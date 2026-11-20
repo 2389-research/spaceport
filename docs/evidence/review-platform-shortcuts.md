@@ -384,4 +384,16 @@ The Mac desktop, account settings, and unrelated containers remain untouched.
 The [scoped receipt](review-squad/linux-native/gnome-prerequisites-3a0bcb00d.json) records versions and failure boundaries.
 Logs remain `/tmp/spaceport-9s44-gnome-{prerequisites,compositor,system-session,cleanup}.log`.
 A future route needs a working isolated GNOME login session, followed by actual app input checks.
+
+### Remote GNOME startup prerequisite on `1ab605fde`
+
+The separate branch-scoped [probe run](https://github.com/2389-research/spaceport/actions/runs/44686213368) passes on a disposable Ubuntu 24.04 runner.
+Actual logs identify GNOME Shell 46.0 and Mutter 46.2 with a surfaceless renderer.
+The private session publishes virtual monitor `Meta-0`, socket `wayland-0`, and the Shell bus owner.
+Rust directly owns and reaps the non-forking private bus, Shell, and query processes.
+The [scoped receipt](review-squad/linux-native/gnome-startup-1ab605fde.json) preserves the source, times, versions, warnings, and cleanup boundary.
+RealtimeKit and GNOME SessionManager remain absent; the probe does not establish full desktop readiness.
+It starts no Spaceport process and sends no keys.
+The next prerequisite uses a private GTK field and Mutter's persistent input session to test Polish evdev input.
+Spaceport shortcut behavior and actual GNOME interception remain unqualified, so Kata `3wd4` stays open.
 Mutter-only or nested startup cannot substitute for those checks.

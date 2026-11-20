@@ -66,7 +66,33 @@ fn command(program: &str, root: &Path) -> Command {
     command
 }
 
-fn session(root: &Path) -> io::Result<()> {
+fn input_probe(root: &Path, script: &Path, display: &Path) -> io::Result<()> {
+    let log = fs::File::create(root.join("input.log"))?;
+    let mut driver = Owned(
+        command("gjs", root)
+            .arg("-m")
+            .arg(script)
+            .env("WAYLAND_DISPLAY", display)
+            .env("GDK_BACKEND", "wayland")
+            .stdout(Stdio::from(log.try_clone()?))
+            .stderr(Stdio::from(log))
+            .spawn()?,
+    );
+    let result = wait(&mut driver.0, Duration::from_secs(45));
+    let cleanup = driver.reap();
+    println!("GNOME_PROBE input_driver_reaped={}", cleanup.is_ok());
+    print_log(root, "input.log")?;
+    let status = result?;
+    cleanup?;
+    if !status.success() {
+        return Err(io::Error::other(format!(
+            "native input prerequisite failed: {status}"
+        )));
+    }
+    Ok(())
+}
+
+fn session(root: &Path, input: Option<&Path>) -> io::Result<()> {
     let log = fs::File::create(root.join("gnome.log"))?;
     let mut shell = Owned(
         command("gnome-shell", root)
@@ -90,11 +116,14 @@ fn session(root: &Path) -> io::Result<()> {
                     "owned GNOME Shell exited: {status}"
                 )));
             }
-            let mut socket = false;
+            let mut display = None;
             for entry in fs::read_dir(root.join("runtime"))? {
                 let entry = entry?;
-                socket |= entry.file_name().to_string_lossy().starts_with("wayland-")
-                    && entry.file_type()?.is_socket();
+                if entry.file_name().to_string_lossy().starts_with("wayland-")
+                    && entry.file_type()?.is_socket()
+                {
+                    display = Some(entry.path());
+                }
             }
             let output = fs::File::create(root.join("bus-owner.log"))?;
             let mut query = Owned(
@@ -115,11 +144,14 @@ fn session(root: &Path) -> io::Result<()> {
                     .spawn()?,
             );
             let owner = wait(&mut query.0, Duration::from_secs(2))?;
-            if socket && owner.success() && shell.0.try_wait()?.is_none() {
+            if let Some(display) = display
+                && owner.success()
+                && shell.0.try_wait()?.is_none()
+            {
                 println!(
                     "GNOME_PROBE startup=true private_wayland=true private_bus_owner=true spaceport_started=false keyboard_input=false"
                 );
-                return Ok(());
+                return input.map_or(Ok(()), |script| input_probe(root, script, &display));
             }
             if Instant::now() >= deadline {
                 return Err(io::Error::new(
@@ -170,9 +202,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
         }
     }
-    if !cfg!(target_os = "linux") || env::args_os().len() != 1 {
-        return Err(io::Error::other("usage: spaceport-gnome-probe").into());
+    if !cfg!(target_os = "linux") || env::args_os().len() > 2 {
+        return Err(io::Error::other("usage: spaceport-gnome-probe [GJS_INPUT_PROBE]").into());
     }
+    let input = env::args_os().nth(1).map(fs::canonicalize).transpose()?;
     let nonce = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
     let root = env::temp_dir().join(format!("spaceport-gnome-{}-{nonce}", std::process::id()));
     fs::DirBuilder::new().mode(0o700).create(&root)?;
@@ -214,7 +247,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             thread::sleep(Duration::from_millis(20));
         }
-        session(&root)
+        session(&root, input.as_deref())
     })();
     let cleanup = bus.reap();
     println!(

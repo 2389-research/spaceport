@@ -1,3 +1,5 @@
+# ABOUTME: Runs the private GNOME prerequisite on one owned throwaway branch.
+# ABOUTME: Keeps app input qualification separate from compositor startup.
 name: Linux GNOME prerequisite probe
 
 on:
@@ -26,8 +28,24 @@ jobs:
           persist-credentials: false
       - name: Install the real GNOME prerequisite
         run: |
-          sudo apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=20 update --error-on=any
-          sudo apt-get install --no-install-recommends -y gnome-shell dbus-x11 at-spi2-core libgl1-mesa-dri mesa-vulkan-drivers
+          apt_temp=$(mktemp -d /tmp/spaceport-gnome-apt.XXXXXX)
+          trap 'rm -rf "$apt_temp"' EXIT
+          mkdir "$apt_temp/parts"
+          chmod 755 "$apt_temp" "$apt_temp/parts"
+          apt_options=(-o "Dir::Etc::SourceList=$apt_temp/ubuntu.sources" -o "Dir::Etc::SourceParts=$apt_temp/parts"
+            -o Acquire::Retries=0 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20)
+          for mirror in primary fallback; do
+            python3 scripts/ubuntu-ci-sources.py --architecture "$(dpkg --print-architecture)" \
+              --mirror "$mirror" /etc/apt/sources.list.d/ubuntu.sources > "$apt_temp/ubuntu.sources"
+            chmod 644 "$apt_temp/ubuntu.sources"
+            if sudo apt-get "${apt_options[@]}" update --error-on=any; then
+              break
+            elif [[ $mirror == fallback ]]; then
+              exit 1
+            fi
+          done
+          sudo apt-get "${apt_options[@]}" install --no-install-recommends -y \
+            gnome-shell gjs gir1.2-gtk-4.0 dbus-x11 at-spi2-core libgl1-mesa-dri mesa-vulkan-drivers
           gnome-shell --version
           systemctl is-active systemd-logind
       - name: Compile and run the throwaway startup probe
@@ -35,4 +53,4 @@ jobs:
           rustup show
           rustfmt --edition 2024 --check scripts/qualification/linux_gnome_probe.rs
           rustc --edition 2024 scripts/qualification/linux_gnome_probe.rs -o "$RUNNER_TEMP/spaceport-gnome-probe"
-          "$RUNNER_TEMP/spaceport-gnome-probe"
+          "$RUNNER_TEMP/spaceport-gnome-probe" "$GITHUB_WORKSPACE/scripts/qualification/linux_gnome_input.js"
