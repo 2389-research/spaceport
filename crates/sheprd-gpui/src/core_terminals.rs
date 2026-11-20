@@ -56,6 +56,8 @@ pub(crate) fn set_terminals_for_test(cx: &mut App, terminals: Vec<TerminalInfo>)
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests;
 
+#[cfg(test)]
+pub(crate) use screen::Screen;
 #[cfg(all(test, unix))]
 pub(crate) use tests::scripted_core::connect as connect_backend_for_test;
 

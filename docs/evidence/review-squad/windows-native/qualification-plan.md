@@ -120,6 +120,29 @@ No evidence establishes a shortcut delivery regression, so `3wd4` remains closed
 The qualified PR head `287f65aa5` and its complete green CI remain unchanged.
 Kata remains 50 closed and three open.
 
+### Fixed replay result and production pipeline candidate
+
+The [probe on `46340b12e`](https://github.com/2389-research/spaceport/actions/runs/44731650086) passes all tests.
+The three captured-stream tests pass, including all fragment boundaries.
+None of the selected resize interleavings reproduces the native stale prompt suffix.
+All 38 native shortcut IDs pass again, including Cycle Windows with source-document readiness.
+Settings and all three Core cases also pass; ordinary Core retains its complete success capture.
+This narrows the parsing experiment without establishing the native cause.
+The failed and successful observer captures each contain 1,342 bytes.
+After replacing only the owned six-character temporary directory names, their ordered bytes are identical.
+The twelve differing bytes come from those directory names in two prompts.
+These captures belong to the read-only observer, not the UI's active attachment.
+They do not exclude differences in that active stream, timing, damage, or native provider state.
+
+The next test feeds the same bytes through real damage publication, `Screen::apply`, and `Transcript::read_frame`.
+It compares complete app frames across chunk sizes and checks full and narrow text projections.
+The captured bytes now live once in shared test support.
+The UI crate adds only the existing emulator crate as a test dependency.
+A test-only re-export reaches the existing app frame consumer without widening production interfaces.
+No production behavior changes; the local compiler and Mac holds remain active.
+The guarded workflow also runs pure emulator replay as a separate Linux job.
+Its completed log is available without waiting for the native UI build.
+
 ## Implementation
 
 - [x] Add fixed native cases and pure contract tests before implementing their runner.
