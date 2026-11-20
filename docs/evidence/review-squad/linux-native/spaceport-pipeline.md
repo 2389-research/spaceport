@@ -160,9 +160,9 @@ Kata remains 49 closed and four open.
 
 ## Exact resume point
 
-The separate native branch is `fix/review-squad-linux-native`, at qualified source `7d8bf54a2`.
+The separate native branch is `fix/review-squad-linux-native`, at qualified source `5979a3a9d`.
 No CI run remains pending for that source.
-The Settings receipt and this progress note await the next meaningful code checkpoint.
+The group receipt and this progress note await the next meaningful code checkpoint.
 Do not publish a documentation-only checkpoint merely to start another native run.
 
 Finish Linux window cycling, split groups, pane history/cycling, and geometric prefix focus.
@@ -245,3 +245,28 @@ Cleanup runs in a separate preparation stage after PASSED.
 It guards the exact captured empty group, calls normal `close_group`, and waits for the original layout.
 The next READY also waits for coherent runtime geometry and preserved runtime members.
 Native compilation and this thirty-seventh case remain pending for the next exact-source run.
+
+Source `5979a3a9d` now passes its [exact-source run](https://github.com/2389-research/spaceport/actions/runs/44704607543).
+Eight shared tests and two receipt tests pass.
+The exact native test passes all thirty-seven cases in 13.88 seconds.
+The new right-hand group is empty and active; original tabs and global runtime pane IDs remain intact.
+Normal guarded cleanup restores the original layout before Polish input.
+The [group receipt](spaceport-groups-5979a3a9d.json) preserves actual creation and cleanup observations.
+All prior cases and process, layout, session, and daemon-survival guards pass.
+
+The next case measures native Ctrl-Shift-Grave Cycle Windows.
+It opens the second window once through the existing deferred creation callback.
+Preparation requires the exact private Socket target, coherent second-window state, matching boot, and unchanged runtime members.
+READY requires the original window active with terminal focus and the owned target inactive.
+Observation requires the exact target active and coherent, while both original windows and runtime members remain present.
+Each window may retain connection-local terminal selection; this case does not compare their focused pane IDs.
+The inactive original's surface geometry is irrelevant to this window-focus outcome.
+All other measured cases retain their original surface-coherence guard.
+The active target must pass full snapshot/surface coherence and structural validation.
+Cleanup defers normal Close Window on only the captured handle and waits for its exact removal.
+The next case waits for original-window activation and coherent geometry before READY.
+
+The observer moves into its own module before adding this ownership flow.
+Its prior body matches committed source exactly before the Cycle Windows branch is added.
+This keeps each file under 1,000 lines without exposing baseline fields.
+The thirty-eighth case remains pending its exact-source compilation and native run.

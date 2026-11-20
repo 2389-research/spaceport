@@ -4,6 +4,7 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Outcome {
     // keep-sorted start
+    CycleWindows,
     DecreaseFont,
     Fullscreen(bool),
     IncreaseFont,
@@ -218,6 +219,11 @@ pub(super) const CASES: &[Case] = &[
         chords: &[&[29, 42, 43]],
         id: "split-editor-alias",
         outcome: Outcome::SplitEditor,
+    },
+    Case {
+        chords: &[&[29, 42, 41]],
+        id: "cycle-windows-alias",
+        outcome: Outcome::CycleWindows,
     },
     Case {
         chords: &[&[100, 38], &[42, 100, 49]],

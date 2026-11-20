@@ -13,13 +13,19 @@ use cases::{CASES, Notice, Outcome, notice};
 mod capture;
 #[path = "smoke_linux_shortcuts/groups.rs"]
 mod groups;
+#[path = "smoke_linux_shortcuts/observe.rs"]
+mod observe;
+use observe::observed;
 #[path = "smoke_linux_shortcuts/popups.rs"]
 mod popups;
+#[path = "smoke_linux_shortcuts/windows.rs"]
+mod windows;
 
 struct Baseline {
     boot: String,
     cell_height: u32,
     configured_font: f32,
+    cycle: Option<windows::Owned>,
     focused_pane: String,
     focused_tab: String,
     font_size: f32,
@@ -49,6 +55,16 @@ enum Stage {
         baseline: Baseline,
         index: usize,
     },
+    AwaitCycle {
+        baseline: Baseline,
+        index: usize,
+        opening: windows::Opening,
+    },
+    AwaitCycleFocus {
+        baseline: Baseline,
+        index: usize,
+        owned: windows::Owned,
+    },
     AwaitFocus {
         baseline: Baseline,
         index: usize,
@@ -63,10 +79,20 @@ enum Stage {
         handle: AnyWindowHandle,
         index: usize,
     },
+    AwaitWindowClose {
+        baseline: Baseline,
+        index: usize,
+        owned: windows::Owned,
+    },
     CloseGroup {
         baseline: Baseline,
         group: crate::browser::GroupId,
         index: usize,
+    },
+    CloseWindow {
+        baseline: Baseline,
+        index: usize,
+        owned: windows::Owned,
     },
     Mapped,
     Mapping,
@@ -153,6 +179,7 @@ fn baseline(view: &SheprdWindow, window: &Window, cx: &App) -> Result<Baseline> 
         boot: snapshot.boot_id.clone(),
         cell_height: view.options.cell_height_px,
         configured_font: view.configured_terminal_size,
+        cycle: None,
         focused_pane: snapshot
             .focused_pane_id
             .clone()
@@ -194,210 +221,6 @@ fn search_ready(view: &SheprdWindow, window: &Window, cx: &App) -> bool {
                 let search = search.read(cx);
                 search.focus.is_focused(window) && search.text().is_empty()
             })
-}
-
-fn observed(
-    view: &SheprdWindow,
-    before: &Baseline,
-    outcome: Outcome,
-    nonce: &str,
-    id: &str,
-    window: &Window,
-    cx: &mut App,
-) -> Result<bool> {
-    let after = baseline(view, window, cx)?;
-    if outcome == Outcome::Settings {
-        same_runtime(before, &after)?;
-        same_terminal_state(before, &after)?;
-        let Some(handle) = settings_fixture::window(cx) else {
-            return Ok(false);
-        };
-        ensure!(
-            !before.windows.contains(&handle),
-            "native Settings case began with its window open"
-        );
-        ensure!(
-            after.windows.len() == before.windows.len() + 1
-                && before.windows.iter().all(|old| after.windows.contains(old)),
-            "native Settings action changed unexpected windows"
-        );
-        let active = settings_fixture::active(cx)?;
-        if active {
-            eprintln!(
-                "LINUX_KEYS_CASE id={id} settings_window_active=true original_windows_preserved=true"
-            );
-        }
-        return Ok(active);
-    }
-    same_scene(before, &after)?;
-    match outcome {
-        Outcome::SplitEditor => {
-            same_terminal_state(before, &after)?;
-            let created = groups::created(&before.groups, &after.groups, view, cx)?;
-            if let Some(group) = created {
-                eprintln!(
-                    "LINUX_KEYS_CASE id={id} empty_right_group={group:?} active=true runtime_members_preserved=true"
-                );
-            }
-            Ok(created.is_some())
-        }
-        Outcome::Settings => anyhow::bail!("Settings outcome bypassed its window observer"),
-        Outcome::Fullscreen(expected) => {
-            same_members(before, &after)?;
-            ensure!(
-                before.focused_tab == after.focused_tab
-                    && before.focused_pane == after.focused_pane,
-                "native fullscreen key changed the focused terminal"
-            );
-            ensure!(
-                before.fullscreen != expected,
-                "native fullscreen case began at its target"
-            );
-            let done = after.fullscreen == expected && view.focus.is_focused(window);
-            if done {
-                eprintln!(
-                    "LINUX_KEYS_CASE id={id} fullscreen_before={} fullscreen_after={}",
-                    before.fullscreen, after.fullscreen
-                );
-            }
-            Ok(done)
-        }
-        Outcome::NextRegion | Outcome::PreviousRegion => {
-            same_terminal(before, &after)?;
-            let expected = if outcome == Outcome::NextRegion {
-                crate::window::chrome_focus::Region::TitleBar
-            } else {
-                crate::window::chrome_focus::Region::StatusBar
-            };
-            let done = view.menu.page.is_none()
-                && view.chrome_region == Some(expected)
-                && window.focused(cx).is_some()
-                && !view.chrome_entry_focus.is_focused(window)
-                && !view.focus.is_focused(window);
-            if done {
-                eprintln!("LINUX_KEYS_CASE id={id} region={expected:?} control_focused=true");
-            }
-            Ok(done)
-        }
-        Outcome::Keybindings | Outcome::Palette | Outcome::ResumePalette => {
-            same_terminal(before, &after)?;
-            popups::observed(view, before.palette_resume.as_ref(), outcome, window, cx)
-        }
-        Outcome::IncreaseFont | Outcome::DecreaseFont | Outcome::ResetFont => {
-            same_terminal(before, &after)?;
-            ensure!(
-                after.configured_font == before.configured_font,
-                "native font key changed the configured baseline"
-            );
-            ensure!(
-                view.focus.is_focused(window),
-                "native font key moved terminal focus"
-            );
-            let expected = match outcome {
-                Outcome::IncreaseFont => before.font_size + crate::config::FONT_SIZE_STEP,
-                Outcome::DecreaseFont => before.font_size - crate::config::FONT_SIZE_STEP,
-                _ => before.configured_font,
-            };
-            ensure!(
-                before.font_size != expected,
-                "native font case has no size change to observe"
-            );
-            if after.font_size != expected || after.cell_height == before.cell_height {
-                return Ok(false);
-            }
-            ensure!(
-                after.cell_height > 0,
-                "native font key produced an empty cell height"
-            );
-            eprintln!(
-                "LINUX_KEYS_CASE id={id} font_before={} font_after={} cell_height_before={} cell_height_after={}",
-                before.font_size, after.font_size, before.cell_height, after.cell_height
-            );
-            Ok(true)
-        }
-        Outcome::NewTab => {
-            ensure!(
-                after
-                    .tabs
-                    .iter()
-                    .filter(|id| before.tabs.contains(id))
-                    .count()
-                    == before.tabs.len(),
-                "native new-tab action lost an existing tab"
-            );
-            ensure!(
-                after.tabs.len() <= before.tabs.len() + 1,
-                "native new-tab action created extra tabs"
-            );
-            if after.tabs.len() != before.tabs.len() + 1 {
-                return Ok(false);
-            }
-            Ok(!before.tabs.contains(&after.focused_tab)
-                && after.workspace_tabs.contains(&after.focused_tab))
-        }
-        Outcome::Tab(_) | Outcome::NextTab | Outcome::PreviousTab => {
-            same_members(before, &after)?;
-            let target = match outcome {
-                Outcome::Tab(number) => numbered_tab(before, number)?,
-                _ => stepped_tab(before, outcome == Outcome::NextTab)?,
-            };
-            ensure!(
-                before.focused_tab != target,
-                "native tab case began on its target"
-            );
-            if after.focused_tab != target {
-                return Ok(false);
-            }
-            ensure!(
-                after.revision > before.revision,
-                "native tab focus has no new daemon revision"
-            );
-            eprintln!(
-                "LINUX_KEYS_CASE id={id} before={:.80} target={target:.80} after={:.80}",
-                before.focused_tab, after.focused_tab
-            );
-            Ok(true)
-        }
-        Outcome::PolishSearch => {
-            same_members(before, &after)?;
-            ensure!(
-                view.menu.page == Some(Page::Themes),
-                "Polish input replaced the owned search popup"
-            );
-            let search = view
-                .menu
-                .themes
-                .as_ref()
-                .and_then(|picker| picker.search())
-                .context("Polish search field is missing")?;
-            Ok(search.read(cx).text() == "łŃ")
-        }
-        Outcome::TerminalBytes(expected) => {
-            same_terminal(before, &after)?;
-            ensure!(
-                view.focus.is_focused(window),
-                "native pane key moved focus away from the terminal"
-            );
-            match capture::read(&capture::screen(view)?, nonce, id, expected.len()) {
-                capture::Capture::Pending => Ok(false),
-                capture::Capture::Malformed => {
-                    anyhow::bail!("native pane capture is malformed for {id}")
-                }
-                capture::Capture::Complete(bytes) => {
-                    ensure!(
-                        bytes == expected,
-                        "native pane bytes differ for {id}: {bytes:02x?}"
-                    );
-                    eprintln!(
-                        "LINUX_KEYS_CASE id={id} bytes={bytes:02x?} count={} pane={:.80}",
-                        bytes.len(),
-                        after.focused_pane
-                    );
-                    Ok(true)
-                }
-            }
-        }
-    }
 }
 
 fn same_scene(before: &Baseline, after: &Baseline) -> Result<()> {
@@ -486,16 +309,108 @@ fn advance(
         view.notices.is_none() && view.live.notices.is_none(),
         "native case has a client notice"
     );
-    if !coherent(view) || view.bounds.size.width <= px(0.) {
+    // Cross-window preparation must progress while the original window is inactive.
+    let stage = match stage {
+        Stage::AwaitCycle {
+            baseline: before,
+            index,
+            opening,
+        } => {
+            let Some(owned) = opening.poll(&before, cx)? else {
+                return Ok(Step::Continue(Stage::AwaitCycle {
+                    baseline: before,
+                    index,
+                    opening,
+                }));
+            };
+            let after = baseline(view, window, cx)?;
+            same_runtime(&before, &after)?;
+            same_members(&before, &after)?;
+            owned.activate_original(cx);
+            return Ok(Step::Continue(Stage::AwaitCycleFocus {
+                baseline: before,
+                index,
+                owned,
+            }));
+        }
+        Stage::AwaitCycleFocus {
+            baseline: before,
+            index,
+            owned,
+        } => {
+            if !window.is_window_active() || !coherent(view) || !owned.inactive(cx)? {
+                return Ok(Step::Continue(Stage::AwaitCycleFocus {
+                    baseline: before,
+                    index,
+                    owned,
+                }));
+            }
+            let mut current = baseline(view, window, cx)?;
+            same_runtime(&before, &current)?;
+            same_members(&before, &current)?;
+            owned.check_addition(&before, &current.windows)?;
+            current.cycle = Some(owned);
+            return Ok(Step::Paint(Stage::Ready {
+                baseline: current,
+                index,
+            }));
+        }
+        Stage::CloseWindow {
+            baseline,
+            index,
+            owned,
+        } => {
+            owned.request_close(cx);
+            return Ok(Step::Continue(Stage::AwaitWindowClose {
+                baseline,
+                index,
+                owned,
+            }));
+        }
+        Stage::AwaitWindowClose {
+            baseline: before,
+            index,
+            owned,
+        } => {
+            if !owned.closed(cx) {
+                return Ok(Step::Continue(Stage::AwaitWindowClose {
+                    baseline: before,
+                    index,
+                    owned,
+                }));
+            }
+            let after = baseline(view, window, cx)?;
+            same_runtime(&before, &after)?;
+            same_members(&before, &after)?;
+            owned.check_removal(&before, &after)?;
+            owned.activate_original(cx);
+            eprintln!(
+                "LINUX_KEYS_CASE owned_second_window_closed=true before_case={}",
+                CASES[index].id
+            );
+            return Ok(Step::Continue(Stage::Prepare(index)));
+        }
+        stage => stage,
+    };
+    let cycling = matches!(&stage, Stage::Observe { index, .. } if CASES[*index].outcome == Outcome::CycleWindows);
+    if (!cycling && !coherent(view)) || view.bounds.size.width <= px(0.) {
         return Ok(Step::Continue(stage));
     }
-    view.live
-        .surface
-        .as_ref()
-        .context("native surface is missing")?
-        .frame
-        .validate()?;
+    if !cycling {
+        view.live
+            .surface
+            .as_ref()
+            .context("native surface is missing")?
+            .frame
+            .validate()?;
+    }
     match stage {
+        Stage::AwaitCycle { .. }
+        | Stage::AwaitCycleFocus { .. }
+        | Stage::CloseWindow { .. }
+        | Stage::AwaitWindowClose { .. } => {
+            anyhow::bail!("native cross-window stage bypassed its owner")
+        }
         Stage::CloseGroup {
             baseline,
             group,
@@ -663,6 +578,15 @@ fn advance(
             }
             let baseline = baseline(view, window, cx)?;
             match case.outcome {
+                Outcome::CycleWindows => {
+                    popups::close(view, window, cx)?;
+                    let opening = windows::open(view, window, cx)?;
+                    return Ok(Step::Continue(Stage::AwaitCycle {
+                        baseline,
+                        index,
+                        opening,
+                    }));
+                }
                 Outcome::SplitEditor => {
                     groups::prepared(&baseline.groups)?;
                     popups::close(view, window, cx)?;
@@ -757,6 +681,18 @@ fn advance(
         } => {
             let case = &CASES[index];
             let focused = match case.outcome {
+                Outcome::CycleWindows => {
+                    let current = baseline(view, window, cx)?;
+                    same_scene(&before, &current)?;
+                    same_members(&before, &current)?;
+                    let owned = before
+                        .cycle
+                        .as_ref()
+                        .context("native cycle case has no owned target window")?;
+                    view.menu.page.is_none()
+                        && view.focus.is_focused(window)
+                        && owned.inactive(cx)?
+                }
                 Outcome::SplitEditor => {
                     let current = baseline(view, window, cx)?;
                     same_terminal(&before, &current)?;
@@ -841,7 +777,8 @@ fn advance(
             started,
         } => {
             let case = &CASES[index];
-            if (case.outcome != Outcome::Settings && !window.is_window_active())
+            if (!matches!(case.outcome, Outcome::Settings | Outcome::CycleWindows)
+                && !window.is_window_active())
                 || !observed(view, &baseline, case.outcome, nonce, case.id, window, cx)?
             {
                 return Ok(Step::Continue(Stage::Observe {
@@ -855,6 +792,18 @@ fn advance(
                 eprintln!("{}", notice(nonce, Notice::Complete));
                 Ok(Step::Done)
             } else {
+                if case.outcome == Outcome::CycleWindows {
+                    let mut baseline = baseline;
+                    let owned = baseline
+                        .cycle
+                        .take()
+                        .context("native cycle cleanup lost its owned window")?;
+                    return Ok(Step::Continue(Stage::CloseWindow {
+                        baseline,
+                        index: index + 1,
+                        owned,
+                    }));
+                }
                 if case.outcome == Outcome::SplitEditor {
                     let group = view
                         .group_slots()
