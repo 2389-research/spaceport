@@ -10,6 +10,7 @@ use crate::smoke;
 use crate::{
     WINDOW_TITLE,
     app::WindowLaunch,
+    config::{Config, Theme},
     endpoint, log_window, menu, preferences, sessions, sidebar,
     state::LiveState,
     terminal::{Selection, WheelAccumulator},
@@ -40,125 +41,42 @@ impl SheprdWindow {
         let focus = cx.focus_handle();
         window.focus(&focus, cx);
         let weak = cx.weak_entity();
-        let (initial_theme, initial_icons, initial_rail) = cx
-            .try_global::<crate::app::InitialAppearance>()
-            .map(|appearance| {
-                (
-                    appearance.theme.clone(),
-                    appearance.config.status_icons,
-                    appearance.config.edge_rail,
-                )
-            })
-            .unwrap_or_default();
-        let indicators = sidebar::Indicators::new(
-            None,
-            initial_icons,
-            initial_rail,
-            matches!(
-                cx.window_appearance(),
-                WindowAppearance::Light | WindowAppearance::VibrantLight
-            ),
-            &initial_theme,
-        );
-        let sidebar_view = cx.new(|_| sidebar::SidebarView::new(weak, indicators));
+        let startup = Startup::of(cx);
+        let sidebar_view = cx.new(|_| sidebar::SidebarView::new(weak, startup.indicators));
         let hosts = vec![cx.entity_id(), sidebar_view.entity_id()];
         let mark_layer = cx.new(|cx| crate::mark_layer::MarkLayer::new(window, hosts, cx));
-        let timer = cx.background_executor().clone();
-        let poll = cx.spawn_in(window, async move |this, cx| {
-            loop {
-                timer.timer(Duration::from_millis(16)).await;
-                if this
-                    .update_in(cx, |this, window, cx| this.tick(window, cx))
-                    .is_err()
-                {
-                    break;
-                }
-            }
-        });
-        let appearance = cx
-            .try_global::<crate::app::InitialAppearance>()
-            .cloned()
-            .unwrap_or_default();
-        let crate::app::InitialAppearance {
-            config,
-            keymap,
-            theme,
-            error,
-        } = appearance;
+        let effects = Self::window_effects(window, cx, &focus);
+        let launched = Launched::of(launch);
         // Effects run here in a fixed order, so the fields below can stay sorted.
-        let configured_terminal_size = config.terminal.size;
-        let status_bar_visible = config.status_bar.show;
+        let configured_terminal_size = startup.config.terminal.size;
+        let status_bar_visible = startup.config.status_bar.show;
         let mut gui_config_diagnostic = crate::config_diagnostic::ConfigDiagnostic::default();
-        gui_config_diagnostic.sync_own(crate::config::diagnostic(&config).as_deref());
-        let (catalog, endpoints, core_key) = match launch {
-            WindowLaunch::Legacy(target) => (
-                endpoint::Catalog::new(&target),
-                vec![endpoint::Endpoint::new(
-                    endpoint::LOCAL.into(),
-                    "Local".into(), // i18n: data
-                    target,
-                    true,
-                )],
-                None,
-            ),
-            WindowLaunch::Core(key) => (endpoint::Catalog::inactive(), Vec::new(), Some(key)),
-        };
+        gui_config_diagnostic.sync_own(crate::config::diagnostic(&startup.config).as_deref());
+        let mut notices = crate::notice::Notices::default();
+        if let Some(error) = startup.error.clone() {
+            notices.show(crate::notice::Cause::Configuration, error);
+        }
         let menu = menu::MenuState::new(cx);
         let sidebar_search = sidebar::SidebarSearch::new(cx);
         let surface_signal = cx.new(|_| SurfaceSignal);
-        let sidebar_invalidation = Self::invalidate_sidebar(cx);
-        let host_theme = Self::observe_host_theme(cx);
         let browser = crate::browser::Browser::new(cx);
-        // Another window, or an agent, may open or close a tab.
-        let browser_tabs = cx.observe_global::<crate::browser::Store>(|_, cx| cx.notify());
         let device_tags = crate::device_tags::DeviceTags::current(cx);
-        let device_tags_changed = Self::observe_device_tags(cx);
-        let worktree_notes = Self::observe_worktree_notes(window, cx);
-        let notification_mutes = Self::observe_notification_mutes(cx);
-        let prefix_interceptor = Self::intercept_prefix(window, cx);
-        let activation = cx.observe_window_activation(window, |this, window, cx| {
-            this.active = window.is_window_active();
-            if this.active {
-                this.publish_server_keymap(cx);
-            } else {
-                this.shift_taps.cancel();
-                this.disarm_prefix();
-                this.cancel_terminal_mouse(cx);
-                // A drag cut short is dropped; a selection kept for an
-                // explicit copy outlives a trip to another window.
-                if this.selection.as_ref().is_some_and(Selection::dragging) {
-                    this.selection = None;
-                }
-                this.pressed_terminal_link = None;
-            }
-            this.report_focus();
-            cx.notify();
-        });
-        let appearance_change = cx.observe_window_appearance(window, |this, _, cx| {
-            this.apply_shared_theme(cx);
-            this.apply_system_theme(cx);
-            cx.notify();
-        });
-        let window_closed = Self::give_back_torn_tabs(cx);
-        let terminal_focus = Self::leave_region_with_terminal(&focus, window, cx);
-        let mut notices = crate::notice::Notices::default();
-        if let Some(error) = error {
-            notices.show(crate::notice::Cause::Configuration, error);
-        }
+        // The Core group this window shows, if it was opened for one.
+        let core_key = launched.core_key.clone();
         let mut this = Self {
             // keep-sorted start
-            _activation: activation,
-            _appearance: appearance_change,
-            _browser_tabs: browser_tabs,
-            _device_tags: device_tags_changed,
-            _host_theme: host_theme,
-            _notification_mutes: notification_mutes,
-            _poll: poll,
-            _prefix_interceptor: prefix_interceptor,
-            _sidebar_invalidation: sidebar_invalidation,
-            _terminal_focus: terminal_focus,
-            _window_closed: window_closed,
-            _worktree_notes: worktree_notes,
+            _activation: effects.activation,
+            _appearance: effects.appearance,
+            _browser_tabs: effects.browser_tabs,
+            _device_tags: effects.device_tags_changed,
+            _host_theme: effects.host_theme,
+            _notification_mutes: effects.notification_mutes,
+            _poll: effects.poll,
+            _prefix_interceptor: effects.prefix_interceptor,
+            _sidebar_invalidation: effects.sidebar_invalidation,
+            _terminal_focus: effects.terminal_focus,
+            _window_closed: effects.window_closed,
+            _worktree_notes: effects.worktree_notes,
             active: window.is_window_active(),
             activity: Default::default(),
             agent_sort: preferences::AgentSort::default(),
@@ -168,11 +86,11 @@ impl SheprdWindow {
             bell: crate::bell::Bell::default(),
             bounds: Bounds::default(),
             browser,
-            catalog,
+            catalog: launched.catalog,
             cell_width: 9.,
             chats: Default::default(),
             chrome_region: None,
-            config,
+            config: startup.config,
             config_load: None,
             config_load_revision: 0,
             config_watch: None,
@@ -190,7 +108,7 @@ impl SheprdWindow {
             device_tags,
             device_themes: Default::default(),
             devices_overview: Default::default(),
-            endpoints,
+            endpoints: launched.endpoints,
             file_transfer: Default::default(),
             find: None,
             find_memory: Default::default(),
@@ -209,7 +127,7 @@ impl SheprdWindow {
             integrations: Default::default(),
             key_layout: prefix::current_layout,
             key_press: function_keys::current_press,
-            keymap,
+            keymap: startup.keymap,
             last_input: None,
             last_pointer: None,
             last_queued_options: None,
@@ -276,7 +194,7 @@ impl SheprdWindow {
             surface_signal,
             tab_drag: None,
             terminal_mouse: None,
-            theme,
+            theme: startup.theme,
             theme_light: crate::app::light_appearance(cx),
             title: WINDOW_TITLE.to_owned(),
             toast_motion: Default::default(),
@@ -292,6 +210,7 @@ impl SheprdWindow {
             zen: Default::default(),
             // keep-sorted end
         };
+
         // Quitting need not drop this window, so its SSH children (port
         // forwards and listening-port tunnels) are killed here rather than
         // left forwarding after the app is gone.
@@ -316,24 +235,189 @@ impl SheprdWindow {
             }
             return this;
         }
+        this.start(core_key, window, cx);
+        this
+    }
+
+    /// The observers and task a new window holds: what it draws from, what it
+    /// gives back when it closes, and the frame tick that keeps it current.
+    fn window_effects(window: &mut Window, cx: &mut Context<Self>, focus: &FocusHandle) -> Effects {
+        let timer = cx.background_executor().clone();
+        let poll = cx.spawn_in(window, async move |this, cx| {
+            loop {
+                timer.timer(Duration::from_millis(16)).await;
+                if this
+                    .update_in(cx, |this, window, cx| this.tick(window, cx))
+                    .is_err()
+                {
+                    break;
+                }
+            }
+        });
+        let sidebar_invalidation = Self::invalidate_sidebar(cx);
+        let host_theme = Self::observe_host_theme(cx);
+        // Another window, or an agent, may open or close a tab.
+        let browser_tabs = cx.observe_global::<crate::browser::Store>(|_, cx| cx.notify());
+        let device_tags_changed = Self::observe_device_tags(cx);
+        let worktree_notes = Self::observe_worktree_notes(window, cx);
+        let notification_mutes = Self::observe_notification_mutes(cx);
+        let prefix_interceptor = Self::intercept_prefix(window, cx);
+        let activation = cx.observe_window_activation(window, |this, window, cx| {
+            this.active = window.is_window_active();
+            if this.active {
+                this.publish_server_keymap(cx);
+            } else {
+                this.shift_taps.cancel();
+                this.disarm_prefix();
+                this.cancel_terminal_mouse(cx);
+                // A drag cut short is dropped; a selection kept for an
+                // explicit copy outlives a trip to another window.
+                if this.selection.as_ref().is_some_and(Selection::dragging) {
+                    this.selection = None;
+                }
+                this.pressed_terminal_link = None;
+            }
+            this.report_focus();
+            cx.notify();
+        });
+        let appearance = cx.observe_window_appearance(window, |this, _, cx| {
+            this.apply_shared_theme(cx);
+            this.apply_system_theme(cx);
+            cx.notify();
+        });
+        let window_closed = Self::give_back_torn_tabs(cx);
+        let terminal_focus = Self::leave_region_with_terminal(focus, window, cx);
+        Effects {
+            activation,
+            appearance,
+            browser_tabs,
+            device_tags_changed,
+            host_theme,
+            notification_mutes,
+            poll,
+            prefix_interceptor,
+            sidebar_invalidation,
+            terminal_focus,
+            window_closed,
+            worktree_notes,
+        }
+    }
+
+    /// What a window does once its state exists: it shows the Core group it
+    /// was opened for, reconnects to its daemon, and reads the settings that
+    /// arrive with it.
+    fn start(
+        &mut self,
+        core_key: Option<crate::browser::CoreGroupKey>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         Self::poll_on_frame(cx.entity().downgrade(), window);
-        this.sidebar_preferences = if let Some(key) = core_key.as_ref() {
+        self.sidebar_preferences = if let Some(key) = core_key.as_ref() {
             Some(preferences::Preferences::for_core(key.hub_core_id()))
         } else {
-            this.endpoints
+            self.endpoints
                 .first()
                 .and_then(|endpoint| endpoint.connection.target.socket_path().ok())
                 .map(|path| preferences::Preferences::new(&path))
         };
         if core_key.is_none() {
-            this.reconnect(cx);
+            self.reconnect(cx);
         }
-        log_window::set_appearance(&this.config, &this.theme, cx);
-        this.load_gui_config(cx);
+        log_window::set_appearance(&self.config, &self.theme, cx);
+        self.load_gui_config(cx);
         if core_key.is_none() {
-            this.load_shared_settings(cx);
+            self.load_shared_settings(cx);
         }
-        this.watch_gui_config(cx);
-        this
+        self.watch_gui_config(cx);
     }
+}
+
+/// What the app hands a new window: its config, keymap, theme, and the
+/// startup error to show, with the indicators that config draws.
+struct Startup {
+    config: Config,
+    error: Option<String>,
+    indicators: sidebar::Indicators,
+    keymap: crate::keymap::Keymap,
+    theme: Theme,
+}
+
+impl Startup {
+    fn of(cx: &App) -> Self {
+        let appearance = cx
+            .try_global::<crate::app::InitialAppearance>()
+            .cloned()
+            .unwrap_or_default();
+        let indicators = sidebar::Indicators::new(
+            None,
+            appearance.config.status_icons,
+            appearance.config.edge_rail,
+            matches!(
+                cx.window_appearance(),
+                WindowAppearance::Light | WindowAppearance::VibrantLight
+            ),
+            &appearance.theme,
+        );
+        let crate::app::InitialAppearance {
+            config,
+            keymap,
+            theme,
+            error,
+        } = appearance;
+        Self {
+            config,
+            error,
+            indicators,
+            keymap,
+            theme,
+        }
+    }
+}
+
+/// What a window was opened against: its endpoint catalog, the Core group it
+/// shows, and the error it could not start with.
+struct Launched {
+    catalog: endpoint::Catalog,
+    core_key: Option<crate::browser::CoreGroupKey>,
+    endpoints: Vec<endpoint::Endpoint>,
+}
+
+impl Launched {
+    fn of(launch: WindowLaunch) -> Self {
+        match launch {
+            WindowLaunch::Legacy(target) => Self {
+                catalog: endpoint::Catalog::new(&target),
+                core_key: None,
+                endpoints: vec![endpoint::Endpoint::new(
+                    endpoint::LOCAL.into(),
+                    "Local".into(), // i18n: data
+                    target,
+                    true,
+                )],
+            },
+            WindowLaunch::Core(key) => Self {
+                catalog: endpoint::Catalog::inactive(),
+                core_key: Some(key),
+                endpoints: Vec::new(),
+            },
+        }
+    }
+}
+
+/// The subscriptions and task a new window holds, so [`SheprdWindow::new`]
+/// can start them in one block and keep its fields sorted.
+struct Effects {
+    activation: Subscription,
+    appearance: Subscription,
+    browser_tabs: Subscription,
+    device_tags_changed: Subscription,
+    host_theme: Subscription,
+    notification_mutes: Subscription,
+    poll: Task<()>,
+    prefix_interceptor: Subscription,
+    sidebar_invalidation: Subscription,
+    terminal_focus: Subscription,
+    window_closed: Subscription,
+    worktree_notes: Subscription,
 }
