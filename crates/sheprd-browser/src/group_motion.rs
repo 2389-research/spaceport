@@ -175,8 +175,6 @@ impl GroupMotion {
         !self.opening.is_empty() || !self.folding.is_empty()
     }
 
-    /// Holds all motion where it starts, for tests whose frames are too
-    /// slow to catch it mid-way.
     /// Turns motion on, for the tests of the motion itself.
     #[cfg(any(test, feature = "test-support"))]
     pub fn enable(&mut self) {

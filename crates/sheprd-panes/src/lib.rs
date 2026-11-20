@@ -5,7 +5,7 @@
 
 mod error;
 
-pub use error::Error;
+pub use error::{Error, Result};
 
 use serde::{Deserialize, Serialize};
 use sheprd_backend::TerminalId;

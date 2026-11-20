@@ -136,8 +136,10 @@ dev-dependencies enable it.
    are covered by `web_url.rs`'s own tests.
 6. **Five inline `#[cfg(test)] mod tests` blocks moved to their own files**
    while they moved crates (`layouts`, `hidden`, `tab_appear`, `group_motion`,
-   and `store/saved`'s), as AGENTS.md asks; the 360 inline lines the design
-   flagged are now files under each module's `tests/`.
+   and `store/saved`'s), as AGENTS.md asks; of the 360 inline lines the design
+   flagged, most are now files under each module's `tests/` — three inline
+   blocks remain, carried over verbatim (`web_url.rs`, `tab_scroll.rs`, and
+   `tab_scroll`'s nested reveal test), which a follow-up can move.
 
 ## 6. Gates, per commit
 
