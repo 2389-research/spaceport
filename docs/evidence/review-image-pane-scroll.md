@@ -345,3 +345,33 @@ Logs: `/tmp/spaceport-9s44-native-paint-windows-{all,minimal}.log`.
 Quick formatting, size, sorting, operations, localization, commit-subject, and diff checks pass.
 Independent read-only review finds no material proof, ownership, or lifecycle regression.
 Actual Windows capture qualification and inspection of all four PNGs remain pending.
+
+## Native source samples on `23cab5b4b`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44652883114/job/136012085170) now produces an actual GPU failure capture.
+All four authored assets arrive and paint; source-row validation rejects the old sample points.
+The [capture](review-squad/native-images/failure-23cab5b4b.png) is 1200×780 and 59,766 bytes.
+Root decodes and inspects it; the [receipt](review-squad/native-images/failure-23cab5b4b.json) records its hash and actual pixel samples.
+
+Pinned DirectX uses linear filtering with edge-to-edge tile UVs and no atlas padding.
+The previous half-cell offsets sample near the tiny sources' edges rather than their texel centers.
+Microsoft's [filtering contract](https://learn.microsoft.com/en-us/windows/uwp/graphics-concepts/bilinear-texture-filtering) explains those interpolated colors.
+The underlying image mapping call also predates the cache/scroll change in source.
+No native baseline was run, so this ancestry evidence does not qualify atlas-edge appearance.
+
+The corrected witnesses use each full image mapping's source centers.
+Red and blue witnesses move one device pixel outside the green overlay's opposing edges.
+Explicit guards refuse an overlapping witness or one outside its source mapping.
+The green center lies over the red/blue boundary, so its expected blend is approximately `[64,128,64]`.
+The actual capture gives `[63,125,65]`; the other center samples match their saturated source colors.
+Assets, saturated thresholds, glyph layers, source identity, motion, and clipping requirements remain intact.
+
+Clipping's positive witness now uses the mapped cyan center and requires its visible containment.
+The new regression first fails because the old validator accepts a clipped source center.
+The corrected focused run passes 18 raster and image-consumer cases, with two existing Metal opt-ins skipped.
+Logs: `/tmp/spaceport-9s44-native-texel-center-{red,green}.log`.
+Both Windows feature configurations pass Clippy for the app and native accessibility harness with warnings denied.
+Logs: `/tmp/spaceport-9s44-native-texel-windows-{all,minimal}.log`.
+Quick formatting, size, sorting, operations, localization, commit-subject, and diff checks pass.
+Independent review finds no material proof gap in the corrected sampling or clipping guards.
+Actual corrected Windows execution and all four success captures remain pending; `gfde` stays open.

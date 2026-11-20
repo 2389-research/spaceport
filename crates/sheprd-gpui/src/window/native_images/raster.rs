@@ -22,6 +22,7 @@ pub(super) fn clipping(
     scale: f32,
     pane: Bounds<Pixels>,
     bounds: Bounds<Pixels>,
+    image_bounds: Bounds<Pixels>,
     mask: Bounds<Pixels>,
     crossing: bool,
 ) -> Result<()> {
@@ -50,13 +51,16 @@ pub(super) fn clipping(
         f32::from(visible.size.width) * scale >= 1. && f32::from(visible.size.height) * scale >= 1.,
         "authored edge image has no visible interior pixels"
     );
-    let x = f32::from(visible.left()) + f32::from(visible.size.width) / 2.;
-    let inside = sample(
-        pixels,
-        scale,
-        x,
-        f32::from(visible.top()) + f32::from(visible.size.height) / 2.,
-    )?;
+    let x = f32::from(image_bounds.left() + image_bounds.size.width / 2.);
+    let inside_y = f32::from(image_bounds.top() + image_bounds.size.height / 2.);
+    ensure!(
+        x >= f32::from(visible.left())
+            && x < f32::from(visible.right())
+            && inside_y >= f32::from(visible.top())
+            && inside_y < f32::from(visible.bottom()),
+        "authored cyan source texel center is outside the visible viewport"
+    );
+    let inside = sample(pixels, scale, x, inside_y)?;
     ensure!(
         inside[1] > 200 && inside[2] > 200 && inside[0] < 40,
         "authored cyan edge image is absent inside the pane: {inside:?}"

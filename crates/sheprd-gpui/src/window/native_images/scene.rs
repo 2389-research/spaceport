@@ -103,17 +103,20 @@ pub(super) fn validate_pixels(shot: &Shot) -> Result<()> {
             && below.visible.intersect(&below.mask).size == below.visible.size,
         "native source mapping or central-image clipping changed"
     );
-    let x = f32::from(below.visible.left()) + shot.scene.metrics.width / 2.;
-    let top = color(
-        shot,
-        x,
-        f32::from(below.visible.top()) + shot.scene.metrics.height / 2.,
-    )?;
-    let bottom = color(
-        shot,
-        x,
-        f32::from(below.visible.bottom()) - shot.scene.metrics.height / 2.,
-    )?;
+    let middle = image(&shot.paint, 2)?;
+    let x = f32::from(below.image.left() + below.image.size.width / 2.);
+    // The green overlay touches both source-row centers; sample just outside its snapped edges.
+    let red_y = f32::from(below.image.top() + below.image.size.height / 4.) - 1. / shot.scale;
+    let blue_y = f32::from(below.image.top() + below.image.size.height * 0.75) + 1. / shot.scale;
+    ensure!(
+        red_y >= f32::from(below.image.top())
+            && red_y < f32::from(middle.visible.top())
+            && blue_y >= f32::from(middle.visible.bottom())
+            && blue_y < f32::from(below.image.bottom()),
+        "native source-row witnesses overlap the green image or leave their source mapping"
+    );
+    let top = color(shot, x, red_y)?;
+    let bottom = color(shot, x, blue_y)?;
     ensure!(
         top[0] > 200 && top[2] < 40 && bottom[2] > 200 && bottom[0] < 40,
         "native image source rows are not red then blue: {top:?} / {bottom:?}"
@@ -121,27 +124,21 @@ pub(super) fn validate_pixels(shot: &Shot) -> Result<()> {
     let above = image(&shot.paint, 3)?;
     let yellow = color(
         shot,
-        f32::from(above.visible.left()) + shot.scene.metrics.width / 2.,
-        f32::from(above.visible.top()) + shot.scene.metrics.height / 2.,
+        f32::from(above.image.left() + above.image.size.width / 2.),
+        f32::from(above.image.top() + above.image.size.height / 2.),
     )?;
     ensure!(
         yellow[0] > 200 && yellow[1] > 200 && yellow[2] < 40,
         "native above-text image is missing: {yellow:?}"
     );
-    let middle = image(&shot.paint, 2)?;
     let mixed = color(
         shot,
-        f32::from(middle.visible.left()) + shot.scene.metrics.width / 2.,
-        f32::from(middle.visible.top()) + shot.scene.metrics.height / 2.,
+        f32::from(middle.image.left() + middle.image.size.width / 2.),
+        f32::from(middle.image.top() + middle.image.size.height / 2.),
     )?;
     ensure!(
-        mixed[0] > 60
-            && mixed[0] < 220
-            && mixed[1] > 60
-            && mixed[1] < 220
-            && mixed[0].abs_diff(mixed[1]) <= 16
-            && mixed[2] < 40,
-        "native transparent overlap does not blend red and green once: {mixed:?}"
+        mixed[0].abs_diff(64) <= 8 && mixed[1].abs_diff(128) <= 8 && mixed[2].abs_diff(64) <= 8,
+        "native transparent overlap does not blend green once over the red/blue boundary: {mixed:?}"
     );
     let white = |image: &ImagePaint| -> Result<usize> {
         let x = f32::from(image.visible.left()) + shot.scene.metrics.width;
@@ -178,6 +175,7 @@ pub(super) fn validate_pixels(shot: &Shot) -> Result<()> {
         shot.scale,
         shot.pane,
         edge.visible,
+        edge.image,
         edge.mask,
         f32::from(edge.visible.bottom() - shot.pane.bottom()) > 1. / shot.scale,
     )
@@ -232,6 +230,7 @@ pub(super) fn validate_motion(base: &Shot, moving: &Shot, offset: f32) -> Result
         moving.scale,
         moving.pane,
         crossed.visible,
+        crossed.image,
         crossed.mask,
         true,
     )?;
