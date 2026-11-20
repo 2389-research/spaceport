@@ -10,24 +10,42 @@ Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Windows.For
 Add-Type -Path @("$PSScriptRoot\native_profile_id.cs", "$PSScriptRoot\native_altgr.cs")
 $tablePath = "$PSScriptRoot\windows_shortcut_cases.json"
 if ((Get-Item -LiteralPath $tablePath).Length -gt 32768) { throw 'Native case table exceeds bound' }
-$table = @(Get-Content -LiteralPath $tablePath -Raw | ConvertFrom-Json)
-$matching = @($table | Where-Object { $_.id -ceq $CaseId })
-if ($matching.Count -ne 1) { throw 'Native input requires one fixed case ID' }
-$case = $matching[0]
-$nativeChords = [System.Collections.Generic.List[int[]]]::new()
-foreach ($entry in $case.chords) {
-  $codes = [int[]]@($entry)
-  if ($codes.Count -lt 1 -or $codes.Count -gt 4 -or @($codes | Select-Object -Unique).Count -ne $codes.Count -or
-      @($codes | Where-Object { $_ -lt 1 -or $_ -gt 255 }).Count -ne 0) { throw 'Native chord violates physical-key bounds' }
-  $nativeChords.Add($codes)
+# Windows PowerShell emits the JSON array as one pipeline object; assignment preserves its actual elements.
+$table = Get-Content -LiteralPath $tablePath -Raw | ConvertFrom-Json
+function Native-Case([string]$id) {
+  $matching = @($table | Where-Object { $_.id -is [string] -and $_.id -ceq $id })
+  if ($matching.Count -ne 1) { throw 'Native input requires one fixed case ID' }
+  $selected = $matching[0]
+  if ($selected.id -isnot [string] -or $selected.id -cne $id) { throw 'Native input selected the wrong case' }
+  $chords = [System.Collections.Generic.List[int[]]]::new()
+  foreach ($entry in $selected.chords) {
+    $codes = [int[]]@($entry)
+    if ($codes.Count -lt 1 -or $codes.Count -gt 4 -or @($codes | Select-Object -Unique).Count -ne $codes.Count -or
+        @($codes | Where-Object { $_ -lt 1 -or $_ -gt 255 }).Count -ne 0) { throw 'Native chord violates physical-key bounds' }
+    $chords.Add($codes)
+  }
+  if ($chords.Count -lt 1 -or $chords.Count -gt 4) { throw 'Native case violates chord-count bounds' }
+  return @{ value=$selected; chords=$chords }
 }
-if ($nativeChords.Count -lt 1 -or $nativeChords.Count -gt 4) { throw 'Native case violates chord-count bounds' }
+$native = Native-Case $CaseId
+$case = $native.value
+$nativeChords = $native.chords
 if ($ValidateContract) {
+  $ids = [System.Collections.Generic.HashSet[string]]::new()
+  foreach ($row in $table) {
+    if (-not $ids.Add($row.id)) { throw 'Native case IDs are not unique' }
+    $selected = Native-Case $row.id
+    if ($selected.value.id -cne $row.id) { throw 'Native consumer selected the wrong contract case' }
+  }
+  $rejected = $false
+  try { $null = Native-Case '__unknown_native_case__' } catch { $rejected = $true }
+  if (-not $rejected) { throw 'Native consumer accepted an unknown case' }
   $tokens = $null
   $parseErrors = $null
   [System.Management.Automation.Language.Parser]::ParseFile("$PSScriptRoot\console_shortcuts.ps1", [ref]$tokens, [ref]$parseErrors) | Out-Null
   if ($parseErrors.Count -ne 0) { throw ($parseErrors | Out-String) }
-  [Console]::WriteLine('WINDOWS_KEYS PowerShell_contract=true console_syntax=true input=false')
+  & "$PSScriptRoot\console_shortcuts.ps1" -ValidateContract
+  [Console]::WriteLine("WINDOWS_KEYS PowerShell_contract=true cases=$($ids.Count) unknown_case_rejected=true console_syntax=true input=false")
   exit 0
 }
 [Console]::WriteLine("WINDOWS_KEYS stage=case_loaded id=$CaseId chords=$($nativeChords.Count)")

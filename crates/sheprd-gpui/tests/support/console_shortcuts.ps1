@@ -1,8 +1,23 @@
 # ABOUTME: Captures real key and modifier records inside the private Herdr console pane.
 # ABOUTME: Publishes nonce-bound attachment and result receipts without echoing typed keys.
-param([string]$Nonce)
+param([string]$Nonce, [switch]$ValidateContract)
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\powershell_modules.ps1"
+$table = Get-Content -LiteralPath "$PSScriptRoot\windows_shortcut_cases.json" -Raw | ConvertFrom-Json
+$cases = @($table | Where-Object { $_.outcome.kind -is [string] -and $_.outcome.kind -ceq 'pane_key' })
+if ($cases.Count -lt 2 -or $cases.Count -gt 8 -or $cases[0].id -cne 'console-attachment') {
+  throw 'Console prerequisite is not first in the fixed key cases'
+}
+$ids = [System.Collections.Generic.HashSet[string]]::new()
+foreach ($case in $cases) {
+  if ($case.id -isnot [string] -or $case.id -notmatch '^[a-z0-9-]{1,64}$' -or -not $ids.Add($case.id)) {
+    throw 'Console producer requires distinct scalar case IDs'
+  }
+}
+if ($ValidateContract) {
+  [Console]::WriteLine("WINDOWS_KEYS console_contract=true pane_cases=$($cases.Count) input=false")
+  return
+}
 if ($Nonce -notmatch '^[a-f0-9]{32}$') { throw 'Console capture requires a private nonce' }
 Add-Type @'
 using System;
@@ -17,11 +32,6 @@ $inputHandle = [SpaceportConsoleCapture]::GetStdHandle(-10)
 $mode = [uint32]0
 if ([Console]::IsInputRedirected -or -not [SpaceportConsoleCapture]::GetConsoleMode($inputHandle, [ref]$mode)) {
   throw 'Pane producer has no attached real console input'
-}
-$table = @(Get-Content -LiteralPath "$PSScriptRoot\windows_shortcut_cases.json" -Raw | ConvertFrom-Json)
-$cases = @($table | Where-Object { $_.outcome.kind -eq 'pane_key' })
-if ($cases.Count -lt 2 -or $cases.Count -gt 8 -or $cases[0].id -cne 'console-attachment') {
-  throw 'Console prerequisite is not first in the fixed key cases'
 }
 function Publish([string]$kind, [string]$id, $value) {
   if ($id -notmatch '^[a-z0-9-]{1,64}$') { throw 'Console case ID exceeds fixture bounds' }

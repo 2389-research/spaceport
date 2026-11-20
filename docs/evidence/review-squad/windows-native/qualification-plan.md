@@ -147,3 +147,25 @@ The intended matrix covers the stock Polish programmer layout on Windows x64 onl
 It does not qualify ARM64, every keyboard layout, or the whole original finding before execution.
 The Linux/GNOME observer and cases belong to the integrating owner in another worktree.
 Do not modify Herdr or substitute mock peers for keyboard qualification.
+
+### PowerShell case enumeration
+
+Source `c9a585ae5` passes compilation, Clippy, and four Rust contract tests.
+The [instrumented run](https://github.com/2389-research/spaceport/actions/runs/44714614632) fails its new PowerShell preflight with a chord-count error.
+The console native step skips; four matrix tests fail at that same early boundary.
+Extended Polish AltGr and existing direct chrome still pass.
+
+Windows PowerShell 5.1 emits a parsed JSON array as one pipeline object.
+Wrapping that pipeline in `@(...)` nests the entire case table.
+The old selector compares aggregate properties and selects the table as one case.
+The new chord-count guard catches that selection before input.
+The [PowerShell issue](https://github.com/PowerShell/PowerShell/issues/3424) documents this enumeration behavior.
+
+Both native sender and console producer now assign the parsed array directly.
+Both require scalar case IDs; the native sender also requires exact ID equality.
+The preflight exercises the actual native consumer for every case and rejects an unknown ID.
+It invokes the console producer's real case selection before console attachment or receipt writes.
+The producer validates sentinel order and distinct scalar IDs in that same path.
+Independent review confirms collection and child-scope return behavior, with no remaining material finding.
+Static checks pass; the corrected PowerShell preflight and native outcomes remain pending CI.
+This fixes the identified selection defect; it does not yet prove the earlier watchdog or digit outcomes pass.
