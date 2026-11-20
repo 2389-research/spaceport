@@ -77,7 +77,8 @@ The complete final command retains its exact comparison, including any trailing 
 The ordinary Core case fails again; observing and resizing still pass.
 Its escaped private screen text contains `SP_A11Y_7rs\\runneradmin` on one line.
 The marker exists, but a stale prompt suffix prevents the required exact output line.
-This establishes visible text corruption, not a missing accessibility event.
+This establishes native accessibility text corruption.
+The actual painted terminal has not been compared with that failed accessibility transcript.
 The next diagnostic drains the existing read-only runtime attachment for one second after failure.
 It preserves the 1 MiB capture bound.
 It displays at most 8 KiB of captured bytes as escaped text and byte-exact hex.
