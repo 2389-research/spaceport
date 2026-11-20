@@ -39,10 +39,16 @@ class Px0SourceAbsence(unittest.TestCase):
     def test_retained_file_chat_and_core_routes_exist(self):
         for name in (
             "crates/sheprd-gpui/src/window/file_links.rs",
-            "crates/sheprd-gpui/src/browser/store.rs",
             "crates/sheprd-gpui/src/core_terminals.rs",
         ):
             self.assertTrue((ROOT / name).exists(), name)
+        # The browser store's home: the app before the browser-crate
+        # extraction, the crate after it. Either must exist.
+        self.assertTrue(
+            (ROOT / "crates/sheprd-gpui/src/browser/store.rs").exists()
+            or (ROOT / "crates/sheprd-browser/src/store.rs").exists(),
+            "browser store",
+        )
 
 
 if __name__ == "__main__":
