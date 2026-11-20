@@ -13,8 +13,11 @@ mod capture;
 
 struct Baseline {
     boot: String,
+    cell_height: u32,
+    configured_font: f32,
     focused_pane: String,
     focused_tab: String,
+    font_size: f32,
     fullscreen: bool,
     revision: u64,
     tabs: Vec<String>,
@@ -120,6 +123,8 @@ fn baseline(view: &SheprdWindow, window: &Window, cx: &App) -> Result<Baseline> 
     workspaces.sort();
     Ok(Baseline {
         boot: snapshot.boot_id.clone(),
+        cell_height: view.options.cell_height_px,
+        configured_font: view.configured_terminal_size,
         focused_pane: snapshot
             .focused_pane_id
             .clone()
@@ -128,6 +133,7 @@ fn baseline(view: &SheprdWindow, window: &Window, cx: &App) -> Result<Baseline> 
             .focused_tab_id
             .clone()
             .context("native focused tab is missing")?,
+        font_size: view.config.terminal.size,
         fullscreen: window.is_fullscreen(),
         revision: snapshot.revision,
         tabs,
@@ -171,6 +177,38 @@ fn observed(
     let after = baseline(view, window, cx)?;
     same_scene(before, &after)?;
     match outcome {
+        Outcome::IncreaseFont | Outcome::DecreaseFont | Outcome::ResetFont => {
+            same_terminal(before, &after)?;
+            ensure!(
+                after.configured_font == before.configured_font,
+                "native font key changed the configured baseline"
+            );
+            ensure!(
+                view.focus.is_focused(window),
+                "native font key moved terminal focus"
+            );
+            let expected = match outcome {
+                Outcome::IncreaseFont => before.font_size + crate::config::FONT_SIZE_STEP,
+                Outcome::DecreaseFont => before.font_size - crate::config::FONT_SIZE_STEP,
+                _ => before.configured_font,
+            };
+            ensure!(
+                before.font_size != expected,
+                "native font case has no size change to observe"
+            );
+            if after.font_size != expected || after.cell_height == before.cell_height {
+                return Ok(false);
+            }
+            ensure!(
+                after.cell_height > 0,
+                "native font key produced an empty cell height"
+            );
+            eprintln!(
+                "LINUX_KEYS_CASE id={id} font_before={} font_after={} cell_height_before={} cell_height_after={}",
+                before.font_size, after.font_size, before.cell_height, after.cell_height
+            );
+            Ok(true)
+        }
         Outcome::NewTab => {
             ensure!(
                 after
@@ -417,8 +455,35 @@ fn advance(
                 return Ok(Step::Continue(Stage::Prepare(index)));
             }
             let case = &CASES[index];
+            if matches!(
+                case.outcome,
+                Outcome::IncreaseFont | Outcome::DecreaseFont | Outcome::ResetFont
+            ) {
+                if view.config_load.is_some() {
+                    return Ok(Step::Continue(Stage::Prepare(index)));
+                }
+                if case.outcome == Outcome::ResetFont
+                    && view.config.terminal.size == view.configured_terminal_size
+                {
+                    view.command(Command::IncreaseFontSize, window, cx);
+                    view.command(Command::IncreaseFontSize, window, cx);
+                    return Ok(Step::Paint(Stage::Prepare(index)));
+                }
+            }
             let baseline = baseline(view, window, cx)?;
             match case.outcome {
+                Outcome::IncreaseFont | Outcome::DecreaseFont | Outcome::ResetFont => {
+                    ensure!(
+                        baseline.cell_height > 0,
+                        "native font baseline has no cell height"
+                    );
+                    let range = &crate::config::FONT_SIZE_RANGE;
+                    ensure!(
+                        baseline.font_size > *range.start() && baseline.font_size < *range.end(),
+                        "native font baseline is clamped"
+                    );
+                    window.focus(&view.focus, cx);
+                }
                 Outcome::NewTab => window.focus(&view.focus, cx),
                 Outcome::Tab(number) => {
                     let required = CASES
@@ -470,6 +535,17 @@ fn advance(
         } => {
             let case = &CASES[index];
             let focused = match case.outcome {
+                Outcome::IncreaseFont | Outcome::DecreaseFont | Outcome::ResetFont => {
+                    let current = baseline(view, window, cx)?;
+                    same_terminal(&before, &current)?;
+                    ensure!(
+                        view.config_load.is_none()
+                            && current.font_size == before.font_size
+                            && current.cell_height == before.cell_height,
+                        "native font baseline changed before READY"
+                    );
+                    view.focus.is_focused(window)
+                }
                 Outcome::NewTab => view.focus.is_focused(window),
                 Outcome::Tab(number) => {
                     let current = baseline(view, window, cx)?;

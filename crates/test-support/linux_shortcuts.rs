@@ -4,8 +4,11 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Outcome {
     // keep-sorted start
+    DecreaseFont,
+    IncreaseFont,
     NewTab,
     PolishSearch,
+    ResetFont,
     Tab(u8),
     TerminalBytes(&'static [u8]),
     // keep-sorted end
@@ -74,6 +77,21 @@ pub(super) const CASES: &[Case] = &[
         chords: &[&[29, 42, 10]],
         id: "tab-9",
         outcome: Outcome::Tab(9),
+    },
+    Case {
+        chords: &[&[29, 42, 13]],
+        id: "font-increase",
+        outcome: Outcome::IncreaseFont,
+    },
+    Case {
+        chords: &[&[29, 42, 12]],
+        id: "font-decrease",
+        outcome: Outcome::DecreaseFont,
+    },
+    Case {
+        chords: &[&[29, 42, 11]],
+        id: "font-reset",
+        outcome: Outcome::ResetFont,
     },
     Case {
         chords: &[&[64]],

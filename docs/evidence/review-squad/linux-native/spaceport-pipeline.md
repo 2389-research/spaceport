@@ -116,3 +116,18 @@ The workflow selects those tests alongside the existing case and notice tests.
 This expands qualification infrastructure without changing product key handling.
 No failing baseline or compilation was run locally because local compiler work remains held.
 Native delivery and these new parser tests remain pending until the exact-source CI run completes.
+
+Source `22c5ace7c` now passes that [exact-source run](https://github.com/2389-research/spaceport/actions/runs/44700115942).
+Eight shared contract tests and two receipt tests pass.
+The exact native test passes all sixteen compiled cases in 6.30 seconds.
+Every digit reaches its workspace-relative daemon tab.
+All five pane-key cases produce their expected bytes without changing terminal focus or fullscreen state.
+Polish search and the existing cleanup, layout restoration, and daemon-survival guards also pass.
+The [source-scoped receipt](spaceport-matrix-22c5ace7c.json) retains every parent case completion and all five hex results.
+The bounded GUI tail omits early tab details; parent case acknowledgements remain present for every case.
+
+The next checkpoint adds native `+`, `_`, and `)` font aliases.
+It waits for pending config loading before recording the size and cell-height baseline.
+Reset begins at a different session size, then must restore the configured size.
+These three cases remain pending until their own exact-source native run passes.
+The earlier sixteen-case success does not qualify these additions.

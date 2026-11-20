@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "scope": "Real Spaceport Linux native tab digits and pane-key matrix; complete shortcut finding remains open",
+  "source": "22c5ace7c45434331d26450796aeb0becb8812cf",
+  "run": {
+    "id": 44700115942,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44700115942",
+    "job_id": 136166153490,
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "runtime": {
+    "desktop": "private GNOME 46/Mutter 46 Wayland on disposable Ubuntu 24.04",
+    "layout": "Polish pl(basic)",
+    "herdr": "official 0.9.5 Linux x86_64",
+    "herdr_sha256": "14d9e8bc8b4a9e0118d77c32266f76d461f09b40342eb23752960bd89f59929d",
+    "input": "persistent Mutter RemoteDesktop evdev session",
+    "build": "debug functional qualification; not release performance"
+  },
+  "timestamp_semantics": "UTC values identify CI log emissions. GNOME_RECEIPT messages are child-log contents emitted later by the Rust parent.",
+  "checks": {
+    "shared_contract_tests": {
+      "passed": 8,
+      "failed": 0,
+      "ignored": 0
+    },
+    "receipt_export_tests": {
+      "passed": 2,
+      "failed": 0
+    },
+    "native_tests": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "seconds": 6.3
+    },
+    "native_cases": [
+      "new-tab",
+      "tab-1",
+      "tab-2",
+      "tab-3",
+      "tab-4",
+      "tab-5",
+      "tab-6",
+      "tab-7",
+      "tab-8",
+      "tab-9",
+      "pane-f6",
+      "pane-shift-f6",
+      "pane-f11",
+      "pane-ctrl-page-up",
+      "pane-ctrl-page-down",
+      "polish-search"
+    ]
+  },
+  "observed": [
+    {
+      "utc": "2026-11-20T08:11:24.7324232Z",
+      "message": "GNOME_PROBE native_test_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7324840Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE shell_user=true overview_active=false private_bus=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7325411Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=new-tab outcome=NewTab native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7325925Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-1 outcome=Tab(1) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7326473Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-2 outcome=Tab(2) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7326962Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-3 outcome=Tab(3) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7327447Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-4 outcome=Tab(4) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7328146Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-5 outcome=Tab(5) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7328644Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-6 outcome=Tab(6) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7329136Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-7 outcome=Tab(7) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7329621Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-8 outcome=Tab(8) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7330104Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-9 outcome=Tab(9) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7330718Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=pane-f6 outcome=TerminalBytes([27, 91, 49, 55, 126]) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7331508Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=pane-shift-f6 outcome=TerminalBytes([27, 91, 49, 55, 59, 50, 126]) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7332359Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=pane-f11 outcome=TerminalBytes([27, 91, 50, 51, 126]) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7333162Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=pane-ctrl-page-up outcome=TerminalBytes([27, 91, 53, 59, 53, 126]) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7334150Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=pane-ctrl-page-down outcome=TerminalBytes([27, 91, 54, 59, 53, 126]) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7334914Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=polish-search outcome=PolishSearch native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7335476Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE keys_released=true session_closed=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7347300Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=pane-f6 bytes=[1b, 5b, 31, 37, 7e] count=5 pane=w1:pA"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7349071Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=pane-shift-f6 bytes=[1b, 5b, 31, 37, 3b, 32, 7e] count=7 pane=w1:pB"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7375041Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=pane-f11 bytes=[1b, 5b, 32, 33, 7e] count=5 pane=w1:pC"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7376833Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=pane-ctrl-page-up bytes=[1b, 5b, 35, 3b, 35, 7e] count=6 pane=w1:pD"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7378801Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=pane-ctrl-page-down bytes=[1b, 5b, 36, 3b, 35, 7e] count=6 pane=w1:pE"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7382495Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS native PASS: real daemon tabs, shifted digits, pane key bytes, and Polish search text"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7383390Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE PASS: fixed real-app pipeline; keys released, session closed, layout restored, daemon survived GUI exit"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7580165Z",
+      "message": "GNOME_PROBE shell_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T08:11:24.7637159Z",
+      "message": "GNOME_PROBE bus_reaped=true root_preserved_for_runner_cleanup=/tmp/spaceport-gnome-13398-1795162269367177403"
+    }
+  ],
+  "case_contracts": {
+    "tabs": "Each Ctrl-Shift digit begins on another real daemon tab. The result must match workspace position, advance daemon revision, and preserve tab order and scene identities.",
+    "terminal_keys": "Each bare F6/Shift-F6/F11/Ctrl-PageUp/Down case owns a fresh raw-input pane program. READY follows program execution. Correlated DONE and exact expected bytes must arrive with unchanged focused terminal, window identities, and fullscreen state.",
+    "polish": "Native Right-Alt-L and Shift-Right-Alt-N produce exact łŃ in the production theme search."
+  },
+  "limitations": [
+    "Parent receipts retain every case completion. The bounded GUI tail retains detailed tab-5 through tab-9 and pane-byte results; early detailed tab receipts are omitted.",
+    "Existing headless Mesa/GNOME environment warnings remain; no Rust warning or error appears in compilation.",
+    "Punctuation/font, history/browser/window, revised Ctrl/prefix/palette, and remaining Windows matrix are pending.",
+    "Physical keyboard hardware, Mac foreground, audible screen reader, and release profiling are not qualified."
+  ]
+}
