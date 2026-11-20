@@ -120,7 +120,7 @@ Kata `q72g` remains open for these specific checks:
 
 | Requirement | Remaining native evidence |
 | --- | --- |
-| Core Terminal node | Inspect actual text, caret, bounds, and observing panes with accessibility active. |
+| Core Terminal node | Ordinary Core text, caret, bounds, and change events pass on `23cab5b4b`; native observing panes remain pending. |
 | Herdr caret and announcements | Text, caret, line bounds, and TextChanged pass; audible screen-reader announcements remain pending. |
 | Settings font scaling | Enlarged native glyphs and clipping pass at 1100×780 and 680×780 on `7b7498762`; see captures below. |
 | Keyboard reorder and resize | Workspace reorder and Herdr resize pass on `4194cb1ab`; Core resize remains pending. |
@@ -528,3 +528,16 @@ Logs: `/tmp/spaceport-9s44-core-observe-windows-{all,minimal}.log`.
 Independent read-only review finds no material targeting, event-ordering, lifetime, or helper regression.
 Actual Windows execution and existing native helper regressions remain pending.
 This case does not qualify observing-pane input refusal, Core resize, audible speech, or macOS Cmd-W.
+
+### Native Core text qualification on `23cab5b4b`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44652883114/job/136012085170) passes the actual Core terminal case.
+The app tab matches Core's terminal address before native input starts.
+The helper reads the authored output line, receives TextChanged, and exposes the unselected caret and contained line bounds.
+Its observer is removed; an independent runtime stream also contains the native typed marker.
+The terminal survives, and the exact private Core shuts down and reaps successfully before the test returns.
+The [receipt](review-squad/core-native/qualification-23cab5b4b.json) records this scope and its remaining gates.
+
+The same job passes eight GUI cases, pipe ownership, and 23 non-Core UIA cases.
+Its separate image case fails pixel validation, so the native job remains red.
+This passing Core case does not qualify observing panes, Core resize, audible speech, backdrop contrast, or macOS Cmd-W.
