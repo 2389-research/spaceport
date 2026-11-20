@@ -484,6 +484,8 @@ mod held_shortcuts;
 mod images;
 #[path = "accessibility_windows/keyboard_layouts.rs"]
 mod keyboard_layouts;
+#[path = "accessibility_windows/non_us.rs"]
+mod non_us;
 #[path = "accessibility_windows/pane_resize.rs"]
 mod pane_resize;
 #[path = "accessibility_windows/quit.rs"]

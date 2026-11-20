@@ -275,3 +275,40 @@ VS Code's saved-layout mapper tests remain synthetic and cannot prove actual key
 No external code is copied, and no layout, setting, runtime, or desktop changed during this research.
 Implementation and actual Windows qualification remain pending; Linux/GNOME qualification remains separate.
 Doctor Biz explicitly keeps Mac foreground checks pending.
+
+### Disposable AltGr implementation and verification plan
+
+The implementation uses the existing isolated Windows accessibility harness.
+`accessibility_windows/non_us.rs` owns its private app, daemon, observer snapshots, and absolute child deadline.
+`support/uia_altgr.ps1` owns native field focus, actual text assertions, and the intentional cleanup failure.
+`support/native_altgr.cs` owns the enabled profile, GUI-thread HKL, scan-code keys, and restoration.
+This changes test infrastructure only; production shortcut behavior remains unchanged.
+
+- [x] Separate ordinary and non-US CI selection, using actual Cargo invocation tests.
+- [x] Verify Rust harness compilation in the Windows all-feature configuration.
+- [x] Review HWND/thread ownership, Win32 ABI, key release, and profile restoration independently.
+- [x] Verify the Windows minimal harness configuration and final quick checks.
+- [ ] Execute the stock-profile prerequisite and both cleanup paths on disposable Windows CI.
+- [ ] Require actual native `łŃ`, no Workspace dialog, stable runtime identities, and complete cleanup before qualifying the gap.
+
+The scheduling regression fails first because the separate step and namespace exclusion are absent.
+After wiring both, all three scheduling cases pass.
+All eleven existing CI policy cases pass.
+Both Windows harness feature configurations pass Clippy with warnings denied.
+Formatting, file sizes, sorted regions, operations, localization, commit subjects, and diff checks pass.
+Logs: `/tmp/spaceport-9s44-non-us-{scheduling-red,scheduling-green,ci-policy,windows-all,windows-minimal,static}.log`.
+The original ordinary namespace loses no fixtures: every deferred namespace has its own supported-runner step.
+
+The Rust test refuses session setup outside a GitHub-hosted Windows runner.
+The helper independently requires the fixture's explicit disposable-session marker.
+[EnumEnabledLayoutOrTip](https://learn.microsoft.com/en-us/windows/win32/tsf/enumenabledlayoutortip) records enabled profiles before mutation.
+Unknown keyboard profile formats fail before setup.
+Only an absent Polish profile is enabled; no default profile, language pack, or owner configuration changes.
+Normal cleanup and an intentional exception restore the original GUI HKL and enabled profile set.
+An added loaded HKL is removed only when absent before the test.
+The watchdog releases owned keys first and attempts the same cleanup within the parent's five-second reserve.
+A forced timeout remains a failed fixture and does not prove complete restoration.
+
+Actual C# compilation, profile availability, translation, and cleanup remain pending Windows execution.
+Cross-compiling the Rust harness embeds these helpers; it does not execute or compile their C# code.
+Linux/GNOME and Mac native qualification remain separate.

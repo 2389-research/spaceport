@@ -312,7 +312,11 @@ jobs:
       - name: Native UI Automation tree and keyboard focus
         if: matrix.runner == 'windows-2025'
         run: |
-          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows -- --ignored --nocapture --test-threads=1 --skip core::
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows -- --ignored --nocapture --test-threads=1 --skip core:: --skip non_us::
+      - name: Native non-US keyboard input
+        if: ${{ !cancelled() && matrix.runner == 'windows-2025' }}
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows non_us:: -- --ignored --nocapture --test-threads=1
       - name: Stage the pinned Core fixture
         if: ${{ !cancelled() && matrix.runner == 'windows-2025' }}
         run: |

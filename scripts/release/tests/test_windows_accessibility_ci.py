@@ -57,8 +57,8 @@ class WindowsAccessibilityCi(unittest.TestCase):
         harness = args[args.index("--") + 1:]
         self.assertEqual(args[args.index("--") - 1], "accessibility_windows")
         self.assertEqual(
-            harness, ["--ignored", "--nocapture", "--test-threads=1", "--skip", "core::"],
-            "ordinary UIA may defer only the Core namespace",
+            harness, ["--ignored", "--nocapture", "--test-threads=1", "--skip", "core::", "--skip", "non_us::"],
+            "ordinary UIA defers only separately scheduled Core and non-US fixtures",
         )
         core = self.accessibility_step("Native Core text and caret qualification", independent=True)
         args = cargo_arguments(step_script(core))
@@ -66,6 +66,14 @@ class WindowsAccessibilityCi(unittest.TestCase):
         self.assertEqual(
             args[args.index("--") + 1:], ["--ignored", "--nocapture", "--test-threads=1"],
             "the separate Core step must run every deferred fixture",
+        )
+
+    def test_non_us_input_runs_in_its_own_disposable_session_step(self):
+        step = self.accessibility_step("Native non-US keyboard input", independent=True)
+        args = cargo_arguments(step_script(step))
+        self.assertEqual(args[args.index("--") - 1], "non_us::")
+        self.assertEqual(
+            args[args.index("--") + 1:], ["--ignored", "--nocapture", "--test-threads=1"],
         )
 
     def accessibility_step(self, name, independent=False):
