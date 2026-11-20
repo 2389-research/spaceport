@@ -125,6 +125,46 @@ fn mark_frame(cx: &mut VisualTestContext) {
     cx.update(|window, cx| window.draw(cx).clear(cx));
 }
 
+/// What a frame nothing in the window invalidated painted.
+#[cfg(feature = "integration-test")]
+fn mark_frame_counts(cx: &mut VisualTestContext) -> crate::performance::Counts {
+    cx.update(|window, cx| {
+        *cx.default_global::<crate::performance::Counts>() = crate::performance::Counts::default();
+        window.draw(cx).clear(cx);
+        *cx.default_global::<crate::performance::Counts>()
+    })
+}
+
+#[cfg(feature = "integration-test")]
+#[gpui::test]
+fn a_mark_frame_repaints_no_mirrored_cells(cx: &mut TestAppContext) {
+    let (_view, cx) = split_window_mirroring_t0(cx);
+    let counts = mark_frame_counts(cx);
+    assert_eq!(counts.paints, 0, "{counts:?}");
+    assert_eq!((counts.quads, counts.glyphs), (0, 0), "{counts:?}");
+}
+
+/// The other side of the cache: output in the tab a group mirrors is painted
+/// at once, and the frame after it is replayed again.
+#[cfg(feature = "integration-test")]
+#[gpui::test]
+fn a_mirrored_group_paints_the_cells_that_changed(cx: &mut TestAppContext) {
+    let (view, cx) = split_window_mirroring_t0(cx);
+    assert_eq!(mark_frame_counts(cx).paints, 0);
+    cx.update(|_, cx| {
+        view.update(cx, |view, _| {
+            let surface = Arc::make_mut(view.live.surface.as_mut().unwrap());
+            surface.frame.cells[0].symbol = "x".into();
+            let live = view.live.clone();
+            view.endpoints[view.selected_endpoint].live = live;
+        });
+    });
+    let changed = mark_frame_counts(cx);
+    assert_eq!(changed.paints, 1, "{changed:?}");
+    assert!(changed.glyphs > 0, "{changed:?}");
+    assert_eq!(mark_frame_counts(cx).paints, 0);
+}
+
 /// What a mark frame costs, in microseconds, once the window has settled on
 /// `grid`. A mark frame is measured after a warm-up: the first frames after a
 /// change paint what changed.
