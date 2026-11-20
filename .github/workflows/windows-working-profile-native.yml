@@ -60,6 +60,13 @@ jobs:
           printf 'HERDR_CORE_TEST_BINARY=%s\n' "$profile_core_binary" >> "$GITHUB_ENV"
       - name: Prepare the native display
         run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/set-display-resolution.ps1
+      - name: Prepare and verify animations on the disposable desktop
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $result = ./scripts/profile/desktop-animations.ps1 -Action Enable -EvidenceDirectory $env:HERDR_TEST_TMPDIR
+          $result | Set-Content -Encoding UTF8 -LiteralPath (Join-Path $env:HERDR_TEST_TMPDIR 'desktop-animation-enabled.json')
+          $result | Write-Output
       - name: Build the release app and profile target with local symbols
         run: |
           set -euo pipefail
@@ -83,6 +90,19 @@ jobs:
       - name: Profile controlled Working TUI beside private Core
         timeout-minutes: 15
         run: cargo test --locked --release --target x86_64-pc-windows-msvc -p sheprd-gpui --features integration-test --test working_profile working_tui_and_core_profile -- --ignored --exact --nocapture
+      - name: Restore and verify the disposable desktop animation preference
+        if: ${{ always() }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:HERDR_TEST_TMPDIR) {
+            $original = Join-Path $env:HERDR_TEST_TMPDIR 'desktop-animation-original.json'
+            if (Test-Path -LiteralPath $original) {
+              $result = ./scripts/profile/desktop-animations.ps1 -Action Restore -EvidenceDirectory $env:HERDR_TEST_TMPDIR
+              $result | Set-Content -Encoding UTF8 -LiteralPath (Join-Path $env:HERDR_TEST_TMPDIR 'desktop-animation-restored.json')
+              $result | Write-Output
+            }
+          }
       # This is throwaway read-only analysis for qualifying the first trace exports.
       - name: Retain trace event classes and sampled CPU reports
         if: ${{ !cancelled() }}

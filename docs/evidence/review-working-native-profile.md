@@ -943,3 +943,15 @@ Cleanup restores the native value and verifies both observations, avoiding assum
 A repeated-preparation control checks exclusive refusal and the unchanged original-record hash.
 Fresh processes verify eligibility and restoration independently.
 Actual setter acceptance and property mapping remain pending.
+
+At `8d0e39146`, isolated run `44835104225`, job `136629375437`, passed every animation contract.
+Both original values were false; preparation made both true, including the fresh-process WinRT read.
+Repeated preparation refused and preserved the exact original-record hash.
+Restoration returned both values to false; a fresh process independently confirmed the original WinRT value.
+This proves the setter on that disposable runner, not the earlier native runner's settings.
+
+The helper now refuses immediately if its WinRT postcondition is false.
+The native workflow prepares before building, saves preparation evidence, and always attempts recorded restoration after profiling.
+The app continues to read normal OS preferences and reject reduced-motion Working samples.
+The counter measures existing render calls, not physical display presents or exact CPU-interval frame rates.
+The native branch has not advanced yet; Windows ordinary GREEN remains pending.

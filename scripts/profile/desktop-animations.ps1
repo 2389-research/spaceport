@@ -58,6 +58,7 @@ if ($Action -eq 'Enable') {
         finally { $writer.Dispose() }
     } finally { $stream.Dispose() }
     if (-not $nativeOriginal) { Set-DesktopAnimations $true }
+    if (-not (Get-DesktopAnimations)) { throw 'AnimationsEnabled is false after desktop preparation; refusing native profiling.' }
 } else {
     $record = Get-Content -LiteralPath $saved -Raw | ConvertFrom-Json
     if ($record.animations_enabled -isnot [bool]) { throw 'The saved animation preference must be a Boolean.' }
