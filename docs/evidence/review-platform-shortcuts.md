@@ -312,3 +312,20 @@ A forced timeout remains a failed fixture and does not prove complete restoratio
 Actual C# compilation, profile availability, translation, and cleanup remain pending Windows execution.
 Cross-compiling the Rust harness embeds these helpers; it does not execute or compile their C# code.
 Linux/GNOME and Mac native qualification remain separate.
+
+### Linux display prerequisite research
+
+The open Kata finding still requires actual Linux keyboard and desktop qualification.
+GNOME 46's [nested-session documentation](https://github.com/GNOME/gnome-shell/blob/46.0/docs/building-and-running.md#running-a-nested-instance) warns that outer compositors can intercept shortcuts.
+A nested Shell alone cannot establish delivery of the disputed desktop chords.
+
+GNOME's [GTK CI change](https://mail.gnome.org/archives/commits-list/2022-May/msg05630.html) runs Mutter on Xvfb inside a private D-Bus session.
+That supplies an actual X11 compositor route, but does not itself qualify GNOME Shell behavior.
+GNOME 46's [Mutter source](https://github.com/GNOME/mutter/blob/46.0/src/core/meta-context-main.c) also supports a headless Wayland backend and virtual monitors.
+Those modes are alternatives; the source rejects combining X11 with its headless or nested flags.
+
+Any Linux fixture must prove which compositor owns its isolated display before sending native keys.
+It must retain the exact app window, runtime identities, key cleanup, and display-process ownership.
+The existing runtime stager supplies Windows packages only; an explicit trusted Linux Herdr fixture remains a prerequisite.
+No Linux desktop, runtime, configuration change, or new CI job ran during this research.
+These sources narrow the next setup experiment; they do not qualify the remaining shortcut requirement.
