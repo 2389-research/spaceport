@@ -7,6 +7,7 @@
 
 mod client;
 mod server;
+mod targets;
 
 use crate::SheprdWindow;
 #[cfg(windows)]
