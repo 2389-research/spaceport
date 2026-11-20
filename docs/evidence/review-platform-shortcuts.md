@@ -288,8 +288,8 @@ This changes test infrastructure only; production shortcut behavior remains unch
 - [x] Verify Rust harness compilation in the Windows all-feature configuration.
 - [x] Review HWND/thread ownership, Win32 ABI, key release, and profile restoration independently.
 - [x] Verify the Windows minimal harness configuration and final quick checks.
-- [ ] Execute the stock-profile prerequisite and both cleanup paths on disposable Windows CI.
-- [ ] Require actual native `łŃ`, no Workspace dialog, stable runtime identities, and complete cleanup before qualifying the gap.
+- [x] Execute the stock-profile prerequisite and both cleanup paths on disposable Windows CI; see `3a0bcb00d` below.
+- [x] Verify native `łŃ`, no Workspace dialog, stable runtime identities, and complete cleanup on `3a0bcb00d`.
 
 The scheduling regression fails first because the separate step and namespace exclusion are absent.
 After wiring both, all three scheduling cases pass.
@@ -309,7 +309,7 @@ An added loaded HKL is removed only when absent before the test.
 The watchdog releases owned keys first and attempts the same cleanup within the parent's five-second reserve.
 A forced timeout remains a failed fixture and does not prove complete restoration.
 
-Actual C# compilation, profile availability, translation, and cleanup remain pending Windows execution.
+The Windows results below record actual C# compilation, profile setup, translation, and cleanup.
 Cross-compiling the Rust harness embeds these helpers; it does not execute or compile their C# code.
 Linux/GNOME and Mac native qualification remain separate.
 
@@ -351,7 +351,22 @@ Their exact IDs are verified absent afterward; no desktop or Windows API execute
 Logs: `/tmp/spaceport-9s44-profile-parser-{red,green,final}.log`.
 The runtime is Mono `6.8.0.105+dfsg-3.6ubuntu2` in Ubuntu 24.04 on Linux ARM64.
 The final image is pinned at `sha256:ab18ecc70c55c703eae968948f9f1dbbe662aa8d9badac7c982e6a6237b9d74c`.
-Windows parsing, activation, native translated text, and cleanup remain pending.
+The later `3a0bcb00d` native run qualifies the Windows path below.
+
+### Actual Windows non-US qualification on `3a0bcb00d`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44677192575/job/136091920328) passes the Polish Programmers fixture.
+Real scan-code input produces `łŃ` in the owned native search field.
+The shifted AltGr shortcut opens no workspace dialog and preserves exact runtime identities.
+The helper restores the GUI layout, original enabled profiles, and released keys.
+It verifies cleanup after both normal completion and an intentional exception.
+The actual receipt appears at `2026-11-20T05:06:24.5175055Z`; the Rust test also passes.
+See the [scoped receipt](review-squad/windows-native/qualification-3a0bcb00d.json).
+
+This qualifies this disposable Windows session and Polish layout, without claiming all keyboard layouts.
+The same job passes all 25 ordinary UIA cases, including the chat-action correction.
+It separately fails Core resize geometry; the overall job remains red.
+Linux non-US input and real GNOME interception remain pending, so Kata `3wd4` stays open.
 
 ### Disposable GNOME prerequisite probe, November 20
 

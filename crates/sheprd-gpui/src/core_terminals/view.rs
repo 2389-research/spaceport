@@ -317,24 +317,12 @@ impl Render for CoreTerminalView {
         let painter = self.painter.clone();
         let look = self.look.clone();
         let frame = self.frame_to_paint();
-        let transcript = window
-            .is_a11y_active()
-            .then(|| {
-                frame.as_deref().and_then(|frame| {
-                    Transcript::read_frame(
-                        frame,
-                        self.selection
-                            .map(|selection| selection.rows(frame.width))
-                            .unwrap_or_default(),
-                        self.look.cell_width,
-                        self.look.cell_height,
-                    )
-                })
-            })
-            .flatten();
+        let accessible_frame = window.is_a11y_active().then(|| frame.clone()).flatten();
+        let selection = self.selection;
+        let cell = (self.look.cell_width, self.look.cell_height);
         // Share this render's canvas bounds with the synthetic text nodes.
         // Previous frame bounds can be stale during a resize or tab move.
-        let accessible_bounds = transcript
+        let accessible_bounds = accessible_frame
             .as_ref()
             .map(|_| Rc::new(GeometryCell::new(None)));
         let canvas_bounds = accessible_bounds.clone();
@@ -414,15 +402,26 @@ impl Render for CoreTerminalView {
             .id(SharedString::from(format!("core-terminal-{}", self.id)))
             .role(Role::Terminal)
             .aria_label(fl!("window-input-terminal"))
-            .when_some(transcript, |root, transcript| {
+            .when_some(accessible_frame, |root, frame| {
                 root.a11y_synthetic_children(move |builder| {
                     if let Some(bounds) = accessible_bounds.as_ref().and_then(|bounds| bounds.get())
                     {
-                        transcript.expose(
-                            builder,
-                            (bounds.origin.x.into(), bounds.origin.y.into()),
-                            scale,
-                        );
+                        let selected = selection
+                            .map(|selection| selection.rows(frame.width))
+                            .unwrap_or_default();
+                        if let Some(transcript) = Transcript::read_frame(
+                            &frame,
+                            selected,
+                            cell.0,
+                            cell.1,
+                            (bounds.size.width.into(), bounds.size.height.into()),
+                        ) {
+                            transcript.expose(
+                                builder,
+                                (bounds.origin.x.into(), bounds.origin.y.into()),
+                                scale,
+                            );
+                        }
                     }
                 })
             })

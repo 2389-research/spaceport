@@ -655,3 +655,28 @@ The bounded keyboard-profile parser and chat diagnostic-walk correction still ne
 Doctor Biz keeps Mac foreground checks pending; this integration opens no Mac fixture.
 Kata remains 49 closed and four open; Crew separately remains 50 done and three doing.
 No native-pending finding closes, and no merge or release follows from this checkpoint.
+
+## Native results and Core viewport correction
+
+Actual CI on `3a0bcb00d` finishes with 16 successes, two failures, and one unconfigured skip.
+All workspace jobs, configured Mac builds, Windows installer, ARM native tests, and supply-chain jobs pass.
+The x64 native job passes eight GUI cases, pipe ownership, and all 25 ordinary UIA cases.
+Chat actions and the Polish AltGr qualification now pass with their original ownership and cleanup assertions.
+Core ordinary and observing text pass; right-side resize restoration fails native containment.
+The aggregate failure follows that direct x64 failure.
+See the [scoped receipt](review-squad/windows-native/qualification-3a0bcb00d.json).
+
+The correction bounds Core accessibility text to the current canvas during a retained-grid resize.
+The [accessibility evidence](review-accessibility-gaps.md#core-resize-containment-on-3a0bcb00d) records the regression and exact verification scope.
+Three initial regressions fail first; the focused consumer run then passes 124 cases with two explicit Metal opt-ins ignored.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- terminal::accessibility:: core_terminals::view::tests:: core_terminals::tests:: window::accessibility:: window::tests::core_ window::regions::tests::`.
+The Mac debug test linker reports its existing 16 MiB unwind-table warning.
+The same warning appears in the earlier `/tmp/spaceport-9s44-render-integration-consumers.log`.
+The inherited external `block` future-compatibility notice also remains.
+Neither warning comes from a newly introduced diagnostic allowance or disabled check.
+Package Clippy passes all targets with all features and without default features on macOS and Windows GNU.
+Commands use `cargo clippy --locked -p sheprd-gpui --all-targets`, the selected feature flag, and `-- -D warnings`.
+Windows runs also select `--target x86_64-pc-windows-gnu`.
+Canonical quick checks, JSON receipt validation, and diff checks pass.
+Independent actual-diff review finds no material regression; fresh Windows native qualification remains pending.
+Logs are `/tmp/spaceport-9s44-core-viewport-{host-all,host-minimal,windows-all,windows-minimal,static}.log`.

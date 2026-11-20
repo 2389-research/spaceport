@@ -1,0 +1,42 @@
+{
+  "source": "3a0bcb00d82922794951e8bdb4eaf2f0e8ea5593",
+  "run_id": 44677192575,
+  "job_id": 136091920328,
+  "job_url": "https://github.com/2389-research/spaceport/actions/runs/44677192575/job/136091920328",
+  "platform": "windows-2025 x64",
+  "overall_job_result": "failure",
+  "ordinary_uia": {"passed": 25, "failed": 0, "filtered_out": 10},
+  "chat": {
+    "receipt_utc": "2026-11-20T05:02:18.5851651Z",
+    "result": "named content and controls, Tab, Enter, Space, queued answers and preserved draft",
+    "test_ok_utc": "2026-11-20T05:02:18.6239305Z",
+    "original_action_deadline_seconds": 20
+  },
+  "non_us": {
+    "receipt_utc": "2026-11-20T05:06:24.5175055Z",
+    "klid": "00000415",
+    "translated_text": ["U+0142", "U+0143"],
+    "workspace_dialog_opened": false,
+    "keys_released": true,
+    "layouts_restored": true,
+    "intentional_failure_cleanup": true,
+    "stable_runtime_ids": true,
+    "test_ok_utc": "2026-11-20T05:06:24.5740061Z",
+    "scope": "Polish Programmers in the disposable GitHub-hosted session; other layouts and Linux/GNOME remain unqualified"
+  },
+  "core": {
+    "observing_text_events_caret_cleanup": "pass",
+    "ordinary_text_events_caret_runtime_output_cleanup": "pass",
+    "resize": "fail during right restoration after the left geometry stage",
+    "initial_caret_line": {"left": 1105, "width": 442},
+    "left_caret_line": {"left": 1059, "width": 492},
+    "failure": "Resize text geometry escapes the private terminal",
+    "failure_utc": "2026-11-20T05:06:43.8346553Z"
+  },
+  "qualification_limits": [
+    "Core resize does not qualify on this source",
+    "Earlier intermittent ordinary Core failure remains without an established cause",
+    "No Mac foreground or audible screen-reader qualification",
+    "No foreground working-session release profile"
+  ]
+}

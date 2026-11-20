@@ -151,7 +151,7 @@ if ($Action -in @('Resize','CoreResize')) {
     if ($rect.Width -le 0 -or $rect.Height -le 0 -or
         $rect.Left -lt $outer.Left - 1 -or $rect.Top -lt $outer.Top - 1 -or
         $rect.Right -gt $outer.Right + 1 -or $rect.Bottom -gt $outer.Bottom + 1) {
-      throw 'Resize text geometry escapes the private terminal'
+      throw "Resize text geometry escapes the private terminal: rect=$($rect.Left),$($rect.Top),$($rect.Width),$($rect.Height) terminal=$($outer.Left),$($outer.Top),$($outer.Width),$($outer.Height)"
     }
     return $rect
   }

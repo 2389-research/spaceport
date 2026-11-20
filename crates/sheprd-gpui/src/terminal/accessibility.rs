@@ -150,17 +150,33 @@ impl Transcript {
         )
     }
 
-    /// Reads a Core terminal's complete visible grid using the same text rules.
+    /// Reads complete Core cells inside the current canvas while a resize catches up.
     pub(crate) fn read_frame(
         frame: &FrameData,
         selected: impl IntoIterator<Item = (u16, Range<u16>)>,
         cell_width: f32,
         cell_height: f32,
+        viewport: (f32, f32),
     ) -> Option<Self> {
+        if ![viewport.0, viewport.1, cell_width, cell_height]
+            .into_iter()
+            .all(|value| value.is_finite() && value > 0.)
+        {
+            return None;
+        }
+        let cols = frame.width.min((viewport.0 / cell_width).floor() as u16);
+        let rows = frame.height.min((viewport.1 / cell_height).floor() as u16);
+        if cols == 0 || rows == 0 {
+            return None;
+        }
+        let selected = selected.into_iter().filter_map(|(row, columns)| {
+            let columns = columns.start.min(cols)..columns.end.min(cols);
+            (!columns.is_empty()).then_some((row, columns))
+        });
         Self::read_rows(
             frame,
-            0..frame.width,
-            0..frame.height,
+            0..cols,
+            0..rows,
             selected,
             (0., 0.),
             (cell_width, cell_height),

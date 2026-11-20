@@ -56,7 +56,8 @@ fn full_grid_reading_exposes_unicode_caret_and_polite_output() {
         visible: true,
         shape: 0,
     });
-    let transcript = Transcript::read_frame(&frame, [], CELL_WIDTH, CELL_HEIGHT).unwrap();
+    let transcript =
+        Transcript::read_frame(&frame, [], CELL_WIDTH, CELL_HEIGHT, (50., 40.)).unwrap();
     let ids = [NodeId(1), NodeId(2)];
     let mut node = Node::new(Role::Terminal);
     transcript.decorate_parent(&mut node, &ids);
@@ -72,7 +73,8 @@ fn full_grid_reading_exposes_unicode_caret_and_polite_output() {
             .collect::<Vec<_>>(),
         ["a界\n", "done"]
     );
-    let selected = Transcript::read_frame(&frame, [(0, 0..1)], CELL_WIDTH, CELL_HEIGHT).unwrap();
+    let selected =
+        Transcript::read_frame(&frame, [(0, 0..1)], CELL_WIDTH, CELL_HEIGHT, (50., 40.)).unwrap();
     assert_eq!(
         selected.selection,
         Some((
@@ -87,5 +89,5 @@ fn full_grid_reading_exposes_unicode_caret_and_polite_output() {
         ))
     );
     frame.cells.clear();
-    assert!(Transcript::read_frame(&frame, [], CELL_WIDTH, CELL_HEIGHT).is_none());
+    assert!(Transcript::read_frame(&frame, [], CELL_WIDTH, CELL_HEIGHT, (50., 40.)).is_none());
 }

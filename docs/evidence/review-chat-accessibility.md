@@ -342,4 +342,15 @@ It still finds the exact owned window, composer, draft, target, and native focus
 The parent retains complete tree assertions before input and after each relevant scene change.
 Native Tab, Enter, Space, deliberate activation, twenty-second deadlines, and all action assertions remain unchanged.
 Independent review finds no material loss of targeting or verification.
-Actual Windows qualification remains pending; this is not a claimed production chat fix.
+This candidate initially lacks Windows qualification; the following run records that result.
+
+## Actual chat-action rerun on `3a0bcb00d`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44677192575/job/136091920328) passes all 25 ordinary UIA cases.
+The chat case retains named content, actual Tab/Enter/Space input, deliberate permission answers, and the preserved draft.
+All five action invocations finish within their original twenty-second deadlines.
+The receipt appears at `2026-11-20T05:02:18.5851651Z`; the Rust test passes afterward.
+See the [scoped receipt](review-squad/windows-native/qualification-3a0bcb00d.json).
+The redundant diagnostic-walk correction now has actual Windows qualification.
+This establishes fixture completion, without claiming a production chat-performance improvement.
+The same job separately fails Core resize geometry; its overall result remains red.

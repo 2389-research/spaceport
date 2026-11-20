@@ -710,3 +710,26 @@ The earlier ordinary failure does not recur, so its new diagnostic branch does n
 No root cause or production correction follows from that successful rerun.
 The job separately fails chat-action timing and a keyboard-profile prerequisite before layout mutation.
 Audible screen-reader qualification and Mac Cmd-W remain pending.
+
+### Core resize containment on `3a0bcb00d`
+
+The [scoped Windows receipt](review-squad/windows-native/qualification-3a0bcb00d.json) records two Core text passes and one resize failure.
+The left step moves its native caret line from `left=1105,width=442` to `left=1059,width=492`.
+The right restoration then fails the unchanged terminal-containment assertion.
+The failing helper did not record that final rectangle, so cross-call sampling cannot be excluded.
+
+Source inspection independently establishes a real geometry defect.
+Core captures its retained grid before layout, then queues a resize from the new canvas bounds.
+Painting clips that grid, but the accessibility transcript previously kept its old full width and height.
+Pinned AccessKit consumes text-run bounds and character positions without clipping them to the terminal parent.
+
+The correction builds the transcript after the current canvas extent is available.
+It reads only complete visible cells, capped by the retained frame's actual dimensions.
+It discards hidden selections and carets while preserving the real visible cursor.
+Five focused cases cover retained grids, restoration, character extents, selection, fractional bounds, sub-cell bounds, and wide characters.
+Three initial cases fail behaviorally against the old full-grid path before the correction.
+The complete focused run passes 124 cases; two unrelated explicit Metal opt-ins remain ignored.
+Log: `/tmp/spaceport-9s44-core-viewport-{red,green}.log`.
+The native helper retains its containment guards and deadlines, adding only numeric failure bounds.
+Fresh Windows Core resize qualification remains pending for the correction.
+Mac foreground and audible screen-reader checks remain pending.
