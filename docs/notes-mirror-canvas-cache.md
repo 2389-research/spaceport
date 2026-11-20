@@ -59,15 +59,16 @@ Times, 200 mark frames after 10 warm-up frames, microseconds per frame:
 | 80x24 (1920 cells) | 503.0 us | 399.1 us | **103.9 us** |
 | 100x56 (5600 cells) | 695.0 us | 399.1 us | **295.9 us** |
 
-So a mirrored group's picture was 21-43% of the whole mark frame's CPU, and one
-mirrored group cost 74% of everything else the frame did. At the mark's 20 fps
-that is 2.1-5.9 ms of CPU per second: 0.2-0.6% of one core per mirrored or
-parked group, every group in a split laid on top of that. The cost is linear in
-cells (2.9x the cells, 2.85x the time).
+So a mirrored group's picture was 21-43% of the whole mark frame's CPU: the
+larger group cost three quarters as much again as everything else the frame did.
+At the mark's 20 fps that is 2.1-5.9 ms of CPU per second, 0.2-0.6% of one core
+per mirrored or parked group, with every group of a split laid on top of that.
+The cost is linear in cells (2.9x the cells, 2.85x the time).
 
-`gg9v` measured the same window shape at 4.0 ms per native frame in the release
-driver, which includes the platform's dispatch as well as this scene
-construction; those 104-296 us are the same CPU work, bought on every frame.
+`gg9v` measured a mark frame at 4.0 ms in the native release driver, at
+1200x780 with the same 40-workspace sidebar, and that includes the platform's
+dispatch as well as this scene construction; these 104-296 us are the same CPU
+work, bought on every frame.
 
 ## The cut
 
