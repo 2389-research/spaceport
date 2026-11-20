@@ -770,3 +770,14 @@ Eight observer tests, ten accessibility controls, and actual recorder inventory 
 Mac, tools, and encrypted retention jobs passed.
 Windows scoped Clippy rejected a redundant test `Digest` import already in scope from its parent.
 The correction removes that redundant import; a warning-free remote gate remains pending.
+
+At `2c86f1971ff81690dbfb99b80bc1c8673718961c`, run `44819608809` passed all four jobs.
+Windows passed 47 harness tests, eight observer tests, ten accessibility controls, inventory, and scoped Clippy.
+Mac passed 27 harness tests, nine observer tests, and scoped Clippy.
+The known Mac linker and `block` future-compatibility warnings remain; no new warnings were introduced.
+
+The native branch advanced normally from `bdcedbc26` to this exact validated source.
+Native run `44821546335` started with the real mixed TUI/Core case and sampled-only profile selected.
+Its build, actual Core execution, capture review, trace quality, and attribution remain pending.
+Next inspect its completed job and retained encrypted artifacts; never retry uncertain runtime actions blindly.
+Doctor Biz's Mac and actual-speech holds remain in force, with Kata still 50 closed and three open.
