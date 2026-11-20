@@ -78,6 +78,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Installed CPU file profile inspection failed.' }
           & wpr.exe -profiledetails CPU.light -filemode
           if ($LASTEXITCODE -ne 0) { throw 'Installed light CPU file profile inspection failed.' }
+          $definition = Join-Path $env:RUNNER_TEMP 'spaceport-installed-cpu.wprp'
+          & wpr.exe -exportprofile CPU $definition -filemode
+          if ($LASTEXITCODE -ne 0) { throw 'Installed CPU file profile export failed.' }
+          Get-Content -LiteralPath $definition
       - name: Inspect recording status flags
         if: ${{ !cancelled() }}
         timeout-minutes: 1

@@ -34,7 +34,7 @@ use readiness::Workload;
 #[cfg(windows)]
 mod core;
 #[cfg(windows)]
-pub(super) use core::run as run_core;
+pub(crate) use core::run as run_core;
 
 #[cfg(target_os = "macos")]
 mod macos;
@@ -341,7 +341,7 @@ fn validate_before_sample(
     targets: &Targets,
     working: bool,
 ) -> Result<()> {
-    readiness::Workload::TwoTui(targets).validate(observation, working)
+    Workload::TwoTui(targets).validate(observation, working)
 }
 
 fn populated(observation: &Observation, targets: &Targets) -> bool {

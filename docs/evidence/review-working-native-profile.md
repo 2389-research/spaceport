@@ -708,3 +708,14 @@ Lifecycle review found no material defect in registration, shutdown ordering, ex
 The shared phase path preserves existing TUI guards and partial measurements.
 The next native workflow stages the pinned Core binary and selects this exact mixed case with a fifteen-minute bound.
 This workflow change does not affect the already completed TUI classification run.
+
+At `66485b492`, run `44808826883` passed tools, retention, observer cases, and ordinary accessibility controls.
+The harness failed compilation on both platforms due to one denied redundant qualification.
+Windows also rejected the mixed entry point's too-narrow intermediate re-export.
+The correction uses the imported `Workload` name and gives that test-crate re-export the required visibility.
+No native Core execution occurred.
+
+Installed WPR details at job `136539796095` show both CPU file profiles use 1,024 KB buffers with count 20.
+Verbose includes sampled-profile and context-switch stacks; Light exposes no System Stacks section.
+Light cannot supply the required stack evidence and was not selected.
+The next tools probe exports the installed verbose definition through its documented read-only command.
