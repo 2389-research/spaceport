@@ -8,8 +8,8 @@ next ones. Update it as each step lands.
 
 ## What moved
 
-Five modules have left the app, each one a pure function of its inputs with no
-`gpui` types — and the settings body, the largest, has too:
+Eleven modules have left the app. Ten are pure functions of their inputs with
+no `gpui` types; `sheprd-browser` is the first that has to carry them:
 
 | Crate | From | Dependencies | Files importing it |
 | --- | --- | --- | --- |
@@ -19,6 +19,14 @@ Five modules have left the app, each one a pure function of its inputs with no
 | `crates/sheprd-settings` | `crates/sheprd-gpui/src/config*`, `src/contrast.rs` | `sheprd-client`, `sheprd-commands`, `sheprd-i18n`, `sheprd-usage`, `sheprd-lenient`, `serde`, `toml`, `thiserror`, … | 307 (through the `crate::config` façade in `src/config.rs`) |
 | `crates/sheprd-sound` | `crates/sheprd-gpui/src/sound/` | `rodio`, `serde`, `sheprd-lenient`, `sheprd-protocol`, `thiserror`, `toml`, `tracing` | 17 |
 | `crates/sheprd-words` | `crates/sheprd-gpui/src/words.rs` | `unicode-segmentation` | 2 (`multiline_input.rs`, `text_editing/keys.rs`) |
+| `crates/sheprd-panes` | `crates/sheprd-gpui/src/core_terminals/panes*` | `serde`, `sheprd-backend`, `thiserror` | 16 (through `sheprd_panes::`) |
+| `crates/sheprd-state-file` | `crates/sheprd-gpui/src/state_file.rs` | `serde`, `serde_json`, `tempfile`, `thiserror`, `tracing` | 10 |
+| `crates/sheprd-motion` | `crates/sheprd-gpui/src/motion/slow*`, `motion.rs`'s clock | none | 49 (through the `crate::motion` façade) |
+| `crates/sheprd-browser` | `crates/sheprd-gpui/src/browser*` | `gpui`, `serde`, `serde_json`, `sheprd-client`, `sheprd-motion`, `sheprd-panes`, `sheprd-reorder`, `sheprd-state-file`, `sheprd-truncate`, `thiserror`, `tracing`, `url`, `uuid` | 51 (through the `crate::browser` façade) |
+
+The browser's own record is
+[`notes-browser-extraction.md`](notes-browser-extraction.md): what moved, what
+stayed on the window, and the two seams the design had to change.
 
 ### `sheprd-ago`
 
@@ -173,7 +181,7 @@ homes. Counted today, production lines first:
 
 | Feature | production / test lines | `gpui::`/entity uses | i18n messages | files importing it | what blocks it |
 | --- | --- | --- | --- | --- | --- |
-| `browser` | 4,748 / 3,064 | 55 | 10 | 53 | 1,398 lines of `impl SheprdWindow` methods (92) need the mechanical inversion behind a `&BrowserHosts<'_>` borrow struct; see the browser-extraction design |
+| `browser` | moved: `crates/sheprd-browser` holds 3,398 production and 1,904 test lines | — | 10 | 51 | done; 1,395 production lines stay in the app as the window's own (wrappers, element building, `group_shown`, the close driver) — see [`notes-browser-extraction.md`](notes-browser-extraction.md) |
 | `chat` | 20,440 / 16,011 | 128 | 174 | 12 | GPUI views all the way down; needs `browser` below it first, then the `sheprd-live` trigger named in the settings design |
 | `sidebar` | 11,195 / 14,506 | 162 | 75 | 263 | the most-imported module in the crate; settings now below it, still needs `menu`, `keymap`, `endpoint`, `icons`, `worktree_notes`, `device_tags` |
 
