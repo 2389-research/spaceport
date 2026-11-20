@@ -8,6 +8,10 @@ The next candidate corrects those tests, adds Core failure diagnostics, and sche
 Settings glyphs and clipping are qualified on `7b7498762`; other native accessibility gates remain open.
 Crew tracks 50 done children and three open children for `9s44`.
 The closed shortcut child still has an explicitly recorded native qualification gap.
+Kata separately records 49 closed children and four open children.
+Its shortcut finding `3wd4` remains open for the required native qualification.
+The painting/polling finding `gfde` closes in Kata at 04:09 UTC on November 20, under event 9804.
+The earlier Crew closure alone had not closed that Kata issue.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
 It does not authorize merging the draft into main or releasing it.
