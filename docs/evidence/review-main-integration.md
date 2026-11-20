@@ -1,10 +1,10 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `1679d74f0` passes every workspace job and all 25 non-Core native UIA cases.
-Workspace consent now passes; eight tab crops reveal a 2.85:1 light-image focus-ring defect.
-Its Core resize qualifier stops on a missing old output line before measuring new geometry.
-The next candidate fixes translucent tab focus paint and separates later Core caret measurements from old text.
+Status: `b94978e3b` passes all 25 non-Core native UIA cases and the corrected four-case tab contrast qualification.
+Core observing and resizing pass; ordinary Core text/events fail without a diagnosed boundary.
+Default macOS compilation and four Windows test jobs expose separate test portability errors.
+The next candidate corrects those tests, adds Core failure diagnostics, and schedules disposable Windows AltGr qualification.
 Settings glyphs and clipping are qualified on `7b7498762`; other native accessibility gates remain open.
 Crew tracks 50 done children and three open children for `9s44`.
 The closed shortcut child still has an explicitly recorded native qualification gap.
@@ -17,7 +17,7 @@ Current collaboration is on [Spaceport Crew](https://artifacts.folk-fujita.ts.ne
 The imported `9s44` and `q72g` tasks are claimed by `review-squad` and remain open.
 The painting/polling finding `gfde` is closed after its five-clause audit and all four native image inspections.
 See the [native image receipt](review-squad/native-images/qualification-a8f7bd371.json) and [Crew closure receipt](review-squad/crew-closures.jsonl).
-The remaining children cover native Core Cmd-W, accessibility speech/contrast, and Clint's foreground release profile.
+The remaining children cover native Core Cmd-W, accessibility speech, and Clint's foreground release profile.
 On November 20 at 02:54 UTC, Doctor Biz explicitly answered “Keep Mac checks pending.”
 Do not launch Mac foreground fixtures until Doctor Biz changes that instruction.
 Windows CI continues; this instruction does not pause the full review goal.
@@ -69,6 +69,22 @@ The four link-removal guards and canonical quick checks pass.
 Logs: `/tmp/spaceport-9s44-wave12-{integration-consumers,integration-metal,replay,host-clippy,windows-all,windows-minimal,link-absence,static}.log`.
 Fresh combined-source platform CI and corrected Windows captures remain pending.
 Mac foreground checks remain pending under Doctor Biz's instruction.
+
+The published combined source is `b94978e3bb323e7fa9d70934b63401f841bb8dd2`.
+Its [CI run](https://github.com/2389-research/spaceport/actions/runs/44669528487) exposes two test portability errors and a separate native Core failure.
+Default macOS Clippy lacks the Metal test's integration-feature gate; that bounded gate correction passes local default-feature Clippy.
+All four Windows workspace jobs fail the same file-link assertion after PR 142's test additions.
+One URL uses `RUNNER~1` while the expected URL spells the same directory `runneradmin`.
+The assertion now compares canonical file identities instead of requiring one valid URL spelling.
+All five related content-update cases pass locally; actual Windows execution remains pending.
+Production file opening and path validation remain unchanged.
+
+All 25 ordinary native UIA cases pass, including corrected tab captures and workspace consent.
+The corrected tab bands qualify the four measured cases; see [the original after-images and ratios](review-accessibility-gaps.md#corrected-native-tab-paint-and-core-results-on-b94978e3b).
+Core observing and resize pass, while ordinary Core text/events fail without a diagnosed boundary.
+The next candidate adds separate native and runtime diagnostics without retries or weakened requirements.
+All 19 CI jobs finish: eleven succeed, seven fail, and one unconfigured target skips.
+The seven failures include the aggregate gate; the separate supply-chain run succeeds.
 
 Initial published checkpoint: `150eed475c4097c63dff86edf8e2b215c64a1d02`.
 Draft: [PR 125](https://github.com/2389-research/spaceport/pull/125).

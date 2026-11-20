@@ -670,3 +670,34 @@ The module now uses the same macOS-and-integration gate as the existing image Me
 Host binary/test Clippy without default features passes after correction.
 Log: `/tmp/spaceport-9s44-tab-halo-default-gate.log`.
 The correction does not change the tab painter or turn this opt-in raster test into native keyboard qualification.
+
+### Corrected native tab paint and Core results on `b94978e3b`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44669528487/job/136067096933) passes all 25 non-Core UIA cases.
+All four selected-tab pairs retain exact native focus, stable bounds, configuration, and runtime identities.
+Root decodes, hashes, and views all eight original PNGs.
+Independent verification matches all eight raw records, stored hashes, dimensions, bands, and measured ratios.
+The [receipt and originals](review-squad/tab-focus/contrast-b94978e3b.json) retain every frame and measurement.
+
+| Native case | Qualified component | Minimum ratio against its unfocused pixels |
+| --- | --- | --- |
+| Dark opaque | Existing accent ring | 3.00396 |
+| Dark image | Complete white outer band | 8.31767 |
+| Light opaque | Existing accent ring | 3.00113 |
+| Light image | Complete black inner band | 13.62095 |
+
+Both image captures match every pixel of an outer white 2px band and an inner black 2px band.
+Their adjacent bands contrast at 21:1.
+The opposite band's lower background ratios remain recorded; this does not claim every pixel exceeds 3:1.
+Qualification covers these four actual Classic/Nord/Latte/private-image cases, without universal WCAG or inset-area claims.
+Screen-reader speech remains unqualified, so `q72g` stays open.
+
+The same job passes observing Core text/events and the corrected Core resize case.
+Resize preserves exact runtime input, both terminal identities, native movement/restoration, and owned cleanup.
+Its ordinary Core text case separately fails the combined text/event deadline.
+The existing error does not distinguish absent runtime input, absent rendered output, and absent native events.
+No root cause or successful ordinary rerun is claimed.
+The diagnostic correction retains the deadline, input, output, event, and caret requirements.
+It records separate native booleans and inspects the independent runtime marker when the native helper fails.
+It prints no terminal contents and performs no input retry.
+See the [scoped Core receipt](review-squad/core-native/qualification-b94978e3b.json).
