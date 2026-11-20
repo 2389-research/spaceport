@@ -251,3 +251,27 @@ The held-window case preserves three windows after two fresh presses and ten hel
 All four Linux CI configurations also pass on that source.
 The native layout inventory still contains only US `00000409`; Polish Programmers remains unavailable.
 Those results do not qualify non-US keyboard delivery or actual GNOME interception.
+
+## Disposable Windows non-US qualification route
+
+Read-only research finds a supported setup path without changing Doctor Biz's machines.
+Use a disposable Windows CI session and its existing Polish Programmers keyboard profile.
+Microsoft identifies that profile as `0415:00000415` and its KLID as `00000415`.
+[InstallLayoutOrTip](https://learn.microsoft.com/en-us/windows/win32/tsf/installlayoutortip) can enable it in the current session.
+Do not infer activation from saved language preferences or install a display-language pack.
+The actual CI prerequisite remains unexecuted.
+
+Enumerate actual HKLs and identify that exact KLID before sending input.
+Post the documented layout request to the exact owned GUI HWND.
+Verify the target GUI thread's actual HKL before continuing.
+Use scan-code RightAlt+L and RightAlt+Shift+N in the real Search spaces field.
+Require the actual translated `łŃ` value, unchanged runtime identities, and no Workspace dialog.
+The shifted N case exercises the current Ctrl-Alt-Shift-N default against character preference.
+Restore the GUI's original layout and remove only a profile added by this disposable test.
+Never substitute Unicode packet input for native translation.
+
+Chromium's [scoped layout helper](https://github.com/chromium/chromium/blob/main/ui/events/test/keyboard_layout_win.cc) supports explicit activation and restoration.
+VS Code's saved-layout mapper tests remain synthetic and cannot prove actual key delivery.
+No external code is copied, and no layout, setting, runtime, or desktop changed during this research.
+Implementation and actual Windows qualification remain pending; Linux/GNOME qualification remains separate.
+Doctor Biz explicitly keeps Mac foreground checks pending.
