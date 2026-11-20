@@ -544,6 +544,17 @@ Use actual returned shell arguments before generating bounded Core output throug
 Current profile readiness proves two TUI frames and cannot qualify a Core group.
 Core's existing frame probe observes mailbox state before paint; `shown()` also includes hidden views.
 Select the drawn `Shown::Page` and exact Core terminal location.
-Require Core identity, live state, canvas bounds, marker content, and an actual paint-consumer receipt plus native capture.
+Require Core identity, live state, and projected marker content.
+Label borrowed bounds as last layout and frame content as projected.
+Retain identity observations around each native GPU capture.
+Root must inspect a unique authored Core marker in those captures before qualifying visible content.
+This avoids adding a paint-receipt API solely for profiling.
+GPUI captures its last rendered scene; projected metadata can lead that scene after navigation or output.
+Finish navigation and output before sampling; keep screenshot review pending until the marker is actually visible.
+The GPU scene does not prove physical desktop presentation or uninterrupted foreground state.
 Do not call `frame_to_paint` from the observer; it mutates the veil cache.
-Root has made no Core profiling change or qualification claim; TUI qualification remains first.
+The Core test checkpoint adds optional projected metadata without changing existing TUI JSON fields.
+Its selected-view accessor deliberately returns no observation until remote RED confirms the tests.
+Expected failures: six on Mac and five on Windows; three serialization and fixture controls should pass.
+Independent static review found no material defect.
+No Core process or performance measurement has run.

@@ -9,6 +9,8 @@ mod frame_probe;
 pub(super) mod keys;
 pub(super) mod paste;
 mod pointer;
+#[cfg(all(any(target_os = "macos", windows), feature = "integration-test"))]
+mod profile;
 
 use super::{
     screen::Screen,

@@ -103,6 +103,8 @@ pub(crate) struct WindowsNative {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct Group {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) core: Option<Core>,
     pub(crate) index: usize,
     pub(crate) primary: bool,
     pub(crate) shown_terminal: bool,
@@ -111,6 +113,28 @@ pub(crate) struct Group {
     pub(crate) tab: Option<String>,
     pub(crate) projected_revision: Option<u64>,
     pub(crate) presented: Option<Frame>,
+}
+
+/// One selected single-pane Core tab. Its cells are projected, never presented proof.
+#[derive(Debug, Deserialize, Serialize)]
+pub(crate) struct Core {
+    pub(crate) tab: u64,
+    pub(crate) terminal: String,
+    pub(crate) core_id: Option<String>,
+    pub(crate) connected: bool,
+    pub(crate) observe: bool,
+    pub(crate) ended: bool,
+    pub(crate) failed: bool,
+    pub(crate) last_layout: Option<[f32; 4]>,
+    pub(crate) projected: Option<CoreProjection>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub(crate) struct CoreProjection {
+    pub(crate) columns: u16,
+    pub(crate) rows: u16,
+    pub(crate) nonblank_cells: usize,
+    pub(crate) projected_marker: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

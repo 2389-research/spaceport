@@ -50,6 +50,10 @@ impl SheprdWindow {
                     })
                 });
                 Group {
+                    core: match self.group_shown(slot.id, cx) {
+                        Shown::Page(tab) => self.profile_core_tab(tab, cx),
+                        _ => None,
+                    },
                     index: slot.index,
                     primary,
                     shown_terminal: self.group_shown(slot.id, cx) == Shown::Terminal,
