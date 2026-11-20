@@ -1,7 +1,8 @@
 # ABOUTME: Traverses the private chat's real controls and activates them with native keys.
 # ABOUTME: Requires exact-window foreground and ancestry before every key press.
 param([int]$ProcessId, [ValidateSet('Settings','Tool','Allow','Reject')][string]$Action)
-. "$PSScriptRoot\uia_tree.ps1" -ProcessId $ProcessId
+# The parent verifies the full tree; actions need the same setup and exact-window checks.
+. "$PSScriptRoot\uia_tree.ps1" -ProcessId $ProcessId -SkipTree
 $fixture = Get-Content "$PSScriptRoot\native-chat-accessibility.json" -Raw | ConvertFrom-Json
 if ($windows.Count -ne 1) { throw 'Native chat requires exactly one private window' }
 $root = $windows[0]

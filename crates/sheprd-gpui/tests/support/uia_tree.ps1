@@ -5,7 +5,7 @@
 # its control type, name, and the patterns or states that matter here. With
 # -Keys, it then brings the window forward, sends each key ("|"-separated,
 # SendKeys syntax), and prints the element that has keyboard focus after it.
-param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '', [string]$ExpectedButton = '', [string]$Expand = '', [string]$MenuItem = '', [string]$GroupActionsFor = '', [string]$FocusWorkspace = '', [switch]$ExpectExit)
+param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '', [string]$ExpectedButton = '', [string]$Expand = '', [string]$MenuItem = '', [string]$GroupActionsFor = '', [string]$FocusWorkspace = '', [switch]$ExpectExit, [switch]$SkipTree)
 [Console]::WriteLine('UIA stage: script entry')
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\powershell_modules.ps1"
@@ -57,10 +57,16 @@ $condition = New-Object System.Windows.Automation.PropertyCondition ($automation
 [Console]::WriteLine('UIA stage: finding private windows')
 $windows = $automation::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children, $condition)
 [Console]::WriteLine("UIA stage: reading $($windows.Count) private windows")
-foreach ($window in $windows) {
-  Walk $window ''
+if (-not $SkipTree) {
+  foreach ($window in $windows) {
+    Walk $window ''
+  }
 }
-[Console]::WriteLine('UIA stage: tree complete')
+if ($SkipTree) {
+  [Console]::WriteLine('UIA stage: window discovery complete; tree dump skipped')
+} else {
+  [Console]::WriteLine('UIA stage: tree complete')
+}
 
 if ($GroupActionsFor) {
   $name = [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $GroupActionsFor)
