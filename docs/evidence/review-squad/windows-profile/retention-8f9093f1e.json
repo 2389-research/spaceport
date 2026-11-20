@@ -1,0 +1,19 @@
+{
+  "source": "8f9093f1edc27b24709e514b9a477ab98947f834",
+  "run_id": 44781753704,
+  "job_id": 136445967627,
+  "artifact_id": 14652966084,
+  "artifact_name": "spaceport-encrypted-retention-probe",
+  "artifact_bytes": 796,
+  "artifact_sha256": "663e37fc1a7e04695295567fa3be7261a1d206b2237caa72f2412d70529ec1ad",
+  "ciphertext_sha256": "46c1bde25b576a6bf242a6f1e46396b4f42ffe1623fbcc3fb5cdb5946a820d12",
+  "recipient_fingerprint": "F550E9D83215B9D9A5437A4176C5B051D8CB8646",
+  "windows_gpg": "2.4.9",
+  "decrypted_archive_members": [
+    "marker.txt"
+  ],
+  "marker_sha256": "fe5a3b5d5369375f456ff946498cc14c0c1b23334dce30a5ec44983545a17624",
+  "exact_marker_comparison": "passed",
+  "scope": "Shared sealer generated-marker round trip only. No native profile, trace, CPU, stack, or speech qualification.",
+  "implementation": "scripts/profile/encrypt-artifacts.ps1"
+}

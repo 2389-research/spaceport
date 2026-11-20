@@ -14,8 +14,8 @@ fn control_child(directory: &Path, script: &str) -> Result<Child> {
         .current_dir(directory)
         .args(["/d", "/c", script])
         .stdin(std::process::Stdio::null())
-        .stdout(fs::File::create(directory.join("control.stdout"))?)
-        .stderr(fs::File::create(directory.join("control.stderr"))?);
+        .stdout(File::create(directory.join("control.stdout"))?)
+        .stderr(File::create(directory.join("control.stderr"))?);
     Ok(command.spawn()?)
 }
 
@@ -168,7 +168,7 @@ fn output_setup_failure_keeps_authority_when_stop_never_starts() -> Result<()> {
         |_| Ok(()),
         |_| {
             // This is the actual stdout setup boundary before command_output can spawn.
-            fs::File::create(directory.path().join("missing-parent/stop.stdout.log"))?;
+            File::create(directory.path().join("missing-parent/stop.stdout.log"))?;
             anyhow::bail!("invalid output path unexpectedly opened")
         },
         |child, _| finish_control(child, directory.path()),

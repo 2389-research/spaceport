@@ -1,0 +1,95 @@
+# ABOUTME: Profiles the normal release app with an owned private TUI workload.
+# ABOUTME: Launches only through the native run branch and uploads encrypted evidence.
+name: Windows working native profile
+
+on:
+  push:
+    branches: [fix/review-squad-windows-profile-native]
+
+permissions: {}
+
+concurrency:
+  group: windows-working-native-profile
+  cancel-in-progress: false
+
+jobs:
+  profile:
+    if: >-
+      github.repository == '2389-research/spaceport' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/fix/review-squad-windows-profile-native'
+    runs-on: windows-2025
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_RELEASE_DEBUG: line-tables-only
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select the pinned Rust toolchain
+        run: rustup show
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          key: working-native-symbols-windows-x64
+          save-if: false
+      - name: Prepare the private fixture parent and installed reader
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $fixtures = Join-Path $env:RUNNER_TEMP 'spaceport-working-profile-data'
+          if (Test-Path $fixtures) { throw 'Refusing an existing fixture parent.' }
+          [IO.Directory]::CreateDirectory($fixtures) | Out-Null
+          "HERDR_TEST_TMPDIR=$fixtures" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          $reader = Get-Command xperf.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1
+          "SPACEPORT_WORKING_PROFILE_XPERF=$($reader.Source)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Stage the checksum-pinned TUI fixture
+        run: |
+          set -euo pipefail
+          profile_herdr_binary=$(python scripts/install-herdr-windows.py "$RUNNER_TEMP/herdr-profile")
+          printf 'HERDR_TEST_BINARY=%s\n' "$profile_herdr_binary" >> "$GITHUB_ENV"
+      - name: Prepare the native display
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/set-display-resolution.ps1
+      - name: Build the release app and profile target with local symbols
+        run: |
+          set -euo pipefail
+          cargo test --locked --release --target x86_64-pc-windows-msvc -p sheprd-gpui --features integration-test --test working_profile --no-run
+          cargo metadata --locked --offline --no-deps --format-version 1 > "$RUNNER_TEMP/spaceport-profile-metadata.json"
+      - name: Retain the exact executable and PDB identities
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $metadata = Get-Content -Raw (Join-Path $env:RUNNER_TEMP 'spaceport-profile-metadata.json') | ConvertFrom-Json
+          $binaryRoot = Join-Path $metadata.target_directory 'x86_64-pc-windows-msvc/release'
+          $destination = Join-Path $env:HERDR_TEST_TMPDIR 'build'
+          [IO.Directory]::CreateDirectory($destination) | Out-Null
+          $files = @(foreach ($name in @('spaceport.exe', 'spaceport.pdb')) {
+            $inputFile = Join-Path $binaryRoot $name
+            Copy-Item -LiteralPath $inputFile -Destination $destination
+            [ordered]@{name = $name; sha256 = (Get-FileHash -Algorithm SHA256 $inputFile).Hash; bytes = (Get-Item $inputFile).Length}
+          })
+          [ordered]@{source = $env:GITHUB_SHA; run_id = $env:GITHUB_RUN_ID; files = $files; qualification = 'unreviewed native capture'} |
+            ConvertTo-Json -Depth 4 | Set-Content -Encoding UTF8 (Join-Path $destination 'identity.json')
+      - name: Profile idle and controlled Working phases
+        run: cargo test --locked --release --target x86_64-pc-windows-msvc -p sheprd-gpui --features integration-test --test working_profile working_terminal_groups_profile -- --ignored --exact --nocapture
+      - name: Encrypt completed and partial private evidence
+        id: seal
+        if: ${{ !cancelled() }}
+        timeout-minutes: 10
+        shell: powershell
+        run: |
+          $recipient = Join-Path $env:GITHUB_WORKSPACE 'docs/evidence/review-squad/windows-profile/retention-public.asc'
+          $sealed = Join-Path $env:RUNNER_TEMP 'spaceport-working-native.zip.gpg'
+          & ./scripts/profile/encrypt-artifacts.ps1 -SourceDirectory $env:HERDR_TEST_TMPDIR -RecipientFile $recipient -OutputFile $sealed
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() && steps.seal.outcome == 'success' }}
+        with:
+          name: spaceport-working-native-encrypted
+          path: ${{ runner.temp }}/spaceport-working-native.zip.gpg
+          if-no-files-found: error
+          retention-days: 7

@@ -463,6 +463,12 @@ No native profile ran.
 The marker probe now calls `scripts/profile/encrypt-artifacts.ps1` so real captures use the same encryption path.
 The extraction and its temporary-directory cleanup still need remote verification.
 
+At `8f9093f1edc27b24709e514b9a477ab98947f834`, retention job `136445967627` passed using the shared script.
+Artifact `14652966084` matched its recorded archive and ciphertext hashes.
+Private decryption again recovered only the exact authored marker.
+The [shared-script receipt](review-squad/windows-profile/retention-8f9093f1e.json) qualifies that producer/consumer path and successful temporary cleanup.
+It provides no native profiling measurement.
+
 The ownership correction prepares Stop's command and both output files before Start.
 It retains authority when process creation fails and retires authority only after a real child exists.
 Receipt failures cannot skip waiting for that child.
@@ -473,6 +479,11 @@ The new persistence test reads actual saved JSON after a real missing-executable
 Its old full-path runtime baseline requires an active WPR recording and was not run while recording remained gated.
 That baseline gap does not substitute for the pending native profile.
 
+At `8f9093f1e`, Windows job `136445967801` stopped at three denied unnecessary-qualification diagnostics.
+The Stop refactor imports `File`, so the tests must use that import instead of `fs::File`.
+No Windows runtime controls ran at that source; their GREEN remains pending.
+Mac job `136445967717` passed its ordinary tests and scoped Clippy.
+
 ### Concurrent redraw change
 
 PR [145](https://github.com/2389-research/spaceport/pull/145) merged as `55c206e7c6be1a16f2e0643819f4dfc5df360f66` on November 20.
@@ -482,3 +493,14 @@ Root requested the retained profile notes and receipts through Crew.
 Those reported numbers remain unverified here.
 The PR explicitly leaves Core/chat and mirrored-picture measurements unqualified.
 Keep Kata gg9v open and choose the exact measured source before starting a native run.
+
+### Explicit native execution channel
+
+The native workflow runs only on `fix/review-squad-windows-profile-native`.
+Ordinary code-branch pushes cannot launch its windows or recorder.
+Root pushes an exact reviewed source there only after safety controls and retention qualify.
+The first Windows workload measures this branch's original 30 fps cap.
+It does not measure the merged 20 fps change or close the remaining Core/chat clauses.
+The workflow retains the exact release executable, PDB, identities, captures, and partial traces through the shared sealer.
+Only ciphertext uploads; Root must inspect native observations and filtered stacks before qualification.
+Native workflow static review found no material defect; no native execution has run yet.
