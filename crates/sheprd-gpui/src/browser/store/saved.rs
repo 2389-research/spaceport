@@ -4,8 +4,9 @@
 //! it. Only this module can name a retired tab kind: it checks the whole
 //! file, reserves every ID in it, and hands the store the tabs that restore.
 use super::{Location, MAX_TABS, MAX_TITLE_CHARS, Saved, Scope, Tab, TabId};
-use crate::{browser::WebUrl, core_terminals::panes::Panes};
+use crate::browser::WebUrl;
 use serde::Deserialize;
+use sheprd_panes::Panes;
 use std::path::{Component, Path, PathBuf};
 
 #[derive(Deserialize)]

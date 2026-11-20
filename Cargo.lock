@@ -6480,6 +6480,7 @@ dependencies = [
  "sheprd-diagnostics",
  "sheprd-i18n",
  "sheprd-osc52",
+ "sheprd-panes",
  "sheprd-remote",
  "sheprd-reorder",
  "sheprd-settings",
@@ -6547,6 +6548,16 @@ dependencies = [
 [[package]]
 name = "sheprd-osc52"
 version = "0.1.0"
+
+[[package]]
+name = "sheprd-panes"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sheprd-backend",
+ "thiserror 2.0.21",
+]
 
 [[package]]
 name = "sheprd-protocol"

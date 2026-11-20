@@ -479,7 +479,7 @@ impl Store {
     pub(crate) fn edit_panes<R>(
         &mut self,
         id: TabId,
-        edit: impl FnOnce(&mut crate::core_terminals::panes::Panes) -> R,
+        edit: impl FnOnce(&mut sheprd_panes::Panes) -> R,
     ) -> Option<R> {
         let tab = self.tabs.iter_mut().find(|tab| tab.id == id)?;
         let Some(Location::CoreTerminal { panes, .. }) = &mut tab.location else {

@@ -1,11 +1,7 @@
 //! Drawing a herdr-core tab: one pane bare, as a Herdr tab draws, or a split
 //! in the tab layout's [`PaneChrome`], with a line between two panes to drag.
 
-use super::{
-    State,
-    panes::{Axis, Node, Share},
-    view::PaneLook,
-};
+use super::{State, view::PaneLook};
 use crate::{
     SheprdWindow,
     browser::{Location, Slot, Store, Tab, TabId},
@@ -16,6 +12,7 @@ use crate::{
 use gpui::{prelude::*, *};
 use sheprd_backend::TerminalId;
 use sheprd_client::protocol::AgentStatus;
+use sheprd_panes::{Axis, Node, Share};
 
 /// How wide the strip that drags a split is, whatever its gutter.
 const GRAB: f32 = 6.;

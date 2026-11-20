@@ -33,6 +33,7 @@ sheprd-core-client.workspace    = true
 sheprd-diagnostics.workspace    = true
 sheprd-i18n.workspace           = true
 sheprd-osc52.workspace          = true
+sheprd-panes.workspace          = true
 sheprd-remote.workspace         = true
 sheprd-reorder.workspace         = true
 sheprd-settings.workspace        = true

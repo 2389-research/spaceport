@@ -5,10 +5,7 @@
 //! shortcuts work on Herdr panes, so a herdr-core tab handles them here
 //! rather than letting them reach Herdr.
 
-use super::{
-    Purpose, layout,
-    panes::{Axis, Direction, Panes},
-};
+use super::{Purpose, layout};
 use crate::{
     SheprdWindow,
     browser::{Location, Store, TabId},
@@ -18,6 +15,7 @@ use crate::{
 };
 use gpui::{Context, Window};
 use sheprd_backend::TerminalId;
+use sheprd_panes::{Axis, Direction, Panes};
 
 impl SheprdWindow {
     /// Runs `command` on the focused herdr-core tab's panes. False when no

@@ -14,7 +14,7 @@ fn old_vs_code_tabs_are_dropped_without_reusing_their_ids() {
             scope.clone(),
             "w1",
             Some(Location::CoreTerminal {
-                panes: crate::core_terminals::panes::Panes::single(
+                panes: sheprd_panes::Panes::single(
                     sheprd_backend::TerminalId::try_from("t1".to_owned()).unwrap(),
                 ),
                 observe: false,

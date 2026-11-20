@@ -7,7 +7,6 @@ mod render;
 
 use super::{
     Mismatch, observation,
-    panes::Panes,
     workspace_document::{VersionedDocument, Workspace as CoreWorkspace, edit},
 };
 use crate::{
@@ -21,6 +20,7 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 use sheprd_backend::TerminalId;
+use sheprd_panes::Panes;
 use std::sync::{
     Arc, Mutex, MutexGuard,
     mpsc::{self, Receiver, TryRecvError},

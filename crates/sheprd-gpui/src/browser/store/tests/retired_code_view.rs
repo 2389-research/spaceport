@@ -14,7 +14,7 @@ fn old_source_view_is_dropped_without_reusing_its_id() {
             scope.clone(),
             "w",
             Some(Location::CoreTerminal {
-                panes: crate::core_terminals::panes::Panes::single(
+                panes: sheprd_panes::Panes::single(
                     sheprd_backend::TerminalId::try_from("t1".to_owned()).unwrap(),
                 ),
                 observe: false,

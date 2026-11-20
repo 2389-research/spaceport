@@ -141,7 +141,7 @@ impl SheprdWindow {
             Purpose::Split {
                 tab,
                 at,
-                axis: crate::core_terminals::panes::Axis::Row,
+                axis: sheprd_panes::Axis::Row,
             },
             spawn,
             cx,

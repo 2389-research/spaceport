@@ -65,7 +65,7 @@ fn saved_core_tabs_stay_hidden_without_being_discarded(cx: &mut gpui::TestAppCon
                 scope,
                 &workspace,
                 Some(Location::CoreTerminal {
-                    panes: crate::core_terminals::panes::Panes::single(
+                    panes: sheprd_panes::Panes::single(
                         sheprd_backend::TerminalId::new("private-saved-terminal").unwrap(),
                     ),
                     observe: false,

@@ -2,6 +2,7 @@
 //! only in the saved-file schema, which drops them before a tab is live.
 use crate::i18n::fl;
 use serde::{Deserialize, Serialize};
+use sheprd_panes::Panes;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -12,7 +13,7 @@ pub(crate) enum Location {
     /// into panes. Tabs saved before splits named one `terminal`.
     CoreTerminal {
         #[serde(alias = "terminal")]
-        panes: crate::core_terminals::panes::Panes,
+        panes: Panes,
         /// A watch-only mirror: it follows the terminal's size and never
         /// types into it.
         #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -38,3 +39,6 @@ impl Location {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

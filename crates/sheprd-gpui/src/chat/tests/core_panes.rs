@@ -9,12 +9,12 @@ use crate::{
     SheprdWindow,
     browser::{Location, Store, TabId},
     chat::core_pane::key,
-    core_terminals::panes::Panes,
     sidebar::layout_tests::full_draw,
 };
 use gpui::{App, Entity, TestAppContext, VisualTestContext};
 use sheprd_backend::{RunState, TerminalId, TerminalInfo};
 use sheprd_client::{ConnectTarget, protocol::AgentStatus};
+use sheprd_panes::Panes;
 use std::collections::BTreeMap;
 
 pub(super) fn id(name: &str) -> TerminalId {
@@ -63,7 +63,7 @@ pub(super) fn attached(
         snapshot.agents[0].tokens.clear();
         let mut panes = Panes::single(id("t1"));
         panes
-            .split(&id("t1"), crate::core_terminals::panes::Axis::Row, id("t2"))
+            .split(&id("t1"), sheprd_panes::Axis::Row, id("t2"))
             .unwrap();
         let infos = vec![info("t1", Some(endpoint)), info("t2", None)];
         let driven = view.core_terminals.show_for_test(panes, false, infos, cx);

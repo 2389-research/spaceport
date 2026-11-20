@@ -5,13 +5,13 @@
 
 mod error;
 
-pub(crate) use error::Error;
+pub use error::Error;
 
 use serde::{Deserialize, Serialize};
 use sheprd_backend::TerminalId;
 
 /// The most panes one tab splits into.
-pub(crate) const MAX_PANES: usize = 16;
+pub const MAX_PANES: usize = 16;
 
 /// A split's first side's share, in thousandths, kept where both sides stay
 /// usable.
@@ -27,7 +27,7 @@ const EPSILON: f32 = 1e-4;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub(crate) enum Axis {
+pub enum Axis {
     /// Side by side, as a split to the right makes.
     Row,
     /// Stacked, as a split downward makes.
@@ -35,7 +35,7 @@ pub(crate) enum Axis {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Direction {
+pub enum Direction {
     Left,
     Right,
     Up,
@@ -60,16 +60,16 @@ impl Direction {
 /// brought back into range rather than refused.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(from = "u16", into = "u16")]
-pub(crate) struct Share(u16);
+pub struct Share(u16);
 
 impl Share {
     /// The share at `fraction` of the split, as a drag reports it.
-    pub(crate) fn at(fraction: f32) -> Self {
+    pub fn at(fraction: f32) -> Self {
         // Clamped to 0..=1000 first, so the cast cannot truncate.
         Self::from((fraction.clamp(0., 1.) * 1000.).round() as u16)
     }
 
-    pub(crate) fn fraction(self) -> f32 {
+    pub fn fraction(self) -> f32 {
         f32::from(self.0) / 1000.
     }
 
@@ -101,7 +101,7 @@ impl From<Share> for u16 {
 /// ID alone, which is also how tabs saved before splits read back.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
-pub(crate) enum Node {
+pub enum Node {
     Leaf(TerminalId),
     Split {
         axis: Axis,
@@ -244,13 +244,16 @@ impl Node {
     }
 }
 
+#[cfg(test)]
+mod tests;
+
 /// A part of the unit square a pane takes.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct Rect {
-    pub(crate) x: f32,
-    pub(crate) y: f32,
-    pub(crate) width: f32,
-    pub(crate) height: f32,
+pub struct Rect {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
 }
 
 impl Rect {
@@ -318,7 +321,7 @@ impl Rect {
 /// A tab's panes: at least one, at most [`MAX_PANES`], each terminal once.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "Node", into = "Node")]
-pub(crate) struct Panes {
+pub struct Panes {
     root: Node,
 }
 
@@ -347,28 +350,31 @@ impl From<Panes> for Node {
 }
 
 impl Panes {
-    pub(crate) fn single(id: TerminalId) -> Self {
+    pub fn single(id: TerminalId) -> Self {
         Self {
             root: Node::Leaf(id),
         }
     }
 
-    pub(crate) fn root(&self) -> &Node {
+    pub fn root(&self) -> &Node {
         &self.root
     }
 
     /// Every terminal, left to right and top to bottom as the tree holds them.
-    pub(crate) fn terminals(&self) -> Vec<&TerminalId> {
+    pub fn terminals(&self) -> Vec<&TerminalId> {
         let mut leaves = Vec::new();
         self.root.leaves(&mut leaves);
         leaves
     }
 
-    pub(crate) fn len(&self) -> usize {
+    /// A tab always holds at least one pane, so there is no empty tree for
+    /// clippy's `is_empty` companion to report.
+    #[allow(clippy::len_without_is_empty)]
+    pub fn len(&self) -> usize {
         self.terminals().len()
     }
 
-    pub(crate) fn first(&self) -> &TerminalId {
+    pub fn first(&self) -> &TerminalId {
         let mut node = &self.root;
         loop {
             match node {
@@ -378,17 +384,12 @@ impl Panes {
         }
     }
 
-    pub(crate) fn contains(&self, id: &TerminalId) -> bool {
+    pub fn contains(&self, id: &TerminalId) -> bool {
         self.root.contains(id)
     }
 
     /// Splits the pane `at`, putting `new` right of or below it.
-    pub(crate) fn split(
-        &mut self,
-        at: &TerminalId,
-        axis: Axis,
-        new: TerminalId,
-    ) -> Result<(), Error> {
+    pub fn split(&mut self, at: &TerminalId, axis: Axis, new: TerminalId) -> Result<(), Error> {
         if self.len() >= MAX_PANES {
             return Err(Error::Full);
         }
@@ -402,12 +403,12 @@ impl Panes {
     }
 
     /// Removes the pane `id`. The last pane stays: a tab always shows one.
-    pub(crate) fn remove(&mut self, id: &TerminalId) -> bool {
+    pub fn remove(&mut self, id: &TerminalId) -> bool {
         self.root.remove(id)
     }
 
     /// Sets the share of the split at `path`; true when it changed.
-    pub(crate) fn set_share(&mut self, path: &[bool], share: Share) -> bool {
+    pub fn set_share(&mut self, path: &[bool], share: Share) -> bool {
         match self.root.split_at(path) {
             Some(current) if *current != share => {
                 *current = share;
@@ -419,7 +420,7 @@ impl Panes {
 
     /// Moves the split nearest `id` along `direction`'s axis one step that
     /// way; true when it moved.
-    pub(crate) fn resize(&mut self, id: &TerminalId, direction: Direction) -> bool {
+    pub fn resize(&mut self, id: &TerminalId, direction: Direction) -> bool {
         let step = if direction.forward() {
             RESIZE_STEP
         } else {
@@ -435,7 +436,7 @@ impl Panes {
     }
 
     /// Each pane's part of the unit square.
-    pub(crate) fn rects(&self) -> Vec<(TerminalId, Rect)> {
+    pub fn rects(&self) -> Vec<(TerminalId, Rect)> {
         let mut out = Vec::new();
         self.root.rects(Rect::UNIT, &mut out);
         out
@@ -443,7 +444,7 @@ impl Panes {
 
     /// The pane beside `id` toward `direction`: of those touching that edge,
     /// the one sharing most of it.
-    pub(crate) fn neighbor(&self, id: &TerminalId, direction: Direction) -> Option<TerminalId> {
+    pub fn neighbor(&self, id: &TerminalId, direction: Direction) -> Option<TerminalId> {
         let rects = self.rects();
         let (_, from) = rects.iter().find(|(pane, _)| pane == id)?;
         rects

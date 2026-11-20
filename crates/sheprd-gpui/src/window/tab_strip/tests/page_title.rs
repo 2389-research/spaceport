@@ -5,11 +5,9 @@
 //! into view again: otherwise its end, with its close button, is left past
 //! the strip's edge until another tab is chosen.
 use super::*;
-use crate::{
-    browser::{Location, Store, TabId},
-    core_terminals::panes::Panes,
-};
+use crate::browser::{Location, Store, TabId};
 use sheprd_backend::TerminalId;
+use sheprd_panes::Panes;
 
 const TITLE: &str = "feat: scroll pane history smoothly, following the trackpad";
 

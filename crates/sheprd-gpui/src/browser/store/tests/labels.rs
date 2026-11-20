@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn a_terminal_tab_shows_its_programs_title_and_otherwise_terminal() {
     let terminal = Location::CoreTerminal {
-        panes: crate::core_terminals::panes::Panes::single(
+        panes: sheprd_panes::Panes::single(
             sheprd_backend::TerminalId::try_from("t1".to_owned()).unwrap(),
         ),
         observe: false,

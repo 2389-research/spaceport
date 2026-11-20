@@ -1,13 +1,11 @@
 //! What the chat side reads of herdr-core tabs: the terminals a chat may be
 //! drawn over, the pane a new chat splits, and moving the pane in use.
 
-use crate::{
-    browser::TabId,
-    core_terminals::{CoreTerminals, panes::Panes},
-};
+use crate::{browser::TabId, core_terminals::CoreTerminals};
 use gpui::{App, TestAppContext};
 use sheprd_backend::{RunState, TerminalId, TerminalInfo};
 use sheprd_client::protocol::AgentStatus;
+use sheprd_panes::Panes;
 
 fn id(name: &str) -> TerminalId {
     TerminalId::new(name).unwrap()
@@ -30,7 +28,7 @@ fn terminals(cx: &mut App) -> (CoreTerminals, TabId, TabId) {
     let mut terminals = CoreTerminals::default();
     let mut panes = Panes::single(id("t1"));
     panes
-        .split(&id("t1"), crate::core_terminals::panes::Axis::Row, id("t2"))
+        .split(&id("t1"), sheprd_panes::Axis::Row, id("t2"))
         .unwrap();
     let infos = ["t1", "t2", "t3", "t4"].map(info).to_vec();
     let driven = terminals.show_for_test(panes, false, infos, cx);

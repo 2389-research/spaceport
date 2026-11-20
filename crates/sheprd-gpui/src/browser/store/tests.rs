@@ -11,7 +11,7 @@ mod saved_schema;
 
 fn terminal(id: &str) -> Option<Location> {
     Some(Location::CoreTerminal {
-        panes: crate::core_terminals::panes::Panes::single(
+        panes: sheprd_panes::Panes::single(
             sheprd_backend::TerminalId::try_from(id.to_owned()).unwrap(),
         ),
         observe: false,
