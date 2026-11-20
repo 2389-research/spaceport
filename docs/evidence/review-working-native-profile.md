@@ -784,8 +784,8 @@ Doctor Biz's Mac and actual-speech holds remain in force, with Kata still 50 clo
 
 ### Remaining original performance scope
 
-The mixed native run qualifies one baseline; it cannot close every clause in gg9v.
-Source observations below refer to measured candidate `2c86f1971`, not newer main or PR 147.
+The mixed native run can qualify one baseline; it cannot close every clause in gg9v.
+Source observations below refer to selected candidate `2c86f1971`, not newer main or PR 147.
 
 | Clause | Inspected source or evidence | Remaining proof |
 | --- | --- | --- |
