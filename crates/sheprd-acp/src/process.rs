@@ -1,16 +1,23 @@
-//! The agent's process: started in its own process group on Unix so that
-//! stopping it also stops what it started, such as `npx`'s Node child.
+// ABOUTME: Starts ACP agents with owned process trees and drained standard error.
+// ABOUTME: Retains exit status while stopping owned Unix groups and Windows jobs.
+//! The agent's process and descendants, including an npm shim's Node child.
+
+#[cfg(unix)]
+mod unix;
+#[cfg(windows)]
+mod windows;
+#[cfg(unix)]
+use unix::Child;
+#[cfg(windows)]
+use windows::Child;
 
 use std::{
     collections::VecDeque,
     ffi::OsString,
     io::{BufRead, BufReader},
     path::Path,
-    process::{Child, ChildStdin, ChildStdout, ExitStatus, Stdio},
-    sync::{
-        Arc, Mutex, PoisonError,
-        atomic::{AtomicBool, Ordering},
-    },
+    process::{ChildStdin, ChildStdout, ExitStatus, Stdio},
+    sync::{Arc, Mutex, PoisonError},
     thread,
     time::Duration,
 };
@@ -34,16 +41,15 @@ pub(crate) struct Spawned {
 #[derive(Clone)]
 pub(crate) struct AgentProcess {
     child: Arc<Mutex<Child>>,
-    /// Set once the agent has been reaped, after which its pid may already
-    /// belong to another process. The group stays identifiable from the id
-    /// captured at spawn, because a recycled pid leading a new group makes
-    /// the captured group gone.
-    reaped: Arc<AtomicBool>,
-    /// The agent's own process group, captured at spawn. Unix only; Windows
-    /// has no process groups here.
-    #[cfg(unix)]
-    group: Option<rustix::process::Pid>,
     stderr: Arc<Mutex<VecDeque<String>>>,
+}
+
+pub(crate) struct StopOnDrop(AgentProcess);
+
+impl Drop for StopOnDrop {
+    fn drop(&mut self) {
+        self.0.stop();
+    }
 }
 
 pub(crate) fn spawn(
@@ -61,19 +67,13 @@ pub(crate) fn spawn(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     #[cfg(unix)]
-    std::os::unix::process::CommandExt::process_group(&mut command, 0);
-    let mut child = command.spawn().map_err(|source| Error::AgentSpawn {
+    let child = unix::spawn(command);
+    #[cfg(windows)]
+    let child = windows::spawn(command);
+    let mut child = child.map_err(|source| Error::AgentSpawn {
         program: program.to_string_lossy().into_owned(),
         source,
     })?;
-    // The group is created for this child (process_group(0) above), so the
-    // group id is the child's pid while the child is unreaped: capture it at
-    // spawn, the one moment the pid is certainly the agent's.
-    #[cfg(unix)]
-    let group = {
-        use rustix::process::Pid;
-        i32::try_from(child.id()).ok().and_then(Pid::from_raw)
-    };
     let input = child.stdin.take().ok_or(Error::AgentPipe("input"))?;
     let output = child.stdout.take().ok_or(Error::AgentPipe("output"))?;
     let stderr = Arc::new(Mutex::new(VecDeque::new()));
@@ -99,43 +99,23 @@ pub(crate) fn spawn(
         output,
         process: AgentProcess {
             child: Arc::new(Mutex::new(child)),
-            reaped: Arc::new(AtomicBool::new(false)),
-            #[cfg(unix)]
-            group,
             stderr,
         },
     })
 }
 
 impl AgentProcess {
+    pub(crate) fn stop_on_drop(&self) -> StopOnDrop {
+        StopOnDrop(self.clone())
+    }
+
     fn lock(&self) -> std::sync::MutexGuard<'_, Child> {
         self.child.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
     /// Waits for the agent to exit, polling so that `stop` can still reach it.
     pub(crate) fn wait(&self) -> std::io::Result<ExitStatus> {
-        loop {
-            if let Some(status) = self.lock().try_wait()? {
-                self.reaped.store(true, Ordering::SeqCst);
-                return Ok(status);
-            }
-            thread::sleep(POLL);
-        }
-    }
-
-    /// Whether the agent has exited, reaping it if it has. Unix only: the
-    /// group probes below are the only caller.
-    #[cfg(unix)]
-    fn gone(&self) -> bool {
-        match self.lock().try_wait() {
-            Ok(Some(_)) => {
-                self.reaped.store(true, Ordering::SeqCst);
-                true
-            }
-            Ok(None) => false,
-            // A child this handle can no longer wait for has already gone.
-            Err(_) => true,
-        }
+        wait_with(|| self.lock().try_wait(), || thread::sleep(POLL))
     }
 
     /// The last lines the agent wrote to standard error.
@@ -148,46 +128,38 @@ impl AgentProcess {
             .collect()
     }
 
-    /// Asks the agent's process group to end, then kills what is left of it
-    /// after a grace period. The agent exiting is not enough: a tool it
-    /// started may ignore the request, so the wait lasts until the whole
-    /// group is gone.
-    ///
-    /// The group id was captured at spawn, so it is the agent's group however
-    /// long ago the agent exited; a group that has been reaped and whose pid
-    /// was recycled into another group leader makes the old group gone, which
-    /// `test_kill_process_group` sees. Cleanup therefore works after the
-    /// agent has exited on its own — a tool the agent started may outlive it
-    /// — while a recycled pid can never be signalled: the probes answer for
-    /// the group the agent owned, never for the recycled pid's.
+    /// Ends the owned process tree, including descendants of an exited shim.
+    /// Unix groups receive TERM before KILL; Windows jobs terminate together.
     pub(crate) fn stop(&self) {
         #[cfg(unix)]
+        self.lock().stop();
+        #[cfg(windows)]
         {
-            use rustix::process::{Signal, kill_process_group, test_kill_process_group};
-            let group = self.group;
-            if let Some(group) = group {
-                let _ = kill_process_group(group, Signal::TERM);
-            }
-            let deadline = std::time::Instant::now() + GRACE;
-            while std::time::Instant::now() < deadline {
-                let agent_gone = self.gone();
-                let group_gone = group.is_none_or(|group| test_kill_process_group(group).is_err());
-                if agent_gone && group_gone {
-                    return;
-                }
-                thread::sleep(POLL);
-            }
-            if let Some(group) = group {
-                let _ = kill_process_group(group, Signal::KILL);
-            }
+            let mut child = self.lock();
+            let _ = child.kill();
+            let _ = child.wait();
         }
-        let mut child = self.lock();
-        let _ = child.kill();
-        let _ = child.wait();
-        self.reaped.store(true, Ordering::SeqCst);
     }
 }
 
-// Process groups are a Unix notion; Windows has no test here.
+fn wait_with(
+    mut observe: impl FnMut() -> std::io::Result<Option<ExitStatus>>,
+    mut idle: impl FnMut(),
+) -> std::io::Result<ExitStatus> {
+    loop {
+        match observe() {
+            Ok(Some(status)) => return Ok(status),
+            Ok(None) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(error) => return Err(error),
+        }
+        idle();
+    }
+}
+
 #[cfg(all(test, unix))]
 mod tests;
+
+#[cfg(all(test, windows))]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod windows_tests;

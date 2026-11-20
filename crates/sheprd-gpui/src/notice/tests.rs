@@ -2,6 +2,8 @@
 // ABOUTME: Uses explicit clock values to cover deadlines without sleeps.
 use super::*;
 
+mod history;
+
 #[test]
 fn operation_notice_expires_at_its_deadline() {
     let now = Instant::now();

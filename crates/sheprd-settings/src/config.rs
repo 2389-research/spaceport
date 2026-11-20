@@ -195,7 +195,7 @@ impl Default for Config {
             edge_rail: false,
             favorite_themes: Vec::new(),
             features: Features::default(),
-            focus_follows_mouse: true,
+            focus_follows_mouse: false,
             herdr_2_terminals: false,
             herdr_core_enabled: false,
             icon_font_missing: false,
@@ -342,6 +342,12 @@ impl Config {
             &Self::path()?,
             &view_settings_path(sheprd_client::local_var),
         )
+    }
+
+    /// Reads explicit private fixture files without changing process-wide paths.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn load_fixture(path: &Path, view: &Path) -> Result<Self> {
+        Self::load_startup_path(path, view)
     }
 
     pub(crate) fn load_startup_path(path: &Path, daemon: &Path) -> Result<Self> {
@@ -534,7 +540,7 @@ impl Config {
         // keep-sorted start
         config.confirm_close_pane = settings.confirm_close_pane.unwrap_or(true);
         config.confirm_close_tab = settings.confirm_close_tab.unwrap_or(true);
-        config.focus_follows_mouse = settings.focus_follows_mouse.unwrap_or(true);
+        config.focus_follows_mouse = settings.focus_follows_mouse.unwrap_or(false);
         config.show_agents = settings.show_agents.unwrap_or(true);
         config.show_agents_header = settings.show_agents_header.unwrap_or(true);
         config.show_device_icons = settings.show_device_icons.unwrap_or(true);

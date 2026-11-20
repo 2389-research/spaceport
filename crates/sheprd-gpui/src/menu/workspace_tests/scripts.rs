@@ -1,3 +1,5 @@
+// ABOUTME: Keeps retained workspace menu actions separate from removed script launchers.
+// ABOUTME: Covers primary, linked, and ordinary workspace action sets.
 use super::*;
 
 #[gpui::test]
@@ -19,6 +21,7 @@ fn workspace_menu_keeps_checkout_actions_without_script_launches(cx: &mut gpui::
                     actions.iter().all(|action| matches!(
                         action,
                         WorkspaceMenuAction::Dialog(_)
+                            | WorkspaceMenuAction::CloseWorkspace
                             | WorkspaceMenuAction::Collapse
                             | WorkspaceMenuAction::Expand
                             | WorkspaceMenuAction::Mute

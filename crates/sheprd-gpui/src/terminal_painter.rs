@@ -1,3 +1,5 @@
+// ABOUTME: Paints terminal cells, decorations, and images from prepared frame data.
+// ABOUTME: Reuses font-dependent glyph shapes while applying current colours during paint.
 //! Painting one terminal surface: the cells, their glyphs, the decorations
 //! over them, and the images between and above them.
 //!
@@ -14,6 +16,9 @@ mod glyphs;
 mod graphics;
 mod grid;
 mod highlight;
+mod image_paint;
+#[cfg(test)]
+pub(crate) mod image_probe;
 mod images;
 mod links;
 mod surface;
@@ -26,8 +31,9 @@ use self::glyphs::GlyphCache;
 pub(crate) use self::graphics::CellSeparator;
 pub(crate) use self::grid::Ground;
 pub(crate) use self::highlight::{Highlight, Tint};
+pub(crate) use self::image_paint::ImageBatch;
 use self::images::ImageCache;
-pub(crate) use self::images::{ImageTarget, PlacedImages};
+pub(crate) use self::images::{ImageRegion, ImageTarget, PlacedImages};
 pub(crate) use self::images::{fit_bgra, texture};
 
 use crate::config::Theme;

@@ -41,10 +41,6 @@ impl Channel {
 }
 
 // An unknown channel stops the build: there is no runtime fallback.
-#[cfg_attr(
-    not(all(target_os = "macos", feature = "macos-updater")),
-    allow(dead_code, reason = "only the native updater reads the channel so far")
-)]
 pub(crate) const CHANNEL: Channel = match Channel::parse(env!("SPACEPORT_BUILD_CHANNEL")) {
     Some(channel) => channel,
     None => panic!("SPACEPORT_BUILD_CHANNEL is not a known build channel"),

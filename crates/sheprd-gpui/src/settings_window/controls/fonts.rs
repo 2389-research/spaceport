@@ -1,3 +1,5 @@
+// ABOUTME: Renders keyboard-accessible font buttons and a confined family chooser.
+// ABOUTME: Keeps search navigation separate from focused picker button activation.
 //! Compact per-role controls and a root-level, transient family chooser.
 // i18n: migrated
 use super::*;
@@ -227,6 +229,9 @@ impl SettingsWindow {
         if !matches!(key, "up" | "down" | "enter" | "escape") {
             return;
         }
+        if key != "escape" && !self.controls.search.read(cx).focus.is_focused(window) {
+            return;
+        }
         cx.stop_propagation();
         if self.controls.search.read(cx).is_composing() {
             return;
@@ -263,11 +268,15 @@ impl SettingsWindow {
         id: String,
         label: impl Into<SharedString>,
     ) -> Stateful<Div> {
+        let label = label.into();
         let selector = id.clone();
         #[cfg(all(feature = "integration-test", target_os = "macos"))]
         let probe = native_probe(id.clone());
         div()
             .id(id)
+            .role(Role::Button)
+            .aria_label(label.clone())
+            .map(|button| super::super::ui::focusable(&self.theme, button, true))
             .debug_selector(move || selector.clone())
             .row()
             .items_center()
@@ -278,7 +287,7 @@ impl SettingsWindow {
             .rounded(px(corners::CONTROL))
             .cursor_pointer()
             .hover(|style| style.bg(rgb(self.theme.active)))
-            .child(label.into())
+            .child(label)
             .map(|button| {
                 #[cfg(all(feature = "integration-test", target_os = "macos"))]
                 let button = button.child(probe);
@@ -357,7 +366,7 @@ impl SettingsWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<Div> {
-        if self.section != Section::Fonts {
+        if !self.font_picker_shown() {
             return None;
         }
         let target = self.controls.picker?;
@@ -393,6 +402,7 @@ impl SettingsWindow {
                         .inset_e(px(20.))
                         .occlude()
                         .id("settings-font-picker")
+                        .key_context("SettingsFontPicker")
                         .debug_selector(|| "settings-font-picker".into())
                         .map(|picker| {
                             #[cfg(all(feature = "integration-test", target_os = "macos"))]
@@ -462,6 +472,7 @@ impl SettingsWindow {
                                                 format!("settings-font-result-{index}"),
                                                 "",
                                             )
+                                            .aria_label(family_label(&family))
                                             .w_full()
                                             .h(px(28.))
                                             .justify_start()

@@ -1,12 +1,16 @@
+// ABOUTME: Owns a private Unix control socket and its recovery lock.
+// ABOUTME: Removes only the bound socket while retaining exclusive address ownership.
 //! The control channel on Unix: a socket file in the user's private state
 //! directory, readable by the user alone.
 use std::{
+    fs::{File, OpenOptions, TryLockError},
     io::{self, Read, Write},
     os::unix::{
-        fs::PermissionsExt,
+        fs::{FileTypeExt, MetadataExt, OpenOptionsExt, PermissionsExt},
         net::{UnixListener, UnixStream},
     },
     path::{Path, PathBuf},
+    sync::Arc,
     time::Duration,
 };
 
@@ -14,7 +18,20 @@ pub(super) fn address(state: &Path) -> crate::Result<PathBuf> {
     Ok(state.join("control.sock"))
 }
 
-pub(super) struct Listener(UnixListener);
+struct Binding {
+    path: PathBuf,
+    device: u64,
+    inode: u64,
+    _lock: File,
+}
+
+#[derive(Clone)]
+pub(super) struct Cleanup(Arc<Binding>);
+
+pub(super) struct Listener {
+    listener: UnixListener,
+    cleanup: Cleanup,
+}
 
 impl Listener {
     /// Binds `path`, replacing a socket no process answers on. Another live
@@ -23,6 +40,24 @@ impl Listener {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
             std::fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700))?;
+        }
+        // Keep this stable file after shutdown. Unlinking it would let two
+        // starters lock different inodes for the same socket address.
+        let lock = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .mode(0o600)
+            .open(path.with_extension("lock"))?;
+        match lock.try_lock() {
+            Ok(()) => {}
+            Err(TryLockError::WouldBlock) => {
+                return Err(crate::Error::SocketInUse {
+                    path: path.to_owned(),
+                });
+            }
+            Err(TryLockError::Error(error)) => return Err(error.into()),
         }
         let listener = match UnixListener::bind(path) {
             Ok(listener) => listener,
@@ -38,17 +73,35 @@ impl Listener {
             Err(error) => return Err(error.into()),
         };
         std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))?;
-        Ok(Self(listener))
+        let metadata = std::fs::symlink_metadata(path)?;
+        let cleanup = Cleanup(Arc::new(Binding {
+            path: path.to_owned(),
+            device: metadata.dev(),
+            inode: metadata.ino(),
+            _lock: lock,
+        }));
+        Ok(Self { listener, cleanup })
     }
 
     pub(super) fn accept(&self) -> io::Result<Connection> {
-        Ok(Connection(self.0.accept()?.0))
+        Ok(Connection(self.listener.accept()?.0))
+    }
+
+    pub(super) fn cleanup(&self) -> Cleanup {
+        self.cleanup.clone()
     }
 }
 
-/// Removes the socket file when the app quits.
-pub(super) fn release(path: &Path) {
-    let _ = std::fs::remove_file(path);
+/// Removes the exact bound socket. The live lease excludes other starters.
+pub(super) fn release(cleanup: &Cleanup) {
+    let binding = &cleanup.0;
+    if std::fs::symlink_metadata(&binding.path).is_ok_and(|metadata| {
+        metadata.file_type().is_socket()
+            && metadata.dev() == binding.device
+            && metadata.ino() == binding.inode
+    }) {
+        let _ = std::fs::remove_file(&binding.path);
+    }
 }
 
 pub(super) struct Connection(UnixStream);

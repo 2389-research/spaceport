@@ -40,5 +40,5 @@ fn orchestrator_cli_refuses_before_contacting_the_private_app_socket() {
     assert_eq!(error["error"]["code"], "not_running");
 
     #[cfg(unix)]
-    assert!(!state.path().join("spaceport/control.sock").exists());
+    assert!(!app_state_path(state.path()).join("control.sock").exists());
 }

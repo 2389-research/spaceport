@@ -1,24 +1,29 @@
+// ABOUTME: Owns one attached Core terminal on a bounded background worker.
+// ABOUTME: Reports rejected input and wakes views when command capacity returns.
 //! One thread per shown terminal. It owns the attached `Terminal`, whatever
 //! backend made it, applies the view's commands between waits for output,
 //! and keeps the latest screen in a mailbox the window reads on its tick.
 //! Nothing here runs on the UI thread, and the UI never waits for it.
 
 use super::screen::Screen;
+mod prepared;
+pub(crate) use prepared::{Cancellation, Fallback};
+use prepared::{Envelope, Next};
 use sheprd_backend::{
     Backend, ClientPaneInputEvent, Role, Size, SurfaceUpdate, Terminal, TerminalId,
 };
 use std::{
     sync::{
         Arc, Mutex, PoisonError,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
     },
     time::Duration,
 };
 
 /// How long a wait for output lasts before queued commands are applied.
 const POLL: Duration = Duration::from_millis(8);
-/// Commands queued for one terminal; typing faster than this drops keys
-/// with a warning rather than growing without bound.
+/// Commands queued for one terminal. Rejected input becomes a visible error.
+/// Size and focus changes retry after the worker frees capacity.
 const MAX_COMMANDS: usize = 256;
 
 /// What the view asks of its terminal.
@@ -32,7 +37,9 @@ pub(crate) enum Command {
 /// The latest screen, and whether the window has seen it.
 #[derive(Default)]
 pub(crate) struct Mailbox {
+    blocked: AtomicBool,
     changed: AtomicBool,
+    queued: AtomicUsize,
     screen: Mutex<Screen>,
     stop: AtomicBool,
 }
@@ -41,6 +48,14 @@ impl Mailbox {
     fn update(&self, change: impl FnOnce(&mut Screen)) {
         change(&mut self.screen.lock().unwrap_or_else(PoisonError::into_inner));
         self.changed.store(true, Ordering::Release);
+    }
+
+    fn failure(&self, reason: String) {
+        let mut screen = self.screen.lock().unwrap_or_else(PoisonError::into_inner);
+        if screen.failure.is_none() {
+            screen.failure = Some(reason);
+            self.changed.store(true, Ordering::Release);
+        }
     }
 
     pub(crate) fn changed(&self) -> bool {
@@ -61,7 +76,7 @@ impl Mailbox {
 /// The view's end of a terminal's worker. Dropping it stops the worker on
 /// its next wait; nothing joins it.
 pub(crate) struct Link {
-    commands: std::sync::mpsc::SyncSender<Command>,
+    commands: std::sync::mpsc::SyncSender<Envelope>,
     pub(crate) mailbox: Arc<Mailbox>,
 }
 
@@ -75,10 +90,13 @@ impl Link {
         }
     }
 
-    pub(crate) fn send(&self, command: Command) {
-        if let Err(error) = self.commands.try_send(command) {
-            tracing::warn!(?error, "Dropped input for a herdr-core terminal");
-        }
+    /// Whether the command entered the queue, before any runtime acknowledgement.
+    pub(crate) fn send(&self, command: Command) -> bool {
+        self.enqueue_command(command)
+    }
+
+    pub(crate) fn failure(&self, reason: String) {
+        self.mailbox.failure(reason);
     }
 }
 
@@ -107,7 +125,7 @@ fn run<B: Backend>(
     id: &TerminalId,
     size: Size,
     role: Role,
-    queue: &std::sync::mpsc::Receiver<Command>,
+    queue: &std::sync::mpsc::Receiver<Envelope>,
     mailbox: &Mailbox,
 ) {
     let fail = |error: &dyn std::error::Error| {
@@ -118,8 +136,23 @@ fn run<B: Backend>(
         Ok(terminal) => terminal,
         Err(error) => return fail(&error),
     };
+    let mut head = None;
     while !mailbox.stop.load(Ordering::Acquire) {
-        for command in queue.try_iter() {
+        for _ in 0..MAX_COMMANDS {
+            if head.is_none() {
+                head = queue.try_recv().ok();
+            }
+            let Some(envelope) = &mut head else {
+                break;
+            };
+            let command = match envelope.poll() {
+                Next::Wait => break,
+                Next::Skip => {
+                    head = None;
+                    continue;
+                }
+                Next::Apply(command) => command,
+            };
             let applied = match command {
                 Command::Focus(focused) => terminal.focus(focused),
                 Command::Input(input) => terminal.input(&input),
@@ -128,6 +161,7 @@ fn run<B: Backend>(
             if let Err(error) = applied {
                 return fail(&error);
             }
+            head = None;
         }
         match terminal.next(POLL) {
             Ok(updates) if updates.is_empty() => {}

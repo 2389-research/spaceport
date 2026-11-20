@@ -94,7 +94,7 @@ fn gather() -> String {
     let _ = writeln!(text, "\n== Last {LOG_RECORDS} log records ==");
     text.push_str(&log_records());
     let _ = writeln!(text, "\n== Newest {CRASH_REPORTS} crash reports ==");
-    match crate::crash::dir() {
+    match crate::preferences::state_dir().and_then(|state| crate::crash::dir(&state)) {
         Some(dir) => text.push_str(&crash_reports(&dir)),
         None => text.push_str("(no state directory)\n"),
     }
@@ -231,9 +231,10 @@ fn flatten(key: &str, value: &toml::Value, lines: &mut Vec<String>) {
 }
 
 fn log_records() -> String {
-    let Some(current) = crate::diagnostics::log_file() else {
+    let Some(state) = crate::preferences::state_dir() else {
         return "(no state directory)\n".into();
     };
+    let current = crate::diagnostics::log_file(&state);
     let previous = crate::diagnostics::previous_log_file(&current);
     match logs::tail(&previous, &current, LOG_RECORDS) {
         Ok(records) if records.is_empty() => "(no log yet)\n".into(),

@@ -1,3 +1,5 @@
+// ABOUTME: Runs window command handlers with explicit completion and fallback outcomes.
+// ABOUTME: Preserves confirmation, endpoint admission, focus, and local feedback ownership.
 //! What each row of the command table does: the window's side of a command
 //! that needs no daemon request, and the request the rest fall through to.
 
@@ -14,6 +16,37 @@ use crate::{
 use gpui::{Context, Window};
 
 impl SheprdWindow {
+    pub(super) fn command_close_workspace(
+        &mut self,
+        _command: Command,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Run {
+        let opened = self
+            .live
+            .snapshot
+            .as_ref()
+            .and_then(|snapshot| snapshot.focused_workspace_id.clone())
+            .is_some_and(|id| self.open_workspace_close(&id, window, cx));
+        if !opened {
+            self.show_flash(
+                super::Flash::warning(fl!("close-modal-workspace-unavailable")),
+                cx,
+            );
+        }
+        Run::Done
+    }
+
+    pub(super) fn command_messages(
+        &mut self,
+        _command: Command,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Run {
+        self.open_messages(window, cx);
+        Run::Done
+    }
+
     /// The command a notice's toast names.
     pub(super) fn command_notification_target(
         &mut self,
@@ -338,10 +371,11 @@ impl SheprdWindow {
         &mut self,
         _command: Command,
         _window: &mut Window,
-        _cx: &mut Context<Self>,
+        cx: &mut Context<Self>,
     ) -> Run {
         self.toggle_sidebar();
-        Run::FallsThrough
+        cx.notify();
+        Run::Done
     }
 
     pub(super) fn command_focus_next_region(
@@ -645,9 +679,14 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.live.activation.fenced()
-            || !self.endpoints[self.selected_endpoint].surface_requested()
-        {
+        let Some(endpoint) = self.endpoints.get(self.selected_endpoint) else {
+            self.show_flash(
+                super::Flash::warning(fl!("window-notices-needs-herdr-tui")),
+                cx,
+            );
+            return;
+        };
+        if self.live.activation.fenced() || !endpoint.surface_requested() {
             return;
         }
         if let Some(snapshot) = &self.live.snapshot

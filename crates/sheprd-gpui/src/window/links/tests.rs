@@ -1,3 +1,5 @@
+// ABOUTME: Shares headless terminal-link fixtures across supported platforms.
+// ABOUTME: Exercises real local files and isolated protocol peers without external applications.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::{sidebar::layout_tests::fixture_window, state::ConnectionStatus, window::MockPeer};
@@ -10,7 +12,6 @@ use sheprd_client::protocol::{
 mod cases;
 mod content_updates;
 mod external;
-#[cfg(unix)]
 mod file_checks;
 mod file_handlers;
 

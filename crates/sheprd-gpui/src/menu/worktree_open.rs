@@ -1,3 +1,5 @@
+// ABOUTME: Loads bounded existing-worktree listings from the selected daemon.
+// ABOUTME: Keeps request ownership separate from the picker display projection.
 //! Existing checkouts come only from the selected daemon, never local Git.
 
 // i18n: migrated
@@ -6,6 +8,10 @@ use crate::{SheprdWindow, i18n::fl, search_input::SearchInput};
 use gpui::{prelude::*, *};
 use serde::Deserialize;
 use sheprd_client::Method;
+
+mod paint;
+mod render;
+pub(in crate::menu) use paint::Paint;
 
 const MAX_ENTRIES: usize = 512;
 
@@ -48,6 +54,7 @@ pub(super) struct Picker {
     query: String,
     pub(super) selected: usize,
     pub(super) scroll: UniformListScrollHandle,
+    pub(super) status_scroll: ScrollHandle,
 }
 
 impl Picker {
@@ -62,6 +69,7 @@ impl Picker {
             query: String::new(),
             selected: 0,
             scroll: UniformListScrollHandle::new(),
+            status_scroll: ScrollHandle::new(),
         }
     }
 
@@ -239,141 +247,6 @@ impl SheprdWindow {
         self.menu.worktree_open = Some(picker);
         self.menu.error = result.err().map(|error| error.to_string());
         cx.notify();
-    }
-
-    pub(super) fn render_existing_worktrees(&self, cx: &mut Context<Self>) -> Div {
-        let Some(picker) = &self.menu.worktree_open else {
-            return div();
-        };
-        let mut panel = div().w_full().flex().flex_col().flex_1().min_h_0().child(
-            div()
-                .debug_selector(|| "open-worktree-search".into())
-                .flex_none()
-                .px(px(16.))
-                .py(px(10.))
-                .child(picker.search.clone())
-                .child(
-                    div()
-                        .pt(px(6.))
-                        .text_color(rgb(self.theme.muted))
-                        .child(fl!(
-                            "worktree-open-count",
-                            shown = picker.filtered.len(),
-                            total = picker.entries.len(),
-                        )),
-                ),
-        );
-        if picker.filtered.is_empty() {
-            panel = panel.child(
-                div()
-                    .debug_selector({
-                        let empty = picker.entries.is_empty();
-                        move || {
-                            if empty {
-                                "open-worktree-empty"
-                            } else {
-                                "open-worktree-no-matches"
-                            }
-                            .into()
-                        }
-                    })
-                    .flex_1()
-                    .p(px(16.))
-                    .text_color(rgb(self.theme.muted))
-                    .child(if picker.pending.is_some() {
-                        fl!("worktree-open-loading")
-                    } else if !picker.entries.is_empty() {
-                        fl!("worktree-open-no-matching")
-                    } else if self.menu.error.is_some() {
-                        fl!("worktree-open-unavailable")
-                    } else {
-                        fl!("worktree-open-empty")
-                    }),
-            );
-        } else {
-            panel = panel.child(
-                uniform_list(
-                    "open-worktrees",
-                    picker.filtered.len(),
-                    cx.processor(|this, range: std::ops::Range<usize>, _, cx| {
-                        range
-                            .map(|row| this.render_existing_worktree_row(row, cx))
-                            .collect()
-                    }),
-                )
-                .debug_selector(|| "open-worktree-list".into())
-                .w_full()
-                .track_scroll(&picker.scroll)
-                .flex_1()
-                .min_h_0(),
-            );
-        }
-        panel
-    }
-
-    fn render_existing_worktree_row(&self, row: usize, cx: &mut Context<Self>) -> AnyElement {
-        let Some(picker) = &self.menu.worktree_open else {
-            return div().into_any_element();
-        };
-        let Some(entry) = picker.entry(row) else {
-            return div().into_any_element();
-        };
-        let label = entry.branch.as_deref().unwrap_or(&entry.label);
-        let status = match (entry.open_workspace_id.is_some(), entry.is_detached) {
-            (true, _) => fl!("worktree-open-open"),
-            (_, true) => fl!("worktree-open-detached"),
-            _ => String::new(),
-        };
-        div()
-            .id(row)
-            .debug_selector(move || format!("open-worktree-row-{row}"))
-            .w_full()
-            .h(px(self.config.ui.line_height() * 2. + 14.))
-            .px(px(16.))
-            .py(px(5.))
-            .flex()
-            .flex_col()
-            .min_w_0()
-            .cursor_pointer()
-            .when(row == picker.selected, |row| row.bg(rgb(self.theme.active)))
-            .hover(|row| row.bg(rgb(self.theme.active)))
-            .child(
-                div()
-                    .w_full()
-                    .flex()
-                    .min_w_0()
-                    .gap(px(8.))
-                    .child(div().flex_1().min_w_0().truncate().child(label.to_owned()))
-                    .when(!status.is_empty(), |line| {
-                        line.child(
-                            div()
-                                .debug_selector(move || format!("open-worktree-row-status-{row}"))
-                                .flex_none()
-                                .text_color(rgb(self.theme.muted))
-                                .child(status),
-                        )
-                    }),
-            )
-            .child(
-                div()
-                    .w_full()
-                    .truncate()
-                    .text_color(rgb(self.theme.muted))
-                    .child(entry.path.clone()),
-            )
-            .on_click(cx.listener(move |this, _, window, cx| {
-                cx.stop_propagation();
-                if this.menu.page != Some(Page::Dialog(WorkspaceAction::OpenWorktree))
-                    || this.menu.opening.is_some()
-                {
-                    return;
-                }
-                if let Some(picker) = &mut this.menu.worktree_open {
-                    picker.selected = row;
-                }
-                this.submit_workspace_dialog(window, cx);
-            }))
-            .into_any_element()
     }
 }
 

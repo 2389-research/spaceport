@@ -16,6 +16,8 @@ mod device_icons;
 mod features;
 mod focus_follows_mouse;
 mod indicators;
+#[cfg(unix)]
+mod local_history;
 mod repository_icons;
 mod session_restore;
 mod sidebar_search;
@@ -365,7 +367,7 @@ fn rapid_size_intents_coalesce_without_erasing_other_faces() {
 #[gpui::test]
 fn busy_size_clicks_survive_config_refresh_without_starting_a_write(cx: &mut TestAppContext) {
     let (source, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
-    let settings = cx.new(|cx| SettingsWindow::new(source.downgrade(), cx));
+    let settings = cx.new(|cx| crate::settings_window::tests::fixture_new(source.downgrade(), cx));
     settings.update(cx, |settings, cx| {
         settings.persistence.begin_save(Kind::Ordinary);
         settings.controls.saving_sizes = vec![(FontFace::Sidebar, 20.)];
@@ -422,7 +424,7 @@ fn numeric_size_accepts_only_bounded_ascii_integers() {
 
 fn numeric_fixture(window: &mut Window, cx: &mut Context<SettingsWindow>) -> SettingsWindow {
     let source = cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx));
-    let mut view = SettingsWindow::new(source.downgrade(), cx);
+    let mut view = crate::settings_window::tests::fixture_new(source.downgrade(), cx);
     view.section = Section::Fonts;
     // Accepted intents remain in memory while assertions inspect the queue.
     view.persistence.begin_save(Kind::Ordinary);

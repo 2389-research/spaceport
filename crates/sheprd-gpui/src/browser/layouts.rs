@@ -1,3 +1,5 @@
+// ABOUTME: Persists workspace group layouts and preserves rejected state before recovery.
+// ABOUTME: Reserves page identities from every saved layout reference.
 //! Saved editor group layouts: how each workspace's view was split, which
 //! tab each group showed, and the group in use, kept across restarts. The
 //! app keeps one per workspace of each daemon; a window restores it the
@@ -22,13 +24,25 @@ struct Entry {
 }
 
 #[derive(Serialize, Deserialize)]
-struct Saved {
-    layouts: Vec<Entry>,
+struct Saved<T = Entry> {
+    layouts: Vec<T>,
+    /// IDs discarded during recovery must survive a layout-only rewrite.
+    #[serde(default)]
+    next_tab_id: u64,
+}
+
+impl Entry {
+    fn valid(&self) -> bool {
+        self.scope.valid_workspace(&self.workspace)
+            && self.layout.valid()
+            && (!matches!(self.scope, Scope::Core(_)) || self.layout.pages_only())
+    }
 }
 
 #[derive(Default)]
 pub(crate) struct Layouts {
     layouts: HashMap<Key, SavedLayout>,
+    next_tab_id: u64,
     writer: Option<state_file::Writer<Saved>>,
     quitting: bool,
 }
@@ -37,13 +51,7 @@ impl Global for Layouts {}
 
 fn parse(bytes: &[u8]) -> crate::Result<HashMap<Key, SavedLayout>> {
     let saved: Saved = serde_json::from_slice(bytes)?;
-    if saved.layouts.len() > MAX_LAYOUTS
-        || !saved.layouts.iter().all(|entry| {
-            entry.scope.valid_workspace(&entry.workspace)
-                && entry.layout.valid()
-                && (!matches!(entry.scope, Scope::Core(_)) || entry.layout.pages_only())
-        })
-    {
+    if saved.layouts.len() > MAX_LAYOUTS || !saved.layouts.iter().all(Entry::valid) {
         return Err(crate::Error::InvalidGroupLayouts);
     }
     Ok(saved
@@ -53,38 +61,108 @@ fn parse(bytes: &[u8]) -> crate::Result<HashMap<Key, SavedLayout>> {
         .collect())
 }
 
+fn recover(bytes: &[u8]) -> crate::Result<HashMap<Key, SavedLayout>> {
+    let file: Saved<serde_json::Value> = serde_json::from_slice(bytes)?;
+    Ok(file
+        .layouts
+        .into_iter()
+        .take(MAX_LAYOUTS)
+        .filter_map(|value| serde_json::from_value::<Entry>(value).ok())
+        .filter(Entry::valid)
+        .map(|entry| ((entry.scope, entry.workspace), entry.layout))
+        .collect())
+}
+
+/// Reserves every page identity, including references in rejected layout entries.
+pub(super) fn reserved_next(path: &std::path::Path) -> crate::Result<u64> {
+    let Some(bytes) = state_file::read(path, MAX_FILE_BYTES)? else {
+        return Ok(0);
+    };
+    reserved_next_bytes(&bytes)
+}
+
+fn reserved_next_bytes(bytes: &[u8]) -> crate::Result<u64> {
+    let file: Saved<serde_json::Value> = serde_json::from_slice(bytes)?;
+    let mut next = file.next_tab_id;
+    let mut reserve = |pick: &serde_json::Value| {
+        if pick.get("kind").and_then(serde_json::Value::as_str) == Some("page")
+            && let Some(id) = pick.get("id").and_then(serde_json::Value::as_u64)
+        {
+            next = next.max(id.saturating_add(1));
+        }
+    };
+    for layout in &file.layouts {
+        let groups = layout
+            .get("layout")
+            .and_then(|layout| layout.get("groups"))
+            .and_then(serde_json::Value::as_array);
+        for group in groups.into_iter().flatten() {
+            if let Some(pick) = group.get("pick") {
+                reserve(pick);
+            }
+            for list in ["tabs", "hidden"] {
+                for pick in group
+                    .get(list)
+                    .and_then(serde_json::Value::as_array)
+                    .into_iter()
+                    .flatten()
+                {
+                    reserve(pick);
+                }
+            }
+        }
+    }
+    Ok(next)
+}
+
 impl Layouts {
     fn path() -> Option<PathBuf> {
         crate::preferences::state_dir().map(|dir| dir.join("editor-groups.json"))
     }
 
-    /// Called before starting GPUI, like the browser tabs. A missing or
-    /// damaged file starts every workspace unsplit.
+    /// Restores layouts before GPUI starts. Rejected bytes survive later saves.
     pub(crate) fn load() -> Self {
-        let path = Self::path();
-        let layouts = path
+        Self::load_from(Self::path())
+    }
+
+    fn load_from(path: Option<PathBuf>) -> Self {
+        let mut blocked = false;
+        let (layouts, next_tab_id) = path
             .as_deref()
             .map(|path| {
-                state_file::read(path, MAX_FILE_BYTES)
-                    .and_then(|bytes| bytes.as_deref().map_or(Ok(HashMap::new()), parse))
+                state_file::read(path, MAX_FILE_BYTES).and_then(|bytes| {
+                    let Some(bytes) = bytes else {
+                        return Ok((HashMap::new(), 0));
+                    };
+                    match parse(&bytes) {
+                        Ok(layouts) => Ok((layouts, reserved_next_bytes(&bytes)?)),
+                        Err(error) => {
+                            tracing::warn!(%error, "Cannot fully restore editor groups");
+                            state_file::preserve_rejected(path, &bytes)?;
+                            Ok((recover(&bytes)?, reserved_next_bytes(&bytes)?))
+                        }
+                    }
+                })
             })
             .transpose()
             .unwrap_or_else(|error| {
-                tracing::warn!(%error, "Cannot restore editor groups");
+                tracing::warn!(%error, "Cannot restore editor groups; saving is blocked");
+                blocked = true;
                 None
             })
             .unwrap_or_default();
-        let writer = path.and_then(
-            |path| match state_file::Writer::start("editor-groups", path) {
+        let writer = path.filter(|_| !blocked).and_then(|path| {
+            match state_file::Writer::start("editor-groups", path) {
                 Ok(writer) => Some(writer),
                 Err(error) => {
                     tracing::warn!(%error, "Cannot start editor group worker");
                     None
                 }
-            },
-        );
+            }
+        });
         Self {
             layouts,
+            next_tab_id,
             writer,
             quitting: false,
         }
@@ -130,6 +208,13 @@ impl Layouts {
             Some(layout)
                 if layouts.layouts.len() < MAX_LAYOUTS || layouts.layouts.contains_key(key) =>
             {
+                layouts.next_tab_id = layouts.next_tab_id.max(
+                    layout
+                        .pages()
+                        .map(|id| u64::from(id).saturating_add(1))
+                        .max()
+                        .unwrap_or(0),
+                );
                 layouts.layouts.insert(key.clone(), layout);
             }
             Some(_) => return,
@@ -165,6 +250,7 @@ impl Layouts {
         }
         if let Some(writer) = &self.writer {
             writer.save(Saved {
+                next_tab_id: self.next_tab_id,
                 layouts: self
                     .layouts
                     .iter()
@@ -178,6 +264,10 @@ impl Layouts {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "layouts/tests/recovery.rs"]
+mod recovery_tests;
 
 #[cfg(test)]
 mod tests {
@@ -233,6 +323,7 @@ mod tests {
         let saved = parsed.get(&key).unwrap();
         assert_eq!(serde_json::to_string(saved).unwrap(), layout);
         let bytes = serde_json::to_vec(&Saved {
+            next_tab_id: 0,
             layouts: vec![Entry {
                 scope: key.0.clone(),
                 workspace: key.1.clone(),

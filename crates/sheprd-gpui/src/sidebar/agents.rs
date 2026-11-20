@@ -1,9 +1,12 @@
+// ABOUTME: Presents authoritative agent status and ordered sidebar rows.
+// ABOUTME: Keeps status geometry, labels, and color policy shared across views.
 //! The agents list: how it is sorted, and how each agent's place and status
 //! are labelled. Status comes from the daemon's snapshot, never from guessing
 //! at terminal output.
 
 use super::{
-    STATUS_DOT_UNKNOWN, STATUS_WIDTH, first_text, label_text, line_height, scaled, unknown_dot,
+    IndexedSnapshot, STATUS_DOT_UNKNOWN, STATUS_WIDTH, first_text, label_text, line_height, scaled,
+    unknown_dot,
 };
 use crate::direction::Logical;
 use crate::i18n::fl;
@@ -14,7 +17,15 @@ use crate::{
     herdr_settings::Settings,
 };
 use gpui::{prelude::*, *};
-use sheprd_client::protocol::{AgentStatus, ClientShellAgent, ClientShellSnapshot};
+use sheprd_client::protocol::{AgentStatus, ClientShellAgent};
+
+#[cfg(any(test, all(windows, feature = "integration-test")))]
+mod native_shapes;
+#[cfg(all(windows, feature = "integration-test"))]
+pub(crate) use native_shapes::verify_status_shapes;
+
+#[cfg(test)]
+pub(in crate::sidebar) mod visits;
 
 pub(super) fn agents_sort(window: &SheprdWindow, cx: &mut Context<SheprdWindow>) -> Stateful<Div> {
     let theme = &window.theme;
@@ -87,32 +98,11 @@ pub(super) fn status_priority(status: AgentStatus) -> u8 {
 /// none match. Upstream's client keys this on the label, not on the order
 /// being non-empty, and drops ids the snapshot has no agent for. Without a
 /// view the local sort applies.
-pub(super) fn sorted_agents(
-    snapshot: &ClientShellSnapshot,
+pub(super) fn sorted_agents<'a>(
+    snapshot: &IndexedSnapshot<'a>,
     sort: AgentSort,
-) -> Vec<&ClientShellAgent> {
-    if snapshot.agent_view_label.is_some() {
-        return snapshot
-            .agent_order
-            .iter()
-            .filter_map(|pane_id| {
-                snapshot
-                    .agents
-                    .iter()
-                    .find(|agent| agent.pane_id == *pane_id)
-            })
-            .collect();
-    }
-    let mut ordered: Vec<_> = snapshot.agents.iter().collect();
-    if sort == AgentSort::Priority {
-        ordered.sort_by_key(|agent| {
-            (
-                std::cmp::Reverse(status_priority(agent.agent_status)),
-                std::cmp::Reverse(agent.state_change_seq),
-            )
-        });
-    }
-    ordered
+) -> Vec<&'a ClientShellAgent> {
+    snapshot.agents(sort)
 }
 
 /// Every listed host's agents in the order the panel paints them, with the
@@ -131,13 +121,13 @@ pub(super) fn panel_agents<'a>(
     let mut listed = 0;
     let mut rows = Vec::new();
     for (index, live) in hosts {
-        let Some(snapshot) = live.snapshot.as_deref() else {
+        let Some(snapshot) = live.indexed_snapshot() else {
             continue;
         };
         listed += 1;
-        merge &= snapshot.agent_view_label.is_none();
+        merge &= snapshot.snapshot().agent_view_label.is_none();
         rows.extend(
-            sorted_agents(snapshot, sort)
+            sorted_agents(&snapshot, sort)
                 .into_iter()
                 .map(|agent| (index, live, agent)),
         );
@@ -183,13 +173,11 @@ pub(super) fn agent_names(agent: &ClientShellAgent) -> [Option<&str>; 4] {
 /// it is blank or only repeats the agent's `name`.
 pub(crate) fn pane_name(
     agent: &ClientShellAgent,
-    snapshot: &ClientShellSnapshot,
+    snapshot: &IndexedSnapshot<'_>,
     name: &str,
 ) -> Option<String> {
     let renamed = snapshot
-        .panes
-        .iter()
-        .find(|pane| pane.pane_id == agent.pane_id)
+        .pane(&agent.pane_id)
         .and_then(|pane| safe_caption(pane.label.as_deref()));
     renamed
         .or_else(|| safe_caption(agent.title.as_deref()))
@@ -212,21 +200,12 @@ fn safe_caption(text: Option<&str>) -> Option<String> {
 /// naming it. `None` once the agent's workspace has gone.
 pub(super) fn agent_place<'a>(
     agent: &ClientShellAgent,
-    snapshot: &'a ClientShellSnapshot,
+    snapshot: &IndexedSnapshot<'a>,
 ) -> Option<(&'a str, Option<&'a str>)> {
-    let workspace = snapshot
-        .workspaces
-        .iter()
-        .find(|workspace| workspace.workspace_id == agent.workspace_id)?;
-    let tabs = snapshot
-        .tabs
-        .iter()
-        .filter(|tab| tab.workspace_id == agent.workspace_id)
-        .count();
+    let workspace = snapshot.workspace(&agent.workspace_id)?;
+    let tabs = snapshot.tab_count(&agent.workspace_id);
     let tab = snapshot
-        .tabs
-        .iter()
-        .find(|tab| tab.tab_id == agent.tab_id)
+        .tab(&agent.tab_id)
         .filter(|tab| tabs > 1 || tab.custom_label)
         .and_then(|tab| sheprd_client::text::caption(&tab.label));
     Some((workspace.label.as_str(), tab))
@@ -407,7 +386,8 @@ pub(super) fn status_mark(
     if indicators.icons != StatusIcons::Dots {
         return status_icon(status, font, indicators, color);
     }
-    // Upstream dots: blocked/done filled, idle hollow, unknown a small dot.
+    // Filled squares distinguish blocked agents from completed dots without color.
+    // Idle remains hollow; unknown uses a smaller dot.
     // Working spins instead, so busy agents read apart from settled ones.
     // They grow with the font, as upstream's dot glyphs do.
     let dot = indicators.width(font);
@@ -437,13 +417,21 @@ pub(super) fn status_mark(
             slot.child(
                 div()
                     .size(px(if bold { dot } else { diameter }))
-                    .rounded_full()
+                    .rounded(px(dot_radius(status, if bold { dot } else { diameter })))
                     .border_1()
                     .when(bold, |dot| dot.border_2())
                     .border_color(rgb(color))
                     .when(filled, |dot| dot.bg(rgb(color))),
             )
         })
+}
+
+fn dot_radius(status: AgentStatus, diameter: f32) -> f32 {
+    if status == AgentStatus::Blocked {
+        0.
+    } else {
+        diameter / 2.
+    }
 }
 
 /// A working dot: a faint ring with a spinning arc, `size` across. Rows draw

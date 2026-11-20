@@ -36,6 +36,10 @@ mod clipboard;
 mod live;
 pub(crate) use live::start as start_live;
 
+#[cfg(target_os = "linux")]
+#[path = "smoke_linux_shortcuts.rs"]
+mod linux_shortcuts;
+
 #[cfg(target_os = "macos")]
 #[path = "smoke_preferences.rs"]
 mod preferences;
@@ -69,6 +73,8 @@ macro_rules! fixtures {
 
 fixtures! {
     // keep-sorted start
+    #[cfg(windows)]
+    departures: "smoke_departures.rs", Some("HERDR_TEST_POPUP_DEPARTURES");
     #[cfg(target_os = "macos")]
     hosts: "smoke_hosts.rs", Some("HERDR_TEST_SIDEBAR_ROUTING");
     #[cfg(target_os = "linux")]

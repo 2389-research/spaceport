@@ -1,3 +1,5 @@
+// ABOUTME: Checks removal of phone control before any app connection.
+// ABOUTME: Keeps the retained local command catalog available in isolated state.
 //! The desktop executable refuses retired phone commands before app startup.
 //! Its retained local command catalog and missing-app status use private state.
 
@@ -27,7 +29,7 @@ fn phone_refusal_keeps_local_cli_available_in_private_state() {
     assert!(retained.status.success(), "{retained:?}");
     let commands: serde_json::Value = serde_json::from_slice(&retained.stdout).unwrap();
     assert!(
-        commands
+        commands["commands"]
             .as_array()
             .unwrap()
             .iter()
@@ -42,5 +44,5 @@ fn phone_refusal_keeps_local_cli_available_in_private_state() {
     assert!(missing.stderr.is_empty(), "{missing:?}");
 
     #[cfg(unix)]
-    assert!(!state.path().join("spaceport/control.sock").exists());
+    assert!(!app_state_path(state.path()).join("control.sock").exists());
 }

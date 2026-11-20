@@ -312,6 +312,15 @@ impl SheprdWindow {
             return Delivery::Queued;
         };
         let bridge_paths = self.accepts_remote_images();
+        let permit = match super::clipboard::reserve(cx) {
+            Ok(permit) => permit,
+            Err(error) => {
+                self.notices
+                    .show(crate::notice::Cause::Input, error.localize());
+                cx.notify();
+                return Delivery::Refused;
+            }
+        };
         // GPUI's native reader copies and hashes whole images synchronously.
         // Only its in-memory test clipboard is read on the foreground thread.
         let read = super::clipboard::read;
@@ -321,13 +330,21 @@ impl SheprdWindow {
             target,
             PreparationKind::Input,
             move || {
+                let _permit = permit;
                 #[cfg(test)]
                 let item = {
                     let _ = read;
                     read_or_key(Ok(item), fallback.is_some())?
                 };
                 #[cfg(not(test))]
-                let item = read_or_key(read(image_only), fallback.is_some())?;
+                let item = read_or_key(
+                    read(if image_only {
+                        super::clipboard::Mode::Image
+                    } else {
+                        super::clipboard::Mode::Normal
+                    }),
+                    fallback.is_some(),
+                )?;
                 let Some(item) = item else {
                     return Ok(fallback.map_or(Prepared::Empty, Prepared::Input));
                 };

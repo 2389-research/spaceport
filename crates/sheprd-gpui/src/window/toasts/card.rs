@@ -1,3 +1,5 @@
+// ABOUTME: Renders notification cards with readable labels and live announcements.
+// ABOUTME: Keeps departing paint copies inert and silent.
 //! One toast's card: its host, badge, title, body, and dismiss button.
 
 use super::{
@@ -50,22 +52,35 @@ impl SheprdWindow {
                 })
             })
             .when(look.live, |card| {
-                card.debug_selector({
-                    let endpoint_id = endpoint_id.clone();
-                    move || format!("toast-{endpoint_id}-{id}")
-                })
-                .occlude()
-                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                .on_mouse_down(MouseButton::Right, |_, _, cx| cx.stop_propagation())
-                .on_scroll(|_, _, cx| cx.stop_propagation())
-                .when(look.navigable, |d| d.cursor_pointer())
-                .on_click({
-                    let source = toast.source.clone();
-                    cx.listener(move |this, _, _, cx| {
-                        cx.stop_propagation();
-                        this.click_toast(&source, id, cx);
+                card.role(Role::Status)
+                    .aria_label(format!(
+                        "{}: {}{}",
+                        toast.label,
+                        notice.title,
+                        notice
+                            .body
+                            .as_ref()
+                            .map_or_else(String::new, |body| format!(". {body}"))
+                    ))
+                    .a11y_synthetic_children(|builder| {
+                        builder.parent_node().set_live(accesskit::Live::Polite);
                     })
-                })
+                    .debug_selector({
+                        let endpoint_id = endpoint_id.clone();
+                        move || format!("toast-{endpoint_id}-{id}")
+                    })
+                    .occlude()
+                    .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                    .on_mouse_down(MouseButton::Right, |_, _, cx| cx.stop_propagation())
+                    .on_scroll(|_, _, cx| cx.stop_propagation())
+                    .when(look.navigable, |d| d.cursor_pointer())
+                    .on_click({
+                        let source = toast.source.clone();
+                        cx.listener(move |this, _, _, cx| {
+                            cx.stop_propagation();
+                            this.click_toast(&source, id, cx);
+                        })
+                    })
             })
             .relative()
             .left(px(offset(toast.corner, look.shown)))

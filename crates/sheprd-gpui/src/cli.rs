@@ -1,4 +1,8 @@
+// ABOUTME: Parses Spaceport launch options and local control invocations.
+// ABOUTME: Keeps informational paths independent of native startup and daemon connections.
 mod args;
+mod help;
+pub(crate) use help::usage;
 pub mod control;
 
 use sheprd_client::ConnectTarget;
@@ -42,6 +46,8 @@ pub enum CliError {
     MissingValue(&'static str),
     #[error("{0} may only be specified once")]
     DuplicateOption(&'static str),
+    #[error("--window does not apply to this local command")]
+    WindowNotSupported,
     #[error("Invalid {0}")]
     InvalidValue(&'static str),
     #[error("{command} requires {what}")]
@@ -110,7 +116,12 @@ pub fn build_info() -> &'static str {
 
 impl LaunchOptions {
     pub fn parse(args: impl IntoIterator<Item = impl Into<OsString>>) -> Result<Self, CliError> {
-        let mut args = args.into_iter().map(Into::into).peekable();
+        let mut args = args
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<OsString>>()
+            .into_iter()
+            .peekable();
         if let Some(family) = args.next_if(control::is_family) {
             return Ok(Self {
                 target: ConnectTarget::Local,
@@ -130,13 +141,30 @@ impl LaunchOptions {
             });
         }
         let mut socket = None;
+        let mut json = false;
         #[cfg(feature = "integration-test")]
         let mut mode = LaunchMode::Normal;
         #[cfg(not(feature = "integration-test"))]
         let mode = LaunchMode::Normal;
         while let Some(arg) = args.next() {
             match arg.to_str() {
+                Some("--json") => json = true,
                 Some("--help" | "-h" | "--build-info") => {
+                    if arg != "--build-info" {
+                        if args.clone().any(|arg| arg == "--window") {
+                            return Err(CliError::WindowNotSupported);
+                        }
+                        if json || args.clone().any(|arg| arg == "--json") {
+                            return Ok(Self {
+                                target: ConnectTarget::Local,
+                                mode: LaunchMode::Control(control::Invocation {
+                                    command: control::ControlCommand::Help(None),
+                                    json: true,
+                                    window: None,
+                                }),
+                            });
+                        }
+                    }
                     return Ok(Self {
                         target: ConnectTarget::Local,
                         mode: if arg == "--build-info" {
@@ -173,6 +201,9 @@ impl LaunchOptions {
                     return Err(CliError::UnknownOption(arg));
                 }
             }
+        }
+        if json {
+            return Err(CliError::UnknownOption("--json".into()));
         }
         #[cfg(feature = "integration-test")]
         {

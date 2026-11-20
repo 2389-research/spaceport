@@ -1,3 +1,5 @@
+// ABOUTME: Dispatches isolated native input to one retained AppKit fixture window.
+// ABOUTME: Keeps callbacks on the main thread without posting desktop-wide events.
 //! Exact-window, main-thread-only AppKit events for the isolated fixture.
 #![allow(unsafe_code, deprecated, unexpected_cfgs)]
 use anyhow::{Context as _, Result, bail};
@@ -36,6 +38,37 @@ pub(super) fn host_arrow(id: String) -> impl gpui::IntoElement {
 #[derive(Debug, thiserror::Error)]
 #[error("{0}")]
 struct NativeHandleError(raw_window_handle::HandleError);
+
+/// Keys used by the native Settings scenario; no desktop-wide event posting.
+pub(crate) enum Key {
+    // keep-sorted start
+    Down,
+    Enter,
+    Escape,
+    InvalidX,
+    ShiftTab,
+    Space,
+    Tab,
+    Up,
+    // keep-sorted end
+}
+
+impl Key {
+    fn event(&self) -> (&'static str, u16, usize) {
+        // Virtual codes come from the SDK's HIToolbox/Events.h. Function-key
+        // characters follow NSEvent and GPUI's macOS event decoder.
+        match self {
+            Self::Tab => ("\t", 0x30, 0),
+            Self::ShiftTab => ("\u{19}", 0x30, 1 << 17),
+            Self::Enter => ("\r", 0x24, 0),
+            Self::Space => (" ", 0x31, 0),
+            Self::Escape => ("\u{1b}", 0x35, 0),
+            Self::Down => ("\u{f701}", 0x7d, 0),
+            Self::Up => ("\u{f700}", 0x7e, 0),
+            Self::InvalidX => ("x", 0x07, 0),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub(crate) struct Target {
@@ -78,6 +111,62 @@ impl Target {
         unsafe { msg_send![self.window, isKeyWindow] }
     }
 
+    /// Read only this process and the retained target; never inspect another app.
+    pub(crate) fn activation_facts(&self) -> Result<String> {
+        let main = objc2::MainThreadMarker::new()
+            .context("native activation diagnostics require the main thread")?;
+        let app = objc2_app_kit::NSApplication::sharedApplication(main);
+        let running = objc2_app_kit::NSRunningApplication::currentApplication();
+        let bundle = running.bundleIdentifier().map(|id| id.to_string());
+        // Target retains this exact NSWindow/NSView on the main thread. These
+        // property getters neither change activation nor deliver input events.
+        let (
+            number,
+            visible,
+            miniaturized,
+            eligible,
+            key,
+            main_window,
+            active_space,
+            responder,
+            attached,
+        ) = unsafe {
+            let number: isize = msg_send![self.window, windowNumber];
+            let visible: bool = msg_send![self.window, isVisible];
+            let miniaturized: bool = msg_send![self.window, isMiniaturized];
+            let eligible: bool = msg_send![self.window, canBecomeKeyWindow];
+            let key: bool = msg_send![self.window, isKeyWindow];
+            let main_window: bool = msg_send![self.window, isMainWindow];
+            let active_space: bool = msg_send![self.window, isOnActiveSpace];
+            let responder: id = msg_send![self.window, firstResponder];
+            let attached: id = msg_send![self.view, window];
+            (
+                number,
+                visible,
+                miniaturized,
+                eligible,
+                key,
+                main_window,
+                active_space,
+                responder == self.view,
+                attached == self.window,
+            )
+        };
+        Ok(format!(
+            // i18n: data
+            "pid={} running_pid={} bundle={bundle:?} app_policy={} running_policy={} app_running={} finished_launching={} app_active={} running_active={} app_hidden={} window_number={number} visible={visible} miniaturized={miniaturized} can_become_key={eligible} key={key} main={main_window} on_active_space={active_space} first_responder_is_target={responder} view_attached_to_target={attached}",
+            std::process::id(),
+            running.processIdentifier(),
+            app.activationPolicy().0,
+            running.activationPolicy().0,
+            app.isRunning(),
+            running.isFinishedLaunching(),
+            app.isActive(),
+            running.isActive(),
+            app.isHidden()
+        ))
+    }
+
     pub(crate) fn paste(&self) -> Result<()> {
         let characters = objc2_foundation::NSString::from_str("v");
         let characters = (&*characters as *const objc2_foundation::NSString)
@@ -99,6 +188,39 @@ impl Target {
             let handled: bool = msg_send![self.window, performKeyEquivalent: event];
             if !handled {
                 let _: () = msg_send![self.window, sendEvent: event];
+            }
+        }
+        Ok(())
+    }
+
+    pub(crate) fn press(&self, key: Key) -> Result<()> {
+        let (text, code, modifiers) = key.event();
+        let characters = objc2_foundation::NSString::from_str(text);
+        let characters = (&*characters as *const objc2_foundation::NSString)
+            .cast_mut()
+            .cast::<objc::runtime::Object>();
+        // There is no safe GPUI API for AppKit event injection. The safe
+        // dispatcher simulates GPUI input and skips this native translation.
+        // Retained objects stay on their acquiring main thread. Call outside
+        // App updates because key equivalents and responders reenter GPUI.
+        unsafe {
+            let number: isize = msg_send![self.window, windowNumber];
+            for kind in [10_usize, 11_usize] {
+                let event: id = msg_send![class!(NSEvent), keyEventWithType: kind
+                    location: NSPoint::new(0., 0.) modifierFlags: modifiers
+                    timestamp: 0_f64 windowNumber: number context: nil
+                    characters: characters charactersIgnoringModifiers: characters
+                    isARepeat: false keyCode: code];
+                if event == nil {
+                    bail!("cannot create native Settings key event");
+                }
+                let handled = kind == 10 && {
+                    let handled: bool = msg_send![self.window, performKeyEquivalent: event];
+                    handled
+                };
+                if !handled {
+                    let _: () = msg_send![self.window, sendEvent: event];
+                }
             }
         }
         Ok(())

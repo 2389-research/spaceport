@@ -1,3 +1,5 @@
+// ABOUTME: Encodes printable keys and releases for Core terminal programs.
+// ABOUTME: Preserves clipboard fallback pairing when paste preparation consumes a press.
 //! Keys a program asked for beyond typed text, under the kitty keyboard
 //! protocol: printable keys as key events when it wants every key, and
 //! releases when it wants those. By default typing stays text, which the
@@ -52,11 +54,24 @@ impl CoreTerminalView {
     /// Releases a key sent while the program asked for releases. A key
     /// whose press went elsewhere, or arrived as text, has nothing held.
     pub(super) fn key_up(&mut self, event: &KeyUpEvent, _: &mut Window, cx: &mut Context<Self>) {
+        let fallback = if self
+            .paste_release
+            .as_ref()
+            .is_some_and(|(key, _)| key == &event.keystroke.key)
+        {
+            self.paste_release.take().map(|(_, fallback)| fallback)
+        } else {
+            None
+        };
         let Some(release) = self.held_keys.release(&event.keystroke.key) else {
             return;
         };
         if self.screen.keys.releases && self.marked.is_empty() {
-            self.send(release);
+            if let Some(fallback) = fallback {
+                self.link.send_release(release, fallback);
+            } else {
+                self.send(release);
+            }
             cx.stop_propagation();
         }
     }

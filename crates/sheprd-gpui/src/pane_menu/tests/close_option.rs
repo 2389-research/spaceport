@@ -2,7 +2,6 @@ use super::*;
 
 /// Chooses Close from the pane menu of `pane`, for `endpoint::lifecycle_tests`,
 /// which owns the connected fixture.
-#[cfg(unix)]
 pub(crate) fn close_from_menu(
     view: &mut SheprdWindow,
     pane: &str,

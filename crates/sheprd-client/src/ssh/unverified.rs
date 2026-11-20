@@ -1,4 +1,5 @@
-//! SSH hosts the user chose to connect to without verifying their host keys.
+//! ABOUTME: Tracks SSH targets whose host keys the user explicitly skips.
+//! ABOUTME: Applies their trust and forwarding policy to every SSH command.
 //!
 //! The bridge's policy is `StrictHostKeyChecking=yes`, and options given on the
 //! command line beat the user's config. A generated SSH config may disable
@@ -41,6 +42,8 @@ impl HostKeys {
     /// Options placed before [`super::POLICY`], which they override. No known
     /// hosts file is read either: with checking off, a recorded key that no
     /// longer matches still connects but turns off agent and port forwarding.
+    /// Unknown keys do not trigger that protection, so explicitly disable
+    /// agent and X11 forwarding to hosts that could be impersonated.
     pub(crate) fn options(self) -> &'static [&'static str] {
         match self {
             Self::Verify => &[],
@@ -51,6 +54,10 @@ impl HostKeys {
                 "UserKnownHostsFile=/dev/null",
                 "-o",
                 "GlobalKnownHostsFile=/dev/null",
+                "-o",
+                "ForwardAgent=no",
+                "-o",
+                "ForwardX11=no",
             ],
         }
     }

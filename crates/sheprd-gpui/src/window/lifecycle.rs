@@ -40,16 +40,13 @@ impl SheprdWindow {
         self.last_input = Some(Instant::now());
     }
 
-    /// Records the pointer at `position` over the panes as use only when it
-    /// moved, and returns whether it did: platforms such as Windows report
-    /// move events for a cursor that did not move, and a resting cursor must
-    /// not keep an idle window in use.
+    /// Records pointer movement without claiming shared input ownership.
+    /// Platforms can report move events for a resting pointer.
     pub(crate) fn note_pointer(&mut self, position: Point<Pixels>) -> bool {
         if self.last_pointer == Some(position) {
             return false;
         }
         self.last_pointer = Some(position);
-        self.note_input();
         true
     }
 

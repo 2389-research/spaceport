@@ -1,3 +1,5 @@
+// ABOUTME: Checks bounded endpoint responses and daemon-owned error messages.
+// ABOUTME: Retains typed refusal codes and readable fallback diagnostics.
 use super::*;
 use serde_json::json;
 
@@ -91,7 +93,7 @@ fn a_refusal_without_text_still_displays() {
     let silent = result(&json!({"error": {}})).unwrap_err();
     assert_eq!(
         silent.to_string(),
-        "The daemon refused the request without saying why."
+        "Spaceport could not read Herdr's error explanation."
     );
     let spoken = result(&json!({"error": "busy"})).unwrap_err();
     assert_eq!(spoken.to_string(), "busy");

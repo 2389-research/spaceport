@@ -1,3 +1,5 @@
+// ABOUTME: Shares the device activity summary between live and captured picker content.
+// ABOUTME: Captures aggregate counts without device identities or observation ownership.
 //! The device picker's activity card: every device's agents over the last
 //! two hours and how many work and wait now, above the device list. The
 //! whole card opens the Devices overview, where the same history is drawn
@@ -12,17 +14,47 @@ use gpui::{prelude::*, *};
 use sheprd_client::protocol::AgentStatus;
 
 const SPARK_HEIGHT: f32 = 22.;
+
+pub(super) struct ActivityPaint {
+    tally: Tally,
+    totals: Vec<crate::devices_overview::history::Counts>,
+}
 /// About what the card takes above the list at the default font size,
 /// margins included: the list gives up this much in a window too short for
 /// both. Only a budget; the card sizes itself.
 pub(super) const ROOM: f32 = 100.;
 
 impl SheprdWindow {
+    pub(super) fn activity_card_paint(&self) -> ActivityPaint {
+        ActivityPaint {
+            tally: Tally::sum(&self.overview_devices()),
+            totals: self.devices_overview.history.totals(),
+        }
+    }
+
     pub(super) fn render_activity_card(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let paint = self.activity_card_paint();
+        self.activity_card_content(paint.tally, paint.totals, true, cx)
+    }
+
+    pub(super) fn render_activity_card_paint(
+        &self,
+        paint: &ActivityPaint,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
+        self.activity_card_content(paint.tally, paint.totals.clone(), false, cx)
+    }
+
+    fn activity_card_content(
+        &self,
+        tally: Tally,
+        totals: Vec<crate::devices_overview::history::Counts>,
+        active: bool,
+        cx: &mut Context<Self>,
+    ) -> Stateful<Div> {
         let look = self.overview_look(cx);
         let theme = look.theme;
         let small = px(self.config.ui.size * 0.85);
-        let tally = Tally::sum(&self.overview_devices());
         let count = |status: AgentStatus, text: String| {
             div()
                 .flex()
@@ -41,8 +73,10 @@ impl SheprdWindow {
             .border_1()
             .border_color(rgb(theme.active))
             .bg(rgb(theme.background))
-            .cursor_pointer()
-            .hover(|style| style.border_color(rgb(theme.muted)))
+            .when(active, |card| {
+                card.cursor_pointer()
+                    .hover(|style| style.border_color(rgb(theme.muted)))
+            })
             .flex()
             .flex_col()
             .gap(px(6.))
@@ -76,11 +110,7 @@ impl SheprdWindow {
                             ),
                     ),
             )
-            .child(sparkline(
-                &self.devices_overview.history,
-                &look,
-                SPARK_HEIGHT,
-            ))
+            .child(sparkline(totals, &look, SPARK_HEIGHT))
             .child(
                 div()
                     .flex()
@@ -98,8 +128,10 @@ impl SheprdWindow {
                         fl!("devices-activity-blocked", count = tally.blocked),
                     )),
             )
-            .on_click(cx.listener(|this, _, window, cx| {
-                this.open_devices_overview(window, cx);
-            }))
+            .when(active, |card| {
+                card.on_click(cx.listener(|this, _, window, cx| {
+                    this.open_devices_overview(window, cx);
+                }))
+            })
     }
 }

@@ -1,3 +1,5 @@
+// ABOUTME: Dispatches local control requests and observes bounded pending conditions.
+// ABOUTME: Resolves caller windows without crossing ambiguous or unshown sessions.
 //! The app's side of the control socket: requests are answered on the UI
 //! thread, a few at a time, from the windows and the app's globals. Most are
 //! answered at once; a request that waits for a condition is parked as a
@@ -175,12 +177,59 @@ pub(super) fn window_for(
         .ok_or_else(|| Response::error(ErrorCode::NoWindow, "Spaceport has no window open"))
 }
 
+/// Resolves a single caller session without the detached-window fallback.
+/// Tab actions and observations require a currently listed workspace.
+fn session_window(caller: &Caller, cx: &mut App) -> Result<WindowHandle<SheprdWindow>, Response> {
+    if caller.workspace_id.is_none() && caller.daemon_socket.is_none() {
+        return window_for(caller, cx);
+    }
+    if !valid_caller(caller) {
+        return Err(Response::error(
+            ErrorCode::InvalidRequest,
+            "Invalid workspace, pane, or daemon",
+        ));
+    }
+    let target = target(caller);
+    let windows = main_windows(cx);
+    for strict in target.strictness() {
+        let matching: Vec<_> = windows
+            .iter()
+            .copied()
+            .filter(|handle| {
+                caller
+                    .window
+                    .is_none_or(|id| handle.window_id().as_u64() == id)
+            })
+            .filter(|handle| {
+                handle
+                    .read_with(cx, |view, _| {
+                        view.control_target(&target, *strict).is_some()
+                    })
+                    .unwrap_or(false)
+            })
+            .collect();
+        match matching.as_slice() {
+            [handle] => return Ok(*handle),
+            [] => {}
+            _ => {
+                return Err(not_found(
+                    "Several windows show the caller's session; select one with --window",
+                ));
+            }
+        }
+    }
+    Err(Response::error(
+        ErrorCode::WorkspaceNotFound,
+        "No selected Spaceport window shows the caller's session",
+    ))
+}
+
 /// Answers `chat status` as the socket would, for tests that build chats
 /// with the chat module's own fixtures.
 #[cfg(test)]
 pub(crate) fn chat_status(cx: &mut App) -> Response {
     use super::protocol::{Call, chat::ChatOp};
-    chat::serve(
+    chat::immediate(
         Call {
             caller: Caller::default(),
             op: ChatOp::Status,
@@ -267,7 +316,7 @@ fn serve(incoming: socket::Incoming, state: &mut State, cx: &mut App) {
         Request::Settings(call) => settings::serve(call, incoming, &mut state.watches, cx),
         Request::Events(call) => events::serve(call, incoming, &mut state.watches, cx),
         Request::Link(call) => incoming.respond(links::serve(call, cx)),
-        Request::Chat(call) => incoming.respond(chat::serve(call, cx)),
+        Request::Chat(call) => chat::serve(call, incoming, &mut state.watches, cx),
     }
 }
 
@@ -282,11 +331,11 @@ pub(crate) fn install(cx: &mut App) {
         }
     };
     tracing::info!(path = %server.path().display(), "Control socket listening");
-    let path = server.path().to_owned();
+    let cleanup = server.cleanup();
     cx.on_app_quit(move |cx| {
-        let path = path.clone();
+        let cleanup = cleanup.clone();
         cx.background_executor()
-            .spawn(async move { socket::release(&path) })
+            .spawn(async move { cleanup.release() })
     })
     .detach();
     let timer = cx.background_executor().clone();

@@ -45,7 +45,12 @@ fn verify(handle: WindowHandle<SheprdWindow>, field: String, cx: &mut App) {
                 "search" => {
                     view.open_theme_picker(window, cx);
                     let picker = view.menu.themes.as_ref().context("search did not open")?;
-                    let focus = picker.search.read(cx).focus.clone();
+                    let focus = picker
+                        .search()
+                        .context("search field is absent")?
+                        .read(cx)
+                        .focus
+                        .clone();
                     anyhow::ensure!(focus.is_focused(window), "search lacks focus");
                     focus
                 }

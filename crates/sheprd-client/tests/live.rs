@@ -1,3 +1,5 @@
+// ABOUTME: Exercises endpoint contracts against an explicitly selected isolated Herdr TUI.
+// ABOUTME: Owns private daemon children and preserves unrelated sessions and files.
 //! Explicitly opt-in: never discovers or attaches to an existing daemon.
 //! The daemon under test is a POSIX process with a POSIX sandbox, so the whole
 //! harness compiles on Unix only.
@@ -27,6 +29,12 @@ const TIMEOUT: Duration = Duration::from_secs(20);
 
 #[path = "live/plugins.rs"]
 mod plugins;
+
+#[path = "live/shutdown.rs"]
+mod shutdown;
+
+#[path = "live/workspace_close.rs"]
+mod workspace_close;
 
 /// Verify the CLI contract used by the picker against an explicitly selected
 /// installation. Every command has the sandbox's cleared, private environment.

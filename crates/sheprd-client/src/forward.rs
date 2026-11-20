@@ -1,3 +1,5 @@
+// ABOUTME: Owns bounded local forwards for saved SSH hosts.
+// ABOUTME: Keeps each private master within its application's lifetime.
 //! Local forwards of a saved SSH host's listening ports. A worker thread owns
 //! one `ssh -N` master per forward, private to that forward, and asks it for
 //! the local listener with `ssh -O forward -L`. That request succeeds only once
@@ -11,10 +13,9 @@ use crate::{Error, Result, catalog::validate_target, ssh};
 use std::num::NonZeroU16;
 #[cfg(unix)]
 use std::{
-    io::Read as _,
     net::{Ipv4Addr, TcpListener},
     path::Path,
-    process::{Child, Command, Stdio},
+    process::{Command, Stdio},
     sync::{Arc, Mutex, MutexGuard, PoisonError, mpsc},
     thread,
     time::{Duration, Instant},
@@ -49,10 +50,7 @@ const READY_TIMEOUT: Duration = Duration::from_secs(30);
 const FORWARD_TIMEOUT: Duration = Duration::from_secs(10);
 #[cfg(unix)]
 const STARTING_POLL: Duration = Duration::from_millis(50);
-/// The bound on how long a listening forward waits without re-reading its
-/// master. The master's standard output closing is the fast path; this bounds
-/// the wait when no close is reported, such as a pipe a descendant of the
-/// master inherited and kept open.
+/// Bounds master-state detection while retaining exact owned-child cleanup.
 #[cfg(unix)]
 const LISTENING_POLL: Duration = Duration::from_millis(250);
 
@@ -62,7 +60,7 @@ const LISTENING_POLL: Duration = Duration::from_millis(250);
 #[derive(Default)]
 struct Slot {
     stopped: bool,
-    child: Option<Child>,
+    child: Option<ssh::owned_process::OwnedChild>,
 }
 
 #[cfg(unix)]
@@ -137,14 +135,14 @@ impl PortForward {
         matches!(master(&self.slot), Master::Running)
     }
 
-    /// Kills the master without waiting for it; the worker reaps it. Safe on
+    /// Stops the master without waiting for it; the worker reaps it. Safe on
     /// the UI thread and while quitting, when the worker may never run again.
     pub fn stop(&self) {
         let mut slot = lock(&self.slot);
         slot.stopped = true;
         if let Some(child) = &mut slot.child {
             // A child the worker already reaped is not signalled again.
-            let _ = child.kill();
+            child.stop();
         }
     }
 }
@@ -213,40 +211,14 @@ fn run(
     let dir = ControlDir::create("herdr-fwd").map_err(Error::ForwardControl)?;
     let socket = dir.socket();
     // Stderr can carry banners or secrets; nothing reads it.
-    let mut child = master_command(&socket)
-        .stdin(Stdio::null())
-        // Piped only to hear the master end: closing it is the one notification
-        // a child process gives this one. Nothing reads what it writes.
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(Error::ForwardSpawn)?;
-    let output = child.stdout.take();
+    let child = ssh::owned_process::OwnedChild::spawn(
+        master_command(&socket),
+        Some(dir.path()),
+        Stdio::null(),
+    )
+    .map_err(Error::ForwardSpawn)?;
     // A stop that came while spawning is seen by the first check below.
     lock(slot).child = Some(child);
-    let (wake, woken) = mpsc::channel();
-    if let Some(mut output) = output {
-        let wake = wake.clone();
-        thread::Builder::new()
-            .name("herdr-forward-exit".into())
-            .spawn(move || {
-                let mut scratch = [0; 64];
-                // Reads until true EOF. A signal-interrupted read is retried,
-                // not treated as the end: a wake sent early would be consumed
-                // while the master still runs, and the real exit would then
-                // have no reader left to report it.
-                loop {
-                    match output.read(&mut scratch) {
-                        Ok(0) => break,
-                        Ok(_) => {}
-                        Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
-                        Err(_) => break,
-                    }
-                }
-                let _ = wake.send(());
-            })
-            .map_err(Error::ForwardSpawn)?;
-    }
     let ended = supervise(
         slot,
         remote_port,
@@ -254,15 +226,10 @@ fn run(
         &socket,
         forward_command,
         events,
-        &woken,
     );
-    // Held until the wait is over, so a closed pipe is the only wake it can
-    // have and a disconnect never has to stand for one.
-    drop(wake);
     let child = lock(slot).child.take();
-    if let Some(mut child) = child {
-        let _ = child.kill();
-        let _ = child.wait();
+    if let Some(child) = child {
+        child.finish();
     }
     if let Some(error) = ended {
         let _ = events.try_send(ForwardEvent::Ended(error));
@@ -280,7 +247,6 @@ fn supervise(
     socket: &Path,
     forward_command: impl Fn(&Path, u16) -> Command,
     events: &mpsc::SyncSender<ForwardEvent>,
-    woken: &mpsc::Receiver<()>,
 ) -> Option<Error> {
     // The master opens its control socket only once it has authenticated.
     let deadline = Instant::now() + ready_timeout;
@@ -337,15 +303,10 @@ fn supervise(
     }
     loop {
         match master(slot) {
-            Master::Running => {}
+            Master::Running => thread::sleep(LISTENING_POLL),
             Master::Stopped => return None,
             Master::Ended(error) => return Some(error),
         }
-        // The master's standard output closing wakes this thread the moment it
-        // exits; the wait is also bounded so a close no wake reported (a pipe
-        // a descendant inherited, a lost notification) still ends the forward
-        // inside the caller's own horizon rather than a 30 s one.
-        let _ = woken.recv_timeout(LISTENING_POLL);
     }
 }
 
@@ -396,6 +357,8 @@ fn master_command(target: &str, socket: &Path) -> Command {
             "ControlMaster=yes",
             "-o",
             "ControlPersist=no",
+            "-o",
+            "ForkAfterAuthentication=no",
             "-o",
         ])
         .arg(control_path(socket))

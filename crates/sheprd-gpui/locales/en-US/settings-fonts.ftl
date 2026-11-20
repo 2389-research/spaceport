@@ -3,6 +3,7 @@
 
 settings-fonts-section-faces = Faces
 settings-fonts-use-one = Use one family for all…
+settings-fonts-family-action = { $role } font family: { $family }
 # The family `.SystemUIFont`, the platform's interface font.
 settings-fonts-system-font = System font
 settings-fonts-size = { $size } px

@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 //! The section list shows each section under its group, above a search box.
 use super::*;
 use gpui::{px, size};
@@ -12,7 +14,7 @@ fn navigation_lists_every_section_under_its_group(cx: &mut TestAppContext) {
     let main = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let weak = cx.update(|cx| main.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
     let (_view, cx) = cx.add_window_view(|window, cx| {
-        let view = SettingsWindow::new(weak, cx);
+        let view = fixture_new(weak, cx);
         window.focus(&view.focus, cx);
         view
     });

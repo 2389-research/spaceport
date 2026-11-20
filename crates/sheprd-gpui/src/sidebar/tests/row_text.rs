@@ -1,3 +1,5 @@
+// ABOUTME: Exercises workspace and agent row label composition.
+// ABOUTME: Preserves observable behavior while sharing indexed snapshot fixtures.
 use super::*;
 use crate::sidebar::row::first_text;
 
@@ -43,7 +45,12 @@ fn agent_rows_name_their_place_then_their_agent() {
         host: Option<&'a str>,
     ) -> (Vec<(&'a str, bool)>, &'a str) {
         let agent = &snapshot.agents[0];
-        agent_labels(agent_name(agent), agent_place(agent, snapshot), host, None)
+        agent_labels(
+            agent_name(agent),
+            agent_place(agent, &IndexedSnapshot::new(snapshot)),
+            host,
+            None,
+        )
     }
     assert_eq!(
         labels(&snapshot, None),

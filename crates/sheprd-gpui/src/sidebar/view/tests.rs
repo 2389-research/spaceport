@@ -1,7 +1,11 @@
+// ABOUTME: Verifies sidebar cache invalidation and presentation policies.
+// ABOUTME: Keeps full fixture state behind the sidebar's real child view.
 #![allow(clippy::unwrap_used)]
 
 use super::*;
 use crate::{herdr_settings::Settings, sidebar::layout_tests::fixture_window};
+
+mod accessibility;
 
 #[gpui::test]
 fn shared_indicator_reload_invalidates_cache_but_identical_props_do_not(

@@ -1,3 +1,5 @@
+// ABOUTME: Renders the chat plan, changed files, and detail visibility controls.
+// ABOUTME: Exposes each visible plan step with its text and current state.
 //! The rail beside the entries: the agent's plan and the files its tool
 //! calls changed. It hides on request and in panes too narrow for it, and
 //! the header then keeps the plan's progress at hand.
@@ -86,6 +88,10 @@ impl SheprdWindow {
             controls.push(
                 div()
                     .id("chat-rail-toggle")
+                    .map(|button| {
+                        super::accessibility::button(theme, fl!("chat-toggle-rail"), button)
+                    })
+                    .aria_expanded(shown)
                     .debug_selector(|| "chat-rail-toggle".into())
                     .flex_none()
                     .flex()
@@ -152,6 +158,9 @@ impl SheprdWindow {
                 .filter(|step| step.status == PlanStatus::Completed)
                 .count();
             div()
+                .id("chat-accessible-plan")
+                .role(Role::List)
+                .aria_label(fl!("chat-rail-plan"))
                 .debug_selector(|| "chat-plan".into())
                 .flex()
                 .flex_col()
@@ -160,13 +169,14 @@ impl SheprdWindow {
                     fl!("chat-rail-plan"),
                     format!("{done}/{}", plan.len()),
                 ))
-                .children(plan.iter().take(ROWS).map(|step| {
+                .children(plan.iter().take(ROWS).enumerate().map(|(index, step)| {
                     let (icon, color) = match step.status {
                         PlanStatus::Completed => ("icons/status-solid-done.svg", hues.green),
                         PlanStatus::InProgress => ("icons/status-solid-working.svg", hues.yellow),
                         PlanStatus::Pending => ("icons/status-outline-idle.svg", theme.muted),
                     };
                     div()
+                        .map(|row| super::accessibility::plan_step(index, step, row))
                         .flex()
                         .gap(px(6.))
                         .text_size(small)

@@ -173,7 +173,7 @@ impl SettingsWindow {
             .find(|(cached, _)| cached == choice);
         let thumbnail = div()
             .debug_selector(move || format!("settings-theme-thumbnail-{index}"))
-            .h(px(26.))
+            .h(rems(1.625))
             .flex_none()
             .w_full()
             .rounded(px(3.))
@@ -196,7 +196,7 @@ impl SettingsWindow {
             _ => thumbnail
                 .bg(rgb(self.theme.surface))
                 .text_color(rgb(self.theme.subtext()))
-                .text_size(px(10.))
+                .text_size(rems(0.625))
                 .child(if palette.is_some() {
                     fl!("settings-theme-thumbnail-unavailable")
                 } else {

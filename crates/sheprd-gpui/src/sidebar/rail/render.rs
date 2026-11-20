@@ -1,3 +1,5 @@
+// ABOUTME: Paints compact rail lists through per-concern measurement and row helpers.
+// ABOUTME: Uses prepared snapshot indexes for agent placement without copying records.
 //! Drawing the collapsed sidebar's rail: what it measured, its spaces and
 //! agents lists, and the frame around them.
 
@@ -14,6 +16,7 @@ use crate::sidebar::{
     agents::{Indicators, agent_place},
     layout::{self, SidebarLook},
     line_height,
+    snapshot_index::IndexedSnapshot,
     workspaces::workspace_label,
 };
 use crate::{Command, NavigationTarget, SheprdWindow, config::FontConfig, fonts::StyledFont};
@@ -353,11 +356,11 @@ impl SheprdWindow {
             }
             let selected = index == self.selected_endpoint;
             let live = self.live_of(index);
-            let Some(snapshot) = live.snapshot.as_deref() else {
+            let Some(snapshot) = live.indexed_snapshot() else {
                 continue;
             };
             agents = agents
-                .child(self.rail_agent_row(measured, agent, endpoint, snapshot, selected, cx));
+                .child(self.rail_agent_row(measured, agent, endpoint, &snapshot, selected, cx));
         }
         agents
     }
@@ -368,7 +371,7 @@ impl SheprdWindow {
         measured: &RailMeasure<'_>,
         agent: &ClientShellAgent,
         endpoint: &crate::endpoint::Endpoint,
-        snapshot: &sheprd_client::protocol::ClientShellSnapshot,
+        snapshot: &IndexedSnapshot<'_>,
         selected: bool,
         cx: &Context<Self>,
     ) -> Stateful<Div> {

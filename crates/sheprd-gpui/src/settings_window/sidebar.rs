@@ -478,7 +478,7 @@ impl SettingsWindow {
             .and_then(|(_, color, _)| color)
             .map(|color| format!("{color:06x}"))
             .unwrap_or_default();
-        let input = cx.new(SearchInput::new);
+        let input = cx.new(ui::text_input);
         input.update(cx, |input, cx| {
             input.set_text_selected(&current, cx);
             input.set_appearance(self.config.terminal.clone(), self.theme.clone(), cx);

@@ -11,13 +11,13 @@ settings-theme-system = System
 settings-theme-mode-hint = Light, dark, or follow the system. Pick a theme below to change it.
 # $light and $dark are theme names.
 settings-theme-side-hint = Which side of the pair the themes below change. Light: { $light } · Dark: { $dark }
-# Shown for the theme value that uses Herdr's own theme.
-settings-theme-follow-herdr = Follow Herdr
+# Shown for the theme value that follows the private base view theme.
+settings-theme-follow-herdr = Follow view theme
 settings-theme-library-all = All
 settings-theme-library-ghostty = Ghostty
-settings-theme-library-herdr = Herdr
-settings-theme-library-read-only = Herdr's themes are read-only on this platform.
-settings-theme-read-only = Herdr's themes are read-only on this platform. Choose This app or Follow Herdr instead.
+settings-theme-library-herdr = Spaceport view
+settings-theme-library-read-only = Spaceport view themes are read-only on this platform.
+settings-theme-read-only = Spaceport view themes are read-only on this platform. Choose This app or Follow view theme instead.
 settings-theme-open-file = Open theme file
 settings-theme-search-placeholder = Search themes...
 settings-theme-count =
@@ -34,7 +34,7 @@ settings-theme-empty = No matching themes. Try a shorter search.
 
 ## Where a theme card's theme comes from, and whether it is drafted or saved.
 
-settings-theme-kind-herdr = Herdr
+settings-theme-kind-herdr = Spaceport view
 settings-theme-kind-built-in = Built-in
 settings-theme-kind-file = File
 settings-theme-kind-ghostty = Ghostty

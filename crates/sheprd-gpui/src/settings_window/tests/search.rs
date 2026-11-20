@@ -10,12 +10,13 @@ fn catalog_search_matches_title_description_and_page() {
     let hits = catalog::search("indent");
     assert_eq!(hits.len(), 1);
     assert_eq!(catalog::CATALOG[hits[0]].id, "sidebar-indent");
-    assert!(catalog::search("TOAST").iter().all(|i| {
-        matches!(
-            catalog::CATALOG[*i].section,
-            Section::Notifications | Section::General
-        )
-    }));
+    let toasts = catalog::search("TOAST");
+    assert_eq!(toasts, catalog::search("toast"));
+    assert!(
+        toasts
+            .iter()
+            .any(|i| catalog::CATALOG[*i].section == Section::Notifications)
+    );
     assert!(
         catalog::search("tabs")
             .iter()

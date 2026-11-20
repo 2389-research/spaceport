@@ -1,6 +1,10 @@
 use super::*;
 use std::{fs, os::unix::fs::PermissionsExt};
 
+// APFS rejects invalid UTF-8 filenames before an executable can be created.
+#[cfg(target_os = "linux")]
+mod program_path;
+
 const WAIT: Duration = Duration::from_secs(10);
 
 /// A test's files: the fake `ssh`, its dial log, and the masters' pid files.

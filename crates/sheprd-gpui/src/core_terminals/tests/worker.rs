@@ -1,3 +1,5 @@
+// ABOUTME: Exercises terminal workers through bounded scripted backend contracts.
+// ABOUTME: Shares actual input and surface consumers across queue regression topics.
 //! The worker runs any `sheprd_backend::Backend`; a scripted one stands in
 //! for herdr-core here.
 
@@ -9,6 +11,9 @@ use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
+
+mod backpressure;
+mod prepared;
 
 #[derive(Debug, thiserror::Error)]
 #[error("scripted failure")]
@@ -86,6 +91,19 @@ fn until<T>(mut ready: impl FnMut() -> Option<T>) -> T {
 
 fn size(cols: u16, rows: u16) -> Size {
     Size::new(cols, rows).unwrap()
+}
+
+pub(crate) fn recording_link() -> (worker::Link, Arc<Mutex<Vec<Command>>>) {
+    let backend = Scripted::default();
+    let received = backend.received.clone();
+    let link = worker::spawn(
+        backend,
+        TerminalId::new("view-clipboard").unwrap(),
+        size(80, 24),
+        Role::Active,
+    )
+    .unwrap();
+    (link, received)
 }
 
 #[test]

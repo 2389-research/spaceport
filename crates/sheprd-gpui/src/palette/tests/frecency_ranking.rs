@@ -1,3 +1,5 @@
+// ABOUTME: Exercises palette frecency ranking across prepared destination rows.
+// ABOUTME: Preserves observable behavior while sharing indexed snapshot fixtures.
 use super::frecency::Key;
 use super::*;
 
@@ -66,7 +68,12 @@ fn only_the_flat_project_list_sorts_by_frecency_without_a_query() {
 fn go_to_rows_are_remembered_by_durable_or_boot_scoped_keys() {
     let snapshot = go_to_fixture();
     let mut entries = Vec::new();
-    go_to_entries(crate::endpoint::LOCAL, None, &snapshot, &mut entries);
+    go_to_entries(
+        crate::endpoint::LOCAL,
+        None,
+        &crate::sidebar::IndexedSnapshot::new(&snapshot),
+        &mut entries,
+    );
     let key = |target: NavigationTarget<String>| {
         entries
             .iter()

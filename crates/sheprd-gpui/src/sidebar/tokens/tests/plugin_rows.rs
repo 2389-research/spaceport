@@ -1,3 +1,5 @@
+// ABOUTME: Exercises agent-specific plugin rows and token values.
+// ABOUTME: Preserves observable behavior while sharing indexed snapshot fixtures.
 //! Rows a project-grouping plugin writes into Herdr's config: a one-line
 //! card whose name turns bold when the daemon's label carries the plugin's
 //! invisible group-head mark, and a dimmed detail line from a custom token
@@ -26,7 +28,13 @@ fn invisible_marks_in_daemon_labels_drive_rules_and_withdrawn_tokens_drop_rows()
     let agent = &mut snapshot.agents[0];
     agent.display_agent = Some(format!("alpha{HEAD}"));
     agent.tokens = vec![("group_sub".into(), "review \u{b7} report".into())];
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(
+        &layout,
+        &snapshot.agents[0],
+        &IndexedSnapshot::new(&snapshot),
+        None,
+    )
+    .unwrap();
     assert_eq!(texts(&rows)[1], ["review \u{b7} report"]);
     assert!(bold(&rows[0][1]), "a group head is bold");
     assert_eq!(rows[1][0].style.dim, Some(true));
@@ -36,7 +44,13 @@ fn invisible_marks_in_daemon_labels_drive_rules_and_withdrawn_tokens_drop_rows()
     let agent = &mut snapshot.agents[0];
     agent.display_agent = Some("alpha".into());
     agent.tokens.clear();
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(
+        &layout,
+        &snapshot.agents[0],
+        &IndexedSnapshot::new(&snapshot),
+        None,
+    )
+    .unwrap();
     assert_eq!(rows.len(), 1);
     assert!(!bold(&rows[0][1]));
 }

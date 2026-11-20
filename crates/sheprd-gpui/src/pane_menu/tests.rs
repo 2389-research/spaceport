@@ -1,3 +1,5 @@
+// ABOUTME: Exercises pane targeting, input isolation, and accepted action correlation.
+// ABOUTME: Shares synthetic endpoint fixtures across focused pane menu topics.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use core::prelude::v1::test;
@@ -5,6 +7,7 @@ use sheprd_client::ClientEvent;
 use std::sync::Arc;
 
 pub(crate) mod close_option;
+pub(super) mod departure;
 mod en_xa;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 mod excluded_carry;
@@ -490,6 +493,10 @@ fn pane_rename_correlates_responses_and_preserves_other_dialogs(cx: &mut TestApp
                         request_id: Some(outcome.into()),
                         reason: sheprd_client::Error::UnsupportedMethod,
                     });
+                    assert!(matches!(
+                        v.live.pane_rename.as_ref().unwrap().result.as_ref(),
+                        Some(Err(error)) if matches!(error.as_ref(), crate::Error::Client(sheprd_client::Error::UnsupportedMethod))
+                    ));
                 } else {
                     v.live.apply(ClientEvent::Response {
                         request_id: outcome.into(),
@@ -512,16 +519,12 @@ fn pane_rename_correlates_responses_and_preserves_other_dialogs(cx: &mut TestApp
                 } else {
                     let pane = v.menu.pane.as_ref().unwrap();
                     assert!(pane.pending.is_none());
-                    assert!(
-                        pane.error
-                            .as_ref()
-                            .unwrap()
-                            .contains(if outcome == "rejected" {
-                                "does not offer that request"
-                            } else {
-                                "Invalid label"
-                            })
-                    );
+                    let expected = if outcome == "rejected" {
+                        fl!("error-client-unsupported-method")
+                    } else {
+                        "Invalid label".into()
+                    };
+                    assert!(pane.error.as_ref().unwrap().contains(&expected));
                 }
             }
             assert!(matches!(&v.live.dialog_response, Some((id, Some(Ok(_)))) if id == "removal"));

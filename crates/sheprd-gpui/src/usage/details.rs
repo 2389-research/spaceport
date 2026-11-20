@@ -1,3 +1,5 @@
+// ABOUTME: Draws concrete provider details beside the shared usage report fields.
+// ABOUTME: Shares detail templates between current observations and captured departure data.
 //! The panel body of a provider's report: the shared fields, then whatever
 //! detail the provider attached, found by its type. A provider attaches
 //! detail in `herdr-usage`; drawing it lives here, beside the rest of the
@@ -13,11 +15,22 @@ use gpui::{AnyElement, Div, div, prelude::*, px};
 use sheprd_usage::details::{ClaudeAccount, ClaudeAccountStatus, OpenaiDaily};
 
 pub(super) fn render(report: &Report, ui: &Ui) -> AnyElement {
+    render_known(
+        report,
+        report.detail::<OpenaiDaily>(),
+        report.detail::<Vec<ClaudeAccount>>().map(Vec::as_slice),
+        ui,
+    )
+}
+
+pub(super) fn render_known(
+    report: &Report,
+    daily: Option<&OpenaiDaily>,
+    accounts: Option<&[ClaudeAccount]>,
+    ui: &Ui,
+) -> AnyElement {
     let standard = ui.standard(report);
-    if let Some(daily) = report
-        .detail::<OpenaiDaily>()
-        .filter(|daily| !daily.days.is_empty())
-    {
+    if let Some(daily) = daily.filter(|daily| !daily.days.is_empty()) {
         return div()
             .flex()
             .flex_col()
@@ -26,10 +39,7 @@ pub(super) fn render(report: &Report, ui: &Ui) -> AnyElement {
             .child(daily_spend(daily, ui))
             .into_any_element();
     }
-    if let Some(others) = report
-        .detail::<Vec<ClaudeAccount>>()
-        .filter(|others| !others.is_empty())
-    {
+    if let Some(others) = accounts.filter(|others| !others.is_empty()) {
         return div()
             .flex()
             .flex_col()

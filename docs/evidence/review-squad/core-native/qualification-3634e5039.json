@@ -1,0 +1,32 @@
+{
+  "source": "3634e503949e3e1eb133a7b8d090ba4c32eee1cb",
+  "run": 44671802770,
+  "job": 136074462029,
+  "url": "https://github.com/2389-research/spaceport/actions/runs/44671802770/job/136074462029",
+  "job_conclusion": "failure",
+  "cases": [
+    {
+      "name": "native_core_observing_pane_exposes_fresh_text_caret_and_change_events",
+      "result": "passed",
+      "scope": "Fresh native text, caret-line geometry, native text-change event, exact mirrored terminal identity, observer removal, owned cleanup",
+      "receipt_utc": "2026-11-20T04:16:35.8892199Z"
+    },
+    {
+      "name": "native_core_text_caret_bounds_and_output_changes_match_the_real_runtime",
+      "result": "passed",
+      "receipt_utc": "2026-11-20T04:16:41.0349311Z",
+      "scope": "Native authored text, exact independent runtime marker, changed-output event, unselected caret-line geometry, observer removal and owned cleanup"
+    },
+    {
+      "name": "native_core_prefix_resize_moves_and_restores_bounds_without_ending_either_terminal",
+      "result": "passed",
+      "scope": "Native prefix input, Left and Right movement/restoration, fixed pane/window edges, exact runtime marker, both stable terminal addresses, key release and owned cleanup",
+      "receipt_utc": "2026-11-20T04:16:47.3163126Z"
+    }
+  ],
+  "limits": [
+    "All three Core cases pass on this source; the ordinary case failure on b94978e3b remains undiagnosed. Diagnostics alone are not a claimed root-cause fix.",
+    "The job separately fails the ordinary chat helper deadline and a keyboard-profile format guard before mutation.",
+    "These Windows cases do not qualify macOS Cmd-W, audible speech, non-US input, or a foreground working-session release profile."
+  ]
+}

@@ -1,3 +1,5 @@
+// ABOUTME: Paints native windows from prepared and bounded presentation state.
+// ABOUTME: Mounts the shared raw shortcut scope around window content.
 //! Painting the window from prepared state. Render reads bounded caches and
 //! the latest projection only: it never queries the daemon, touches disk, or
 //! starts a process.
@@ -23,14 +25,14 @@ mod cells;
 impl SheprdWindow {
     /// Config warnings, then the daemon's announcement, stacked over the
     /// top-right of the terminal area below the tab strip, whose buttons stay
-    /// reachable. A menu page owns the window's attention, and zen mode keeps
-    /// the window clear; they wait behind either.
+    /// reachable. Operation failures remain visible when the status bar is hidden.
     fn render_notices(&self, cx: &mut Context<Self>) -> Option<AnyElement> {
-        if !self.notices_allowed() {
-            return None;
+        let mut cards = Vec::new();
+        if self.notices_allowed() {
+            cards.extend(self.config_diagnostic_cards(cx));
+            cards.extend(self.announcement_card(cx));
         }
-        let mut cards = self.config_diagnostic_cards(cx);
-        cards.extend(self.announcement_card(cx));
+        cards.extend(self.operation_warning_card(cx));
         if cards.is_empty() {
             return None;
         }
@@ -82,14 +84,16 @@ impl SheprdWindow {
     /// Whether [`Self::render_notices`] draws a card, so the keyboard can
     /// reach the cards as a region of their own.
     pub(super) fn notices_shown(&self) -> bool {
-        self.notices_allowed()
-            && (self.gui_config_diagnostic.visible().is_some()
-                || self.icon_font_notice.visible().is_some()
-                || self
-                    .endpoints
-                    .get(self.selected_endpoint)
-                    .is_some_and(|endpoint| endpoint.config_diagnostic.visible().is_some())
-                || self.live.product_announcement().is_some())
+        (self.menu.page.is_none() && !self.endpoints.is_empty() && self.reconnecting())
+            || self.operation_warning_shown()
+            || self.notices_allowed()
+                && (self.gui_config_diagnostic.visible().is_some()
+                    || self.icon_font_notice.visible().is_some()
+                    || self
+                        .endpoints
+                        .get(self.selected_endpoint)
+                        .is_some_and(|endpoint| endpoint.config_diagnostic.visible().is_some())
+                    || self.live.product_announcement().is_some())
     }
 }
 
@@ -100,9 +104,20 @@ impl Render for SheprdWindow {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.tick_frame(window, cx);
         let (paint, areas) = self.prepare_frame(window, cx);
-        let terminal = self.terminal_area(paint, window, cx);
+        let over_terminal = self.activity_section().is_none()
+            && areas
+                .terminal_slot
+                .is_some_and(|slot| self.active_group().is_none_or(|group| group == slot.id))
+            && self.core_fallback_view().is_none();
+        let flash = self.render_flash(over_terminal, cx);
+        let (terminal_flash, window_flash) = if over_terminal {
+            (flash, None)
+        } else {
+            (None, flash)
+        };
+        let terminal = self.terminal_area(paint, terminal_flash, window, cx);
         let body = self.render_body(areas, terminal, window, cx);
-        self.render_root(body, window, cx)
+        self.render_root(body, window_flash, window, cx)
     }
 }
 
@@ -110,6 +125,7 @@ impl SheprdWindow {
     /// Everything that moves on its own this frame: focus that left a view,
     /// chrome that slides, and the themes and glyphs that follow it.
     fn tick_frame(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.resume_hidden_feedback();
         self.restore_menu_focus(window, cx);
         self.leave_vanished_region(window, cx);
         self.sync_backdrop(window, cx);
@@ -228,7 +244,20 @@ impl SheprdWindow {
             let signal = self.surface_signal.clone();
             window.on_next_frame(move |_, cx| signal.update(cx, |_, cx| cx.notify()));
         }
-        let regions = self.terminal_regions(surface.as_ref(), &highlights, slide, &look, cx);
+        #[cfg(all(windows, feature = "integration-test"))]
+        let native_slide = super::native_images::enabled()
+            .then(|| slide.clone())
+            .flatten();
+        let (regions, main_images) =
+            self.terminal_regions(window_frame.as_ref(), &highlights, slide, &look, cx);
+        #[cfg(all(windows, feature = "integration-test"))]
+        super::native_images::observe(
+            self,
+            window_frame.as_ref(),
+            native_slide.as_ref(),
+            window,
+            cx,
+        );
         // Without regions the canvas paints the whole grid, images included.
         let whole = regions.is_empty();
         // The IME composition paints inline at the input cursor; a menu's
@@ -265,6 +294,7 @@ impl SheprdWindow {
             images,
             link_rows,
             link_shift,
+            main_images,
             marked,
             menu_open,
             metrics,
@@ -312,7 +342,11 @@ impl SheprdWindow {
             .sidebar_column_width(f32::from(window.viewport_size().width))
             .map(|width| {
                 (
-                    crate::sidebar::cached_view(&self.sidebar_view, width),
+                    crate::sidebar::view_element(
+                        &self.sidebar_view,
+                        width,
+                        window.is_a11y_active(),
+                    ),
                     width,
                 )
             });
@@ -372,6 +406,7 @@ impl SheprdWindow {
     fn terminal_area(
         &mut self,
         paint: Paint,
+        terminal_flash: Option<Div>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
@@ -484,7 +519,7 @@ impl SheprdWindow {
             // the cells sits in the same box, inside the terminal's padding.
             // A frame the daemon has not resized yet may be larger than the
             // box, so the box clips it and the padding stays clear.
-            .child(self.terminal_cells(paint, window, cx))
+            .child(self.terminal_cells(paint, terminal_flash, window, cx))
     }
 
     /// The terminal, every group's body behind it, and the content they make.
@@ -598,6 +633,7 @@ impl SheprdWindow {
     fn render_root(
         &mut self,
         body: Body,
+        window_flash: Option<Div>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
@@ -608,7 +644,14 @@ impl SheprdWindow {
         // Zen mode keeps toasts and menus: they carry errors and what the
         // user asked for, not chrome.
         let zen = self.zen_layout();
-        let root = div()
+        let root = Self::shortcut_scope(cx)
+            .child(
+                div()
+                    .id("chrome-entry-focus")
+                    .absolute()
+                    .size(px(0.))
+                    .track_focus(&self.chrome_entry_focus),
+            )
             .capture_key_down(cx.listener(Self::application_menu_shortcut))
             .capture_key_down(cx.listener(Self::chrome_focus_key))
             .on_modifiers_changed(cx.listener(Self::double_shift_modifiers))
@@ -640,7 +683,7 @@ impl SheprdWindow {
                 .size_full()
             });
         let root = self.root_events(root, cx);
-        let root = self.root_body(root, body, zen, window, cx);
+        let root = self.root_body(root, body, zen, window_flash, window, cx);
         crate::titlebar::frame(window, self.theme.active, root)
     }
 
@@ -718,6 +761,7 @@ impl SheprdWindow {
         root: Div,
         body: Body,
         zen: bool,
+        window_flash: Option<Div>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Div {
@@ -761,6 +805,7 @@ impl SheprdWindow {
                         .min_h_0()
                         .relative()
                         .child(content)
+                        .children(window_flash)
                         .children(self.render_notices(cx))
                         .children(self.zen_status_bar(cx)),
                 ),
@@ -819,6 +864,7 @@ struct Paint {
     images: Option<Arc<sheprd_client::SurfaceImages>>,
     link_rows: Vec<(u16, std::ops::Range<u16>)>,
     link_shift: Option<(Bounds<Pixels>, Pixels)>,
+    main_images: bool,
     marked: Option<(String, Option<Arc<PaneSurfaceFrame>>, Pixels)>,
     menu_open: bool,
     metrics: CellMetrics,

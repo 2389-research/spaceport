@@ -3,6 +3,9 @@
 use super::*;
 use std::io::{BufRead, BufReader, Read};
 
+mod polling;
+mod unix_ownership;
+
 /// The agent exits at once on TERM, but leaves a tool behind that ignores
 /// it; stopping the chat must still end the tool.
 #[test]
@@ -73,10 +76,8 @@ fn the_agent_gets_the_environment_it_was_started_with() {
     assert_eq!(seen, "1");
 }
 
-/// The waiter thread reaps the agent as soon as it exits, but a tool the
-/// agent started may keep the group alive. Stopping the handle after that
-/// still cleans the group up: the group id was captured at spawn, so the
-/// group the agent owned — not the reaped pid — is what gets signalled.
+/// The waiter observes the agent's exit while its owner reserves the leader.
+/// A surviving tool remains in that owned group until stop finishes cleanup.
 ///
 /// The test reads the tool's death from a FIFO's EOF instead of asserting
 /// on a pid that a recycle could impersonate. The tool inherits an ignored
@@ -102,7 +103,7 @@ fn stopping_after_the_agent_exited_still_cleans_up_a_surviving_tool() {
         dir.path(),
     )
     .unwrap();
-    // Reap the agent, as the waiter thread does when it exits.
+    // Observe the exit without releasing the leader's native identity.
     let status = spawned.process.wait().unwrap();
     assert!(status.success());
     // Blocks until the tool opens its end: the tool is up, holding the

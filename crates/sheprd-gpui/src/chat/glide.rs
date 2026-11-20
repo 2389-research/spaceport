@@ -272,7 +272,7 @@ impl Glide {
         }
         let top = -f32::from(list.scroll_px_offset_for_scrollbar().y);
         let end = top + behind(list);
-        if !smooth {
+        if !smooth || crate::accessibility::policy::reduce_motion() {
             self.last_step = None;
             self.speed = 0.;
             // At the end before this frame's layout, which then lays out

@@ -1,6 +1,9 @@
+// ABOUTME: Exercises runtime socket discovery and configuration path precedence.
+// ABOUTME: Uses explicit environment values instead of personal runtime state.
 use super::*;
 
 mod login_config_home;
+mod runtime_config;
 // Non-UTF-8 configuration roots only exist on POSIX; Windows paths are UTF-16.
 #[cfg(unix)]
 #[test]

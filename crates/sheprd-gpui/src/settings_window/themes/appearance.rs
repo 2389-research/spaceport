@@ -7,7 +7,7 @@ use crate::{
     i18n::fl,
     settings_window::ui,
 };
-use gpui::{Context, Div, ScrollStrategy, Window, div, prelude::*, px, rgb, uniform_list};
+use gpui::{Context, Div, ScrollStrategy, Window, div, prelude::*, px, rems, rgb, uniform_list};
 
 impl SettingsWindow {
     pub(in crate::settings_window) fn render_theme_search(&self, cx: &mut Context<Self>) -> Div {
@@ -46,7 +46,7 @@ impl SettingsWindow {
             .child(
                 div()
                     .debug_selector(|| "settings-theme-count".into())
-                    .text_size(px(11.))
+                    .text_size(rems(0.6875))
                     .text_color(rgb(theme.subtext()))
                     .child(if browser.discovering {
                         fl!(
@@ -101,7 +101,7 @@ impl SettingsWindow {
                                 cx.processor(|this, range: std::ops::Range<usize>, _, cx| {
                                     this.schedule_grid_palettes(range.clone(), cx);
                                     range
-                                        .map(|row| div().h(px(ROW_HEIGHT)).w_full().row().gap(px(6.)).children((0..this.themes.grid.columns).map(|column| {
+                                        .map(|row| div().h(rems(ROW_HEIGHT / 16.)).w_full().row().gap(px(6.)).children((0..this.themes.grid.columns).map(|column| {
                                             let index = row * this.themes.grid.columns + column;
                                             if index >= this.themes.filtered.len() {
                                                 return div().flex_1().min_w_0().into_any_element();
@@ -154,7 +154,7 @@ impl SettingsWindow {
                                                 .debug_selector(move || {
                                                     format!("settings-theme-row-{index}")
                                                 })
-                                                .h(px(76.))
+                                                .h(rems(4.75))
                                                 .flex_1()
                                                 .min_w_0()
                                                 .overflow_hidden()
@@ -189,7 +189,7 @@ impl SettingsWindow {
                                                         .debug_selector(move || {
                                                             format!("settings-theme-source-{index}")
                                                         })
-                                                        .text_size(px(10.))
+                                                        .text_size(rems(0.625))
                                                         .text_color(rgb(this.theme.subtext()))
                                                         .truncate()
                                                         .child(if draft { fl!("settings-theme-card-draft", source = source) } else if saved { fl!("settings-theme-card-saved", source = source) } else { source }),

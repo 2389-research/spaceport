@@ -1,0 +1,27 @@
+{
+  "source": "23cab5b4bb90932f19265feb80c0427ec5308d33",
+  "run": 44652883114,
+  "job": 136012085170,
+  "url": "https://github.com/2389-research/spaceport/actions/runs/44652883114/job/136012085170",
+  "observed_at": "2026-11-20T01:35:06.6666572Z",
+  "platform": "Windows x64",
+  "fixture_release": "Herdr Core 0.1.21",
+  "test": "core::native_core_text_caret_bounds_and_output_changes_match_the_real_runtime",
+  "result": "passed",
+  "receipt": "CORE_NATIVE text=true native_text_changed=true caret_line_bounds=true exact_runtime_output=true observer_removed=true",
+  "qualified": [
+    "actual app tab matches the runtime terminal address",
+    "native Terminal text contains the authored output line",
+    "native TextChanged event is delivered",
+    "unselected caret and contained caret-line bounds are exposed",
+    "independent observe-only runtime stream contains the native typed marker",
+    "event observer is removed and exact private runtime cleanup succeeds"
+  ],
+  "remaining": [
+    "observing-pane native accessibility",
+    "Core pane close and held macOS Cmd-W",
+    "Core resize and restoration",
+    "audible screen-reader announcements",
+    "selected-tab backdrop contrast"
+  ]
+}

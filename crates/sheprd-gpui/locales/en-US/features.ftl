@@ -1,7 +1,7 @@
 # The optional `[features]` flags, as Settings > General lists them.
 
 features-acp-chats = ACP chats
-features-acp-chats-description = Show sheprd-acp chats as native chat views and offer new chats with the agents installed on the host. Off, chat panes keep their terminal and nothing looks for sheprd-acp or agents.
+features-acp-chats-description = Show native chat views and offer new chats with agents installed on the device. When off, chat panes stay terminals and Spaceport does not look for chat helpers or agents.
 features-qa-menu = QA menu
 features-qa-menu-description = Add a QA menu for checking the app by hand: sample toasts and dialogs, update progress, sounds, a test notification, the badge, and slowed animations.
 features-sidebar-hover-menu = Open space menus on hover

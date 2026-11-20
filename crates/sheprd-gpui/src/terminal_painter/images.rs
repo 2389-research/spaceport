@@ -1,3 +1,5 @@
+// ABOUTME: Resolves terminal image targets and decodes bounded untrusted image assets.
+// ABOUTME: Owns texture caching and placement geometry for main and popup frames.
 //! Images a pane places through Herdr's graphics scene.
 //!
 //! The worker hands over each image's encoded bytes once; this module turns
@@ -49,7 +51,7 @@ pub(crate) enum ImageTarget<'a> {
 }
 
 impl ImageTarget<'_> {
-    fn places(self, source: &SurfaceGraphicsSource) -> bool {
+    pub(crate) fn places(self, source: &SurfaceGraphicsSource) -> bool {
         match (self, source) {
             (
                 Self::Main,
@@ -79,6 +81,14 @@ pub(crate) struct PlacedImages<'a> {
     pub(crate) target: ImageTarget<'a>,
 }
 
+/// Placement metadata drawn from one source band into a clipped destination.
+pub(crate) struct ImageRegion<'a> {
+    pub(crate) placements: &'a [SurfaceGraphicsPlacement],
+    pub(crate) origin: gpui::Point<Pixels>,
+    pub(crate) grid: Bounds<Pixels>,
+    pub(crate) clip: Bounds<Pixels>,
+}
+
 impl<'a> PlacedImages<'a> {
     fn resolved(self) -> impl Iterator<Item = (&'a SurfaceGraphicsPlacement, &'a SurfaceImage)> {
         self.placements
@@ -94,6 +104,7 @@ impl<'a> PlacedImages<'a> {
 pub(crate) struct ImageGeometry {
     pub(crate) visible: Bounds<Pixels>,
     pub(crate) image: Bounds<Pixels>,
+    pub(crate) mask: Bounds<Pixels>,
 }
 
 /// Maps a placement onto the grid at `origin`, as Herdr's own client does:
@@ -144,7 +155,11 @@ pub(crate) fn geometry(
             px(key.image_height as f32 * scale_y),
         ),
     );
-    Some(ImageGeometry { visible, image })
+    Some(ImageGeometry {
+        visible,
+        image,
+        mask: grid,
+    })
 }
 
 /// Decodes `data` into the BGRA texture GPUI uploads, scaled to fit
@@ -359,17 +374,60 @@ impl ImageCache {
         window: &mut Window,
         cx: &mut App,
     ) -> Vec<(i32, ImageGeometry, Arc<RenderImage>)> {
+        self.prepare_regions(
+            images.images,
+            images.target,
+            [ImageRegion {
+                placements: images.placements,
+                origin,
+                grid,
+                clip: grid,
+            }],
+            cell,
+            window,
+            cx,
+        )
+    }
+
+    pub(crate) fn prepare_regions<'a>(
+        &mut self,
+        images: &SurfaceImages,
+        target: ImageTarget<'_>,
+        regions: impl IntoIterator<Item = ImageRegion<'a>>,
+        cell: (f32, f32),
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Vec<(i32, ImageGeometry, Arc<RenderImage>)> {
         self.release_idle(window);
+        #[cfg(test)]
+        super::image_probe::prepare(target, self.tick);
         let now = Instant::now();
         let mut placed = Vec::new();
-        for (placement, image) in images.resolved() {
-            let Some(geometry) = geometry(placement, origin, cell, grid) else {
+        for region in regions {
+            if region.clip.size.width <= Pixels::ZERO || region.clip.size.height <= Pixels::ZERO {
                 continue;
-            };
-            match self.lookup(image.serial(), now) {
-                Lookup::Ready(texture) => placed.push((placement.z, geometry, texture)),
-                Lookup::Decode => self.spawn(image, &placement.asset, window, cx),
-                Lookup::Wait => {}
+            }
+            for (placement, image) in (PlacedImages {
+                placements: region.placements,
+                images,
+                target,
+            })
+            .resolved()
+            {
+                let Some(mut geometry) = geometry(placement, region.origin, cell, region.grid)
+                else {
+                    continue;
+                };
+                geometry.mask = region.clip;
+                let clipped = geometry.visible.intersect(&geometry.mask);
+                if clipped.size.width <= Pixels::ZERO || clipped.size.height <= Pixels::ZERO {
+                    continue;
+                }
+                match self.lookup(image.serial(), now) {
+                    Lookup::Ready(texture) => placed.push((placement.z, geometry, texture)),
+                    Lookup::Decode => self.spawn(image, &placement.asset, window, cx),
+                    Lookup::Wait => {}
+                }
             }
         }
         // Lower z paints first; equal z keeps the scene's order.

@@ -35,10 +35,11 @@ only a re-export of `sheprd_client::text::safe_text`; it now names that directly
 so the crate depends on `sheprd-client` and the app keeps one implementation. The
 direction is UI → client, which `sheprd-gpui` already had.
 
-`sheprd-reorder`'s `SLIDE` still reads `cfg!(test)`, so a test build of the new
-crate settles rows at once while the app keeps its 150 ms slide. That is the same
-distinction the app had before the move, now decided in the crate that owns the
-duration.
+`sheprd-reorder` keeps a fixed 150 ms slide duration for normal consumers.
+GPUI's motion policy alone selects instant settling under `cfg(test)`.
+This preserves headless layout tests while native test binaries retain real motion.
+The temporary dependency feature also affected `CARGO_BIN_EXE_spaceport` through Cargo feature unification.
+The integration removes that feature and covers midpoint progression from a normal dependency consumer.
 
 ## Gates
 

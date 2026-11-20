@@ -1,0 +1,32 @@
+{
+  "source": "b94978e3bb323e7fa9d70934b63401f841bb8dd2",
+  "run": 44669528487,
+  "job": 136067096933,
+  "url": "https://github.com/2389-research/spaceport/actions/runs/44669528487/job/136067096933",
+  "job_conclusion": "failure",
+  "cases": [
+    {
+      "name": "native_core_observing_pane_exposes_fresh_text_caret_and_change_events",
+      "result": "passed",
+      "completed_utc": "2026-11-20T03:54:37.0770343Z",
+      "scope": "Fresh native text, caret-line geometry, native text-change event, exact mirrored terminal identity, observer removal, owned cleanup"
+    },
+    {
+      "name": "native_core_text_caret_bounds_and_output_changes_match_the_real_runtime",
+      "result": "failed",
+      "completed_utc": "2026-11-20T03:54:46.3810452Z",
+      "failure": "Native terminal text or changed-output event is missing",
+      "limitation": "This combined error does not identify whether input, rendered output, or the native event is absent. No root cause is established."
+    },
+    {
+      "name": "native_core_prefix_resize_moves_and_restores_bounds_without_ending_either_terminal",
+      "result": "passed",
+      "completed_utc": "2026-11-20T03:54:51.5451792Z",
+      "scope": "Native prefix input, Left and Right movement/restoration, fixed pane/window edges, exact runtime marker, both stable terminal addresses, key release and owned cleanup"
+    }
+  ],
+  "limits": [
+    "This is not an overall successful native job or current-head CI result.",
+    "These Windows cases do not qualify macOS Cmd-W, audible speech, non-US input, or a foreground working-session release profile."
+  ]
+}

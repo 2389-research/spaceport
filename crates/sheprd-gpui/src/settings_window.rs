@@ -5,9 +5,14 @@
 mod catalog;
 mod controls;
 mod inputs;
+mod keyboard;
 #[cfg(windows)]
 mod launch_at_login;
 mod layouts;
+#[cfg(all(windows, feature = "integration-test"))]
+mod native_keyboard;
+#[cfg(any(test, all(windows, feature = "integration-test")))]
+mod native_png;
 mod navigation;
 mod pages;
 pub(crate) use layouts::{apply_loaded_layout, layout_load_revision};
@@ -17,11 +22,13 @@ mod native;
 pub(crate) use native::branding::capture as capture_branding;
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
 pub(crate) use native::core_opt_in::verify as verify_core_opt_in;
+mod host_history;
 mod persistence;
-mod remote_history;
 mod scrollbar;
 mod search;
 mod section;
+#[cfg(all(feature = "integration-test", target_os = "linux"))]
+pub(crate) mod shortcut_fixture;
 use section::{Group, Section};
 mod sidebar;
 #[cfg(test)]
@@ -35,7 +42,8 @@ mod ui;
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
 pub(crate) use native::verify_native;
 pub(crate) use themes::{
-    apply_loaded_theme, apply_theme_draft, theme_load_revision, theme_pending,
+    apply_loaded_theme, apply_theme_draft, theme_appearance_pending, theme_load_revision,
+    theme_pending,
 };
 
 use crate::direction::Logical;
@@ -71,6 +79,17 @@ struct SettingsWindowHandle {
     model: Option<WeakEntity<SettingsWindow>>,
 }
 impl Global for SettingsWindowHandle {}
+
+pub(crate) fn refresh_system_contrast(cx: &mut App) -> bool {
+    let model = cx
+        .try_global::<SettingsWindowHandle>()
+        .and_then(|handle| handle.model.clone());
+    model.is_some_and(|model| {
+        model
+            .update(cx, |view, cx| view.refresh_system_contrast(cx))
+            .is_ok()
+    })
+}
 
 pub(crate) fn open(source: WeakEntity<SheprdWindow>, cx: &mut App) {
     cx.defer(move |cx| {
@@ -144,7 +163,11 @@ fn open_with(
             model
         },
     ) {
-        Ok(handle) => cx.default_global::<SettingsWindowHandle>().window = Some(handle),
+        Ok(handle) => {
+            cx.default_global::<SettingsWindowHandle>().window = Some(handle);
+            #[cfg(all(windows, feature = "integration-test"))]
+            native_keyboard::observe(handle, cx);
+        }
         Err(_) => tracing::error!("Unable to open Settings window"),
     }
 }
@@ -215,7 +238,7 @@ struct SettingsWindow {
     sidebar_intent: Option<SidebarIntent>,
     #[cfg(test)]
     layout_io: Option<layouts::LayoutIo>,
-    remote_history: remote_history::RemoteHistory,
+    host_history: host_history::HostHistory,
     theme_loading: bool,
     theme_waiting: bool,
     theme_light: bool,
@@ -262,7 +285,7 @@ impl SettingsWindow {
                 }
             }
         });
-        let nav_search = cx.new(crate::search_input::SearchInput::new);
+        let nav_search = cx.new(ui::text_input);
         nav_search.update(cx, |input, cx| {
             input.set_placeholder_with(|| fl!("settings-search-placeholder"), cx)
         });
@@ -320,7 +343,7 @@ impl SettingsWindow {
             sidebar_intent: None,
             #[cfg(test)]
             layout_io: None,
-            remote_history: Default::default(),
+            host_history: Default::default(),
             theme_loading: false,
             theme_waiting: false,
             theme_light: false,
@@ -368,8 +391,8 @@ impl SettingsWindow {
         if self.section == Section::Integrations {
             cx.notify();
         }
-        if matches!(self.section, Section::General | Section::Tabs) {
-            self.sync_remote_history(false, cx);
+        if self.section == Section::Tabs {
+            self.sync_host_history(false, cx);
         }
     }
 
@@ -395,8 +418,8 @@ impl SettingsWindow {
         if self.section == Section::Integrations {
             owner.update(cx, |source, cx| source.load_integrations(cx));
         }
-        if matches!(self.section, Section::General | Section::Tabs) {
-            self.sync_remote_history(false, cx);
+        if self.section == Section::Tabs {
+            self.sync_host_history(false, cx);
         }
         cx.notify();
     }
@@ -609,8 +632,8 @@ impl SettingsWindow {
                 .source
                 .update(cx, |source, cx| source.load_integrations(cx));
         }
-        if matches!(section, Section::General | Section::Tabs) {
-            self.sync_remote_history(false, cx);
+        if section == Section::Tabs {
+            self.sync_host_history(false, cx);
         }
         cx.notify();
     }
@@ -618,6 +641,9 @@ impl SettingsWindow {
 
 impl Render for SettingsWindow {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // Settings owns this window's rem basis. Keep the default geometry,
+        // and let both chrome text and relative spacing follow the UI font.
+        window.set_rem_size(px(16. * self.config.ui.size / 12.));
         self.caption.sync(window, &self.theme);
         let searching = self.search_results.clone();
         let heading = if searching.is_some() {
@@ -634,7 +660,7 @@ impl Render for SettingsWindow {
             },
         };
         self.viewport_width = f32::from(window.viewport_size().width);
-        let navigation = self.navigation(cx);
+        let navigation = self.navigation(window, cx);
         let font_picker = self.render_control_font_picker(window, cx);
         let this = cx.entity().downgrade();
         let header = crate::titlebar::header(&self.theme, window, move |window, cx| {
@@ -643,6 +669,7 @@ impl Render for SettingsWindow {
         let theme = &self.theme;
         let root = div()
             .key_context("SettingsWindow")
+            .tab_group()
             .relative()
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::settings_key))
@@ -672,8 +699,8 @@ impl Render for SettingsWindow {
             .flex_col()
             .overflow_hidden()
             .text_font(&self.config.ui)
-            .text_size(px(12.))
-            .line_height(px(18.))
+            .text_size(rems(0.75))
+            .line_height(rems(1.125))
             .bg(rgb(theme.background))
             .text_color(rgb(theme.foreground))
             .text_start()
@@ -695,8 +722,8 @@ impl Render for SettingsWindow {
                             .p(px(28.))
                             .child(
                                 div()
-                                    .text_size(px(18.))
-                                    .line_height(px(26.))
+                                    .text_size(rems(1.125))
+                                    .line_height(rems(1.625))
                                     .font_weight(FontWeight::SEMIBOLD)
                                     .child(heading),
                             )
@@ -705,7 +732,7 @@ impl Render for SettingsWindow {
                                 |header, lead| {
                                     header.mt(px(2.)).child(
                                         div()
-                                            .text_size(px(12.))
+                                            .text_size(rems(0.75))
                                             .text_color(rgb(theme.subtext()))
                                             .child(lead),
                                     )

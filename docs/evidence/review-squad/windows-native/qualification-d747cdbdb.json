@@ -1,0 +1,85 @@
+{
+  "source": "d747cdbdb82e48e6f4efb14866416f789a118b8f",
+  "run_id": 44680270572,
+  "job_id": 136101908188,
+  "job_url": "https://github.com/2389-research/spaceport/actions/runs/44680270572/job/136101908188",
+  "platform": "windows-2025 x64",
+  "job_result": "success",
+  "ci": {
+    "run_id": 44680270572,
+    "result": "success",
+    "successful_jobs": 18,
+    "skipped_unconfigured_jobs": 1,
+    "reported_updated_utc": "2026-11-20T05:44:45Z"
+  },
+  "supply_chain": {
+    "run_id": 44680270699,
+    "result": "success",
+    "successful_jobs": 3
+  },
+  "gui": {"passed": 8, "failed": 0},
+  "pipe_owner": {"passed": 1, "failed": 0},
+  "ordinary_uia": {"passed": 25, "failed": 0, "filtered_out": 10},
+  "chat": {
+    "receipt_utc": "2026-11-20T05:29:45.5347398Z",
+    "result": "named content and controls, Tab, Enter, Space, queued answers and preserved draft",
+    "test_ok_utc": "2026-11-20T05:29:45.5747031Z"
+  },
+  "non_us": {
+    "receipt_utc": "2026-11-20T05:33:38.3439532Z",
+    "klid": "00000415",
+    "translated_text": ["U+0142", "U+0143"],
+    "workspace_dialog_opened": false,
+    "keys_released": true,
+    "layouts_restored": true,
+    "intentional_failure_cleanup": true,
+    "stable_runtime_ids": true,
+    "test_ok_utc": "2026-11-20T05:33:38.4001578Z"
+  },
+  "core": {
+    "observing": {
+      "receipt_utc": "2026-11-20T05:33:44.7752444Z",
+      "text": true,
+      "native_text_changed": true,
+      "caret_line_bounds": true,
+      "same_terminal": true,
+      "observer_removed": true,
+      "test_ok_utc": "2026-11-20T05:33:44.8954590Z"
+    },
+    "ordinary": {
+      "receipt_utc": "2026-11-20T05:33:50.7224808Z",
+      "text": true,
+      "native_text_changed": true,
+      "caret_line_bounds": true,
+      "exact_runtime_output": true,
+      "observer_removed": true,
+      "test_ok_utc": "2026-11-20T05:33:50.8488613Z"
+    },
+    "resize": {
+      "receipt_utc": "2026-11-20T05:33:58.4153432Z",
+      "native": true,
+      "prefix": true,
+      "left": true,
+      "right": true,
+      "restored": true,
+      "runtime_marker": true,
+      "stable_terminal_ids": true,
+      "keys_released": true,
+      "fixed_window_edges": true,
+      "fixed_outer_pane_edges": true,
+      "divider_gap_preserved": true,
+      "test_ok_utc": "2026-11-20T05:33:58.5523426Z",
+      "assertions_and_deadlines": "unchanged; numeric failure diagnostics only"
+    },
+    "passed": 3,
+    "failed": 0
+  },
+  "release_performance_step": "skipped",
+  "qualification_limits": [
+    "One actual Windows Polish layout; Linux/GNOME remains unqualified",
+    "No Mac foreground Cmd-W or audible screen-reader qualification",
+    "No foreground working-session release profile",
+    "Earlier intermittent ordinary Core failure still has no established cause",
+    "These results qualify this exact source and owned native fixtures, not every runtime or layout"
+  ]
+}

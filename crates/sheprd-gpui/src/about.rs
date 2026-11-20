@@ -1,3 +1,5 @@
+// ABOUTME: Presents embedded build identity and upstream attribution in the About dialog.
+// ABOUTME: Shares active and departing content without keeping link actions alive.
 //! Classic macOS-style About box: build identity and attribution. It reads embedded
 //! constants, never the daemon or the network; links open in the browser.
 // i18n: migrated
@@ -36,6 +38,10 @@ impl SheprdWindow {
     }
 
     pub(super) fn render_about(&self, cx: &mut Context<Self>) -> Div {
+        self.render_about_mode(true, cx)
+    }
+
+    pub(crate) fn render_about_mode(&self, active: bool, cx: &mut Context<Self>) -> Div {
         let font = &self.config.ui;
         let theme = &self.theme;
         let muted = rgb(theme.muted);
@@ -85,6 +91,7 @@ impl SheprdWindow {
                     name = crate::constants::WINDOW_TITLE
                 )),
                 REPOSITORY,
+                active,
             ))
             .child(
                 div()
@@ -116,7 +123,7 @@ impl SheprdWindow {
                         sheprd = SHEPRD_NAME
                     )),
             )
-            .children(self.render_about_build(theme))
+            .children(self.render_about_build(theme, active))
             .child(
                 div()
                     .flex()
@@ -127,11 +134,13 @@ impl SheprdWindow {
                         "about-website",
                         fl!("about-upstream-team", name = HERDR_NAME),
                         WEBSITE,
+                        active,
                     ))
                     .child(self.about_link(
                         "about-upstream-repository",
                         fl!("about-upstream-team", name = SHEPRD_NAME),
                         UPSTREAM_REPOSITORY,
+                        active,
                     )),
             )
             .child(
@@ -170,11 +179,12 @@ impl SheprdWindow {
                             .flex_wrap()
                             .justify_center()
                             .gap(px(8.))
-                            .child(self.about_link("about-license", LICENSE, LICENSE_URL))
+                            .child(self.about_link("about-license", LICENSE, LICENSE_URL, active))
                             .child(self.about_link(
                                 "about-notices",
                                 label_text(&fl!("about-notices")),
                                 format!("{REPOSITORY}/blob/main/NOTICE"),
+                                active,
                             )),
                     ),
             )
@@ -189,17 +199,20 @@ impl SheprdWindow {
                     .border_1()
                     .border_color(rgb(theme.active))
                     .bg(rgb(theme.active))
-                    .cursor_pointer()
                     .child(fl!("about-ok"))
-                    .on_click(cx.listener(|this, _, window, cx| {
-                        cx.stop_propagation();
-                        this.dismiss_menu(window, cx);
-                    })),
+                    .when(active, |button| {
+                        button
+                            .cursor_pointer()
+                            .on_click(cx.listener(|this, _, window, cx| {
+                                cx.stop_propagation();
+                                this.dismiss_menu(window, cx);
+                            }))
+                    }),
             )
     }
 
     /// Worktree builds are throwaway; name the branch that produced this one.
-    fn render_about_build(&self, theme: &crate::config::Theme) -> Option<Div> {
+    fn render_about_build(&self, theme: &crate::config::Theme, active: bool) -> Option<Div> {
         (env!("HERDR_BUILD_WORKTREE") == "1").then(|| {
             let pr = env!("HERDR_BUILD_PR");
             div()
@@ -223,6 +236,7 @@ impl SheprdWindow {
                         "about-pr",
                         fl!("about-pull-request", number = pr),
                         crate::worktree_banner::pull_request_url(pr),
+                        active,
                     ))
                 })
         })
@@ -233,6 +247,7 @@ impl SheprdWindow {
         id: &'static str,
         label: impl IntoElement,
         url: impl Into<String>,
+        active: bool,
     ) -> Stateful<Div> {
         let url = url.into();
         div()
@@ -241,15 +256,17 @@ impl SheprdWindow {
             .flex_none()
             .flex()
             .items_center()
-            .cursor_pointer()
             .text_color(crate::menu::accent(&self.theme))
             .border_b_1()
             .border_color(transparent_black())
-            .hover(|style| style.border_color(crate::menu::accent(&self.theme)))
             .child(label)
-            .on_click(move |_, _, cx| {
-                cx.stop_propagation();
-                cx.open_url(&url);
+            .when(active, |link| {
+                link.cursor_pointer()
+                    .hover(|style| style.border_color(crate::menu::accent(&self.theme)))
+                    .on_click(move |_, _, cx| {
+                        cx.stop_propagation();
+                        cx.open_url(&url);
+                    })
             })
     }
 }

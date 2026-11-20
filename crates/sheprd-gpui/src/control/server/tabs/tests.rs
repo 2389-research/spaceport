@@ -12,6 +12,7 @@ use std::{path::Path, sync::Arc};
 
 mod core_flag;
 mod saved_tabs;
+mod session_targets;
 mod windows;
 
 #[test]

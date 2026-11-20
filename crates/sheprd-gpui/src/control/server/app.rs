@@ -276,10 +276,16 @@ pub(super) fn window(call: Call<WindowOp>, cx: &mut App) -> Response {
             Response::done(format!("Resized to {}x{}", asked.width, asked.height))
         }),
         WindowOp::Detach => in_free_window(caller, cx, |view, window, cx| {
+            if let Err(response) = require_legacy_window(view) {
+                return response;
+            }
             view.command(Command::Detach, window, cx);
             Response::done("Detached from the selected host; it keeps running")
         }),
         WindowOp::Reconnect => in_free_window(caller, cx, |view, window, cx| {
+            if let Err(response) = require_legacy_window(view) {
+                return response;
+            }
             view.command(Command::Reconnect, window, cx);
             Response::done("Reconnecting to the selected host")
         }),
@@ -372,6 +378,7 @@ pub(super) fn command(call: Call<CommandOp>, cx: &mut App) -> Response {
         return update_error(error);
     }
     match info.command {
+        Command::CloseWorkspace => workspace_close(&call.caller, cx),
         Command::CheckForUpdates => in_free_window(&call.caller, cx, |_, _, cx| {
             match crate::updates::check(cx) {
                 Ok(()) => Response::done("Opened Check for Updates"),
@@ -387,10 +394,82 @@ pub(super) fn command(call: Call<CommandOp>, cx: &mut App) -> Response {
             cx,
         ),
         command => in_free_window(&call.caller, cx, |view, window, cx| {
+            if matches!(command, Command::Detach | Command::Reconnect)
+                && let Err(response) = require_legacy_window(view)
+            {
+                return response;
+            }
             view.command(command, window, cx);
             Response::done(format!("Ran {}", crate::i18n::command_english(info)))
         }),
     }
+}
+
+fn require_legacy_window(view: &SheprdWindow) -> Result<(), Response> {
+    if view.endpoints.get(view.selected_endpoint).is_some() {
+        Ok(())
+    } else {
+        Err(Response::error(
+            ErrorCode::Unsupported,
+            crate::i18n::fl!("window-notices-needs-herdr-tui"),
+        ))
+    }
+}
+
+/// Opens consent for the caller's exact visible Herdr TUI workspace.
+fn workspace_close(caller: &Caller, cx: &mut App) -> Response {
+    let handle = match super::session_window(caller, cx) {
+        Ok(handle) => handle,
+        Err(response) => return response,
+    };
+    handle
+        .update(cx, |view, window, cx| {
+            if view.selected_core_group().is_some() {
+                return Response::error(
+                    ErrorCode::Unsupported,
+                    crate::i18n::fl!("close-modal-workspace-unavailable"),
+                );
+            }
+            if view.menu.page.is_some() {
+                return Response::error(
+                    ErrorCode::WindowBusy,
+                    "A dialog is open in the window; close it first",
+                );
+            }
+            let target = super::target(caller);
+            let Some((_, workspace)) = target
+                .strictness()
+                .iter()
+                .find_map(|strict| view.control_target(&target, *strict))
+                .filter(|(endpoint, _)| *endpoint == view.selected_endpoint)
+            else {
+                return Response::error(
+                    ErrorCode::WorkspaceNotFound,
+                    "The selected host does not show the caller's workspace",
+                );
+            };
+            if caller.pane_id.as_ref().is_some_and(|pane| {
+                view.live.snapshot.as_ref().is_none_or(|snapshot| {
+                    !snapshot.panes.iter().any(|candidate| {
+                        candidate.pane_id == *pane && candidate.workspace_id == workspace
+                    })
+                })
+            }) {
+                return Response::error(
+                    ErrorCode::WorkspaceNotFound,
+                    "The caller's pane is no longer in this workspace",
+                );
+            }
+            if view.open_workspace_close(&workspace, window, cx) {
+                Response::done("Opened workspace close confirmation")
+            } else {
+                Response::error(
+                    ErrorCode::Failed,
+                    "The workspace is not connected; no close confirmation opened",
+                )
+            }
+        })
+        .unwrap_or_else(|_| Response::error(ErrorCode::NoWindow, "The window closed"))
 }
 
 fn update_error(error: crate::updates::Error) -> Response {

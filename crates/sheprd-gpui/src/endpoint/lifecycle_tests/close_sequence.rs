@@ -29,6 +29,8 @@ fn close_sequence_waits_for_the_previous_closes_ack_and_surface(cx: &mut gpui::T
                     window,
                     cx,
                 );
+                assert_eq!(view.menu.page, Some(crate::menu::Page::ConfirmClose));
+                view.send_close(window, cx);
                 assert!(view.menu.page.is_none());
                 assert!(!view.input_ready());
             });
@@ -94,7 +96,15 @@ fn close_sequence_waits_for_the_previous_closes_ack_and_surface(cx: &mut gpui::T
                             view.live.surface.is_some()
                         }
                     });
-                    view.advance_close_run(window, cx);
+                    if index == 1 {
+                        // Force the worker contention production can encounter on this tick.
+                        let inbox = view.endpoints[0].connection.inbox.clone();
+                        let _busy = inbox.lock().unwrap();
+                        view.advance_close_run(window, cx);
+                        assert!(view.input_ready(), "a busy tick must defer the next close");
+                    } else {
+                        view.advance_close_run(window, cx);
+                    }
                     assert!(view.menu.page.is_none(), "no stale-connection dialog");
                     assert!(view.browser.closing.is_some());
                     if index == 0 {
@@ -109,6 +119,16 @@ fn close_sequence_waits_for_the_previous_closes_ack_and_surface(cx: &mut gpui::T
         // Release the worker's in-flight barrier too: the model above drove
         // its acknowledgement independently to test both arrival orders.
         server.respond(&barrier);
+        cx.update(|window, cx| {
+            view.update(cx, |view, cx| {
+                poll_until(view, cx, |view, cx| {
+                    view.advance_close_run(window, cx);
+                    assert!(view.menu.page.is_none(), "no stale-connection dialog");
+                    assert!(view.browser.closing.is_some());
+                    !view.input_ready()
+                });
+            });
+        });
         let ClientMessage::ClientShellEndpointRequest { request, .. } = server.receive() else {
             panic!("missing automatic second close");
         };

@@ -21,3 +21,20 @@ fn windows_pipe_name_is_independent_of_upstream() {
         windows_pipe_name("S-1-5-21-1", Some(Path::new("c:/STATE/a/")))
     );
 }
+
+#[test]
+fn development_pipes_are_scoped_without_changing_preview_defaults() {
+    let root = Path::new("state");
+    let preview = root.join("spaceport");
+    let development = root.join("spaceport-development-debug");
+    assert_eq!(windows_state_scope(&preview, false), None);
+    assert_eq!(windows_state_scope(&preview, true), Some(preview.as_path()));
+    assert_eq!(
+        windows_state_scope(&development, false),
+        Some(development.as_path())
+    );
+    assert_ne!(
+        windows_pipe_name("S-1-5-21-1", windows_state_scope(&preview, false)),
+        windows_pipe_name("S-1-5-21-1", windows_state_scope(&development, false)),
+    );
+}

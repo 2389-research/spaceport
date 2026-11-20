@@ -1,3 +1,5 @@
+// ABOUTME: Tracks bounded per-host listening ports and their explicit tunnel actions.
+// ABOUTME: Shares prepared port data between sidebar, status, and contextual menus.
 //! TCP ports each workspace's processes listen on, for the sidebar and the
 //! status bar, where clicking one opens it in a browser tab.
 //!
@@ -11,6 +13,7 @@
 mod error;
 mod render;
 mod scan;
+mod shared;
 pub(crate) mod tunnel;
 
 pub(crate) use error::Error;
@@ -23,7 +26,8 @@ use crate::{
     usage::{Host, Shell},
     worker_stop::Stop,
 };
-pub(crate) use render::{chips, close_button};
+use gpui::App;
+pub(crate) use render::{chips, close_button, close_glyph};
 #[cfg(test)]
 pub(crate) use scan::{Bind, Owner};
 pub(crate) use scan::{Link, Origin, Port, Ports, parse};
@@ -31,6 +35,7 @@ use sheprd_client::ConnectTarget;
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
+    rc::Rc,
     sync::{Arc, mpsc},
     thread,
     time::{Duration, Instant},
@@ -181,18 +186,7 @@ fn spawn(host: Host) -> Option<Worker> {
 fn run(host: &Host, stop: &Stop, results: &mpsc::SyncSender<Result<Ports>>) {
     let mut shell: Option<Shell> = None;
     loop {
-        let opened = match shell.take() {
-            Some(shell) => Ok(shell),
-            None => open(host),
-        };
-        let result = opened.and_then(|mut opened| {
-            let ports = scan(&mut opened);
-            // A failed step leaves the shell unusable; a missing tool does not.
-            if !matches!(ports, Err(crate::Error::ListeningPorts(Error::Scan(_)))) {
-                shell = Some(opened);
-            }
-            ports
-        });
+        let result = next_scan(&mut shell, || open(host));
         let due = Instant::now() + if result.is_ok() { INTERVAL } else { RETRY };
         match results.try_send(result) {
             // The UI is behind; it will take the next one.
@@ -205,10 +199,25 @@ fn run(host: &Host, stop: &Stop, results: &mpsc::SyncSender<Result<Ports>>) {
     }
 }
 
+fn next_scan(shell: &mut Option<Shell>, open: impl FnOnce() -> Result<Shell>) -> Result<Ports> {
+    let opened = match shell.take() {
+        Some(shell) => Ok(shell),
+        None => open(),
+    };
+    opened.and_then(|mut opened| {
+        let ports = scan(&mut opened);
+        // A failed step leaves the shell unusable; a missing tool does not.
+        if !matches!(ports, Err(crate::Error::ListeningPorts(Error::Scan(_)))) {
+            *shell = Some(opened);
+        }
+        ports
+    })
+}
+
 /// One host's latest scan.
-#[derive(Default)]
+#[derive(Clone, Default)]
 struct Reading {
-    ports: Ports,
+    ports: Arc<Ports>,
     /// Where the host's ports open, which follows from the host alone.
     origin: Origin,
     /// Why the latest scan failed, as last logged; the last good ports stay
@@ -222,10 +231,10 @@ impl Reading {
         match result {
             Ok(ports) => {
                 self.error = None;
-                if ports == self.ports {
+                if ports == *self.ports {
                     return false;
                 }
-                self.ports = ports;
+                self.ports = Arc::new(ports);
                 true
             }
             Err(error) => {
@@ -244,9 +253,9 @@ impl Reading {
 
 #[derive(Default)]
 struct Monitor {
-    /// None once its thread could not start or has ended.
-    worker: Option<Worker>,
-    reading: Reading,
+    /// Releasing the final window lease stops this host's worker.
+    source: Option<Rc<shared::Scan>>,
+    reading: Arc<Reading>,
 }
 
 /// One workspace's ports and where a browser finds them.
@@ -297,14 +306,14 @@ impl ListeningPorts {
     pub(crate) fn seed(&mut self, host: Host, ports: Ports) {
         let reading = Reading {
             origin: Origin::new(&host),
-            ports,
+            ports: Arc::new(ports),
             error: None,
         };
         self.monitors.insert(
             host,
             Monitor {
-                worker: None,
-                reading,
+                source: None,
+                reading: Arc::new(reading),
             },
         );
     }
@@ -312,7 +321,16 @@ impl ListeningPorts {
     /// Scans exactly `hosts` (at most [`HOST_LIMIT`]): starts workers for new
     /// ones, stops and forgets the rest, and takes finished scans. Returns
     /// whether anything shown changed.
-    pub fn poll(&mut self, hosts: impl IntoIterator<Item = Host>) -> bool {
+    pub fn poll(&mut self, hosts: impl IntoIterator<Item = Host>, cx: &mut App) -> bool {
+        self.poll_shared(hosts, cx.default_global::<shared::Scans>())
+    }
+
+    fn poll_shared(
+        &mut self,
+        hosts: impl IntoIterator<Item = Host>,
+        scans: &mut shared::Scans,
+    ) -> bool {
+        scans.prune();
         let mut wanted: Vec<Host> = Vec::new();
         for host in hosts {
             if wanted.len() == HOST_LIMIT {
@@ -333,20 +351,19 @@ impl ListeningPorts {
             self.monitors
                 .entry(host)
                 .or_insert_with_key(|host| Monitor {
-                    worker: spawn(host.clone()),
-                    reading: Reading {
+                    source: scans.lease(host),
+                    reading: Arc::new(Reading {
                         origin: Origin::new(host),
                         ..Reading::default()
-                    },
+                    }),
                 });
         }
         for monitor in self.monitors.values_mut() {
-            while let Some(worker) = &monitor.worker {
-                match worker.results.try_recv() {
-                    Ok(result) => changed |= monitor.reading.apply(result),
-                    Err(mpsc::TryRecvError::Empty) => break,
-                    Err(mpsc::TryRecvError::Disconnected) => monitor.worker = None,
-                }
+            if let Some(source) = &monitor.source {
+                let reading = source.poll();
+                changed |= !Arc::ptr_eq(&monitor.reading.ports, &reading.ports)
+                    && (!monitor.reading.ports.is_empty() || !reading.ports.is_empty());
+                monitor.reading = reading;
             }
         }
         changed

@@ -7,6 +7,7 @@ use super::Localize;
 use sheprd_i18n::{Locale, Pseudo};
 use std::fmt::Display;
 
+mod activation_guidance;
 mod backdrop;
 mod caffeine;
 mod chat;

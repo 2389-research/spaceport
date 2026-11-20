@@ -12,7 +12,7 @@ fn keyboard_close_writes_final_draft_once_and_browsing_never_reloads_config(
     let reloads = Arc::new(AtomicUsize::new(0));
     let (view, cx) = cx.add_window_view(|window, cx| {
         cx.bind_keys(key_bindings());
-        let mut view = SettingsWindow::new(weak, cx);
+        let mut view = fixture_new(weak, cx);
         let mut io = recording_themes(writes.clone(), false);
         let load = io.load.clone();
         let reloads = reloads.clone();

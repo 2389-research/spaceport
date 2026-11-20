@@ -10,6 +10,7 @@ use gpui::{AppContext, Context};
 mod core_catalog;
 mod core_flag;
 mod core_remote_document;
+mod departure;
 mod en_xa;
 mod fold;
 mod manual_entry;
@@ -22,6 +23,7 @@ fn open_form(view: &mut SheprdWindow, step: Step, cx: &mut Context<SheprdWindow>
         fields: std::array::from_fn(|_| cx.new(SearchInput::new)),
         step,
         error: None,
+        scroll: gpui::ScrollHandle::new(),
     });
     view.menu.page = Some(Page::AddDevice);
 }

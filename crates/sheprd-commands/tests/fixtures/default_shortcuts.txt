@@ -19,6 +19,9 @@ close_tab windows: ctrl-alt-shift-w
 close_window linux: ctrl-alt-w
 close_window macos: cmd-alt-shift-w
 close_window windows: -
+close_workspace linux: -
+close_workspace macos: -
+close_workspace windows: -
 command_palette linux: ctrl-shift-p
 command_palette macos: cmd-shift-p
 command_palette windows: ctrl-shift-p
@@ -82,10 +85,10 @@ focus_agent_8 windows: -
 focus_agent_9 linux: -
 focus_agent_9 macos: -
 focus_agent_9 windows: -
-focus_down linux: ctrl-alt-shift-down
+focus_down linux: -
 focus_down macos: cmd-alt-down
 focus_down windows: ctrl-alt-shift-down
-focus_left linux: ctrl-alt-shift-left
+focus_left linux: -
 focus_left macos: cmd-alt-left
 focus_left windows: ctrl-alt-shift-left
 focus_next_region linux: ctrl-f6
@@ -94,7 +97,7 @@ focus_next_region windows: ctrl-f6
 focus_previous_region linux: ctrl-shift-f6
 focus_previous_region macos: cmd-shift-f6
 focus_previous_region windows: ctrl-shift-f6
-focus_right linux: ctrl-alt-shift-right
+focus_right linux: -
 focus_right macos: cmd-alt-right
 focus_right windows: ctrl-alt-shift-right
 focus_tab_1 linux: ctrl-shift-1 ctrl-!
@@ -124,7 +127,7 @@ focus_tab_8 windows: ctrl-shift-8 ctrl-*
 focus_tab_9 linux: ctrl-shift-9 ctrl-(
 focus_tab_9 macos: cmd-9
 focus_tab_9 windows: ctrl-shift-9 ctrl-(
-focus_up linux: ctrl-alt-shift-up
+focus_up linux: -
 focus_up macos: cmd-alt-up
 focus_up windows: ctrl-alt-shift-up
 focus_workspace_1 linux: -
@@ -172,6 +175,9 @@ last_pane windows: -
 logs linux: -
 logs macos: -
 logs windows: -
+messages linux: -
+messages macos: -
+messages windows: -
 mirror_core_pane linux: -
 mirror_core_pane macos: -
 mirror_core_pane windows: -
@@ -265,7 +271,7 @@ resize_pane_right windows: -
 resize_pane_up linux: -
 resize_pane_up macos: -
 resize_pane_up windows: -
-resume_palette linux: ctrl-alt-shift-r
+resume_palette linux: ctrl-shift-r
 resume_palette macos: cmd-shift-r
 resume_palette windows: ctrl-alt-shift-r
 sessions linux: ctrl-shift-s

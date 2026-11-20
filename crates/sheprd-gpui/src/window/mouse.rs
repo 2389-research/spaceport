@@ -172,8 +172,8 @@ impl SheprdWindow {
         ) else {
             return false;
         };
-        // `handle` borrows the window, so the field is set directly. Hover
-        // motion is not counted here: `note_pointer` counts it only when the pointer moved.
+        // `handle` borrows the window, so the field is set directly.
+        // Passive motion must not claim another client's pane or size.
         if kind != ClientMouseKind::Moved {
             self.last_input = Some(std::time::Instant::now());
         }
@@ -393,8 +393,10 @@ impl SheprdWindow {
         window: &Window,
         cx: &mut Context<Self>,
     ) {
-        // Pointing at a pane is use even when its program ignores the mouse.
         let moved = self.note_pointer(event.position);
+        if moved && event.pressed_button.is_some() {
+            self.note_input();
+        }
         let split_cursor = self.split_cursor_at(event.position);
         if split_cursor != self.split_cursor {
             self.split_cursor = split_cursor;

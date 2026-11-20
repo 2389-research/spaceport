@@ -28,6 +28,8 @@ use super::{
 };
 use crate::{SheprdWindow, config::ChatLayoutMode};
 
+mod accessibility;
+mod clipboard;
 mod input_resize;
 mod running;
 mod selection;
@@ -126,6 +128,9 @@ impl Options {
                 | "widgets-end"
                 | "jump"
                 | "conversation"
+                | "clipboard"
+                | "clipboard-field"
+                | "accessibility"
                 | "existing"
                 | "input-resize"
                 | "tools"
@@ -137,7 +142,7 @@ impl Options {
                 | "all"
         ) {
             bail!(
-                "HERDR_TEST_RICH_CHAT expects math, code, diagram, activity, activity-open, attachments, questions, selection, user, widgets, widgets-end, jump, conversation, existing, input-resize, tools, turns, running, running-open, steps, steps-open, or all"
+                "HERDR_TEST_RICH_CHAT expects math, code, diagram, activity, activity-open, attachments, questions, selection, user, widgets, widgets-end, jump, conversation, accessibility, clipboard, clipboard-field, existing, input-resize, tools, turns, running, running-open, steps, steps-open, or all"
             );
         }
         let hold = std::env::var("HERDR_TEST_RICH_CHAT_HOLD_MS")
@@ -146,7 +151,17 @@ impl Options {
             .transpose()
             .context("invalid preview hold duration")?
             .unwrap_or(2_000)
-            .min(60_000);
+            // Interactive qualification spans several bounded native helpers.
+            .min(
+                if matches!(
+                    case.as_str(),
+                    "accessibility" | "clipboard" | "clipboard-field"
+                ) {
+                    180_000
+                } else {
+                    60_000
+                },
+            );
         let layout = std::env::var("HERDR_TEST_RICH_CHAT_LAYOUT")
             .ok()
             .map(|name| {
@@ -211,6 +226,9 @@ async fn run(
     options: Options,
     cx: &mut AsyncApp,
 ) -> Result<()> {
+    if options.case == "clipboard-field" {
+        return clipboard::standalone(handle, options.hold, cx).await;
+    }
     handle.update(cx, |view, window, cx| install(view, window, cx, &options))??;
     let timer = cx.background_executor().clone();
     let deadline = Instant::now() + WAIT;
@@ -337,9 +355,13 @@ async fn run(
     let hold_until = Instant::now() + options.hold;
     let mut selection_probe = selection::Probe::default();
     let mut resize_probe = input_resize::Probe::default();
+    let mut clipboard_probe = clipboard::Probe::default();
+    let mut accessibility_probe = (options.case == "accessibility")
+        .then(accessibility::Probe::new)
+        .transpose()?;
     while Instant::now() < hold_until {
         timer.timer(Duration::from_millis(50)).await;
-        handle.update(cx, |view, window, cx| {
+        handle.update(cx, |view, window, cx| -> Result<()> {
             fit_surface(view);
             view.prepare_chat_visuals(window, cx);
             if options.case == "selection" {
@@ -348,8 +370,23 @@ async fn run(
             if options.case == "input-resize" {
                 resize_probe.observe(view, window);
             }
+            if options.case == "clipboard"
+                && let Some(input) = view
+                    .chats
+                    .pane(PANE)
+                    .and_then(|pane| pane.composer.as_ref())
+            {
+                clipboard_probe.observe(input.read(cx));
+            }
+            if let Some(probe) = &mut accessibility_probe {
+                probe.observe(view, cx)?;
+            }
             cx.notify();
-        })?;
+            Ok(())
+        })??;
+    }
+    if let Some(probe) = accessibility_probe {
+        anyhow::ensure!(probe.complete(), "native chat permission answers missing");
     }
     Ok(())
 }
@@ -360,6 +397,9 @@ fn install(
     cx: &mut Context<SheprdWindow>,
     options: &Options,
 ) -> Result<()> {
+    let accessibility = (options.case == "accessibility")
+        .then(accessibility::fixture)
+        .transpose()?;
     view.config.features.acp_chats = true;
     view.config.chat.layout = options.layout;
     if let Some(width) = options.max_width {
@@ -444,6 +484,9 @@ fn install(
     if options.case == "questions" {
         transcript.entries = question_entries();
     }
+    if let Some(fixture) = &accessibility {
+        transcript = fixture.transcript.clone();
+    }
     if options.working {
         transcript.turn = Some(sheprd_chat_protocol::Turn {
             started_ms: super::now_ms().saturating_sub(12_000),
@@ -526,10 +569,11 @@ fn install(
         },
         transcript,
     )?;
-    if options.case == "selection"
-        && let Some(pane) = view.chats.pane_mut(PANE)
-    {
-        pane.text_focus = Some(cx.focus_handle());
+    if let Some(pane) = view.chats.pane_mut(PANE) {
+        pane.text_focus = Some(super::window::conversation_focus(cx));
+        if accessibility.is_some() {
+            pane.rail = true;
+        }
     }
     if options.case == "activity-open"
         && let Some(pane) = view.chats.pane_mut(PANE)
@@ -559,10 +603,14 @@ fn install(
         let font = view.config.ui.clone();
         let theme = view.theme.clone();
         let input = cx.new(|cx| {
-            let mut input = crate::multiline_input::MultilineInput::new(cx);
+            let mut input = super::window::composer(cx);
             input.set_appearance(font, theme, cx);
             input.set_placeholder_with(|| "Preview only — no agent is connected".to_owned(), cx); // i18n: data
-            if let Some(draft) = &options.draft {
+            if let Some(draft) = options
+                .draft
+                .as_deref()
+                .or_else(|| accessibility.as_ref().map(|fixture| fixture.draft.as_str()))
+            {
                 input.set_text_at(draft, draft.len(), cx);
             }
             input

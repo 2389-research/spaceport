@@ -1,3 +1,5 @@
+// ABOUTME: Exercises localized token text and stable rule matching.
+// ABOUTME: Preserves observable behavior while sharing indexed snapshot fixtures.
 use super::*;
 use sheprd_i18n::Pseudo;
 
@@ -11,7 +13,13 @@ fn state_rules_match_the_english_status_in_every_language() {
     let agents = agent_layout(
         r#"rows = [[{ token = "state_text", rules = [{ equals = "working", hide = true }] }, "workspace"]]"#,
     );
-    let rows = agent_rows(&agents, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(
+        &agents,
+        &snapshot.agents[0],
+        &IndexedSnapshot::new(&snapshot),
+        None,
+    )
+    .unwrap();
     let spaces = space_layout(
         r##"rows = [[{ token = "state_text", rules = [{ equals = "blocked", fg = "#ff0000" }] }]]"##,
     );

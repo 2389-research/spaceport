@@ -1,4 +1,6 @@
-"""Inherited Windows installation identity stays consistent."""
+"""ABOUTME: Check the fork's compiler identity and exact startup ownership.
+ABOUTME: Keep inherited installer state outside Spaceport's smoke contract.
+"""
 import importlib.util
 from pathlib import Path
 import sys
@@ -22,22 +24,11 @@ PACKAGE = load("package_windows", SCRIPTS / "package-windows.py")
 
 
 class RebrandCompatibility(unittest.TestCase):
-    def test_installer_keeps_upgrade_and_startup_identities(self):
-        text = INSTALLER.SCRIPT.read_text()
-        for line in ('#define AppName "Sheprd"', '#define StartupName "Herdr UI"',
-                     '#define AppUserModelID "so.pen.herdr-gpui"', 'AppPublisher=Herdr UI',
-                     r'DefaultDirName={localappdata}\Programs\Herdr UI'):
-            self.assertIn(line, text)
-        self.assertEqual(INSTALLER.app_id(), "{7FA70894-4FC0-4923-BDCB-B05F7475610A}")
-        startup = [line for line in text.splitlines() if line.startswith("Root:") and
-                   ("CurrentVersion\\Run" in line or "StartupApproved\\Run" in line)]
-        self.assertTrue(startup)
-        for line in startup:
-            self.assertIn('ValueName: "{#StartupName}"', line)
-            self.assertIn("uninsdeletevalue dontcreatekey", line)
-            self.assertNotIn("ValueData:", line)
-        self.assertIn("CompareText(RemoveBackslashUnlessRoot(ExtractFilePath(Target))", text)
-        self.assertIn("FileExists(NewPath) or FileCopy(OldPath, NewPath, True)", text)
+    def test_compiler_and_smoke_read_the_runtime_identity(self):
+        identity = (ROOT / "crates/sheprd-gpui/development-app-id").read_text().strip()
+        arguments = INSTALLER.iscc_arguments("20261117.1", "x86_64-pc-windows-msvc", "src", "out")
+        self.assertIn(f"/DAppUserModelID={identity}", arguments)
+        self.assertEqual(INSTALLER.app_user_model_id(), identity)
 
     def test_every_packaged_executable_is_installed(self):
         text = INSTALLER.SCRIPT.read_text()
@@ -46,10 +37,10 @@ class RebrandCompatibility(unittest.TestCase):
                           }.get(name, name)
             self.assertIn(f'Source: "{{#SourceDir}}\\{definition}";', text)
 
-    def test_native_smoke_preserves_a_disabled_legacy_startup_entry(self):
-        launcher = Path("C:/Programs/Herdr UI/herdr-gpui-launcher.exe")
-        values = {INSTALLER.STARTUP_KEYS[0]: {"Herdr UI": (f'"{launcher}"', 1)},
-                  INSTALLER.STARTUP_KEYS[1]: {"Herdr UI": (bytes([3]) + bytes(11), 3)}}
+    def test_smoke_checks_only_the_forks_disabled_startup_entry(self):
+        launcher = Path("C:/Programs/Spaceport/spaceport-launcher.exe")
+        values = {INSTALLER.STARTUP_KEYS[0]: {"Spaceport": (f'"{launcher}"', 1), "Sheprd": ("other", 1)},
+                  INSTALLER.STARTUP_KEYS[1]: {"Spaceport": (bytes([3]) + bytes(11), 3), "Herdr UI": ("other", 1)}}
 
         def query(key, name):
             if name not in values[key]:
@@ -65,10 +56,10 @@ class RebrandCompatibility(unittest.TestCase):
                                          OpenKey=open_key, QueryValueEx=query)
         with mock.patch.dict(sys.modules, {"winreg": registry}):
             INSTALLER.check_startup_preserved(launcher)
-            values[INSTALLER.STARTUP_KEYS[1]]["Herdr UI"] = (bytes([2]) + bytes(11), 3)
+            self.assertEqual(set(INSTALLER.startup_entries()), set(INSTALLER.STARTUP_KEYS))
+            values[INSTALLER.STARTUP_KEYS[1]]["Spaceport"] = (bytes([2]) + bytes(11), 3)
             with self.assertRaisesRegex(ValueError, "disabled state"):
                 INSTALLER.check_startup_preserved(launcher)
-            values[INSTALLER.STARTUP_KEYS[1]]["Herdr UI"] = (bytes([3]) + bytes(11), 3)
-            values[INSTALLER.STARTUP_KEYS[0]]["Sheprd"] = (f'"{launcher}"', 1)
-            with self.assertRaisesRegex(ValueError, "second startup identity"):
-                INSTALLER.check_startup_preserved(launcher)
+            del values[INSTALLER.STARTUP_KEYS[0]]["Spaceport"]
+            del values[INSTALLER.STARTUP_KEYS[1]]["Spaceport"]
+            self.assertEqual(INSTALLER.startup_entries(), [])

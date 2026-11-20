@@ -1,3 +1,5 @@
+// ABOUTME: Reorders device headers without changing workspace ownership or daemon state.
+// ABOUTME: Shares drag geometry while keeping headless timing inside the UI crate.
 //! Reordering devices by dragging their headers. A press lifts a header as it
 //! lifts a workspace row; while it is lifted the list folds to its headers,
 //! so a device with many rows moves as one line among the others, and the
@@ -5,9 +7,9 @@
 //! there moves the device for this client (`endpoint::order`), Local
 //! included.
 
-use crate::SheprdWindow;
+use crate::{SheprdWindow, motion::REORDER};
 use gpui::{prelude::*, *};
-use sheprd_reorder::{Beside, LIFT_DELAY, LIFT_DISTANCE, SLIDE, Slide, preview, slot_for};
+use sheprd_reorder::{Beside, LIFT_DELAY, LIFT_DISTANCE, Slide, preview, slot_for};
 use std::{
     cell::{Cell, RefCell},
     collections::HashMap,
@@ -229,9 +231,10 @@ impl SheprdWindow {
                     to: 0.,
                     start: now,
                 });
-                *slide = slide.toward(previewed[unit], now, SLIDE);
-                plan.sliding |= slide.progress(now, SLIDE) < 1.;
-                slide.at(now, SLIDE)
+                let duration = crate::motion::slide_duration(REORDER);
+                *slide = slide.toward(previewed[unit], now, duration);
+                plan.sliding |= slide.progress(now, duration) < 1.;
+                slide.at(now, duration)
             };
             plan.shifts.insert(index, (px(shift), unit == dragged));
             plan.drop.rows.push((unit, row, px(shift)));

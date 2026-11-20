@@ -1,10 +1,12 @@
+// ABOUTME: Resolves custom-command shortcuts against configured and reserved keys.
+// ABOUTME: Preserves app-default overrides and typed shortcut precedence.
 //! The daemon's `[[keys.command]]` shortcuts, matched against the resolved
 //! keymap. Herdr resolves its own actions before custom commands, so a
 //! keystroke a daemon `[keys]` entry, the GUI's `[keybindings]`, a pane key,
 //! the app's reserved bindings, or the prefix already holds never reaches
 //! one, and of two custom commands sharing a trigger only the first runs. A
-//! catalog default is no Herdr action and nobody configured it, so it yields
-//! to a custom command bound to its keystroke, as it does to a daemon
+//! catalog shortcut or Spaceport-only default is no Herdr action and nobody
+//! configured it, so it yields to a custom command, as it does to a daemon
 //! `[keys]` entry. Dispatch and the shortcut reference both answer through
 //! `Keymap::reach`, so neither can claim a shortcut the other disagrees with.
 
@@ -153,7 +155,7 @@ impl Keymap {
             Trigger::Prefixed(_) if self.prefixes.is_empty() => Reach::NoPrefix,
             // Any prefix typed after a prefix passes it through instead.
             Trigger::Prefixed(keystroke) => {
-                if self.is_prefix(keystroke) || self.chord(keystroke).is_some() {
+                if self.is_prefix(keystroke) || self.owns_chord(keystroke) {
                     Reach::Shadowed
                 } else {
                     Reach::Runs
@@ -183,8 +185,8 @@ impl Keymap {
 
     /// Keystrokes GPUI binds directly that a custom command cannot take: the
     /// keymap's, less the catalog defaults no config file assigned, then the
-    /// app's own. The interceptor matches custom commands before GPUI's
-    /// bindings, so a default left out here simply never fires.
+    /// app's own. The window router matches custom commands before catalog
+    /// defaults, so a default left out here yields its shortcut.
     fn bound_directly(&self) -> HashSet<Identity> {
         self.direct_keystrokes(false)
     }
@@ -197,7 +199,8 @@ impl Keymap {
             .iter()
             .flatten()
             .filter(|shortcut| {
-                shortcut.chord.is_none() && (with_catalog_defaults || !shortcut.catalog_default)
+                shortcut.chord.is_none()
+                    && (with_catalog_defaults || shortcut.origin == super::Origin::Owned)
             })
             .map(|shortcut| shortcut.label.as_str());
         let reserved = crate::actions::reserved_keystrokes().map(|label| -> &str { label });

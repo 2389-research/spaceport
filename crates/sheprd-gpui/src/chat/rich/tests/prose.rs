@@ -1,3 +1,5 @@
+// ABOUTME: Checks Markdown hierarchy, inline styles, and bounded prose preparation.
+// ABOUTME: Keeps display semantics independent from parser source metadata.
 use super::*;
 
 #[test]
@@ -15,6 +17,7 @@ fn ordinary_markdown_keeps_hierarchy_lists_and_inline_semantics_without_visual_j
                 kind,
                 indent,
                 content,
+                ..
             } => Some((*kind, *indent, content)),
             _ => None,
         })

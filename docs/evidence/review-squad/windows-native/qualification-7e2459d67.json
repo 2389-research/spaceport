@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "scope": "Windows shortcut matrix partial native qualification; setup and search accessibility failures remain",
+  "source": "7e2459d6792b913d406bfef4fb4e8a22e8a94774",
+  "gpui_version": "0.3.10",
+  "run": {
+    "id": 44716174820,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44716174820",
+    "job_id": 136220045460,
+    "status": "completed",
+    "conclusion": "failure"
+  },
+  "checks": {
+    "formatting_and_clippy": "passed",
+    "rust_contract_tests": {
+      "passed": 4,
+      "failed": 0
+    },
+    "powershell_consumers": {
+      "native_cases": 38,
+      "console_cases": 6,
+      "unknown_case_rejected": true,
+      "input": false
+    },
+    "console_native_test": {
+      "passed": 0,
+      "failed": 1,
+      "seconds": 6.23
+    },
+    "matrix_native_tests": {
+      "passed": 3,
+      "failed": 1,
+      "seconds": 101.37
+    },
+    "altgr_test": {
+      "passed": 1,
+      "failed": 0,
+      "seconds": 5.11
+    },
+    "direct_chrome_test": {
+      "passed": 1,
+      "failed": 0,
+      "seconds": 5.78
+    }
+  },
+  "completed_native_case_ids": [
+    "back",
+    "forward",
+    "next-pane",
+    "previous-pane",
+    "keybinds",
+    "settings",
+    "split-editor",
+    "cycle-windows",
+    "focus-left",
+    "focus-right",
+    "focus-up",
+    "focus-down",
+    "next-tab",
+    "previous-tab",
+    "fullscreen",
+    "zen",
+    "status-bar",
+    "sidebar",
+    "palette",
+    "tab-1",
+    "tab-2",
+    "tab-3",
+    "tab-4",
+    "tab-5",
+    "tab-6",
+    "tab-7",
+    "tab-8",
+    "tab-9"
+  ],
+  "failures": [
+    {
+      "case": "console preparation",
+      "observed": "ValuePattern.SetValue throws Value is read-only before the pane program starts.",
+      "next_action": "Use the existing owned native input scope for bounded authored setup text; require echoed text before Enter."
+    },
+    {
+      "case": "resume-palette preparation",
+      "observed": "SetValue returns but saved palette query does not become font before the deadline.",
+      "source_finding": "SearchInput advertises its text value but registers no SetValue listener; GPUI fallback does not apply the action.",
+      "next_action": "Register a weak-entity SetValue listener through the existing normalized setter, preserve masked-field guards, and retain the native SetValue regression."
+    }
+  ],
+  "limits": [
+    "This failed run does not qualify the console-owned keys, Resume, font cases, or the whole matrix.",
+    "The shared GPUI0.3.11 source needs independent qualification; this source uses0.3.10.",
+    "Earlier failures and partial results remain source-specific."
+  ]
+}

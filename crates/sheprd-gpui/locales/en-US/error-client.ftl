@@ -11,72 +11,72 @@
 # who must update: app (this app) or daemon (Herdr on the host). $app is the
 # client product name.
 error-client-bridge-incompatible = { $fix ->
-    [app] The Herdr daemon on this host cannot serve this app; update { $app }
-   *[daemon] The Herdr daemon on this host cannot serve this app; run `herdr update` and reconnect
+    [app] This device's Herdr version needs a newer app. Update { $app }.
+   *[daemon] This device's Herdr version needs an update. Run `herdr update`, then choose Terminal → Reconnect.
 }
 error-client-bridge-incompatible-version = { $fix ->
-    [app] The Herdr daemon (version { $version }) on this host cannot serve this app; update { $app }
-   *[daemon] The Herdr daemon (version { $version }) on this host cannot serve this app; run `herdr update` and reconnect
+    [app] Herdr { $version } on this device needs a newer app. Update { $app }.
+   *[daemon] Herdr { $version } on this device needs an update. Run `herdr update`, then choose Terminal → Reconnect.
 }
-error-client-cancelled = The connection was stopped.
-error-client-catalog-limit = The saved host list is larger than Spaceport stores; remove a host.
-error-client-catalog-not-file = The saved host list is not a regular file; remove it so Spaceport can write a new one.
-error-client-catalog-schema = The saved host list cannot be read; update Spaceport, or remove it to start over.
-error-client-catalog-version-or-count = The saved host list is in a format this app does not know, or it lists too many hosts; update Spaceport or remove a host.
+error-client-cancelled = The connection stopped.
+error-client-catalog-limit = The saved connection list is too large.
+error-client-catalog-not-file = The saved connections path is not a file.
+error-client-catalog-schema = The saved connections file could not be read.
+error-client-catalog-version-or-count = The saved connections use an unsupported format or contain too many entries.
 # $version is the oldest Herdr release this app works with.
-error-client-closed-before-welcome = The host's Herdr daemon closed the connection without answering; it is likely older than { $version }, which this app requires. Run `herdr update` and reconnect
-error-client-command-boot = The daemon's session changed before the command could run; reconnect and try again.
-error-client-disconnected = The app is not connected to the daemon.
-error-client-empty-surface = A pane screen was asked for with no rows or columns; nothing was sent.
-error-client-encoded-surface-before-baseline = An encoded pane screen arrived before the full screen it belongs to; reconnect.
-# The daemon refused a request without saying why.
-error-client-endpoint = The daemon refused the request without saying why.
+error-client-closed-before-welcome = Herdr closed the connection without answering. It may be older than the required version { $version }. Run `herdr update`, then choose Terminal → Reconnect.
+error-client-command-boot = This command does not match the current connection. Choose Terminal → Reconnect.
+error-client-disconnected = Spaceport is disconnected from Herdr.
+error-client-empty-surface = The terminal view needs a width and height. Resize the window and try again.
+error-client-encoded-surface-before-baseline = Herdr sent a screen update before the initial screen. Choose Terminal → Reconnect.
+# The server refused a request without saying why.
+error-client-endpoint = Spaceport could not read Herdr's error explanation.
 # $server_version is the daemon's version; $generation and $ours are the
 # protocol versions the daemon and this app speak. $fix is who must update:
 # app (this app) or daemon (Herdr).
 error-client-endpoint-generation = { $fix ->
-    [app] This app and the host's Herdr daemon (version { $server_version }) speak different protocol versions ({ $ours } here, { $generation } there); update { $app }
-   *[daemon] This app and the host's Herdr daemon (version { $server_version }) speak different protocol versions ({ $ours } here, { $generation } there); run `herdr update` and reconnect
+    [app] Herdr { $server_version } needs a newer app. Update { $app }. Connection formats: Herdr { $generation }, app { $ours }.
+   *[daemon] Herdr { $server_version } needs an update. Run `herdr update`, then choose Terminal → Reconnect. Connection formats: Herdr { $generation }, app { $ours }.
 }
-error-client-event-receiver-dropped = The connection's events stopped.
-error-client-expected-welcome = The host did not greet this app as expected; run `herdr update` and reconnect.
+error-client-event-receiver-dropped = Spaceport stopped receiving connection updates.
+error-client-expected-welcome = Herdr did not send the expected connection information. Choose Terminal → Reconnect.
 error-client-forward-control = Could not prepare the port forward's private folder.
 error-client-forward-exit = The SSH port forward ended ({ $status }); check host trust, authentication, and the network.
 error-client-forward-local-port = No local port is free to forward to.
 error-client-forward-refused = SSH could not listen on a local port ({ $status }).
 error-client-forward-spawn = Could not start SSH for the port forward.
 error-client-forward-timeout = SSH did not connect in time; check host trust and authentication.
-error-client-frame-length = The daemon sent a message this app cannot read (bad message length); reconnect.
-error-client-frame-prefix = The daemon sent a message this app cannot read (bad message prefix); reconnect.
-error-client-full = Too many commands are waiting for the daemon; try again.
-error-client-geometry-limit = The pane's screen is larger than the daemon allows; make the pane or window smaller.
-error-client-handshake-timeout = The host did not finish connecting in time; check the network and reconnect.
-error-client-health-timeout = The host did not answer its health check in time; check the network and reconnect.
-error-client-incompatible-codecs = This app and the host's Herdr daemon cannot agree on a protocol; run `herdr update` and reconnect.
-error-client-input-write-timeout = The daemon did not take the terminal input in time; reconnect.
+error-client-frame-length = Herdr sent terminal data Spaceport could not read. Choose Terminal → Reconnect.
+error-client-frame-prefix = Herdr sent terminal data Spaceport could not read. Choose Terminal → Reconnect.
+error-client-full = Too many commands are waiting. Let them finish before trying again.
+error-client-geometry-limit = This terminal size is larger than Herdr supports. Resize the window and try again.
+error-client-handshake-timeout = Herdr did not finish opening the connection in time. Choose Terminal → Reconnect.
+error-client-health-timeout = Herdr stopped answering connection checks. Choose Terminal → Reconnect.
+error-client-incompatible-codecs = This version of Herdr uses a terminal format Spaceport does not support.
+error-client-input-write-timeout = Spaceport could not finish sending terminal input. Some input may have arrived. Choose Terminal → Reconnect.
 error-client-invalid-session = That is not a valid session name.
-error-client-io = Could not talk to the daemon: { $error }
-error-client-json = The daemon's answer was not valid JSON: { $error }
-error-client-legacy-daemon = This host's Herdr daemon is older than this app needs; run `herdr update` and reconnect.
-error-client-missing-boot-id = That command needs the daemon's session first; reconnect and try again.
+error-client-io = Could not communicate with Herdr: { $error }
+error-client-json = Spaceport could not read Herdr's reply: { $error }
+error-client-legacy-daemon = This Herdr version is too old for Spaceport. Run `herdr update`, then choose Terminal → Reconnect.
+error-client-missing-boot-id = The connection is not ready for this command. Wait for it to connect.
 # $server_version is the version of Herdr on the SSH host.
-error-client-missing-health-check = The Herdr daemon on this SSH host (version { $server_version }) has no health check this app can use; run `herdr update` there and reconnect
+error-client-missing-health-check = Herdr { $server_version } on this device cannot report connection health. Run `herdr update` there, then choose Terminal → Reconnect.
 # $server_version is the daemon's version.
-error-client-missing-surface-interest = The Herdr daemon on this host (version { $server_version }) cannot send pane screens the way this app asks; run `herdr update` and reconnect
-error-client-no-local-socket = A host reached over SSH has no local socket to connect to.
-error-client-partial-frame-timeout = The daemon started a message and never finished it; reconnect.
-error-client-patch-before-baseline = A pane screen update arrived before the full screen it belongs to; reconnect.
-error-client-profile-id = A saved host has an ID this app cannot use, or two hosts share one; remove one.
-error-client-profile-label = A saved host's label cannot be used.
+error-client-missing-surface-interest = Herdr { $server_version } cannot safely share these terminal views. Run `herdr update`, then choose Terminal → Reconnect.
+error-client-no-local-socket = This remote connection has no local socket file.
+error-client-partial-frame-timeout = Herdr stopped partway through a terminal update. Choose Terminal → Reconnect.
+error-client-patch-before-baseline = Herdr sent a screen update before the initial screen. Choose Terminal → Reconnect.
+error-client-profile-id = A saved connection has a missing, invalid, or repeated ID.
+error-client-profile-label = A saved connection has an invalid name.
 error-client-remote-command = The command on the host failed ({ $status }).
 error-client-remote-output = The command on the host printed something this app did not expect.
-error-client-request-timeout = The daemon did not answer in time; the request was not sent again.
-error-client-response-boot = The daemon's session changed while the request was in flight; try again.
-error-client-response-id = The daemon's answer did not match the request; reconnect.
-error-client-response-limit = The daemon's answer was larger than this app accepts.
-error-client-response-missing-result = The daemon's answer carried neither a result nor a reason.
-error-client-response-schema = The daemon's answer is not one this app can read.
-error-client-response-type = The daemon answered a different request than the one sent.
+error-client-request-timeout = Herdr did not confirm the request. It may have happened; check the result before trying again.
+error-client-response-boot = Herdr's reply belongs to another connection. Choose Terminal → Reconnect.
+error-client-response-id = Herdr's reply did not match the waiting request. Choose Terminal → Reconnect.
+error-client-response-limit = Herdr's reply was too large for Spaceport to read.
+error-client-response-missing-result = Herdr's reply contained neither a result nor an explanation.
+error-client-response-schema = Spaceport could not read Herdr's reply.
+error-client-response-type = Herdr replied to a different action. Choose Terminal → Reconnect.
 error-client-script-cancelled = host script cancelled
 error-client-script-connect = could not reach host for script: { $error }
 # $stderr is the end of what the script printed on the host, as it printed it.
@@ -89,21 +89,21 @@ error-client-script-spawn = could not start host script
 error-client-script-timeout = host script made no progress before its deadline
 error-client-script-unsupported = Host scripts need this app running on Linux or macOS.
 error-client-script-worker = host script worker panicked
-error-client-selection-limit = The saved host selection is larger than Spaceport stores; remove it to start over.
-error-client-selection-not-file = The saved host selection is not a regular file; remove it so Spaceport can write a new one.
-error-client-selection-schema = The saved host selection cannot be read; remove it so Spaceport can write a new one.
-error-client-selection-unavailable = The selected host is not there, or it is turned off; pick another host.
-error-client-selection-version = The saved host selection is in a format this app does not know; update Spaceport.
-error-client-snapshot-identity = The daemon's session changed, or its screen data went backwards; reconnect.
-error-client-socket-closed = The daemon closed the connection.
+error-client-selection-limit = The saved connection choice is too large.
+error-client-selection-not-file = The saved connection choice path is not a file.
+error-client-selection-schema = The saved connection choice could not be read.
+error-client-selection-unavailable = The selected connection is missing or disabled. Select another device.
+error-client-selection-version = The saved connection choice uses an unsupported format.
+error-client-snapshot-identity = Herdr restarted or sent older session state. Choose Terminal → Reconnect.
+error-client-socket-closed = The connection to Herdr closed.
 error-client-storage-destination-not-file = Spaceport's saved data is not a regular file.
 error-client-storage-path = Spaceport's saved data has a path it cannot use.
-error-client-surface-before-snapshot = A pane screen arrived before the daemon's session data; reconnect.
-error-client-surface-encoding-not-negotiated = This Herdr daemon did not offer the screen encoding this app asked for; run `herdr update` and reconnect.
-error-client-surface-identity = A pane screen arrived for the wrong pane or an out-of-date revision; reconnect.
-error-client-unsolicited-response = The daemon answered a request this app never sent; reconnect.
-error-client-unsupported-method = This Herdr daemon does not offer that request; run `herdr update` and reconnect.
-error-client-unsupported-surface-interest = This Herdr daemon cannot send pane screens the way this app asks; run `herdr update` and reconnect.
+error-client-surface-before-snapshot = Herdr sent a screen before its session information. Choose Terminal → Reconnect.
+error-client-surface-encoding-not-negotiated = Herdr sent a terminal format this connection did not agree to use. Choose Terminal → Reconnect.
+error-client-surface-identity = Herdr's terminal screen does not match its session information. Choose Terminal → Reconnect.
+error-client-unsolicited-response = Herdr sent a reply without a matching request. Choose Terminal → Reconnect.
+error-client-unsupported-method = This version of Herdr does not support this action.
+error-client-unsupported-surface-interest = This version of Herdr cannot safely share these terminal views.
 error-client-upload-cancelled = SSH file transfer cancelled
 # $error is why the upload failed; the temporary files it left on the host
 # could not be removed either.
@@ -119,7 +119,7 @@ error-client-upload-size-overflow = The files are too large to transfer at once.
 error-client-upload-source-changed = file transfer source changed length
 error-client-upload-timeout = SSH file transfer made no progress for 30 seconds
 error-client-upload-unsupported = SSH file transfer needs this app running on Linux or macOS.
-error-client-welcome-kind = The host's Herdr daemon sent a greeting this app cannot read; run `herdr update` and reconnect.
+error-client-welcome-kind = Herdr sent unsupported connection information. Choose Terminal → Reconnect.
 # $code and $message are the daemon's reason for refusing the connection,
 # in its own words.
 error-client-welcome-rejected = The host's Herdr daemon refused the connection ({ $code }): { $message }

@@ -274,6 +274,13 @@ impl SheprdWindow {
                 #[cfg(feature = "integration-test")]
                 self.navigations
                     .record(label, focus.as_ref(), std::panic::Location::caller());
+                #[cfg(all(windows, feature = "integration-test"))]
+                if super::prefix::native_shortcut_fences_observed() {
+                    tracing::debug!(
+                        custom_command = label == sheprd_client::Method::CommandInvoke.as_str(),
+                        "Native shortcut queued"
+                    );
+                }
                 self.fence_focus_change(focus);
                 return true;
             }
@@ -314,7 +321,7 @@ impl SheprdWindow {
                 });
             state.invalidate_surface();
             state.dirty = true;
-            self.live = state.clone();
+            self.live.apply_window_update(state.clone());
         }
     }
 
@@ -361,6 +368,12 @@ impl SheprdWindow {
             self.input_probe.actions += 1;
         }
         if self.core_pane_command(command, window, cx) {
+            return;
+        }
+        if matches!(command, Command::Detach | Command::Reconnect)
+            && self.endpoints.get(self.selected_endpoint).is_none()
+        {
+            self.show_flash(Flash::warning(fl!("window-notices-needs-herdr-tui")), cx);
             return;
         }
         match self.dispatch(command, window, cx) {
@@ -463,69 +476,6 @@ impl SheprdWindow {
             cx.notify();
         }
     }
-
-    pub(crate) fn render_agent_skill_offer(&self, cx: &mut Context<Self>) -> gpui::Div {
-        use gpui::{prelude::*, *};
-        let theme = &self.theme;
-        let button = |id: &'static str, label: String, primary: bool| {
-            div()
-                .id(id)
-                .debug_selector(move || id.into())
-                .p(px(8.))
-                .rounded(px(crate::config::corners::CONTROL))
-                .when(primary, |button| button.bg(rgb(theme.active)))
-                .when(!primary, |button| button.hover(|s| s.bg(rgb(theme.active))))
-                .cursor_pointer()
-                .child(label)
-        };
-        div()
-            .debug_selector(|| "agent-skill-offer".into())
-            .child(
-                div()
-                    .p(px(8.))
-                    .child(fl!("window-notices-skill-offer-title")),
-            )
-            .child(
-                div()
-                    .p(px(8.))
-                    .child(fl!("window-notices-skill-offer-body")),
-            )
-            .child(
-                div()
-                    .p(px(8.))
-                    .text_color(rgb(theme.muted))
-                    .child(fl!("window-notices-skill-offer-detail")),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_wrap()
-                    .gap(px(8.))
-                    .p(px(8.))
-                    .child(
-                        button(
-                            "agent-skill-install",
-                            fl!("window-notices-skill-offer-install"),
-                            true,
-                        )
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            cx.stop_propagation();
-                            this.install_browser_skill(window, cx);
-                        })),
-                    )
-                    .child(
-                        button(
-                            "agent-skill-decline",
-                            fl!("window-notices-skill-offer-decline"),
-                            false,
-                        )
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            cx.stop_propagation();
-                            this.dismiss_menu(window, cx);
-                        })),
-                    ),
-            )
-    }
 }
 
 /// Runs a command that acts on the window itself rather than its content,
@@ -552,9 +502,19 @@ fn cycle_windows(window: &Window, cx: &mut gpui::App) {
     let Some(next) = next_window(&cx.windows(), window.window_handle()) else {
         return;
     };
+    #[cfg(all(target_os = "linux", feature = "integration-test"))]
+    if super::prefix::native_shortcuts_observed() {
+        eprintln!("LINUX_KEYS_CASE cycle_command_dispatched=true next_window_selected=true");
+    }
     cx.defer(move |cx| {
-        next.update(cx, |_, window, _| window.activate_window())
-            .ok();
+        next.update(cx, |_, window, _| {
+            #[cfg(all(target_os = "linux", feature = "integration-test"))]
+            if super::prefix::native_shortcuts_observed() {
+                eprintln!("LINUX_KEYS_CASE cycle_platform_activation_requested=true");
+            }
+            window.activate_window();
+        })
+        .ok();
     });
 }
 

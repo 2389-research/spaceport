@@ -5,9 +5,37 @@
 // i18n: migrated
 use super::*;
 
+const NAVIGATION_PADDING: f32 = 12.;
+const NAVIGATION_BORDER: f32 = 1.;
+const ITEM_PADDING: f32 = 10.;
+const ITEM_GAP: f32 = 10.;
+const ICON_SIZE: f32 = 17.;
+
 impl SettingsWindow {
-    pub(super) fn navigation(&self, cx: &mut Context<Self>) -> Stateful<Div> {
+    pub(super) fn navigation(&mut self, window: &Window, cx: &mut Context<Self>) -> Stateful<Div> {
         use crate::panel_resize::{PanelDrag, Side, handle};
+        let font = crate::config::font_for(&self.config.ui);
+        let widest = Section::ALL
+            .iter()
+            .map(|section| {
+                let label = section.label();
+                let mut run = window.text_style().to_run(label.len());
+                run.font = font.clone();
+                window
+                    .text_system()
+                    .shape_line(label.into(), px(self.config.ui.size), &[run], None)
+                    .width
+            })
+            .max()
+            .unwrap_or_default();
+        let needed = f32::from(widest).ceil()
+            + NAVIGATION_PADDING * 2.
+            + NAVIGATION_BORDER
+            + ITEM_PADDING * 2.
+            + ITEM_GAP
+            + ICON_SIZE;
+        self.navigation_width
+            .set_default(needed.max(crate::panel_resize::SETTINGS_NAVIGATION.width(0.)));
         let theme = &self.theme;
         div()
             .id("settings-navigation")
@@ -41,10 +69,10 @@ impl SettingsWindow {
             .flex_none()
             .flex()
             .flex_col()
-            .p(px(12.))
+            .p(px(NAVIGATION_PADDING))
             .gap(px(2.))
             .bg(rgb(mix(theme.surface, theme.background, 25)))
-            .border_e(px(1.))
+            .border_e(px(NAVIGATION_BORDER))
             .border_color(rgb(theme.active))
             .child(
                 div()
@@ -100,7 +128,7 @@ impl SettingsWindow {
             .px(px(10.))
             .pt(px(10.))
             .pb(px(4.))
-            .text_size(px(10.))
+            .text_size(rems(0.625))
             .text_color(rgb(self.theme.subtext()))
             .child(group.label().to_uppercase())
     }
@@ -113,8 +141,14 @@ impl SettingsWindow {
     ) -> Stateful<Div> {
         let theme = &self.theme;
         let selected = self.section == section;
+        let id: SharedString = section.selector().into();
+        let mut context = KeyContext::default();
+        context.set("settings-section", id.clone());
         div()
+            .key_context(context)
+            .child(search::track_focus_bounds(id, px(0.)))
             .id(("settings-section", index))
+            .map(|row| ui::focusable(theme, row, true))
             .role(Role::Tab)
             .aria_label(section.label())
             .aria_selected(selected)
@@ -127,8 +161,8 @@ impl SettingsWindow {
             .debug_selector(move || section.selector())
             .row()
             .items_center()
-            .gap(px(10.))
-            .px(px(10.))
+            .gap(px(ITEM_GAP))
+            .px(px(ITEM_PADDING))
             .py(px(6.))
             .rounded(px(corners::CONTROL))
             .cursor_pointer()
@@ -137,7 +171,7 @@ impl SettingsWindow {
             .child(
                 svg()
                     .path(section.icon())
-                    .size(px(17.))
+                    .size(px(ICON_SIZE))
                     .flex_none()
                     .text_color(rgb(if selected {
                         theme.primary()
@@ -145,7 +179,14 @@ impl SettingsWindow {
                         theme.subtext()
                     })),
             )
-            .child(section.label())
+            .child(
+                div()
+                    .debug_selector(move || format!("{}-label", section.selector()))
+                    .flex_1()
+                    .min_w_0()
+                    .truncate()
+                    .child(section.label()),
+            )
             .on_click(
                 cx.listener(move |this, _, window, cx| this.select_section(section, window, cx)),
             )
@@ -189,7 +230,7 @@ impl SettingsWindow {
             .gap(px(12.))
             .border_t_1()
             .border_color(rgb(self.theme.active))
-            .text_size(px(11.))
+            .text_size(rems(0.6875))
             .when(!pending.is_empty() && self.error.is_none(), |footer| {
                 footer.child(
                     div()

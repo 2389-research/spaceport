@@ -4,6 +4,10 @@
 #[path = "../../test-support/sandbox.rs"]
 mod sandbox;
 
+#[path = "support/state_path.rs"]
+mod state_path;
+use state_path::app_state_path;
+
 #[cfg(target_os = "macos")]
 #[path = "support/clipboard_guard.rs"]
 mod clipboard_guard;
@@ -28,6 +32,14 @@ struct Isolated {
 mod chat_start;
 #[path = "live_gui/diagnostics.rs"]
 mod diagnostics;
+
+#[cfg(target_os = "linux")]
+#[path = "live_gui/linux_shortcuts.rs"]
+mod linux_shortcuts;
+
+#[cfg(windows)]
+#[path = "live_gui/pipe_readiness.rs"]
+mod pipe_readiness;
 
 #[path = "live_gui/preview_branding.rs"]
 mod preview_branding;
@@ -108,6 +120,30 @@ fn native_sidebar() {
     native_fixture(Fixture::Sidebar);
 }
 
+#[cfg(windows)]
+#[test]
+#[ignore = "requires active Windows desktop; captures only owned popup scenes"]
+fn native_popup_departures() {
+    native_fixture(Fixture::Departures);
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+#[ignore = "requires selecting the isolated Spaceport keyboard check window and leaving it foreground"]
+fn native_settings_keyboard() {
+    eprintln!(
+        "Select the window titled Spaceport keyboard check when it appears, then leave it foreground. The fixture observes focus without a chat reply."
+    );
+    let (status, log) = run_fixture(&Fixture::SettingsKeyboard)
+        .expect("native Settings keyboard fixture exceeded its 120-second process deadline");
+    assert_gui_success(status, &log);
+    assert!(
+        log.contains("SIDEBAR native Settings keyboard PASS:"),
+        "{log}"
+    );
+    assert!(log.contains("SIDEBAR native PASS:"), "{log}");
+}
+
 #[test]
 #[ignore = "requires native rendering; isolated local controls, no daemon"]
 fn native_local_controls() {
@@ -173,6 +209,8 @@ fn native_input_shutdown(field: &'static str) {
 }
 
 enum Fixture {
+    #[cfg(windows)]
+    Departures,
     LocalControls {
         light: bool,
     },
@@ -184,6 +222,8 @@ enum Fixture {
     #[cfg(target_os = "macos")]
     SidebarRouting,
     Sidebar,
+    #[cfg(target_os = "macos")]
+    SettingsKeyboard,
     #[cfg(target_os = "linux")]
     ApplicationMenus,
     Notifications,
@@ -244,6 +284,8 @@ fn native_fixture(fixture: Fixture) {
     }
     assert!(status.success(), "native sidebar failed: {status}");
     assert!(log.contains(match fixture {
+        #[cfg(windows)]
+        Fixture::Departures => "DEPARTURES native PASS:",
         Fixture::Preview { .. } => "RICH CHAT native fixture PASS",
         #[cfg(target_os = "macos")]
         Fixture::SidebarRouting => "SIDEBAR routing PASS:",
@@ -255,6 +297,14 @@ fn native_fixture(fixture: Fixture) {
         Fixture::InputShutdown(_) => "INPUT shutdown ready:",
         _ => "SIDEBAR native PASS:",
     }));
+    #[cfg(windows)]
+    if matches!(fixture, Fixture::LocalControls { .. }) {
+        assert!(log.contains("STATUS SHAPES native PASS:"), "{log}");
+    }
+    #[cfg(windows)]
+    if matches!(fixture, Fixture::LocalControls { light: true }) {
+        assert!(log.contains("SECONDARY TEXT native PASS:"), "{log}");
+    }
 }
 
 fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
@@ -279,6 +329,10 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
         command.env("HERDR_TEST_CHAT_START_CAPTURE", path);
     }
     match fixture {
+        #[cfg(windows)]
+        Fixture::Departures => {
+            command.env("HERDR_TEST_POPUP_DEPARTURES", "1");
+        }
         Fixture::Preview { light, narrow } => {
             let theme = if *light { "light" } else { "dark" };
             let size = if *narrow { "narrow" } else { "wide" };
@@ -318,6 +372,10 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
             }
         }
         Fixture::Sidebar => {}
+        #[cfg(target_os = "macos")]
+        Fixture::SettingsKeyboard => {
+            command.env("HERDR_TEST_SETTINGS_KEYBOARD", "1");
+        }
         #[cfg(target_os = "linux")]
         Fixture::ApplicationMenus => {
             command.env("HERDR_TEST_APPLICATION_MENUS", "1");
@@ -345,10 +403,23 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
     }
     isolated.gui = Some(command.arg("--sidebar-test").spawn().unwrap());
     let gui = isolated.gui.as_mut().unwrap();
+    #[cfg(target_os = "macos")]
+    if matches!(fixture, Fixture::SettingsKeyboard) {
+        eprintln!(
+            "Settings keyboard fixture pid={} sandbox={}",
+            gui.id(),
+            isolated.sandbox.dir.display()
+        );
+    }
     // A bound on a hung fixture, not a performance budget (`just test-perf`
     // measures that): the debug build's startup, catalog loading, and every
     // layout already take about 17 seconds on a shared Windows runner.
-    let deadline = Instant::now() + Duration::from_secs(40);
+    let seconds = match fixture {
+        #[cfg(target_os = "macos")]
+        Fixture::SettingsKeyboard => 120,
+        _ => 40,
+    };
+    let deadline = Instant::now() + Duration::from_secs(seconds);
     while gui.try_wait().unwrap().is_none() {
         if Instant::now() >= deadline {
             let _ = gui.kill();

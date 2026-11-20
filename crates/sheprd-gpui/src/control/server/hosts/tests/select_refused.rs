@@ -1,8 +1,9 @@
+// ABOUTME: Checks repeated host selection refusals through the real window handler.
+// ABOUTME: Keeps each control reply and status notice aligned with its typed cause.
 //! `host select` passes on why the window refused, each time it refuses.
 use super::*;
+use crate::i18n::Localize as _;
 use crate::state::ConnectionStatus;
-
-const UNSUPPORTED: &str = "Current endpoint does not support surface switching";
 
 /// A window whose selected host is connected but cannot hand its surface
 /// over, beside a saved host to switch to.
@@ -28,13 +29,14 @@ fn the_same_refusal_twice_in_a_row_says_why_both_times(cx: &mut TestAppContext) 
     let (view, cx) = window(cx);
     view.update(cx, |view, cx| {
         stuck_on_local(view);
-        let refused = Response::error(ErrorCode::Failed, UNSUPPORTED);
+        let reason = crate::endpoint::Error::SurfaceSwitchingUnsupported.localize();
+        let refused = Response::error(ErrorCode::Failed, reason.as_str());
         for attempt in 1..=2 {
             let answer = select(view, "ssh:devbox", |view, id| view.select_endpoint(id, cx));
             assert_eq!(answer, refused, "attempt {attempt}");
             assert_eq!(view.selected_endpoint, 0);
             // The status bar shows the refusal as before.
-            assert_eq!(view.notices.text(), Some(UNSUPPORTED));
+            assert_eq!(view.notices.text(), Some(reason.as_str()));
         }
     });
 }

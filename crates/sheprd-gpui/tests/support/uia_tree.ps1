@@ -1,15 +1,25 @@
+# ABOUTME: Inspects and acts only on the native fixture's owned UIA windows.
+# ABOUTME: Refuses keyboard input unless the exact private window owns foreground focus.
 # Prints a process's windows as UI Automation's control view shows them, the
 # tree Narrator and NVDA read: one line per element, indented by depth, with
 # its control type, name, and the patterns or states that matter here. With
 # -Keys, it then brings the window forward, sends each key ("|"-separated,
 # SendKeys syntax), and prints the element that has keyboard focus after it.
-param([int]$ProcessId, [string]$Keys = '')
+param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '', [string]$ExpectedButton = '', [string]$Expand = '', [string]$MenuItem = '', [string]$GroupActionsFor = '', [string]$FocusWorkspace = '', [switch]$ExpectExit, [switch]$SkipTree)
+[Console]::WriteLine('UIA stage: script entry')
 $ErrorActionPreference = 'Stop'
+. "$PSScriptRoot\powershell_modules.ps1"
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::WriteLine('UIA stage: encoding configured')
+[Console]::WriteLine('UIA stage: loading assemblies')
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Windows.Forms
+[Console]::WriteLine('UIA stage: compiling native helpers')
 Add-Type @"
 using System; using System.Runtime.InteropServices;
 public static class HerdrUia {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int key);
   [DllImport("user32.dll")] public static extern void keybd_event(byte k, byte s, uint f, UIntPtr e);
 }
 "@
@@ -44,20 +54,116 @@ function Walk($element, $indent) {
 }
 
 $condition = New-Object System.Windows.Automation.PropertyCondition ($automation::ProcessIdProperty), $ProcessId
-foreach ($window in $automation::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children, $condition)) {
-  Walk $window ''
+[Console]::WriteLine('UIA stage: finding private windows')
+$windows = $automation::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children, $condition)
+[Console]::WriteLine("UIA stage: reading $($windows.Count) private windows")
+if (-not $SkipTree) {
+  foreach ($window in $windows) {
+    Walk $window ''
+  }
+}
+if ($SkipTree) {
+  [Console]::WriteLine('UIA stage: window discovery complete; tree dump skipped')
+} else {
+  [Console]::WriteLine('UIA stage: tree complete')
+}
+
+if ($GroupActionsFor) {
+  $name = [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $GroupActionsFor)
+  $type = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::TabItem)
+  $condition = [System.Windows.Automation.AndCondition]::new($name, $type)
+  $tabs = @(foreach ($window in $windows) { $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition) })
+  if ($tabs.Count -ne 1) { throw "Expected one private tab '$GroupActionsFor', found $($tabs.Count)" }
+  $strip = $walker.GetParent($tabs[0])
+  if ($strip.Current.ControlType -ne [System.Windows.Automation.ControlType]::Tab) { throw 'The private tab has no tab-strip parent' }
+  $control = $walker.GetNextSibling($strip)
+  while ($null -ne $control -and $control.Current.ControlType -ne [System.Windows.Automation.ControlType]::Tab) {
+    if ($control.Current.ControlType -eq [System.Windows.Automation.ControlType]::Button -and $control.Current.Name -ceq 'Tab actions') { break }
+    $control = $walker.GetNextSibling($control)
+  }
+  if ($null -eq $control -or $control.Current.ControlType -ne [System.Windows.Automation.ControlType]::Button -or $control.Current.ProcessId -ne $ProcessId) {
+    throw 'The private tab strip has no adjacent Tab actions control'
+  }
+  $control.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+}
+
+if ($Invoke -or $MenuItem -or $Expand) {
+  $target = if ($Invoke) { $Invoke } elseif ($MenuItem) { $MenuItem } else { $Expand }
+  $type = if ($Invoke) { [System.Windows.Automation.ControlType]::Button } else { [System.Windows.Automation.ControlType]::MenuItem }
+  $name = [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $target)
+  $button = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, $type)
+  $namedButton = [System.Windows.Automation.AndCondition]::new($name, $button)
+  $buttons = @(foreach ($window in $windows) {
+    $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $namedButton)
+  })
+  if ($buttons.Count -ne 1) { throw "Expected one private control named '$target', found $($buttons.Count)" }
+  if ($Expand) {
+    $buttons[0].GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+  } else {
+    $buttons[0].GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+  }
 }
 
 if ($Keys) {
   $handle = (Get-Process -Id $ProcessId).MainWindowHandle
+  if ($handle -eq [IntPtr]::Zero) { throw 'The private process has no main window' }
   # Windows lets a background process raise a window right after a key press.
   [HerdrUia]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero)
   [HerdrUia]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
   [HerdrUia]::SetForegroundWindow($handle) | Out-Null
   Start-Sleep -Milliseconds 500
+  if ($FocusWorkspace) {
+    if ([HerdrUia]::GetForegroundWindow() -ne $handle) { throw 'The private window is not foreground' }
+    $root = $automation::FromHandle($handle)
+    if ($root.Current.ProcessId -ne $ProcessId) { throw 'The native root belongs to another process' }
+    $name = [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $FocusWorkspace)
+    $type = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)
+    $rows = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.AndCondition]::new($name, $type))
+    if ($rows.Count -ne 1) { throw 'Expected one named workspace in the private window' }
+    $row = $rows[0]
+    if ($row.Current.IsOffscreen -or -not $row.Current.IsEnabled -or -not $row.Current.IsKeyboardFocusable) { throw 'The private workspace cannot receive visible keyboard focus' }
+    $row.SetFocus()
+    $deadline = [DateTime]::UtcNow.AddSeconds(3)
+    while (-not $row.Current.HasKeyboardFocus) {
+      if ([DateTime]::UtcNow -ge $deadline) { throw 'The private workspace did not receive keyboard focus' }
+      Start-Sleep -Milliseconds 10
+    }
+  }
   foreach ($key in $Keys.Split('|')) {
+    $focused = $automation::FocusedElement
+    if ([HerdrUia]::GetForegroundWindow() -ne $handle -or
+        $focused.Current.ProcessId -ne $ProcessId) {
+      throw 'The private window does not own foreground keyboard focus'
+    }
+    if ($ExpectedButton -and
+        ($focused.Current.ControlType -ne [System.Windows.Automation.ControlType]::Button -or
+         $focused.Current.Name -cne $ExpectedButton)) {
+      throw "The focused control is not the expected private button '$ExpectedButton'"
+    }
+    if ($FocusWorkspace) {
+      if ($focused.Current.ControlType -ne [System.Windows.Automation.ControlType]::ListItem -or $focused.Current.Name -cne $FocusWorkspace) { throw 'The named workspace lost native keyboard focus' }
+      foreach ($modifier in @(0x10, 0x11, 0x12, 0x5B, 0x5C)) {
+        if (([HerdrUia]::GetAsyncKeyState($modifier) -band 0x8000) -ne 0) { throw 'A modifier is already held before workspace input' }
+      }
+    }
     [System.Windows.Forms.SendKeys]::SendWait($key)
+    if ($FocusWorkspace) {
+      foreach ($modifier in @(0x10, 0x11, 0x12, 0x5B, 0x5C)) {
+        if (([HerdrUia]::GetAsyncKeyState($modifier) -band 0x8000) -ne 0) { throw 'Workspace input left a modifier held' }
+      }
+    }
+    if ($ExpectExit) {
+      # The owned app may already be gone; never inspect another app's new focus.
+      [Console]::WriteLine('UIA_KEY expected_exit=true sent=true')
+      break
+    }
     Start-Sleep -Milliseconds 400
-    "focus after $key -> $(Describe $automation::FocusedElement)"
+    $focused = $automation::FocusedElement
+    if ($focused.Current.ProcessId -ne $ProcessId) { throw 'Native keyboard focus left the private process' }
+    if ($FocusWorkspace) {
+      if ([HerdrUia]::GetForegroundWindow() -ne $handle -or -not [System.Windows.Automation.Automation]::Compare($focused, $row)) { throw 'Native keyboard focus left the named private workspace' }
+      [Console]::WriteLine('WORKSPACE_KEY focused=true released=true sent=true')
+    }
+    "focus after $key -> $(Describe $focused)"
   }
 }

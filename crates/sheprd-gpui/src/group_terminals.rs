@@ -1,3 +1,5 @@
+// ABOUTME: Owns each window's active and parked terminal-group connections.
+// ABOUTME: Keeps attachment readiness, input fences, and cleanup with the selected endpoint.
 //! A client connection per editor group that shows a terminal.
 //!
 //! The daemon keeps a focused tab and projects a surface per client, so each
@@ -28,6 +30,10 @@ use gpui::{prelude::*, *};
 use serde_json::json;
 use sheprd_client::{ConnectOptions, Method};
 use std::time::{Duration, Instant};
+
+#[cfg(all(target_os = "macos", feature = "integration-test"))]
+#[path = "working_profile/groups.rs"]
+mod working_profile;
 
 /// How long a parked connection waits for its tab before asking again.
 const REFOCUS_AFTER: Duration = Duration::from_secs(1);
@@ -267,6 +273,8 @@ impl SheprdWindow {
             .collect();
         let now = Instant::now();
         let last_input = self.last_input;
+        // Remote bridges can start Herdr too. Wait for the endpoint to serve before attaching groups.
+        let endpoint_serving = self.endpoints[self.selected_endpoint].serving();
         let terminals = &mut self.group_terminals;
         terminals.parked.retain(|parked| {
             parked.workspace == key && needed.iter().any(|(group, _)| *group == parked.group)
@@ -283,10 +291,12 @@ impl SheprdWindow {
                 .find(|parked| parked.group == *group);
             match existing {
                 Some(parked) => parked.steer(tab, now, last_input),
+                None if !endpoint_serving => {}
                 None if terminals.retry.iter().any(|(waiting, _)| waiting == group) => {}
                 None => {
                     let mut connection = ConnectionBridge::new(target.clone());
-                    connection.reconnect(self.options, false, true);
+                    // Only the endpoint owns starting Herdr. Parked groups attach.
+                    connection.reconnect(self.options, false, true, crate::daemon::Start::Never);
                     terminals.parked.push(Parked {
                         group: *group,
                         workspace: key.clone(),

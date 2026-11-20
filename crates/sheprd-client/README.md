@@ -4,7 +4,7 @@ Local, SSH, and WSL client for Herdr's stable generation 1 endpoint. Local
 connections and SSH endpoints work on Unix and on Windows, and WSL
 distributions are Windows-only. This crate
 does not link Herdr, GPUI, ratatui, crossterm, Tokio, or a PTY implementation.
-The workspace centralizes the pinned GPUI dependency (`gpui-pre` 0.3.10) for the GUI member.
+The workspace centralizes the pinned GPUI dependency (`gpui-pre` 0.3.11) for the GUI member.
 
 ```rust,no_run
 use sheprd_client::{connect, ClientEvent, ConnectOptions, ConnectTarget};
@@ -125,7 +125,14 @@ retires its masters, since the network path may have changed. The bridge,
 port forwards, `script_command`, and Windows never share.
 Both are blocking helpers for background workers; absent or empty keys return `None`.
 
-All fallible client APIs return the crate-root `Error`, derived with `thiserror`.
+`process_output::capture` owns a pipe and captures a bounded prefix, tail, or limited read.
+Its I/O boundary returns `io::Result` with concrete causes.
+Run it and drop its `Capture` on a background worker.
+Drop cancels and joins the reader without waiting for other processes to close inherited writers.
+Unix readers use nonblocking pipes; Windows readers peek before each bounded read.
+SSH probes and the app's device CLI share this capture and keep one deadline for all output.
+
+Client protocol and session operations return the crate-root `Error`, derived with `thiserror`.
 I/O, protocol, and JSON failures retain their concrete sources; callers can match
 variants or inspect `std::error::Error::source()` rather than parsing messages.
 `Error::kind()` preserves transport retry/cancellation categories. Historical
@@ -160,8 +167,8 @@ operation and waits for it only until the caller's deadline:
 These calls (`transport/overlapped.rs`) are the stream's only `unsafe`, because
 `interprocess` and the standard library block in `WriteFile` and the asynchronous
 wrappers need a runtime or a completion-port reactor. The crate also exports
-`pipe_available`, one `PeekNamedPipe` call, for the app's control pipe, which
-reads a synchronous pipe and has no other bounded way to. An SSH or WSL bridge's
+`pipe_available`, one `PeekNamedPipe` call, for synchronous control and child-output pipes.
+An SSH or WSL bridge's
 stream is the same type over two private pipes the crate creates for the child's
 stdin and stdout, overlapped on this end, with the same deadlines; the standard library's
 `Stdio::piped` ends are not documented to be overlapped.

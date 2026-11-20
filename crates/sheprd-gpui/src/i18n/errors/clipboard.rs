@@ -6,6 +6,8 @@ use crate::{i18n::fl, window::clipboard::Error};
 impl Localize for Error {
     fn localize(&self) -> String {
         match self {
+            Self::Busy => fl!("error-clipboard-busy"),
+            Self::Cancelled => fl!("error-clipboard-cancelled"),
             Self::Changed => fl!("error-clipboard-changed"),
             Self::Encoding(_) => fl!("error-clipboard-encoding"),
             #[cfg(target_os = "macos")]

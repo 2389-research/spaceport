@@ -1,0 +1,28 @@
+{
+  "source": "23cab5b4bb90932f19265feb80c0427ec5308d33",
+  "run": 44652883114,
+  "job": 136012085170,
+  "url": "https://github.com/2389-research/spaceport/actions/runs/44652883114/job/136012085170",
+  "observed_at": "2026-11-20T01:32:42.8595383Z",
+  "phase": "failure",
+  "file": "failure-23cab5b4b.png",
+  "dimensions": [1200, 780],
+  "bytes": 59766,
+  "sha256": "220159fa7b86accfe31a4093b4a40720668b7646e888283675514afdca00b311",
+  "result": "failed native source-row pixel assertions",
+  "samples": {
+    "top": [39, 13, 17, 255],
+    "bottom": [11, 13, 45, 255]
+  },
+  "qualified": false,
+  "inspection": "Root inspected the actual decoded failure capture. Asset centers are bright; sampled edges are dim.",
+  "diagnosis": "The probe samples tiny images near their atlas filter boundaries. Pinned DirectX uses bilinear filtering. Source centers confirm the expected colors; the green center blends over the red/blue boundary.",
+  "center_samples": [
+    { "point": [358, 178], "rgba": [249, 0, 0, 255], "role": "red, one device pixel above overlay" },
+    { "point": [358, 260], "rgba": [0, 0, 246, 255], "role": "blue, one device pixel below overlay" },
+    { "point": [505, 179], "rgba": [253, 253, 0, 255], "role": "yellow center" },
+    { "point": [358, 219], "rgba": [63, 125, 65, 255], "role": "green center over red/blue boundary" },
+    { "point": [579, 719], "rgba": [0, 249, 249, 255], "role": "cyan center" }
+  ],
+  "native_baseline": "Not run. Source comparison finds the same image mapping call before the cache/scroll change."
+}

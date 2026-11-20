@@ -126,9 +126,10 @@ These commands target the default local session, not a named session, SSH host,
 or other device. For named-session and other recovery guidance, see the
 [Herdr troubleshooting guide](https://herdr.dev/docs/troubleshooting/).
 
-For split terminal panes within a tab, **Focus follows mouse** is on by default.
-Disable it in **Settings > Tabs & panes > Panes**, or run
-`spaceport config set focus_follows_mouse false`.
+For split terminal panes within a tab, **Focus follows mouse** is off by default.
+Enable it in **Settings > Tabs & panes > Panes**, or run
+`spaceport config set focus_follows_mouse true`.
+Enabling it changes Herdr's shared focused pane, including where other clients type.
 Hovering a pane focuses it when the window is active and
 terminal input has keyboard focus. Held mouse buttons, modifiers, dragging,
 IME composition, menus, and terminal popups suppress hover focus.
@@ -148,9 +149,9 @@ main window retains its geometry for next time. Additional windows cascade from
 the last open main window. Fullscreen windows restore to their normal rectangle.
 Each window reopens on the display it was on; if that display is disconnected,
 it opens on the primary display, resized and moved to fit. Logs windows
-are not restored. Geometry is stored in `window-state.json` under
-`$XDG_STATE_HOME/herdr/gpui`, or `~/.local/state/herdr/gpui` by default
-(`%LOCALAPPDATA%\herdr\gpui` on Windows when `HOME` is unset). Native
+are not restored. Geometry is stored in `window-state.json` under the
+[selected build state directory](../../docs/cli.md).
+Windows uses `%LOCALAPPDATA%` when `HOME` is unset. Native
 test modes skip this state. Up to 64 main windows are restored.
 
 The inherited custom updater has been removed. App updates remain a required
@@ -290,7 +291,8 @@ until it restarts; check Core's machine list to see what happened.
 The dialog has no host-key option. Hosts that keep no stable key to check are
 listed by hand under `[ssh] skip_host_key_verification` in the local config,
 by target (see [`config-gpui.example.toml`](../sheprd-settings/config-gpui.example.toml)). For those targets the app passes
-`StrictHostKeyChecking=no` and reads no known hosts file. To verify a host
+`StrictHostKeyChecking=no` and reads no known hosts file. Agent and X11
+forwarding are disabled, even when enabled in SSH config. To verify a host
 again, delete its target from that list; connections opened without checking
 take no new commands once it is gone.
 
@@ -397,8 +399,8 @@ and its terminals running.
 
 Reopening the GUI keeps each pane's scrollback, which the daemon holds. Herdr
 replays scrollback after the daemon itself restarts only when its opt-in
-`[experimental] pane_history = true` is set. **Settings > General > Session
-restore** toggles that shared setting and asks the daemon to reload it. Herdr
+`[experimental] pane_history = true` is set. **Settings > Tabs & panes > Session
+restore** edits that runtime setting and asks local Herdr sessions to reload it. Herdr
 then saves pane output to `session-history.json` next to `session.json`, so
 treat that file like terminal history. The GUI never writes terminal output to
 disk itself.
@@ -415,39 +417,53 @@ are refused, and a file the GUI creates is private (`0600`).
 
 ## Configuration
 
-GUI settings live in `$XDG_CONFIG_HOME/herdr/`, falling back to
-`~/.config/herdr/` and, on Windows, to `%APPDATA%\herdr\`. An app opened from
+Spaceport settings live in `$XDG_CONFIG_HOME/spaceport/`, falling back to
+`~/.config/spaceport/` and, on Windows, to `%APPDATA%\spaceport\`. An app opened from
 Finder or a desktop launcher does not inherit a shell's `XDG_CONFIG_HOME`, so
 when it has none and no daemon answers at `~/.config/herdr/` (a socket file
 an exited daemon left behind does not count), it asks the login shell for its
-value once at startup and uses it for these settings, the daemon's
-`config.toml`, and the daemon's sockets. A daemon the app starts is given the
+value once at startup and uses it as the configuration root for Spaceport and
+the daemon's sockets. A daemon the app starts is given the
 same root, so it listens where the app connects:
 
-- `config-gpui.toml` contains managed defaults and documentation. Its first line
+- `config.toml` contains managed defaults and documentation. Its first line
   warns **DO NOT EDIT -- WILL BE OVERWRITTEN**. Startup and GUI config reload
   replace it with the current release's defaults, exposing newly added settings.
-- `config-gpui.local.toml` contains your persistent overrides. Edit this file;
+- `config.local.toml` contains your persistent overrides. Edit this file;
   omitted keys inherit the managed defaults, nested tables merge key by key,
-  and arrays replace rather than append. Theme-picker saves also go here.
+  and arrays replace rather than append. App theme-picker saves also go here.
+- `view.toml` holds private base themes, sounds, toasts, sidebar preferences,
+  and `[keys]` prefix chords. The base-theme controls edit this file.
 
-Close older GPUI versions before upgrading: they still write theme changes to
-the old managed path rather than the local override file.
+To use Ctrl+A as Spaceport's prefix, set this in `spaceport/view.toml`:
 
-The files are created automatically. Existing pre-managed configs are copied
-verbatim into the local file before the original is replaced. This preserves
-comments and all explicitly set values, including old defaults; remove a local
-key to follow the current default again. If a different local file already
-exists, migration stops without overwriting either file and asks you to merge
-them. A sibling `config-gpui.lock` serializes application writes across windows
+```toml
+[keys]
+prefix = "ctrl+a"
+```
+
+Spaceport keeps this prefix separate from Herdr's own client settings.
+Changing the view prefix leaves Ctrl+B available to terminal applications.
+
+Creation, close, toggle, and daemon command shortcuts run once per key press.
+Font size, navigation, pane resizing, and terminal input still repeat.
+Holding the prefix keeps its next chord armed.
+Release a consumed chord key before typing it as text.
+
+The local pane-history switch alone edits Herdr's runtime configuration:
+`HERDR_CONFIG_PATH`, otherwise the configuration root's `herdr/config.toml`.
+Its guarded write preserves comments and all unrelated runtime keys.
+
+Spaceport creates its managed files automatically and keeps upstream settings separate.
+Remove a local override to follow the current default again.
+A sibling `config.lock` serializes application writes across windows
 and processes. Invalid local settings keep the current in-memory configuration
-on reload. Native overrides do not modify Herdr's shared config; the shared
-settings controls described below explicitly edit that separate file.
+on reload. Base view settings stay in `view.toml`.
 
 See
 [`config-gpui.example.toml`](../sheprd-settings/config-gpui.example.toml) for a complete example.
 Font sizes use logical pixels (finite 8..48), not typographic points. Saving
-`config-gpui.local.toml` automatically reloads every open GUI window, usually
+`config.local.toml` automatically reloads every open GUI window, usually
 within half a second. Font family, font size, theme, and layout changes apply
 together; invalid edits keep the last valid settings and show a load error.
 Reload waits while a theme preview/save is active. The manual GUI config reload
@@ -459,10 +475,20 @@ a sidebar. General lists every optional `[features]` flag with a switch and a
 description of what it does.
 The terminal stays usable while Settings is open. Cmd-W (or Ctrl-W) closes only
 Settings; reopening activates the existing window instead of creating a duplicate.
-Sheprd's own settings remain editable if the originating session window closes.
-Each row is tagged with the app that reads it: **Herdr** for settings in
-Herdr's shared config, which its terminal client follows too, and **Sheprd**
-for settings only this app reads, kept in `config-gpui.local.toml`.
+Tab and Shift-Tab move between enabled controls and show a focus ring.
+Enter or Space activates a focused button, switch, segment, or colour choice.
+Dropdowns use Up/Down, Enter to choose, and Escape to cancel.
+Their trigger regains focus when the list closes.
+The font picker keeps Tab inside its controls; its search field uses Up/Down to choose a family.
+Theme search also uses Up/Down to browse its grid.
+The backdrop opacity slider uses arrow keys for one-percent steps and Home/End for its limits.
+Focus scrolls a row into view when needed.
+Invalid numeric or colour text keeps focus until corrected or cancelled with Escape.
+An active IME composition keeps ownership of Tab.
+Spaceport's own settings remain editable if the originating session window closes.
+Rows tagged **Spaceport view** edit the private `view.toml` base settings.
+Rows tagged **Spaceport** use app overrides in `config.local.toml`.
+The **Herdr** pane-history row edits the runtime's own config file.
 
 Appearance provides a large live preview and a searchable, virtualized grid of
 theme cards, including every discovered Ghostty theme rather than a small
@@ -483,7 +509,7 @@ the draft and an error so it can be retried. Other controls keep their existing
 automatic-save behavior without resetting the live theme or layout. Reload also
 preserves these drafts. Theme, font, and layout writes from Settings are serialized.
 
-**Ghostty** and **Herdr** are independent library filters, both enabled initially.
+**Ghostty** and **Spaceport view** are independent library filters, both enabled initially.
 Turn either off to show only the other; search text is preserved, and changing a
 filter does not change the live theme or pending draft. Ghostty includes native
 built-ins and theme files. The built-ins bundle popular Ghostty themes from
@@ -492,9 +518,9 @@ still lists them; when Ghostty is installed, its copy of a built-in, including
 an older spelling such as `tokyonight` or `catppuccin-mocha`, is listed once,
 as the built-in. A theme saved under such a spelling stays listed and loads
 from its file. Every card identifies its source, including themes
-with the same name in both libraries. Herdr selections edit the shared theme,
-which changes the GUI only when it follows Herdr rather than a native override.
-Follow Herdr and high contrast remain available independently.
+with the same name in both libraries. Spaceport view selections edit the base theme.
+The GUI uses that theme when **Follow view theme** is selected.
+Follow view theme and high contrast remain available independently.
 
 Fonts uses compact rows for Terminal, Sidebar, Tabs, and Interface, with family
 and size together and a shared specimen of the selected role below. Click a
@@ -503,14 +529,14 @@ families together without changing their sizes. The catalog stays hidden until
 requested. Size steppers coalesce repeated changes; click a size to type an
 integer from 8 through 48. Enter or blur saves, Escape cancels.
 Accepted saves survive closing Settings. Family and size edits preserve configured
-fallbacks and unrelated settings in `config-gpui.local.toml`. General retains
+fallbacks and unrelated settings in `config.local.toml`. General retains
 browser-skill installation/removal and configuration paths.
 
 Settings groups its pages: Appearance (Theme, Sidebar, Fonts, Status bar),
 Behaviour (General, Tabs & panes, Code, Notifications), Connect (Integrations,
 Plugins, Cloud devices) and Advanced (Configuration), with a search box above
-them that finds any row. Every row shows whether it is shared with Herdr or
-local to this app. General has **Show listening ports**, **Smooth scrolling**,
+them that finds any row. Tags distinguish Spaceport overrides, private view
+settings, and runtime-owned pane history. General has **Show listening ports**, **Smooth scrolling**,
 the clipboard notification overrides, **Remove worktrees of merged PRs**,
 the browser skill and **Install beta releases**.
 Tabs & panes has the tab bar, **Confirm before closing** a tab, pane or
@@ -518,18 +544,18 @@ workspace, **Focus follows mouse** and session restore. Notifications has
 delivery, **Finished notifications**, the in-app toast overrides (a 0-3600
 second delay field), agent sounds with a 0-100% **Volume**, and the status
 indicator style and icon set. An override dropdown's first entry follows
-Herdr's value and removes only the local override. Sidebar has the layout
+the view file's value and removes only the local override. Sidebar has the layout
 preset, selection marks, **Device footer**, **Show agents**, **Show search**,
 **Show repository icons**, **Show device icons**, spacing sliders and host
 colours. Theme ends with the window backdrop and terminal padding. Custom sound
-paths and per-agent sound policies remain shared-file settings. Configuration
+paths and per-agent sound policies live in `view.toml`. Configuration
 paths are diagnostic facts rather than editable preference values.
 
 These native edits save automatically through the serial background save path,
 preserving unrelated TOML keys/comments and pending theme/layout selections.
-Controls are disabled while a save or reload is in progress. Shared settings
+Controls are disabled while a save or reload is in progress. Private view settings
 retain their platform restrictions; Windows can edit native overrides but not
-shared Herdr settings. System delivery posts OS notifications (see
+base view settings. System delivery posts OS notifications (see
 [System notifications](#system-notifications)); terminal delivery remains
 unsupported by this GUI.
 
@@ -538,20 +564,19 @@ ID breaking ties. Its search field filters names and IDs without contacting the
 daemon. Install actions still use the original ID and selected source host;
 filtering never changes the action destination.
 
-Theme, indicator style, sound, and toast delivery are **shared with the local
-Herdr TUI**. They read `HERDR_CONFIG_PATH`, otherwise
-`$XDG_CONFIG_HOME/herdr/config.toml` or `~/.config/herdr/config.toml`. The GUI uses
-the release `herdr` namespace even in debug builds; select a `herdr-dev` config
-explicitly with `HERDR_CONFIG_PATH` when needed. These are local preferences,
-not a remote daemon's configuration: a socket does not expose the daemon's config
-path or effective settings. General displays the shared file and reload control.
+Theme, indicator style, sound, toast delivery, and prefix keys use Spaceport's
+private `view.toml`, with app overrides from `config.local.toml`.
+Configuration displays both Spaceport files and their reload control.
+The runtime-owned pane-history controls read only that feature from each
+Herdr config. A runtime's theme and prefix do not become Spaceport preferences.
 
 This follows Herdr's own client/server split, which `herdr --remote` uses too.
 Selecting a different device does not change which settings apply:
 
 | Scope | Settings | Source |
 | --- | --- | --- |
-| GUI-wide | Theme and palette overrides, indicator style, sound, toast delivery and clipboard toast, sidebar agent rows (`state_text`), sidebar collapsing (`sidebar_collapsed_mode`, `sidebar_start_collapsed`), wheel and right-click input (`mouse_scroll_lines`, `right_click_passthrough_modifier`), and `[keys]` including the prefix | Local `config.toml`, under `config-gpui.toml` overrides |
+| GUI-wide | Theme and palette overrides, indicator style, sound, toast delivery and clipboard toast, sidebar agent rows (`state_text`), sidebar collapsing (`sidebar_collapsed_mode`, `sidebar_start_collapsed`), wheel and right-click input (`mouse_scroll_lines`, `right_click_passthrough_modifier`), and `[keys]` including the prefix | Spaceport `view.toml`, under `config.local.toml` overrides |
+| Runtime history | `[experimental] pane_history` | The local or SSH host's Herdr config |
 | Per host | Worktree directory and custom commands, plus pane defaults, pane borders, gaps, scrollbars, and border labels, and integrations, which the daemon applies itself | That host's daemon, through its snapshot |
 
 Herdr's pane chrome settings in `[ui]` — `pane_borders` (`auto`, `always`,
@@ -565,7 +590,7 @@ reload), not the local file, and draws a pixel scrollbar thumb only where the
 daemon reserved a scrollbar column. Changing these locally has no effect on a
 remote device's daemon. `mouse_scroll_lines` and
 `right_click_passthrough_modifier` are client input settings, read from the
-local `config.toml` like the TUI does.
+private `view.toml`.
 
 Keybindings stay local on an SSH device, as with Herdr's default
 `--remote-keybindings local`. **Use server keybindings** in a device's
@@ -878,9 +903,9 @@ contrast against the sidebar, menus, and selected rows. Each color keeps its
 hue and moves only its lightness, and only as far as it has to, so a theme
 that already reads well is drawn as authored: on dark themes the status dots
 keep upstream's colors, while light themes such as Catppuccin Latte get darker
-versions of the same hues. **Settings > Theme > High contrast**, or
-top-level `contrast = "high"`, raises that minimum from 3:1 (the WCAG level for
-graphics) to 4.5:1 (the level for text), lifts dim labels to it too, and makes
+versions of the same hues. Muted and secondary text always reach 4.5:1 against
+normal and hovered chrome. **Settings > Theme > High contrast**, or top-level
+`contrast = "high"`, also raises colored marks from 3:1 to 4.5:1 and makes
 selected rows stand further off the surface. Terminal output is never
 adjusted; programs keep the colors they asked for.
 
@@ -1437,7 +1462,13 @@ no trailing padding. A selection reaching rows scrolled out of view exposes
 only its visible part, though the copy still includes all of it. Copy mode's
 keyboard selection is not exposed.
 
-While the terminal has keyboard focus and is ready for input, its accessibility
+Both Herdr and Core terminal panes expose their visible rows through AccessKit.
+An unselected pane exposes the program's visible cursor as a caret.
+Changed visible rows carry polite live-region metadata.
+Native screen-reader announcements still need platform qualification.
+Settings chrome follows the configured UI font size; font previews retain their own sizes.
+
+While the Herdr terminal has keyboard focus and is ready for input, its accessibility
 node also accepts text insertion (`AXValue` on macOS), so dictation tools can
 recognize a writable target. Setting it pastes into the focused pane or open
 terminal popup; it does not replace terminal output or the selected cells.
@@ -1990,7 +2021,7 @@ tabs. Splitting opens nothing new and moves no tab.
   per workspace. A group's own connection closes with the group, or when the
   window leaves the workspace or host; returning reconnects it.
 - Each workspace's groups, their tabs and widths, and the group in use are
-  saved in `$XDG_STATE_HOME/herdr/gpui/editor-groups.json` and come back
+  saved in `editor-groups.json` under the selected build state directory and come back
   after a restart; the group in use returns to its own tab. Closing a
   workspace in Herdr forgets its groups, and a damaged file starts every
   workspace unsplit. With several windows on one workspace, the last change
@@ -2039,7 +2070,7 @@ updates. Only files carrying the app's managed-skill marker are rewritten or
 removed; a skill of the same name you wrote yourself is left alone.
 
 - The offer appears in the first window after it connects. **Not now**, or
-  closing it, is remembered in `$XDG_STATE_HOME/herdr/gpui/agent-skill.json`
+  closing it, is remembered in `agent-skill.json` under the selected build state directory
   and it is not asked again.
 - Preferences > Agents installs or removes it at any time; so does the
   palette's **Install Browser Skill for Agents**.
@@ -2312,7 +2343,7 @@ programs. This follows terminal conventions alongside the
 [GNOME keyboard guidelines](https://developer.gnome.org/hig/reference/keyboard.html),
 whose plain Ctrl editing shortcuts also work in the app's text fields.
 
-Windows starts from the Linux profile, which matches Windows Terminal's
+Windows starts from the shared Ctrl profile, which matches Windows Terminal's
 Ctrl+Shift conventions: no default uses the Win key, which Windows keeps for
 itself, and plain Ctrl keys still reach terminal programs. Reset font size is
 Ctrl+0 there, as in Windows Terminal, because Windows can take Ctrl+Shift+0 for
@@ -2324,7 +2355,7 @@ switching input languages. Alt+F4 closes a window through Windows itself.
 | New workspace | Ctrl+Alt+Shift+N |
 | Copy / Paste | Ctrl+Shift+C / Ctrl+Shift+V |
 | Find / Command palette | Ctrl+Shift+F / Ctrl+Shift+P |
-| Resume palette | Ctrl+Alt+Shift+R |
+| Resume palette | Ctrl+Shift+R (Linux) / Ctrl+Alt+Shift+R (Windows) |
 | Split right / Split down | Ctrl+Shift+D / Ctrl+Alt+Shift+D |
 | Close pane / Close tab | Ctrl+Shift+W / Ctrl+Alt+Shift+W |
 | Next / Previous tab | Ctrl+Shift+PageDown / Ctrl+Shift+PageUp |
@@ -2338,10 +2369,29 @@ switching input languages. Alt+F4 closes a window through Windows itself.
 | Quit | Ctrl+Shift+Q |
 | Full screen | Ctrl+Shift+F11 |
 
+The default prefix is Ctrl+B. Press the prefix, release it, then press the chord key.
+Plain F6, Shift+F6, F11, and Ctrl+PageUp/PageDown remain available to pane programs.
+Spaceport adds private-view `focus_next_region`, `focus_previous_region`, and `toggle_full_screen` prefix defaults on Linux and Windows.
+They use Prefix+F6, Prefix+Shift+F6, and Prefix+F11 respectively.
+These three entries are Spaceport commands, rather than Herdr TUI defaults.
+Their unconfigured defaults yield to existing daemon custom chords.
+Explicit `[keys]` or `[keybindings]` assignments keep their configured precedence.
+Herdr-native prefix defaults retain their TUI precedence.
+Linux leaves GNOME's Ctrl+Alt+Shift+arrows unbound; Prefix, H/J/K/L still focus panes.
+
 The in-app reference lists all platform defaults and current overrides. The
 Cmd examples elsewhere in this document describe the macOS profile.
 Ctrl+Shift+U is left unbound for
 [GNOME/IBus Unicode character entry](https://help.gnome.org/users/gnome-help/stable/tips-specialchars.html.en#ctrlshiftu).
+
+In the sidebar, focus a workspace row and press **Alt+Up** or **Alt+Down** to reorder it.
+A parent row moves its repository group; a linked worktree stays among its siblings.
+Only rows on the selected, connected endpoint can move.
+Configured command shortcuts keep priority over these row keys.
+
+For pane dividers, use **Resize mode** or the directional **Resize** commands in shortcut settings.
+Herdr's resize mode uses the prefix followed by R, then arrows or H/J/K/L; Escape leaves it.
+Core pane layouts accept the same directional Resize commands.
 
 A shifted digit or punctuation key arrives as the symbol it types, so every
 default of that kind is bound both ways and either spelling runs it: Ctrl+Shift-1
@@ -3341,11 +3391,16 @@ group named by its title with its description as help text, and its switches,
 choices, buttons, and fields by name and state; Logs as its search field,
 buttons, a list of entries, the level menu, and its status line.
 
-Each button can be invoked from the screen reader. With a Windows contrast
-theme on (Settings > Accessibility > Contrast themes), the app's own marks and
-labels use the **High contrast** level whatever `contrast` says; terminal
-colors and the theme itself are unchanged, since GPUI does not paint with the
-system's contrast colors.
+Each button can be invoked from the screen reader. macOS **Increase Contrast**,
+Windows **Contrast themes**, and Linux's desktop portal contrast preference
+raise the app's own chrome to **High contrast**, whatever `contrast` says.
+Terminal colors remain unchanged.
+
+macOS **Reduce Motion**, Windows **Animation effects**, and Linux's desktop
+portal reduced-motion preference also control app animations. Changes take
+effect within a few seconds. Linux support requires a portal backend that
+provides these preferences. The initial Linux lookup runs asynchronously;
+unavailable preferences leave the last known policy unchanged.
 
 #### The keyboard in the chrome
 
@@ -3361,6 +3416,7 @@ ring. **F10** opens the menu bar. Both region commands can be rebound in
 Keyboard Shortcuts (Cmd+F6 and Cmd+Shift+F6 on macOS). A region's controls are
 tab stops only while it holds the keyboard, so clicking a chrome button never
 pulls typing away from the terminal.
+The default prefix is Ctrl+B. Prefix, F6 and Prefix, Shift+F6 also switch regions.
 
 `tests/accessibility_windows.rs` reads a running window's tree and checks
 these names and where Ctrl+F6 and Tab move focus:
@@ -3375,9 +3431,7 @@ Still missing, and not faked with labels that do nothing:
   results, themes, pull requests), most rows
   and buttons other than the shared field have no role yet, so a screen reader
   hears the dialog's name and its field but not every choice in it;
-- Settings controls built from arbitrary elements (font and color pickers)
-  are not named yet;
-- Settings and Logs have no region keys: there Tab follows
+- Logs has no region keys: there Tab follows
   GPUI's own order only where a control registers a tab stop;
 - when the app starts in the background (from a script rather than the Start
   menu), AccessKit can miss the first activation and report the window rather

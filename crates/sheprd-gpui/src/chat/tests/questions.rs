@@ -1,3 +1,5 @@
+// ABOUTME: Checks readable question history and bounded answer projections.
+// ABOUTME: Verifies prepared text and retained answer behavior across revisions.
 use super::*;
 use crate::{
     chat::prepared::{Body, Part, Prepared, answers_text},
@@ -43,7 +45,7 @@ fn answers_prepare_rich_content_and_readable_copy_once_without_widgets_or_pages(
     let mut transcript = Transcript::new("Codex");
     transcript.entries.push(answered(answers));
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &[(EntryId(1), 1)]);
+    prepared.update(&transcript, &[(EntryId(1), 1)], |_, _| false);
     let first = prepared.body(EntryId(1)).unwrap();
     let Body::Answers { text, parts } = &*first else {
         panic!("prepared answers")
@@ -71,19 +73,19 @@ fn answers_prepare_rich_content_and_readable_copy_once_without_widgets_or_pages(
         );
     }
     assert_eq!(text.matches("**Question ").count(), 2);
-    prepared.update(&transcript, &[(EntryId(1), 1)]);
+    prepared.update(&transcript, &[(EntryId(1), 1)], |_, _| false);
     assert!(Rc::ptr_eq(&first, &prepared.body(EntryId(1)).unwrap()));
     if let EntryKind::Notice { answers, .. } = &mut transcript.entries[0].kind {
         answers[0].answer = "Use **nine**.".into();
     }
-    prepared.update(&transcript, &[(EntryId(1), 2)]);
+    prepared.update(&transcript, &[(EntryId(1), 2)], |_, _| false);
     let next = prepared.body(EntryId(1)).unwrap();
     assert!(!Rc::ptr_eq(&first, &next));
     assert!(matches!(next.as_ref(), Body::Answers { text, .. } if text.contains("Use **nine**.")));
     if let EntryKind::Notice { answers, .. } = &mut transcript.entries[0].kind {
         answers.clear();
     }
-    prepared.update(&transcript, &[(EntryId(1), 3)]);
+    prepared.update(&transcript, &[(EntryId(1), 3)], |_, _| false);
     assert!(prepared.body(EntryId(1)).is_none());
 }
 

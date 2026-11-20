@@ -1,3 +1,7 @@
+// ABOUTME: Bridges ordered connection events into bounded UI mailboxes.
+// ABOUTME: Keeps connection generations isolated from retired readers and paints.
+mod reader;
+
 use crate::{
     config::Theme,
     state::{Answer, ConnectionStatus, LiveState},
@@ -9,16 +13,16 @@ use sheprd_client::{
     protocol::{ClientHostAppearance, ClientHostColor, ClientPaneInputEvent},
 };
 use std::sync::{
-    Arc, Mutex,
+    Arc, Mutex, MutexGuard, TryLockError,
     atomic::{AtomicBool, Ordering},
 };
 
 /// Test builds only: what a test blocks on while a `ConnectionBridge`'s event
 /// reader applies an update. The app polls its mailbox every frame and never
-/// waits on it, so nothing in a production build observes this channel; the
-/// lifecycle tests block here rather than poll on a clock, because a bounded
-/// clock wait is a timing guess that a loaded runner breaks. One channel and
-/// one count per test thread, so every connection a test starts wakes the same
+/// waits on it, so nothing in a production build observes this channel.
+/// Notifications wake lifecycle tests promptly. A bounded recheck also observes
+/// worker flags that can change while a fixture holds the reader's inbox.
+/// One channel and one count per test thread let every connection wake the same
 /// wait, and a wake a test did not need costs it one extra poll.
 ///
 /// Gated on `cfg(test)` rather than `any(test, feature = "integration-test")`:
@@ -35,7 +39,10 @@ pub(crate) mod applied {
             atomic::{AtomicU64, Ordering},
             mpsc::{Receiver, Sender, channel},
         },
+        time::{Duration, Instant},
     };
+
+    pub(crate) const WAIT_TIMEOUT: Duration = Duration::from_secs(30);
 
     thread_local! {
         static WAKES: (Sender<()>, RefCell<Receiver<()>>, Arc<AtomicU64>) = {
@@ -70,21 +77,23 @@ pub(crate) mod applied {
         WAKES.with(|(_, _, applied)| applied.load(Ordering::Acquire))
     }
 
-    /// Blocks until a reader has applied an update or has ended.
-    ///
-    /// A reader that stops without ending hangs the waiting test instead of
-    /// failing it on a clock: a regression should stop the suite loudly, and
-    /// the CI job's own timeout bounds it.
+    /// Waits for a reader update or a recheck of independently changing state.
+    /// Callers still verify their condition and enforce their own wait bound.
     pub(crate) fn wait() {
         WAKES.with(|(_, receiver, _)| {
-            let _ = receiver.borrow().recv();
+            let _ = receiver.borrow().recv_timeout(Duration::from_millis(250));
         });
     }
 
     /// Blocks until [`count`] reaches `applied`, as a test that knows how many
     /// updates it is waiting for waits on.
     pub(crate) fn wait_for(applied: u64) {
+        let until = Instant::now() + WAIT_TIMEOUT;
         while count() < applied {
+            assert!(
+                Instant::now() < until,
+                "the connection reader never settled"
+            );
             wait();
         }
     }
@@ -239,10 +248,16 @@ impl ConnectionBridge {
         self.reset(ConnectionStatus::Detached, active);
     }
 
-    pub fn reconnect(&mut self, options: ConnectOptions, active: bool, surface_active: bool) {
+    pub fn reconnect(
+        &mut self,
+        options: ConnectOptions,
+        active: bool,
+        surface_active: bool,
+        start: crate::daemon::Start,
+    ) {
         tracing::debug!("Connection bridge reconnecting");
         self.reset(ConnectionStatus::Connecting, active);
-        self.start(options, surface_active, |events| {
+        self.start(options, surface_active, start, |events| {
             std::thread::Builder::new()
                 .name("herdr-gui-events".into())
                 .spawn(events)
@@ -254,6 +269,7 @@ impl ConnectionBridge {
         &mut self,
         options: ConnectOptions,
         surface_active: bool,
+        start: crate::daemon::Start,
         spawn: impl FnOnce(Box<dyn FnOnce() + Send>) -> std::io::Result<()>,
     ) {
         self.drained = Arc::new(AtomicBool::new(false));
@@ -266,7 +282,7 @@ impl ConnectionBridge {
         let startup_inbox = self.inbox.clone();
         let result =
             connect_with_connector(target, options, surface_active, move |target, stop| {
-                let result = crate::daemon::connect(target, stop, || {
+                let result = crate::daemon::connect(target, start, stop, || {
                     tracing::debug!("Connection bridge starting local daemon");
                     if let Ok(mut state) = startup_inbox.lock()
                         && state.status == ConnectionStatus::Connecting
@@ -315,6 +331,7 @@ impl ConnectionBridge {
             })
             .map_err(crate::Error::from)
             .and_then(|client| {
+                let handle = client.handle.clone();
                 self.handle = Some(client.handle);
                 let inbox = self.inbox.clone();
                 let drained = self.drained.clone();
@@ -323,41 +340,17 @@ impl ConnectionBridge {
                 let scrollback = self.scrollback.clone();
                 // Drain ordered events even while GPUI is busy; retain only coherent state.
                 spawn(Box::new(move || {
-                    while let Ok(event) = client.events.recv() {
-                        match &event {
-                            ClientEvent::Connected(_) => tracing::debug!("Connection bridge connected"),
-                            ClientEvent::Disconnected { .. } => tracing::debug!(category = "transport_disconnected", "Connection bridge disconnected"),
-                            _ => {}
-                        }
-                        let event = match integrations.lock() {
-                            Ok(mut integrations) => integrations.apply(event),
-                            Err(_) => Some(event),
-                        };
-                        let event = event.and_then(|event| match scrollback.lock() {
-                            Ok(mut scrollback) => scrollback.apply(event),
-                            Err(_) => Some(event),
-                        });
-                        let event = event.and_then(|event| match links.lock() {
-                            Ok(mut links) => links.apply(event),
-                            Err(_) => Some(event),
-                        });
-                        if let Ok(mut state) = inbox.lock() {
-                            match event {
-                                Some(event) => state.apply(event),
-                                // A link answer changes nothing the live state
-                                // holds, but the window polls only when it is dirty.
-                                None => state.dirty = true,
-                            }
-                        }
-                        // After the guard is gone, so a woken waiter always
-                        // finds the update in the inbox.
+                    let reader = reader::Reader {
+                        drained,
+                        handle,
+                        inbox,
+                        integrations,
+                        links,
+                        scrollback,
                         #[cfg(test)]
-                        reader_wake.notify();
-                    }
-                    drained.store(true, Ordering::Release);
-                    #[cfg(test)]
-                    reader_wake.notify();
-                    tracing::debug!("Connection bridge event reader drained");
+                        wake: reader_wake,
+                    };
+                    reader.read(&client.events);
                 }))
                 .map_err(crate::Error::from)
             });
@@ -385,21 +378,38 @@ impl ConnectionBridge {
 
     /// Cheap enough to call every display frame: never blocks the UI thread.
     pub fn has_update(&self) -> bool {
-        self.inbox.try_lock().is_ok_and(|state| state.dirty)
+        self.try_inbox().is_some_and(|state| state.dirty)
+    }
+
+    fn try_inbox(&self) -> Option<MutexGuard<'_, LiveState>> {
+        match self.inbox.try_lock() {
+            Ok(state) => Some(state),
+            Err(TryLockError::WouldBlock) => None,
+            Err(TryLockError::Poisoned(error)) => {
+                if let Some(handle) = &self.handle {
+                    handle.disconnect();
+                }
+                let mut state = error.into_inner();
+                reader::recover(&self.inbox, &mut state);
+                Some(state)
+            }
+        }
+    }
+
+    /// A retry may retire this inbox only after its final ordered update was read.
+    pub(crate) fn retry_ready(&self) -> bool {
+        self.drained.load(Ordering::Acquire) && self.try_inbox().is_some_and(|state| !state.dirty)
     }
 
     /// Whether the worker has reported this link up, which the window learns
     /// only when it next takes an update. Never blocks: `None` while the event
     /// reader holds the inbox, when the answer is not yet known.
     pub fn reports_connected(&self) -> Option<bool> {
-        self.inbox
-            .try_lock()
-            .ok()
-            .map(|state| state.status.is_connected())
+        self.try_inbox().map(|state| state.status.is_connected())
     }
 
     pub fn take_update(&self) -> Option<LiveState> {
-        let mut state = self.inbox.try_lock().ok()?;
+        let mut state = self.try_inbox()?;
         if let Ok(mut retired) = self.retired.lock() {
             for (answer, request) in retired.drain(..) {
                 state.clear_answer(answer, &request);

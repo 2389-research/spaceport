@@ -9,6 +9,10 @@ use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use sheprd_reorder::Beside;
 use std::path::PathBuf;
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+};
 use uuid::Uuid;
 
 mod saved;
@@ -217,6 +221,20 @@ struct Saved {
     next: u64,
 }
 
+/// Owns one unused identity and capacity slot until placement or cancellation.
+/// Dropping a window or queued request releases capacity without any app context.
+#[derive(Debug)]
+pub(crate) struct Reservation {
+    id: TabId,
+    slots: Arc<AtomicUsize>,
+}
+
+impl Drop for Reservation {
+    fn drop(&mut self) {
+        self.slots.fetch_sub(1, Ordering::Relaxed);
+    }
+}
+
 #[derive(Default)]
 pub(crate) struct Store {
     tabs: Vec<Tab>,
@@ -224,6 +242,8 @@ pub(crate) struct Store {
     pub(super) closed: super::closed::ClosedTabs,
     writer: Option<state_file::Writer<Saved>>,
     quitting: bool,
+    restoration_blocked: bool,
+    reservations: Arc<AtomicUsize>,
 }
 
 impl Global for Store {}
@@ -249,32 +269,61 @@ impl Store {
         crate::preferences::state_dir().map(|dir| dir.join("browser-tabs.json"))
     }
 
-    /// Called before starting GPUI, like the window state. A missing or
-    /// damaged file starts with no tabs.
+    /// Restores tabs before GPUI starts. Rejected bytes survive later saves.
+    /// Layout rewrites retain their reservation floor across restarts.
     pub(crate) fn load() -> Self {
-        let path = Self::path();
-        let tabs = path
-            .as_deref()
-            .map(|path| {
-                state_file::read(path, MAX_FILE_BYTES)
-                    .and_then(|bytes| bytes.as_deref().map_or(Ok(Saved::default()), saved::parse))
-            })
-            .transpose()
-            .unwrap_or_else(|error| {
-                tracing::warn!(%error, "Cannot restore browser tabs");
-                None
-            })
-            .unwrap_or_default();
-        let writer = path.and_then(
-            |path| match state_file::Writer::start("browser-tabs", path) {
-                Ok(writer) => Some(writer),
+        Self::load_from(Self::path())
+    }
+
+    pub(super) fn load_from(path: Option<PathBuf>) -> Self {
+        let mut restoration_blocked = false;
+        let mut tabs = path.as_deref().map(Self::read).transpose().unwrap_or_else(|error| {
+            tracing::warn!(%error, "Browser tab restoration failed; saving and new tabs are blocked");
+            restoration_blocked = true;
+            None
+        }).unwrap_or_default();
+        if let Some(path) = &path {
+            match super::layouts::reserved_next(&path.with_file_name("editor-groups.json")) {
+                Ok(next) => tabs.next = tabs.next.max(next),
                 Err(error) => {
-                    tracing::warn!(%error, "Cannot start browser-tab worker");
-                    None
+                    tracing::warn!(%error, "Cannot verify saved tab references; saving and new tabs are blocked");
+                    restoration_blocked = true;
                 }
-            },
-        );
-        Self::with_saved(tabs, writer)
+            }
+        }
+        let writer =
+            path.filter(|_| !restoration_blocked)
+                .and_then(
+                    |path| match state_file::Writer::start("browser-tabs", path) {
+                        Ok(writer) => Some(writer),
+                        Err(error) => {
+                            tracing::warn!(%error, "Cannot start browser-tab worker");
+                            None
+                        }
+                    },
+                );
+        let mut store = Self::with_saved(tabs, writer);
+        store.restoration_blocked = restoration_blocked;
+        store
+    }
+
+    fn read(path: &std::path::Path) -> crate::Result<Saved> {
+        let Some(bytes) = state_file::read(path, MAX_FILE_BYTES)? else {
+            return Ok(Saved::default());
+        };
+        match saved::parse(&bytes) {
+            Ok(saved) => Ok(saved),
+            Err(error) => {
+                tracing::warn!(%error, "Cannot fully restore browser tabs");
+                state_file::preserve_rejected(path, &bytes)?;
+                Ok(saved::recover(&bytes))
+            }
+        }
+    }
+
+    /// New identities and writes wait until unreadable state can be repaired.
+    pub(crate) fn restoration_blocked(&self) -> bool {
+        self.restoration_blocked
     }
 
     fn with_saved(saved: Saved, writer: Option<state_file::Writer<Saved>>) -> Self {
@@ -284,6 +333,8 @@ impl Store {
             closed: Default::default(),
             writer,
             quitting: false,
+            restoration_blocked: false,
+            reservations: Arc::default(),
         }
     }
 
@@ -318,6 +369,14 @@ impl Store {
         if let Some(writer) = &self.writer {
             writer.save(self.saved());
         }
+    }
+
+    #[cfg(test)]
+    pub(super) fn finish_writes(mut self) {
+        let Some(writer) = self.writer.take() else {
+            panic!("the persistence fixture requires a writer");
+        };
+        writer.finish();
     }
 
     fn saved(&self) -> Saved {
@@ -389,14 +448,54 @@ impl Store {
     }
 
     pub(super) fn restore_tab(&mut self, mut tab: Tab) -> Option<TabId> {
-        if self.tabs.len() >= MAX_TABS {
-            return None;
+        let reserved = self.reserve().ok()?;
+        tab.id = reserved.id;
+        let id = tab.id;
+        self.tabs.push(tab);
+        self.save();
+        Some(id)
+    }
+
+    /// Reserves before runtime submission, so intervening opens cannot steal placement capacity.
+    pub(crate) fn reserve(&mut self) -> Result<Reservation, super::Error> {
+        if self.restoration_blocked {
+            return Err(super::Error::RestorationBlocked);
         }
-        let following = self.next.checked_add(1)?;
+        let following = self.next.checked_add(1).ok_or(super::Error::Capacity)?;
+        if self.tabs.len() + self.reservations.load(Ordering::Relaxed) >= MAX_TABS {
+            return Err(super::Error::Capacity);
+        }
         let id = TabId(self.next);
         self.next = following;
-        tab.id = id;
-        self.tabs.push(tab);
+        self.reservations.fetch_add(1, Ordering::Relaxed);
+        self.save();
+        Ok(Reservation {
+            id,
+            slots: self.reservations.clone(),
+        })
+    }
+
+    /// Consumes the already-owned slot without allocating another identity.
+    pub(crate) fn place_reserved(
+        &mut self,
+        reserved: Reservation,
+        scope: Scope,
+        workspace_id: String,
+        location: Location,
+    ) -> Option<TabId> {
+        if !Arc::ptr_eq(&self.reservations, &reserved.slots) {
+            return None;
+        }
+        let id = reserved.id;
+        let title = location.default_title();
+        self.tabs.push(Tab {
+            id,
+            scope,
+            workspace_id,
+            location: Some(location),
+            title,
+            origin: None,
+        });
         self.save();
         Some(id)
     }

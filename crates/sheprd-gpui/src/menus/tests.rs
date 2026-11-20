@@ -254,7 +254,14 @@ fn edit_menu_items_follow_focus(cx: &mut gpui::TestAppContext) {
             view.open_theme_picker(window, cx);
         });
         cx.write_to_clipboard(ClipboardItem::new_string("nord".into()));
-        view.read(cx).menu.themes.as_ref().unwrap().search.clone()
+        view.read(cx)
+            .menu
+            .themes
+            .as_ref()
+            .unwrap()
+            .search()
+            .unwrap()
+            .clone()
     });
     assert_eq!(available(cx), LABELS);
     choose("Paste", cx);

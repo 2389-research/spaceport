@@ -1,12 +1,16 @@
+// ABOUTME: Runs local control commands and formats their public CLI results.
+// ABOUTME: Preserves typed transport failures and distinct exit statuses for callers.
 //! The caller's side: build a request from the command line, send it to
 //! the running app (or read the app's files), and print the answer as text
 //! or, with `--json`, as one JSON document.
 mod app;
 mod chat;
+mod completions;
 mod events;
-mod help;
+pub(super) mod help;
 mod hosts;
 mod local;
+mod origin;
 mod settings;
 mod tabs;
 mod work;
@@ -85,6 +89,7 @@ pub(crate) struct Context {
     pub window: Option<u64>,
     /// Carries a request to the running app and brings its answer back.
     transport: fn(&Request) -> crate::Result<Response>,
+    origin: origin::Origin,
 }
 
 impl Context {
@@ -93,14 +98,26 @@ impl Context {
             json,
             window,
             transport: send,
+            origin: origin::Origin::current(),
         }
     }
 
     pub(crate) fn caller(&self) -> crate::Result<Caller> {
+        if self.origin == origin::Origin::Core {
+            return Ok(Caller {
+                window: self.window,
+                ..Caller::default()
+            });
+        }
         Ok(Caller {
             window: self.window,
             ..caller(None)?
         })
+    }
+
+    fn send(&self, request: &Request) -> crate::Result<Response> {
+        self.origin.check(request)?;
+        (self.transport)(request)
     }
 
     /// Sends `op` of a family and returns the app's answer, an error answer
@@ -114,7 +131,7 @@ impl Context {
             caller: self.caller()?,
             op,
         });
-        match (self.transport)(&request)? {
+        match self.send(&request)? {
             Response::Error { code, message } => {
                 Err(crate::control::Error::Rejected { code, message }.into())
             }
@@ -137,11 +154,21 @@ impl Context {
 
 /// The daemon a pane's agent belongs to, from the variables Herdr sets in it.
 fn caller_daemon() -> crate::Result<Option<String>> {
-    if std::env::var_os("HERDR_SOCKET_PATH").is_none() {
+    let Some(api) = std::env::var_os("HERDR_SOCKET_PATH") else {
         return Ok(None);
+    };
+    let unrepresentable = || crate::control::Error::Rejected {
+        code: ErrorCode::InvalidRequest,
+        message:
+            "The caller daemon socket path is not UTF-8; exact session targeting is unavailable"
+                .into(),
+    };
+    if api.to_str().is_none() {
+        return Err(unrepresentable().into());
     }
     let path = sheprd_client::ConnectTarget::Local.socket_path()?;
-    Ok(path.to_str().map(str::to_owned))
+    let daemon = path.to_str().ok_or_else(unrepresentable)?;
+    Ok(Some(daemon.to_owned()))
 }
 
 pub(super) fn env_id(name: &str) -> Option<String> {
@@ -225,14 +252,36 @@ fn rejected(response: Response) -> crate::Error {
 /// An answer of another kind than asked for: an app of another version.
 pub(crate) fn unexpected(response: Response) -> crate::Error {
     tracing::debug!(?response, "Unexpected control response");
-    crate::control::Error::NoResponse.into()
+    crate::control::Error::Rejected {
+        code: ErrorCode::Unsupported,
+        message:
+            "Spaceport answered with an incompatible response; update the older app or command line"
+                .into(),
+    }
+    .into()
 }
 
 /// The exit status an error maps to.
 pub(crate) fn status(error: &crate::Error) -> u8 {
     match error {
         crate::Error::InvalidBrowserUrl | crate::Error::InvalidLocalPage => exit::USAGE,
-        crate::Error::Control(crate::control::Error::Unavailable { .. }) => exit::NOT_RUNNING,
+        crate::Error::Control(
+            crate::control::Error::Unavailable { .. } | crate::control::Error::NoResponse,
+        ) => exit::NOT_RUNNING,
+        crate::Error::Control(crate::control::Error::Io(source)) => match source.kind() {
+            std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock => exit::TIMEOUT,
+            std::io::ErrorKind::BrokenPipe
+            | std::io::ErrorKind::ConnectionReset
+            | std::io::ErrorKind::ConnectionAborted
+            | std::io::ErrorKind::UnexpectedEof => exit::NOT_RUNNING,
+            _ => exit::REFUSED,
+        },
+        crate::Error::Control(crate::control::Error::Json(source)) if source.is_eof() => {
+            exit::NOT_RUNNING
+        }
+        crate::Error::Control(crate::control::Error::Json(source)) if source.is_data() => {
+            exit::UNSUPPORTED
+        }
         crate::Error::Control(crate::control::Error::Rejected { code, .. }) => match code {
             ErrorCode::InvalidUrl => exit::USAGE,
             ErrorCode::NotFound | ErrorCode::WorkspaceNotFound | ErrorCode::NoWindow => {
@@ -248,8 +297,11 @@ pub(crate) fn status(error: &crate::Error) -> u8 {
 }
 
 /// The error's code as JSON names it.
-fn code(error: &crate::Error) -> &'static str {
-    match status(error) {
+fn code(error: &crate::Error) -> serde_json::Value {
+    if let crate::Error::Control(crate::control::Error::Rejected { code, .. }) = error {
+        return serde_json::json!(code);
+    }
+    serde_json::json!(match status(error) {
         exit::USAGE => "usage",
         exit::NOT_RUNNING => "not_running",
         exit::NOT_FOUND => "not_found",
@@ -257,7 +309,7 @@ fn code(error: &crate::Error) -> &'static str {
         exit::TIMEOUT => "timeout",
         exit::UNSUPPORTED => "unsupported",
         _ => "refused",
-    }
+    })
 }
 
 /// Text for the caller's terminal: lines and tabs stay, every other control
@@ -335,16 +387,17 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
     let context = Context::new(invocation.json, invocation.window);
     let result = match invocation.command {
         ControlCommand::Help(family) => {
-            println!("{}", help::usage(family));
-            return ExitCode::SUCCESS;
+            let text = family.map_or_else(crate::cli::usage, |family| help::usage(Some(family)));
+            Output::data(&text, &serde_json::json!({ "usage": text }))
         }
         ControlCommand::Skill => {
-            print!(
-                "{}",
-                crate::agent_skill::text(crate::agent_skill::executable().as_deref())
-            );
-            return ExitCode::SUCCESS;
+            let text = crate::agent_skill::text(crate::agent_skill::executable().as_deref());
+            Output::data(
+                text.trim_end_matches('\n'),
+                &serde_json::json!({ "skill": text }),
+            )
         }
+        ControlCommand::Completions(shell) => completions::completions(shell),
         ControlCommand::Status => app::status(&context),
         ControlCommand::App(command) => app::app(command, &context),
         ControlCommand::Window(command) => app::window(command, &context),
@@ -358,6 +411,9 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         ControlCommand::Worktree(command) => work::worktree(command, &context),
         ControlCommand::Host(command) => hosts::host(command, &context),
         ControlCommand::Ports(command) => hosts::ports(command, &context),
+        ControlCommand::Processes { .. } if context.origin == origin::Origin::Core => {
+            Err(origin::Origin::unsupported())
+        }
         ControlCommand::Processes { pane } => local::processes(pane.as_deref()),
         ControlCommand::Usage => hosts::usage(&context),
         ControlCommand::Config(command) => settings::config(command, &context),

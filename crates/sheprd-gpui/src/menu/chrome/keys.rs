@@ -35,6 +35,9 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.messages_key(event, window, cx) {
+            return;
+        }
         if self.shortcut_editor_key(event, window, cx) {
             return;
         }

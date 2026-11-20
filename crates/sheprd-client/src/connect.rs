@@ -1,3 +1,5 @@
+// ABOUTME: Spawns connection workers and reports their terminal state.
+// ABOUTME: Keeps setup, handshake, and teardown off the caller's thread.
 //! Spawning a connection worker. Setup, handshake, and teardown all happen off
 //! the caller's thread; failures arrive as events rather than as a return value.
 
@@ -14,7 +16,7 @@ use crate::{
     transport::Stream,
     wsl,
 };
-use crossbeam_channel::bounded;
+use crossbeam_channel::{Sender, bounded};
 use std::{
     io,
     sync::{
@@ -23,6 +25,23 @@ use std::{
     },
     thread,
 };
+
+/// Owns terminal delivery even when setup or the session unwinds.
+struct Disconnect {
+    events: Sender<ClientEvent>,
+    stop: Arc<AtomicBool>,
+    event: Option<ClientEvent>,
+}
+
+impl Drop for Disconnect {
+    fn drop(&mut self) {
+        // Delivery remains ordered, bounded, and cancellable on this worker.
+        if let Some(event) = self.event.take() {
+            let _ = deliver(&self.events, event, &self.stop);
+        }
+        self.stop.store(true, Ordering::Release);
+    }
+}
 
 /// Returns immediately after spawning. Connection/handshake errors arrive as events.
 pub fn connect(target: ConnectTarget, options: ConnectOptions) -> Result<Client> {
@@ -73,6 +92,15 @@ pub fn connect_with_connector(
     thread::Builder::new()
         .name("herdr-client-io".into())
         .spawn(move || {
+            let mut disconnect = Disconnect {
+                events: tx,
+                stop: worker_stop,
+                event: Some(ClientEvent::Disconnected {
+                    reason: "connection worker panicked".into(),
+                    ssh: None,
+                }),
+            };
+            let worker_stop = &disconnect.stop;
             let transport = match target {
                 ConnectTarget::Ssh { .. } => "ssh",
                 ConnectTarget::Wsl { .. } => "wsl",
@@ -84,14 +112,14 @@ pub fn connect_with_connector(
             let result = (|| {
                 let (stream, child) = match &target {
                     ConnectTarget::Ssh { target, session } => {
-                        let (stream, child) = ssh::connect(target, session, &worker_stop)?;
+                        let (stream, child) = ssh::connect(target, session, worker_stop)?;
                         (stream, Some(child))
                     }
                     ConnectTarget::Wsl { distro, session } => {
-                        let (stream, child) = wsl::connect(distro, session, &worker_stop)?;
+                        let (stream, child) = wsl::connect(distro, session, worker_stop)?;
                         (stream, Some(child))
                     }
-                    _ => (connector(&target, &worker_stop)?, None),
+                    _ => (connector(&target, worker_stop)?, None),
                 };
                 run_connection(
                     stream,
@@ -99,9 +127,9 @@ pub fn connect_with_connector(
                     surface_active,
                     child.is_some(),
                     rx,
-                    &tx,
+                    &disconnect.events,
                     Signals {
-                        stop: &worker_stop,
+                        stop: worker_stop,
                         liveness: &worker_liveness,
                         pace: Pace::default(),
                     },
@@ -117,7 +145,11 @@ pub fn connect_with_connector(
             }
             if !worker_stop.load(Ordering::Acquire) {
                 if let Some(mismatch) = result.as_ref().err().and_then(Error::version_mismatch) {
-                    let _ = deliver(&tx, ClientEvent::VersionMismatch(mismatch), &worker_stop);
+                    let _ = deliver(
+                        &disconnect.events,
+                        ClientEvent::VersionMismatch(mismatch),
+                        worker_stop,
+                    );
                 }
                 let ssh = match &result {
                     Err(Error::Ssh(ssh::Error::Refused(failure))) => Some(*failure),
@@ -133,9 +165,8 @@ pub fn connect_with_connector(
                             .collect()
                     })
                     .unwrap_or_else(|| "server disconnected".into());
-                let _ = deliver(&tx, ClientEvent::Disconnected { reason, ssh }, &worker_stop);
+                disconnect.event = Some(ClientEvent::Disconnected { reason, ssh });
             }
-            worker_stop.store(true, Ordering::Release);
         })?;
     Ok(Client {
         handle: ClientHandle {

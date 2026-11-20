@@ -1,3 +1,5 @@
+// ABOUTME: Builds named host colour choices and typed colour entry.
+// ABOUTME: Uses the same callbacks for pointer and keyboard selection.
 //! Host colour row: a curated swatch strip, a "none" swatch, a hex field and
 //! a reset glyph. Pure rendering; the page owns the colour and the saves.
 // i18n: migrated
@@ -46,12 +48,21 @@ pub(in crate::settings_window) fn swatch_row(
     hex_input: Option<(Entity<SearchInput>, bool)>,
     on_change: impl Fn(HostColorChange, &mut Window, &mut App) + 'static,
     on_edit_hex: impl Fn(&mut Window, &mut App) + 'static,
-) -> Div {
+) -> Stateful<Div> {
+    let row_id: SharedString = format!("host-colour-{index}").into();
     let on_change = Rc::new(on_change);
     let none = {
         let on_change = on_change.clone();
         div()
             .id(SharedString::from(format!("host-colour-{index}-none")))
+            .role(Role::RadioButton)
+            .aria_label(fl!("settings-swatch-none"))
+            .aria_toggled(if current.is_none() {
+                Toggled::True
+            } else {
+                Toggled::False
+            })
+            .map(|choice| super::focusable(theme, choice, true))
             .debug_selector(move || format!("host-colour-{index}-none"))
             .size(px(SWATCH_SIZE))
             .rounded(px(corners::SMALL))
@@ -72,6 +83,14 @@ pub(in crate::settings_window) fn swatch_row(
             .id(SharedString::from(format!(
                 "host-colour-{index}-swatch-{k}"
             )))
+            .role(Role::RadioButton)
+            .aria_label(format!("#{color:06x}")) // i18n: data
+            .aria_toggled(if selected {
+                Toggled::True
+            } else {
+                Toggled::False
+            })
+            .map(|choice| super::keyboard::focusable_on(theme, choice, color))
             .debug_selector(move || format!("host-colour-{index}-swatch-{k}"))
             .size(px(SWATCH_SIZE))
             .rounded(px(corners::SMALL))
@@ -101,7 +120,7 @@ pub(in crate::settings_window) fn swatch_row(
         .debug_selector(move || format!("host-colour-{index}-hex"))
         .w(px(92.))
         .flex_none()
-        .text_size(px(12.))
+        .text_size(rems(0.75))
         .map(|hex| match hex_input {
             // A typed colour that does not parse keeps the field, outlined.
             Some((input, invalid)) => hex
@@ -118,7 +137,10 @@ pub(in crate::settings_window) fn swatch_row(
                     Some(color) => (format!("#{color:06x}"), theme.foreground),
                     None => (fl!("settings-swatch-none"), theme.muted),
                 };
-                hex.text_font(mono)
+                super::focusable(theme, hex, true)
+                    .role(Role::Button)
+                    .aria_label(fl!("settings-sidebar-swatch-edit"))
+                    .text_font(mono)
                     .text_color(rgb(color))
                     .cursor_pointer()
                     .on_click(move |_, window, cx| on_edit_hex(window, cx))
@@ -133,6 +155,9 @@ pub(in crate::settings_window) fn swatch_row(
         slot.child(
             div()
                 .id(SharedString::from(format!("host-colour-{index}-reset")))
+                .role(Role::Button)
+                .aria_label(fl!("settings-sidebar-swatch-reset"))
+                .map(|reset| super::focusable(theme, reset, true))
                 .debug_selector(move || format!("host-colour-{index}-reset"))
                 .text_color(rgb(theme.muted))
                 .cursor_pointer()
@@ -141,12 +166,18 @@ pub(in crate::settings_window) fn swatch_row(
         )
     });
     div()
+        .id(row_id.clone())
+        .key_context(super::row_context(row_id.clone()))
+        .relative()
+        .child(super::super::search::track_bounds(row_id, px(0.)))
+        .role(Role::Group)
+        .aria_label(host.to_owned())
         .debug_selector(move || format!("host-colour-{index}"))
         .row()
         .items_center()
         .gap(px(10.))
         .py(px(6.))
-        .text_size(px(13.))
+        .text_size(rems(0.8125))
         .text_color(rgb(theme.foreground))
         .child(
             div()
@@ -178,7 +209,7 @@ pub(in crate::settings_window) fn swatch_row(
                 .when(!hint.is_empty(), |col| {
                     col.child(
                         div()
-                            .text_size(px(11.))
+                            .text_size(rems(0.6875))
                             .text_color(rgb(theme.muted))
                             .child(hint),
                     )

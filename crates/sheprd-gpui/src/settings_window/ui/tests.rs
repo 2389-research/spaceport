@@ -1,8 +1,15 @@
+// ABOUTME: Exercises shared Settings control behavior and accessibility metadata.
+// ABOUTME: Shares native key-event fixtures across pointer and keyboard tests.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::config::Theme;
 use core::prelude::v1::test;
-use std::{cell::Cell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
+
+mod keyboard;
 
 struct Harness {
     picked: Rc<Cell<Option<u8>>>,

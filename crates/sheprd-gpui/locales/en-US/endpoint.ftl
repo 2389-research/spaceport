@@ -13,6 +13,7 @@ endpoint-status =
         [daemon-outdated] Herdr update needed
         [client-outdated] app update needed
         [herdr-missing] Herdr not installed
+        [herdr-stopped] Herdr stopped
         [reconnecting] reconnecting
         [online] online
        *[connecting] connecting
@@ -25,7 +26,7 @@ endpoint-catalog-failed = Host catalog: { $error }
 endpoint-reload-config-failed = Reload config: { $error }
 endpoint-activate-failed = Activate: { $error }
 # $device is the device's name.
-endpoint-activation-failed = { $device }: surface activation failed or timed out
+endpoint-activation-failed = { $device }: Could not show the terminal screen (failed or timed out)
 # $reason is what the connection reported.
-endpoint-activation-failed-because = { $device }: surface activation failed or timed out: { $reason }
-endpoint-surface-switching-unsupported = Current endpoint does not support surface switching
+endpoint-activation-failed-because = { $device }: Could not show the terminal screen (failed or timed out): { $reason }
+endpoint-surface-switching-unsupported = This connection cannot switch terminal screens

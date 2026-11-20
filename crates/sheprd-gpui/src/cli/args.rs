@@ -1,13 +1,12 @@
-//! A cursor over a control command's arguments. Values stay OS strings until
-//! a command asks for UTF-8, so a path argument never has to be one.
+//! ABOUTME: Parses control options separately from literal command text.
+//! ABOUTME: Keeps OS strings intact until a command requires UTF-8.
 use super::CliError;
 use std::{collections::VecDeque, ffi::OsString};
 
 pub(crate) struct Args {
     rest: VecDeque<OsString>,
-    /// Everything after a `--`, taken as it is: no flag there is this
-    /// program's.
-    trailing: Option<Vec<OsString>>,
+    /// Free text or everything after `--`; these words cannot be options.
+    trailing: VecDeque<OsString>,
     /// The command being parsed, named in errors.
     command: &'static str,
     /// The window to act in: the one `--window` names, or the one a
@@ -19,13 +18,52 @@ fn is_flag(value: &OsString) -> bool {
     value.as_encoded_bytes().starts_with(b"-") && value.len() > 1
 }
 
+/// Find literal text before any eager option or help scan can consume it.
+fn text_boundary(args: &VecDeque<OsString>, command: &str) -> Option<(usize, bool)> {
+    let mut positionals = 0;
+    let mut text_after = None;
+    let mut at = 0;
+    while let Some(arg) = args.get(at) {
+        match arg.to_str() {
+            Some("--") => return Some((at, true)),
+            Some("--window") => {
+                at += 1;
+                if args.get(at).is_some_and(|value| !is_flag(value)) {
+                    at += 1;
+                }
+            }
+            Some("--json" | "--help" | "-h") => at += 1,
+            _ if text_after == Some(positionals) => return Some((at, false)),
+            _ => {
+                if !is_flag(arg) {
+                    positionals += 1;
+                    if positionals == 1 && arg == "set" {
+                        text_after = match command {
+                            "notes" | "theme" | "font" => Some(1),
+                            "config" => Some(2),
+                            _ => None,
+                        };
+                    }
+                }
+                at += 1;
+            }
+        }
+    }
+    None
+}
+
 impl Args {
     pub(crate) fn new(args: impl IntoIterator<Item = OsString>, command: &'static str) -> Self {
         let mut rest: VecDeque<OsString> = args.into_iter().collect();
-        let trailing = rest
-            .iter()
-            .position(|arg| arg == "--")
-            .map(|at| rest.split_off(at).into_iter().skip(1).collect());
+        let trailing = text_boundary(&rest, command)
+            .map(|(at, separator)| {
+                let mut text = rest.split_off(at);
+                if separator {
+                    let _ = text.pop_front();
+                }
+                text
+            })
+            .unwrap_or_default();
         Self {
             rest,
             trailing,
@@ -48,23 +86,22 @@ impl Args {
 
     /// The next word, which names a subcommand.
     pub(crate) fn verb(&mut self) -> Option<OsString> {
-        self.rest.pop_front()
+        self.rest.pop_front().or_else(|| self.trailing.pop_front())
     }
 
-    /// Whether `--help` or `-h` appears anywhere, which wins over every
-    /// other argument for commands that support help.
+    /// Help wins over other options, but never consumes literal text.
     pub(crate) fn wants_help(&self) -> bool {
         self.rest.iter().any(|arg| arg == "--help" || arg == "-h")
     }
 
-    /// Removes `--flag` wherever it is; whether it was there.
+    /// Removes `--flag` before literal text; whether it was there.
     pub(crate) fn flag(&mut self, flag: &str) -> bool {
         let before = self.rest.len();
         self.rest.retain(|arg| arg != flag);
         self.rest.len() != before
     }
 
-    /// Removes `--flag VALUE` wherever it is. A value may not look like a flag.
+    /// Removes `--flag VALUE` before literal text. Its value cannot be a flag.
     pub(crate) fn option(&mut self, flag: &'static str) -> Result<Option<OsString>, CliError> {
         let Some(at) = self.rest.iter().position(|arg| arg == flag) else {
             return Ok(None);
@@ -120,10 +157,13 @@ impl Args {
             .ok_or(CliError::InvalidValue(flag))
     }
 
-    /// The next positional argument, which may not look like a flag.
+    /// The next positional argument. Literal tails may contain flag words.
     pub(crate) fn positional(&mut self) -> Option<OsString> {
-        let at = self.rest.iter().position(|arg| !is_flag(arg))?;
-        self.rest.remove(at)
+        self.rest
+            .iter()
+            .position(|arg| !is_flag(arg))
+            .and_then(|at| self.rest.remove(at))
+            .or_else(|| self.trailing.pop_front())
     }
 
     pub(crate) fn required(&mut self, what: &'static str) -> Result<OsString, CliError> {
@@ -144,17 +184,18 @@ impl Args {
     /// Every remaining positional argument joined by spaces, as a prompt or
     /// a note is typed unquoted.
     pub(crate) fn words(&mut self) -> Result<Option<String>, CliError> {
-        let mut words = Vec::new();
-        while let Some(word) = self.positional() {
-            words.push(utf8(word)?);
-        }
+        let words = self
+            .rest
+            .drain(..)
+            .chain(self.trailing.drain(..))
+            .map(utf8)
+            .collect::<Result<Vec<_>, _>>()?;
         Ok((!words.is_empty()).then(|| words.join(" ")))
     }
 
     /// Fails on anything left over, so a typo is never silently ignored.
     pub(crate) fn finish(&mut self) -> Result<(), CliError> {
-        let unread = self.trailing.take().map(|_| OsString::from("--"));
-        match self.rest.pop_front().or(unread) {
+        match self.rest.pop_front().or_else(|| self.trailing.pop_front()) {
             None => Ok(()),
             Some(extra) => Err(CliError::Unexpected {
                 command: self.command,
@@ -169,83 +210,4 @@ pub(crate) fn utf8(value: OsString) -> Result<String, CliError> {
 }
 
 #[cfg(test)]
-mod tests {
-    #![allow(clippy::unwrap_used)]
-    use super::*;
-
-    fn args(words: &[&str]) -> Args {
-        Args::new(words.iter().map(OsString::from), "test")
-    }
-
-    #[test]
-    fn options_are_found_anywhere_and_values_cannot_be_flags() {
-        let mut parsed = args(&["a", "--wait", "5", "--json", "b"]);
-        assert!(parsed.flag("--json"));
-        assert_eq!(parsed.number("--wait", 1..=10u64).unwrap(), Some(5));
-        assert_eq!(parsed.required_text("x").unwrap(), "a");
-        assert_eq!(parsed.optional_text().unwrap().as_deref(), Some("b"));
-        parsed.finish().unwrap();
-        assert_eq!(
-            args(&["--workspace", "--json"])
-                .option("--workspace")
-                .unwrap_err(),
-            CliError::MissingValue("--workspace")
-        );
-        assert_eq!(
-            args(&["--wait"]).option("--wait").unwrap_err(),
-            CliError::MissingValue("--wait")
-        );
-        assert_eq!(
-            args(&["--wait", "1", "--wait", "2"])
-                .option("--wait")
-                .unwrap_err(),
-            CliError::DuplicateOption("--wait")
-        );
-        assert_eq!(
-            args(&["--wait", "99"])
-                .number("--wait", 1..=10u64)
-                .unwrap_err(),
-            CliError::InvalidValue("--wait")
-        );
-    }
-
-    #[test]
-    fn leftovers_and_missing_arguments_are_errors() {
-        assert_eq!(
-            args(&["--new"]).finish().unwrap_err(),
-            CliError::Unexpected {
-                command: "test",
-                argument: "--new".into()
-            }
-        );
-        assert_eq!(
-            args(&[]).required("FILE").unwrap_err(),
-            CliError::MissingArgument {
-                command: "test",
-                what: "FILE"
-            }
-        );
-        let mut words = args(&["fix", "the", "bug", "--agents", "2"]);
-        assert_eq!(words.number("--agents", 1..=8u8).unwrap(), Some(2));
-        assert_eq!(words.words().unwrap().as_deref(), Some("fix the bug"));
-        // A lone dash is a value, as for stdin.
-        assert_eq!(args(&["-"]).required_text("x").unwrap(), "-");
-    }
-
-    #[test]
-    fn double_dash_words_are_not_parsed_as_options() {
-        let mut parsed = args(&["id", "--", "git", "log", "--json", "--"]);
-        assert!(!parsed.flag("--json"));
-        assert!(!parsed.wants_help());
-        assert_eq!(parsed.required_text("ID").unwrap(), "id");
-        assert_eq!(
-            parsed.finish().unwrap_err(),
-            CliError::Unexpected {
-                command: "test",
-                argument: "--".into(),
-            }
-        );
-        // A `--` no command reads is refused, like any other leftover.
-        assert!(args(&["--", "x"]).finish().is_err());
-    }
-}
+mod tests;

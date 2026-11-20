@@ -19,6 +19,11 @@ pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
     .detach();
 }
 
+#[path = "smoke_local_controls/confirmations.rs"]
+mod confirmations;
+#[path = "smoke_local_controls/shutdown.rs"]
+mod shutdown;
+
 pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -> Result<()> {
     let light = std::env::var_os("HERDR_TEST_LOCAL_CONTROLS_LIGHT").is_some();
     handle.update(cx, |view, window, cx| -> Result<()> {
@@ -87,6 +92,14 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
     crate::settings_window::capture_branding(handle, cx).await?;
     #[cfg(target_os = "macos")]
     crate::settings_window::verify_core_opt_in(handle, cx).await?;
+    confirmations::verify(handle, light, cx).await?;
+    shutdown::verify(handle, light, cx).await?;
+    #[cfg(windows)]
+    cx.update(|cx| crate::sidebar::verify_status_shapes(light, cx))?;
+    #[cfg(windows)]
+    if light {
+        crate::contrast::verify_secondary_text(cx).await?;
+    }
     if !cx
         .background_spawn(async { crate::diagnostics::flush(Duration::from_secs(2)) })
         .await

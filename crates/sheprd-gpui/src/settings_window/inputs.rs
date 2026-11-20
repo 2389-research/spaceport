@@ -8,11 +8,8 @@ use super::{
     pages::{Spacing, padding_ids, size_control},
     ui,
 };
-use crate::{
-    config::{
-        Axis, FONT_SIZE_RANGE, FontFace, MAX_PADDING, Side, SoundConfig, preferences::Preference,
-    },
-    search_input::SearchInput,
+use crate::config::{
+    Axis, FONT_SIZE_RANGE, FontFace, MAX_PADDING, Side, SoundConfig, preferences::Preference,
 };
 use gpui::{prelude::*, *};
 use std::ops::RangeInclusive;
@@ -110,7 +107,7 @@ impl SettingsWindow {
         if let Some(open) = self.dropdown.take()
             && open.focus().is_focused(window)
         {
-            window.focus(&self.focus, cx);
+            window.focus(open.previous_focus().unwrap_or(&self.focus), cx);
         }
         cx.notify();
     }
@@ -179,7 +176,7 @@ impl SettingsWindow {
         if !self.finish_number_edit(true, cx) {
             self.finish_number_edit(false, cx);
         }
-        let input = cx.new(SearchInput::new);
+        let input = cx.new(ui::text_input);
         input.update(cx, |input, cx| {
             input.set_text_selected(&format!("{}", value as i64), cx);
             // The number's field already draws the frame.
@@ -334,17 +331,21 @@ impl SettingsWindow {
         cx: &mut Context<Self>,
     ) {
         let key = event.keystroke.key.as_str();
+        if self.settings_tab(event, window, cx) {
+            return;
+        }
         if let Some(open) = &mut self.dropdown {
             if !matches!(key, "up" | "down" | "enter" | "escape") {
                 return;
             }
             cx.stop_propagation();
             let field = open.field;
+            let previous_focus = open.previous_focus().cloned();
             match open.key(event) {
                 Some(usize::MAX) => self.close_dropdown(window, cx),
                 Some(index) => {
                     self.pick_dropdown(field, index, cx);
-                    window.focus(&self.focus, cx);
+                    window.focus(previous_focus.as_ref().unwrap_or(&self.focus), cx);
                 }
                 None => cx.notify(),
             }

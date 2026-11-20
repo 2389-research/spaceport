@@ -49,14 +49,15 @@ const IDENTIFICATION: u32 = 0x0001_0000;
 type Pipe = DuplexPipeStream<pipe_mode::Bytes>;
 
 /// The control pipe of the user running this process. A state directory
-/// chosen with `XDG_STATE_HOME`, as tests and side-by-side installs do, gets
-/// a pipe of its own; otherwise every shell of the user reaches the same
-/// one, whatever `HOME` it was started with.
+/// chosen with `XDG_STATE_HOME`, or selected for a development build, gets
+/// a pipe of its own. Ordinary installed previews retain their SID-only pipe,
+/// whatever `HOME` the shell was started with.
 pub(super) fn address(state: &Path) -> crate::Result<PathBuf> {
     let sid = security::user_sid().map_err(crate::Error::User)?;
-    let isolated = std::env::var_os("XDG_STATE_HOME")
+    let explicit = std::env::var_os("XDG_STATE_HOME")
         .filter(|value| !value.is_empty())
-        .map(|_| state);
+        .is_some();
+    let isolated = super::windows_state_scope(state, explicit);
     Ok(name(&sid, isolated))
 }
 
@@ -65,6 +66,9 @@ pub(super) fn name(sid: &str, isolated: Option<&Path>) -> PathBuf {
 }
 
 pub(super) struct Listener(PipeListener<pipe_mode::Bytes, pipe_mode::Bytes>);
+
+#[derive(Clone)]
+pub(super) struct Cleanup;
 
 impl Listener {
     /// Creates the pipe. Another live server of this user keeps it, and a
@@ -107,10 +111,14 @@ impl Listener {
             read_timeout: Duration::ZERO,
         })
     }
+
+    pub(super) fn cleanup(&self) -> Cleanup {
+        Cleanup
+    }
 }
 
 /// Nothing to remove: a pipe goes away with its last handle.
-pub(super) fn release(_: &Path) {}
+pub(super) fn release(_: &Cleanup) {}
 
 pub(super) struct Connection {
     pub(super) pipe: Pipe,

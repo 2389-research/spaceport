@@ -1,8 +1,12 @@
+// ABOUTME: Collects launch and control command parser tests.
+// ABOUTME: Covers CLI errors before any GUI or connection starts.
 use super::*;
 
 mod chat;
 mod control_commands;
 mod development_links;
+mod free_text;
+mod help_contract;
 mod language;
 mod links;
 mod removed_automation;

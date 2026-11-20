@@ -1,3 +1,5 @@
+// ABOUTME: Builds Settings controls and labels their actual configuration owner.
+// ABOUTME: Keeps rendering separate from settings state and persistence.
 //! Shared row and control builders for the Settings pages. Pure rendering:
 //! they take the theme and return elements; state and saves stay on the view.
 // i18n: migrated
@@ -10,9 +12,11 @@ use crate::{
 use gpui::{prelude::*, *};
 use std::rc::Rc;
 
+mod keyboard;
 mod number;
 mod popover;
 mod swatches;
+pub(in crate::settings_window) use keyboard::{focusable, text_input};
 pub(in crate::settings_window) use number::{
     Look, Number, NumberChange, NumberEdit, Unit, number, parse_number,
 };
@@ -20,24 +24,31 @@ pub(in crate::settings_window) use popover::{Dropdown, dropdown};
 pub(in crate::settings_window) use swatches::{HostColorChange, parse_hex_input, swatch_row};
 
 pub(in crate::settings_window) const ROW_HEIGHT: f32 = 38.;
+const ROW_BORDER: f32 = 1.;
 
-/// Where a setting is stored: Herdr's own config, which its terminal client
-/// reads too, or Sheprd's file, which only this app reads. The tags name
-/// the apps rather than the files, since that is what decides who sees it.
+pub(in crate::settings_window) fn row_context(id: SharedString) -> KeyContext {
+    let mut context = KeyContext::default();
+    context.set("settings-row", id);
+    context
+}
+
+/// Distinguishes runtime configuration, private base view settings, and app overrides.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::settings_window) enum Source {
     Herdr,
     Sheprd,
+    View,
 }
 
 pub(in crate::settings_window) fn tag(theme: &Theme, source: Source) -> Div {
     let (label, color) = match source {
         Source::Herdr => (fl!("settings-source-herdr"), theme.ink(0x8fb8d9)),
         Source::Sheprd => (fl!("settings-source-herdr-ui"), theme.ink(0xc9b26f)),
+        Source::View => (fl!("settings-source-view"), theme.ink(0x8fb8d9)),
     };
     div()
-        .text_size(px(9.))
-        .line_height(px(13.))
+        .text_size(rems(0.5625))
+        .line_height(rems(0.8125))
         .px(px(5.))
         .rounded(px(corners::SMALL))
         .border_1()
@@ -60,7 +71,7 @@ pub(in crate::settings_window) fn section(
         .pb(px(6.))
         .border_b_1()
         .border_color(rgb(theme.active))
-        .text_size(px(11.))
+        .text_size(rems(0.6875))
         .font_weight(FontWeight::SEMIBOLD)
         .text_color(rgb(theme.subtext()))
         .child(title.to_uppercase())
@@ -163,12 +174,14 @@ impl Row {
         let dimmed = self.disabled.is_some();
         let tracked = id.clone();
         let reason_id = format!("{id}-reason");
+        let context = row_context(id.clone());
         // A disabled row shows its reason instead of the description.
         let (description, desc_id) = match self.disabled {
             Some(reason) => (Some(reason), reason_id),
             None => (self.description, desc_id),
         };
         div()
+            .key_context(context)
             .debug_selector(move || id.to_string())
             .relative()
             .row()
@@ -178,7 +191,7 @@ impl Row {
             .py(px(6.))
             .border_b_1()
             .border_color(rgb(theme.active))
-            .child(super::search::track_bounds(tracked))
+            .child(super::search::track_bounds(tracked, px(ROW_BORDER)))
             .child(
                 // Only the text dims: a control a disabled row cannot use is
                 // built disabled and dims itself, and GPUI multiplies nested
@@ -193,7 +206,7 @@ impl Row {
                             .row()
                             .items_center()
                             .gap(px(6.))
-                            .text_size(px(12.))
+                            .text_size(rems(0.75))
                             .font_weight(FontWeight::MEDIUM)
                             .child(self.title)
                             .children(self.tag.map(|source| {
@@ -203,8 +216,8 @@ impl Row {
                     .children(description.map(|text| {
                         div()
                             .debug_selector(move || desc_id.clone())
-                            .text_size(px(11.))
-                            .line_height(px(15.))
+                            .text_size(rems(0.6875))
+                            .line_height(rems(0.9375))
                             .text_color(rgb(theme.subtext()))
                             .child(text)
                     })),
@@ -237,9 +250,13 @@ pub(in crate::settings_window) fn toggle(
         } else {
             Toggled::False
         });
-    crate::accessibility::disabled(track, !enabled)
-        .when(enabled, |track| track.cursor_pointer())
-        .when(!enabled, |track| track.opacity(0.5))
+    focusable(
+        theme,
+        crate::accessibility::disabled(track, !enabled),
+        enabled,
+    )
+    .when(enabled, |track| track.cursor_pointer())
+    .when(!enabled, |track| track.opacity(0.5))
 }
 
 /// A bordered text button; the caller adds `.on_click` when it is enabled.
@@ -256,22 +273,26 @@ pub(in crate::settings_window) fn button(
         .debug_selector(move || id.to_string())
         .role(Role::Button)
         .aria_label(label.clone());
-    crate::accessibility::disabled(button, !enabled)
-        .flex_none()
-        .whitespace_nowrap()
-        .px(px(10.))
-        .py(px(3.))
-        .rounded(px(corners::CONTROL))
-        .border_1()
-        .border_color(rgb(theme.active))
-        .bg(rgb(theme.surface))
-        .when(enabled, |button| {
-            button
-                .cursor_pointer()
-                .hover(|style| style.bg(rgb(theme.active)))
-        })
-        .when(!enabled, |button| button.opacity(0.5))
-        .child(label)
+    focusable(
+        theme,
+        crate::accessibility::disabled(button, !enabled),
+        enabled,
+    )
+    .flex_none()
+    .whitespace_nowrap()
+    .px(px(10.))
+    .py(px(3.))
+    .rounded(px(corners::CONTROL))
+    .border_1()
+    .border_color(rgb(theme.active))
+    .bg(rgb(theme.surface))
+    .when(enabled, |button| {
+        button
+            .cursor_pointer()
+            .hover(|style| style.bg(rgb(theme.active)))
+    })
+    .when(!enabled, |button| button.opacity(0.5))
+    .child(label)
 }
 
 pub(in crate::settings_window) fn segmented<T: Copy + PartialEq + 'static>(
@@ -357,24 +378,28 @@ fn segments<T: Copy + PartialEq + 'static>(
                     .role(Role::RadioButton)
                     .when_some(name, |segment, name| segment.aria_label(name))
                     .aria_toggled(if on { Toggled::True } else { Toggled::False });
-                crate::accessibility::disabled(segment, !segment_live)
-                    .debug_selector(move || format!("{id}-{index}"))
-                    .px(px(10.))
-                    .py(px(3.))
-                    .rounded(px(corners::SMALL))
-                    .whitespace_nowrap()
-                    .text_color(rgb(if on {
-                        theme.foreground
-                    } else {
-                        theme.subtext()
-                    }))
-                    .when(on, |seg| seg.bg(rgb(theme.active)))
-                    .when(enabled && !segment_live, |seg| seg.opacity(0.5))
-                    .when(segment_live, |seg| seg.cursor_pointer())
-                    .when(segment_live && !on, move |seg| {
-                        seg.on_click(move |_, window, cx| on_pick(value, window, cx))
-                    })
-                    .child(label)
+                focusable(
+                    theme,
+                    crate::accessibility::disabled(segment, !segment_live),
+                    segment_live,
+                )
+                .debug_selector(move || format!("{id}-{index}"))
+                .px(px(10.))
+                .py(px(3.))
+                .rounded(px(corners::SMALL))
+                .whitespace_nowrap()
+                .text_color(rgb(if on {
+                    theme.foreground
+                } else {
+                    theme.subtext()
+                }))
+                .when(on, |seg| seg.bg(rgb(theme.active)))
+                .when(enabled && !segment_live, |seg| seg.opacity(0.5))
+                .when(segment_live, |seg| seg.cursor_pointer())
+                .when(segment_live && !on, move |seg| {
+                    seg.on_click(move |_, window, cx| on_pick(value, window, cx))
+                })
+                .child(label)
             },
         ))
 }

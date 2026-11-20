@@ -1,3 +1,5 @@
+// ABOUTME: Shows Spaceport's actual settings paths and reload controls.
+// ABOUTME: Opens configuration files away from the UI thread.
 //! Configuration: the files behind these settings, and reload.
 // i18n: migrated
 use super::{
@@ -61,7 +63,7 @@ impl SettingsWindow {
             ))
             .child(self.gate_shared(self.file_row(
                 &catalog::CONFIG_SHARED,
-                ui::Source::Herdr,
+                ui::Source::View,
                 shared_path.as_ref().map_or_else(
                     || fl!("settings-configuration-unavailable"),
                     |path| path.display().to_string(),

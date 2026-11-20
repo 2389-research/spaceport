@@ -1,3 +1,5 @@
+// ABOUTME: Exercises coherent terminal surfaces through the real framed client worker.
+// ABOUTME: Fences queued input when daemon identity or projection changes.
 use super::*;
 
 #[test]
@@ -92,14 +94,10 @@ fn boot_change_in_partial_frame_prevents_queued_input() {
     thread::sleep(Duration::from_millis(100));
     client.handle.set_focus("boot-v1", true).unwrap();
     server.write_all(&bytes[5..]).unwrap();
-    assert!(
-        worker
-            .join()
-            .unwrap()
-            .unwrap_err()
-            .to_string()
-            .contains("session changed, or its screen data went backwards")
-    );
+    assert!(matches!(
+        worker.join().unwrap(),
+        Err(Error::SnapshotIdentity)
+    ));
     let mut byte = [0];
     assert_eq!(server.read(&mut byte).unwrap(), 0);
 }

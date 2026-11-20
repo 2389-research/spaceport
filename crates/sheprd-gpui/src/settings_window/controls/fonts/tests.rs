@@ -27,7 +27,7 @@ const PLUS: [&str; 4] = [
 
 fn fixture(window: &mut Window, cx: &mut Context<SettingsWindow>) -> SettingsWindow {
     let source = cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx));
-    let mut view = SettingsWindow::new(source.downgrade(), cx);
+    let mut view = crate::settings_window::tests::fixture_new(source.downgrade(), cx);
     view.section = Section::Fonts;
     view.controls.names = (0..472).map(|i| format!("Family {i:03}")).collect();
     view.controls.filtered = filter_fonts(&view.controls.names, "");

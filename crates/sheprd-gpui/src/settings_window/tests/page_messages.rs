@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 //! Messages the behaviour pages name as data: each must be an English
 //! message that takes no arguments.
 use super::*;
@@ -15,10 +17,10 @@ fn position_names_are_messages() {
 }
 
 #[test]
-fn override_label_follows_herdr_through_its_message() {
+fn override_label_follows_private_view_through_its_message() {
     assert_eq!(pages::override_label("On", Some("Off")), "Off");
     assert_eq!(
         pages::override_label("Top left", None),
-        "Use Herdr setting · \u{2068}Top left\u{2069}"
+        "Use view setting · \u{2068}Top left\u{2069}"
     );
 }

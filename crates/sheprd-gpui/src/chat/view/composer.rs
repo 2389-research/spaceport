@@ -1,3 +1,5 @@
+// ABOUTME: Renders chat drafts, attachments, agent settings, and send controls.
+// ABOUTME: Keeps named controls on the existing prompt and attachment action paths.
 //! The composer's parts: the files to send, the draft's prompt field,
 //! the session's settings, context use, and the send button, which the
 //! chat's layout arranges. The settings' menus open above them.
@@ -38,7 +40,7 @@ impl SheprdWindow {
             .children(problem.map(|problem| {
                 div()
                     .debug_selector(|| "chat-problem".into())
-                    .text_size(self.chat_small_text())
+                    .text_size(px((self.chat_text_size() - 2.).max(10.)))
                     .text_color(rgb(Hues::of(theme).red))
                     .child(problem)
             }))
@@ -67,6 +69,9 @@ impl SheprdWindow {
             .child(
                 div()
                     .id("chat-reply-terminal")
+                    .map(|button| {
+                        super::accessibility::button(theme, fl!("chat-reply-in-terminal"), button)
+                    })
                     .debug_selector(|| "chat-reply-terminal".into())
                     .flex()
                     .items_center()
@@ -165,6 +170,7 @@ impl SheprdWindow {
         let theme = &self.theme;
         let pane_id = chat.target.pane_id.clone();
         Self::chat_round_button("chat-attach")
+            .map(|button| super::accessibility::button(theme, fl!("chat-attach-files"), button))
             .hover(|button| button.bg(rgb(theme.active)))
             .child(
                 svg()
@@ -219,6 +225,7 @@ impl SheprdWindow {
                         "icons/file.svg"
                     };
                     let pane_id = pane_id.clone();
+                    let remove = fl!("chat-remove-attachment", name = safe_text(&name, 120));
                     div()
                         .debug_selector(move || format!("chat-attachment-{index}"))
                         .flex()
@@ -242,6 +249,7 @@ impl SheprdWindow {
                         .child(
                             div()
                                 .id(("chat-detach", index))
+                                .map(|button| super::accessibility::button(theme, remove, button))
                                 .debug_selector(move || format!("chat-detach-{index}"))
                                 .flex_none()
                                 .size(px(18.))
@@ -304,6 +312,10 @@ impl SheprdWindow {
             SendButton::Stop => {
                 let fill = Hues::of(theme).red;
                 Self::chat_round_button("chat-stop")
+                    .map(|button| {
+                        super::accessibility::button(theme, fl!("chat-stop-turn"), button)
+                    })
+                    .map(|button| crate::accessibility::focusable(button, theme.text_on(fill)))
                     .bg(rgb(fill))
                     .child(
                         div()
@@ -320,6 +332,12 @@ impl SheprdWindow {
                 let on = chat.send == SendButton::Send;
                 let fill = if on { theme.primary() } else { theme.active };
                 Self::chat_round_button("chat-send")
+                    .map(|button| {
+                        super::accessibility::button(theme, fl!("chat-send-message"), button)
+                    })
+                    .map(|button| crate::accessibility::focusable(button, theme.text_on(fill)))
+                    .tab_stop(on)
+                    .map(|button| crate::accessibility::disabled(button, !on))
                     .bg(rgb(fill))
                     .when(!on, |button| button.cursor_default())
                     .child(

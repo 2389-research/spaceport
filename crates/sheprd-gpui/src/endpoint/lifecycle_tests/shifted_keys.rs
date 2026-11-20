@@ -1,3 +1,5 @@
+// ABOUTME: Checks shifted shortcut precedence through the production window scope.
+// ABOUTME: Uses private daemon peers and explicit keyboard focus.
 use super::*;
 use crate::window::prefix::KeyChars;
 
@@ -14,7 +16,7 @@ fn connect(
 ) -> Server {
     let (endpoint, server) = connected_endpoint("ssh:fixture");
     let keys: toml::Table = keys.parse().unwrap();
-    cx.update(|_, cx| {
+    cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.endpoints.truncate(1);
             view.endpoints.push(endpoint);
@@ -44,7 +46,9 @@ fn connect(
             .unwrap();
             view.key_press = || Some((18, true));
             view.key_layout = |_| Some(KeyChars::typing(["1", "!", "1", "1"], false));
-        })
+        });
+        window.focus(&view.read(cx).focus.clone(), cx);
+        window.draw(cx).clear(cx);
     });
     server
 }
@@ -129,13 +133,35 @@ fn a_key_held_as_named_is_not_taken_by_a_restored_custom_command(cx: &mut gpui::
         ("toggle_sidebar = 'ctrl+alt+!'", &[][..]),
         ("", &[("ctrl-alt-!", "text:x")][..]),
     ] {
-        let _server = connect(&view, "ctrl+alt+shift+1", keys, pane_keys, cx);
+        let mut server = connect(&view, "ctrl+alt+shift+1", keys, pane_keys, cx);
+        let before = view.read_with(cx, |view, _| view.sidebar_visible);
         let claimed = cx.update(|window, cx| {
             window.dispatch_keystroke(gpui::Keystroke::parse("ctrl-alt-!").unwrap(), cx)
         });
-        assert!(
-            !claimed,
-            "{keys} {pane_keys:?}: a custom command took the key"
+        assert_eq!(
+            claimed,
+            !keys.is_empty(),
+            "a named catalog binding runs; a pane key remains forwarded"
+        );
+        assert_eq!(
+            view.read_with(cx, |view, _| view.sidebar_visible),
+            if keys.is_empty() { before } else { !before }
+        );
+        cx.update(|_, cx| {
+            view.update(cx, |view, cx| {
+                assert!(view.send(
+                    ClientPaneInputEvent::TextCommit("named-key-marker".into()),
+                    cx
+                ));
+            })
+        });
+        assert_eq!(
+            server.receive(),
+            ClientMessage::ClientShellPaneInput {
+                pane_id: "w1:p1".into(),
+                events: vec![ClientPaneInputEvent::TextCommit("named-key-marker".into())]
+            },
+            "the custom command must not reach the wire"
         );
     }
     // Held by nothing, the same key runs the custom command.

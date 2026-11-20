@@ -1,5 +1,7 @@
 use super::*;
 
+mod output_deadline;
+
 fn destination(host: &str) -> Destination {
     Destination {
         user: "penso".into(),

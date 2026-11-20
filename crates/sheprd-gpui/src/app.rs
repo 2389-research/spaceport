@@ -65,10 +65,16 @@ impl InitialAppearance {
                 theme,
                 error: None,
             },
-            Err(error) => Self {
-                error: Some(fl!("app-load-config-failed", error = error.localize())),
-                ..Self::default()
-            },
+            Err(error) => {
+                let config = Config::default();
+                let theme = Theme::default().styled_for(&config);
+                Self {
+                    config,
+                    error: Some(fl!("app-load-config-failed", error = error.localize())),
+                    keymap: Keymap::default(),
+                    theme,
+                }
+            }
         }
     }
 }
@@ -163,15 +169,12 @@ fn open_window_placed(
         crate::window_state::WindowState::placement(bounds, cx)
     });
     let handle = cx.open_window(
-        WindowOptions {
-            window_bounds: Some(WindowBounds::Windowed(bounds)),
+        main_window_options(
+            bounds,
             display_id,
-            window_min_size: Some(size(px(640.), px(400.))),
-            titlebar: Some(titlebar::options(WINDOW_TITLE)),
-            app_owns_titlebar_drag: cfg!(target_os = "macos"),
-            app_id: Some(crate::constants::LINUX_APP_ID.into()),
-            ..Default::default()
-        },
+            #[cfg(feature = "integration-test")]
+            fixture,
+        ),
         |window, cx| {
             crate::taskbar::mark(window, cx);
             cx.new(|cx| {
@@ -194,6 +197,26 @@ fn open_window_placed(
         anyhow::bail!("Selected Core group is no longer available");
     }
     Ok(handle)
+}
+
+fn main_window_options(
+    bounds: Bounds<Pixels>,
+    display_id: Option<DisplayId>,
+    #[cfg(feature = "integration-test")] fixture: bool,
+) -> WindowOptions {
+    let window_min_size = Some(size(px(640.), px(400.)));
+    // Isolated fixtures exercise narrow layouts below the ordinary app minimum.
+    #[cfg(feature = "integration-test")]
+    let window_min_size = if fixture { None } else { window_min_size };
+    WindowOptions {
+        app_id: Some(crate::constants::LINUX_APP_ID.into()),
+        app_owns_titlebar_drag: cfg!(target_os = "macos"),
+        display_id,
+        titlebar: Some(titlebar::options(WINDOW_TITLE)),
+        window_bounds: Some(WindowBounds::Windowed(bounds)),
+        window_min_size,
+        ..Default::default()
+    }
 }
 
 /// The app's one sound worker. Each window holds its own connection and the
@@ -370,24 +393,7 @@ pub(crate) fn run() -> std::process::ExitCode {
         return std::process::ExitCode::SUCCESS;
     }
     if mode == LaunchMode::Help {
-        println!(
-            // i18n: data
-            "spaceport [--socket CLIENT_SOCKET]\nConnects to Local and saved SSH hosts; never installs remote software.\nStarts the local Herdr daemon if needed; never stops it.\nExplicit --socket targets are attach-only and isolate the GUI to one existing daemon."
-        );
-        println!(
-            // i18n: data
-            "  --build-info        Print the executable's build identity without starting the GUI"
-        );
-        // i18n: data
-        println!("\nCommands for the running app (each with --help):");
-        for family in cli::control::FAMILIES {
-            println!("  {:<18}{}", family.name, family.summary);
-        }
-        #[cfg(feature = "integration-test")]
-        println!(
-            // i18n: data
-            "  --integration-test  Run native GUI checks (requires explicit --socket)\n  --sidebar-test      Run native sidebar fixtures without connecting to a daemon\n  --performance-test  Measure native dense-terminal hover/scroll without a daemon (macOS/Windows)"
-        );
+        println!("{}", cli::usage());
         return std::process::ExitCode::SUCCESS;
     }
     #[cfg(feature = "integration-test")]
@@ -401,13 +407,14 @@ pub(crate) fn run() -> std::process::ExitCode {
         smoke::EXIT_CODE.store(1, std::sync::atomic::Ordering::SeqCst);
     }
     let startup_failed = std::rc::Rc::new(std::cell::Cell::new(false));
-    if let Err(error) = diagnostics::init(crate::log_targets::LOG_TARGETS) {
+    let state = crate::preferences::state_dir();
+    if let Err(error) = diagnostics::init(crate::log_targets::LOG_TARGETS, state.as_deref()) {
         // i18n: data
         eprintln!("Unable to initialize diagnostics: {error}");
         return std::process::ExitCode::FAILURE;
     }
     // After the log, which a panic's record goes to.
-    crate::crash::install(APP_VERSION);
+    crate::crash::install(APP_VERSION, state.as_deref());
     // SSH children use the login shell's `ssh` and agent, as the daemon does:
     // launchd's would miss keys such as a security key held by another agent.
     sheprd_client::set_command_environment(crate::login_env::apply);
@@ -422,6 +429,9 @@ pub(crate) fn run() -> std::process::ExitCode {
     }
     // Only read first-frame settings here. Migration, defaults refresh, and font
     // discovery run after opening; CLI and fixtures skip personal settings.
+    if mode == LaunchMode::Normal {
+        crate::accessibility::policy::prime();
+    }
     let appearance = if mode == LaunchMode::Normal {
         // Before anything resolves a config path or the daemon's socket.
         crate::login_env::adopt_config_home();
@@ -490,6 +500,9 @@ pub(crate) fn run() -> std::process::ExitCode {
     gpui_platform::application()
         .with_assets(icons::Icons)
         .run(move |cx| {
+            if mode == LaunchMode::Normal {
+                crate::accessibility::policy::install(cx);
+            }
             crate::core_feature::install(appearance.dark.config.herdr_core_enabled, cx);
             let window_count = window_state.as_ref().map_or(1, |state| state.count());
             if let Some(state) = window_state {
@@ -570,6 +583,8 @@ pub(crate) fn run() -> std::process::ExitCode {
             match opened {
                 Ok(_window) => {
                     if mode == LaunchMode::Normal {
+                        #[cfg(all(target_os = "macos", feature = "integration-test"))]
+                        crate::working_profile::start(_window, cx);
                         let sound = shared_sound(cx);
                         let _ = _window.update(cx, |view, _, _| {
                             view.use_sound(sound);

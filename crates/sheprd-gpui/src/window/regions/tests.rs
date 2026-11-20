@@ -1,3 +1,5 @@
+// ABOUTME: Checks terminal region ownership and reuse through real window draws.
+// ABOUTME: Shares small frame fixtures with focused region regression tests.
 #![allow(clippy::unwrap_used)]
 
 use super::{Look, Owner, SheprdWindow, partition};
@@ -9,6 +11,7 @@ use sheprd_client::protocol::{
 };
 use std::sync::Arc;
 
+mod images;
 mod slides;
 
 fn rect(x: u16, y: u16, width: u16, height: u16) -> SurfaceRect {

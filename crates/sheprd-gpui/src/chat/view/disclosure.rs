@@ -1,3 +1,5 @@
+// ABOUTME: Exposes chat disclosures through pointer, keyboard, and screen-reader actions.
+// ABOUTME: Keeps expansion tied to the same captured conversation and visible text.
 //! The header that opens and closes a folded card: a thought, a tool call,
 //! a notice's details, or a context summary.
 
@@ -45,6 +47,33 @@ impl SheprdWindow {
     ) -> Stateful<Div> {
         let text_pane = pane_id.to_owned();
         let toggle_pane = pane_id.to_owned();
+        let pane = self.chats.pane(pane_id);
+        let owner = pane.map(|pane| (pane.target.clone(), pane.session.since()));
+        let label = pane
+            .and_then(|pane| pane.prepared.text().entry(id))
+            .and_then(|projection| {
+                projection
+                    .texts()
+                    .next()
+                    .map(|text| crate::notifications::safe_text(text, 400))
+            })
+            .unwrap_or_else(|| crate::i18n::fl!("chat-details"));
+        let toggle = move |this: &mut Self, _: &mut Window, cx: &mut Context<Self>| {
+            let Some(pane) = this.chats.pane_mut(&toggle_pane) else {
+                return;
+            };
+            if !owner.as_ref().is_some_and(|(target, cursor)| {
+                crate::chat::files::is_current(&pane.target, pane.session.since(), target, *cursor)
+            }) {
+                return;
+            }
+            pane.toggle_expanded(id);
+            cx.notify();
+        };
+        let header =
+            super::accessibility::button(&self.theme, label, header).key_context("ChatDisclosure");
+        let header =
+            crate::accessibility::expandable(header, expanded, cx.weak_entity(), toggle.clone());
         let label_toggles = match text {
             HeaderText::Label => true,
             HeaderText::Body => !expanded,
@@ -60,12 +89,9 @@ impl SheprdWindow {
                     }),
                 )
             })
-            .on_click(cx.listener(move |this, _: &ClickEvent, _, cx| {
+            .on_click(cx.listener(move |this, _: &ClickEvent, window, cx| {
                 cx.stop_propagation();
-                if let Some(pane) = this.chats.pane_mut(&toggle_pane) {
-                    pane.toggle_expanded(id);
-                }
-                cx.notify();
+                toggle(this, window, cx);
             }))
     }
 }

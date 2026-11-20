@@ -1,6 +1,9 @@
 //! The registry of this process's shared masters (see the parent module).
 use super::{BACKOFF, IDLE, Lane, MAX_BACKOFF, READY_TIMEOUT};
 use crate::control_dir::{ControlDir, control_path};
+use crate::ssh::owned_process::unix;
+#[cfg(test)]
+use crate::ssh::owned_process::unix::WATCHDOG;
 use std::{
     collections::{HashMap, HashSet},
     ffi::OsString,
@@ -20,38 +23,6 @@ const POLL: Duration = Duration::from_millis(50);
 /// How long a stopped master's watchdog may take to end it before it is
 /// killed outright.
 const STOP_GRACE: Duration = Duration::from_secs(5);
-
-/// Runs the master (`"$@"`) and ends it once this shell's standard input, a
-/// pipe from this process, closes; then removes the socket directory `$1`.
-/// The pipe is copied to fd 3 first because a background job's own standard
-/// input is `/dev/null`. The master gets SIGTERM, which lets it remove its
-/// socket, then SIGKILL: `ssh` keeps SIGTERM ignored when it started with it
-/// ignored, as a child of a GUI application can, and a shell cannot reset a
-/// signal ignored on entry. The watcher inherits that ignored SIGTERM too, so
-/// once the master exits on its own the shell stops the watcher with SIGKILL
-/// and reaps it: a watcher left behind would wake when the pipe later closes
-/// and signal the master's pid, which by then may be another process's. The
-/// shell exits with the master's status.
-const WATCHDOG: &str = r#"dir=$1
-shift
-exec 3<&0
-"$@" </dev/null 3<&- &
-master=$!
-(
-    read -r _ <&3
-    kill "$master" 2>/dev/null
-    sleep 1
-    kill -9 "$master" 2>/dev/null
-) &
-watcher=$!
-exec 3<&-
-wait "$master"
-status=$?
-kill -9 "$watcher" 2>/dev/null
-wait "$watcher" 2>/dev/null
-rm -f "$dir/c"
-rmdir "$dir" 2>/dev/null
-exit "$status""#;
 
 /// Why a master could not be started; the host then connects directly for a
 /// while. Only logged.
@@ -419,7 +390,8 @@ const CHECK_TIMEOUT: Duration = Duration::from_secs(5);
 /// config gets none: commands connecting directly ride that one, which may
 /// have been authenticated interactively where this master cannot be.
 fn launch(program: &OsString, target: &str, lane: Lane, id: u64) -> Result<Master, StartError> {
-    let mut check = crate::environment::command(&program.to_string_lossy());
+    let mut check = crate::new_command(program);
+    crate::environment::apply(&mut check);
     check.args(["-O", "check", "--", target]);
     let checked = crate::ssh::run(&mut check, CHECK_TIMEOUT, || false);
     if matches!(checked, Ok((status, _)) if status.success()) {
@@ -427,12 +399,12 @@ fn launch(program: &OsString, target: &str, lane: Lane, id: u64) -> Result<Maste
     }
     let dir = ControlDir::create("herdr-mux").map_err(StartError::Directory)?;
     let socket = dir.socket();
-    let mut command = crate::environment::command("/bin/sh");
+    let mut master_command = crate::new_command(program);
+    crate::environment::apply(&mut master_command);
+    master_command.args(master_args(target, lane, &socket));
+    let mut command =
+        unix::command(&master_command, Some(dir.path())).map_err(StartError::Spawn)?;
     command
-        .args(["-c", WATCHDOG, "herdr-ssh-mux"])
-        .arg(dir.path())
-        .arg(program)
-        .args(master_args(target, lane, &socket))
         .stdin(Stdio::piped())
         // Stderr can carry banners or secrets; nothing reads it.
         .stdout(Stdio::null())

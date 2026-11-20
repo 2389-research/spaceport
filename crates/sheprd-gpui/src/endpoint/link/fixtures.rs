@@ -31,10 +31,6 @@ impl Endpoint {
         }));
     }
 
-    pub(crate) fn clear_outage_for_test(&mut self) {
-        self.set_failure_for_test(None);
-    }
-
     fn set_failure_for_test(&mut self, why: Option<Failure>) {
         let retry_at = self.retry_at();
         self.enter(Transition::Fixture(if self.connection.handle.is_some() {

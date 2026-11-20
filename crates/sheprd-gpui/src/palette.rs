@@ -25,8 +25,10 @@ mod go_to;
 mod interaction_tests;
 mod keys;
 mod last_seen;
+mod paint;
 pub(crate) use error::Error;
 pub(crate) use last_seen::LastSeen;
+pub(crate) use paint::Paint;
 mod preview;
 mod project_create;
 mod project_open;
@@ -347,6 +349,7 @@ struct Source {
     generation: u64,
     enabled: bool,
     snapshot: Option<Arc<ClientShellSnapshot>>,
+    index: crate::sidebar::SnapshotIndexCache,
 }
 
 #[derive(Clone)]
@@ -594,15 +597,19 @@ impl SheprdWindow {
 
     fn palette_sources(&self) -> Vec<Source> {
         std::iter::once(self.selected_endpoint)
+            .filter(|index| *index < self.endpoints.len())
             .chain((0..self.endpoints.len()).filter(|index| *index != self.selected_endpoint))
             .map(|index| {
                 let endpoint = &self.endpoints[index];
                 let live = self.live_of(index);
+                // Populate before cloning so every presentation shares one immutable index.
+                let _ = live.indexed_snapshot();
                 Source {
                     endpoint: endpoint.id.clone(),
                     generation: endpoint.generation,
                     enabled: endpoint.enabled() && live.status.is_connected(),
                     snapshot: live.snapshot.clone(),
+                    index: live.sidebar_index.clone(),
                 }
             })
             .collect()
@@ -624,12 +631,13 @@ impl SheprdWindow {
             let Some(snapshot) = source.snapshot.as_ref().filter(|_| source.enabled) else {
                 continue;
             };
+            let indexed = source.index.indexed(snapshot);
             let host = self
                 .endpoints
                 .iter()
                 .find(|endpoint| endpoint.id == source.endpoint)
                 .map(|endpoint| endpoint.label.as_str());
-            go_to_entries(&source.endpoint, host, snapshot, &mut entries);
+            go_to_entries(&source.endpoint, host, &indexed, &mut entries);
         }
         entries.extend(
             COMMANDS

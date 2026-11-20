@@ -24,6 +24,7 @@ settings-error-system-appearance = Apply system appearance: { $error }
 # Which app a setting belongs to, as a tag beside it.
 settings-source-herdr = Herdr
 settings-source-herdr-ui = Spaceport
+settings-source-view = Spaceport view
 # The footer after a save: what went wrong saving or reading the files back.
 settings-saved-unreloaded = Saved; could not reload current preferences
 settings-save-failed-reloaded = Save failed; reloaded current preferences
@@ -31,16 +32,16 @@ settings-save-failed = Save failed; reload before editing again
 settings-saved-daemon-unqueued = Saved; daemon reload not queued: { $error }
 settings-error-save = Save settings: { $error }
 settings-error-reload = Could not reload settings; keeping current preferences: { $error }
-settings-error-load-herdr = Load Herdr settings: { $error }
+settings-error-load-herdr = Load Spaceport view settings: { $error }
 
 ## Shared by the pages' controls.
 
-# Why rows that edit Herdr's own file are disabled.
-settings-shared-read-only = Herdr's settings are read-only on this platform.
-settings-shared-unavailable = Herdr's settings are unavailable. Reload to retry.
+# Why rows that edit the private base view file are disabled.
+settings-shared-read-only = Spaceport view settings are read-only on this platform.
+settings-shared-unavailable = Spaceport view settings are unavailable. Reload to retry.
 # The first entry of a dropdown that can follow Herdr's file, with the
 # value Herdr has; the other entries override it.
-settings-use-herdr = Use Herdr setting · { $value }
+settings-use-herdr = Use view setting · { $value }
 settings-on = On
 settings-off = Off
 # Where a notification appears in the window.
@@ -91,12 +92,12 @@ settings-lead-configuration = Files behind these settings. Saved edits reload au
 settings-theme-mode = Appearance
 settings-theme-side = Editing
 settings-theme-side-description = Which side of the pair the themes below change.
-settings-theme-follow = Follow Herdr's theme
-settings-theme-follow-description = Use the theme set in Herdr's own config instead of a GUI choice.
+settings-theme-follow = Follow view theme
+settings-theme-follow-description = Use the base theme in spaceport/view.toml instead of an app override.
 settings-theme-contrast = High contrast
 settings-theme-contrast-description = Raise text and marker contrast on every theme.
 settings-theme-source = Source
-settings-theme-source-description = Ghostty themes apply to this app; Herdr themes are shared.
+settings-theme-source-description = Choose a Ghostty theme or a palette from Spaceport's view settings.
 settings-theme-backdrop = Backdrop
 settings-theme-backdrop-description = What shows behind the main window: solid, translucent or a picture.
 settings-theme-padding-left = Left
@@ -157,7 +158,7 @@ settings-general-ports-description = Port chips on workspaces with a dev server.
 settings-general-smooth-scroll = Smooth scrolling
 settings-general-smooth-scroll-description = Scroll terminal history between rows; off steps whole rows.
 settings-general-copy-on-select = Copy on select
-settings-general-copy-on-select-description = Off: ⌘C / Ctrl-C copies the highlighted selection.
+settings-general-copy-on-select-description = On copies when you select. Off keeps the selection for ⌘C / Ctrl-C. With Off, Ctrl-C copies a selection instead of interrupting.
 settings-general-copied-toast = Copied notification
 settings-general-clipboard-position = Notification position
 settings-general-browser-skill = Teach local agents to use browser tabs
@@ -168,8 +169,8 @@ settings-tabs-layout = Tab layout
 settings-tabs-layout-description = How tab strips draw their tabs. Also under View > Tab Layout.
 settings-tabs-agent-title = Show agent titles on tabs
 settings-tabs-agent-title-description = A tab with no name of its own shows its agent's terminal title in place of its number.
-settings-tabs-herdr-2 = New terminals use Herdr 2
-settings-tabs-herdr-2-description = New tabs on this computer run in herdr-core, with native split panes. Herdr 1 tabs keep running beside them.
+settings-tabs-herdr-2 = Use Herdr Core for new local tabs
+settings-tabs-herdr-2-description = New Tab uses Herdr Core on this computer. Herdr TUI and its CLI cannot see those terminals. Existing tabs keep their runtime. Tabs inside a Core group always use that group's Core.
 settings-tabs-position = Position
 settings-tabs-hide-single = Hide with a single tab
 settings-tabs-confirm-tab = Confirm before closing a tab
@@ -179,20 +180,20 @@ settings-tabs-focus-follows-mouse-description = The pointer chooses the active p
 settings-tabs-pane-history = Restore scrollback after Herdr restarts
 settings-tabs-pane-history-description = Experimental. Herdr saves pane output to session-history.json and replays it when the daemon restarts.
 settings-notif-delivery = Deliver agent notifications
-settings-notif-delivery-description = Spaceport shows them in-app. System uses OS notifications; clicking one opens its pane. Terminal is for other clients only.
+settings-notif-delivery-description = Spaceport shows in-app notices. System uses OS notifications. Terminal and Off show none in Spaceport, unless Show toasts overrides them.
 settings-notif-finished = Finished notifications
 settings-notif-show = Show toasts
 settings-notif-delay = Delay
 settings-notif-position = Position
 settings-notif-sound = Play agent sounds
 settings-notif-volume = Volume
-settings-notif-volume-description = Sounds and Test play at this level, even when sounds are off.
+settings-notif-volume-description = Sets notification and test volume. Test still plays when notification sounds are off.
 settings-integrations-search = Integrations
 settings-integrations-search-description = Agents Herdr can launch and track.
 settings-config-local = Spaceport settings
 settings-config-local-description = The file holding Spaceport's own settings on this machine.
-settings-config-shared = Herdr configuration
-settings-config-shared-description = Herdr's configuration file, which its terminal client reads too.
+settings-config-shared = Spaceport view settings
+settings-config-shared-description = Private base theme, sounds, toasts, and prefix keys in spaceport/view.toml.
 settings-config-reload = Reload configuration
 settings-config-reload-description = Re-reads both files. Does not restart the daemon.
 

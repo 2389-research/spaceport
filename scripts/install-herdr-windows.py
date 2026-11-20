@@ -1,72 +1,103 @@
 #!/usr/bin/env python3
-"""Install the pinned Windows Herdr daemon for the native CI tests.
+# ABOUTME: Stages checksum-pinned Windows runtimes for isolated native tests.
+# ABOUTME: Preserves required ConPTY files without changing user installation state.
+"""Stage a pinned Windows runtime for native CI tests.
 
-Usage: python install-herdr-windows.py DESTINATION_DIR
+Usage: python install-herdr-windows.py [--core] DESTINATION_DIR
 
-Downloads Herdr's x86_64 Windows release, checks its SHA-256, extracts it into
-DESTINATION_DIR, and prints the path of herdr.exe for HERDR_TEST_BINARY. Herdr
-publishes no ARM64 Windows build; Windows on ARM runs this one under x64
-emulation, and the archive carries an ARM64 OpenConsole for its terminals.
-Emulated there, its panes echo typed text but never act on Enter, so CI runs
-the live-daemon GUI test on x64 only.
+The default stages Herdr 0.9.5 for HERDR_TEST_BINARY. --core stages Core 0.1.21
+for HERDR_CORE_TEST_BINARY, including its ConPTY files and license notices.
+Prints the exact executable path. Does not run an installer or change PATH.
 
-The digest is the one GitHub records for this exact asset; bump the version
-and digest together. Nothing here discovers or touches a user's own Herdr.
-Pure standard library, for the Windows runner.
+These Windows releases are x64-only. The Core fixture targets Windows x64.
+The default Herdr archive also carries an ARM64 OpenConsole; existing ARM
+fixtures retain their live-input exclusion. Bump versions and digests together.
 """
+import argparse
 import hashlib
-from pathlib import Path
-import shutil
+from pathlib import Path, PureWindowsPath
 import sys
 import tempfile
 import urllib.request
 import zipfile
 
-VERSION = "0.9.5"
-SHA256 = "d2c6c9c971c43a0bfdde8c692a9a1a7a45c3e4807cd01ae45662b4734fac1cbf"
-URL = f"https://github.com/herdrdev/herdr/releases/download/v{VERSION}/herdr-windows-x86_64.zip"
+RELEASES = {
+    # keep-sorted start
+    "core": (
+        "https://releases.herdr.dev/core/0.1.21/herdr-core-windows-x86_64.zip",
+        "a8984634c35b58ba82d0aec078d5a5e6004da01d5a25b3daf822ab5e31c7312b",
+        ("herdr-core.exe", "conpty/conpty.dll", "conpty/x64/OpenConsole.exe", "LICENSE",
+         "THIRD-PARTY-NOTICES/Microsoft.Windows.Console.ConPTY-LICENSE.txt"),
+    ),
+    "herdr": (
+        "https://github.com/herdrdev/herdr/releases/download/v0.9.5/herdr-windows-x86_64.zip",
+        "d2c6c9c971c43a0bfdde8c692a9a1a7a45c3e4807cd01ae45662b4734fac1cbf",
+        ("herdr.exe",),
+    ),
+    # keep-sorted end
+}
 LIMIT = 64 * 1024 * 1024
 
 
-def install(destination):
+def check_destination(destination):
     destination = Path(destination)
     if destination.exists() and any(destination.iterdir()):
         raise ValueError(f"{destination} is not empty")
+    return destination
+
+
+def unpack(archive, destination, expected_digest, required):
+    """Validate the complete Windows package before extracting its first file."""
+    destination = check_destination(destination)
+    digest = hashlib.sha256()
+    with Path(archive).open("rb") as source:
+        total = 0
+        while chunk := source.read(1024 * 1024):
+            total += len(chunk)
+            if total > LIMIT:
+                raise ValueError("Runtime archive exceeds the size limit")
+            digest.update(chunk)
+    if digest.hexdigest() != expected_digest:
+        raise ValueError(f"Runtime archive digest mismatch: {digest.hexdigest()}")
+    with zipfile.ZipFile(archive) as zipped:
+        for member in zipped.infolist():
+            path = PureWindowsPath(member.filename)
+            if not member.filename or path.root or path.drive or ".." in path.parts or ":" in member.filename:
+                raise ValueError(f"unsafe archive member: {member.filename}")
+        files = {member.filename for member in zipped.infolist() if not member.is_dir()}
+        for member in required:
+            if member not in files:
+                raise ValueError(f"Runtime archive is missing required file: {member}")
+        destination.mkdir(parents=True, exist_ok=True)
+        zipped.extractall(destination)
+    return (destination / required[0]).resolve()
+
+
+def install(destination, runtime="herdr"):
+    destination = check_destination(destination)
+    url, digest, required = RELEASES[runtime]
     with tempfile.TemporaryDirectory(prefix="herdr-download-") as temp:
         archive = Path(temp) / "herdr.zip"
-        digest = hashlib.sha256()
-        with urllib.request.urlopen(URL, timeout=120) as response, archive.open("xb") as output:
+        request = urllib.request.Request(url, headers={"User-Agent": "Spaceport-native-fixture/1"})
+        with urllib.request.urlopen(request, timeout=120) as response, archive.open("xb") as output:
             total = 0
             while chunk := response.read(1024 * 1024):
                 total += len(chunk)
                 if total > LIMIT:
-                    raise ValueError("Herdr archive exceeds the size limit")
-                digest.update(chunk)
+                    raise ValueError("Runtime archive exceeds the size limit")
                 output.write(chunk)
-        if digest.hexdigest() != SHA256:
-            raise ValueError(f"Herdr archive digest mismatch: {digest.hexdigest()}")
-        with zipfile.ZipFile(archive) as zipped:
-            for member in zipped.infolist():
-                # Refuse anything that would land outside the destination.
-                parts = Path(member.filename).parts
-                if member.filename.startswith(("/", "\\")) or ".." in parts or ":" in member.filename:
-                    raise ValueError(f"unsafe archive member: {member.filename}")
-            destination.mkdir(parents=True, exist_ok=True)
-            zipped.extractall(destination)
-    binary = destination / "herdr.exe"
-    if not binary.is_file():
-        shutil.rmtree(destination, ignore_errors=True)
-        raise ValueError("Herdr archive has no herdr.exe")
-    return binary.resolve()
+        return unpack(archive, destination, digest, required)
 
 
 def main():
-    if len(sys.argv) != 2:
-        sys.exit(__doc__.strip().splitlines()[2])
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--core", action="store_true", help="stage the pinned Core fixture")
+    parser.add_argument("destination", type=Path)
+    args = parser.parse_args()
     try:
-        print(install(sys.argv[1]))
-    except (OSError, ValueError) as error:
-        sys.exit(f"Herdr install failed: {error}")
+        print(install(args.destination, "core" if args.core else "herdr"))
+    except (OSError, ValueError, zipfile.BadZipFile) as error:
+        sys.exit(f"Runtime fixture staging failed: {error}")
 
 
 if __name__ == "__main__":

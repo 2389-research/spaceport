@@ -10,16 +10,33 @@ mod core_catalog;
 pub(crate) use add_device::enter;
 mod error;
 mod host_menu;
+mod paint;
 pub(super) mod picker;
 pub(super) mod rail;
 mod scope;
 mod setup;
+mod setup_paint;
 mod wsl;
+
+#[cfg(test)]
+pub(in crate::menu) use wsl::departure_fixture as device_setup_departure_fixture;
+#[cfg(test)]
+pub(in crate::menu) use wsl::long_fixture as device_setup_long_fixture;
 
 pub(super) use add_device::Setup;
 pub(crate) use error::Error;
+pub(in crate::menu) use host_menu::DeviceThemePaint;
 pub(crate) use host_menu::HostMenu;
+pub(in crate::menu) use host_menu::Paint as HostPaint;
+#[cfg(test)]
+pub(in crate::menu) use host_menu::departure_fixture as host_departure_fixture;
+#[cfg(test)]
+pub(in crate::menu) use host_menu::device_theme_departure_fixture;
+#[cfg(test)]
+pub(in crate::menu) use host_menu::long_tags_fixture as host_long_tags_fixture;
+pub(in crate::menu) use paint::DevicesPaint;
 pub(crate) use scope::DeviceScope;
+pub(in crate::menu) use setup_paint::Paint as DeviceSetupPaint;
 pub(super) use wsl::WslSetup;
 
 use super::{Page, colors};

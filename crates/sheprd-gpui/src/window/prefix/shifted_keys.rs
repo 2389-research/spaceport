@@ -1,3 +1,5 @@
+// ABOUTME: Restores shifted and function-key identities for shortcut matching.
+// ABOUTME: Gives consumed shortcut tails the same key identity through modifier changes.
 //! A shifted key GPUI delivered without its Shift.
 //!
 //! GPUI's macOS backend keeps Shift only on the letters a to z. Any other
@@ -30,6 +32,10 @@ impl<'a> Typed<'a> {
 
     pub(in crate::window) fn keystroke(&self) -> &Keystroke {
         self.keystroke
+    }
+
+    pub(in crate::window) fn held_key(&self) -> &str {
+        &self.restored.as_ref().unwrap_or(self.keystroke).key
     }
 
     /// As `find`, except that what the restored keystroke finds counts only

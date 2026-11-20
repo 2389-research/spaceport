@@ -1,4 +1,6 @@
-; Per-user Windows installer for Sheprd, compiled by
+; ABOUTME: Installs Spaceport into its own per-user Windows identity.
+; ABOUTME: Preserves daemon sessions and externally owned URL handlers.
+; Per-user Windows installer for Spaceport, compiled by
 ; `windows-installer.py build`, which passes the defines below. It installs the
 ; release zip's tree unchanged: spaceport.exe, a console program because it is
 ; also the command line terminals and agents run, spaceport-launcher.exe,
@@ -7,7 +9,6 @@
 ; Closing applications before replacing files also ends running chats, whose
 ; agents' sessions can be resumed. It never installs, starts, or stops the Herdr daemon, and uninstalling
 ; keeps settings and Herdr sessions.
-; The directory and shortcut match site/install.ps1, so either replaces the other.
 
 #ifndef Version
   #error Pass /DVersion=YYYYMMDD.COUNTER
@@ -24,31 +25,30 @@
 #ifndef OutputDir
   #error Pass /DOutputDir=DIRECTORY
 #endif
+#ifndef AppUserModelID
+  #error Pass /DAppUserModelID=the compiled app identity
+#endif
 ; Optional: /DSignTool=NAME with a matching /SNAME=COMMAND makes ISCC
 ; Authenticode-sign the uninstaller and Setup.exe. Nothing passes them since
 ; the upstream release workflow was removed, so every build stays unsigned.
 
-#define AppName "Sheprd"
-#define StartupName "Herdr UI"
+#define AppName "Spaceport"
+#define StartupName "Spaceport"
 #define AppExe "spaceport.exe"
 #define Launcher "spaceport-launcher.exe"
-; Inherited package AppUserModelID. Spaceport's production identity remains
-; unconfigured; this installer is not approved for Spaceport distribution.
-#define AppUserModelID "so.pen.herdr-gpui"
 #define Icons "..\..\assets\icons"
 
 [Setup]
-; Never change: Windows finds an existing installation by it.
-AppId={{7FA70894-4FC0-4923-BDCB-B05F7475610A}
+; Spaceport owns this identity independently of upstream installations.
+AppId={{E3008A35-FD63-4B85-A416-3FC47E25A820}
 AppName={#AppName}
 AppVersion={#Version}
 AppVerName={#AppName} {#Version}
-; winget matches the deployed publisher as well as the permanent AppId.
-AppPublisher=Herdr UI
-AppPublisherURL=https://sheprd.org
-AppSupportURL=https://github.com/sheprd-labs/sheprd/issues
+AppPublisher=2389 Research, Inc
+AppPublisherURL=https://github.com/2389-research/spaceport
+AppSupportURL=https://github.com/2389-research/spaceport/issues
 ; Preserve the existing installation directory across package upgrades.
-DefaultDirName={localappdata}\Programs\Herdr UI
+DefaultDirName={localappdata}\Programs\Spaceport
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
@@ -65,7 +65,7 @@ OutputBaseFilename=Sheprd-{#Version}-{#Target}-setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
-; Sheprd's icon in place of Inno's stock box: the setup file's own icon, the
+; Spaceport's icon in place of Inno's stock box: the setup file's own icon, the
 ; corner image on every page, and, centered rather than stretched, the welcome
 ; and finish pages' panel. Each list runs from 100% to 250% DPI.
 SetupIconFile={#Icons}\Sheprd.ico
@@ -99,13 +99,10 @@ Source: "{#SourceDir}\{#Launcher}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\sheprd-acp.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion
 
-; Uninstall removes only directories Setup created. Over an install.ps1 copy
-; these already existed, and would otherwise be left behind empty.
+; Remove only empty directories owned by this installation.
 [UninstallDelete]
 Type: dirifempty; Name: "{app}\licenses"
 Type: dirifempty; Name: "{app}"
-; A pre-Setup install may have supplied the desktop shortcut we renamed.
-Type: files; Name: "{userdesktop}\{#AppName}.lnk"
 
 ; The app registers its AppUserModelID for notifications on first use; that
 ; key goes on uninstall. Protocol links need a separately owned installer ID.
@@ -114,7 +111,7 @@ Root: HKCU; Subkey: "Software\Classes\AppUserModelId\{#AppUserModelID}"; Flags: 
 ; Settings > General > Launch at login writes a Run value naming the launcher,
 ; and Task Manager's Startup apps may mark it off. Setup creates neither; both
 ; go on uninstall, so Windows is not left starting a missing program.
-; Never rename these on upgrade: StartupApproved holds the user's disabled state.
+; StartupApproved holds this app's disabled state across upgrades.
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "{#StartupName}"; Flags: uninsdeletevalue dontcreatekey
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"; ValueName: "{#StartupName}"; Flags: uninsdeletevalue dontcreatekey
 
@@ -166,45 +163,16 @@ begin
   end;
 end;
 
-{ The user PATH without this installation's entries. Pre-release builds of this
-  installer put the bin subdirectory there instead, so that goes too. }
+{ The user PATH without this installation's entry. }
 function PathWithoutApp(): String;
 begin
-  Result := WithoutEntry(WithoutEntry(UserPath(), ExpandConstant('{app}')), ExpandConstant('{app}\bin'));
+  Result := WithoutEntry(UserPath(), ExpandConstant('{app}'));
 end;
 
 procedure SetUserPath(Path: String);
 begin
   if Path <> UserPath() then
     RegWriteExpandStringValue(HKCU, EnvironmentKey, 'Path', Path);
-end;
-
-{ Only rename shortcuts owned by this installation. A legacy desktop shortcut
-  survives even when a fresh Setup run did not select the desktop task. }
-procedure RenameLegacyShortcut(Folder: String);
-var
-  OldPath, NewPath, Target, Name: String;
-  Shell, Link: Variant;
-begin
-  OldPath := Folder + '\Herdr UI.lnk';
-  NewPath := Folder + '\{#AppName}.lnk';
-  if not FileExists(OldPath) then
-    exit;
-  try
-    Shell := CreateOleObject('WScript.Shell');
-    Link := Shell.CreateShortcut(OldPath);
-    Target := Link.TargetPath;
-    Name := ExtractFileName(Target);
-    if (CompareText(RemoveBackslashUnlessRoot(ExtractFilePath(Target)), ExpandConstant('{app}')) <> 0) or
-       ((CompareText(Name, 'herdr-gpui.exe') <> 0) and
-        (CompareText(Name, 'herdr-gpui-launcher.exe') <> 0) and
-        (CompareText(Name, '{#AppExe}') <> 0) and (CompareText(Name, '{#Launcher}') <> 0)) then
-      exit;
-    if FileExists(NewPath) or FileCopy(OldPath, NewPath, True) then
-      DeleteFile(OldPath);
-  except
-    Log('Could not rename the legacy shortcut: ' + GetExceptionMessage);
-  end;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
@@ -221,8 +189,6 @@ begin
     Path := Path + ExpandConstant('{app}');
   end;
   SetUserPath(Path);
-  RenameLegacyShortcut(ExpandConstant('{userprograms}'));
-  RenameLegacyShortcut(ExpandConstant('{userdesktop}'));
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

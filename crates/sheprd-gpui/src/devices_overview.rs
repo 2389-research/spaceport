@@ -80,7 +80,13 @@ impl SheprdWindow {
             })
         });
         let Some(id) = opened else {
-            self.show_flash(Flash::warning(fl!("devices-overview-too-many-tabs")), cx);
+            self.show_flash(
+                Flash::warning(crate::browser::open_error(
+                    cx,
+                    fl!("devices-overview-too-many-tabs"),
+                )),
+                cx,
+            );
             return;
         };
         self.dismiss_menu(window, cx);

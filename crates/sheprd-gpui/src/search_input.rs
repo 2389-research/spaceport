@@ -1,6 +1,11 @@
+// ABOUTME: Edits single-line picker searches with native IME and selection support.
+// ABOUTME: Exposes plain paint data when a closing picker releases its field.
 //! A single-line, native-IME-aware input for searchable pickers.
+mod paint;
+pub(crate) use paint::Paint;
 use std::ops::Range;
 
+use gpui::accesskit::ActionData;
 use gpui::{
     App, Bounds, ClipboardItem, ContentMask, Context, CursorStyle, EntityInputHandler,
     EventEmitter, FocusHandle, Focusable, KeyDownEvent, MouseButton, Pixels, Point, Role,
@@ -115,6 +120,16 @@ impl SearchInput {
 
     pub fn text(&self) -> &str {
         &self.edit.text
+    }
+
+    fn set_accessible_value(&mut self, data: Option<&ActionData>, cx: &mut Context<Self>) {
+        if self.masked {
+            return;
+        }
+        let Some(ActionData::Value(text)) = data else {
+            return;
+        };
+        self.set_text_at(text, text.len(), cx);
     }
 
     /// Replaces the text with the cursor at byte `cursor`, moved back to a
@@ -439,6 +454,7 @@ impl EntityInputHandler for SearchInput {
 impl Render for SearchInput {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let input = cx.entity();
+        let accessible = cx.weak_entity();
         let painter = input.clone();
         let height = px(self.font.line_height());
         div()
@@ -466,21 +482,13 @@ impl Render for SearchInput {
                     }),
                 }
             })
-            .w_full()
-            .when(self.framed, |field| {
-                field
-                    .px_2()
-                    .py_1()
-                    .rounded(px(crate::config::corners::CONTROL))
-                    .border_1()
-                    .border_color(rgb(self.theme.active))
-                    .bg(rgb(self.theme.background))
-            })
-            .text_color(rgb(self.theme.foreground))
-            .text_font(&self.font)
-            .text_size(px(self.font.size))
-            .line_height(height)
+            .map(|field| paint::frame(field, &self.font, &self.theme, self.framed))
             .track_focus(&self.focus)
+            .when(!self.masked, |field| {
+                field.on_a11y_action(gpui::AccessibleAction::SetValue, move |data, _, cx| {
+                    let _ = accessible.update(cx, |input, cx| input.set_accessible_value(data, cx));
+                })
+            })
             .cursor(CursorStyle::IBeam)
             .on_key_down(cx.listener(Self::key_down))
             .on_action(cx.listener(|this, _: &actions::Cut, window, cx| {

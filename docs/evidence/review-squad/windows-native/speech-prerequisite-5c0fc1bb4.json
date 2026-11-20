@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "finding": "q72g",
+  "source": "5c0fc1bb42a8783d85c30482553b28b73e305efe",
+  "workflow": ".github/workflows/windows-speech-preflight.yml",
+  "run_id": 44756776215,
+  "job_id": 136358454558,
+  "run_url": "https://github.com/2389-research/spaceport/actions/runs/44756776215",
+  "job_conclusion": "failure",
+  "image": {
+    "name": "windows-2025-vs2026",
+    "version": "20261116.315.1",
+    "runner_version": "2.338.2"
+  },
+  "observations": [
+    {
+      "timestamp": "2026-11-20T14:47:17.2826830Z",
+      "stage": "inventory",
+      "os": {
+        "Caption": "Microsoft Windows Server 2025 Datacenter",
+        "Version": "10.0.26100",
+        "BuildNumber": "26100"
+      },
+      "services": [
+        {
+          "Name": "AudioEndpointBuilder",
+          "Status": 4,
+          "StartType": 2
+        },
+        {
+          "Name": "Audiosrv",
+          "Status": 4,
+          "StartType": 2
+        }
+      ],
+      "sound_devices": [],
+      "limit": "Device inventory does not prove active render endpoints."
+    },
+    {
+      "timestamp": "2026-11-20T14:47:19.2496978Z",
+      "stage": "voices",
+      "voices": [
+        {
+          "name": "Microsoft David Desktop",
+          "enabled": true
+        },
+        {
+          "name": "Microsoft Zira Desktop",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-11-20T14:47:24.0434349Z",
+      "stage": "speech_api_failed",
+      "type": "System.Management.Automation.MethodInvocationException",
+      "message": "Exception calling \"Speak\" with \"1\" argument(s): \"Audio device error encountered. - Error Code: 0x2\"",
+      "detail": "System.Management.Automation.MethodInvocationException: Exception calling \"Speak\" with \"1\" argument(s): \"Audio device error encountered. - Error Code: 0x2\" ---> System.Speech.Internal.Synthesis.AudioException: Audio device error encountered. - Error Code: 0x2\r\n   at System.Speech.Internal.Synthesis.VoiceSynthesis.Speak(Prompt prompt)\r\n   at CallSite.Target(Closure , CallSite , Object , String )\r\n   --- End of inner exception stack trace ---\r\n   at System.Management.Automation.ExceptionHandlingOps.CheckActionPreference(FunctionContext funcContext, Exception exception)\r\n   at System.Management.Automation.Interpreter.ActionCallInstruction`2.Run(InterpretedFrame frame)\r\n   at System.Management.Automation.Interpreter.EnterTryCatchFinallyInstruction.Run(InterpretedFrame frame)\r\n   at System.Management.Automation.Interpreter.EnterTryCatchFinallyInstruction.Run(InterpretedFrame frame)"
+    }
+  ],
+  "conclusion": "This runner exposes no Win32 sound devices and its default System.Speech playback fails. Audible screen-reader output remains unqualified.",
+  "limits": [
+    "System.Speech is a render-path prerequisite probe, not NVDA or Narrator.",
+    "Win32 device inventory does not enumerate active WASAPI endpoints.",
+    "No audio was recorded or listened to.",
+    "No screen reader, virtual audio device, service, or driver was installed or configured.",
+    "This result applies to the exact hosted image and run, not every Windows environment."
+  ],
+  "next_step": "Qualify an actual render endpoint before staging portable NVDA and recording its owned process tree."
+}

@@ -1,6 +1,6 @@
-// ABOUTME: Reads and edits shared Herdr preferences with guarded file replacement.
+// ABOUTME: Reads and edits private view preferences and runtime history with guarded file replacement.
 // ABOUTME: Preserves unknown settings and the snapshot used for conflict checks.
-//! Shared release-namespace Herdr settings. `load` and `save` do blocking I/O:
+//! Private Spaceport view settings with a narrow runtime history adapter. `load` and `save` do blocking I/O:
 //! callers MUST run them on a background worker, never in render/input handlers.
 //!
 //! Schema/defaults and palette data adapted from https://github.com/herdrdev/herdr
@@ -95,34 +95,36 @@ pub const THEME_NAMES: &[&str] = &[
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("shared Herdr config I/O failed")]
+    #[error("configuration file I/O failed")]
     Io(#[from] std::io::Error),
     #[cfg(windows)]
-    #[error("saving shared Herdr settings is unsupported on Windows; edit config.toml manually")]
+    #[error(
+        "saving these settings is unsupported on Windows; edit the configuration file manually"
+    )]
     Unsupported,
     #[cfg(unix)]
-    #[error("shared Herdr config was replaced but completion failed; reload before saving again")]
+    #[error("configuration file was replaced but completion failed; reload before saving again")]
     Committed(#[source] std::io::Error),
-    #[error("invalid shared Herdr TOML")]
+    #[error("invalid configuration TOML")]
     Parse(#[from] toml::de::Error),
-    #[error("cannot edit shared Herdr TOML")]
+    #[error("cannot edit configuration TOML")]
     Edit(#[from] toml_edit::TomlError),
     #[cfg(unix)]
-    #[error("shared Herdr config changed; reload before saving")]
+    #[error("configuration file changed; reload before saving")]
     Conflict,
     #[cfg(unix)]
-    #[error("shared Herdr config is busy; retry saving")]
+    #[error("configuration file is busy; retry saving")]
     Busy,
     #[error(
-        "shared Herdr config must be a single-link regular file you own, in directories only you or root can write, reached only through symlinks you or root own"
+        "configuration file must be a single-link regular file you own, in directories only you or root can write, reached only through symlinks you or root own"
     )]
     UnsafePath,
     #[cfg(unix)]
     #[error(
-        "shared Herdr config path {path:?} is writable by group or others (mode {mode:04o}); remove group/other write permission with chmod go-w on this path, then Reload settings"
+        "configuration file path {path:?} is writable by group or others (mode {mode:04o}); remove group/other write permission with chmod go-w on this path, then Reload settings"
     )]
     InsecurePermissions { path: PathBuf, mode: u32 },
-    #[error("shared Herdr config exceeds the 1 MiB limit")]
+    #[error("configuration file exceeds the 1 MiB limit")]
     TooLarge,
     #[error("ui.toast.delay_seconds must be between 0 and 3600")]
     ToastDelay,
@@ -143,7 +145,7 @@ pub enum Error {
     #[error("unexpected output reading the host's Herdr config")]
     RemoteOutput,
     #[cfg(unix)]
-    #[error("could not remove shared config temporary file: {cleanup}")]
+    #[error("could not remove configuration temporary file: {cleanup}")]
     Cleanup {
         #[source]
         source: Option<Box<Error>>,
@@ -453,6 +455,15 @@ impl Settings {
     /// Background-only. A missing file yields defaults without creating anything.
     pub fn load() -> crate::Result<Self> {
         let path = crate::view_settings_path(sheprd_client::local_var);
+        Self::load_resolved(path)
+    }
+
+    /// Background-only. Used only by the local runtime's pane-history adapter.
+    pub fn load_runtime_history() -> crate::Result<Self> {
+        Self::load_resolved(sheprd_client::herdr_config_path())
+    }
+
+    fn load_resolved(path: PathBuf) -> crate::Result<Self> {
         let path = if path.is_absolute() {
             path
         } else {

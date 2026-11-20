@@ -1,3 +1,5 @@
+// ABOUTME: Shares setup framing and source choices with passive departing copies.
+// ABOUTME: Keeps source switching and close actions exclusive to the active dialog.
 //! The Add Device dialog's frame: one title, a rail of what can be added (this
 //! platform's own hosts), and the chosen source's form beside it. Each source keeps its own form state,
 //! so switching back and forth does not lose what was typed.
@@ -23,6 +25,16 @@ pub(in crate::menu) enum Source {
     Host,
     /// WSL distributions on this machine, listed only on Windows.
     Wsl,
+}
+
+pub(super) struct Choice {
+    source: Source,
+    name: String,
+}
+
+pub(super) struct Paint {
+    current: Source,
+    choices: Vec<Choice>,
 }
 
 impl Source {
@@ -68,6 +80,19 @@ pub(super) fn add_device_offer() -> String {
 }
 
 impl SheprdWindow {
+    pub(super) fn device_rail_paint(&self, current: Source) -> Paint {
+        Paint {
+            current,
+            choices: self
+                .rail_sources()
+                .into_iter()
+                .map(|source| Choice {
+                    source,
+                    name: source.name(),
+                })
+                .collect(),
+        }
+    }
     /// This platform's own hosts.
     pub(in crate::menu) fn rail_sources(&self) -> Vec<Source> {
         let mut sources = vec![Source::Host];
@@ -149,14 +174,18 @@ impl SheprdWindow {
     /// The whole dialog: the shared header, the rail, and `pane`, which draws
     /// its own body and footer. `selector` and `close` keep each source's
     /// own debug names for its frame and Close button.
-    pub(in crate::menu) fn add_device_frame(
+    pub(super) fn add_device_frame(
         &self,
-        selector: &'static str,
-        close: &'static str,
+        paint: &Paint,
         compact: bool,
         pane: impl IntoElement,
+        active: bool,
         cx: &mut Context<Self>,
     ) -> Div {
+        let (selector, close) = match paint.current {
+            Source::Host => ("device-setup-dialog", "device-setup-close"),
+            Source::Wsl => ("wsl-setup-dialog", "wsl-setup-close"),
+        };
         let theme = &self.theme;
         let header = div()
             .debug_selector(|| "device-setup-header".into())
@@ -180,17 +209,21 @@ impl SheprdWindow {
                     .debug_selector(move || close.into())
                     .px_2()
                     .py_1()
-                    .cursor_pointer()
                     .rounded(px(crate::config::corners::CONTROL))
-                    .hover(|s| s.bg(rgb(theme.active)))
                     .child(fl!("add-device-close"))
-                    .on_click(cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx))),
+                    .when(active, |button| {
+                        button
+                            .cursor_pointer()
+                            .hover(|s| s.bg(rgb(theme.active)))
+                            .on_click(
+                                cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx)),
+                            )
+                    }),
             );
-        let sources = self.rail_sources();
         let body = div().flex_1().min_h_0().flex();
         // A lone source needs no rail.
-        let body = if sources.len() > 1 {
-            body.child(self.render_add_device_rail(&sources, compact, cx))
+        let body = if paint.choices.len() > 1 {
+            body.child(self.render_add_device_rail(paint, compact, active, cx))
         } else {
             body
         };
@@ -216,12 +249,12 @@ impl SheprdWindow {
 
     fn render_add_device_rail(
         &self,
-        sources: &[Source],
+        paint: &Paint,
         compact: bool,
+        active: bool,
         cx: &mut Context<Self>,
     ) -> Div {
         let theme = &self.theme;
-        let current = self.menu.page.and_then(Source::of);
         // A provider's pane opened from elsewhere belongs under Add provider
         // while the rail omits it.
         let mut rail = div()
@@ -236,8 +269,9 @@ impl SheprdWindow {
             .gap(px(2.))
             .border_r_1()
             .border_color(rgb(theme.active));
-        for &source in sources {
-            let on = current == Some(source);
+        for choice in &paint.choices {
+            let source = choice.source;
+            let on = paint.current == source;
             let id = source.id();
             let icon = div()
                 .flex_none()
@@ -262,9 +296,9 @@ impl SheprdWindow {
                     .items_center()
                     .gap(px(8.))
                     .rounded(px(crate::config::corners::CONTROL))
-                    .cursor_pointer()
                     .when(on, |row| row.bg(rgb(theme.primary_wash())))
-                    .when(!on, |row| row.hover(|s| s.bg(rgb(theme.active))))
+                    .when(active, |row| row.cursor_pointer())
+                    .when(active && !on, |row| row.hover(|s| s.bg(rgb(theme.active))))
                     .child(icon)
                     .when(!compact, |row| {
                         // Its own width counts, so the rail widens to fit it.
@@ -273,12 +307,14 @@ impl SheprdWindow {
                                 .flex_grow(1.)
                                 .min_w_0()
                                 .truncate()
-                                .child(source.name()),
+                                .child(choice.name.clone()),
                         )
                     })
-                    .on_click(cx.listener(move |this, _, window, cx| {
-                        this.open_source(source, window, cx);
-                    })),
+                    .when(active, |row| {
+                        row.on_click(cx.listener(move |this, _, window, cx| {
+                            this.open_source(source, window, cx);
+                        }))
+                    }),
             );
         }
         rail

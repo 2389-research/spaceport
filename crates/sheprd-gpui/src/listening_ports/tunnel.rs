@@ -6,12 +6,13 @@
 //! page reuses it.
 
 use crate::Result;
+use sheprd_client::ssh::owned_process::OwnedChild;
 use std::{
     collections::HashMap,
     io::{BufRead, BufReader, Read},
     net::{IpAddr, Ipv4Addr, TcpListener},
     num::NonZeroU16,
-    process::{Child, ExitStatus, Stdio},
+    process::{ExitStatus, Stdio},
     sync::{Arc, Mutex, MutexGuard, PoisonError, mpsc},
     thread,
     time::{Duration, Instant},
@@ -39,6 +40,10 @@ const READY_OUTPUT: u64 = 64 * 1024;
 /// Tunnels are opened by hand, one click each; this only bounds a runaway.
 const TUNNEL_LIMIT: usize = 32;
 
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::disallowed_methods)]
+mod tests;
+
 /// A remote port, by the SSH target its host is dialled with.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Key {
@@ -59,7 +64,7 @@ pub(crate) struct Attempt(Arc<Mutex<Slot>>);
 #[derive(Default)]
 struct Slot {
     cancelled: bool,
-    child: Option<Child>,
+    child: Option<OwnedChild>,
 }
 
 impl Attempt {
@@ -68,11 +73,11 @@ impl Attempt {
     }
 
     /// Takes the freshly spawned child. One that was cancelled meanwhile is
-    /// killed at once, which the waiting task then sees as an exit.
-    pub(super) fn adopt(&self, child: Child) {
+    /// stopped on arrival, which the waiting task then sees as an exit.
+    pub(super) fn adopt(&self, child: impl Into<OwnedChild>) {
         let mut slot = self.slot();
         let cancelled = slot.cancelled;
-        slot.child = Some(child);
+        slot.child = Some(child.into());
         if cancelled {
             kill(&mut slot);
         }
@@ -86,7 +91,7 @@ impl Attempt {
         }
     }
 
-    /// Kills the child without waiting for it; the task that owns the
+    /// Stops the child without waiting for it; the task that owns the
     /// attempt reaps it. Safe on the UI thread and while quitting.
     pub(crate) fn cancel(&self) {
         let mut slot = self.slot();
@@ -98,7 +103,7 @@ impl Attempt {
 fn kill(slot: &mut Slot) {
     if let Some(child) = &mut slot.child {
         // A child already reaped is not signalled again.
-        let _ = child.kill();
+        child.stop();
     }
 }
 
@@ -131,18 +136,8 @@ impl Drop for Tunnel {
     /// Kills the child and reaps it on a thread of its own, so closing a
     /// tunnel never waits on the UI thread.
     fn drop(&mut self) {
-        let Some(mut child) = self.attempt.slot().child.take() else {
-            return;
-        };
-        let _ = child.kill();
-        let reaped = thread::Builder::new()
-            .name("herdr-tunnel-reaper".into())
-            .spawn(move || {
-                let _ = child.wait();
-            });
-        if let Err(error) = reaped {
-            tracing::warn!(category = "listening-ports", %error, "could not reap an SSH tunnel");
-        }
+        let child = self.attempt.slot().child.take();
+        drop(child);
     }
 }
 
@@ -167,14 +162,14 @@ pub(crate) fn open(key: &Key, preferred: Option<u16>, attempt: &Attempt) -> Resu
 
 fn start(key: &Key, preferred: Option<u16>, attempt: &Attempt) -> Result<Tunnel> {
     let local = free_port(preferred).map_err(Error::Port)?;
-    let mut command = sheprd_client::forward_command(&key.target, local, key.address, key.port)?;
+    let command = sheprd_client::forward_command(&key.target, local, key.address, key.port)?;
+    start_command(local, command, attempt)
+}
+
+fn start_command(local: u16, command: std::process::Command, attempt: &Attempt) -> Result<Tunnel> {
     // Only the readiness line is read; diagnostics may carry secrets.
-    command
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null());
-    let mut child = command.spawn().map_err(Error::Start)?;
-    let stdout = child.stdout.take();
+    let mut child = OwnedChild::spawn(command, None, Stdio::piped()).map_err(Error::Start)?;
+    let stdout = child.take_stdout();
     attempt.adopt(child);
     let result = match stdout {
         Some(stdout) => ready(|| attempt.try_wait(), stdout, Instant::now() + OPEN_TIMEOUT),
@@ -514,7 +509,7 @@ impl Drop for Tunnels {
 #[cfg(all(test, unix))]
 impl Tunnel {
     /// A tunnel around any child, standing in for `ssh` in tests.
-    pub(crate) fn around(child: Child, local: u16) -> Self {
+    pub(crate) fn around(child: std::process::Child, local: u16) -> Self {
         let attempt = Attempt::default();
         attempt.adopt(child);
         Self::new(&attempt, local)

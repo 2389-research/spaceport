@@ -37,8 +37,6 @@ rustix.workspace = true
 [target.'cfg(windows)'.dependencies]
 windows-sys = { features = [
   "Win32_System_Registry",
-  "Win32_UI_Accessibility",
-  "Win32_UI_WindowsAndMessaging",
 ], workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]

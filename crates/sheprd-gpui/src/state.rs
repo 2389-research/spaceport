@@ -1,3 +1,5 @@
+// ABOUTME: Reduces ordered connection events into a coherent displayed projection.
+// ABOUTME: Preserves accepted responses while keeping presentation indexes derived from snapshots.
 //! A connection's live state, as the window reads it.
 // i18n: migrated
 use crate::i18n::{Localize, fl};
@@ -79,6 +81,7 @@ pub struct LiveState {
     pub(crate) sound_cancel: Arc<std::sync::atomic::AtomicBool>,
     pub(crate) sound_connection_cancel: Arc<std::sync::atomic::AtomicBool>,
     pub snapshot: Option<Arc<ClientShellSnapshot>>,
+    pub(crate) sidebar_index: crate::sidebar::SnapshotIndexCache,
     /// One newer metadata projection, waiting for its matching cells.
     pub(crate) pending_snapshot: Option<Arc<ClientShellSnapshot>>,
     /// When each of `snapshot`'s agents last changed, on a clock shared with
@@ -96,6 +99,8 @@ pub struct LiveState {
     /// Why `ssh` refused the bridge, when that is how the connection ended.
     pub(crate) ssh_failure: Option<sheprd_client::SshFailure>,
     pub missing_installation: bool,
+    /// An explicit shutdown from this connection, retained through its disconnect.
+    pub(crate) server_stopped: bool,
     /// The daemon's reported version, from an accepted handshake or mismatch notice.
     pub daemon_version: Option<String>,
     /// Why the last handshake was refused, when updating one side fixes it.
@@ -201,6 +206,7 @@ impl Default for LiveState {
             sound_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             sound_connection_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             snapshot: None,
+            sidebar_index: Default::default(),
             pending_snapshot: None,
             agent_recency: AgentRecency::default(),
             previous_pane: None,
@@ -211,6 +217,7 @@ impl Default for LiveState {
             notices: Default::default(),
             ssh_failure: None,
             missing_installation: false,
+            server_stopped: false,
             daemon_version: None,
             version_mismatch: None,
             local_daemon_peer: false,
@@ -253,6 +260,16 @@ pub(crate) enum Answer {
 }
 
 impl LiveState {
+    /// Applies a window projection without resetting the same notice's reading time.
+    pub(crate) fn apply_window_update(&mut self, mut next: Self) {
+        next.notices.inherit_display(&self.notices);
+        if matches!((&self.snapshot, &next.snapshot), (Some(current), Some(incoming)) if Arc::ptr_eq(current, incoming))
+        {
+            std::mem::swap(&mut self.sidebar_index, &mut next.sidebar_index);
+        }
+        *self = next;
+    }
+
     fn answer_slot(&mut self, answer: Answer) -> &mut Option<(String, Option<DialogResponse>)> {
         match answer {
             Answer::Script => &mut self.script_response,
@@ -294,6 +311,8 @@ impl LiveState {
             sound_cancel,
             sound_connection_cancel,
             snapshot,
+            // Derived from the exact snapshot identity, without changing displayed data.
+            sidebar_index: _,
             pending_snapshot: _,
             // Changes only with `snapshot`, which is compared below.
             agent_recency: _,
@@ -305,6 +324,7 @@ impl LiveState {
             notices,
             ssh_failure,
             missing_installation,
+            server_stopped,
             daemon_version,
             version_mismatch,
             local_daemon_peer,
@@ -363,6 +383,7 @@ impl LiveState {
             && *notices == self.notices
             && *ssh_failure == self.ssh_failure
             && *missing_installation == self.missing_installation
+            && *server_stopped == self.server_stopped
             && *daemon_version == self.daemon_version
             && *version_mismatch == self.version_mismatch
             && *local_daemon_peer == self.local_daemon_peer
@@ -524,6 +545,7 @@ impl LiveState {
                             welcome.capabilities.iter().any(|value| value == capability)
                         });
                 self.missing_installation = false;
+                self.server_stopped = false;
                 self.version_mismatch = None;
                 // The daemon reports the mode to each new connection.
                 self.keyboard_report_all = false;
@@ -645,6 +667,9 @@ impl LiveState {
                     *result = Some(Ok(response));
                 }
             }
+            ClientEvent::Message(ServerMessage::ServerShutdown { .. }) => {
+                self.server_stopped = true;
+            }
             ClientEvent::Message(ServerMessage::ClientShellError { message }) => {
                 self.notices.show(crate::notice::Cause::Daemon, message)
             }
@@ -732,7 +757,6 @@ impl LiveState {
             | ClientEvent::Message(ServerMessage::Welcome { .. })
             | ClientEvent::Message(ServerMessage::ClientShellSnapshot(_))
             // Consumed by the session worker and never forwarded here.
-            | ClientEvent::Message(ServerMessage::ServerShutdown { .. })
             | ClientEvent::Message(ServerMessage::PaneSurface(_))
             | ClientEvent::Message(ServerMessage::PaneSurfacePatch(_))
             | ClientEvent::Message(ServerMessage::ClientShellEndpointResponseChunk { .. })

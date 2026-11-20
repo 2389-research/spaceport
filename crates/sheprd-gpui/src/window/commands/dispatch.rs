@@ -1,3 +1,5 @@
+// ABOUTME: Routes window-owned commands through one dispatch table.
+// ABOUTME: Keeps local actions separate from guarded daemon fallback.
 //! The commands the window answers without the daemon, as one table: each
 //! row names the commands it takes and the window method that runs them, and
 //! the ones it does not take fall through to the daemon request.
@@ -26,12 +28,20 @@ struct Row {
 /// returns [`Run::FallsThrough`], so the request it still needs is made.
 const ROWS: &[Row] = &[
     Row {
+        takes: |command| matches!(command, Command::CloseWorkspace),
+        run: SheprdWindow::command_close_workspace,
+    },
+    Row {
         takes: |command| matches!(command, Command::OpenNotificationTarget),
         run: SheprdWindow::command_notification_target,
     },
     Row {
         takes: |command| matches!(command, Command::Logs),
         run: SheprdWindow::command_logs,
+    },
+    Row {
+        takes: |command| matches!(command, Command::Messages),
+        run: SheprdWindow::command_messages,
     },
     Row {
         takes: |command| matches!(command, Command::NewWindow),

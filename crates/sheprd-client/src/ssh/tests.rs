@@ -4,6 +4,7 @@ mod forward;
 mod incompatible;
 #[cfg(unix)]
 mod mise;
+mod output_deadline;
 mod probe_failure;
 mod windows_host;
 #[cfg(windows)]

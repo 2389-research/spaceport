@@ -1,3 +1,5 @@
+// ABOUTME: Exercises tab captions from decoded snapshot metadata.
+// ABOUTME: Preserves observable behavior while sharing indexed snapshot fixtures.
 use super::*;
 
 #[test]
@@ -6,7 +8,12 @@ fn pasted_transport_markers_do_not_show_as_pane_or_tab_captions() {
     snapshot.agents[0].title = Some("<pasted_content id=\"demo\">".into());
     snapshot.tabs[0].label = "<pasted_content id=\"demo\">".into();
     assert_eq!(named(&snapshot), None);
-    assert_eq!(agent_place(&snapshot.agents[0], &snapshot).unwrap().1, None);
+    assert_eq!(
+        agent_place(&snapshot.agents[0], &IndexedSnapshot::new(&snapshot))
+            .unwrap()
+            .1,
+        None
+    );
     snapshot.panes = vec![pane("p0", Some("#357 Windows GUI never connects"))];
     assert_eq!(
         named(&snapshot).as_deref(),
@@ -14,7 +21,9 @@ fn pasted_transport_markers_do_not_show_as_pane_or_tab_captions() {
     );
     snapshot.tabs[0].label = "My chosen tab".into();
     assert_eq!(
-        agent_place(&snapshot.agents[0], &snapshot).unwrap().1,
+        agent_place(&snapshot.agents[0], &IndexedSnapshot::new(&snapshot))
+            .unwrap()
+            .1,
         Some("My chosen tab")
     );
 }

@@ -51,5 +51,3 @@ impl Drop for TempDirectory {
 }
 
 mod removed_updater;
-
-mod removed_chat_lifecycle;

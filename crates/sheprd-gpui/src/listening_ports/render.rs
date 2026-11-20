@@ -168,24 +168,15 @@ pub(crate) fn close_button(
     theme: &Theme,
     cx: &mut Context<SheprdWindow>,
 ) -> Stateful<Div> {
-    let (muted, foreground, surface) = (theme.muted, theme.foreground, theme.surface);
+    let (foreground, surface) = (theme.foreground, theme.surface);
     let hint = SharedString::from(fl!(
         "listening-ports-close-tunnel",
         target = key.target.clone(),
         port = key.port.to_string()
     ));
     let key = key.clone();
-    div()
-        .id(id.clone())
-        .debug_selector(|| id.to_string())
-        .flex_none()
+    close_glyph(id, glyph, theme)
         .cursor_pointer()
-        .child(
-            svg()
-                .path("icons/close.svg")
-                .size(px((glyph * 0.8).round()))
-                .text_color(rgb(muted)),
-        )
         .hover(|style| style.bg(rgb(surface)))
         .tooltip(move |_, cx| {
             cx.new(|_| crate::usage::Hint {
@@ -208,6 +199,19 @@ pub(crate) fn close_button(
                 cx.notify();
             }
         }))
+}
+
+pub(crate) fn close_glyph(id: SharedString, glyph: f32, theme: &Theme) -> Stateful<Div> {
+    div()
+        .id(id.clone())
+        .debug_selector(|| id.to_string())
+        .flex_none()
+        .child(
+            svg()
+                .path("icons/close.svg")
+                .size(px((glyph * 0.8).round()))
+                .text_color(rgb(theme.muted)),
+        )
 }
 
 /// The hand-started forward that already reaches `key`, if one runs. Such a

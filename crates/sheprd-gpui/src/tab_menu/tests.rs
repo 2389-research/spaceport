@@ -4,6 +4,7 @@ use core::prelude::v1::test;
 use gpui::VisualTestContext;
 use std::sync::Arc;
 
+mod departure;
 mod en_xa;
 // Moves run POSIX host scripts and are never offered on other clients.
 #[cfg(any(target_os = "linux", target_os = "macos"))]
@@ -346,10 +347,15 @@ fn rename_response_is_correlated_and_survives_surface_invalidation(cx: &mut Test
                 request_id: Some("rename-1".into()),
                 reason: sheprd_client::Error::UnsupportedMethod,
             });
+            assert!(matches!(
+                view.live.tab_rename.as_ref().unwrap().result.as_ref(),
+                Some(Err(error))
+                    if matches!(error.as_ref(), crate::Error::Client(sheprd_client::Error::UnsupportedMethod))
+            ));
             view.poll_tab_rename(window, cx);
             assert_eq!(
                 view.menu.tab.as_ref().unwrap().error.as_deref(),
-                Some("This Herdr daemon does not offer that request; run `herdr update` and reconnect.")
+                Some(fl!("error-client-unsupported-method").as_str())
             );
             assert!(view.menu.tab.as_ref().unwrap().pending.is_none());
             view.menu.tab.as_mut().unwrap().pending = Some("rename-error".into());

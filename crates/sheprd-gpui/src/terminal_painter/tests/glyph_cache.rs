@@ -1,3 +1,5 @@
+// ABOUTME: Checks glyph reuse across frames and font-dependent cache invalidation.
+// ABOUTME: Keeps colour-only changes separate from shaping and storage bounds.
 use super::*;
 
 #[test]
@@ -73,7 +75,11 @@ fn cache_reuses_cells_invalidates_fonts_and_bounds_storage(cx: &mut TestAppConte
     );
     assert_eq!(painter.borrow().cell_width, Some(original_width));
     let mut theme = Theme::default();
-    for (font_size, cell_height) in [(28., CELL_HEIGHT), (28., 36.), (28., 36.)] {
+    for (font_size, cell_height, reuses) in [
+        (28., CELL_HEIGHT, false),
+        (28., 36., false),
+        (28., 36., true),
+    ] {
         // The final iteration changes only the palette.
         if painter.borrow().cell_height == 36. {
             theme.palette[1] = 0x123456;
@@ -81,8 +87,8 @@ fn cache_reuses_cells_invalidates_fonts_and_bounds_storage(cx: &mut TestAppConte
         painter
             .borrow_mut()
             .set_appearance(font_size, cell_height, theme.clone());
-        assert_eq!(painter.borrow().glyphs.len(), 0);
-        assert!(painter.borrow().cell_width.is_none());
+        assert_eq!(painter.borrow().glyphs.len(), if reuses { 3 } else { 0 });
+        assert_eq!(painter.borrow().cell_width.is_some(), reuses);
         draw(frame.clone(), font("Menlo"));
         assert_eq!(painter.borrow().glyphs.len(), 3);
         assert!(painter.borrow().cell_width.unwrap_or_default() > original_width * 1.5);

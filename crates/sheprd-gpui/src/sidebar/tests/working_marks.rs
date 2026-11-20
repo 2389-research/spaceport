@@ -1,3 +1,5 @@
+// ABOUTME: Checks status animation geometry and frame requests.
+// ABOUTME: Exercises the shared reduced-motion policy on rendered indicators.
 use super::*;
 use crate::sidebar::layout_tests::run_frames;
 use gpui::{IntoElement, ParentElement, Render, TestAppContext, div};
@@ -91,8 +93,17 @@ fn every_set_moves_while_working_and_rests_when_settled(cx: &mut TestAppContext)
 /// every animation on its first frame.
 #[gpui::test]
 fn moving_marks_redraw_as_time_passes_and_rest_under_reduced_motion(cx: &mut TestAppContext) {
+    let _scope = crate::accessibility::policy::tests::Scope::new();
     for reduced in [false, true] {
-        cx.update(|cx| cx.set_reduce_motion(reduced));
+        cx.update(|cx| {
+            crate::accessibility::policy::tests::set(
+                crate::accessibility::policy::Preferences {
+                    high_contrast: None,
+                    reduce_motion: Some(reduced),
+                },
+                cx,
+            );
+        });
         for &icons in StatusIcons::ALL {
             for status in STATUSES {
                 let indicators = Indicators::new(None, icons, false, false, &Theme::default());

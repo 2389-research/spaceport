@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 //! A pane whose content runs past it shows a thumb that follows its scroll
 //! and drags it; one that fits shows none.
 use super::*;
@@ -7,7 +9,7 @@ use gpui::{px, size};
 fn overflowing_panes_show_a_thumb_that_drags_them(cx: &mut TestAppContext) {
     let main = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let weak = cx.update(|cx| main.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
-    let (view, cx) = cx.add_window_view(|_, cx| SettingsWindow::new(weak, cx));
+    let (view, cx) = cx.add_window_view(|_, cx| fixture_new(weak, cx));
     let draw = |cx: &mut VisualTestContext| {
         cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
     };

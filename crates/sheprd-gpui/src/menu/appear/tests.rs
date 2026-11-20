@@ -1,5 +1,27 @@
+// ABOUTME: Checks popup motion and painted departure against explicit frame times.
+// ABOUTME: Reuses isolated native-window fixtures without wall-clock sleeps.
 use super::*;
 use gpui::point;
+
+mod application;
+mod capture;
+mod cleanup;
+mod core_workspace;
+mod departure;
+mod device_setup;
+mod device_theme;
+mod devices_picker;
+mod generic_shell;
+mod group_menu;
+mod host_menu;
+mod keybinds;
+mod opener_click;
+mod pane_menu;
+mod static_dialogs;
+mod tab_menu;
+mod theme_picker;
+mod usage;
+mod workspace;
 
 fn live() -> Appear {
     Appear {
@@ -109,7 +131,7 @@ fn all_devices_sinks_away_after_it_closes() {
 }
 
 #[test]
-fn a_session_form_closes_at_once_instead_of_the_picker_sinking() {
+fn a_session_form_leaves_as_a_dialog_instead_of_the_picker_sinking() {
     let start = Instant::now();
     let mut appear = live();
     let anchor = Shown::Popover(point(px(10.), px(600.)));
@@ -117,7 +139,11 @@ fn a_session_form_closes_at_once_instead_of_the_picker_sinking() {
     // The form opens over the picker, then a click outside closes both.
     appear.observe(Some(Shown::Dialog), Some(Page::Devices), start + ENTER);
     appear.observe(None, None, start + ENTER * 2);
-    assert!(appear.leaving(start + ENTER * 2).is_none());
+    assert_eq!(appear.leaving(start + ENTER * 2), Some((Page::Devices, 1.)));
+    assert_eq!(
+        appear.leaving.as_ref().expect("session form leaves").shape,
+        Shown::Dialog
+    );
 }
 
 #[test]
@@ -127,22 +153,22 @@ fn a_closed_page_lets_go_of_what_it_read_once_it_has_gone() {
     let anchor = Shown::Popover(point(px(200.), px(40.)));
     appear.observe(Some(anchor), Some(Page::Devices), start);
     appear.keep(Page::Devices, Kept::default());
-    appear.observe(None, None, start);
-    appear.settle(start);
+    appear.observe(None, None, start + ENTER);
+    appear.settle(start + ENTER);
     assert!(appear.kept.is_some(), "kept while it goes");
-    appear.settle(start + LEAVE);
+    appear.settle(start + ENTER + LEAVE);
     assert!(appear.leaving.is_none());
     assert!(appear.kept.is_none(), "dropped once it has gone");
 }
 
 #[test]
-fn other_menus_do_not_linger_after_closing() {
+fn other_menus_leave_after_closing() {
     let start = Instant::now();
     let mut appear = live();
     let anchor = Shown::Popover(point(px(10.), px(600.)));
     appear.observe(Some(anchor), Some(Page::Menu), start);
     appear.observe(None, None, start + ENTER);
-    assert!(appear.leaving(start + ENTER).is_none());
+    assert_eq!(appear.leaving(start + ENTER), Some((Page::Menu, 1.)));
 }
 
 #[gpui::test]
@@ -174,7 +200,9 @@ fn all_devices_draws_lower_while_it_rises(cx: &mut gpui::TestAppContext) {
     // Held at its start, however long the frames take: a start still ahead
     // reads as not begun.
     view.update(cx, |view, _| {
-        view.menu.appear.since = Some(motion::now() + std::time::Duration::from_secs(3600));
+        let later = motion::now() + std::time::Duration::from_secs(3600);
+        view.menu.appear.panel_motion.set(false, later, true);
+        view.menu.appear.panel_motion.set(true, later, false);
     });
     draw(cx);
     let rising = cx.debug_bounds("menu-panel").expect("All Devices draws");
@@ -213,12 +241,14 @@ fn the_devices_popover_is_drawn_as_it_goes_and_leaves_the_menu_reset(
         // start is set as well as observed.
         let later = motion::now() + std::time::Duration::from_secs(3600);
         view.menu.appear.observe(None, None, later);
-        view.menu.appear.leaving = Some((Page::Devices, later));
+        let leaving = view.menu.appear.leaving.as_mut().expect("Devices leaves");
+        leaving.motion.set(true, later, true);
+        leaving.motion.set(false, later, false);
     });
     draw(cx);
-    // The copy going away was drawn, shielded, and the menu's own state is
-    // as the reset left it once it was.
-    assert!(cx.debug_bounds("menu-leaving-shield").is_some());
+    // Captured content remains painted without covering current controls.
+    assert!(cx.debug_bounds("menu-panel").is_some());
+    assert!(cx.debug_bounds("menu-leaving-shield").is_none());
     view.update(cx, |view, _| {
         assert_eq!(view.menu.page, None);
         assert_eq!(view.menu.error, None);

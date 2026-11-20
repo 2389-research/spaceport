@@ -232,8 +232,8 @@ fn shared_rows_say_why_they_are_disabled(cx: &mut TestAppContext) {
         // Loaded shared settings make the rows editable again.
         assert_eq!(gate, None);
         assert!(cx.debug_bounds("tabs-position-reason").is_none());
-        assert!(cx.debug_bounds("tabs-pane-history-reason").is_none());
-        assert!(cx.debug_bounds("tabs-pane-history-description").is_some());
+        // Runtime history still waits for its own config, independently of the view file.
+        assert!(cx.debug_bounds("tabs-pane-history-reason").is_some());
     } else {
         // Elsewhere Herdr's file cannot be written, so loading it changes
         // nothing: the rows keep the platform's reason over their description.

@@ -8,10 +8,3 @@ version.workspace      = true
 
 [lints]
 workspace = true
-
-[features]
-# The GPUI test harness enables this so drags settle at once; in a normal
-# build the slide runs its real duration. A cargo feature, not `cfg!(test)`,
-# because a dependency's own `cfg(test)` is false inside its consumers'
-# test builds.
-test-support = []

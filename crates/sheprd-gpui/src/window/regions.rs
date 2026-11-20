@@ -1,3 +1,5 @@
+// ABOUTME: Caches terminal cell layers by pane while preserving shared paint order.
+// ABOUTME: Invalidates changed regions and keeps main-grid image textures out of cached scenes.
 //! The terminal grid painted as one cached view per pane, plus one for the
 //! cells around them, so an update repaints only the regions whose cells
 //! changed. One busy pane no longer reshapes every other pane on screen.
@@ -6,13 +8,16 @@
 use super::SheprdWindow;
 use crate::{
     config::Theme,
+    presentation::Picture,
     smooth_scroll::Slide,
     terminal::CellMetrics,
-    terminal_painter::{self, Highlight, Layer, Part, Span, TerminalPainter},
+    terminal_painter::{self, Highlight, ImageTarget, Layer, Part, Span, TerminalPainter},
 };
 use gpui::{prelude::*, *};
 use sheprd_client::protocol::{FrameData, PaneSurfaceFrame, PaneSurfacePane, SurfaceRect};
 use std::{cell::RefCell, ops::Range, rc::Rc, sync::Arc};
+
+mod images;
 
 /// Whose cells a region paints.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -211,6 +216,8 @@ impl Render for RegionView {
         canvas(
             |_, _, _| (),
             move |bounds, _, window, cx| {
+                #[cfg(any(test, all(windows, feature = "integration-test")))]
+                super::native_images::cells(window.window_handle().window_id());
                 let mut painter = painter.borrow_mut();
                 let look = &region.look;
                 let mut paint = |frame: &FrameData,
@@ -272,18 +279,8 @@ impl Render for RegionView {
                 let mask = Bounds::new(bounds.origin + pane.origin, pane.size);
                 window.with_content_mask(Some(ContentMask { bounds: mask }), |window| {
                     // Each earlier frame fills the edge rows the newer ones lack.
-                    let mut filled = 0;
-                    for (earlier, shift) in &slide.behind {
-                        let rows = u16::try_from(shift.abs_diff(filled))
-                            .unwrap_or(rect.height)
-                            .min(rect.height);
-                        filled = *shift;
-                        let bottom = rect.y.saturating_add(rect.height);
-                        let band = match *shift > 0 {
-                            true => bottom - rows..bottom,
-                            false => rect.y..rect.y + rows,
-                        };
-                        let y = offset + *shift as f32 * metrics.height;
+                    for (earlier, shift, band) in slide.bands() {
+                        let y = offset + shift as f32 * metrics.height;
                         paint(
                             &earlier.frame,
                             bounds.origin + point(px(0.), px(y)),
@@ -353,20 +350,22 @@ impl SheprdWindow {
     /// in a whole-grid paint: a glyph overhanging its region into a border or
     /// a neighbouring pane stays visible.
     ///
-    /// Images stay whole-frame: a texture no paint looks up is released while
-    /// a replayed scene would still sample it.
+    /// Main-grid images paint uncached between the cell layers. The flag says
+    /// those passes already prepared images and released idle textures.
     pub(super) fn terminal_regions(
         &mut self,
-        surface: Option<&Arc<PaneSurfaceFrame>>,
+        picture: Option<&Picture>,
         highlights: &[Highlight],
         mut slide: Option<Slide>,
         look: &Look,
         cx: &mut Context<Self>,
-    ) -> Vec<AnyElement> {
-        let Some(surface) = surface.filter(|surface| surface.graphics.placements.is_empty()) else {
+    ) -> (Vec<AnyElement>, bool) {
+        let Some(picture) = picture else {
             self.regions.clear();
-            return Vec::new();
+            return (Vec::new(), false);
         };
+        let surface = &picture.frame;
+        let image_slide = slide.clone();
         let mut previous = std::mem::take(&mut self.regions);
         // A chat view covers its pane's cells and paints its own background,
         // so they are not painted under it: on macOS a page in the chat
@@ -431,10 +430,34 @@ impl SheprdWindow {
             };
             self.regions.push(views);
         }
-        (0..Layer::ALL.len())
-            .flat_map(|layer| self.regions.iter().map(move |views| &views[layer]))
-            .map(|view| {
-                view.clone()
+        if self.regions.is_empty() {
+            return (Vec::new(), false);
+        }
+        let mut images = surface
+            .graphics
+            .placements
+            .iter()
+            .chain(
+                image_slide
+                    .iter()
+                    .flat_map(|slide| slide.behind.iter())
+                    .flat_map(|(frame, _)| &frame.graphics.placements),
+            )
+            .any(|placement| ImageTarget::Main.places(&placement.asset.source))
+            .then(|| {
+                images::layers(
+                    self.painter.clone(),
+                    picture.clone(),
+                    image_slide,
+                    look.metrics,
+                )
+            });
+        let main_images = images.is_some();
+        let mut layers = Vec::new();
+        for (index, layer) in Layer::ALL.into_iter().enumerate() {
+            layers.extend(self.regions.iter().map(|views| {
+                views[index]
+                    .clone()
                     .cached(
                         StyleRefinement::default()
                             .absolute()
@@ -443,8 +466,16 @@ impl SheprdWindow {
                             .size_full(),
                     )
                     .into_any_element()
-            })
-            .collect()
+            }));
+            if let Some(images) = &mut images {
+                match layer {
+                    Layer::Backgrounds => layers.extend(images[0].take()),
+                    Layer::Decorations => layers.extend(images[1].take()),
+                    Layer::Text => {}
+                }
+            }
+        }
+        (layers, main_images)
     }
 }
 

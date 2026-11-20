@@ -6,8 +6,10 @@ use crate::control::protocol::app::Switch;
 
 mod core_catalog;
 mod core_flag;
+mod core_only_connection;
 mod core_window;
 mod core_window_new;
+mod messages;
 
 fn call<T>(op: T) -> Call<T> {
     Call {
@@ -132,3 +134,4 @@ fn a_new_window_joins_the_callers_own_session(cx: &mut gpui::TestAppContext) {
 mod ui_panel;
 
 mod updates;
+mod workspace_close;

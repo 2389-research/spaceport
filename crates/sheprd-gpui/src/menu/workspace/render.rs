@@ -1,6 +1,10 @@
+// ABOUTME: Shares workspace dialog content between active and departing panels.
+// ABOUTME: Omits native input and submit actions from captured display data.
 //! Painting a workspace dialog: its header, the body each action asks for,
 //! and the footer whose submit button arms only once there is something to send.
 
+use super::DialogPaint;
+use crate::dialog_input::DialogInput;
 use crate::{
     SheprdWindow,
     i18n::fl,
@@ -14,20 +18,35 @@ impl SheprdWindow {
         action: WorkspaceAction,
         cx: &mut Context<Self>,
     ) -> Div {
-        let Some(target) = &self.menu.target else {
+        let Some(paint) = self.prepare_workspace_dialog(action, cx) else {
             return div();
         };
+        self.workspace_dialog_content(&paint, self.menu.input.as_ref(), true, cx)
+    }
+
+    pub(in crate::menu) fn render_workspace_dialog_paint(
+        &self,
+        paint: &DialogPaint,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        self.workspace_dialog_content(paint, paint.input.as_ref(), false, cx)
+            .relative()
+            .top(paint.offset)
+    }
+
+    fn workspace_dialog_content(
+        &self,
+        paint: &DialogPaint,
+        input: Option<&DialogInput>,
+        active: bool,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let action = paint.action;
         let theme = &self.theme;
         let font = &self.config.ui;
         let danger = danger(theme);
-        let creating = self.menu.opening.is_some();
-        let armed = (action != WorkspaceAction::OpenWorktree
-            || self.menu.worktree_open.as_ref().is_some_and(|picker| {
-                picker.pending.is_none()
-                    && !picker.filtered.is_empty()
-                    && !picker.search.read(cx).is_composing()
-            }))
-            && !creating;
+        let creating = paint.creating;
+        let armed = paint.armed;
         let (title, submit): (String, SharedString) = match action {
             WorkspaceAction::Rename => (
                 fl!("workspace-dialog-rename-title"),
@@ -74,10 +93,14 @@ impl SheprdWindow {
                     .child(fl!("workspace-dialog-new-workspace-note")),
             ),
         };
-        if self.menu.input.is_some() {
-            body = body.child(self.render_dialog_input(cx));
+        if let Some(input) = input {
+            body = body.child(if active {
+                self.render_dialog_input(cx)
+            } else {
+                self.render_dialog_input_paint(input)
+            });
         }
-        if let Some(error) = &self.menu.error {
+        if let Some(error) = &paint.error {
             body = body.child(
                 div()
                     .debug_selector(|| "dialog-error".into())
@@ -106,7 +129,7 @@ impl SheprdWindow {
                 .py(px(6.))
                 .rounded(px(crate::config::corners::CONTROL))
                 .border_1()
-                .cursor_pointer()
+                .when(active, |button| button.cursor_pointer())
         };
         // A picker owns the panel's height, so its list scrolls inside the
         // dialog instead of growing it past the window.
@@ -157,7 +180,7 @@ impl SheprdWindow {
                                 div()
                                     .truncate()
                                     .text_color(rgb(theme.muted))
-                                    .child(target.label.clone()),
+                                    .child(paint.label.clone()),
                             ),
                     )
                     .when(action == WorkspaceAction::OpenWorktree, |header| {
@@ -169,35 +192,52 @@ impl SheprdWindow {
                                 .px_2()
                                 .py_1()
                                 .rounded(px(crate::config::corners::CONTROL))
-                                .cursor_pointer()
                                 .text_color(rgb(theme.muted))
-                                .hover(|button| {
-                                    button
-                                        .bg(rgb(theme.active))
-                                        .text_color(rgb(theme.foreground))
+                                .when(active, |button| {
+                                    button.cursor_pointer().hover(|button| {
+                                        button
+                                            .bg(rgb(theme.active))
+                                            .text_color(rgb(theme.foreground))
+                                    })
                                 })
                                 .child("ESC")
-                                .on_click(cx.listener(|this, _, window, cx| {
-                                    cx.stop_propagation();
-                                    this.dismiss_menu(window, cx);
-                                })),
+                                .when(active, |button| {
+                                    button.on_click(cx.listener(|this, _, window, cx| {
+                                        cx.stop_propagation();
+                                        this.dismiss_menu(window, cx);
+                                    }))
+                                }),
                         )
                     }),
             )
             .child(if action == WorkspaceAction::OpenWorktree {
-                self.render_existing_worktrees(cx)
-                    .when(creating || self.menu.error.is_some(), |picker| {
-                        picker.child(
-                            div()
-                                .id("open-worktree-status")
-                                .debug_selector(|| "open-worktree-status".into())
-                                .flex_none()
-                                .h(px(font.line_height() * 3. + 20.))
-                                .overflow_y_scroll()
-                                .child(body),
-                        )
+                (if active {
+                    self.render_existing_worktrees(cx)
+                } else {
+                    paint.picker.as_ref().map_or_else(div, |picker| {
+                        self.render_existing_worktrees_paint(picker, cx)
                     })
-                    .into_any_element()
+                })
+                .when(creating || paint.error.is_some(), |picker| {
+                    picker.child(
+                        div()
+                            .id("open-worktree-status")
+                            .debug_selector(|| "open-worktree-status".into())
+                            .flex_none()
+                            .h(px(font.line_height() * 3. + 20.))
+                            .when(active, |status| {
+                                status.overflow_y_scroll().when_some(
+                                    self.menu.worktree_open.as_ref(),
+                                    |status, picker| status.track_scroll(&picker.status_scroll),
+                                )
+                            })
+                            .when(!active, |status| status.overflow_hidden())
+                            .child(
+                                body.when(!active, |body| body.relative().top(paint.status_offset)),
+                            ),
+                    )
+                })
+                .into_any_element()
             } else {
                 body.into_any_element()
             })
@@ -213,17 +253,23 @@ impl SheprdWindow {
                     .border_color(rgb(theme.active))
                     .child(
                         button("dialog-cancel")
-                            .role(Role::Button)
-                            .aria_label(fl!("workspace-dialog-cancel"))
+                            .when(active, |button| {
+                                button
+                                    .role(Role::Button)
+                                    .aria_label(fl!("workspace-dialog-cancel"))
+                            })
                             .border_color(rgb(theme.active))
-                            .hover(|button| button.bg(rgb(theme.active)))
+                            .when(active, |button| {
+                                button.hover(|button| button.bg(rgb(theme.active)))
+                            })
                             .child(fl!("workspace-dialog-cancel"))
-                            .on_click(cx.listener(|this, _, window, cx| {
-                                cx.stop_propagation();
-                                this.dismiss_menu(window, cx);
-                            })),
+                            .when(active, |button| {
+                                button.on_click(cx.listener(|this, _, window, cx| {
+                                    cx.stop_propagation();
+                                    this.dismiss_menu(window, cx);
+                                }))
+                            }),
                     )
-                    // GitHub rows create their own checkouts without a submit button.
                     .when(
                         !listing || action == WorkspaceAction::OpenWorktree,
                         |footer| {
@@ -232,12 +278,12 @@ impl SheprdWindow {
                             } else {
                                 submit.clone()
                             };
-                            let submit_button = crate::accessibility::disabled(
-                                button("dialog-submit")
-                                    .role(Role::DefaultButton)
-                                    .aria_label(spoken),
-                                !armed,
-                            );
+                            let submit_button = button("dialog-submit").when(active, |button| {
+                                crate::accessibility::disabled(
+                                    button.role(Role::DefaultButton).aria_label(spoken),
+                                    !armed,
+                                )
+                            });
                             footer.child(
                                 submit_button
                                     .border_color(if armed {
@@ -261,7 +307,7 @@ impl SheprdWindow {
                                     .when(!armed, |button| {
                                         button.opacity(0.4).cursor(CursorStyle::OperationNotAllowed)
                                     })
-                                    .when(armed, |button| {
+                                    .when(armed && active, |button| {
                                         button
                                             .hover(|button| button.bg(rgb(theme.active)))
                                             .on_click(cx.listener(|this, _, window, cx| {

@@ -5,11 +5,12 @@ use crate::browser::CoreGroupKey;
 
 #[gpui::test]
 fn disabled_core_tabs_are_hidden_and_direct_actions_preserve_them(cx: &mut gpui::TestAppContext) {
-    cx.update(|cx| {
+    let (view, cx) = window(cx);
+    cx.cx.update(|cx| {
         let key = CoreGroupKey::new("hub-a", None, "spaceport", uuid::Uuid::from_u128(71)).unwrap();
         let mut store = Store::default();
         let core = store.open_core(&key, None).unwrap();
-        let scope = Scope::local(Path::new("/tmp/private-core-flag.sock"));
+        let scope = crate::browser::scope(&view.read(cx).endpoints[0]);
         let bare = store
             .open(
                 scope.clone(),
@@ -50,6 +51,10 @@ fn disabled_core_tabs_are_hidden_and_direct_actions_preserve_them(cx: &mut gpui:
             assert!(cx.global::<Store>().get(id).is_some());
         }
         crate::core_feature::install(true, cx);
+        crate::core_terminals::set_document_for_test_as(cx, "hub-a", sheprd_core_client::wire::Doc {
+            value: serde_json::json!({"schema_version":1,"workspaces":[{"id":uuid::Uuid::from_u128(71),"label":"Core"}]}),
+            version: 1,
+        });
         let Response::Tab {
             reply: Reply::Tabs { tabs },
         } = list(cx)

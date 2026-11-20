@@ -12,7 +12,11 @@ mod activity_bar_windows;
 mod appearance_messages;
 mod catalog_rows;
 mod config_watch;
+mod custom_keyboard;
 mod en_xa;
+mod font_scale;
+mod host_history_reload;
+mod keyboard;
 mod language_picker;
 mod language_reload;
 #[cfg(windows)]
@@ -22,11 +26,11 @@ mod load_save;
 mod mixed_follow;
 mod navigation_groups;
 mod navigation_resize;
+mod navigation_scale;
 mod navigation_scroll;
 mod page_messages;
 mod pages_behaviour;
 mod quit_saves;
-mod remote_history_reload;
 mod removed_plugins;
 mod removed_worktree_cleanup;
 mod rtl;
@@ -38,6 +42,7 @@ mod section_order;
 #[cfg(unix)]
 mod shared_save_queue;
 mod sidebar_drafts;
+mod system_contrast;
 mod tab_layout;
 mod theme_drafts;
 // Saving a shared Herdr theme is Unix-only.
@@ -141,8 +146,17 @@ pub(super) fn skill_fixture(
     cx: &mut Context<SettingsWindow>,
 ) -> SettingsWindow {
     let source = cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx));
-    let mut view = SettingsWindow::new(source.downgrade(), cx);
+    let mut view = fixture_new(source.downgrade(), cx);
     view.section = Section::General;
+    view
+}
+
+pub(super) fn fixture_new(
+    source: WeakEntity<SheprdWindow>,
+    cx: &mut Context<SettingsWindow>,
+) -> SettingsWindow {
+    let mut view = SettingsWindow::new(source, cx);
+    view.host_history.read = Arc::new(|_, _| Err(crate::Error::MissingHome));
     view
 }
 
@@ -154,4 +168,15 @@ pub(super) fn skill_load() -> crate::Result<Loaded> {
         shared: None,
         error: None,
     })
+}
+
+/// GPUI's keystroke convenience helper omits key releases.
+pub(in crate::settings_window) fn press_key(cx: &mut VisualTestContext, key: &str) {
+    let keystroke = crate::keymap::parse_keystroke(key).unwrap();
+    cx.simulate_event(KeyDownEvent {
+        keystroke: keystroke.clone(),
+        is_held: false,
+        prefer_character_input: false,
+    });
+    cx.simulate_event(KeyUpEvent { keystroke });
 }

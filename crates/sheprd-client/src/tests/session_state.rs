@@ -1,3 +1,5 @@
+// ABOUTME: Exercises ordered response assembly and session revision fences.
+// ABOUTME: Checks exact bounds and typed timeout or correlation failures.
 use super::*;
 
 #[test]
@@ -16,7 +18,7 @@ fn session_response_slot_correlates_chunks_and_clears_only_on_completion() {
             .handle_message(chunk("one", true, b"{}"), no_event)
             .unwrap_err()
             .to_string(),
-        "The daemon answered a request this app never sent; reconnect."
+        "Herdr sent a reply without a matching request. Choose Terminal → Reconnect."
     );
     session.pending = Some(Pending {
         id: "one".into(),
@@ -33,7 +35,7 @@ fn session_response_slot_correlates_chunks_and_clears_only_on_completion() {
             .handle_message(chunk("other", true, b"null}"), no_event)
             .unwrap_err()
             .to_string(),
-        "The daemon answered a request this app never sent; reconnect."
+        "Herdr sent a reply without a matching request. Choose Terminal → Reconnect."
     );
     assert_eq!(session.pending.as_ref().unwrap().bytes, partial);
     let mut events = Vec::new();
@@ -53,7 +55,7 @@ fn session_response_slot_correlates_chunks_and_clears_only_on_completion() {
             .handle_message(chunk("one", true, b"{}"), no_event)
             .unwrap_err()
             .to_string(),
-        "The daemon answered a request this app never sent; reconnect."
+        "Herdr sent a reply without a matching request. Choose Terminal → Reconnect."
     );
 }
 
@@ -86,10 +88,7 @@ fn session_response_limit_counts_previous_chunks_and_allows_exact_limit() {
             },
         );
         if overflow {
-            assert_eq!(
-                result.unwrap_err().to_string(),
-                "The daemon's answer was larger than this app accepts."
-            );
+            assert!(matches!(result, Err(Error::ResponseLimit)));
             assert!(events.is_empty());
             assert_eq!(
                 session.pending.unwrap().bytes.len(),
@@ -107,10 +106,10 @@ fn session_response_limit_counts_previous_chunks_and_allows_exact_limit() {
 fn session_deadlines_and_snapshot_revision_fence() {
     let mut session = Session::new(true, false);
     session.started = Instant::now() - TIMEOUT - POLL;
-    assert_eq!(
-        session.check_timeouts().unwrap_err().to_string(),
-        "The host did not finish connecting in time; check the network and reconnect."
-    );
+    assert!(matches!(
+        session.check_timeouts(),
+        Err(Error::HandshakeTimeout)
+    ));
     session
         .handle_message(
             ServerMessage::EndpointControl {
@@ -131,10 +130,10 @@ fn session_deadlines_and_snapshot_revision_fence() {
         bytes: Vec::new(),
         started: Instant::now() - COMMAND_TIMEOUT - POLL,
     });
-    assert_eq!(
-        session.check_timeouts().unwrap_err().to_string(),
-        "The daemon did not answer in time; the request was not sent again."
-    );
+    assert!(matches!(
+        session.check_timeouts(),
+        Err(Error::RequestTimeout)
+    ));
 
     let mut snapshot: Value = serde_json::from_str(SNAPSHOT).unwrap();
     snapshot["revision"] = json!(6);
@@ -147,7 +146,7 @@ fn session_deadlines_and_snapshot_revision_fence() {
             |_| panic!("regressed snapshot must not be published"),
         )
         .unwrap_err();
-    assert!(error.to_string().contains("screen data went backwards"));
+    assert!(matches!(error, Error::SnapshotIdentity));
     assert_eq!(session.snapshot.unwrap().revision, 7);
 }
 
@@ -174,13 +173,14 @@ fn response_boot_id_correlation_and_assembly_limits() {
                 data,
             },
         );
-        let error = worker.join().unwrap().unwrap_err().to_string();
+        let error = worker.join().unwrap().unwrap_err();
         assert!(
-            error.contains(match case {
-                "boot" => "session changed while the request was in flight",
-                "id" => "did not match the request",
-                _ => "larger than this app accepts",
-            }),
+            matches!(
+                (case, &error),
+                ("boot", Error::ResponseBoot)
+                    | ("id", Error::ResponseId)
+                    | ("limit", Error::ResponseLimit)
+            ),
             "{error}"
         );
     }

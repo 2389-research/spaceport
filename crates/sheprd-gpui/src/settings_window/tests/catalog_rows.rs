@@ -100,7 +100,7 @@ fn pages_draw_the_text_search_indexes() {
         let main = cx.add_window(crate::sidebar::layout_tests::fixture_window);
         let weak = cx.update(|cx| main.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
         let (view, cx) = cx.add_window_view(|_, cx| {
-            let mut view = SettingsWindow::new(weak, cx);
+            let mut view = fixture_new(weak, cx);
             show_every_row(&mut view, cx);
             view
         });

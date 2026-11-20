@@ -1,3 +1,5 @@
+// ABOUTME: Verifies GUI and daemon keybinding precedence through real config files.
+// ABOUTME: Checks platform defaults separately from explicitly configured shortcuts.
 use super::*;
 
 #[test]
@@ -159,73 +161,6 @@ fn keybindings_override_defaults_and_reject_bad_entries() -> anyhow::Result<()> 
         ))
     ));
     assert!(Config::parse("[keybindings]\nnew_tab = 5").is_err());
-    Ok(())
-}
-
-/// The daemon's `[keys]` reach the GUI keymap under the GUI's own
-/// `[keybindings]`, and a daemon file the GUI cannot use falls back to
-/// Herdr's defaults instead of failing the GUI config.
-#[test]
-fn daemon_keys_layer_under_gui_keybindings() -> anyhow::Result<()> {
-    use crate::Command;
-    let temp = TempDirectory::new()?;
-    let gui = temp.0.join("config-gpui.toml");
-    let local = gui.with_extension("local.toml");
-    let daemon = temp.0.join("config.toml");
-    let load = || Config::load_path(&gui, &daemon);
-    fs::write(&gui, "")?;
-    let shortcuts = |config: &Config, command| {
-        config
-            .keybindings
-            .shortcuts(command)
-            .map(str::to_owned)
-            .collect::<Vec<_>>()
-    };
-
-    // No daemon file: Herdr's defaults.
-    assert_eq!(
-        shortcuts(&load()?, Command::Tab),
-        [crate::controls::platform_default("cmd-t"), "ctrl-b c"]
-    );
-
-    fs::write(
-        &daemon,
-        "[keys]\nprefix = \"ctrl+a\"\nsplit_vertical = [\"prefix+v\", \"prefix+\\\\\"]\nswitch_tab = [\"prefix+1..9\", \"alt+1..9\"]\n",
-    )?;
-    let config = load()?;
-    assert_eq!(
-        shortcuts(&config, Command::SplitRight),
-        [
-            crate::controls::platform_default("cmd-d"),
-            "ctrl-a v",
-            "ctrl-a \\"
-        ]
-    );
-    assert_eq!(
-        shortcuts(&config, Command::TabNumber(2)),
-        [
-            crate::controls::platform_default("cmd-2"),
-            "ctrl-a 2",
-            "alt-2"
-        ]
-    );
-    assert!(
-        config
-            .keybindings
-            .bindings()
-            .any(|binding| binding == (Command::TabNumber(2), "alt-2"))
-    );
-
-    // The GUI's own entry replaces the command's list, daemon chords too.
-    fs::write(&local, "[keybindings]\nsplit_right = \"cmd-d\"\n")?;
-    assert_eq!(shortcuts(&load()?, Command::SplitRight), ["cmd-d"]);
-
-    fs::write(&local, "")?;
-    fs::write(&daemon, "[keys\nprefix = ")?;
-    assert_eq!(
-        shortcuts(&load()?, Command::Tab),
-        [crate::controls::platform_default("cmd-t"), "ctrl-b c"]
-    );
     Ok(())
 }
 

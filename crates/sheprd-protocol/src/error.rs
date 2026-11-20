@@ -1,3 +1,5 @@
+// ABOUTME: Defines typed protocol errors with bounded, readable diagnostics.
+// ABOUTME: Preserves shared encoding and decoding causes without assuming message direction.
 use std::io;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -10,9 +12,9 @@ pub enum Error {
     Encode(#[from] bincode::error::EncodeError),
     #[error("A message from the daemon could not be read: {0}")]
     Decode(#[from] bincode::error::DecodeError),
-    #[error("A message from the daemon is larger than this app accepts.")]
+    #[error("The message is outside the allowed size limits.")]
     FrameLimit,
-    #[error("The daemon sent an empty message.")]
+    #[error("A message cannot be empty.")]
     EmptyFrame,
     #[error("A clipboard image must hold 1 byte through 16 MiB.")]
     ClipboardImageSize,

@@ -13,16 +13,11 @@ fn function_keys_can_be_configured_without_taking_ordinary_typing() {
 }
 
 #[test]
-fn platform_defaults_are_complete_unique_and_leave_edit_keys_available() {
+fn platform_defaults_are_unique_and_leave_edit_keys_available() {
     let keymap = with(&[]).unwrap();
     let mut seen = HashMap::new();
     for info in COMMANDS {
-        // A platform can append aliases for normalized backend keystrokes.
-        assert!(
-            info.default_shortcuts().len() >= info.base_shortcuts().len(),
-            "{}",
-            info.name
-        );
+        // The catalog tests cover intentional platform differences, including unbound keys.
         for shortcut in info.default_shortcuts() {
             let key = keystroke(shortcut);
             assert!(
@@ -54,7 +49,11 @@ fn linux_shortcuts_preserve_terminal_keys_and_shifted_actions() {
         (Command::CloseWindow, "ctrl-alt-w"),
         (Command::Workspace, "ctrl-alt-shift-n"),
         (Command::Palette, "ctrl-shift-p"),
-        (Command::ResumePalette, "ctrl-alt-shift-r"),
+        (Command::ResumePalette, "ctrl-shift-r"),
+        (Command::FocusLeft, "ctrl-b h"),
+        (Command::FocusDown, "ctrl-b j"),
+        (Command::FocusUp, "ctrl-b k"),
+        (Command::FocusRight, "ctrl-b l"),
         (Command::SplitRight, "ctrl-shift-d"),
         (Command::SplitDown, "ctrl-alt-shift-d"),
         (Command::CopyMode, "ctrl-alt-shift-c"),
@@ -90,10 +89,21 @@ fn linux_shortcuts_preserve_terminal_keys_and_shifted_actions() {
             "{key}"
         );
     }
-    assert!(keymap.triggers(Command::Keybinds, &keystroke("ctrl-shift-/->?"), false));
+    assert_eq!(keymap.chord(&keystroke("?")), Some(Command::Keybinds));
     let configured = with(&[("new_tab", one("cmd-t"))]).unwrap();
     assert_eq!(configured.primary(Command::Tab), "cmd-t");
     assert!(!configured.triggers(Command::Tab, &keystroke("ctrl-shift-t"), false));
+    let configured = with(&[
+        ("focus_left", one("ctrl-alt-shift-left")),
+        ("resume_palette", one("ctrl-alt-shift-r")),
+    ])
+    .unwrap();
+    assert!(configured.triggers(Command::FocusLeft, &keystroke("ctrl-alt-shift-left"), false));
+    assert!(configured.triggers(
+        Command::ResumePalette,
+        &keystroke("ctrl-alt-shift-r"),
+        false
+    ));
 }
 
 #[cfg(windows)]

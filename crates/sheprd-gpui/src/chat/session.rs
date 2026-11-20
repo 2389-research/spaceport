@@ -7,8 +7,8 @@
 
 use super::{Error, MAX_PENDING, Result};
 use sheprd_chat_protocol::{
-    ClientMessage, Command, CommandId, Cursor, EntryId, Rejection, Replica, ServerMessage, Touched,
-    Transcript, VERSION,
+    Change, ClientMessage, Command, CommandId, Cursor, EntryId, Rejection, Replica, ServerMessage,
+    Touched, Transcript, VERSION,
 };
 use std::collections::HashMap;
 
@@ -74,9 +74,17 @@ enum Transition {
 }
 
 #[derive(Debug, Default)]
+struct EntryRevision {
+    changed: u64,
+    replaced: u64,
+}
+
+#[derive(Debug, Default)]
 pub(crate) struct Session {
     /// The agent the program greeted with, until a transcript names one.
     agent: String,
+    /// Revisions at or before the latest snapshot cannot prove an append.
+    append_floor: u64,
     pending: Vec<Pending>,
     /// The last command the program refused, shown until the next one.
     rejection: Option<Refusal>,
@@ -85,7 +93,7 @@ pub(crate) struct Session {
     replica: Replica,
     /// The revision each entry last changed at, so the view redraws only
     /// the entries that did.
-    revisions: HashMap<EntryId, u64>,
+    revisions: HashMap<EntryId, EntryRevision>,
     revision: u64,
     /// Snapshots applied, so the view starts its list over after one.
     snapshots: u64,
@@ -171,7 +179,11 @@ impl Session {
     /// Each entry with the revision it last changed at. A sub-agent's call
     /// lists its steps, so it changes with the latest of them too.
     pub(crate) fn keys(&self) -> Vec<(EntryId, u64)> {
-        let revision = |id: &EntryId| self.revisions.get(id).copied().unwrap_or(0);
+        let revision = |id: &EntryId| {
+            self.revisions
+                .get(id)
+                .map_or(0, |revision| revision.changed)
+        };
         let mut steps: HashMap<&str, u64> = HashMap::new();
         for entry in &self.transcript().entries {
             if let sheprd_chat_protocol::EntryKind::Tool(tool) = &entry.kind
@@ -195,6 +207,14 @@ impl Session {
                 (entry.id, own.max(steps))
             })
             .collect()
+    }
+
+    /// Whether only validated appends changed this entry since its prepared revision.
+    pub(crate) fn appended_since(&self, id: EntryId, prepared: u64) -> bool {
+        prepared > self.append_floor
+            && self.revisions.get(&id).is_some_and(|revision| {
+                revision.changed > prepared && revision.replaced <= prepared
+            })
     }
 
     /// The commands to send again on a new connection, in order. The
@@ -259,6 +279,7 @@ impl Session {
                 self.attachment = Attachment::Current;
                 self.tail_changed |= self.transcript().entries.last() != transcript.entries.last();
                 self.replica.reset(cursor, *transcript);
+                self.append_floor = self.revision;
                 self.revisions.clear();
                 self.snapshots += 1;
                 Ok(true)
@@ -273,7 +294,7 @@ impl Session {
                             }
                             misfit => Error::Apply(misfit),
                         })?;
-                self.touch(touched);
+                self.touch(touched, &change);
                 self.transition(Transition::Epoch(cursor.epoch));
                 self.attachment = Attachment::Current;
                 Ok(true)
@@ -367,11 +388,15 @@ impl Session {
         }
     }
 
-    fn touch(&mut self, touched: Touched) {
+    fn touch(&mut self, touched: Touched, change: &Change) {
         self.revision += 1;
         match touched {
             Touched::Entry(id) => {
-                self.revisions.insert(id, self.revision);
+                let revision = self.revisions.entry(id).or_default();
+                revision.changed = self.revision;
+                if !matches!(change, Change::Append { .. }) {
+                    revision.replaced = self.revision;
+                }
             }
             Touched::Truncated { .. } => {
                 let entries = &self.replica.transcript().entries;

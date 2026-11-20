@@ -1,11 +1,16 @@
+// ABOUTME: Shares rendered multiline field fixtures and caret geometry checks.
+// ABOUTME: Exercises editing, prompt bounds, wrapping, scrolling, and layout reuse.
 #![allow(clippy::unwrap_used)]
 
 use super::*;
 use gpui::{Entity, Modifiers, TestAppContext, TouchPhase, VisualTestContext};
 
 mod key_table;
+mod limits;
+mod paste;
 mod resize;
 mod scrolling;
+mod shaping;
 
 fn field(cx: &mut TestAppContext) -> (Entity<MultilineInput>, &mut VisualTestContext) {
     let (input, cx) = cx.add_window_view(|_, cx| MultilineInput::new(cx));

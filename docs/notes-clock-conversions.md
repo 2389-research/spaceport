@@ -32,6 +32,13 @@ Status at a glance:
   `cfg(windows)` and `cfg(unix)` platform legs, `--all-features` clippy (needs the
   Sparkle framework), the full 4100-test GPUI suite, and any native window (§6).
 
+## Fork integration qualification
+
+The review-fix integration retains the owned tunnel watchdog and the 250 ms master-state poll.
+It defers section 4's detached stdout observer because inherited writers can outlive its owner.
+The other conversions remain included.
+See [the integration evidence](evidence/review-main-integration.md) for the lifecycle review and actual qualification.
+
 ## 1. Item 1: one bounded wait for a child process
 
 ### 1.1 The helper and why it is shaped this way

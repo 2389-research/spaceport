@@ -1,0 +1,22 @@
+{
+  "source": "7b749876289e2b07e6e1ca36bf09068fad55cee5",
+  "job": "https://github.com/2389-research/spaceport/actions/runs/44624169019/job/135913747987",
+  "ui_size": 24,
+  "ui_unit": "logical pixels",
+  "captures": [
+    {
+      "file": "ui-24-after-wide-1100.png",
+      "bytes": 129267,
+      "width": 1100,
+      "height": 780,
+      "sha256": "bb1da0709815a0ac0a2c4ae9f5fa023728c7802ff68998fdd01846954c163b4a"
+    },
+    {
+      "file": "ui-24-after-narrow-680.png",
+      "bytes": 103064,
+      "width": 680,
+      "height": 780,
+      "sha256": "8d701d1f33932a0dc4d9c78bbedd4318a8c04d6ccc4a1069996009e659830ab2"
+    }
+  ]
+}

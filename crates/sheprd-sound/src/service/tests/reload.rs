@@ -1,19 +1,19 @@
+// ABOUTME: Verifies asynchronous sound reloads retain the last valid settings.
+// ABOUTME: Coordinates through the controlled loader and worker playback channels.
 use super::*;
 use crate::{Error, MAX_VOLUME, tests::event};
 use sheprd_protocol::SemanticNotificationKind as Kind;
-use std::sync::atomic::AtomicUsize;
 
 #[test]
 fn worker_reloads_asynchronously_and_keeps_last_valid_config() {
     let (loads, loaded) = mpsc::sync_channel(4);
     let (played, sounds) = mpsc::sync_channel(4);
-    let count = Arc::new(AtomicUsize::new(0));
-    let worker_count = count.clone();
+    let (applied, completed) = mpsc::sync_channel(4);
     loads.send(Ok(Settings::default())).unwrap();
     let service = Service::start(
         move || {
             let result = loaded.recv_timeout(Duration::from_secs(3)).unwrap();
-            worker_count.fetch_add(1, Ordering::Release);
+            applied.send(()).unwrap();
             result
         },
         move |_, path, _, _, _| {
@@ -22,14 +22,7 @@ fn worker_reloads_asynchronously_and_keeps_last_valid_config() {
         },
         MAX_VOLUME,
     );
-    let wait_loaded = |expected| {
-        let deadline = Instant::now() + Duration::from_secs(3);
-        while count.load(Ordering::Acquire) < expected {
-            assert!(Instant::now() < deadline);
-            std::thread::sleep(Duration::from_millis(1));
-        }
-    };
-    wait_loaded(1);
+    completed.recv_timeout(Duration::from_secs(3)).unwrap();
     // Distinct titles, since the worker plays one copy of a repeated event.
     send_event(&service, "initial");
     assert_eq!(sounds.recv_timeout(Duration::from_secs(3)).unwrap(), None);
@@ -38,7 +31,7 @@ fn worker_reloads_asynchronously_and_keeps_last_valid_config() {
     std::fs::write(&config, "[ui.sound]\npath = 'new.mp3'").unwrap();
     loads.send(Settings::load(&config)).unwrap();
     service.reload.store(true, Ordering::Release);
-    wait_loaded(2);
+    completed.recv_timeout(Duration::from_secs(3)).unwrap();
     send_event(&service, "reloaded");
     assert_eq!(
         sounds.recv_timeout(Duration::from_secs(3)).unwrap(),
@@ -47,7 +40,7 @@ fn worker_reloads_asynchronously_and_keeps_last_valid_config() {
     // A failed load keeps what the worker already had.
     loads.send(Err(Error::ConfigSize)).unwrap();
     service.reload.store(true, Ordering::Release);
-    wait_loaded(3);
+    completed.recv_timeout(Duration::from_secs(3)).unwrap();
     send_event(&service, "retained");
     assert_eq!(
         sounds.recv_timeout(Duration::from_secs(3)).unwrap(),

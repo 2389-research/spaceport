@@ -118,8 +118,8 @@ impl SheprdWindow {
         &mut self,
         agent: Agent,
         tab: TabId,
-        cx: &gpui::App,
-    ) -> Result<(), super::StartError> {
+        cx: &mut gpui::App,
+    ) -> Result<crate::core_terminals::Receipt, super::StartError> {
         if !self.config.features.acp_chats {
             return Err(super::StartError::Disabled);
         }
@@ -137,18 +137,19 @@ impl SheprdWindow {
             &EndpointId::random(),
             &self.config.chat.env,
         );
-        self.start_core_program(
-            Purpose::Split {
-                tab,
-                at,
-                axis: crate::core_terminals::panes::Axis::Row,
-            },
-            spawn,
-            cx,
-        )
-        .map_err(|error| super::StartError::Request(std::sync::Arc::new(error)))?;
+        let receipt = self
+            .start_core_program(
+                Purpose::Split {
+                    tab,
+                    at,
+                    axis: crate::core_terminals::panes::Axis::Row,
+                },
+                spawn,
+                cx,
+            )
+            .map_err(|error| super::StartError::Request(std::sync::Arc::new(error)))?;
         self.chats.last_started = Some(agent);
-        Ok(())
+        Ok(receipt)
     }
 
     /// `terminal`'s pane in `tab`: its view, with its chat drawn over it when
@@ -269,7 +270,7 @@ impl SheprdWindow {
                 return None;
             };
             pane.focus_handles(cx)
-                .any(|focus| focus.is_focused(window))
+                .any(|focus| focus.contains_focused(window, cx))
                 .then(|| Some((self.core_terminals.tab_of(terminal, cx)?, terminal.clone())))
                 .flatten()
         })

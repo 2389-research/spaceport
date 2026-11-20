@@ -1,3 +1,5 @@
+// ABOUTME: Owns WSL setup and exact saved-distribution removal effects.
+// ABOUTME: Keeps disposable discovery observers separate from accepted background writes.
 //! WSL distributions as devices: the dialog that lists this machine's
 //! distributions and saves one once Herdr answers inside it, and removal, which
 //! only forgets the distribution here. Nothing here installs Herdr, edits a
@@ -7,6 +9,10 @@ use crate::i18n::fl;
 use crate::{SheprdWindow, endpoint::WSL_PREFIX, search_input::SearchInput};
 use gpui::{prelude::*, *};
 use sheprd_client::HostProbe;
+
+mod paint;
+mod render;
+pub(super) use paint::{Paint, RemovalPaint};
 
 pub(in crate::menu) struct WslSetup {
     distros: Distros,
@@ -18,6 +24,8 @@ pub(in crate::menu) struct WslSetup {
     /// Why the last check failed, kept with this form when another Add Device
     /// source is shown.
     error: Option<String>,
+    scroll: ScrollHandle,
+    list_bounds: std::rc::Rc<std::cell::Cell<Bounds<Pixels>>>,
 }
 
 enum Distros {
@@ -86,6 +94,8 @@ impl SheprdWindow {
             step: Step::Form,
             task: Some(task),
             error: None,
+            scroll: ScrollHandle::new(),
+            list_bounds: Default::default(),
         });
         self.set_wsl_error(None);
         self.menu.page = Some(Page::AddWsl);
@@ -203,169 +213,6 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    pub(in crate::menu) fn render_add_wsl(
-        &self,
-        compact: bool,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement {
-        let theme = &self.theme;
-        let frame = |pane: Div, cx: &mut Context<Self>| {
-            self.add_device_frame("wsl-setup-dialog", "wsl-setup-close", compact, pane, cx)
-        };
-        let Some(setup) = &self.menu.wsl_setup else {
-            return frame(div(), cx);
-        };
-        let saved = self.saved_distros();
-        let mut list = div()
-            .debug_selector(|| "wsl-setup-distros".into())
-            .flex()
-            .flex_col()
-            .gap(px(2.));
-        match &setup.distros {
-            Distros::Loading => {
-                list = list.child(
-                    div()
-                        .text_color(rgb(theme.muted))
-                        .child(fl!("devices-wsl-looking")),
-                )
-            }
-            Distros::Failed(error) => {
-                list = list.child(
-                    div()
-                        .text_color(crate::menu::danger(theme))
-                        .child(fl!("devices-wsl-list-failed", error = error.as_str())),
-                )
-            }
-            Distros::Ready(distros) if distros.is_empty() => {
-                list = list.child(
-                    div()
-                        .text_color(rgb(theme.muted))
-                        .child(fl!("devices-wsl-none")),
-                )
-            }
-            Distros::Ready(distros) => {
-                for (index, distro) in distros.iter().enumerate() {
-                    let added = saved.contains(distro);
-                    let checked = setup.selected.as_ref() == Some(distro);
-                    let pick = distro.clone();
-                    list = list.child(
-                        div()
-                            .id(("wsl-distro", index))
-                            .debug_selector(move || format!("wsl-distro-{index}"))
-                            .px(px(8.))
-                            .py(px(6.))
-                            .rounded(px(crate::config::corners::CONTROL))
-                            .flex()
-                            .items_center()
-                            .gap(px(8.))
-                            .when(checked, |row| row.bg(rgb(theme.active)))
-                            .when(added, |row| row.text_color(rgb(theme.muted)))
-                            .when(!added, |row| {
-                                row.cursor_pointer().hover(|s| s.bg(rgb(theme.active)))
-                            })
-                            .child(crate::toggles::radio(
-                                theme,
-                                self.config.ui.size + 2.,
-                                checked,
-                            ))
-                            .child(div().flex_1().truncate().child(distro.clone()))
-                            .when(added, |row| row.child(fl!("devices-wsl-added")))
-                            .on_click(cx.listener(move |this, _, _, cx| {
-                                if added {
-                                    return;
-                                }
-                                if let Some(setup) = &mut this.menu.wsl_setup {
-                                    setup.selected = Some(pick.clone());
-                                    cx.notify();
-                                }
-                            })),
-                    );
-                }
-            }
-        }
-        let mut body = div()
-            .id("wsl-setup-body")
-            .debug_selector(|| "wsl-setup-body".into())
-            .flex_1()
-            .min_h_0()
-            .overflow_y_scroll()
-            .p(px(16.))
-            .flex()
-            .flex_col()
-            .gap(px(12.))
-            .child(
-                div()
-                    .flex_none()
-                    .text_color(rgb(theme.subtext()))
-                    .child(fl!("devices-wsl-intro")),
-            )
-            .child(list)
-            .child(
-                div()
-                    .flex_none()
-                    .flex()
-                    .flex_col()
-                    .gap(px(6.))
-                    .child(fl!("devices-wsl-session"))
-                    .child(setup.session.clone()),
-            );
-        if let Some(error) = &setup.error {
-            body = body.child(
-                div()
-                    .debug_selector(|| "wsl-setup-error".into())
-                    .flex_none()
-                    .text_color(crate::menu::danger(theme))
-                    .child(error.clone()),
-            );
-        }
-        if let Step::Checking(distro) = &setup.step {
-            body = body.child(
-                div()
-                    .debug_selector(|| "wsl-setup-status".into())
-                    .flex_none()
-                    .text_color(rgb(theme.muted))
-                    .child(fl!("devices-wsl-checking", distro = distro.as_str())),
-            );
-        }
-        let ready = setup.step == Step::Form && setup.selected.is_some();
-        let footer = div()
-            .flex_none()
-            .p(px(16.))
-            .border_t_1()
-            .border_color(rgb(theme.active))
-            .flex()
-            .justify_end()
-            .child(
-                div()
-                    .id("wsl-setup-submit")
-                    .debug_selector(|| "wsl-setup-submit".into())
-                    .p(px(8.))
-                    .rounded(px(crate::config::corners::CONTROL))
-                    .bg(rgb(theme.active))
-                    .when(ready, |button| {
-                        button.cursor_pointer().hover(|s| {
-                            s.bg(rgb(theme.active).blend(rgba((theme.foreground << 8) | 0x20)))
-                        })
-                    })
-                    .when(!ready, |button| button.text_color(rgb(theme.muted)))
-                    .child(match setup.step {
-                        Step::Form => fl!("devices-wsl-add"),
-                        Step::Checking(_) => fl!("devices-wsl-add-checking"),
-                    })
-                    .on_click(cx.listener(|this, _, window, cx| this.submit_add_wsl(window, cx))),
-            );
-        frame(
-            div()
-                .flex_1()
-                .min_h_0()
-                .flex()
-                .flex_col()
-                .child(body)
-                .child(footer),
-            cx,
-        )
-    }
-
     /// Ask before forgetting a saved distribution.
     pub(crate) fn open_remove_wsl(
         &mut self,
@@ -392,6 +239,7 @@ impl SheprdWindow {
         cx: &mut Context<Self>,
     ) {
         match event.keystroke.key.as_str() {
+            "enter" if event.is_held => {}
             "enter" => self.confirm_remove_wsl(window, cx),
             "escape" => self.dismiss_menu(window, cx),
             _ => return,
@@ -403,7 +251,7 @@ impl SheprdWindow {
     /// Close at once and forget the distribution in the background; its header
     /// pulses until the catalog drops it, like an SSH device's removal.
     fn confirm_remove_wsl(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(distro) = self.menu.wsl_remove.take() else {
+        let Some(distro) = self.menu.wsl_remove.clone() else {
             return;
         };
         let id = format!("{WSL_PREFIX}{distro}");
@@ -438,59 +286,6 @@ impl SheprdWindow {
             });
         })
         .detach();
-    }
-
-    pub(in crate::menu) fn render_remove_wsl(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
-        let Some(distro) = &self.menu.wsl_remove else {
-            return div();
-        };
-        div()
-            .debug_selector(|| "remove-wsl".into())
-            .flex()
-            .flex_col()
-            .p(px(8.))
-            .gap(px(12.))
-            .child(
-                div()
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .child(fl!("devices-wsl-remove-title")),
-            )
-            .child(
-                div()
-                    .text_color(rgb(theme.subtext()))
-                    .child(fl!("devices-wsl-remove-note", distro = distro.as_str())),
-            )
-            .child(
-                div()
-                    .flex()
-                    .justify_end()
-                    .gap(px(8.))
-                    .child(
-                        div()
-                            .id("remove-wsl-cancel")
-                            .p(px(6.))
-                            .cursor_pointer()
-                            .child(fl!("devices-wsl-cancel"))
-                            .on_click(
-                                cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx)),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .id("remove-wsl-submit")
-                            .debug_selector(|| "remove-wsl-submit".into())
-                            .p(px(6.))
-                            .rounded(px(crate::config::corners::CONTROL))
-                            .bg(rgb(theme.active))
-                            .text_color(crate::menu::danger(theme))
-                            .cursor_pointer()
-                            .child(fl!("devices-wsl-remove"))
-                            .on_click(cx.listener(|this, _, window, cx| {
-                                this.confirm_remove_wsl(window, cx)
-                            })),
-                    ),
-            )
     }
 }
 
@@ -529,3 +324,7 @@ fn add(distro: &str, session: &str) -> Outcome {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+pub(in crate::menu) use tests::departure_fixture;
+#[cfg(test)]
+pub(in crate::menu) use tests::long_fixture;

@@ -1,3 +1,5 @@
+// ABOUTME: Reverses popup entry and departure from each panel's current visibility.
+// ABOUTME: Paints closing content without retaining active popup owners.
 //! The menu layer coming and going. A popover fades in while it slides a few
 //! pixels away from what opened it; a dialog rises into place while the
 //! window dims behind it, and closing it lifts the dimming back off. Moving
@@ -10,13 +12,15 @@
 
 mod kept;
 
-pub(super) use kept::{Kept, leaves};
+pub(super) use kept::Kept;
 
 // i18n: migrated
 use super::Page;
+#[cfg(test)]
+use crate::motion::{ENTER, LEAVE};
 use crate::{
     SheprdWindow,
-    motion::{self, ENTER, LEAVE, Toggle},
+    motion::{self, Toggle},
 };
 use gpui::{AnyElement, Context, Pixels, Point, Rgba, Window, div, prelude::*, px, rgba};
 use std::time::Instant;
@@ -44,21 +48,29 @@ enum Shown {
     Dialog,
 }
 
+struct Leaving {
+    page: Page,
+    shape: Shown,
+    motion: Toggle,
+}
+
 #[derive(Default)]
 pub(crate) struct Appear {
     /// What the last frame drew, `None` while no popup was open.
     shown: Option<Shown>,
     /// The page the last frame drew.
     page: Option<Page>,
-    /// When the popup showing now began to appear.
-    since: Option<Instant>,
+    /// The open popup’s reversible entry and departure.
+    panel_motion: Toggle,
     /// A page going away after it closed, from when it did.
-    leaving: Option<(Page, Instant)>,
+    leaving: Option<Leaving>,
     /// What the page that closed reads, taken out as it closed.
     kept: Option<(Page, Kept)>,
     /// All Devices' height as last laid out, which its rise travels.
     pub(super) rise_height: std::rc::Rc<std::cell::Cell<Option<Pixels>>>,
     backdrop: Toggle,
+    #[cfg(all(windows, feature = "integration-test"))]
+    pub(in crate::menu) drawn_departure: std::cell::Cell<Option<(Page, f32)>>,
     /// Unit tests lay menus out where they settle unless one asks to see
     /// them move, so geometry checks need not wait out the motion.
     #[cfg(test)]
@@ -75,19 +87,6 @@ impl Appear {
         let still = !self.live;
         #[cfg(not(test))]
         let still = false;
-        // A session form closing is All Devices' page with its form over it:
-        // it goes at once like any other form, rather than the picker
-        // sinking into the footer in the form's place.
-        let form = self.shown == Some(Shown::Dialog) && last == Some(Page::Devices);
-        self.leaving = match (shown, last) {
-            (None, Some(page)) if !still && !form && leaves(page) => Some((page, now)),
-            _ => None,
-        };
-        // Only the page that just closed keeps what it read; anything else
-        // drops it, cancelling nothing more since closing did that.
-        if self.leaving.map(|(page, _)| page) != self.kept.as_ref().map(|(page, _)| *page) {
-            self.kept = None;
-        }
         // All Devices stays drawn beneath a session form it opened, so
         // closing the form uncovers it where it was rather than showing it
         // anew; only the dimming lifts.
@@ -95,19 +94,49 @@ impl Appear {
             && last == page
             && self.shown == Some(Shown::Dialog)
             && matches!(shown, Some(Shown::Popover(_)));
-        self.since = shown
-            .is_some()
-            .then_some(now)
-            .filter(|_| !still && !uncovered);
+        if let Some(shape) = shown {
+            let reversing = self
+                .leaving
+                .as_ref()
+                .is_some_and(|leaving| Some(leaving.page) == page && leaving.shape == shape);
+            if reversing {
+                if let Some(leaving) = self.leaving.take() {
+                    self.panel_motion = leaving.motion;
+                }
+            } else {
+                self.panel_motion.set(uncovered || still, now, true);
+            }
+            self.panel_motion.set(true, now, uncovered || still);
+            self.leaving = None;
+            self.kept = None;
+        } else {
+            let motion = self.panel_motion;
+            self.leaving = match (last, self.shown) {
+                (Some(page), Some(shape)) if !still => {
+                    let mut motion = motion;
+                    motion.set(false, now, false);
+                    Some(Leaving {
+                        page,
+                        shape,
+                        motion,
+                    })
+                }
+                _ => None,
+            };
+            if self.leaving.as_ref().map(|leaving| leaving.page)
+                != self.kept.as_ref().map(|(page, _)| *page)
+            {
+                self.kept = None;
+            }
+            self.panel_motion.set(false, now, still);
+        }
         self.backdrop.set(shown == Some(Shown::Dialog), now, still);
         self.shown = shown;
     }
 
     /// How much of the open popup shows at `now`, from 0 to 1.
     pub(super) fn panel(&self, now: Instant) -> f32 {
-        self.since
-            .and_then(|since| motion::progress(since, now, ENTER))
-            .unwrap_or(1.)
+        self.panel_motion.shown(now)
     }
 
     /// How far a popup `shown` of the way in still has to go: a popover
@@ -130,20 +159,23 @@ impl Appear {
 
     /// The page sinking away after it closed, and how much of it is left.
     pub(super) fn leaving(&self, now: Instant) -> Option<(Page, f32)> {
-        let (page, since) = self.leaving?;
-        motion::progress(since, now, LEAVE).map(|k| (page, 1. - k))
+        let leaving = self.leaving.as_ref()?;
+        let left = leaving.motion.shown(now);
+        (left > 0.).then_some((leaving.page, left))
     }
 
     /// Lets go of a closed page once it has gone, with what it read.
     fn settle(&mut self, now: Instant) {
-        if self.leaving.is_some() && self.leaving(now).is_none() {
+        if self.leaving(now).is_none() {
             self.leaving = None;
             self.kept = None;
         }
     }
 
     fn moving(&self, now: Instant) -> bool {
-        self.panel(now) < 1. || self.backdrop.moving(now) || self.leaving(now).is_some()
+        (self.shown.is_some() && self.panel_motion.moving(now))
+            || self.backdrop.moving(now)
+            || self.leaving(now).is_some()
     }
 }
 
@@ -151,25 +183,40 @@ impl SheprdWindow {
     /// Takes the popup this frame draws, and keeps frames coming while it,
     /// or the dimming a closed dialog leaves, still moves.
     pub(crate) fn tick_menu_appear(&mut self, window: &mut Window) {
+        #[cfg(all(windows, feature = "integration-test"))]
+        self.menu.appear.drawn_departure.set(None);
         let now = motion::now();
-        // The application menu bar's menus draw their own way.
-        let shown = self
-            .menu
-            .page
-            .filter(|page| *page != Page::Application)
-            .map(|_| match self.menu_dims() {
-                true => Shown::Dialog,
-                false => Shown::Popover(self.menu.anchor),
-            });
+        let shown = self.menu.page.map(|_| match self.menu_dims() {
+            true => Shown::Dialog,
+            false => Shown::Popover(self.menu.anchor),
+        });
         self.menu.appear.observe(shown, self.menu.page, now);
         self.menu.appear.settle(now);
         if self.menu.appear.moving(now) {
             window.request_animation_frame();
         }
     }
+
+    #[cfg(all(windows, feature = "integration-test"))]
+    pub(crate) fn native_departure_frame(&self) -> Option<(Page, f32)> {
+        self.menu.appear.drawn_departure.get()
+    }
+
+    #[cfg(all(windows, feature = "integration-test"))]
+    pub(crate) fn native_departure_released(&self) -> bool {
+        self.menu.appear.leaving.is_none() && self.menu.appear.kept.is_none()
+    }
 }
 
 impl SheprdWindow {
+    pub(crate) fn keep_application_menu_paint(&mut self, paint: crate::menus::in_window::Paint) {
+        let kept = Kept {
+            application: Some(paint),
+            ..Kept::default()
+        };
+        self.menu.appear.keep(Page::Application, kept);
+    }
+
     /// How much of a closed dialog's dimming is still lifting at `now`, from
     /// 0 to 1; 0 while a dialog that dims the window itself is open.
     pub(crate) fn menu_fading(&self, now: Instant) -> f32 {
@@ -179,9 +226,7 @@ impl SheprdWindow {
         self.menu.appear.backdrop(now)
     }
 
-    /// What a popup that just closed leaves while it goes: a dialog's
-    /// dimming lifting, or All Devices sinking into the footer. Neither takes
-    /// input: the window beneath is already the one being used.
+    /// Draws captured panels and lifting dimming after the active menu closes.
     pub(crate) fn render_menu_leaving(
         &mut self,
         window: &Window,
@@ -205,25 +250,48 @@ impl SheprdWindow {
             .appear
             .leaving(now)
             .filter(|_| self.menu.page.is_none());
+        let underlay = leaving.and_then(|(page, left)| {
+            (page == Page::Devices)
+                .then(|| self.menu.appear.kept.as_ref()?.1.devices.as_ref())
+                .flatten()
+                .filter(|paint| paint.session_modal())
+                .map(|paint| {
+                    self.render_session_picker_underlay(Some(paint), window, cx)
+                        .opacity(left)
+                        .into_any_element()
+                })
+        });
         let page = leaving.map(|(page, left)| {
-            // Drawn as it was: its own fields and page back in the menu for
-            // the length of this one draw, which only reads them.
-            let mut kept = self.menu.appear.kept.take();
-            if let Some((_, kept)) = &mut kept {
-                kept.swap(&mut self.menu);
-            }
-            self.menu.page = Some(page);
-            let element = self
-                .render_menu_layer(page, Some(left), window, cx)
-                .into_any_element();
-            self.menu.page = None;
-            if let Some((_, kept)) = &mut kept {
-                kept.swap(&mut self.menu);
-            }
+            // Passive templates use captured values and the explicit page, without restoring active state.
+            let kept = self.menu.appear.kept.take();
+            let element = if page == Page::Application {
+                kept.as_ref()
+                    .and_then(|(_, kept)| kept.application.as_ref())
+                    .map(|paint| {
+                        self.render_application_menu_layer(
+                            paint,
+                            false,
+                            (left, Appear::offset(false, left)),
+                            window,
+                            cx,
+                        )
+                        .into_any_element()
+                    })
+                    .unwrap_or_else(|| div().into_any_element())
+            } else {
+                self.render_menu_layer(
+                    page,
+                    Some(left),
+                    kept.as_ref().map(|(_, kept)| kept),
+                    window,
+                    cx,
+                )
+                .into_any_element()
+            };
             self.menu.appear.kept = kept;
             element
         });
-        fade.into_iter().chain(page).collect()
+        underlay.into_iter().chain(fade).chain(page).collect()
     }
 }
 

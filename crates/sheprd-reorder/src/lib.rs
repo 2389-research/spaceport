@@ -1,3 +1,5 @@
+// ABOUTME: Computes drag destinations and reversible slide positions without UI dependencies.
+// ABOUTME: Keeps normal reorder timing stable for every dependency consumer.
 //! Reordering by dragging, shared by the sidebar's workspace rows and the
 //! tab strips: when a press lifts, how the carried item finds its gap among
 //! the others, and how the others slide aside to preview the drop. Positions
@@ -12,14 +14,8 @@ pub const LIFT_DISTANCE: f32 = 4.;
 /// How long a dropped preview waits for the daemon's new order before the
 /// list falls back to the order it last received.
 pub const SETTLE_TIMEOUT: Duration = Duration::from_secs(2);
-/// How long an item takes to slide to its previewed place. A test build that
-/// enables this crate's `test-support` feature settles at once: its harness
-/// checks where rows go, and a frame clock would only add waits.
-pub const SLIDE: Duration = if cfg!(feature = "test-support") {
-    Duration::ZERO
-} else {
-    Duration::from_millis(150)
-};
+/// How long an item takes to slide to its previewed place.
+pub const SLIDE: Duration = Duration::from_millis(150);
 
 /// Where a dropped item lands: beside another, since a drop past the last
 /// item shown still has to land after it rather than at the very end of a

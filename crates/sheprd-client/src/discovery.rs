@@ -1,3 +1,5 @@
+// ABOUTME: Resolves exact local Herdr socket and runtime configuration paths.
+// ABOUTME: Keeps release namespaces and login configuration roots consistent.
 //! Local socket rules adapted from herdr src/server/socket_paths.rs and
 //! src/session.rs (Apache-2.0; see ../../sheprd-protocol/NOTICE.md).
 //! Modified: explicit release/dev selection, no server spawning or global state.
@@ -28,6 +30,18 @@ pub fn set_login_config_home(path: PathBuf) -> bool {
 /// keeps them.
 pub fn local_var(name: &str) -> Option<OsString> {
     with_login_config_home(name, |name| env::var_os(name), LOGIN_CONFIG_HOME.get())
+}
+
+/// The installed Herdr's release configuration, separate from client view settings.
+pub fn herdr_config_path() -> PathBuf {
+    herdr_config_path_with(local_var)
+}
+
+fn herdr_config_path_with(var: impl Fn(&str) -> Option<OsString>) -> PathBuf {
+    var("HERDR_CONFIG_PATH")
+        .filter(|path| !path.is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| config_root(&var).join("herdr/config.toml"))
 }
 
 fn with_login_config_home(

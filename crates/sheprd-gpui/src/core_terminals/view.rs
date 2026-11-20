@@ -1,7 +1,11 @@
+// ABOUTME: Presents a Core terminal with its own focus, input, and geometry.
+// ABOUTME: Records queued view changes only after its bounded worker accepts them.
 //! A herdr-core terminal drawn by the app: its own focus, keys, and IME
 //! text, painted with the window's terminal painter. One per tab showing it;
 //! any number may show the same terminal, as observers.
 
+#[cfg(all(windows, feature = "integration-test"))]
+mod frame_probe;
 pub(super) mod keys;
 pub(super) mod paste;
 mod pointer;
@@ -14,12 +18,20 @@ use super::{
 use crate::{
     config::{OptionAsAlt, Padding},
     i18n::fl,
-    terminal::{CellMetrics, HeldKeys, key_input, viewport},
+    terminal::{CellMetrics, HeldKeys, Transcript, key_input, viewport},
     terminal_painter::{Ground, TerminalPainter},
 };
 use gpui::{prelude::*, *};
 use sheprd_backend::{ClientPaneInputEvent, FrameData, Size, TerminalId};
-use std::{cell::RefCell, ops::Range, rc::Rc, sync::Arc};
+use std::{
+    cell::{Cell as GeometryCell, RefCell},
+    ops::Range,
+    rc::Rc,
+    sync::Arc,
+};
+
+#[cfg(test)]
+mod tests;
 
 /// How the window draws terminals, copied into each view and refreshed when
 /// fonts, theme, or options change.
@@ -65,6 +77,8 @@ pub(crate) struct CoreTerminalView {
     /// A mirror's view: it watches and never types.
     observe: bool,
     painter: Rc<RefCell<TerminalPainter>>,
+    pending_paste: Option<paste::Pending>,
+    paste_release: Option<(String, super::worker::Fallback)>,
     /// Set while the view is a pane of a split.
     pane: Option<PaneLook>,
     /// Where the button held down is going.
@@ -74,8 +88,8 @@ pub(crate) struct CoreTerminalView {
     /// from, so a veiled pane copies a frame once rather than every paint.
     sleeping: Option<(Arc<FrameData>, Arc<FrameData>)>,
     screen: Screen,
-    sent_focus: Option<bool>,
-    sent_size: Option<Size>,
+    last_queued_focus: Option<bool>,
+    last_queued_size: Option<Size>,
     /// Wheel motion short of a whole row, kept for the next event.
     wheel_rest: f32,
 }
@@ -100,13 +114,15 @@ impl CoreTerminalView {
             marked: String::new(),
             observe,
             painter,
+            pending_paste: None,
+            paste_release: None,
             pane: None,
             press: None,
             selection: None,
             sleeping: None,
             screen: Screen::default(),
-            sent_focus: None,
-            sent_size: None,
+            last_queued_focus: None,
+            last_queued_size: None,
             wheel_rest: 0.,
         }
     }
@@ -124,14 +140,14 @@ impl CoreTerminalView {
         self.screen.ended.is_some()
     }
 
-    /// The size the terminal was last given, in cells.
     /// Where the terminal's cells were last laid out, in the window.
     pub(crate) fn bounds(&self) -> Option<Bounds<Pixels>> {
         self.bounds
     }
 
+    /// The last size queued for the terminal, before its runtime acknowledgement.
     pub(crate) fn size(&self) -> Option<Size> {
-        self.sent_size
+        self.last_queued_size
     }
 
     /// Draws the view as a pane of a split, or bare. Read by this frame's
@@ -170,6 +186,8 @@ impl CoreTerminalView {
             return false;
         };
         self.screen = screen;
+        #[cfg(all(windows, feature = "integration-test"))]
+        frame_probe::record(self);
         cx.notify();
         true
     }
@@ -195,9 +213,8 @@ impl CoreTerminalView {
         let Ok(size) = Size::new(fits.cols, fits.rows) else {
             return;
         };
-        if self.sent_size != Some(size) {
-            self.sent_size = Some(size);
-            self.link.send(Command::Resize(size));
+        if self.last_queued_size != Some(size) && self.link.send(Command::Resize(size)) {
+            self.last_queued_size = Some(size);
         }
     }
 
@@ -213,19 +230,20 @@ impl CoreTerminalView {
             window.prevent_default();
             return;
         }
-        // Pasting reads the clipboard here, as the window does for a Herdr
-        // pane; the Herdr pane behind this one must not take it.
-        let has_text = || {
-            cx.read_from_clipboard()
-                .and_then(|item| item.text())
-                .is_some_and(|text| !text.is_empty())
-        };
-        if paste::pastes(
-            &event.keystroke,
-            cfg!(any(windows, target_os = "linux")),
-            has_text,
-        ) {
-            self.paste_clipboard(cx);
+        if let Some(trigger) =
+            paste::trigger(&event.keystroke, cfg!(any(windows, target_os = "linux")))
+        {
+            if !event.is_held {
+                let fallback = (trigger == paste::Trigger::Probe)
+                    .then(|| {
+                        key_input(event, false).map(|input| (event.keystroke.key.clone(), input))
+                    })
+                    .flatten();
+                if trigger == paste::Trigger::Paste {
+                    self.held_keys.forget(&event.keystroke.key);
+                }
+                self.start_paste(fallback, window, cx);
+            }
             cx.stop_propagation();
             window.prevent_default();
             return;
@@ -272,9 +290,8 @@ impl CoreTerminalView {
 
     fn report_focus(&mut self, window: &Window) {
         let focused = self.focus.is_focused(window);
-        if self.sent_focus != Some(focused) {
-            self.sent_focus = Some(focused);
-            self.link.send(Command::Focus(focused));
+        if self.last_queued_focus != Some(focused) && self.link.send(Command::Focus(focused)) {
+            self.last_queued_focus = Some(focused);
         }
     }
 
@@ -304,6 +321,16 @@ impl Render for CoreTerminalView {
         let painter = self.painter.clone();
         let look = self.look.clone();
         let frame = self.frame_to_paint();
+        let accessible_frame = window.is_a11y_active().then(|| frame.clone()).flatten();
+        let selection = self.selection;
+        let cell = (self.look.cell_width, self.look.cell_height);
+        // Share this render's canvas bounds with the synthetic text nodes.
+        // Previous frame bounds can be stale during a resize or tab move.
+        let accessible_bounds = accessible_frame
+            .as_ref()
+            .map(|_| Rc::new(GeometryCell::new(None)));
+        let canvas_bounds = accessible_bounds.clone();
+        let scale = window.scale_factor();
         let highlights = self.highlights();
         let pane = self.pane;
         let background = self.look.background;
@@ -317,7 +344,12 @@ impl Render for CoreTerminalView {
             .overflow_hidden()
             .child(
                 canvas(
-                    move |bounds, _, cx| fitting.update(cx, |view, _| view.fit(bounds)),
+                    move |bounds, _, cx| {
+                        if let Some(canvas_bounds) = &canvas_bounds {
+                            canvas_bounds.set(Some(bounds));
+                        }
+                        fitting.update(cx, |view, _| view.fit(bounds));
+                    },
                     move |bounds, _, window, cx| {
                         window.handle_input(
                             &focus,
@@ -372,6 +404,31 @@ impl Render for CoreTerminalView {
             });
         crate::config::pad(div(), self.look.padding)
             .id(SharedString::from(format!("core-terminal-{}", self.id)))
+            .role(Role::Terminal)
+            .aria_label(fl!("window-input-terminal"))
+            .when_some(accessible_frame, |root, frame| {
+                root.a11y_synthetic_children(move |builder| {
+                    if let Some(bounds) = accessible_bounds.as_ref().and_then(|bounds| bounds.get())
+                    {
+                        let selected = selection
+                            .map(|selection| selection.rows(frame.width))
+                            .unwrap_or_default();
+                        if let Some(transcript) = Transcript::read_frame(
+                            &frame,
+                            selected,
+                            cell.0,
+                            cell.1,
+                            (bounds.size.width.into(), bounds.size.height.into()),
+                        ) {
+                            transcript.expose(
+                                builder,
+                                (bounds.origin.x.into(), bounds.origin.y.into()),
+                                scale,
+                            );
+                        }
+                    }
+                })
+            })
             .key_context("CoreTerminal")
             .track_focus(&self.focus)
             .flex()
@@ -394,8 +451,8 @@ impl Render for CoreTerminalView {
             })
             .on_key_down(cx.listener(Self::key_down))
             .on_key_up(cx.listener(Self::key_up))
-            .on_action(cx.listener(|this, _: &crate::actions::Paste, _, cx| {
-                this.paste_clipboard(cx);
+            .on_action(cx.listener(|this, _: &crate::actions::Paste, window, cx| {
+                this.paste_clipboard(window, cx);
             }))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::mouse_down))
             .on_mouse_down(MouseButton::Right, cx.listener(Self::mouse_down))

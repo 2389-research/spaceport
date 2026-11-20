@@ -219,6 +219,8 @@ impl Peer {
         // reader keep the old inbox, so their late failure cannot hold or
         // overwrite the one tests drive, as a plain disconnect would allow.
         view.endpoints[0].connection.detach(false);
+        // The peer projection must not inherit the retired attempt's last diagnostic.
+        view.live = crate::state::LiveState::default();
         view.endpoints[0].connection.handle = Some(self.client.handle.clone());
         view.endpoints[0].connection.target = ConnectTarget::Ssh {
             target: HOST.into(),

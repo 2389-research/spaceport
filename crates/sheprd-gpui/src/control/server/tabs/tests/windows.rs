@@ -143,12 +143,15 @@ fn a_tab_of_a_workspace_no_window_lists_is_not_found(cx: &mut gpui::TestAppConte
             }
         ));
         assert!(cx.global::<Store>().get(elsewhere).is_some());
-        // Closing needs no window: the store forgets it, and windows follow.
+        // An unshown tab cannot be closed through an unrelated window.
         assert!(matches!(
             close(&Caller::default(), elsewhere.into(), cx),
-            Response::Done { .. }
+            Response::Error {
+                code: ErrorCode::NotFound,
+                ..
+            }
         ));
-        assert!(cx.global::<Store>().get(elsewhere).is_none());
+        assert!(cx.global::<Store>().get(elsewhere).is_some());
     });
 }
 

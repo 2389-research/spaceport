@@ -1,3 +1,5 @@
+// ABOUTME: Checks typed client errors, retained sources, and readable diagnostics.
+// ABOUTME: Preserves cancellation and retry categories independently of display wording.
 use super::*;
 
 #[test]
@@ -113,14 +115,14 @@ fn connect_options_equality_and_send_error_display() {
     }
     assert_eq!(
         SendError::Full.to_string(),
-        "Too many commands are waiting for the daemon; try again."
+        "Too many commands are waiting. Let them finish before trying again."
     );
     assert_eq!(
         SendError::Disconnected.to_string(),
-        "The app is not connected to the daemon."
+        "Spaceport is disconnected from Herdr."
     );
     assert_eq!(
         Error::MissingBootId.to_string(),
-        "That command needs the daemon's session first; reconnect and try again."
+        "The connection is not ready for this command. Wait for it to connect."
     );
 }

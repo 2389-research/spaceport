@@ -1,6 +1,8 @@
+// ABOUTME: Paints searchable palette rows through shared live and frozen templates.
+// ABOUTME: Keeps departing rows free of activation and field ownership.
 //! The palette paints prepared entries; input and daemon operations live elsewhere.
 
-use super::{Action, AgentFilter, Filter, Palette, preview};
+use super::{Action, AgentFilter, Filter, Palette, paint::Content, preview};
 use crate::direction::Logical;
 use crate::{SheprdWindow, i18n::fl};
 use gpui::{prelude::*, *};
@@ -23,7 +25,7 @@ pub(super) fn search_font(ui: &crate::config::FontConfig) -> crate::config::Font
 impl SheprdWindow {
     /// The query is the palette's focus, as in Raycast: a large frameless
     /// field spans the top, with the filters and count quieter beneath it.
-    fn palette_header(&self, palette: &Palette, cx: &mut Context<Self>) -> Div {
+    fn palette_header(&self, palette: Content<'_>, cx: &mut Context<Self>) -> Div {
         let theme = &self.theme;
         div()
             .flex_none()
@@ -33,7 +35,7 @@ impl SheprdWindow {
                     .py(px(16.))
                     .border_b_1()
                     .border_color(rgb(theme.active))
-                    .child(palette.search.clone()),
+                    .child(palette.input()),
             )
             .child(
                 div()
@@ -60,28 +62,32 @@ impl SheprdWindow {
                                     .px_2()
                                     .py_1()
                                     .rounded(px(crate::config::corners::CONTROL))
-                                    .cursor_pointer()
-                                    .when(filter == palette.filter, |tab| {
+                                    .when(palette.active(), |tab| tab.cursor_pointer())
+                                    .when(filter == palette.filter(), |tab| {
                                         tab.bg(rgb(theme.active)).text_color(rgb(theme.foreground))
                                     })
-                                    .hover(|tab| tab.bg(rgb(theme.active)))
                                     .child(filter.label())
-                                    .on_click(cx.listener(move |this, _, window, cx| {
-                                        this.set_palette_filter(filter, cx);
-                                        if let Some(palette) = &this.menu.palette {
-                                            let focus = palette.search.read(cx).focus.clone();
-                                            window.focus(&focus, cx);
-                                        }
-                                    }))
+                                    .when(palette.active(), |tab| {
+                                        tab.hover(|tab| tab.bg(rgb(theme.active))).on_click(
+                                            cx.listener(move |this, _, window, cx| {
+                                                this.set_palette_filter(filter, cx);
+                                                if let Some(palette) = &this.menu.palette {
+                                                    let focus =
+                                                        palette.search.read(cx).focus.clone();
+                                                    window.focus(&focus, cx);
+                                                }
+                                            }),
+                                        )
+                                    })
                             })),
                     )
                     .child(div().flex_none().child(fl!(
                         "palette-count",
-                        shown = palette.filtered.len(),
-                        total = palette.entries.len(),
+                        shown = palette.count(),
+                        total = palette.total(),
                     ))),
             )
-            .when(palette.filter == Filter::Navigation, |header| {
+            .when(palette.filter() == Filter::Navigation, |header| {
                 header.child(
                     div()
                         .px(px(14.))
@@ -92,7 +98,7 @@ impl SheprdWindow {
 
     /// Go To's status chips; Alt with the chip's navigator letter picks one
     /// from the keyboard.
-    fn palette_agent_filters(&self, palette: &Palette, cx: &mut Context<Self>) -> Div {
+    fn palette_agent_filters(&self, palette: Content<'_>, cx: &mut Context<Self>) -> Div {
         let theme = &self.theme;
         div()
             .row()
@@ -107,37 +113,31 @@ impl SheprdWindow {
                     .px_2()
                     .py_1()
                     .rounded(px(crate::config::corners::CONTROL))
-                    .cursor_pointer()
-                    .when(filter == palette.agent_filter, |chip| {
+                    .when(palette.active(), |chip| chip.cursor_pointer())
+                    .when(filter == palette.agent_filter(), |chip| {
                         chip.bg(rgb(theme.active)).text_color(rgb(theme.foreground))
                     })
-                    .hover(|chip| chip.bg(rgb(theme.active)))
                     .child(filter.label())
-                    .on_click(cx.listener(move |this, _, window, cx| {
-                        this.set_palette_agent_filter(filter, cx);
-                        if let Some(palette) = &this.menu.palette {
-                            let focus = palette.search.read(cx).focus.clone();
-                            window.focus(&focus, cx);
-                        }
-                    }))
+                    .when(palette.active(), |chip| {
+                        chip.hover(|chip| chip.bg(rgb(theme.active)))
+                            .on_click(cx.listener(move |this, _, window, cx| {
+                                this.set_palette_agent_filter(filter, cx);
+                                if let Some(palette) = &this.menu.palette {
+                                    let focus = palette.search.read(cx).focus.clone();
+                                    window.focus(&focus, cx);
+                                }
+                            }))
+                    })
             }))
     }
 
     fn palette_row(
         &self,
-        palette: &Palette,
+        palette: Content<'_>,
         index: usize,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
-        let hit = &palette.filtered[index];
-        let entry = &palette.entries[hit.index];
-        // Ranked results need not keep entry order, so only an empty query nests.
-        let depth = if palette.query.trim().is_empty() {
-            hit.depth
-        } else {
-            0
-        };
-        let action = entry.action.clone();
+        let entry = palette.row(index);
         // Matched characters were found while ranking; painting only styles them.
         let matched = HighlightStyle {
             color: Some(rgb(self.theme.primary()).into()),
@@ -157,28 +157,30 @@ impl SheprdWindow {
             .row()
             .items_center()
             .gap(px(12.))
-            .cursor_pointer()
-            .when(index == palette.selected, |row| {
+            .when(palette.active(), |row| row.cursor_pointer())
+            .when(index == palette.selected(), |row| {
                 row.bg(rgb(self.theme.active))
             })
-            .hover(|s| s.bg(rgb(self.theme.active)))
+            .when(palette.active(), |row| {
+                row.hover(|s| s.bg(rgb(self.theme.active)))
+            })
             .child(
                 div()
                     .flex_1()
                     .min_w_0()
                     .flex()
                     .flex_col()
-                    .ps(px(16. * depth as f32))
+                    .ps(px(16. * entry.depth as f32))
                     .child(
                         div()
                             .truncate()
-                            .child(styled(&entry.label, &hit.highlights.label)),
+                            .child(styled(&entry.label, &entry.highlights.label)),
                     )
                     .child(
                         div()
                             .truncate()
                             .text_color(rgb(self.theme.muted))
-                            .child(styled(&entry.detail, &hit.highlights.detail)),
+                            .child(styled(&entry.detail, &entry.highlights.detail)),
                     ),
             )
             .when(!entry.badge.is_empty(), |row| {
@@ -189,9 +191,11 @@ impl SheprdWindow {
                         .child(entry.badge.clone()),
                 )
             })
-            .on_click(cx.listener(move |this, _, window, cx| {
-                this.activate_palette(action.clone(), window, cx)
-            }))
+            .when_some(palette.action(index), |row, action| {
+                row.on_click(cx.listener(move |this, _, window, cx| {
+                    this.activate_palette(action.clone(), window, cx)
+                }))
+            })
     }
 
     /// Whether Go To shows its preview: it is toggled on, and the window has
@@ -228,7 +232,7 @@ impl SheprdWindow {
         )
     }
 
-    fn render_palette_preview(&self, palette: &Palette) -> Div {
+    fn render_palette_preview(&self, palette: Content<'_>) -> Div {
         let theme = &self.theme;
         let pane = div()
             .debug_selector(|| "palette-preview".into())
@@ -237,7 +241,7 @@ impl SheprdWindow {
             .overflow_hidden()
             .border_s(px(1.))
             .border_color(rgb(theme.active));
-        match self.palette_preview(palette) {
+        match palette.preview(self) {
             Some(preview::Preview::Screen {
                 surface,
                 rect,
@@ -256,7 +260,7 @@ impl SheprdWindow {
                     .child(preview::paint_screen(
                         surface,
                         rect,
-                        palette.preview_painter.clone(),
+                        palette.painter(),
                         look,
                     ))
                     .when_some(seen_at, |pane, at| {
@@ -316,15 +320,66 @@ impl SheprdWindow {
         let Some(palette) = &self.menu.palette else {
             return div();
         };
-        let theme = &self.theme;
         let previews = self.palette_previews(viewport);
+        self.render_palette_content(Content::Live(palette), previews, cx)
+    }
+
+    pub(crate) fn render_palette_paint(
+        &self,
+        palette: &super::Paint,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        self.render_palette_content(Content::Frozen(palette), palette.previews, cx)
+    }
+
+    fn render_palette_content(
+        &self,
+        palette: Content<'_>,
+        previews: bool,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let theme = &self.theme;
+        let project_errors = palette.project_errors();
+        let rows = match palette {
+            Content::Live(live) => uniform_list(
+                "palette-results",
+                palette.count(),
+                cx.processor(|this, range: std::ops::Range<usize>, _, cx| {
+                    let Some(palette) = &this.menu.palette else {
+                        return Vec::new();
+                    };
+                    range
+                        .map(|index| this.palette_row(Content::Live(palette), index, cx))
+                        .collect()
+                }),
+            )
+            .track_scroll(&live.scroll)
+            .flex_1()
+            .min_w_0()
+            .into_any_element(),
+            Content::Frozen(paint) => div()
+                .id("palette-results")
+                .flex_1()
+                .min_w_0()
+                .relative()
+                .overflow_hidden()
+                .children(paint.visible.clone().map(|index| {
+                    div()
+                        .absolute()
+                        .top(paint.offset + paint.row_height * (index - paint.visible.start) as f32)
+                        .left_0()
+                        .right_0()
+                        .child(self.palette_row(palette, index, cx))
+                }))
+                .into_any_element(),
+        };
         div()
             .flex()
             .flex_col()
             .size_full()
             .min_h_0()
             .child(self.palette_header(palette, cx))
-            .when(palette.loading_projects, |panel| {
+            .when(palette.loading(), |panel| {
                 panel.child(
                     div()
                         .flex_none()
@@ -334,7 +389,7 @@ impl SheprdWindow {
                         .child(fl!("palette-loading-projects")),
                 )
             })
-            .when(!palette.projects.errors.is_empty(), |panel| {
+            .when(!project_errors.is_empty(), |panel| {
                 panel.child(
                     div()
                         .id("palette-project-errors")
@@ -344,18 +399,10 @@ impl SheprdWindow {
                         .px(px(16.))
                         .py(px(8.))
                         .text_color(rgb(theme.muted))
-                        .child(
-                            palette
-                                .projects
-                                .errors
-                                .iter()
-                                .map(ToString::to_string)
-                                .collect::<Vec<_>>()
-                                .join("\n"),
-                        ),
+                        .child(project_errors),
                 )
             })
-            .when_some(palette.error.clone(), |panel, error| {
+            .when_some(palette.error(), |panel, error| {
                 panel.child(
                     div()
                         .id("palette-error")
@@ -373,7 +420,7 @@ impl SheprdWindow {
                     .flex_1()
                     .min_h_0()
                     .row()
-                    .when(palette.filtered.is_empty(), |body| {
+                    .when(palette.count() == 0, |body| {
                         body.child(
                             div()
                                 .flex_1()
@@ -382,25 +429,7 @@ impl SheprdWindow {
                                 .child(fl!("palette-no-results")),
                         )
                     })
-                    .when(!palette.filtered.is_empty(), |body| {
-                        body.child(
-                            uniform_list(
-                                "palette-results",
-                                palette.filtered.len(),
-                                cx.processor(|this, range: std::ops::Range<usize>, _, cx| {
-                                    let Some(palette) = &this.menu.palette else {
-                                        return Vec::new();
-                                    };
-                                    range
-                                        .map(|index| this.palette_row(palette, index, cx))
-                                        .collect()
-                                }),
-                            )
-                            .track_scroll(&palette.scroll)
-                            .flex_1()
-                            .min_w_0(),
-                        )
-                    })
+                    .when(palette.count() > 0, |body| body.child(rows))
                     .when(previews, |body| {
                         body.child(self.render_palette_preview(palette))
                     }),
@@ -416,7 +445,7 @@ impl SheprdWindow {
                     .text_color(rgb(theme.muted))
                     .child(if palette.busy() {
                         fl!("palette-opening-project")
-                    } else if palette.filter == Filter::Navigation {
+                    } else if palette.filter() == Filter::Navigation {
                         fl!("palette-go-to-hints")
                     } else {
                         fl!("palette-hints")

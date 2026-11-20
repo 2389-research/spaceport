@@ -1,3 +1,5 @@
+// ABOUTME: Presents transient gesture feedback with readable warning lifetimes.
+// ABOUTME: Keeps hover pauses and motion separate from operation deadlines.
 //! The brief message over the terminal: "copied to clipboard", why a
 //! shortcut did nothing, or how to do what a gesture did not. It answers the
 //! user's own gesture, so it needs no dismissing and retires on its own. Any
@@ -16,6 +18,7 @@ use std::time::{Duration, Instant};
 
 /// How long a flash stays up, matching herdr's own clipboard feedback.
 const FLASH_DURATION: Duration = Duration::from_secs(2);
+const WARNING_DURATION: Duration = Duration::from_secs(10);
 
 /// How long a hint stays up. It teaches rather than confirms, so it needs a
 /// read, not a glance.
@@ -74,7 +77,8 @@ impl Flash {
     fn duration(&self) -> Duration {
         match self.tone {
             Tone::Hint => HINT_DURATION,
-            Tone::Success | Tone::Warning => FLASH_DURATION,
+            Tone::Success => FLASH_DURATION,
+            Tone::Warning => WARNING_DURATION,
         }
     }
 }
@@ -83,6 +87,7 @@ impl Flash {
 /// real time its expiry keeps.
 #[derive(Debug, Default)]
 pub(crate) struct Motion {
+    paused: Option<Instant>,
     /// When the flash up now began to fade in.
     since: Option<Instant>,
     /// The flash that retired, fading out from when it did.
@@ -104,11 +109,16 @@ impl SheprdWindow {
     /// Replaces whatever flash is up, so the newest gesture is the one answered.
     /// A flash already up takes the new text where it is, without fading again.
     pub(crate) fn show_flash(&mut self, flash: Flash, cx: &mut Context<Self>) {
+        if flash.tone == Tone::Warning {
+            self.notices
+                .record(crate::notice::Cause::Command, flash.text.to_string());
+        }
         let expires = Instant::now() + flash.duration();
         if self.flash.is_none() {
             self.flash_motion.since = Some(motion::now());
         }
         self.flash_motion.leaving = None;
+        self.flash_motion.paused = self.flash_motion.paused.map(|_| Instant::now());
         self.flash = Some((flash, expires));
         cx.notify();
     }
@@ -141,6 +151,7 @@ impl SheprdWindow {
             .filter(|_| fade)
             .map(|(flash, _)| (flash, motion::now()));
         self.flash_motion = Motion {
+            paused: None,
             since: None,
             leaving,
         };
@@ -149,6 +160,9 @@ impl SheprdWindow {
     /// Retires the flash once its time is up. `true` when the window has to
     /// repaint without it.
     pub(crate) fn tick_flash(&mut self, now: Instant) -> bool {
+        if self.flash_motion.paused.is_some() {
+            return false;
+        }
         if self
             .flash
             .as_ref()
@@ -158,6 +172,18 @@ impl SheprdWindow {
         }
         self.clear_flash(true);
         true
+    }
+
+    pub(super) fn pause_flash(&mut self, paused: bool, now: Instant) {
+        if paused {
+            if self.flash.is_some() && self.flash_motion.paused.is_none() {
+                self.flash_motion.paused = Some(now);
+            }
+        } else if let Some(since) = self.flash_motion.paused.take()
+            && let Some((_, until)) = self.flash.as_mut()
+        {
+            *until += now.saturating_duration_since(since);
+        }
     }
 }
 

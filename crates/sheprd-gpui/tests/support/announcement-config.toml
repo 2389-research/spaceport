@@ -1,0 +1,7 @@
+language = "en-US"
+
+[features]
+qa_menu = true
+
+[status_bar]
+show = false

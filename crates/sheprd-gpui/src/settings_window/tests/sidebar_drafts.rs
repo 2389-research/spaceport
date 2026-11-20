@@ -21,7 +21,7 @@ fn settings_with_source(
     let captured = edits.clone();
     let weak = cx.update(|cx| source.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
     let (view, cx) = cx.add_window_view(move |window, cx| {
-        let mut view = SettingsWindow::new(weak, cx);
+        let mut view = fixture_new(weak, cx);
         view.controls.preference_io = Some(controls::preferences::PreferenceIo::recording(
             move |edit| captured.lock().unwrap().push(edit),
         ));

@@ -1,3 +1,5 @@
+// ABOUTME: Declares each app command, public name, label, and default shortcut once.
+// ABOUTME: Generates typed command variants and the discoverable catalog from that table.
 //! The one declaration of every catalog command. Each row of the table at
 //! the end of this file names a command once, and `catalog!` writes the
 //! [`Command`] enum, [`COMMANDS`], and the macOS and Linux default shortcuts
@@ -150,12 +152,13 @@ macro_rules! catalog {
 // Ctrl-Alt-N would take the `ń` a Polish layout types. The second-tier rows
 // keep Ctrl-Alt-Shift, which no layout was checked against: where a layout has
 // a capital of its AltGr letter, AltGr-Shift types it, and Ctrl-Alt-Shift with
-// an arrow or with `r` may be a GNOME key. Those rows keep their chords until
-// a real keyboard says otherwise.
+// an arrow or with `r` conflicts with GNOME defaults. The Linux wrapper removes
+// those bindings; Windows retains them. Real keyboard qualification remains required.
 catalog! {
     OpenNotificationTarget, "open_notification_target", "commands-open-notification-target",
         mac: ["cmd-alt-n"], linux: ["ctrl-alt-shift-u"];
     Logs, "logs", "commands-logs", mac: [], linux: [];
+    Messages, "messages", "commands-messages", mac: [], linux: [];
     // Ctrl-Shift-N, as Windows Terminal opens a window. Ctrl-Alt-N is a
     // letter on an AltGr layout, where AltGr is Ctrl-Alt on Windows.
     NewWindow, "new_window", "commands-new-window",
@@ -226,6 +229,7 @@ catalog! {
     EditScrollback, "edit_scrollback", "commands-edit-scrollback", mac: [], linux: [];
     ClosePane, "close_pane", "commands-close-pane", mac: ["cmd-w"], linux: ["ctrl-shift-w"];
     CloseTab, "close_tab", "commands-close-tab", mac: ["cmd-shift-w"], linux: ["ctrl-alt-shift-w"];
+    CloseWorkspace, "close_workspace", "commands-close-workspace", mac: [], linux: [];
     /// Reopens the focused workspace's most recently closed tab.
     // Ctrl-Shift-T is New Tab here, so its partner gains Alt.
     ReopenClosedTab, "reopen_closed_tab", "commands-reopen-closed-tab",

@@ -1,6 +1,7 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
 
+mod departure;
 mod structure;
 
 fn kinds(lines: &[Line]) -> Vec<Kind> {

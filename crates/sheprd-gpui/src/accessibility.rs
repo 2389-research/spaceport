@@ -1,10 +1,28 @@
+// ABOUTME: Exposes screen-reader actions and cached OS display preferences.
+// ABOUTME: Keeps native accessibility policy separate from element annotations.
 //! Small pieces the chrome uses to tell screen readers what GPUI's own
 //! `aria_*` setters cannot, through AccessKit.
 
+pub(crate) mod policy;
+
 use gpui::{
-    AccessibleAction, App, Context, StatefulInteractiveElement, WeakEntity, Window,
-    accesskit::ActionData,
+    AccessibleAction, App, BoxShadow, Context, InteractiveElement, StatefulInteractiveElement,
+    WeakEntity, Window, accesskit::ActionData, point, prelude::*, px, rgb,
 };
+
+/// Gives an enabled control the shared inset keyboard focus ring.
+pub(crate) fn focusable<E: InteractiveElement>(control: E, color: u32) -> E {
+    let ring = rgb(color);
+    control.tab_index(0).focus_visible(move |style| {
+        style.shadow(vec![BoxShadow {
+            color: ring.into(),
+            offset: point(px(0.), px(0.)),
+            blur_radius: px(0.),
+            spread_radius: px(2.),
+            inset: true,
+        }])
+    })
+}
 
 /// Marks an element unavailable, so a screen reader says so and offers none
 /// of its actions. GPUI has no setter for it, so the node is changed directly

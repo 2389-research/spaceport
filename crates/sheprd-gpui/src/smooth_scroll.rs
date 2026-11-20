@@ -1,9 +1,18 @@
+// ABOUTME: Interpolates terminal panes between authoritative scrollback rows.
+// ABOUTME: Bounds retained history and preserves geometry for input and painting.
 //! Wheel scrolling drawn where the OS's deltas put it, between the daemon's
 //! whole-row surfaces. Uncovered rows are filled from earlier surfaces, and
 //! rows no surface showed are never drawn. The pane rests where the gesture
 //! stops, and hit testing follows (`SheprdWindow::grid_position`).
 
-use sheprd_client::protocol::{FrameData, PaneSurfaceFrame, PaneSurfaceScrollMetrics, SurfaceRect};
+use crate::terminal_painter::ImageTarget;
+use sheprd_client::{
+    SurfaceImages,
+    protocol::{
+        FrameData, PaneSurfaceFrame, PaneSurfaceScrollMetrics, SurfaceGraphicsPlacement,
+        SurfaceRect,
+    },
+};
 use std::{
     collections::VecDeque,
     sync::Arc,
@@ -16,6 +25,16 @@ const SPREAD: Duration = Duration::from_millis(48);
 const MAX_BEHIND: usize = 4;
 const MAX_RECENT: usize = 64;
 
+fn image_overlaps(placement: &SurfaceGraphicsPlacement, rect: SurfaceRect) -> bool {
+    ImageTarget::Main.places(&placement.asset.source)
+        && placement.cols > 0
+        && placement.rows > 0
+        && u32::from(placement.x) < u32::from(rect.x) + u32::from(rect.width)
+        && u32::from(placement.y) < u32::from(rect.y) + u32::from(rect.height)
+        && u32::from(rect.x) < u32::from(placement.x).saturating_add(placement.cols)
+        && u32::from(rect.y) < u32::from(placement.y).saturating_add(placement.rows)
+}
+
 #[derive(Clone)]
 pub(crate) struct Slide {
     pub(crate) pane_id: String,
@@ -27,6 +46,25 @@ pub(crate) struct Slide {
 }
 
 impl Slide {
+    /// Each historical picture supplies only the edge rows newer pictures lack.
+    pub(crate) fn bands(
+        &self,
+    ) -> impl Iterator<Item = (&PaneSurfaceFrame, i32, std::ops::Range<u16>)> {
+        self.behind.iter().scan(0, |filled, (frame, shift)| {
+            let rows = u16::try_from(shift.abs_diff(*filled))
+                .unwrap_or(self.rect.height)
+                .min(self.rect.height);
+            *filled = *shift;
+            let bottom = self.rect.y.saturating_add(self.rect.height);
+            let band = if *shift > 0 {
+                bottom - rows..bottom
+            } else {
+                self.rect.y..self.rect.y + rows
+            };
+            Some((frame.as_ref(), *shift, band))
+        })
+    }
+
     pub(crate) fn paints_like(&self, other: &Self) -> bool {
         self.pane_id == other.pane_id
             && self.rect == other.rect
@@ -264,6 +302,30 @@ impl SmoothScroll {
             motion.pending.clear();
         }
         motion.shown = to;
+    }
+
+    /// Historical metadata may use only the picture's existing, unchanged assets.
+    /// Cancel before replacing those assets; history never owns encoded bytes.
+    pub(crate) fn retain_images(
+        &mut self,
+        shown: &PaneSurfaceFrame,
+        before: &SurfaceImages,
+        next: &SurfaceImages,
+    ) {
+        let Some(motion) = &self.motion else {
+            return;
+        };
+        let changed = std::iter::once(shown)
+            .chain(motion.behind.iter().map(|(frame, _)| frame.as_ref()))
+            .flat_map(|frame| &frame.graphics.placements)
+            .filter(|placement| image_overlaps(placement, motion.rect))
+            .any(|placement| {
+                before.get(&placement.asset).map(|image| image.serial())
+                    != next.get(&placement.asset).map(|image| image.serial())
+            });
+        if changed {
+            self.clear();
+        }
     }
 
     pub(crate) fn moving(&self, now: Instant) -> bool {

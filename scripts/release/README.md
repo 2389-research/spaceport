@@ -35,10 +35,12 @@ completed this route with Sparkle enabled.
 Its [qualification record](../../docs/spaceport/evidence/t12-macos-preview-20261117.1-signed.md)
 covers the public DMG and signed feed; the old feed URL redirect was not rerun.
 Both routes require the selected commit to belong to main and have a complete,
-successful main CI run. D66 temporarily pauses Spaceport Windows CI until
-Kata `h8g5` fixes native performance; macOS/Linux checks remain mandatory,
-and the aggregate gate requires Windows jobs to be skipped. No Windows
-performance budget or acceptance result changes.
+successful main CI run. Review `jvcf` restores Windows formatting, clippy,
+unit/CLI tests, native fixtures and packaging checks alongside macOS/Linux.
+The aggregate gate requires each active job according to its detected inputs.
+Only the Windows performance step remains paused under D66 and Kata `h8g5`;
+`WINDOWS_ENABLED=true` enables that step with its unchanged 100 ms budget.
+A green active-platform run does not establish Windows performance acceptance.
 The signing and publishing jobs re-fetch the tag and refuse it if it moved.
 Only the publishing job receives `contents: write`.
 
@@ -265,7 +267,7 @@ Existing DMG outputs are refused before loading credentials.
 
 The Windows targets are `x86_64-pc-windows-msvc` and
 `aarch64-pc-windows-msvc`. No workflow publishes a Windows package now; CI's
-`windows-package` job, paused for the fork under D66, is the only caller of
+`windows-package` job, selected when packaging inputs change, is the only caller of
 these scripts. `scripts/release/package-windows.py VERSION TARGET BINARY LAUNCHER
 OUTPUT_DIR THIRD_PARTY_NOTICES` (standard-library Python, since the runner has no
 zip tool) writes one `Sheprd-VERSION-TARGET.zip` per target with a same-named root
@@ -287,13 +289,15 @@ CI's `windows-package` job runs the same
 optimized build, packaging, installer build, and install/uninstall check on
 `windows-2025` for any pull request that changes their inputs
 (`scripts/ci-changes.sh` lists them), and the required gate then requires it. The installer is per-user (no elevation),
-installs to `%LOCALAPPDATA%\Programs\Herdr UI` as `site/install.ps1` does, adds
+installs to `%LOCALAPPDATA%\Programs\Spaceport`, adds
 that directory to the user `PATH`, and creates the Start menu shortcut to the
 launcher.
-The smoke test seeds a disabled `Herdr UI` startup entry targeting the legacy
+The smoke test seeds a disabled `Spaceport` startup entry targeting the installed
 launcher and requires the command and `StartupApproved` bytes to survive the
-upgrade unchanged. Setup renames only shortcuts targeting this installation;
-it preserves a preexisting desktop shortcut even without a new desktop task.
+upgrade unchanged. It also seeds the app's notification key and requires uninstall to remove it.
+The compiler and smoke read the AppUserModelID from `crates/sheprd-gpui/development-app-id`.
+The smoke refuses accounts with existing Spaceport installation state.
+The inherited `site/install.ps1` remains a separate upstream installer.
 
 ## Windows Signing
 
@@ -316,13 +320,13 @@ The retained packaging scripts keep inherited Sheprd identities on purpose:
 - The Linux desktop ID is `org.sheprd.Sheprd`, matching the app's Wayland app ID
   and X11 `WM_CLASS`. The chat helper remains `sheprd-acp`. Nix wraps the
   `spaceport` command.
-- Windows retains AppId `{7FA70894-4FC0-4923-BDCB-B05F7475610A}`,
-  `%LOCALAPPDATA%\Programs\Herdr UI`, AppUserModelID `so.pen.herdr-gpui` and
-  publisher `Herdr UI`. ZIPs and installers ship `spaceport.exe`,
-  `spaceport-launcher.exe` and `sheprd-acp.exe`. Shortcuts and Explorer text
-  show Sheprd. The installer registers neither inherited `sheprd://` nor
-  `herdr-gpui://` scheme. Setup gracefully stops automation running under
-  either executable name.
+- Windows uses its own AppId `{E3008A35-FD63-4B85-A416-3FC47E25A820}` and
+  `%LOCALAPPDATA%\Programs\Spaceport`, with the existing development AppUserModelID.
+  The publisher is `2389 Research, Inc`; shortcuts show Spaceport.
+  ZIPs and installers ship `spaceport.exe`, `spaceport-launcher.exe` and `sheprd-acp.exe`.
+  Archive and setup filenames retain their existing `Sheprd-VERSION-TARGET` contract.
+  The installer preserves every existing URL handler and upstream installation.
+  This development identity does not enable production release or signing.
 - Runtime service/state identities and the upstream `herdr-core` / `hc` and
   `herdr` command remain compatible. Preview signing uses the explicit environment
   interface above; no local `.envrc` or signing hook is sourced.

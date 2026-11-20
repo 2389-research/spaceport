@@ -1,3 +1,5 @@
+// ABOUTME: Gives process fixtures private homes, configuration, and daemon addresses.
+// ABOUTME: Checks readiness and cleans up only children created by each fixture.
 //! Shared only by the opt-in integration test harnesses, not production code.
 #[cfg(unix)]
 use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
@@ -177,11 +179,19 @@ impl Sandbox {
         self.socket().exists()
     }
 
-    /// A Windows daemon's named pipe leaves no file behind, so readiness is a
-    /// connection that the probe then closes.
+    /// Check availability without leaving a dead connection for the daemon to accept.
     #[cfg(windows)]
-    fn daemon_listening(&self) -> bool {
-        sheprd_client::Stream::connect(self.socket()).is_ok()
+    #[allow(unsafe_code)]
+    pub(crate) fn daemon_listening(&self) -> bool {
+        use windows_sys::Win32::System::Pipes::{NMPWAIT_NOWAIT, WaitNamedPipeW};
+        // Match interprocess's GenericNamespaced mapping in sheprd-client's transport.
+        let address: Vec<_> = format!(r"\\.\pipe\{}", self.socket().to_string_lossy())
+            .encode_utf16()
+            .chain(Some(0))
+            .collect();
+        // SAFETY: this NUL-terminated buffer lives through the call. The no-wait
+        // timeout bounds inspection; the call creates no handle or client connection.
+        unsafe { WaitNamedPipeW(address.as_ptr(), NMPWAIT_NOWAIT) != 0 }
     }
 }
 

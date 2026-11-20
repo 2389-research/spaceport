@@ -1,9 +1,12 @@
+// ABOUTME: Presents passive usage observations in the status bar and popup panel.
+// ABOUTME: Keeps provider collection and credentials outside the native presentation layer.
 //! Plan usage presentation in the status bar, panel, and Usage section.
 //! No authoritative usage feed is connected; shared host and shell types remain.
 // i18n: migrated
 
 mod details;
 mod icons;
+mod paint;
 mod panel;
 mod render;
 mod section;
@@ -13,6 +16,7 @@ mod ui;
 #[cfg(test)]
 mod tests;
 
+pub(crate) use paint::Paint;
 pub(crate) use panel::PANEL_WIDTH;
 pub(crate) use render::Hint;
 #[cfg(test)]

@@ -47,8 +47,21 @@ impl SheprdWindow {
             indicators,
             fill: self.fill(),
             slot,
-            ring: (self.chrome_region == Some(crate::window::chrome_focus::Region::TitleBar))
-                .then(|| self.theme.primary()),
+            ring: (self.chrome_region == Some(crate::window::chrome_focus::Region::TitleBar)).then(
+                || {
+                    let fill = |selected, active| {
+                        self.tab_layout()
+                            .colors(TabState { selected, active }, &self.theme)
+                            .0
+                    };
+                    // The chosen layout owns these fills, including its accent wash.
+                    crate::contrast::ink_on_chrome(
+                        self.theme.primary(),
+                        [fill(true, true), fill(true, false), fill(false, true)],
+                        self.theme.contrast.mark_ratio(),
+                    )
+                },
+            ),
         }
     }
 

@@ -120,8 +120,8 @@ impl TerminalPainter {
                         counts.shapes += 1;
                     }
                     let line = self.shape(font, style, &cell.symbol, window);
-                    if cached && self.glyphs.has_room() {
-                        self.glyphs.insert(style, &cell.symbol, line)
+                    if cached && let Some(slot) = self.glyphs.room() {
+                        self.glyphs.insert(slot, style, &cell.symbol, line)
                     } else {
                         newly_shaped = line;
                         &newly_shaped

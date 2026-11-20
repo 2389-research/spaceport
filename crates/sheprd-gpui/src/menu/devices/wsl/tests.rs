@@ -4,7 +4,13 @@ use crate::{SheprdWindow, search_input::SearchInput, sidebar::layout_tests::fixt
 use gpui::{AppContext, Context, KeyDownEvent, Keystroke, Modifiers, Point, TestAppContext};
 use sheprd_client::{ConnectTarget, WslHost};
 
+mod departure;
 mod en_xa;
+mod fresh_confirmation;
+mod paint_controls;
+
+pub(in crate::menu) use departure::fixture as departure_fixture;
+pub(in crate::menu) use departure::long_fixture;
 
 fn wsl(distro: &str) -> WslHost {
     WslHost {
@@ -21,6 +27,8 @@ fn open_form(view: &mut SheprdWindow, distros: &[&str], cx: &mut Context<SheprdW
         step: Step::Form,
         task: None,
         error: None,
+        scroll: gpui::ScrollHandle::new(),
+        list_bounds: Default::default(),
     });
     view.menu.page = Some(Page::AddWsl);
 }

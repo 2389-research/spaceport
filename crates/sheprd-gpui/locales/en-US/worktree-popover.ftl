@@ -9,6 +9,7 @@ worktree-popover-unmute = Unmute notifications
 worktree-popover-mute-button = Mute
 worktree-popover-unmute-button = Unmute
 worktree-popover-rename = Rename
+worktree-popover-close-workspace = Close workspace
 worktree-popover-note = Note...
 worktree-popover-open-worktree = Open worktree...
 worktree-popover-expand-group = Expand group

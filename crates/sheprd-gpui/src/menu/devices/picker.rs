@@ -16,6 +16,10 @@ use sheprd_client::ConnectTarget;
 
 use super::rail::add_device_offer;
 
+mod paint;
+mod render;
+pub(in crate::menu::devices) use paint::PickerPaint;
+
 /// A line of the picker, in paint order.
 pub(in crate::menu) enum Line {
     All,
@@ -234,391 +238,40 @@ impl SheprdWindow {
         }
     }
 
-    pub(in crate::menu) fn render_devices(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        if let Some(child) = self.menu.devices_reveal.get() {
-            if self.menu.devices_scroll.bounds().size.height > px(0.) {
-                self.menu.devices_scroll.scroll_to_item(child);
-                // The sessions grow open: follow them until they are open.
-                let opening = self.menu.unfolded_since.is_some_and(|since| {
-                    crate::motion::progress(
-                        since,
-                        crate::motion::now(),
-                        crate::motion::duration(crate::motion::ENTER),
-                    )
-                    .is_some()
-                });
-                if !opening {
-                    self.menu.devices_reveal.set(None);
-                }
-            } else {
-                // Laid out for the first time this frame: reveal on the next.
-                cx.notify();
-            }
+    #[cfg(test)]
+    fn picker_unfold_fraction(&self, now: std::time::Instant) -> f32 {
+        if !self.menu.appear.live {
+            return 1.;
         }
-        let mut view = div()
-            .id("devices-list")
-            .max_h(device_list_height(self.menu.anchor.y))
-            .overflow_y_scroll()
-            .track_scroll(&self.menu.devices_scroll)
-            .flex()
-            .flex_col()
-            .gap(px(4.))
-            .child(
-                div()
-                    .p(px(8.))
-                    .flex()
-                    .items_center()
-                    .justify_between()
-                    .gap(px(8.))
-                    .text_color(rgb(self.theme.muted))
-                    .child(div().flex_none().child(fl!("devices-heading")))
-                    .child(
-                        // Wraps rather than cutting a longer language short.
-                        div()
-                            .min_w_0()
-                            .text_size(px(self.config.ui.size * 0.85))
-                            .child(multi_select_hint()),
-                    ),
-            );
-        let mut ordinal = 0;
-        let mut session_row = 0;
-        // The unfolded device's session lines, which open as one block under
-        // their device rather than each popping in on its own.
-        let mut unfolded: Vec<AnyElement> = Vec::new();
-        for line in self.picker_lines() {
-            let selected = self.menu.selected == Some(ordinal);
-            let element = match &line {
-                Line::Session(Entry::Row { row, spec }) => {
-                    let element =
-                        self.sessions_row(session_row, ordinal, row.clone(), selected, spec, cx);
-                    session_row += 1;
-                    Some(element)
-                }
-                Line::Session(entry) => self.session_note(entry),
-                _ => self.device_row(&line).map(|index| {
-                    self.render_device_row(&line, index, ordinal, selected, cx)
-                        .into_any_element()
-                }),
-            };
-            if let Some(element) = element {
-                match line {
-                    Line::Session(_) => {
-                        unfolded.push(
-                            session_indent(&self.theme)
-                                .child(element)
-                                .into_any_element(),
-                        );
-                    }
-                    _ => {
-                        view = self.unfolded_sessions(view, &mut unfolded);
-                        view = view.child(element);
-                        if let Line::Device(index) = line {
-                            view = self.folding_sessions(view, index, cx);
-                        }
-                    }
-                }
-            }
-            if line.selectable() {
-                ordinal += 1;
-            }
-        }
-        view = self.unfolded_sessions(view, &mut unfolded);
-        view = view.children(self.render_core_machine_catalog(cx));
-        // The card stays put above the list, which scrolls on its own.
-        div()
-            .flex()
-            .flex_col()
-            .child(self.render_activity_card(cx))
-            .child(view)
+        crate::motion::progress(
+            self.menu.unfolded_since.unwrap_or(now),
+            now,
+            crate::motion::duration(crate::motion::ENTER),
+        )
+        .map_or(1., |progress| {
+            self.menu.unfold_from + (1. - self.menu.unfold_from) * progress
+        })
     }
 
-    /// The unfolded device's session lines, as one block that grows open
-    /// under its device; nothing when no device is unfolded. The id follows
-    /// the device, so unfolding another plays the opening again.
-    fn unfolded_sessions(&self, view: Stateful<Div>, lines: &mut Vec<AnyElement>) -> Stateful<Div> {
-        if lines.is_empty() {
-            return view;
+    fn picker_folding(&self, index: usize, now: std::time::Instant) -> Option<(&Folding, f32)> {
+        #[cfg(test)]
+        if !self.menu.appear.live {
+            return None;
         }
-        let device = self.menu.unfolded_device.clone().unwrap_or_default();
-        let rows = self.menu.unfolded_rows.clone();
-        view.child(crate::motion::unfold(
-            div()
-                .flex()
-                .flex_col()
-                .gap(px(4.))
-                .on_children_prepainted(move |bounds, _, _| *rows.borrow_mut() = bounds)
-                .children(lines.drain(..)),
-            ElementId::Name(format!("device-sessions-{device}").into()),
-            self.menu.unfolded_height.clone(),
-            self.menu.unfolded_since.unwrap_or_else(crate::motion::now),
-            self.menu.unfold_from,
-        ))
-    }
-
-    /// The sessions of device `index` while they close after it folded.
-    /// They are only a picture of what was there: nothing in them takes the
-    /// pointer, and the keys never reach them.
-    fn folding_sessions(
-        &self,
-        view: Stateful<Div>,
-        index: usize,
-        cx: &mut Context<Self>,
-    ) -> Stateful<Div> {
-        // Unit tests see the fold finished at once.
-        if cfg!(test) {
-            return view;
-        }
-        let Some(folding) = self.menu.folding.as_ref().filter(|folding| {
+        let folding = self.menu.folding.as_ref().filter(|folding| {
             self.endpoints
                 .get(index)
                 .is_some_and(|endpoint| endpoint.id == folding.device)
-        }) else {
-            return view;
-        };
-        if folding.shown(crate::motion::now()).is_none() {
-            return view;
-        }
-        let mut lines = div().relative().flex().flex_col().gap(px(4.));
-        let mut row = 0;
-        for entry in self.device_session_entries(index) {
-            let element = match &entry {
-                Entry::Row { row: choice, spec } => {
-                    row += 1;
-                    self.sessions_row(row - 1, usize::MAX, choice.clone(), false, spec, cx)
-                }
-                _ => match self.session_note(&entry) {
-                    Some(note) => note,
-                    None => continue,
-                },
-            };
-            lines = lines.child(session_indent(&self.theme).child(element));
-        }
-        view.child(crate::motion::fold(
-            lines.child(
-                div()
-                    .id("device-sessions-folding-cover")
-                    .absolute()
-                    .inset_0()
-                    .occlude(),
-            ),
-            ElementId::Name(format!("device-sessions-folding-{}", folding.device).into()),
-            folding.height,
-            folding.since,
-        ))
-    }
-
-    /// All Devices, one device, or Add Device. `index` is the row's place in
-    /// [`Self::choose_device`] and names its selectors.
-    fn render_device_row(
-        &self,
-        line: &Line,
-        index: usize,
-        ordinal: usize,
-        selected: bool,
-        cx: &mut Context<Self>,
-    ) -> Div {
-        let endpoint = match line {
-            Line::Device(device) => self.endpoints.get(*device),
-            _ => None,
-        };
-        let (label, detail, checked, enabled) = match (line, endpoint) {
-            (Line::All, _) => (
-                fl!("devices-all"),
-                fl!(
-                    "devices-all-detail",
-                    count = self.endpoints.len(),
-                    connected = self
-                        .endpoints
-                        .iter()
-                        .filter(|e| e.live.status.is_connected())
-                        .count()
-                ),
-                self.device_filter == DeviceScope::All,
-                true,
-            ),
-            (_, Some(endpoint)) => (
-                endpoint.label.clone(),
-                fl!(
-                    "devices-row-detail",
-                    place = Self::device_detail(&endpoint.connection.target),
-                    state = endpoint.status_label()
-                ),
-                self.device_filter.picks(&endpoint.id),
-                endpoint.enabled(),
-            ),
-            _ => (
-                fl!("devices-add"),
-                self.device_setup_unavailable()
-                    .map_or_else(add_device_offer, SetupUnavailable::text),
-                false,
-                self.device_setup_unavailable().is_none(),
-            ),
-        };
-        let leading = match line {
-            Line::All => Some("icons/devices.svg"),
-            Line::AddDevice => Some("icons/plus.svg"),
-            _ => None,
-        };
-        let row = div()
-            .id(("device-row", index))
-            .debug_selector(move || format!("device-row-{index}"))
-            .p(px(8.))
-            .rounded(px(crate::config::corners::CONTROL))
-            .flex_none()
-            .flex()
-            .items_center()
-            .gap(px(8.))
-            .when(selected, |s| s.bg(rgb(self.theme.active)))
-            // The current scope is highlighted as a session row marks its
-            // current session, rather than with a trailing check.
-            .when(checked, |s| s.bg(rgb(self.theme.primary_wash())))
-            .when(enabled, |s| s.cursor_pointer())
-            .text_color(rgb(if enabled {
-                self.theme.foreground
-            } else {
-                self.theme.muted
-            }))
-            .child(
-                div()
-                    .flex_1()
-                    .min_w_0()
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .justify_between()
-                            .gap(px(8.))
-                            .when_some(leading, |row, path| {
-                                row.child(svg().path(path).size(px(16.)).flex_none().text_color(
-                                    rgb(if enabled {
-                                        self.theme.foreground
-                                    } else {
-                                        self.theme.muted
-                                    }),
-                                ))
-                            })
-                            .child(
-                                div()
-                                    .flex_1()
-                                    .min_w_0()
-                                    .truncate()
-                                    .when(checked, |label| {
-                                        label
-                                            .debug_selector(move || {
-                                                format!("device-current-{index}")
-                                            })
-                                            .font_weight(FontWeight::SEMIBOLD)
-                                    })
-                                    .child(label),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .text_size(px(self.config.ui.size * 0.85))
-                            .text_color(rgb(self.theme.muted))
-                            .child(detail),
-                    ),
+        })?;
+        folding.shown(now)?;
+        let shown = 1.
+            - crate::motion::progress(
+                folding.since,
+                now,
+                crate::motion::duration(crate::motion::LEAVE),
             )
-            .when_some(endpoint, |row, endpoint| {
-                row.child(
-                    div()
-                        .debug_selector(move || format!("device-dot-{index}"))
-                        .size(px(7.))
-                        .flex_none()
-                        .rounded_full()
-                        .bg(rgb(if endpoint.live.status.is_connected() {
-                            colors::online(&self.theme)
-                        } else {
-                            self.theme.muted
-                        })),
-                )
-            })
-            .when_some(
-                match line {
-                    Line::Device(device) => endpoint.map(|endpoint| (*device, endpoint)),
-                    _ => None,
-                },
-                |row, (device, endpoint)| {
-                    row.child(self.render_session_chip(device, index, endpoint, cx))
-                },
-            )
-            .on_hover(cx.listener(move |this, hovered, _, cx| {
-                if *hovered {
-                    this.menu.selected = Some(ordinal);
-                    cx.notify();
-                }
-            }))
-            .on_click(cx.listener(move |this, event: &ClickEvent, window, cx| {
-                if crate::keymap::secondary(&event.modifiers()) {
-                    this.toggle_listed_device(index, window, cx);
-                } else {
-                    this.choose_device(index, window, cx);
-                }
-            }));
-        div().flex_none().child(row)
-    }
-
-    /// The session a device is on, which unfolds the device's other sessions
-    /// beneath it and folds them away again.
-    fn render_session_chip(
-        &self,
-        device: usize,
-        index: usize,
-        endpoint: &crate::endpoint::Endpoint,
-        cx: &mut Context<Self>,
-    ) -> Stateful<Div> {
-        let theme = &self.theme;
-        let unfolded = self.menu.unfolded_device.as_ref() == Some(&endpoint.id);
-        div()
-            .id(("device-sessions", index))
-            .debug_selector(move || format!("device-sessions-{index}"))
-            .role(Role::Button)
-            .aria_label(fl!(
-                "devices-sessions-toggle",
-                device = endpoint.label.as_str()
-            ))
-            .flex_none()
-            .max_w(px(96.))
-            .flex()
-            .items_center()
-            .gap(px(4.))
-            .pl(px(6.))
-            .pr(px(4.))
-            .py(px(2.))
-            .rounded(px(crate::config::corners::SMALL))
-            .cursor_pointer()
-            .hover(|s| s.bg(colors::action_hover(theme)))
-            .text_size(px(self.config.ui.size * 0.85))
-            .text_color(rgb(theme.subtext()))
-            .child(match &endpoint.connection.target {
-                // An explicit socket names no session of its own.
-                ConnectTarget::Socket(_) => svg()
-                    .path("icons/sessions.svg")
-                    .size(px(12.))
-                    .flex_none()
-                    .text_color(rgb(theme.subtext()))
-                    .into_any_element(),
-                target => div()
-                    .min_w_0()
-                    .truncate()
-                    .child(target_session(target))
-                    .into_any_element(),
-            })
-            .child(
-                svg()
-                    .path(if unfolded {
-                        "icons/chevron-up.svg"
-                    } else {
-                        "icons/chevron-down.svg"
-                    })
-                    .size(px(10.))
-                    .flex_none()
-                    .text_color(rgb(theme.muted)),
-            )
-            .on_click(cx.listener(move |this, _, _, cx| {
-                cx.stop_propagation();
-                this.toggle_unfolded(device, cx);
-            }))
+            .unwrap_or(1.);
+        Some((folding, shown))
     }
 
     /// The picker's rows after the devices: Add Device.

@@ -250,11 +250,15 @@ def fixture_processes(root, paths):
                             capture_output=True, text=True, timeout=5, check=True)
     if len(result.stdout) > LIMIT or result.stderr:
         raise ValueError('Executable-path census failed or exceeded its bound')
+    return parse_fixture_processes(result.stdout, root, paths)
+
+
+def parse_fixture_processes(output, root, paths):
     prefixes = [str(Path(root).resolve()) + '/'] + [str(path) + '/' for path in paths]
     matches = []
-    for line in result.stdout.splitlines():
+    for line in output.splitlines():
         fields = line.strip().split(None, 2)
-        if len(fields) != 3 or not fields[0].isdigit() or not fields[1].isdigit():
+        if len(fields) != 3 or not fields[0].isdigit() or not re.fullmatch(r'-?[0-9]+', fields[1]):
             raise ValueError('Executable-path census returned an unexpected row')
         executable = str(Path(fields[2]).resolve()) if fields[2].startswith('/') else ''
         if int(fields[0]) != os.getpid() and any(executable.startswith(prefix) for prefix in prefixes):

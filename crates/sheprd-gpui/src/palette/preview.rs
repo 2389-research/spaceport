@@ -24,6 +24,7 @@ const MAX_FACTS: usize = 10;
 const MIN_FONT_SIZE: f32 = 5.;
 
 /// What the preview shows for the selected Go To row.
+#[derive(Clone)]
 pub(super) enum Preview {
     /// Cells of `rect` within a surface this client already holds.
     Screen {

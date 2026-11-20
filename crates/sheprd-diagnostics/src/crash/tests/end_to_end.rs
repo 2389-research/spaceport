@@ -15,12 +15,16 @@ fn crashing_child() {
     let Some(kind) = std::env::var_os(CHILD) else {
         return;
     };
-    crate::init(crate::Targets {
-        crate_prefix: "",
-        roots: &["sheprd_diagnostics"],
-    })
+    let state = PathBuf::from(std::env::var_os("XDG_STATE_HOME").unwrap()).join("spaceport");
+    crate::init(
+        crate::Targets {
+            crate_prefix: "",
+            roots: &["sheprd_diagnostics"],
+        },
+        Some(&state),
+    )
     .unwrap();
-    install("1.2.3");
+    install("1.2.3", Some(&state));
     match kind.to_str() {
         Some("panic") => panic!("deliberate test panic"),
         #[cfg(windows)]

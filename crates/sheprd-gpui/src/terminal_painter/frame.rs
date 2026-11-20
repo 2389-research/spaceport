@@ -8,14 +8,13 @@ use super::decoration_spans;
 use super::graphics::Graphic;
 use super::grid::{Ground, background_extent, grid_rect, last_row_has_separator};
 use super::highlight::Highlight;
-use super::images::{ImageGeometry, PlacedImages, below_text};
+#[cfg(test)]
+use super::image_probe;
+use super::images::{PlacedImages, below_text};
 use crate::terminal::{HIDDEN, Scrollbar, cell_colors, in_rect, on_default_background};
-use gpui::{
-    App, Bounds, Corners, Font, Pixels, Point, RenderImage, Size, Window, fill, point, px, rgb,
-    rgba, size,
-};
+use gpui::{App, Bounds, Font, Pixels, Point, Size, Window, fill, point, px, rgb, rgba, size};
 use sheprd_client::protocol::{CellData, FrameData, PaneSurfacePane, SurfaceRect};
-use std::{sync::Arc, time::Instant};
+use std::time::Instant;
 
 /// The theme's scrollbar thumb: inset from the daemon's cell rect, and drawn
 /// at this alpha over what it covers.
@@ -50,6 +49,7 @@ impl TerminalPainter {
         let started = Instant::now();
         let mut paint_errors = 0_u64;
         self.configure(font);
+        self.glyphs.begin_paint();
         let cached = true;
         #[cfg(feature = "integration-test")]
         let cached = cached && !self.uncached;
@@ -106,6 +106,8 @@ impl TerminalPainter {
         // second layer above the text.
         if draws(Layer::Backgrounds) {
             window.paint_layer(Bounds::new(origin, background), |window| {
+                #[cfg(test)]
+                image_probe::cells(Layer::Backgrounds, images, grid, window);
                 // Backgrounds precede all glyphs, including wide graphemes' skip cells.
                 let width = usize::from(frame.width);
                 for range in cell_ranges(frame, area) {
@@ -187,6 +189,8 @@ impl TerminalPainter {
                     }
                 }
                 if text_with_backgrounds {
+                    #[cfg(test)]
+                    image_probe::cells(Layer::Text, images, grid, window);
                     paint_errors += self.paint_text(
                         frame,
                         area,
@@ -206,6 +210,8 @@ impl TerminalPainter {
         if !text_with_backgrounds && draws(Layer::Text) {
             paint_errors += self.paint_images(&below, window);
             window.paint_layer(grid, |window| {
+                #[cfg(test)]
+                image_probe::cells(Layer::Text, images, grid, window);
                 paint_errors += self.paint_text(
                     frame,
                     area,
@@ -223,6 +229,8 @@ impl TerminalPainter {
         }
         if draws(Layer::Decorations) {
             window.paint_layer(grid, |window| {
+                #[cfg(test)]
+                image_probe::cells(Layer::Decorations, images, grid, window);
                 // Box and block graphics are quads, so they share this layer to stay
                 // above the backgrounds. Decorations cover the grid, including spaces
                 // and wide-glyph continuation cells.
@@ -370,28 +378,5 @@ impl TerminalPainter {
         if let Some(count) = self.diagnostics.take_errors(now, paint_errors) {
             tracing::warn!(category = "glyph_paint", count, "Terminal paint failed");
         }
-    }
-
-    /// Paints images in order, returning how many failed.
-    fn paint_images(
-        &mut self,
-        placed: &[(i32, ImageGeometry, Arc<RenderImage>)],
-        window: &mut Window,
-    ) -> u64 {
-        let mut failed = 0;
-        for (_z, geometry, texture) in placed {
-            let painted = window.paint_image(
-                geometry.visible,
-                geometry.image,
-                Corners::default(),
-                texture.clone(),
-                0,
-                false,
-            );
-            failed += u64::from(painted.is_err());
-            #[cfg(test)]
-            self.painted_images.push((*_z, geometry.visible));
-        }
-        failed
     }
 }

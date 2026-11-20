@@ -8,7 +8,7 @@ about-repository = { $name } repository
 about-modifications = { $name } modifications { $copyright } { $publisher }
 about-original-copyright = Original { $name } work { $copyright } { $author }.
 about-notices = Third-party notices
-about-summary = Native workspace for terminals and AI agents, powered by Herdr and herdr-core.
+about-summary = Native workspace for terminals and AI agents, powered by Herdr TUI and Herdr Core.
 # The project names are kept verbatim in every locale.
 about-upstream-credits = Built on work by the { $sheprd } and { $herdr } teams.
 about-unaffiliated = An independent fork, not affiliated with or endorsed by the { $herdr } or { $sheprd } teams.

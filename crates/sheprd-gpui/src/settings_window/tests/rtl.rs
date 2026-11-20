@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 //! Settings under `en-XB`: the section list leads from the right and
 //! resizes by its left edge, and the page's rows set from the right.
 use super::*;
@@ -10,7 +12,7 @@ fn the_section_list_leads_from_the_right_and_resizes_by_its_left_edge(cx: &mut T
     let main = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let weak = cx.update(|cx| main.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
     let (view, cx) = cx.add_window_view(|window, cx| {
-        let view = SettingsWindow::new(weak, cx);
+        let view = fixture_new(weak, cx);
         window.focus(&view.focus, cx);
         view
     });

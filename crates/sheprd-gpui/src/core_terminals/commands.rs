@@ -103,8 +103,10 @@ impl SheprdWindow {
             // The last pane closes as its tab does: the window's own close.
             Command::ClosePane if panes.len() > 1 => {
                 // A mirror's pane stops watching; the terminal runs on.
-                if self.remove_core_pane(tab, &terminal, window, cx) && !observe {
-                    self.end_core_terminal(terminal);
+                if observe {
+                    self.remove_core_pane(tab, &terminal, window, cx);
+                } else {
+                    self.open_core_pane_close(tab, terminal, window, cx);
                 }
             }
             _ => return false,
@@ -135,7 +137,13 @@ impl SheprdWindow {
         let Some(id) = Store::update(cx, |store| {
             store.open(scope, &workspace, Some(location), None)
         }) else {
-            self.show_flash(Flash::warning(fl!("core-terminals-too-many-tabs")), cx);
+            self.show_flash(
+                Flash::warning(crate::browser::open_error(
+                    cx,
+                    fl!("core-terminals-too-many-tabs"),
+                )),
+                cx,
+            );
             return;
         };
         self.sync_core_views(cx);

@@ -1,3 +1,5 @@
+// ABOUTME: Defines the pure terminal emulator and its bounded wire-cell output.
+// ABOUTME: Exposes semantic input, damage, and terminal state without transport or GPUI.
 //! A pure terminal emulator: raw PTY bytes in, Herdr's cell model out.
 #![doc = include_str!("../README.md")]
 
@@ -5,6 +7,7 @@ mod cells;
 mod damage;
 mod emulator;
 mod error;
+mod handler;
 pub mod input;
 mod listener;
 mod modes;

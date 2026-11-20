@@ -1,3 +1,5 @@
+// ABOUTME: Checks chat selection projections, boundaries, and invalidation.
+// ABOUTME: Uses full preparation when fixtures supply no append provenance.
 #![allow(clippy::unwrap_used)]
 
 use super::*;
@@ -24,7 +26,7 @@ fn prepare(entries: Vec<Entry>) -> (Transcript, Prepared, Vec<(EntryId, u64)>) {
         .map(|entry| (entry.id, 1))
         .collect::<Vec<_>>();
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, |_, _| false);
     (transcript, prepared, keys)
 }
 
@@ -170,13 +172,13 @@ fn unchanged_projection_is_shared_and_append_preserves_selection() {
     selection.select_all(prepared.text());
     transcript.entries.push(agent(1, "later"));
     keys.push((EntryId(1), 1));
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, |_, _| false);
     assert!(Rc::ptr_eq(&projected, &prepared.text().entries[0]));
     assert!(!selection.validate(prepared.text()));
     assert_eq!(selection.text(prepared.text()).as_deref(), Some("stable"));
     transcript.entries[1] = agent(1, "later changed");
     keys[1].1 += 1;
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, |_, _| false);
     assert!(!selection.validate(prepared.text()));
 }
 
@@ -188,13 +190,13 @@ fn changing_an_interior_selected_entry_or_reordering_invalidates() {
     selection.select_all(prepared.text());
     transcript.entries[1] = agent(3, "changed");
     keys[1].1 += 1;
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, |_, _| false);
     assert!(selection.text(prepared.text()).is_none());
     assert!(selection.validate(prepared.text()));
     selection.select_all(prepared.text());
     transcript.entries.swap(0, 1);
     keys.swap(0, 1);
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, |_, _| false);
     assert!(selection.validate(prepared.text()));
 }
 
@@ -205,7 +207,7 @@ fn snapshot_reset_fences_old_keys_even_when_ids_and_revisions_are_reused() {
     let mut selection = Selection::default();
     selection.select_all(prepared.text());
     prepared.clear();
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, |_, _| false);
     assert!(selection.validate(prepared.text()));
     assert!(!selection.press(prepared.text(), old, 1, false));
     assert_ne!(old.key, caret(prepared.text(), 1, 0, 0, 0, 1).key);
@@ -217,7 +219,7 @@ fn remote_file_destinations_match_visible_expanded_labels() {
         prepare(vec![agent(1, "Read [**source** file](src/main.rs:5).")]);
     let old = caret(prepared.text(), 1, 0, 0, 0, 0);
     prepared.set_remote_links(true);
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, |_, _| false);
     assert!(prepared.text().segment(old.key).is_none());
     let new = caret(prepared.text(), 1, 0, 0, 0, 0);
     assert_eq!(
@@ -249,7 +251,7 @@ fn notice_answers_and_inert_source_have_distinct_segments() {
             .contains("<record>")
     );
     prepared.set_expanded(&std::collections::HashSet::from([EntryId(4)]));
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, |_, _| false);
     assert!(selection.validate(prepared.text()));
     let document = prepared.text();
     assert_eq!(
@@ -375,7 +377,7 @@ fn folded_thoughts_and_tools_never_leak_hidden_text_across_messages() {
         Some("before\n\nvisible thought\n\nRead file\n\nafter")
     );
     prepared.set_expanded(&std::collections::HashSet::from([EntryId(2), EntryId(3)]));
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, |_, _| false);
     assert!(selection.validate(prepared.text()));
     selection.select_all(prepared.text());
     let text = selection.text(prepared.text()).unwrap();
@@ -401,7 +403,7 @@ fn toggling_an_unselected_record_preserves_existing_selection() {
     let start = caret(prepared.text(), 1, 0, 0, 0, 0);
     selection.press(prepared.text(), start, 3, false);
     prepared.set_expanded(&std::collections::HashSet::from([EntryId(2)]));
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, |_, _| false);
     assert!(!selection.validate(prepared.text()));
     assert_eq!(selection.text(prepared.text()).as_deref(), Some("stable"));
 }

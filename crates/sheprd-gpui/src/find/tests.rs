@@ -1,3 +1,5 @@
+// ABOUTME: Checks terminal search requests, results, and visible failures.
+// ABOUTME: Preserves viewport and request ownership across query changes.
 use super::*;
 use crate::{
     scrollback::{refresh_from, reveal_offset},
@@ -184,7 +186,7 @@ fn other_errors_are_reported_and_cleared_by_the_next_edit() {
     search.send_failed(&sheprd_client::Error::Full);
     assert_eq!(
         search.error(),
-        Some("Too many commands are waiting for the daemon; try again.")
+        Some("Too many commands are waiting. Let them finish before trying again.")
     );
     assert!(search.next_request(&shown).is_none());
 }

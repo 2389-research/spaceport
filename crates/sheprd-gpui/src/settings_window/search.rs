@@ -13,12 +13,35 @@ use std::collections::HashMap;
 pub(super) struct RowBounds(pub HashMap<SharedString, Bounds<Pixels>>);
 impl Global for RowBounds {}
 
+/// Navigation and custom choices can scroll into view without becoming catalog rows.
+#[derive(Default)]
+pub(super) struct FocusBounds(pub HashMap<SharedString, Bounds<Pixels>>);
+impl Global for FocusBounds {}
+
 /// Records the bounds of the element it is a child of under `id`. Absolute, so
 /// it takes no room in the row's layout.
-pub(super) fn track_bounds(id: SharedString) -> impl IntoElement {
+pub(super) fn track_bounds(id: SharedString, bottom_border: Pixels) -> impl IntoElement {
+    bounds_probe(id, bottom_border, |id, bounds, cx| {
+        cx.default_global::<RowBounds>().0.insert(id, bounds);
+    })
+}
+
+pub(super) fn track_focus_bounds(id: SharedString, bottom_border: Pixels) -> impl IntoElement {
+    bounds_probe(id, bottom_border, |id, bounds, cx| {
+        cx.default_global::<FocusBounds>().0.insert(id, bounds);
+    })
+}
+
+fn bounds_probe(
+    id: SharedString,
+    bottom_border: Pixels,
+    record: impl FnOnce(SharedString, Bounds<Pixels>, &mut App) + 'static,
+) -> impl IntoElement {
     canvas(
-        move |bounds, _, cx| {
-            cx.default_global::<RowBounds>().0.insert(id, bounds);
+        move |mut bounds, _, cx| {
+            // A full-size absolute child excludes its parent's border.
+            bounds.size.height += bottom_border;
+            record(id, bounds, cx);
         },
         |_, _, _, _| {},
     )
@@ -170,7 +193,7 @@ impl SettingsWindow {
                     }
                     row.control(
                         div()
-                            .text_size(px(10.))
+                            .text_size(rems(0.625))
                             .text_color(rgb(theme.subtext()))
                             .child(entry.section.label()),
                     )
@@ -178,6 +201,7 @@ impl SettingsWindow {
                     .id(ElementId::Name(id.into()))
                     .role(Role::Button)
                     .aria_label(title)
+                    .map(|row| ui::focusable(theme, row, true))
                     .when(!description.is_empty(), |row| {
                         row.aria_description(description)
                     })

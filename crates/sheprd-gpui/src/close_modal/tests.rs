@@ -3,6 +3,12 @@ use super::*;
 use core::prelude::v1::test;
 use std::sync::Arc;
 
+mod accessibility;
+mod batch;
+mod batch_labels;
+mod context;
+mod core_only;
+mod departure;
 mod en_xa;
 mod interrupts;
 mod pane_option;
@@ -106,7 +112,7 @@ fn tab_icon_bounds_and_inactive_cross_confirmation(cx: &mut TestAppContext) {
         view.read_with(cx, |view, _| {
             assert!(view.menu.page == Some(Page::ConfirmClose));
             let close = view.menu.close.as_ref().unwrap();
-            assert_eq!(close.tab, "inactive");
+            assert!(matches!(&close.target, Target::Herdr(target) if target.tab == "inactive"));
             assert!(!close.confirm_selected);
             assert_eq!(
                 close.request(view.live.snapshot.as_ref().unwrap()).unwrap(),

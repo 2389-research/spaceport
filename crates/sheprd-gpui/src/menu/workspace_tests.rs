@@ -1,9 +1,12 @@
+// ABOUTME: Shares workspace menu fixtures and focused topic tests.
+// ABOUTME: Keeps platform gates attached only to the code they protect.
 #![allow(clippy::unwrap_used)]
 
 use super::{WorkspaceAction, WorkspaceMenuAction, WorkspaceTarget};
 use crate::{SheprdWindow, dialog_input::DialogInput, sidebar};
 use sheprd_client::Method;
 
+mod departure;
 mod dialog_layout;
 mod en_xa;
 mod excluded_creation;
@@ -20,10 +23,8 @@ mod removed_orchestrator;
 mod scripts;
 mod targets;
 mod tiles;
-// Host scripts, which find and start agents, need a POSIX client.
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+mod workspace_close;
 /// Presses the open workspace dialog's submit, for `endpoint::lifecycle_tests`.
-#[cfg(unix)]
 pub(crate) fn submit_dialog(
     view: &mut SheprdWindow,
     window: &mut gpui::Window,
@@ -44,9 +45,7 @@ pub(crate) fn target_id(view: &SheprdWindow) -> Option<&str> {
     view.menu.target.as_ref().map(|target| target.id.as_str())
 }
 
-// Drives the workspace menu for `endpoint::lifecycle_tests`, which needs POSIX
-// sockets and processes and is therefore compiled there only.
-#[cfg(unix)]
+// Drives the workspace menu through the connected lifecycle fixture.
 pub(crate) fn submit_focus_change(
     view: &mut SheprdWindow,
     method: Method,

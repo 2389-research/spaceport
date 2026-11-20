@@ -1,8 +1,43 @@
+// ABOUTME: Locates configuration, tools, and isolated application state.
+// ABOUTME: Separates compiled build namespaces from platform root discovery.
 //! Where this user's files and tools live, for an app started from the
 //! desktop rather than a shell: the home directory, the configuration root,
 //! Spaceport's state directory, and a `PATH` with the directories a GUI launch
 //! leaves out.
 use std::{ffi::OsString, path::PathBuf};
+
+pub const PREVIEW_STATE_NAMESPACE: &str = "spaceport";
+
+/// A stable, bounded state name from the application's compiled identity.
+/// Preview versions share state; development profiles and worktrees stay apart.
+pub fn state_namespace(preview: bool, profile: &str, worktree: Option<&str>) -> Option<String> {
+    if preview {
+        return Some(PREVIEW_STATE_NAMESPACE.to_owned());
+    }
+    if !valid_namespace(profile) || profile.len() > 32 {
+        return None;
+    }
+    let mut name = format!("spaceport-development-{profile}");
+    if let Some(worktree) = worktree {
+        if worktree.is_empty() {
+            return None;
+        }
+        let mut hash = 0xcbf2_9ce4_8422_2325_u64;
+        for byte in worktree.as_bytes() {
+            hash ^= u64::from(*byte);
+            hash = hash.wrapping_mul(0x0100_0000_01b3);
+        }
+        name.push_str(&format!("-{hash:016x}"));
+    }
+    Some(name)
+}
+
+fn valid_namespace(name: &str) -> bool {
+    !name.is_empty()
+        && name
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+}
 
 // Probing Linuxbrew on macOS triggers /home's automounter and directory lookups.
 pub const HOMEBREW_DIRS: &[&str] = if cfg!(target_os = "linux") {
@@ -70,19 +105,30 @@ pub fn home_dir() -> Option<PathBuf> {
 /// Spaceport's own state directory, shared by its preferences, logs, and
 /// saved devices.
 pub fn state_dir() -> Option<PathBuf> {
-    state_dir_with(|name| std::env::var_os(name))
+    state_dir_for(PREVIEW_STATE_NAMESPACE)
 }
 
+/// This user's state directory within one validated application namespace.
+pub fn state_dir_for(namespace: &str) -> Option<PathBuf> {
+    valid_namespace(namespace).then_some(())?;
+    state_root_with(|name| std::env::var_os(name)).map(|root| root.join(namespace))
+}
+
+#[cfg(test)]
 fn state_dir_with(var: impl Fn(&str) -> Option<OsString>) -> Option<PathBuf> {
+    state_root_with(var).map(|root| root.join(PREVIEW_STATE_NAMESPACE))
+}
+
+fn state_root_with(var: impl Fn(&str) -> Option<OsString>) -> Option<PathBuf> {
+    state_root_for(var, cfg!(windows))
+}
+
+fn state_root_for(var: impl Fn(&str) -> Option<OsString>, windows: bool) -> Option<PathBuf> {
     let var = |name| var(name).filter(|value| !value.is_empty());
-    let root = var("XDG_STATE_HOME").map(PathBuf::from).or_else(|| {
-        // HOME takes precedence on every platform; the app-specific suffix
-        // keeps this fork's state separate from upstream installations.
-        if let Some(home) = var("HOME") {
-            return Some(PathBuf::from(home).join(".local").join("state"));
-        }
-        #[cfg(windows)]
-        {
+    var("XDG_STATE_HOME").map(PathBuf::from).or_else(|| {
+        // Git Bash can set a different HOME from the desktop's profile.
+        // Both launches must use the same Windows state root.
+        if windows {
             if let Some(local) = var("LOCALAPPDATA") {
                 return Some(PathBuf::from(local));
             }
@@ -90,9 +136,8 @@ fn state_dir_with(var: impl Fn(&str) -> Option<OsString>) -> Option<PathBuf> {
                 return Some(PathBuf::from(profile).join("AppData").join("Local"));
             }
         }
-        None
-    });
-    root.map(|root| root.join("spaceport"))
+        var("HOME").map(|home| PathBuf::from(home).join(".local").join("state"))
+    })
 }
 
 /// GUI launches omit directories commonly used by user-installed tools.
@@ -120,3 +165,16 @@ pub fn local_path() -> OsString {
 
 #[cfg(all(test, unix))]
 mod tests;
+
+#[cfg(test)]
+#[path = "local_path/tests/state_directory.rs"]
+mod state_directory_tests;
+
+#[cfg(test)]
+#[path = "local_path/tests/windows_state.rs"]
+mod windows_state_tests;
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+#[path = "local_path/tests/state_namespace.rs"]
+mod state_namespace_tests;

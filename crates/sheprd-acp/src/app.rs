@@ -36,9 +36,9 @@ struct Agent {
     reach: Box<dyn Reach>,
 }
 
-fn agent(options: &Options, cwd: &std::path::Path) -> Agent {
+fn agent(options: &Options, cwd: &std::path::Path) -> crate::Result<Agent> {
     let name = options.name.clone();
-    match &options.agent {
+    Ok(match &options.agent {
         AgentChoice::Builtin { agent, args: extra } => {
             let agent = *agent;
             let path = crate::agents::search_path(
@@ -49,7 +49,12 @@ fn agent(options: &Options, cwd: &std::path::Path) -> Agent {
             let mut env = Vec::new();
             let mut history = None;
             let (program, mut args, reach): (_, _, Box<dyn Reach>) =
-                match crate::agents::launch(agent, Some(&path), adapter) {
+                match crate::agents::launch(agent, Some(&path), adapter).map_err(|source| {
+                    crate::Error::AgentSpawn {
+                        program: agent.to_string(),
+                        source,
+                    }
+                })? {
                     Launch::Native(program) => {
                         let (args, reach) = native(agent, options.load.as_deref());
                         history = native_history(agent, options.load.as_deref(), cwd);
@@ -83,10 +88,14 @@ fn agent(options: &Options, cwd: &std::path::Path) -> Agent {
             env: Vec::new(),
             history: None,
             login_hint: None,
-            program: program.clone(),
+            program: crate::agents::custom_program(program, std::env::var_os("PATH").as_deref())
+                .map_err(|source| crate::Error::AgentSpawn {
+                    program: program.to_string_lossy().into_owned(),
+                    source,
+                })?,
             reach: Box::new(Acp),
         },
-    }
+    })
 }
 
 /// Whether the chat reaches a built-in agent through its ACP adapter.
@@ -134,9 +143,10 @@ pub(crate) fn run(options: Options) -> anyhow::Result<()> {
     let cwd = cwd
         .canonicalize()
         .with_context(|| format!("no directory {}", cwd.display()))?;
-    let agent = agent(&options, &cwd);
+    let agent = agent(&options, &cwd)?;
     let spawned = process::spawn(&agent.program, &agent.args, &agent.env, &cwd)?;
     let agent_process = spawned.process.clone();
+    let _stop_agent = agent_process.stop_on_drop();
     let (inputs, receiver) = bounded::<Input>(INPUTS);
 
     let to_session = inputs.clone();
@@ -268,3 +278,6 @@ fn listen(
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

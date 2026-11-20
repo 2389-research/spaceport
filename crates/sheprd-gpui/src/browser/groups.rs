@@ -1,3 +1,5 @@
+// ABOUTME: Tracks workspace groups, tab ownership, and saved view selections.
+// ABOUTME: Exposes page references so persistence can reserve their identities.
 //! Editor groups: a workspace's view split into side-by-side groups, each
 //! listing its own tabs and showing one of them.
 //!
@@ -125,6 +127,21 @@ fn valid_pick(pick: &Pick) -> bool {
 }
 
 impl SavedLayout {
+    /// Every page identity, including legacy hidden ownership references.
+    pub(super) fn pages(&self) -> impl Iterator<Item = TabId> + '_ {
+        self.groups.iter().flat_map(|group| {
+            group
+                .pick
+                .iter()
+                .chain(&group.tabs)
+                .chain(&group.hidden)
+                .filter_map(|pick| match pick {
+                    Pick::Page(id) => Some(*id),
+                    Pick::Herdr(_) => None,
+                })
+        })
+    }
+
     pub(crate) fn pages_only(&self) -> bool {
         self.groups.iter().all(|group| {
             group

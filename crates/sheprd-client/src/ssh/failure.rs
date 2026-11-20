@@ -1,3 +1,5 @@
+// ABOUTME: Classifies SSH failures from bounded, private diagnostics.
+// ABOUTME: Keeps stderr text out of retained state, logs, and user-visible errors.
 //! Why `ssh` closed the bridge before its ready banner. The child's exit code
 //! and a bounded stderr tail are read only to pick a class here; the text is
 //! never retained, logged, or shown, since it can name users, keys, and paths.
@@ -168,7 +170,7 @@ fn resolve(host: &str) -> Vec<IpAddr> {
 }
 
 /// Bytes of stderr kept for classification. `ssh` reports its failure last.
-const STDERR_TAIL: usize = 4096;
+pub(super) const STDERR_TAIL: usize = 4096;
 /// How long a closed bridge may take to exit and finish its stderr.
 const DIAGNOSE_TIMEOUT: Duration = Duration::from_secs(2);
 

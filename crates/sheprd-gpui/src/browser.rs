@@ -1,8 +1,11 @@
+// ABOUTME: Shares client-owned tab identities and native workspace layouts.
+// ABOUTME: Reports admission failures without taking ownership of runtime processes.
 //! Client-owned native tabs and shared terminal/chat split layouts.
 //! The selected Herdr runtime owns terminal processes; views only arrange them.
 // i18n: migrated
 
 mod closed;
+mod error;
 mod group_motion;
 mod group_settle;
 mod groups;
@@ -22,18 +25,31 @@ mod view;
 mod view_tests;
 
 pub(crate) use closed::ClosedHerdrTab;
+pub use error::Error;
 pub(crate) use group_motion::Fold;
 #[cfg(test)]
 pub(crate) use groups::GroupIds;
 pub(crate) use groups::{GroupId, Pick, Shown, Slot};
 pub(crate) use layouts::Layouts;
 pub(crate) use location::Location;
-pub(crate) use store::{CoreGroupKey, Scope, Store, Tab, TabId};
+pub(crate) use store::{CoreGroupKey, Reservation, Scope, Store, Tab, TabId};
 pub(crate) use tab_appear::{Leaving, Listed};
 pub(crate) use tab_scroll::{Thumb, ThumbDrag};
 pub(crate) use view::{Browser, PageOpened, scope};
 
 const MAX_URL_BYTES: usize = 8192;
+
+/// Explains why a native tab could not be allocated without hiding recovery failures.
+pub(crate) fn open_error(cx: &gpui::App, fallback: String) -> String {
+    if cx
+        .try_global::<Store>()
+        .is_some_and(Store::restoration_blocked)
+    {
+        crate::i18n::Localize::localize(&Error::RestorationBlocked)
+    } else {
+        fallback
+    }
+}
 
 /// A bounded http or https address with a host and no whitespace or controls.
 /// Explicit terminal and service link clicks use this before opening externally.

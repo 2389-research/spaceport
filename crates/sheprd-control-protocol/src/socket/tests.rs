@@ -8,10 +8,14 @@ use crate::protocol::{
 use test_support::{Address, address};
 
 mod cancellation;
+mod capacity;
 mod framing;
 mod identity;
+#[cfg(unix)]
+mod ownership;
 #[cfg(windows)]
 mod pipe;
+mod status_compatibility;
 #[cfg(unix)]
 mod unix;
 

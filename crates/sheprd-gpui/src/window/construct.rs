@@ -38,6 +38,7 @@ impl SheprdWindow {
             }
             launch => launch,
         };
+        let chrome_entry_focus = cx.focus_handle();
         let focus = cx.focus_handle();
         window.focus(&focus, cx);
         let weak = cx.weak_entity();
@@ -72,7 +73,6 @@ impl SheprdWindow {
             _host_theme: effects.host_theme,
             _notification_mutes: effects.notification_mutes,
             _poll: effects.poll,
-            _prefix_interceptor: effects.prefix_interceptor,
             _sidebar_invalidation: effects.sidebar_invalidation,
             _terminal_focus: effects.terminal_focus,
             _window_closed: effects.window_closed,
@@ -89,6 +89,7 @@ impl SheprdWindow {
             catalog: launched.catalog,
             cell_width: 9.,
             chats: Default::default(),
+            chrome_entry_focus,
             chrome_region: None,
             config: startup.config,
             config_load: None,
@@ -170,6 +171,7 @@ impl SheprdWindow {
             sessions_anchor: Default::default(),
             settings: Default::default(),
             shift_taps: Default::default(),
+            shortcut_keys: Default::default(),
             sidebar_drag: None,
             sidebar_folded: Default::default(),
             sidebar_modified: false,
@@ -261,7 +263,6 @@ impl SheprdWindow {
         let device_tags_changed = Self::observe_device_tags(cx);
         let worktree_notes = Self::observe_worktree_notes(window, cx);
         let notification_mutes = Self::observe_notification_mutes(cx);
-        let prefix_interceptor = Self::intercept_prefix(window, cx);
         let activation = cx.observe_window_activation(window, |this, window, cx| {
             this.active = window.is_window_active();
             if this.active {
@@ -295,7 +296,6 @@ impl SheprdWindow {
             host_theme,
             notification_mutes,
             poll,
-            prefix_interceptor,
             sidebar_invalidation,
             terminal_focus,
             window_closed,
@@ -314,12 +314,12 @@ impl SheprdWindow {
     ) {
         Self::poll_on_frame(cx.entity().downgrade(), window);
         self.sidebar_preferences = if let Some(key) = core_key.as_ref() {
-            Some(preferences::Preferences::for_core(key.hub_core_id()))
+            Some(preferences::Preferences::for_core(key.hub_core_id(), cx))
         } else {
             self.endpoints
                 .first()
                 .and_then(|endpoint| endpoint.connection.target.socket_path().ok())
-                .map(|path| preferences::Preferences::new(&path))
+                .map(|path| preferences::Preferences::new(&path, cx))
         };
         if core_key.is_none() {
             self.reconnect(cx);
@@ -415,7 +415,6 @@ struct Effects {
     host_theme: Subscription,
     notification_mutes: Subscription,
     poll: Task<()>,
-    prefix_interceptor: Subscription,
     sidebar_invalidation: Subscription,
     terminal_focus: Subscription,
     window_closed: Subscription,

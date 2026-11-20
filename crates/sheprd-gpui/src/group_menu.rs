@@ -1,3 +1,5 @@
+// ABOUTME: Presents contextual group actions from the current window's prepared state.
+// ABOUTME: Captures inert row data when active group input closes.
 //! The menu behind a group's "…" button: tabs other than a terminal to open
 //! in the group (chat and listening ports),
 //! a new chat through `herdr-acp`, closing tabs or the group, and splitting it.
@@ -102,6 +104,23 @@ pub(crate) struct GroupMenu {
     /// The panel's own scroll, so a row the keyboard selects past a long
     /// list of ports scrolls into view.
     scroll: ScrollHandle,
+}
+
+struct Row {
+    label: SharedString,
+    detail: SharedString,
+    icon: Option<&'static str>,
+    selector: String,
+    heading: Option<String>,
+    starts_section: bool,
+    capped: bool,
+    close: Option<SharedString>,
+}
+
+pub(crate) struct Paint {
+    rows: Vec<Row>,
+    selected: Option<usize>,
+    offset: Point<Pixels>,
 }
 
 /// The panel child that draws `actions[index]`: the heading before the
@@ -277,21 +296,94 @@ impl SheprdWindow {
         let Some(menu) = &self.menu.group else {
             return panel;
         };
-        let theme = &self.theme;
-        let mut panel = panel.track_scroll(&menu.scroll).flex().flex_col();
+        let actions = self.group_actions(menu.group, cx);
+        let rows = self.prepare_group_rows(&actions);
+        panel
+            .track_scroll(&menu.scroll)
+            .flex()
+            .flex_col()
+            .children(self.render_group_rows(&rows, menu.selected, Some(&actions), cx))
+    }
+
+    pub(crate) fn group_menu_paint(&self, cx: &App) -> Option<Paint> {
+        let menu = self.menu.group.as_ref()?;
+        Some(Paint {
+            rows: self.prepare_group_rows(&self.group_actions(menu.group, cx)),
+            selected: menu.selected,
+            offset: menu.scroll.offset(),
+        })
+    }
+
+    pub(crate) fn render_group_menu_paint(
+        &self,
+        panel: Stateful<Div>,
+        paint: &Paint,
+        cx: &mut Context<Self>,
+    ) -> Stateful<Div> {
+        panel.overflow_hidden().flex().flex_col().child(
+            div()
+                .flex_none()
+                .relative()
+                .top(paint.offset.y)
+                .flex()
+                .flex_col()
+                .children(self.render_group_rows(&paint.rows, paint.selected, None, cx)),
+        )
+    }
+
+    fn prepare_group_rows(&self, actions: &[Action]) -> Vec<Row> {
         let mut section = None;
-        for (index, action) in self.group_actions(menu.group, cx).into_iter().enumerate() {
-            let starts_section = section.is_some_and(|last| last != action.section());
-            let heading = action
-                .heading()
-                .filter(|_| section != Some(action.section()));
-            section = Some(action.section());
-            let headed = heading.is_some();
-            if let Some(heading) = heading {
-                panel = panel.child(
+        actions
+            .iter()
+            .map(|action| {
+                let starts_section = section.is_some_and(|last| last != action.section());
+                let heading = action
+                    .heading()
+                    .filter(|_| section != Some(action.section()));
+                section = Some(action.section());
+                Row {
+                    label: action.label(),
+                    detail: match action {
+                        Action::Port { process, .. } => process.clone().into(),
+                        _ => "".into(),
+                    },
+                    icon: action.icon(),
+                    selector: action.selector(),
+                    heading,
+                    starts_section,
+                    capped: matches!(action, Action::Port { .. }),
+                    close: match action {
+                        Action::Port {
+                            number,
+                            link: Link::Tunnel(key),
+                            ..
+                        } if self.tunnels.is_open(key) => {
+                            let selector = format!("group-menu-close-Port{number}"); // i18n: data
+                            Some(selector.into())
+                        }
+                        _ => None,
+                    },
+                }
+            })
+            .collect()
+    }
+
+    fn render_group_rows(
+        &self,
+        rows: &[Row],
+        selected: Option<usize>,
+        actions: Option<&[Action]>,
+        cx: &mut Context<Self>,
+    ) -> Vec<AnyElement> {
+        let theme = &self.theme;
+        let mut elements = Vec::new();
+        for (index, row) in rows.iter().enumerate() {
+            let headed = row.heading.is_some();
+            if let Some(heading) = &row.heading {
+                elements.push(
                     div()
                         .flex_none()
-                        .when(starts_section, |heading| {
+                        .when(row.starts_section, |heading| {
                             heading
                                 .mt(px(4.))
                                 .border_t_1()
@@ -302,37 +394,26 @@ impl SheprdWindow {
                         .px(px(8.))
                         .text_xs()
                         .text_color(rgb(theme.muted))
-                        .child(heading),
+                        .child(heading.clone())
+                        .into_any_element(),
                 );
             }
-            let detail: SharedString = match &action {
-                Action::Port { process, .. } => process.clone().into(),
-                _ => "".into(),
-            };
-            let selector = action.selector();
+            let selector = row.selector.clone();
             let (label, process) = (format!("{selector}-label"), format!("{selector}-detail"));
-            let capped = matches!(action, Action::Port { .. });
-            // An open tunnel can be closed from its row, as from its chip.
-            let close = match &action {
-                Action::Port {
-                    number,
+            let action = actions.and_then(|actions| actions.get(index));
+            let close = row.close.clone().map(|id| match action {
+                Some(Action::Port {
                     link: Link::Tunnel(key),
                     ..
-                } if self.tunnels.is_open(key) => Some(crate::listening_ports::close_button(
-                    format!("group-menu-close-Port{number}").into(), // i18n: data
-                    key,
-                    ICON_SIZE,
-                    theme,
-                    cx,
-                )),
-                _ => None,
-            };
-            panel = panel.child(
+                }) => crate::listening_ports::close_button(id, key, ICON_SIZE, theme, cx),
+                _ => crate::listening_ports::close_glyph(id, ICON_SIZE, theme),
+            });
+            elements.push(
                 div()
                     .id(("group-menu-action", index))
                     .flex_none()
                     .debug_selector(move || selector.clone())
-                    .when(starts_section && !headed, |row| {
+                    .when(row.starts_section && !headed, |row| {
                         row.mt(px(4.)).border_t_1().border_color(rgb(theme.active))
                     })
                     .min_h(px(self.config.ui.line_height() + 12.))
@@ -340,12 +421,12 @@ impl SheprdWindow {
                     .row()
                     .items_center()
                     .gap(px(8.))
-                    .cursor_pointer()
-                    .when(menu.selected == Some(index), |row| {
-                        row.bg(rgb(theme.active))
+                    .when(action.is_some(), |row| row.cursor_pointer())
+                    .when(selected == Some(index), |row| row.bg(rgb(theme.active)))
+                    .when(action.is_some(), |row| {
+                        row.hover(|row| row.bg(rgb(theme.active)))
                     })
-                    .hover(|row| row.bg(rgb(theme.active)))
-                    .child(match action.icon() {
+                    .child(match row.icon {
                         Some(icon) => svg()
                             .path(icon)
                             .size(px(ICON_SIZE))
@@ -362,31 +443,38 @@ impl SheprdWindow {
                             .flex_grow(1.)
                             .min_w_0()
                             .truncate()
-                            .child(action.label()),
+                            .child(row.label.clone()),
                     )
-                    .when(!detail.is_empty(), |line| {
+                    .when(!row.detail.is_empty(), |line| {
                         line.child(
                             div()
                                 .debug_selector(move || process.clone())
                                 .flex_none()
-                                .when(capped, |detail| detail.max_w(px(PROCESS_WIDTH)).truncate())
+                                .when(row.capped, |detail| {
+                                    detail.max_w(px(PROCESS_WIDTH)).truncate()
+                                })
                                 .text_color(rgb(theme.muted))
-                                .child(detail),
+                                .child(row.detail.clone()),
                         )
                     })
                     .children(close)
-                    .on_hover(cx.listener(move |this, hovered, _, cx| {
-                        if *hovered && let Some(menu) = &mut this.menu.group {
-                            menu.selected = Some(index);
-                            cx.notify();
-                        }
-                    }))
-                    .on_click(cx.listener(move |this, _, window, cx| {
-                        this.activate_group_menu(action.clone(), window, cx)
-                    })),
+                    .when_some(action.cloned(), |row, action| {
+                        row.on_hover(cx.listener(move |this, hovered, _, cx| {
+                            if *hovered && let Some(menu) = &mut this.menu.group {
+                                menu.selected = Some(index);
+                                cx.notify();
+                            }
+                        }))
+                        .on_click(cx.listener(
+                            move |this, _, window, cx| {
+                                this.activate_group_menu(action.clone(), window, cx)
+                            },
+                        ))
+                    })
+                    .into_any_element(),
             );
         }
-        panel
+        elements
     }
 }
 

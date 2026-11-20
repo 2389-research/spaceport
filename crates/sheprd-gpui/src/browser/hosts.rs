@@ -1,3 +1,5 @@
+// ABOUTME: Borrows the window state that browser operations need for one call.
+// ABOUTME: Keeps browser mutation separate from endpoint, snapshot, and tab-store ownership.
 //! What the browser may read of its window for one call.
 //!
 //! [`Browser`] owns everything a browser tab needs and changes it in place. The

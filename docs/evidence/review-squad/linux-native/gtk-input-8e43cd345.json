@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "scope": "Private GNOME Wayland GTK Polish-input prerequisite; Spaceport not started",
+  "source": "8e43cd345405ef6e732bbe213e1c1f06cf5bc60e",
+  "run": {
+    "id": 44690512078,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44690512078",
+    "status": "completed",
+    "conclusion": "success",
+    "job_id": 136134910153
+  },
+  "timestamp_semantics": "UTC values identify CI log emissions. GNOME_INPUT messages are bounded child-log contents emitted later by the Rust parent with GNOME_LOG.",
+  "observed": [
+    {
+      "utc": "2026-11-20T06:50:24.4005298Z",
+      "receipt": "GNOME_PROBE startup=true private_wayland=true private_bus_owner=true spaceport_started=false keyboard_input=false"
+    },
+    {
+      "utc": "2026-11-20T06:50:26.9346517Z",
+      "receipt": "GNOME_PROBE input_driver_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T06:50:26.9351063Z",
+      "receipt": "GNOME_INPUT shell_state phase=mapped state={\"Mode\":\"user\",\"OverviewActive\":true,\"ShellVersion\":\"46.0\"}"
+    },
+    {
+      "utc": "2026-11-20T06:50:26.9351840Z",
+      "receipt": "GNOME_INPUT overview_close_requested=true private_display=true"
+    },
+    {
+      "utc": "2026-11-20T06:50:26.9352363Z",
+      "receipt": "GNOME_INPUT shell_state phase=overview state={\"Mode\":\"user\",\"OverviewActive\":false,\"ShellVersion\":\"46.0\"}"
+    },
+    {
+      "utc": "2026-11-20T06:50:26.9352847Z",
+      "receipt": "GNOME_INPUT activation_requested=true route=alt-tab private_display=true"
+    },
+    {
+      "utc": "2026-11-20T06:50:26.9353841Z",
+      "receipt": "GNOME_INPUT gtk_native=true transport=evdev sequence_sent=true polish=\"łŃ\" keys_released=true session_closed=true layout_restored=true spaceport_started=false"
+    },
+    {
+      "utc": "2026-11-20T06:50:26.9434235Z",
+      "receipt": "GNOME_PROBE shell_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T06:50:26.9477636Z",
+      "receipt": "GNOME_PROBE bus_reaped=true"
+    }
+  ],
+  "proved": [
+    "Actual GTK text łŃ from evdev RightAlt+L and Shift+RightAlt+N through the private GNOME Wayland session",
+    "Owned mapped window must be active before the text sequence",
+    "Overview closure acknowledged and observed before native activation",
+    "All tracked keys released; remote input session closed; prior private layout restored and read back",
+    "Direct input driver, GNOME Shell and nonforking private bus reaped"
+  ],
+  "not_qualified": [
+    "Spaceport key normalization, shortcut dispatch or terminal delivery",
+    "GNOME interception of Spaceport shortcuts",
+    "Physical keyboard hardware",
+    "Mac foreground, audible screen-reader or release profiling gates"
+  ],
+  "cleanup_boundary": "Private HOME/XDG files and indirectly activated session services remain bounded by disposable runner teardown."
+}

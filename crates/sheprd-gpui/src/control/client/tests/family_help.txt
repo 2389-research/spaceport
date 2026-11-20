@@ -2,6 +2,8 @@ spaceport COMMAND ... [--json] [--window ID]
 
   status        Whether Spaceport runs, its version, windows, and hosts
   skill         Print the agent skill describing these commands
+  help          Show command help and shared options
+  completions   Generate shell completion scripts
   app           Bring the app forward, hide it, or quit it
   window        List, open, focus, resize, detach, or reconnect windows
   ui            Sidebar, status bar, and terminal font size
@@ -32,11 +34,13 @@ spaceport COMMAND ... [--json] [--window ID]
 
 Run `spaceport COMMAND --help` for one command's usage.
 
-Every command accepts --json, printing one JSON document, and --window ID,
+Commands accept --json for JSON output; events --follow emits JSON lines.
+App commands accept --window ID,
 acting in that window (IDs come from `window list`). By default a command
 acts in the window showing the caller's workspace (HERDR_WORKSPACE_ID), and
 exits 5 when no window shows it; outside Herdr, in the frontmost window.
-Exit status: 0 done, 1 refused, 2 invalid arguments, 3 Spaceport not running,
+Local commands reject --window. Core pane window controls require an explicit target.
+Exit status: 0 done, 1 refused, 2 invalid arguments, 3 app unavailable,
 4 nothing yet (no notes, no events, no chat panes, no ports, no usage, no log,
 a key not set, or the wait not met), 5 not found, 6 busy (a dialog is open),
 7 timed out, 8 unsupported on this platform or by this app version.
@@ -50,6 +54,15 @@ spaceport status
 === skill ===
 spaceport skill
     Print the agent skill describing these commands.
+
+=== help ===
+spaceport help [COMMAND]
+    Show top-level help, or usage for one command family.
+
+=== completions ===
+spaceport completions bash|fish|zsh
+    Print a completion script for command families and shared options.
+    Source the script in the selected shell. Runs here; Spaceport need not run.
 
 === app ===
 spaceport app focus|hide|quit
@@ -79,7 +92,7 @@ spaceport ui panel workspaces|overview|automations|usage
 
 === tab ===
 spaceport tab [list]
-    The app's own tabs: pages, Devices, Core terminals.
+    The app's own tabs: Devices and Core terminals.
     Terminal tabs belong to Herdr: use `herdr tab`.
 spaceport tab focus|close ID
     Show a tab, switching to its workspace, or close it.
@@ -101,11 +114,13 @@ spaceport chat new AGENT [--pane ID]
     Open a tab running a sheprd-acp chat with AGENT (claude, codex, copilot,
     gemini, opencode, or pi) in the workspace and folder of the pane, else the
     caller's own. On an SSH host the tab runs that host's sheprd-acp, from
-    ~/.herdr/bin or PATH. With no Herdr pane to go by, a Herdr 2 tab in the
+    ~/.herdr/bin or PATH. Outside a daemon pane, a selected Herdr 2 tab in the
     active group splits its pane in use with the chat instead. The chat view
     attaches once the program starts.
+    Wait up to 30 seconds for creation, then return the window, tab, and pane IDs.
+    Creation does not promise agent readiness. Inspect state before retrying a lost answer.
     Exits 8 when ACP chats are off in Settings, sheprd-acp is missing here,
-    or the agent is not installed there. Exits 1 when the host cannot be
+    the route is unsupported, or the agent is not installed there. Exits 1 when the host cannot be
     reached.
 
 === notes ===

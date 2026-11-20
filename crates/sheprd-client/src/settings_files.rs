@@ -94,7 +94,7 @@ pub fn create(path: &Path, text: &str) -> io::Result<()> {
     temporary(parent(path), text)?
         .persist_noclobber(path)
         .map_err(|error| error.error)?;
-    Ok(())
+    sync_directory(parent(path))
 }
 
 /// Replaces the file at `path` whole, so a write cut short never leaves
@@ -105,9 +105,34 @@ pub fn replace(path: &Path, text: &str) -> io::Result<()> {
     let target = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
     let parent = parent(&target);
     fs::create_dir_all(parent)?;
-    temporary(parent, text)?
-        .persist(&target)
-        .map_err(|error| error.error)?;
+    let metadata = match fs::metadata(&target) {
+        Ok(metadata) => Some(metadata),
+        Err(error) if error.kind() == ErrorKind::NotFound => None,
+        Err(error) => return Err(error),
+    };
+    let file = temporary(parent, text)?;
+    if let Some(metadata) = metadata {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            rustix::fs::fchown(
+                file.as_file(),
+                Some(rustix::fs::Uid::from_raw(metadata.uid())),
+                Some(rustix::fs::Gid::from_raw(metadata.gid())),
+            )?;
+        }
+        file.as_file().set_permissions(metadata.permissions())?;
+        file.as_file().sync_all()?;
+    }
+    file.persist(&target).map_err(|error| error.error)?;
+    sync_directory(parent)
+}
+
+fn sync_directory(path: &Path) -> io::Result<()> {
+    #[cfg(unix)]
+    fs::File::open(path)?.sync_all()?;
+    #[cfg(not(unix))]
+    let _ = path;
     Ok(())
 }
 

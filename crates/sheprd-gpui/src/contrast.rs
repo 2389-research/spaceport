@@ -4,3 +4,8 @@
 //! The rules live with the settings they read; this is the path the app's
 //! painters have always named them by.
 pub(crate) use sheprd_settings::contrast::*;
+
+#[cfg(all(windows, feature = "integration-test"))]
+mod native;
+#[cfg(all(windows, feature = "integration-test"))]
+pub(crate) use native::verify_secondary_text;

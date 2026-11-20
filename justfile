@@ -78,6 +78,16 @@ stress-linux iterations="30" cpus="0.5" filter="":
 test-sidebar:
     cargo test --locked -p sheprd-gpui --features integration-test --test live_gui native_sidebar -- --ignored --nocapture --test-threads=1
 
+# Select the private macOS Settings test window, then leave it foreground.
+test-settings-keyboard:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ $(uname -s) != Darwin ]]; then
+        echo "Settings keyboard qualification requires macOS and its foreground test window." >&2
+        exit 2
+    fi
+    cargo test --locked -p sheprd-gpui --features integration-test --test live_gui native_settings_keyboard -- --ignored --exact --nocapture --test-threads=1
+
 # Real AppKit events and glyphs; requires macOS WindowServer, but no unlocked desktop.
 test-sidebar-routing:
     cargo test --locked -p sheprd-gpui --features integration-test --test live_gui sidebar_routing::native_host_routing -- --ignored --exact --nocapture --test-threads=1

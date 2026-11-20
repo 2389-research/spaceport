@@ -1,3 +1,5 @@
+// ABOUTME: Verifies scroll request accounting, retained rows, and visual offsets.
+// ABOUTME: Shares deterministic surfaces with topic-specific motion tests.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use sheprd_client::protocol::{CellData, PaneSurfacePane, PaneSurfaceScrollMetrics};
@@ -365,4 +367,5 @@ fn a_few_blank_rows_never_pass_for_a_scroll() {
     assert!((-5..=5).all(|shift| !rows_shifted(&old, &new, rect, shift)));
 }
 
+mod images;
 mod model;

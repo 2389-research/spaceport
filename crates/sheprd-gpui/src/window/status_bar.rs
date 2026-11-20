@@ -26,8 +26,10 @@ const MODEL_WIDTH: f32 = 160.;
 impl SheprdWindow {
     pub(super) fn expire_status_notices(&mut self, now: std::time::Instant) -> bool {
         let changed = self.notices.expire(now) | self.live.notices.expire(now);
-        for endpoint in &mut self.endpoints {
-            endpoint.live.notices.expire(now);
+        for (index, endpoint) in self.endpoints.iter_mut().enumerate() {
+            if index != self.selected_endpoint || !self.live.notices.is_paused() {
+                endpoint.live.notices.expire(now);
+            }
         }
         changed
     }
@@ -59,6 +61,9 @@ impl SheprdWindow {
             .id("connection-status")
             .debug_selector(|| "connection-status".into())
             .role(Role::Status)
+            .a11y_synthetic_children(|builder| {
+                builder.parent_node().set_live(accesskit::Live::Polite);
+            })
             .aria_label(fl!("status-bar-label"))
             .relative()
             .row()
@@ -166,16 +171,7 @@ impl SheprdWindow {
                     .on_click(cx.listener(|this, _, _, cx| this.open_report_issue(cx))),
                 )
             })
-            .child(
-                div()
-                    .id("status-version")
-                    .debug_selector(|| "status-version".into())
-                    .aria_label(fl!("status-bar-version", version = APP_VERSION))
-                    .flex_none()
-                    .whitespace_nowrap()
-                    .text_color(rgb(self.theme.muted))
-                    .child(APP_VERSION),
-            )
+            .child(version(&self.theme))
     }
 
     /// The focused agent's model, from the `model` and `effort` tokens its
@@ -514,3 +510,18 @@ fn glyph(path: &'static str, color: u32) -> Svg {
         .flex_none()
         .text_color(rgb(color))
 }
+
+fn version(theme: &crate::config::Theme) -> Stateful<Div> {
+    div()
+        .id("status-version")
+        .debug_selector(|| "status-version".into())
+        .role(Role::Label)
+        .aria_value(fl!("status-bar-version", version = APP_VERSION))
+        .flex_none()
+        .whitespace_nowrap()
+        .text_color(rgb(theme.muted))
+        .child(APP_VERSION)
+}
+
+#[cfg(test)]
+mod tests;

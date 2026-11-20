@@ -4,6 +4,8 @@ use crate::window::clipboard::Error;
 #[test]
 fn every_clipboard_variant_has_a_message() {
     assert_localized(&[
+        Error::Busy,
+        Error::Cancelled,
         Error::Changed,
         Error::Encoding(String::from_utf8(vec![0xff]).unwrap_err().utf8_error()),
         Error::Process(std::io::Error::other("disk on fire")),

@@ -8,6 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+mod hello_limit;
 mod scroll;
 
 fn receive(stream: &mut Stream) -> ClientMessage {

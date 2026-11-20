@@ -1,9 +1,14 @@
+// ABOUTME: Captures exact workspaces for native menu actions and dialogs.
+// ABOUTME: Routes workspace termination through shared consent and connection fences.
 //! The workspace a menu row targets and its dialogs with the daemon.
 
 // i18n: migrated
+mod paint;
 pub(super) mod popover;
 mod render;
 mod requests;
+
+pub(in crate::menu) use paint::{DialogPaint, PopoverPaint};
 
 use super::{Page, WorkspaceAction, WorkspaceMenuAction};
 use crate::{SheprdWindow, dialog_input::DialogInput};
@@ -376,10 +381,7 @@ impl SheprdWindow {
         self.hover = None;
         self.hover_menu = None;
         self.menu.reset();
-        self.menu.endpoint_target = (
-            self.selection_epoch,
-            self.endpoints[self.selected_endpoint].generation,
-        );
+        self.menu.origin = Some(super::origin::Origin::capture(self));
         let muted = self.muted_on_selected(crate::notification_mutes::Scope::Workspace, id, cx);
         self.menu.target = Some(WorkspaceTarget {
             muted,
@@ -450,9 +452,10 @@ impl SheprdWindow {
         };
         // Only where creating at once would be allowed, so the prompt never
         // offers what the command itself would refuse.
-        if self.live.activation.fenced()
-            || !self.endpoints[self.selected_endpoint].surface_requested()
-        {
+        let Some(endpoint) = self.endpoints.get(self.selected_endpoint) else {
+            return false;
+        };
+        if self.live.activation.fenced() || !endpoint.surface_requested() {
             return false;
         }
         let Some(id) = self
@@ -485,6 +488,7 @@ impl SheprdWindow {
             (WorkspaceMenuAction::Mute, Label::MUTE)
         }];
         items.push((Dialog(WorkspaceAction::Rename), Label::RENAME));
+        items.push((WorkspaceMenuAction::CloseWorkspace, Label::CLOSE_WORKSPACE));
         if self.note_checkout().is_some() {
             items.push((Dialog(WorkspaceAction::Note), Label::NOTE));
         }
@@ -615,6 +619,11 @@ impl SheprdWindow {
         cx: &mut Context<Self>,
     ) {
         match action {
+            WorkspaceMenuAction::CloseWorkspace => {
+                if let Some(id) = self.menu.target.as_ref().map(|target| target.id.clone()) {
+                    self.open_workspace_close(&id, window, cx);
+                }
+            }
             WorkspaceMenuAction::Dialog(action) => self.open_workspace_dialog(action, window, cx),
             WorkspaceMenuAction::Collapse | WorkspaceMenuAction::Expand => {
                 self.toggle_selected_group(cx)

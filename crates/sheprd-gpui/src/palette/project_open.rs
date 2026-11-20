@@ -116,7 +116,7 @@ impl SheprdWindow {
             let _ = this.update_in(cx, |this, window, cx| {
                 if this.menu.palette.as_ref().is_none_or(|palette| palette.search != token)
                     || this.config.palette != config { return; }
-                if !this.menu_target_current() {
+                if !this.menu_current() {
                     this.palette_project_error(Error::SessionChanged.into(), cx);
                     return;
                 }
@@ -225,7 +225,7 @@ impl SheprdWindow {
             return;
         };
         let (index, _) = match self.local_project_connection(target) {
-            Ok(current) if self.menu_target_current() => current,
+            Ok(current) if self.menu_current() => current,
             Ok(_) => {
                 return self.palette_project_error(Error::SessionChanged.into(), cx);
             }

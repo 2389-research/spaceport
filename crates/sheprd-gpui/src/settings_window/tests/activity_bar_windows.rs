@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 //! The Show activity bar switch reaches every open main window at once.
 use super::*;
 use crate::config::preferences::Preference;
@@ -56,7 +58,7 @@ fn the_switch_hides_and_restores_the_bar_in_every_main_window(cx: &mut TestAppCo
     );
     let weak = cx.update(|cx| workspaces.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
     let settings = cx.add_window(move |_, cx| {
-        let mut view = SettingsWindow::new(weak, cx);
+        let mut view = fixture_new(weak, cx);
         view.controls.preference_io = Some(io);
         view.initialize_controls(cx);
         view.section = Section::Sidebar;

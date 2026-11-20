@@ -1,3 +1,5 @@
+// ABOUTME: Watches a pane's exact process subtree through its local Herdr runtime.
+// ABOUTME: Bounds process queries and revalidates identities before signaling.
 //! The processes running under one pane: its own process (usually the shell
 //! or agent Herdr started), and every process below it, with CPU and memory,
 //! and a way to signal exactly the ones the user picked.
@@ -94,7 +96,7 @@ impl Daemon {
         pane: &str,
         cancelled: &AtomicBool,
     ) -> Result<sheprd_remote::snapshot::ProcessInfo> {
-        let script = self.script(&crate::daemon::executable(), pane)?;
+        let script = self.script(&crate::daemon::executable()?, pane)?;
         let mut output = Vec::new();
         run_script(
             ScriptHost::Local,

@@ -1,3 +1,5 @@
+// ABOUTME: Formats chat discovery, view changes, and acknowledged creation receipts.
+// ABOUTME: Exposes exact runtime identities without claiming agent readiness.
 //! `chat`: list the window's chat panes, or show a chat view or its terminal.
 use super::{Context, Output, unexpected};
 use crate::control::protocol::{
@@ -58,10 +60,18 @@ pub(super) fn chat(op: ChatOp, context: &Context) -> crate::Result<Output> {
             &serde_json::json!({ "pane_id": pane_id, "shown": shown }),
         ),
         Response::Chat {
-            reply: Reply::Started { agent },
+            reply:
+                Reply::Created {
+                    agent,
+                    window_id,
+                    tab,
+                    pane_id,
+                },
         } => Output::data(
-            format!("Starting a {agent} chat"),
-            &serde_json::json!({ "agent": agent, "started": true }),
+            format!(
+                "Created {agent} chat pane {pane_id} in window {window_id}; ACP attachment may still be pending"
+            ),
+            &serde_json::json!({ "agent": agent, "created": true, "window_id": window_id, "tab": tab, "pane_id": pane_id }),
         ),
         response => Err(unexpected(response)),
     }

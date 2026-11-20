@@ -1,3 +1,5 @@
+// ABOUTME: Sizes a terminal through Herdr's direct attach handshake and owned worker.
+// ABOUTME: Bounds negotiation retries and detaches without sending terminal input.
 //! A direct terminal attach: Herdr's own `herdr terminal attach` handshake,
 //! held only to size one terminal. While it is held, Herdr locks the
 //! terminal's PTY to this client's columns and rows; dropping it detaches,
@@ -103,19 +105,21 @@ impl TerminalAttach {
             return Err(Error::Size);
         }
         let mut version = TERMINAL_PROTOCOL_VERSION;
+        let mut retried = false;
         let mut stream = loop {
             let mut stream = connect()?;
             match hello(&mut stream, version, cols, rows) {
                 Ok(()) => break stream,
                 Err(Error::Rejected {
                     version: server, ..
-                }) if server != version => {
+                }) if server != version && !retried => {
                     tracing::debug!(
                         client = version,
                         server,
                         "retrying terminal hello at Herdr's version"
                     );
                     version = server;
+                    retried = true;
                 }
                 Err(error) => return Err(error),
             }

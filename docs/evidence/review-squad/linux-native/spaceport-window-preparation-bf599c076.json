@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "scope": "Failed Linux Cycle Windows preparation; no native cycle input sent",
+  "source": "bf599c07653ca7970ac799784ae8f1e8a9a52aa6",
+  "run": {
+    "id": 44706339419,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44706339419",
+    "job_id": 136186762090,
+    "status": "completed",
+    "conclusion": "failure"
+  },
+  "checks": {
+    "shared_contract_tests": {
+      "passed": 8,
+      "failed": 0
+    },
+    "receipt_tests": {
+      "passed": 2,
+      "failed": 0
+    },
+    "native_test": {
+      "passed": 0,
+      "failed": 1,
+      "seconds": 25.24
+    },
+    "completed_native_cases": [
+      "new-tab",
+      "tab-1",
+      "tab-2",
+      "tab-3",
+      "tab-4",
+      "tab-5",
+      "tab-6",
+      "tab-7",
+      "tab-8",
+      "tab-9",
+      "font-increase",
+      "font-decrease",
+      "font-reset",
+      "pane-f6",
+      "pane-shift-f6",
+      "pane-f11",
+      "pane-ctrl-page-up",
+      "pane-ctrl-page-down",
+      "direct-next-tab",
+      "direct-previous-tab",
+      "prefix-next-tab",
+      "prefix-previous-tab",
+      "direct-next-region",
+      "direct-previous-region",
+      "prefix-next-region",
+      "prefix-previous-region",
+      "direct-fullscreen-enter",
+      "direct-fullscreen-leave",
+      "prefix-fullscreen-enter",
+      "prefix-fullscreen-leave",
+      "keybindings",
+      "palette",
+      "palette-resume",
+      "settings-alias",
+      "prefix-settings",
+      "split-editor-alias"
+    ]
+  },
+  "observed": [
+    {
+      "utc": "2026-11-20T08:59:11.3344107Z",
+      "message": "GNOME_PROBE native_test_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3345689Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=new-tab outcome=NewTab native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3346261Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-1 outcome=Tab(1) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3346923Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-2 outcome=Tab(2) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3347510Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-3 outcome=Tab(3) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3348225Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-4 outcome=Tab(4) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3349113Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-5 outcome=Tab(5) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3349680Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-6 outcome=Tab(6) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3350317Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-7 outcome=Tab(7) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3350967Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-8 outcome=Tab(8) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3351512Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=tab-9 outcome=Tab(9) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3352195Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=font-increase outcome=IncreaseFont native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3352968Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=font-decrease outcome=DecreaseFont native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3353718Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=font-reset outcome=ResetFont native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3354526Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=pane-f6 outcome=TerminalBytes([27, 91, 49, 55, 126]) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3376153Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=pane-shift-f6 outcome=TerminalBytes([27, 91, 49, 55, 59, 50, 126]) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3376827Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=pane-f11 outcome=TerminalBytes([27, 91, 50, 51, 126]) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3377470Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=pane-ctrl-page-up outcome=TerminalBytes([27, 91, 53, 59, 53, 126]) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3378153Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=pane-ctrl-page-down outcome=TerminalBytes([27, 91, 54, 59, 53, 126]) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3378745Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=direct-next-tab outcome=NextTab native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3379309Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=direct-previous-tab outcome=PreviousTab native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3379837Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=prefix-next-tab outcome=NextTab native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3380343Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=prefix-previous-tab outcome=PreviousTab native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3380866Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=direct-next-region outcome=NextRegion native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3381431Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=direct-previous-region outcome=PreviousRegion native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3381985Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=prefix-next-region outcome=NextRegion native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3382526Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=prefix-previous-region outcome=PreviousRegion native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3383112Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=direct-fullscreen-enter outcome=Fullscreen(true) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3383704Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=direct-fullscreen-leave outcome=Fullscreen(false) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3384286Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=prefix-fullscreen-enter outcome=Fullscreen(true) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3385253Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=prefix-fullscreen-leave outcome=Fullscreen(false) native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3385833Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=keybindings outcome=Keybindings native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3386317Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=palette outcome=Palette native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3386800Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=palette-resume outcome=ResumePalette native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3387306Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=settings-alias outcome=Settings native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3387792Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=prefix-settings outcome=Settings native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3388293Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=split-editor-alias outcome=SplitEditor native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3388762Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE keys_released=true session_closed=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3410717Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE empty_group_closed=true before_case=cycle-windows-alias"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3411519Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE qualification FAIL: timed out waiting for Ready(\"cycle-windows-alias\"): LINUX_KEYS fae6983bed12485d8c6cfa7f3e8ce8c8 passed prefix-previous-region"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3551196Z",
+      "message": "GNOME_PROBE shell_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T08:59:11.3584800Z",
+      "message": "GNOME_PROBE bus_reaped=true root_preserved_for_runner_cleanup=/tmp/spaceport-gnome-13316-1795165122645007957"
+    }
+  ],
+  "diagnosis": "The parent times out waiting for Ready(cycle-windows-alias) after normal empty-group cleanup. The source has no per-phase window readiness observations, so the precise creation, coherence, or activation gate is not yet known.",
+  "cleanup": "Key release and session closure plus native-test, Shell, and bus reaping are recorded. The failed run does not qualify daemon survival after successful GUI exit.",
+  "remaining": "Cycle Windows input and final Polish input never run on this source. Qualified 37-case source5979 remains separate. No deadline or scope is relaxed."
+}

@@ -1,3 +1,5 @@
+// ABOUTME: Protects complete formulas while preserving literal code and HTML source.
+// ABOUTME: Tracks source ranges through math delimiter normalization and display placeholders.
 //! Protect complete display formulas from Markdown block syntax. CommonMark
 //! otherwise treats a standalone `=` inside TeX as a Setext heading before
 //! pulldown-cmark's inline math parser can see the delimiters.
@@ -96,6 +98,8 @@ fn formula_source(source: &str, prefix: &str) -> String {
 pub(super) fn protected_ranges(text: &str) -> Vec<Range<usize>> {
     let mut protected = Vec::new();
     let mut code_start = None;
+    #[cfg(test)]
+    super::work::record_protection(text.len());
     for (event, range) in Parser::new(text).into_offset_iter() {
         match event {
             Event::Start(Tag::CodeBlock(_)) => code_start = Some(range.start),

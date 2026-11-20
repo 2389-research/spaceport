@@ -1,3 +1,5 @@
+// ABOUTME: Reads bounded app state and writes snapshots on coalescing workers.
+// ABOUTME: Preserves rejected bytes before recovery can replace their source.
 //! Small app-owned JSON state files. Reads are bounded, writes replace the
 //! file atomically, and the latest value is saved on a worker so a change made
 //! on the UI thread never waits for the disk.
@@ -28,6 +30,27 @@ pub(crate) fn read(path: &Path, limit: u64) -> crate::Result<Option<Vec<u8>>> {
     Ok(Some(bytes))
 }
 
+/// Keeps rejected bytes in a private, unique sibling before any writer starts.
+/// A failed copy leaves the original authoritative and must prevent replacement.
+pub(crate) fn preserve_rejected(path: &Path, bytes: &[u8]) -> crate::Result<PathBuf> {
+    let parent = path.parent().ok_or(crate::Error::MissingStateRoot)?;
+    let mut prefix = path
+        .file_name()
+        .ok_or(crate::Error::MissingStateRoot)?
+        .to_owned();
+    prefix.push(".rejected-");
+    let mut file = tempfile::Builder::new()
+        .prefix(&prefix)
+        .tempfile_in(parent)?;
+    file.write_all(bytes)?;
+    file.as_file().sync_all()?;
+    #[cfg(unix)]
+    fs::File::open(parent)?.sync_all()?;
+    let (_, saved) = file.keep().map_err(|error| error.error)?;
+    tracing::warn!(path = %saved.display(), "Preserved rejected state file");
+    Ok(saved)
+}
+
 pub(crate) fn write<T: Serialize + ?Sized>(path: &Path, value: &T) -> crate::Result<()> {
     let parent = path.parent().ok_or(crate::Error::MissingStateRoot)?;
     fs::create_dir_all(parent)?;
@@ -39,7 +62,7 @@ pub(crate) fn write<T: Serialize + ?Sized>(path: &Path, value: &T) -> crate::Res
     buffer.write_all(b"\n")?;
     buffer.flush()?;
     drop(buffer);
-    // No fsync: on macOS it is F_FULLFSYNC, which can outlast GPUI's 100 ms
+    // No fsync: on macOS it is F_FULLFSYNC, which can outlast GPUI's
     // quit budget. The rename still replaces the file atomically, and a file
     // torn by power loss is rejected on load in favor of the defaults.
     file.persist(path).map_err(|error| error.error)?;
@@ -50,17 +73,27 @@ pub(crate) fn write<T: Serialize + ?Sized>(path: &Path, value: &T) -> crate::Res
 /// worker reads them are never written.
 pub(crate) struct Writer<T> {
     pending: Arc<Mutex<Option<T>>>,
-    wake: mpsc::SyncSender<()>,
+    wake: Option<mpsc::SyncSender<()>>,
     worker: JoinHandle<()>,
 }
 
 impl<T: Serialize + Send + 'static> Writer<T> {
     pub(crate) fn start(name: &str, path: PathBuf) -> io::Result<Self> {
+        Self::start_with_initialization(name, path, |_| ())
+    }
+
+    /// Initializes on the worker before writes. Keeps the returned guard until exit.
+    pub(crate) fn start_with_initialization<G: Send + 'static>(
+        name: &str,
+        path: PathBuf,
+        initialize: impl FnOnce(&Path) -> G + Send + 'static,
+    ) -> io::Result<Self> {
         let pending = Arc::new(Mutex::new(None::<T>));
         let mailbox = pending.clone();
         let (wake, receiver) = mpsc::sync_channel(1);
         let label = name.to_owned();
         let worker = thread::Builder::new().name(name.into()).spawn(move || {
+            let _lifetime = initialize(&path);
             for () in receiver {
                 let snapshot = mailbox.lock().ok().and_then(|mut pending| pending.take());
                 if let Some(snapshot) = snapshot
@@ -72,23 +105,31 @@ impl<T: Serialize + Send + 'static> Writer<T> {
         })?;
         Ok(Self {
             pending,
-            wake,
+            wake: Some(wake),
             worker,
         })
     }
 
     pub(crate) fn save(&self, value: T) {
+        let Some(wake) = &self.wake else {
+            return;
+        };
         if let Ok(mut pending) = self.pending.lock() {
             *pending = Some(value);
         }
         // A full wake queue already guarantees that the latest value is read.
-        let _ = self.wake.try_send(());
+        let _ = wake.try_send(());
+    }
+
+    /// Closes the wake sender without waiting. Already queued snapshots still drain.
+    pub(crate) fn stop(&mut self) {
+        drop(self.wake.take());
     }
 
     /// Writes whatever is still pending, then stops the worker. Blocks, so
     /// callers run it off the UI thread.
-    pub(crate) fn finish(self) {
-        drop(self.wake);
+    pub(crate) fn finish(mut self) {
+        self.stop();
         if self.worker.join().is_err() {
             tracing::warn!("State writer panicked");
         }
@@ -99,6 +140,8 @@ impl<T: Serialize + Send + 'static> Writer<T> {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
+
+    mod lifecycle;
 
     #[test]
     fn missing_files_are_empty_and_oversized_files_are_rejected() {

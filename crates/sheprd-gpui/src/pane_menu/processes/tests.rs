@@ -1,3 +1,5 @@
+// ABOUTME: Exercises process selection, confirmation, and exact worker commands.
+// ABOUTME: Uses isolated worker channels without signaling external processes.
 #![allow(clippy::unwrap_used)]
 
 use super::*;
@@ -5,6 +7,9 @@ use crate::processes::{Command, Daemon, Row};
 use core::prelude::v1::test;
 use sheprd_client::protocol::ClientShellSnapshot;
 use std::sync::Arc;
+
+pub(super) mod departure;
+mod fresh_confirmation;
 
 fn row(pid: u32, depth: usize) -> Row {
     Row {

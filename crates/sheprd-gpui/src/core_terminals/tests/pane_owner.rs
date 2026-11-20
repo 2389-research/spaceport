@@ -15,6 +15,8 @@ use sheprd_backend::TerminalId;
 use sheprd_core_client::wire::Doc;
 use uuid::Uuid;
 
+mod close_confirmation;
+
 fn id(name: &str) -> TerminalId {
     TerminalId::new(name).unwrap()
 }

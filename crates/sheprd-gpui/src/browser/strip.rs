@@ -1,3 +1,5 @@
+// ABOUTME: Updates browser tab-strip motion, scrolling, and retained group state.
+// ABOUTME: Keeps window entry points delegating through the borrowed browser context.
 //! What a group's tab strip draws: the tabs growing into it and shrinking out
 //! of it, its sideways scroll and thumb, and the body sliding under a
 //! connected strip. The rules live in [`super::tab_appear`] and

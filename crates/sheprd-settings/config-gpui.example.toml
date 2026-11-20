@@ -37,10 +37,10 @@ theme = "Default"
 # picker's star button keeps this list in config.local.toml.
 # favorite_themes = ["Nord", "Catppuccin Mocha"]
 # How far the app's own colors (status dots, pull request badges, diff counts,
-# warnings, dim labels) stand off the sidebar and menus. "standard" moves a
-# color only when it would fall below 3:1, as pastels do on light themes.
-# "high" raises them and dim labels to 4.5:1 and makes selected rows stand out
-# more. Terminal output always keeps its program's colors.
+# warnings) stand off the sidebar and menus. "standard" raises marks to 3:1.
+# Muted and secondary text always reach 4.5:1, including on hovered rows.
+# "high" also raises marks to 4.5:1 and makes selected rows stand out more.
+# Terminal output always keeps its program's colors.
 contrast = "standard"
 # The app's own accent (the current tab, selected rows): "theme" takes it from
 # the theme, "system" from Windows Settings > Personalization > Colors.
@@ -110,7 +110,8 @@ smooth_scroll = true
 # show_window_controls = true
 
 # Focus split terminal panes on hover in the active window, without clicking.
-focus_follows_mouse = true
+# This also changes the focused pane for other clients on the same Herdr tab.
+focus_follows_mouse = false
 # macOS only: whether Option-letter reaches a pane as an Alt shortcut (Alt-P
 # for Option-P) or types the character the keyboard layout puts there. "auto"
 # sends Alt from the left Option on the U.S. and ABC layouts, while the right
@@ -218,14 +219,15 @@ project_roots = []
 # ctrl, alt, shift, fn; keystrokes need at least one of cmd, ctrl, alt, or fn,
 # or a function key F1 through F24. Spaceport > Keyboard Shortcuts also edits,
 # unbinds, and resets them.
-# Herdr's own [keys] in config.toml (prefix chords included) add to these
+# Spaceport's [keys] in view.toml (prefix chords included) add to these
 # defaults; a command named here keeps only the keystrokes listed here.
 # The examples below use the macOS defaults. Linux and Windows have their own
 # Ctrl+Shift defaults (not Super or Win): new_tab = "ctrl-shift-t",
 # new_window = "ctrl-shift-n", close_window = "ctrl-alt-w",
 # new_workspace = "ctrl-alt-shift-n",
 # split_right = "ctrl-shift-d", split_down = "ctrl-alt-shift-d",
-# command_palette = "ctrl-shift-p", resume_palette = "ctrl-alt-shift-r",
+# command_palette = "ctrl-shift-p",
+# resume_palette = "ctrl-shift-r" on Linux or "ctrl-alt-shift-r" on Windows,
 # toggle_full_screen = "ctrl-shift-f11", quit = "ctrl-shift-q", and
 # reset_font_size = "ctrl-shift-0" on Linux but "ctrl-0" on Windows, which can
 # take Ctrl+Shift+0 for switching input languages. Windows reports AltGr as
@@ -234,6 +236,16 @@ project_roots = []
 # See Keyboard Shortcuts for the full platform-specific list. Explicit values
 # are used literally on every platform; cmd is not translated to Ctrl+Shift.
 # Ctrl+Shift+U is left to GNOME/IBus Unicode character entry.
+# Linux and Windows leave plain F6, Shift-F6, F11, and Ctrl-PageUp/Down to panes.
+# Their private view.toml [keys] defaults include these Spaceport-specific actions:
+# focus_next_region = "prefix+f6"
+# focus_previous_region = "prefix+shift+f6"
+# toggle_full_screen = "prefix+f11"
+# These unconfigured Spaceport defaults yield to existing daemon custom chords.
+# Explicit [keys] and [keybindings] assignments keep their configured precedence.
+# Herdr's prefix+n/p still select the next/previous tab.
+# Shifted digits and punctuation also bind their symbol spellings.
+# Linux leaves GNOME's Ctrl+Alt+Shift+arrows unbound; prefix+h/j/k/l still focus panes.
 # [keybindings]
 # new_tab = "cmd-t"
 # new_workspace = "cmd-shift-n"
@@ -309,6 +321,8 @@ project_roots = []
 # SSH hosts whose host keys are never verified, by the target saved with the
 # device. Anyone who can intercept the connection to one can impersonate it.
 # Only for hosts that keep no stable key (`UserKnownHostsFile=/dev/null`).
+# Agent and X11 forwarding are disabled for these hosts, even when enabled
+# in SSH config. Remote panes will not receive the forwarded local agent.
 # Add targets here by hand; Add Device has no host-key option. To verify a
 # host again, delete its target here.
 # [ssh]

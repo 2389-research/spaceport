@@ -1,3 +1,5 @@
+// ABOUTME: Paints the compact sidebar rail from workspace and indexed agent rows.
+// ABOUTME: Preserves host grouping, navigation, and status accessibility.
 //! The collapsed sidebar's compact rail, as Herdr's default
 //! `ui.sidebar_collapsed_mode = "compact"` draws it: per host a small header
 //! box, then a status mark per workspace and per agent. The header box stays

@@ -1,9 +1,10 @@
+// ABOUTME: Paints terminal cells and overlays from one prepared frame.
+// ABOUTME: Keeps image batches alive through cached cell replay and routes feedback inside the grid.
 //! The terminal's cells: the regions that paint them, the canvas that takes
 //! their input and paints what changed without them, and what sits over them.
 
 use super::Paint;
 use crate::SheprdWindow;
-use crate::config::ClipboardToastPosition;
 use crate::terminal::*;
 use crate::terminal_painter::{Ground, ImageTarget, PlacedImages};
 use crate::window::PressedLink;
@@ -16,6 +17,7 @@ impl SheprdWindow {
     pub(super) fn terminal_cells(
         &mut self,
         mut paint: Paint,
+        terminal_flash: Option<Div>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Div {
@@ -34,58 +36,7 @@ impl SheprdWindow {
             .children(self.render_reconnecting(cx))
             .when_some(find_bar, |terminal, bar| terminal.child(bar))
             .when_some(copy_badge, |terminal, badge| terminal.child(badge))
-            // Direct feedback for the user's own gesture, not a daemon notice:
-            // it sits over the cells it copied and needs no dismissing.
-            .when_some(self.flash_shown(), |terminal, (flash, shown)| {
-                use ClipboardToastPosition::*;
-                let position = self.config.clipboard_toast.position;
-                // It comes in from the edge it sits by and goes back to it.
-                let edge = px(12. - (1. - shown) * super::super::flash::SLIDE);
-                terminal.child(
-                    div()
-                        .absolute()
-                        .opacity(shown)
-                        .map(|row| match position {
-                            TopLeft | TopCenter | TopRight => row.top(edge),
-                            BottomLeft | BottomCenter | BottomRight => row.bottom(edge),
-                        })
-                        .map(|row| match position {
-                            TopLeft | BottomLeft => row.justify_start(),
-                            TopCenter | BottomCenter => row.justify_center(),
-                            TopRight | BottomRight => row.justify_end(),
-                        })
-                        // The flash spans the cells, so centering centers on
-                        // them and a corner is the corner of the grid.
-                        .left_0()
-                        .right_0()
-                        .px(px(12.))
-                        .flex()
-                        .overflow_hidden()
-                        .child(
-                            div()
-                                .debug_selector(|| "flash".into())
-                                .min_w_0()
-                                .flex()
-                                .items_center()
-                                .gap(px(8.))
-                                .px(px(12.))
-                                .py(px(6.))
-                                .rounded(px(crate::config::corners::CONTROL))
-                                .border_1()
-                                .border_color(rgb(flash.accent(&self.theme)))
-                                .bg(rgb(self.theme.surface))
-                                .text_color(rgb(self.theme.foreground))
-                                .child(
-                                    div()
-                                        .size(px(6.))
-                                        .flex_none()
-                                        .rounded_full()
-                                        .bg(rgb(flash.accent(&self.theme))),
-                                )
-                                .child(div().truncate().child(flash.text.clone())),
-                        ),
-                )
-            })
+            .children(terminal_flash)
     }
 
     /// The canvas over the cells: it reports the box the terminal is laid out
@@ -244,7 +195,7 @@ impl SheprdWindow {
                     );
                 };
                 paint(window, cx);
-            } else {
+            } else if !paint.main_images {
                 // Regions place no images, so nothing
                 // else releases the ones that went away.
                 painter.borrow_mut().release_idle_images(window);

@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 use super::*;
 
 /// A Settings window left open while Task Manager changes the entry reads
@@ -8,7 +10,7 @@ fn coming_to_the_front_reads_the_startup_entry_again(cx: &mut TestAppContext) {
     let source = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let weak = cx.update(|cx| source.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
     let (view, cx) = cx.add_window_view(|window, cx| {
-        let mut view = SettingsWindow::new(weak, cx);
+        let mut view = fixture_new(weak, cx);
         view.watch_launch_at_login(window, cx);
         view
     });
@@ -35,7 +37,7 @@ fn coming_to_the_front_reads_the_startup_entry_again(cx: &mut TestAppContext) {
 fn a_running_read_or_write_is_never_overlapped(cx: &mut TestAppContext) {
     let source = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let weak = cx.update(|cx| source.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
-    let (view, cx) = cx.add_window_view(|_, cx| SettingsWindow::new(weak, cx));
+    let (view, cx) = cx.add_window_view(|_, cx| fixture_new(weak, cx));
     view.update(cx, |view, cx| {
         view.launch_at_login.busy = true;
         // Skipped: a write here would race the running one.

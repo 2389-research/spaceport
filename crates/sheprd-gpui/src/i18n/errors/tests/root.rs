@@ -51,6 +51,7 @@ fn every_own_variant_has_a_message() {
         Error::ImageSize,
         Error::ImageTooLarge { limit: 2048 },
         Error::InvalidBrowserTabs,
+        Error::Browser(crate::browser::Error::RestorationBlocked),
         Error::InvalidBrowserUrl,
         Error::InvalidCodeFile,
         Error::InvalidExternalUrl,
@@ -82,7 +83,6 @@ fn every_own_variant_has_a_message() {
             path: path.clone(),
             source: Box::new(Error::NoTab),
         },
-        Error::PreferencesPath,
         Error::RelativeConfigRoot,
         Error::ScreenshotImage,
         Error::ScreenshotWrite {

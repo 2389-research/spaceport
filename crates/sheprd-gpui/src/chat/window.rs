@@ -19,6 +19,17 @@ use gpui::{prelude::*, *};
 use sheprd_chat_protocol::{Attachment, Command, MAX_PROMPT_SIZE, Status, assist};
 use std::time::Instant;
 
+pub(super) fn conversation_focus(cx: &mut App) -> FocusHandle {
+    cx.focus_handle().tab_stop(true)
+}
+
+pub(super) fn composer(cx: &mut Context<MultilineInput>) -> MultilineInput {
+    let mut input = MultilineInput::new(cx);
+    input.focus = input.focus.clone().tab_stop(true);
+    input.set_label(fl!("chat-composer-label"), cx);
+    input
+}
+
 impl SheprdWindow {
     /// Runs every tick: attaches to the selected daemon's chat panes when it
     /// is local, applies what their programs sent, and keeps each composer
@@ -39,6 +50,16 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        let pastes: Vec<_> = self
+            .chats
+            .panes()
+            .filter_map(|pane| {
+                pane.composer
+                    .as_ref()
+                    .filter(|input| input.read(cx).is_pasting())
+                    .map(|input| (pane.target.clone(), pane.session.since(), input.clone()))
+            })
+            .collect();
         // Off, every chat is let go and its pane shows its terminal again.
         let enabled = self.config.features.acp_chats;
         let route = self
@@ -120,6 +141,19 @@ impl SheprdWindow {
         changed |= self.chats.rewidth(self.config.chat.max_width);
         changed |= self.chats.relocale(crate::i18n::shown_locale());
         changed |= self.chats.poll(now);
+        for (target, cursor, input) in pastes {
+            let current = self.chats.pane(&target.pane_id).is_some_and(|pane| {
+                pane.input() == ChatInput::Composer
+                    && pane
+                        .composer
+                        .as_ref()
+                        .is_some_and(|current| current.entity_id() == input.entity_id())
+                    && super::files::is_current(&pane.target, pane.session.since(), &target, cursor)
+            });
+            if !current {
+                input.update(cx, |input, cx| input.cancel_paste(cx));
+            }
+        }
         // A connection that ended closed its pane's menu, and the search
         // field that held the keyboard went with it. A chat still drawn
         // takes it in its input; otherwise what the pane shows instead does:
@@ -161,7 +195,7 @@ impl SheprdWindow {
             }
             pane.text_focus.get_or_insert_with(|| {
                 changed = true;
-                cx.focus_handle()
+                conversation_focus(cx)
             });
             match pane.input() {
                 ChatInput::Composer => {}
@@ -175,7 +209,7 @@ impl SheprdWindow {
                 ChatInput::ReadOnly => {
                     pane.read_only_focus.get_or_insert_with(|| {
                         changed = true;
-                        cx.focus_handle()
+                        cx.focus_handle().tab_stop(true)
                     });
                     continue;
                 }
@@ -184,7 +218,7 @@ impl SheprdWindow {
                 .composer
                 .get_or_insert_with(|| {
                     changed = true;
-                    cx.new(MultilineInput::new)
+                    cx.new(composer)
                 })
                 .clone();
             let accepts = pane.session.transcript().status.accepts_prompts();
@@ -205,6 +239,7 @@ impl SheprdWindow {
                 .map(str::to_owned);
             composer.update(cx, |input, cx| {
                 input.set_completion(ghost, cx);
+                input.set_label(fl!("chat-composer-label"), cx);
                 input.set_appearance(font.clone(), theme.clone(), cx);
                 input.set_placeholder_with(
                     move || {
@@ -342,7 +377,8 @@ impl SheprdWindow {
     /// on a keystroke bubbling out of the overlay or one of its fields.
     pub(crate) fn chat_focused(&self, window: &Window, cx: &App) -> bool {
         self.chats.panes().any(|pane| {
-            pane.focus_handles(cx).any(|focus| focus.is_focused(window))
+            pane.focus_handles(cx)
+                .any(|focus| focus.contains_focused(window, cx))
                 || pane.menu_search_focused(window, cx)
                 || pane.widgets.focused(window, cx)
         })
@@ -503,6 +539,9 @@ impl SheprdWindow {
         let Some(input) = pane.composer.clone() else {
             return;
         };
+        if !input.read(cx).focus.is_focused(window) {
+            return;
+        }
         if input.read(cx).is_composing() {
             return;
         }
@@ -548,6 +587,9 @@ impl SheprdWindow {
             window.prevent_default();
             return;
         }
+        if self.chat_control_key(pane_id, event, window, cx) {
+            return;
+        }
         if self.chat_reader_key(pane_id, event, window, cx) {
             return;
         }
@@ -577,12 +619,23 @@ impl SheprdWindow {
         let Some(input) = pane.composer.clone() else {
             return;
         };
+        if !input.read(cx).focus.is_focused(window) {
+            return;
+        }
         if input.read(cx).is_composing() {
             return;
         }
         let text = input.read(cx).text().to_owned();
         let found = assist::completions(pane.session.transcript(), &text).len();
         let key = event.keystroke.key.as_str();
+        let owner_action = (key == "tab" && found > 0)
+            || (matches!(key, "up" | "down")
+                && (found > 0 || text.is_empty() || pane.history.recalling()));
+        if owner_action && input.update(cx, |input, cx| input.refuse_while_pasting(cx)) {
+            cx.stop_propagation();
+            window.prevent_default();
+            return;
+        }
         match key {
             "tab" if found > 0 => {
                 let Some(name) = assist::completions(pane.session.transcript(), &text)
@@ -609,7 +662,7 @@ impl SheprdWindow {
                 let Some(recalled) = recalled.map(str::to_owned) else {
                     return;
                 };
-                self.set_chat_prompt(&input, &recalled, window, cx);
+                self.set_chat_prompt(&input, &recalled, cx);
             }
             _ => {
                 if key != "up" && key != "down" {
@@ -623,9 +676,8 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    /// Pastes the clipboard's text into the composer when it holds several
-    /// lines, which the field takes as several lines. Whether it took
-    /// the paste.
+    /// Starts one background clipboard read for the focused composer.
+    /// Returns whether the chat owns this paste action.
     pub(super) fn chat_paste(
         &mut self,
         pane_id: &str,
@@ -659,40 +711,7 @@ impl SheprdWindow {
         if !input.read(cx).focus.is_focused(window) {
             return false;
         }
-        let Some(item) = cx.read_from_clipboard() else {
-            return false;
-        };
-        // Files copied in a file manager carry their names as text too; they
-        // attach as a drop would instead.
-        if let Some(paths) = item.entries().iter().find_map(|entry| match entry {
-            ClipboardEntry::ExternalPaths(paths) if !paths.paths().is_empty() => {
-                Some(paths.paths().to_vec())
-            }
-            _ => None,
-        }) {
-            self.attach_chat_files(pane_id, paths, window, cx);
-            return true;
-        }
-        let Some(text) = item.text() else {
-            // A picture alone, such as a copied screenshot, attaches as a file.
-            let Some(image) = item.into_entries().find_map(|entry| match entry {
-                ClipboardEntry::Image(image) => Some(image),
-                _ => None,
-            }) else {
-                return false;
-            };
-            self.attach_chat_image(pane_id, image, window, cx);
-            return true;
-        };
-        if !text.contains(['\n', '\r']) {
-            return false;
-        }
-        // Newlines paste as newlines into the multi-line field.
-        input.update(cx, |input, cx| {
-            input.replace_text_in_range(None, &text, window, cx)
-        });
-        self.redraw_terminal(cx);
-        cx.notify();
+        self.start_chat_paste(pane_id, &input, window, cx);
         true
     }
 
@@ -701,13 +720,9 @@ impl SheprdWindow {
         &mut self,
         input: &Entity<MultilineInput>,
         text: &str,
-        window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        input.update(cx, |input, cx| {
-            input.clear(cx);
-            input.replace_text_in_range(None, text, window, cx);
-        });
+        input.update(cx, |input, cx| input.set_text_at(text, text.len(), cx));
         self.redraw_terminal(cx);
         cx.notify();
     }
@@ -723,15 +738,15 @@ impl SheprdWindow {
         let Some(pane) = self.chats.pane_mut(pane_id) else {
             return;
         };
-        pane.completion = 0;
         let Some(input) = pane.composer.clone() else {
             return;
         };
+        if input.update(cx, |input, cx| input.refuse_while_pasting(cx)) {
+            return;
+        }
+        pane.completion = 0;
         let text = format!("/{name} ");
-        input.update(cx, |input, cx| {
-            input.clear(cx);
-            input.replace_text_in_range(None, &text, window, cx);
-        });
+        input.update(cx, |input, cx| input.set_text_at(&text, text.len(), cx));
         let focus = input.read(cx).focus.clone();
         window.focus(&focus, cx);
         cx.notify();
@@ -792,6 +807,9 @@ impl SheprdWindow {
         input: &Entity<MultilineInput>,
         cx: &mut Context<Self>,
     ) {
+        if input.update(cx, |input, cx| input.refuse_while_pasting(cx)) {
+            return;
+        }
         let Some(pane) = self.chats.pane_mut(pane_id) else {
             return;
         };

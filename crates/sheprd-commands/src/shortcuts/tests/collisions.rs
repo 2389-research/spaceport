@@ -1,6 +1,5 @@
-//! The platform-delivery collisions the default table answers: a backend that
-//! reports Shift as the symbol it types, Windows' AltGr arriving as Ctrl-Alt,
-//! and the keys the programs inside a pane already claim.
+// ABOUTME: Checks symbol aliases, Windows AltGr safeguards, and pane key ownership.
+// ABOUTME: Preserves Linux's source-confirmed GNOME exclusions across catalog changes.
 
 use super::*;
 
@@ -103,14 +102,24 @@ fn windows_altgr_types_a_letter_so_no_default_is_ctrl_alt_and_a_letter() {
     assert_eq!(linux::defaults(Command::CloseWindow), ["ctrl-alt-w"]);
 }
 
-/// Ctrl-Alt-Shift with an arrow, and Ctrl-Alt-Shift-R, may be a GNOME key.
-/// No layout or desktop was measured, so these wait for a real keyboard.
+/// GNOME reserves these chords; Windows retains its separate Ctrl profile.
 #[test]
-fn ctrl_alt_shift_arrows_and_r_wait_for_a_real_keyboard() {
-    assert_eq!(linux::defaults(Command::FocusLeft), ["ctrl-alt-shift-left"]);
-    assert_eq!(linux::defaults(Command::FocusDown), ["ctrl-alt-shift-down"]);
+fn gnome_exclusions_do_not_change_windows_shortcuts() {
+    for command in [
+        Command::FocusLeft,
+        Command::FocusRight,
+        Command::FocusUp,
+        Command::FocusDown,
+    ] {
+        assert!(linux::defaults(command).is_empty());
+        assert_eq!(
+            windows::defaults(command),
+            crate::catalog::linux::defaults(command)
+        );
+    }
+    assert_eq!(linux::defaults(Command::ResumePalette), ["ctrl-shift-r"]);
     assert_eq!(
-        linux::defaults(Command::ResumePalette),
+        windows::defaults(Command::ResumePalette),
         ["ctrl-alt-shift-r"]
     );
 }

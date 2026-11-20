@@ -17,8 +17,8 @@ menu-settings-paste = Paste into terminal
 menu-settings-no-shortcut = No shortcut assigned
 menu-settings-edit = Edit
 menu-settings-no-match = No matching shortcuts. Try an action name or key combination.
-# "[keys]" is a section of Herdr's config file; keep it as it is.
-menu-settings-note = Includes Herdr's [keys] prefix chords and the connected daemon's custom commands. A binding that cannot run says why. Terminal applications keep their own shortcuts.
+# "[keys]" is a section of the private view file; keep it as it is.
+menu-settings-note = Local prefix chords come from [keys] in spaceport/view.toml. Set prefix = "ctrl+a" there to use Ctrl+A. Connected daemons supply custom commands. A binding that cannot run says why.
 # Why a custom command's binding does not run, under its keys.
 menu-settings-shadowed = Used by a Herdr or GUI shortcut
 menu-settings-taken = Used by an earlier command

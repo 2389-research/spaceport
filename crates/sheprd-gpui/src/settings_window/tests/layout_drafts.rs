@@ -11,7 +11,7 @@ fn layout_clicks_apply_live_without_writing_and_close_commits_only_final(cx: &mu
     let weak = cx.update(|cx| first.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
     let (view, cx) = cx.add_window_view(|window, cx| {
         cx.bind_keys(key_bindings());
-        let mut view = SettingsWindow::new(weak, cx);
+        let mut view = fixture_new(weak, cx);
         view.layout_io = Some(recording_layouts(writes.clone(), false));
         window.focus(&view.focus, cx);
         view

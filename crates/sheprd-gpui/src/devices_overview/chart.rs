@@ -1,3 +1,5 @@
+// ABOUTME: Draws bounded agent activity series from prepared counts and history.
+// ABOUTME: Shares chart geometry between the overview and captured picker summaries.
 //! The agent activity chart: working and blocked agents on every device for
 //! the last two hours as stacked bars, and, behind "View all devices", one
 //! lane per device on the same time axis. Bars and lanes paint as quads on a
@@ -212,8 +214,7 @@ pub(super) fn activity(
 
 /// Every device's agents for the last two hours as a small chart, for the
 /// device picker's activity card.
-pub(crate) fn sparkline(history: &History, look: &Look, height: f32) -> AnyElement {
-    let totals = history.totals();
+pub(crate) fn sparkline(totals: Vec<Counts>, look: &Look, height: f32) -> AnyElement {
     let peak = totals
         .iter()
         .map(|counts| counts.working + counts.blocked)

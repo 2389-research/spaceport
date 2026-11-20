@@ -5,7 +5,7 @@ fn consecutive_pastes_acquire_the_current_selection_each_time() -> Result<()> {
     let mut selection = b"first".to_vec();
     let mut calls = 0;
     for expected in ["first", "second\n"] {
-        let item = read_commands(false, true, true, |program, args, limit, _| {
+        let item = read_commands(Mode::Normal, true, true, |program, args, limit, _| {
             calls += 1;
             assert_eq!(program, "wl-paste");
             assert_eq!(args, ["--no-newline", "--type", "text/plain;charset=utf-8"]);
@@ -21,7 +21,7 @@ fn consecutive_pastes_acquire_the_current_selection_each_time() -> Result<()> {
 
 #[test]
 fn unavailable_wayland_selection_never_reads_the_xwayland_clipboard() -> Result<()> {
-    let item = read_commands(false, true, true, |program, _, _, _| {
+    let item = read_commands(Mode::Normal, true, true, |program, _, _, _| {
         assert_eq!(
             program, "wl-paste",
             "X11 may still contain the previous copy"
@@ -35,7 +35,7 @@ fn unavailable_wayland_selection_never_reads_the_xwayland_clipboard() -> Result<
 #[test]
 fn wayland_plain_text_fallback_precedes_any_image_and_preserves_empty_text() -> Result<()> {
     let mut calls = Vec::new();
-    let item = read_commands(false, true, true, |program, args, limit, _| {
+    let item = read_commands(Mode::Normal, true, true, |program, args, limit, _| {
         assert_eq!(program, "wl-paste");
         assert_eq!(limit, TEXT_LIMIT);
         calls.push(args[2].to_owned());
@@ -49,7 +49,7 @@ fn wayland_plain_text_fallback_precedes_any_image_and_preserves_empty_text() -> 
 
 #[test]
 fn helper_errors_do_not_fall_back_to_another_selection_or_format() {
-    let result = read_commands(false, true, true, |program, _, _, _| {
+    let result = read_commands(Mode::Normal, true, true, |program, _, _, _| {
         assert_eq!(program, "wl-paste");
         Err(Error::Process(io::Error::from(io::ErrorKind::NotFound)).into())
     });

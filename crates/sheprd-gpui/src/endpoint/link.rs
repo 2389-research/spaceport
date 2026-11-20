@@ -31,6 +31,9 @@ pub(super) enum Failure {
     Missing {
         reason: Option<String>,
     },
+    Stopped {
+        reason: Option<String>,
+    },
     Version {
         mismatch: VersionMismatch,
         reason: Option<String>,
@@ -42,6 +45,7 @@ impl Failure {
         match self {
             Self::Transport { reason, .. }
             | Self::Missing { reason }
+            | Self::Stopped { reason }
             | Self::Version { reason, .. } => reason.as_deref(),
         }
     }
@@ -50,6 +54,7 @@ impl Failure {
         match &mut self {
             Self::Transport { reason: old, .. }
             | Self::Missing { reason: old }
+            | Self::Stopped { reason: old }
             | Self::Version { reason: old, .. } => *old = reason,
         }
         self
@@ -59,6 +64,7 @@ impl Failure {
         matches!(
             self,
             Self::Missing { .. }
+                | Self::Stopped { .. }
                 | Self::Transport {
                     needs_user: true,
                     ..
@@ -167,7 +173,12 @@ impl Endpoint {
                 self.enter(Transition::Stop);
                 self.initial_surface = active;
                 self.attempts = self.attempts.saturating_add(1);
-                self.connection.reconnect(options, false, active);
+                self.connection.reconnect(
+                    options,
+                    false,
+                    active,
+                    crate::daemon::Start::WhenMissing,
+                );
                 self.live = self.connection.take_update().unwrap_or_default();
                 Link::Dialing {
                     retry_at: Instant::now() + self.retry_delay(),
@@ -196,6 +207,17 @@ impl Endpoint {
                     Some(Failure::Version {
                         mismatch: mismatch.clone(),
                         reason,
+                    })
+                } else if self.live.server_stopped
+                    && (crate::daemon::may_start(&self.connection.target)
+                        || matches!(
+                            self.connection.target,
+                            ConnectTarget::Ssh { .. } | ConnectTarget::Wsl { .. }
+                        ))
+                {
+                    Some(Failure::Stopped {
+                        reason: reason
+                            .or_else(|| self.live.notices.connection_reason().map(str::to_owned)),
                     })
                 } else if self.live.missing_installation {
                     Some(Failure::Missing { reason })
@@ -333,6 +355,9 @@ impl Endpoint {
     }
     pub(crate) fn herdr_missing(&self) -> bool {
         matches!(self.link.why(), Some(Failure::Missing { .. }))
+    }
+    pub(crate) fn herdr_stopped(&self) -> bool {
+        matches!(self.link.why(), Some(Failure::Stopped { .. }))
     }
     pub(crate) fn version_mismatch(&self) -> Option<&VersionMismatch> {
         match self.link.why() {

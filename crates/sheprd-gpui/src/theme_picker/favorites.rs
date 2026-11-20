@@ -31,6 +31,7 @@ impl SheprdWindow {
         index: usize,
         name: &str,
         favorite: bool,
+        active: bool,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
         let name = name.to_owned();
@@ -42,29 +43,31 @@ impl SheprdWindow {
         div()
             .id(("theme-star", index))
             .debug_selector(move || format!("theme-star-{index}"))
-            .role(Role::Button)
-            .aria_label(if favorite {
-                fl!("theme-picker-unstar")
-            } else {
-                fl!("theme-picker-star")
-            })
             .flex_none()
             .size(px(22.))
             .flex()
             .items_center()
             .justify_center()
             .rounded(px(crate::config::corners::CONTROL))
-            .cursor_pointer()
-            .hover(|s| s.bg(rgb(self.theme.surface)))
             .child(crate::icons::icon(path, 14., color))
-            .on_click(cx.listener(move |this, _, _, cx| {
-                // The row under the star applies its theme on click.
-                cx.stop_propagation();
-                if this.toggle_favorite_theme(&name) {
-                    this.save_favorite_themes(cx);
-                }
-                cx.notify();
-            }))
+            .when(active, |star| {
+                star.role(Role::Button)
+                    .aria_label(if favorite {
+                        fl!("theme-picker-unstar")
+                    } else {
+                        fl!("theme-picker-star")
+                    })
+                    .cursor_pointer()
+                    .hover(|s| s.bg(rgb(self.theme.surface)))
+                    .on_click(cx.listener(move |this, _, _, cx| {
+                        // The row under the star applies its theme on click.
+                        cx.stop_propagation();
+                        if this.toggle_favorite_theme(&name) {
+                            this.save_favorite_themes(cx);
+                        }
+                        cx.notify();
+                    }))
+            })
     }
 
     /// Stars or unstars `name`, queues the change to be written, and

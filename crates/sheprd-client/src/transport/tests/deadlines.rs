@@ -1,6 +1,8 @@
+// ABOUTME: Exercises Windows pipe deadlines and byte integrity with real peers and children.
+// ABOUTME: Keeps timed-out operations observable and reaps exact fixture children on failure.
 use super::*;
 use std::{
-    io,
+    io::{self, Seek},
     sync::mpsc::channel,
     thread,
     time::{Duration, Instant},
@@ -156,6 +158,7 @@ fn a_zero_timeout_is_refused_as_on_a_socket() {
 #[test]
 fn a_bridge_child_streams_both_ways_and_its_exit_reads_as_closed() {
     let (mut stream, stdin, stdout) = Stream::child().unwrap();
+    let mut diagnostics = tempfile::tempfile().unwrap();
     // An unbuffered copy of standard input to standard output.
     let mut command = std::process::Command::new("powershell.exe");
     command
@@ -164,12 +167,12 @@ fn a_bridge_child_streams_both_ways_and_its_exit_reads_as_closed() {
             "-NoProfile",
             "-NonInteractive",
             "-Command",
-            "[Console]::OpenStandardInput().CopyTo([Console]::OpenStandardOutput())",
+            "$inputStream=[Console]::OpenStandardInput(); $outputStream=[Console]::OpenStandardOutput(); [Console]::Error.WriteLine('SPACEPORT_ECHO_READY'); $inputStream.CopyTo($outputStream)",
         ])
         .stdin(stdin)
         .stdout(stdout)
-        .stderr(std::process::Stdio::null());
-    let mut child = command.spawn().unwrap();
+        .stderr(diagnostics.try_clone().unwrap());
+    let mut child = crate::ssh::ChildGuard(command.spawn().unwrap());
     drop(command);
     // More than both pipes hold: alternate bounded writes and reads, as the
     // session loop does, or the child would block on its full output.
@@ -185,7 +188,19 @@ fn a_bridge_child_streams_both_ways_and_its_exit_reads_as_closed() {
     let mut buffer = [0; 8192];
     let start = Instant::now();
     while echoed.len() < sent.len() {
-        assert!(start.elapsed() < Duration::from_secs(30), "echo stalled");
+        if start.elapsed() >= Duration::from_secs(30) {
+            let status = child.0.try_wait();
+            let settled = stream.flush();
+            let mut stderr = String::new();
+            let capture = diagnostics
+                .rewind()
+                .and_then(|()| (&mut diagnostics).take(4096).read_to_string(&mut stderr));
+            panic!(
+                "echo stalled: accepted={offset}/{} echoed={} stream={stream:?} child={status:?} settled={settled:?} stderr_capture={capture:?} stderr={stderr:?}",
+                sent.len(),
+                echoed.len(),
+            );
+        }
         if offset < sent.len() {
             match stream.write(&sent[offset..]) {
                 Ok(written) => offset += written,
@@ -205,8 +220,8 @@ fn a_bridge_child_streams_both_ways_and_its_exit_reads_as_closed() {
         .set_read_timeout(Some(Duration::from_secs(10)))
         .unwrap();
     // The child's exit closes its output: end of stream, not a timeout.
-    child.kill().unwrap();
-    child.wait().unwrap();
+    child.0.kill().unwrap();
+    child.0.wait().unwrap();
     let mut rest = Vec::new();
     stream.read_to_end(&mut rest).unwrap();
     assert!(rest.is_empty());
@@ -225,15 +240,15 @@ fn a_bridge_child_that_never_reads_cannot_hold_a_write() {
         .stdin(stdin)
         .stdout(stdout)
         .stderr(std::process::Stdio::null());
-    let mut child = command.spawn().unwrap();
+    let mut child = crate::ssh::ChildGuard(command.spawn().unwrap());
     drop(command);
     let start = Instant::now();
     assert!(timed_out(
         &stream.write_all(&bytes(16 * CHUNK)).unwrap_err()
     ));
     assert!(start.elapsed() < Duration::from_secs(5));
-    child.kill().unwrap();
-    child.wait().unwrap();
+    child.0.kill().unwrap();
+    child.0.wait().unwrap();
     let start = Instant::now();
     drop(stream);
     assert!(start.elapsed() < Duration::from_secs(5));

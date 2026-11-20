@@ -1,3 +1,5 @@
+// ABOUTME: Acquires native clipboard data in an isolated main-thread helper.
+// ABOUTME: Bounds helper output and reaps only the exact child reader.
 //! A native pasteboard read can block or fault inside AppKit. Run it on the
 //! main thread of a short-lived copy of this executable, before GPUI starts.
 //! No NSPasteboard objects are shared with the GUI's foreground copy paths,
@@ -7,7 +9,7 @@
 mod tests;
 mod wire;
 
-use super::{ClipboardItem, IMAGE_LIMIT, TEXT_LIMIT};
+use super::{ClipboardItem, IMAGE_LIMIT, Mode, TEXT_LIMIT};
 use crate::window::clipboard;
 use std::{
     ffi::OsString,
@@ -58,21 +60,28 @@ impl From<Error> for crate::Error {
 
 /// Blocking, but never calls AppKit in the GUI process. The existing paste
 /// reservation still owns ordering, target validation, and cancellation.
-pub(super) fn read(image_only: bool) -> crate::Result<Option<ClipboardItem>> {
+pub(super) fn read(mode: Mode) -> crate::Result<Option<ClipboardItem>> {
     let executable = std::env::current_exe().map_err(Error::Process)?;
-    let mut command = reader_command(&executable, image_only)?;
+    let mut command = reader_command(&executable, mode)?;
     acquire(&mut command, Instant::now() + TIMEOUT, OUTPUT_LIMIT)
 }
 
 /// The reader is this executable run again, so it needs the file the app
 /// started from. A rebuilt or deleted bundle leaves the running app
 /// without one; saying so beats a bare spawn failure.
-fn reader_command(executable: &Path, image_only: bool) -> Result<Command, Error> {
+fn reader_command(executable: &Path, mode: Mode) -> Result<Command, Error> {
     if !executable.is_file() {
         return Err(Error::Missing(executable.to_owned()));
     }
     let mut command = sheprd_client::new_command(executable);
-    command.args([HELPER, if image_only { "image" } else { "normal" }]);
+    command.args([
+        HELPER,
+        match mode {
+            Mode::Image => "image",
+            Mode::Normal => "normal",
+            Mode::Text => "text",
+        },
+    ]);
     Ok(command)
 }
 
@@ -82,19 +91,17 @@ pub(crate) fn run_helper(args: &[OsString]) -> Option<ExitCode> {
     if args.first().is_none_or(|arg| arg != HELPER) {
         return None;
     }
-    let image_only = match args {
-        [_, mode] if mode == "normal" => false,
-        [_, mode] if mode == "image" => true,
+    let mode = match args {
+        [_, mode] if mode == "normal" => Mode::Normal,
+        [_, mode] if mode == "image" => Mode::Image,
+        [_, mode] if mode == "text" => Mode::Text,
         _ => return Some(ExitCode::from(2)),
     };
     let Some(_main_thread) = objc2::MainThreadMarker::new() else {
         return Some(ExitCode::FAILURE);
     };
     let result = objc2::rc::autoreleasepool(|_| {
-        super::read_pasteboard(
-            &objc2_app_kit::NSPasteboard::generalPasteboard(),
-            image_only,
-        )
+        super::read_pasteboard(&objc2_app_kit::NSPasteboard::generalPasteboard(), mode)
     });
     Some(match result {
         Ok(item) => match wire::write(item.as_ref(), &mut io::stdout().lock()) {

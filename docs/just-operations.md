@@ -43,6 +43,7 @@ recipe rather than a note.
 | `just test-core binary` | herdr-core tests; ends the core's terminals on exit |
 | `just test-gui binary` | real native window tests; needs an active desktop |
 | `just test-sidebar` / `just test-sidebar-routing` | native font/routing suites |
+| `just test-settings-keyboard` | native Settings keyboard navigation; keep its fixture window in front |
 | `just test-perf budget` | release-mode performance budget |
 | `just stress-linux iterations cpus filter` | the Linux stress loop for endpoint tests (CI-adjacent; see the recipe) |
 

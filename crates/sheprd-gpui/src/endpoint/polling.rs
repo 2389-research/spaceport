@@ -1,3 +1,5 @@
+// ABOUTME: Drains endpoint updates and keeps activation and navigation ordered.
+// ABOUTME: Applies daemon clipboard messages and schedules bounded redraws.
 //! The window's periodic endpoint work: draining each connection, activating
 //! the selected surface, and probing sessions.
 use super::{LOCAL, Redraw};
@@ -236,7 +238,7 @@ impl SheprdWindow {
                 .activation
                 .deadline()
                 .filter(|_| !endpoint.initial_surface);
-            self.live = endpoint.live.clone();
+            self.live.apply_window_update(endpoint.live.clone());
             if let Some(deadline) = budget {
                 self.live
                     .activation
@@ -357,7 +359,7 @@ impl SheprdWindow {
                 }
             }
             state.dirty = true;
-            self.live = state.clone();
+            self.live.apply_window_update(state.clone());
             // take_update already moved this response out of the inbox.
             self.live.dialog_response = endpoint.live.dialog_response.clone();
             return true;

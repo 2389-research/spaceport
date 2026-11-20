@@ -156,6 +156,7 @@ jobs:
           python3 -c 'import sys; assert sys.version_info >= (3, 11), "Python 3.11+ required"'
           jq --version
           python3 -m unittest discover -s scripts/release/tests -v
+          python3 -m unittest discover -s scripts -p test_windows_runtime_fixture.py -v
           python3 scripts/release/test-release-security.py
           python3 scripts/test_ubuntu_ci_sources.py
           python3 -m unittest discover -s assets/icons -p 'test_*.py'
@@ -195,6 +196,9 @@ jobs:
       - name: Test default features and executable CLI
         if: matrix.features == 'default'
         run: cargo test --locked --workspace
+      - name: Stage the pinned framework for isolated test children
+        if: runner.os == 'macOS' && matrix.features == 'all'
+        run: python3 scripts/release/sparkle_framework.py stage-tests target/debug --sdk "$SPARKLE_FRAMEWORK_PATH"
       - name: Test integration-feature build and executable CLI
         if: matrix.features == 'all'
         run: cargo test --locked --workspace --all-features
@@ -202,14 +206,11 @@ jobs:
         if: runner.os == 'macOS' && matrix.features == 'all'
         run: cargo test --locked -p sheprd-gpui --features integration-test --test live_gui sidebar_routing::native_host_routing -- --ignored --exact --nocapture --test-threads=1
 
-  # Spaceport Windows jobs are paused until Kata h8g5 fixes native performance.
-  # Keep the jobs and their budgets intact for re-enabling qualification.
   # Match the other platforms' Rust checks without an extra optimized build.
   # Native GUI tests run in windows-native; the optimized Windows build runs
   # in windows-package.
   windows:
     if: >-
-      vars.WINDOWS_ENABLED == 'true' &&
       needs.commits.outputs.code == 'true' &&
       github.repository == '2389-research/spaceport' &&
       (github.event_name == 'pull_request' ||
@@ -256,12 +257,11 @@ jobs:
 
   # The native GUI tests (`just test-gui`, `just test-sidebar`) on a real
   # Windows desktop session against a pinned, checksummed Herdr daemon in the
-  # shared test sandbox, then the release-mode performance budget
-  # (`just test-perf`). Hosted runners have no GPU, so Direct3D runs on WARP:
-  # the budget is a regression tripwire, not a target for real hardware.
+  # shared test sandbox. Only the release-mode performance budget remains
+  # paused for Kata h8g5, controlled by WINDOWS_ENABLED. Hosted runners use
+  # WARP; that unchanged budget remains a Windows qualification gap.
   windows-native:
     if: >-
-      vars.WINDOWS_ENABLED == 'true' &&
       needs.commits.outputs.code == 'true' &&
       github.repository == '2389-research/spaceport' &&
       (github.event_name == 'pull_request' ||
@@ -307,7 +307,27 @@ jobs:
           skip=()
           if [[ $RUNNER == windows-11-arm ]]; then skip=(--skip native_gui_live); fi
           cargo test --locked -p sheprd-gpui --features integration-test --test live_gui -- --ignored --nocapture --test-threads=1 "${skip[@]}"
+      - name: Native pipe owner qualification
+        run: cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport daemon::windows_tests::daemon_pipe_compares_the_opened_owner_despite_read_write_access -- --exact --nocapture --test-threads=1
+      - name: Native UI Automation tree and keyboard focus
+        if: matrix.runner == 'windows-2025'
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows -- --ignored --nocapture --test-threads=1 --skip core:: --skip non_us::
+      - name: Native non-US keyboard input
+        if: ${{ !cancelled() && matrix.runner == 'windows-2025' }}
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows non_us:: -- --ignored --nocapture --test-threads=1
+      - name: Stage the pinned Core fixture
+        if: ${{ !cancelled() && matrix.runner == 'windows-2025' }}
+        run: |
+          core_binary=$(python scripts/install-herdr-windows.py --core "$RUNNER_TEMP/herdr-core")
+          echo "HERDR_CORE_TEST_BINARY=$core_binary" >> "$GITHUB_ENV"
+      - name: Native Core text and caret qualification
+        if: ${{ !cancelled() && matrix.runner == 'windows-2025' }}
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows core:: -- --ignored --nocapture --test-threads=1
       - name: Release-mode performance budget
+        if: vars.WINDOWS_ENABLED == 'true'
         env:
           HERDR_PERF_P95_MS: '100'
         run: |
@@ -319,7 +339,6 @@ jobs:
   # change, so this runs only when what those artifacts are made from changes.
   windows-package:
     if: >-
-      vars.WINDOWS_ENABLED == 'true' &&
       needs.commits.outputs.windows_package == 'true' &&
       github.repository == '2389-research/spaceport' &&
       (github.event_name == 'pull_request' ||
@@ -389,7 +408,6 @@ jobs:
       - name: Require all platform checks
         env:
           RESULT: ${{ needs.checks.result }}
-          WINDOWS_ENABLED: ${{ github.repository != '2389-research/spaceport' }}
           WINDOWS: ${{ needs.windows.result }}
           NATIVE: ${{ needs.windows-native.result }}
           PACKAGE: ${{ needs.windows-package.result }}
@@ -417,21 +435,15 @@ jobs:
           else
             test "$MACOS_RELEASE" = skipped || exit 1
           fi
-          if [ "$WINDOWS_ENABLED" = false ]; then
-            test "$WINDOWS" = skipped && test "$NATIVE" = skipped && test "$PACKAGE" = skipped
-          elif [ "$WINDOWS_ENABLED" = true ]; then
-            if [ "$CODE" = true ]; then
-              test "$WINDOWS" = success && test "$NATIVE" = success || exit 1
-            else
-              test "$WINDOWS" = skipped && test "$NATIVE" = skipped || exit 1
-            fi
-            if [ "$PACKAGE_INPUTS" = true ]; then
-              test "$PACKAGE" = success
-            else
-              test "$PACKAGE_INPUTS" = false && test "$PACKAGE" = skipped
-            fi
+          if [ "$CODE" = true ]; then
+            test "$WINDOWS" = success && test "$NATIVE" = success || exit 1
           else
-            exit 1
+            test "$WINDOWS" = skipped && test "$NATIVE" = skipped || exit 1
+          fi
+          if [ "$PACKAGE_INPUTS" = true ]; then
+            test "$PACKAGE" = success
+          else
+            test "$PACKAGE_INPUTS" = false && test "$PACKAGE" = skipped
           fi
 
   # Linux release builds on main, which the release gate requires. No workflow

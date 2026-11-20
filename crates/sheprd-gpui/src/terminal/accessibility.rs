@@ -1,3 +1,5 @@
+// ABOUTME: Exposes bounded visible terminal text, selections, and carets to AccessKit.
+// ABOUTME: Shares transcript rules across Herdr and Core terminal panes.
 //! The terminal text that assistive technology reads: screen readers, and
 //! selection tools that ask the focused element for its selected text
 //! (`AXSelectedText` on macOS) instead of the clipboard.
@@ -12,13 +14,14 @@
 
 use super::{
     InputTarget,
-    selection::{self, Region, Selection},
+    selection::{self, Selection},
 };
 use gpui::{
     A11ySubtreeBuilder,
-    accesskit::{Node, NodeId, Rect, Role, TextDirection, TextPosition, TextSelection},
+    accesskit::{Live, Node, NodeId, Rect, Role, TextDirection, TextPosition, TextSelection},
 };
 use sheprd_client::protocol::{FrameData, PaneSurfaceFrame};
+use std::ops::Range;
 
 /// AccessKit measures each character in one byte of UTF-8 length. Terminal
 /// content is untrusted and a cell's grapheme may be longer than that, so such
@@ -41,14 +44,14 @@ struct Line {
 impl Line {
     /// Reads `row` of `frame` within the region's columns. `None` when the
     /// frame no longer holds the row.
-    fn read(frame: &FrameData, region: &Region, row: u16) -> Option<Self> {
-        if row >= frame.height || region.columns.end > frame.width {
+    fn read(frame: &FrameData, columns: &Range<u16>, row: u16) -> Option<Self> {
+        if row >= frame.height || columns.end > frame.width {
             return None;
         }
         let offset = usize::from(row) * usize::from(frame.width);
-        let cells = frame.cells.get(
-            offset + usize::from(region.columns.start)..offset + usize::from(region.columns.end),
-        )?;
+        let cells = frame
+            .cells
+            .get(offset + usize::from(columns.start)..offset + usize::from(columns.end))?;
         let mut line = Self {
             row,
             text: String::new(),
@@ -127,31 +130,96 @@ impl Transcript {
         };
         let region = selection::region(surface, &target, cell_width, cell_height)?;
         let frame = selection::frame(surface, &target)?;
-        let lines = region
-            .rows
-            .clone()
-            .map(|row| Line::read(frame, &region, row))
-            .collect::<Option<Vec<_>>>()?;
-        let selection = selection.and_then(|selection| {
-            let mut rows = selection.rows(surface, cell_width, cell_height);
-            let first = rows.next()?;
-            let last = rows.last().unwrap_or_else(|| first.clone());
-            let caret = |row: u16, column: u16| {
-                let line = lines.iter().position(|line| line.row == row)?;
-                let character = lines[line].character(column - region.columns.start);
-                Some(Caret { line, character })
-            };
-            Some((caret(first.0, first.1.start)?, caret(last.0, last.1.end)?))
-        });
-        Some(Self {
-            lines,
-            selection,
-            origin: (
+        let selected = selection
+            .map(|selection| {
+                selection
+                    .rows(surface, cell_width, cell_height)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        Self::read_rows(
+            frame,
+            region.columns.clone(),
+            region.rows,
+            selected,
+            (
                 region.origin.0 + f32::from(region.columns.start) * cell_width,
                 region.origin.1,
             ),
-            width: f32::from(region.columns.end - region.columns.start) * cell_width,
-            cell: (cell_width, cell_height),
+            (cell_width, cell_height),
+        )
+    }
+
+    /// Reads complete Core cells inside the current canvas while a resize catches up.
+    pub(crate) fn read_frame(
+        frame: &FrameData,
+        selected: impl IntoIterator<Item = (u16, Range<u16>)>,
+        cell_width: f32,
+        cell_height: f32,
+        viewport: (f32, f32),
+    ) -> Option<Self> {
+        if ![viewport.0, viewport.1, cell_width, cell_height]
+            .into_iter()
+            .all(|value| value.is_finite() && value > 0.)
+        {
+            return None;
+        }
+        let cols = frame.width.min((viewport.0 / cell_width).floor() as u16);
+        let rows = frame.height.min((viewport.1 / cell_height).floor() as u16);
+        if cols == 0 || rows == 0 {
+            return None;
+        }
+        let selected = selected.into_iter().filter_map(|(row, columns)| {
+            let columns = columns.start.min(cols)..columns.end.min(cols);
+            (!columns.is_empty()).then_some((row, columns))
+        });
+        Self::read_rows(
+            frame,
+            0..cols,
+            0..rows,
+            selected,
+            (0., 0.),
+            (cell_width, cell_height),
+        )
+    }
+
+    fn read_rows(
+        frame: &FrameData,
+        columns: Range<u16>,
+        rows: Range<u16>,
+        selected: impl IntoIterator<Item = (u16, Range<u16>)>,
+        origin: (f32, f32),
+        cell: (f32, f32),
+    ) -> Option<Self> {
+        let lines = rows
+            .clone()
+            .map(|row| Line::read(frame, &columns, row))
+            .collect::<Option<Vec<_>>>()?;
+        let caret = |row, column: u16| {
+            let line = lines.iter().position(|line| line.row == row)?;
+            let character = lines[line].character(column.saturating_sub(columns.start));
+            Some(Caret { line, character })
+        };
+        let mut selected = selected.into_iter().filter(|(row, _)| rows.contains(row));
+        let selection = selected
+            .next()
+            .and_then(|first| {
+                let last = selected.last().unwrap_or_else(|| first.clone());
+                Some((caret(first.0, first.1.start)?, caret(last.0, last.1.end)?))
+            })
+            .or_else(|| {
+                let cursor = frame.cursor.as_ref().filter(|cursor| {
+                    cursor.visible && columns.contains(&cursor.x) && rows.contains(&cursor.y)
+                })?;
+                let at = caret(cursor.y, cursor.x)?;
+                Some((at, at))
+            });
+        Some(Self {
+            lines,
+            selection,
+            origin,
+            width: f32::from(columns.end - columns.start) * cell.0,
+            cell,
         })
     }
 
@@ -166,8 +234,14 @@ impl Transcript {
         for (&id, node) in ids.iter().zip(self.runs(origin, scale)) {
             builder.push_child(id, node);
         }
-        if let Some(selection) = self.text_selection(&ids) {
-            builder.parent_node().set_text_selection(selection);
+        self.decorate_parent(builder.parent_node(), &ids);
+    }
+
+    fn decorate_parent(&self, node: &mut Node, ids: &[NodeId]) {
+        // Announce changed visible rows without interrupting the current speech.
+        node.set_live(Live::Polite);
+        if let Some(selection) = self.text_selection(ids) {
+            node.set_text_selection(selection);
         }
     }
 

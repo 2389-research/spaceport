@@ -14,7 +14,7 @@ fn shared_scope_editability_matches_platform_support() {
 
 pub(super) fn fixture(window: &mut Window, cx: &mut Context<SettingsWindow>) -> SettingsWindow {
     let source = cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx));
-    let mut view = SettingsWindow::new(source.downgrade(), cx);
+    let mut view = crate::settings_window::tests::fixture_new(source.downgrade(), cx);
     view.themes.names = (0..400)
         .map(|index| format!("Catalog {index:03}"))
         .collect();

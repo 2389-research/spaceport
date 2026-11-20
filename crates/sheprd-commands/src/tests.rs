@@ -1,3 +1,5 @@
+// ABOUTME: Checks catalog names, default shortcuts, and snapshot-backed requests.
+// ABOUTME: Keeps confirmed app actions outside direct daemon command construction.
 use super::*;
 
 mod browser_page;
@@ -5,6 +7,7 @@ mod catalog;
 mod removed_git;
 mod removed_orchestrator;
 mod retired_ide;
+mod workspace_close;
 
 #[test]
 fn excluded_worktree_creation_is_absent_from_the_command_catalog() {

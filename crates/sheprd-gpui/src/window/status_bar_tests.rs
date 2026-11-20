@@ -89,4 +89,6 @@ fn a_new_window_starts_with_the_configured_status_bar(cx: &mut TestAppContext) {
     }
 }
 
+mod notice_pause;
 mod notices;
+mod warning_visibility;

@@ -1,3 +1,5 @@
+// ABOUTME: Parses local informational commands and bounded control polling.
+// ABOUTME: Keeps help and completion shell choices explicit at the CLI boundary.
 //! Families with no command enum of their own: `status`, `skill`,
 //! `processes`, `usage`, `bell`, `events`, `run`, `commands`, `logs`, and
 //! `diagnostics`.
@@ -100,4 +102,46 @@ pub(super) fn diagnostics(args: &mut Args) -> Result<ControlCommand, CliError> {
     Ok(ControlCommand::Diagnostics {
         output: args.required("PATH")?.into(),
     })
+}
+
+pub(super) const HELP_USAGE: &str =
+    "spaceport help [COMMAND]\n    Show top-level help, or usage for one command family.";
+pub(super) fn help(args: &mut Args) -> Result<ControlCommand, CliError> {
+    let family = args
+        .optional_text()?
+        .map(|name| {
+            super::FAMILIES
+                .iter()
+                .find(|family| family.name == name)
+                .map(|family| family.name)
+                .ok_or(CliError::InvalidValue("COMMAND"))
+        })
+        .transpose()?;
+    Ok(ControlCommand::Help(family))
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Shell {
+    Bash,
+    Fish,
+    Zsh,
+}
+impl Shell {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Bash => "bash",
+            Self::Fish => "fish",
+            Self::Zsh => "zsh",
+        }
+    }
+}
+pub(super) const COMPLETIONS_USAGE: &str = "spaceport completions bash|fish|zsh\n    Print a completion script for command families and shared options.\n    Source the script in the selected shell. Runs here; Spaceport need not run.";
+pub(super) fn completions(args: &mut Args) -> Result<ControlCommand, CliError> {
+    let shell = match args.required_text("SHELL")?.as_str() {
+        "bash" => Shell::Bash,
+        "fish" => Shell::Fish,
+        "zsh" => Shell::Zsh,
+        _ => return Err(CliError::InvalidValue("bash|fish|zsh")),
+    };
+    Ok(ControlCommand::Completions(shell))
 }

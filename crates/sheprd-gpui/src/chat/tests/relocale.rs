@@ -1,3 +1,5 @@
+// ABOUTME: Checks prepared chat labels and selectable text after locale changes.
+// ABOUTME: Preserves the shared language projection through cache invalidation.
 //! A language switch prepares the chat's labels again: a question's heading
 //! and the selectable text drawn from it follow the locale now shown.
 
@@ -36,15 +38,15 @@ fn forgetting_the_text_writes_its_labels_in_the_locale_now_shown() {
     let transcript = answered();
     let keys = [(EntryId(1), 1)];
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, |_, _| false);
     let english = answers(&prepared);
     assert!(english.contains("**Question "), "{english}");
 
     crate::i18n::show(&Pseudo::Accented.locale());
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, |_, _| false);
     assert_eq!(answers(&prepared), english, "same revision, same body");
     prepared.forget_text();
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, |_, _| false);
     let accented = answers(&prepared);
     assert_ne!(accented, english);
     assert!(!accented.contains("**Question "), "{accented}");

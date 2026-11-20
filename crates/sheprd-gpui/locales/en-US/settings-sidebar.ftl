@@ -26,4 +26,8 @@ settings-sidebar-hosts-empty = Connect to a host to give it a colour.
 settings-sidebar-host-tint = Tints the host header, its workspaces, worktrees and agents.
 settings-sidebar-host-uncoloured = Connected, no colour set.
 settings-sidebar-host-offline = Not connected.
-# The hex field of a host with no colour.
+## Host colour actions.
+
+settings-sidebar-swatch-edit = Edit colour
+settings-sidebar-swatch-reset = Reset colour
+settings-sidebar-spacing-reset = Reset { $setting }

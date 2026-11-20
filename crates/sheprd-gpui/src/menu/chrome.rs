@@ -8,18 +8,16 @@
 mod keys;
 mod render;
 
-use super::{MENU_MARGIN, Page, WorkspaceAction, devices::rail};
-use crate::direction::Logical;
+use super::Page;
+use crate::SheprdWindow;
 use crate::i18n::fl;
-use crate::{SheprdWindow, fonts::StyledFont};
-use gpui::{prelude::*, *};
-
-/// How far past its panel a popover counts as covering, for the Windows
-/// pages that hide under it.
-#[cfg(any(windows, test, feature = "integration-test"))]
-const COVER_MARGIN: f32 = 8.;
+use gpui::{App, Context, Window};
 
 impl SheprdWindow {
+    pub(crate) fn workspace_shell_offset(&self) -> gpui::Pixels {
+        self.menu.workspace_scroll.offset().y
+    }
+
     pub(crate) fn open_menu(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
         self.shift_taps.cancel();
         if !self.cancel_theme_preview(cx) {
@@ -27,10 +25,7 @@ impl SheprdWindow {
         }
         self.menu.reset();
         self.apply_shared_theme(cx);
-        self.menu.endpoint_target = (
-            self.selection_epoch,
-            self.endpoints[self.selected_endpoint].generation,
-        );
+        self.menu.origin = Some(super::origin::Origin::capture(self));
         self.menu.page = Some(Page::Menu);
         self.discard_composition(cx);
         window.focus(&self.menu.focus, cx);
@@ -57,14 +52,21 @@ impl SheprdWindow {
             .application
             .as_ref()
             .and_then(|menu| menu.return_focus.clone());
+        let core_close_focus = self.core_close_focus(cx);
         // A page that animates out keeps what it reads from the reset.
-        if let Some(page) = self.menu.page.filter(|page| super::appear::leaves(*page)) {
-            let kept = super::appear::Kept::take(&mut self.menu);
+        if let Some(page) = self.menu.page {
+            let kept = super::appear::Kept::take(self, window, cx);
             self.menu.appear.keep(page, kept);
         }
         self.menu.reset();
         self.apply_shared_theme(cx);
-        window.focus(return_focus.as_ref().unwrap_or(&self.focus), cx);
+        window.focus(
+            return_focus
+                .as_ref()
+                .or(core_close_focus.as_ref())
+                .unwrap_or(&self.focus),
+            cx,
+        );
         cx.notify();
     }
 
@@ -75,24 +77,30 @@ impl SheprdWindow {
     }
 
     pub(crate) fn menu_target_current(&self) -> bool {
-        self.menu.endpoint_target
-            == (
-                self.selection_epoch,
-                self.endpoints[self.selected_endpoint].generation,
-            )
+        self.menu
+            .origin
+            .as_ref()
+            .is_some_and(|origin| origin.legacy_current(self))
+    }
+
+    pub(crate) fn menu_current(&self) -> bool {
+        self.menu
+            .origin
+            .as_ref()
+            .is_some_and(|origin| origin.current(self))
     }
 
     /// Asks the selected daemon to reread its config file.
     pub(crate) fn reload_daemon_config(&mut self) {
-        let error = self.endpoints[self.selected_endpoint]
-            .reload_config()
-            .err()
-            .map(|error| {
-                fl!(
-                    "menu-chrome-reload-config-failed",
-                    error = error.to_string()
-                )
-            });
+        let Some(endpoint) = self.endpoints.get_mut(self.selected_endpoint) else {
+            return;
+        };
+        let error = endpoint.reload_config().err().map(|error| {
+            fl!(
+                "menu-chrome-reload-config-failed",
+                error = error.to_string()
+            )
+        });
         match error {
             Some(error) => self
                 .notices
@@ -114,21 +122,18 @@ impl SheprdWindow {
             Item::ReloadGuiConfig,
             Item::About,
         ];
-        if self.live.status.is_connected() {
+        let endpoint = self.endpoints.get(self.selected_endpoint);
+        if endpoint.is_some() && self.live.status.is_connected() {
             items.push(Item::ReloadDaemonConfig);
         }
         items.extend(self.release_notes_item());
-        items.push(
-            if self.endpoints[self.selected_endpoint]
-                .connection
-                .handle
-                .is_some()
-            {
+        if let Some(endpoint) = endpoint {
+            items.push(if endpoint.connection.handle.is_some() {
                 Item::Detach
             } else {
                 Item::Reconnect
-            },
-        );
+            });
+        }
         items
     }
 
@@ -176,121 +181,6 @@ impl SheprdWindow {
             }
         }
         cx.notify();
-    }
-
-    pub(crate) fn render_menu(&self, window: &Window, cx: &mut Context<Self>) -> Stateful<Div> {
-        if self.menu.page == Some(Page::Application) {
-            return self.render_application_menu(window, cx);
-        }
-        if self.menu.page == Some(Page::Devices) && self.menu.session_edit.is_some() {
-            let theme = &self.theme;
-            let font = &self.config.ui;
-            let picker = self
-                .anchor_footer_panel(
-                    div()
-                        .id("session-picker-underlay")
-                        .debug_selector(|| "session-picker-underlay".into()),
-                    window.viewport_size(),
-                    Page::Devices,
-                    px(0.),
-                )
-                .overflow_y_scroll()
-                .p(px(6.))
-                .rounded(px(crate::config::corners::PANEL))
-                .border_1()
-                .border_color(rgb(theme.active))
-                .bg(rgb(theme.surface))
-                .text_color(rgb(theme.foreground))
-                .text_font(font)
-                .text_size(px(font.size))
-                .line_height(px(font.line_height()))
-                .child(self.render_devices(cx));
-            // The picker remains visible in its original position beneath the
-            // modal's dimmed, input-occluding layer. Only that top layer owns focus.
-            return div()
-                .id("session-menu-stack")
-                .absolute()
-                .inset_0()
-                .child(picker)
-                .child(self.render_menu_layer(
-                    self.menu.page.unwrap_or(Page::Menu),
-                    None,
-                    window,
-                    cx,
-                ));
-        }
-        self.render_menu_layer(self.menu.page.unwrap_or(Page::Menu), None, window, cx)
-    }
-
-    /// Places a footer menu beside its anchor, `lift` short of it while it
-    /// slides into place.
-    fn anchor_footer_panel(
-        &self,
-        panel: Stateful<Div>,
-        viewport: Size<Pixels>,
-        page: Page,
-        lift: Pixels,
-    ) -> Stateful<Div> {
-        let (room, above) = self.footer_room(viewport);
-        let list = page == Page::Devices;
-        let width = if list {
-            super::devices::MENU_WIDTH
-        } else {
-            180.
-        };
-        // From the window's start edge, which right to left is its right.
-        let anchor = match crate::direction::is_rtl() {
-            false => self.menu.anchor.x,
-            true => viewport.width - self.menu.anchor.x,
-        };
-        let start = match page {
-            Page::Devices => anchor,
-            _ => px(56.),
-        };
-        let panel = panel
-            .absolute()
-            .inset_s(start)
-            .w(px(width).min((viewport.width - px(16.)).max(px(0.))));
-        if above {
-            panel
-                .bottom(
-                    (viewport.height - self.menu.anchor.y
-                        + px(if list { super::devices::MENU_GAP } else { 12. }))
-                    .max(px(MENU_MARGIN))
-                        - lift,
-                )
-                .max_h(room)
-        } else {
-            panel.top(self.menu.anchor.y + px(12.) - lift).max_h(room)
-        }
-    }
-
-    /// The room a footer menu has, and whether it opens above its anchor,
-    /// as it does from the sidebar footer at the window's foot.
-    fn footer_room(&self, viewport: Size<Pixels>) -> (Pixels, bool) {
-        let chrome = px(crate::titlebar::HEIGHT);
-        let band = (viewport.height - chrome - px(2. * MENU_MARGIN)).max(px(60.));
-        let room = |side: Pixels| side.clamp(px(0.), band).max(px(60.)).min(band);
-        let above = room(self.menu.anchor.y - px(12. + MENU_MARGIN) - chrome);
-        let below = room(viewport.height - self.menu.anchor.y - px(12. + MENU_MARGIN));
-        if above >= below {
-            (above, true)
-        } else {
-            (below, false)
-        }
-    }
-
-    /// Whether the open menu is a dialog that dims the window behind it,
-    /// rather than a popover beside what opened it.
-    pub(crate) fn menu_dims(&self) -> bool {
-        let Some(page) = self.menu.page else {
-            return false;
-        };
-        let session_modal = page == Page::Devices && self.menu.session_edit.is_some();
-        let footer_anchored = matches!(page, Page::Menu | Page::Devices) && !session_modal;
-        !footer_anchored
-            && !matches!(page, Page::Usage(_) | Page::Application)
-            && !page.pointer_anchored()
     }
 }
 

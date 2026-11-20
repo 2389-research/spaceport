@@ -11,10 +11,10 @@ use gpui::{App, Font, Hsla, ShapedLine, SharedString, TextRun, Window, px, rgb};
 
 impl TerminalPainter {
     pub fn set_appearance(&mut self, font_size: f32, cell_height: f32, theme: Theme) {
-        if self.font_size != font_size || self.cell_height != cell_height || self.theme != theme {
+        self.theme = theme;
+        if self.font_size != font_size || self.cell_height != cell_height {
             self.font_size = font_size;
             self.cell_height = cell_height;
-            self.theme = theme;
             self.glyphs.clear();
             self.cell_width = None;
         }

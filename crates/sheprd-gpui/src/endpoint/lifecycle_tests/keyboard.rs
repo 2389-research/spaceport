@@ -1,3 +1,5 @@
+// ABOUTME: Checks terminal key releases and daemon shortcuts against private peers.
+// ABOUTME: Mounts the production shortcut scope for custom commands and resize mode.
 use super::*;
 
 /// While Herdr reports that the focused pane wants every key, a key sent as a
@@ -105,7 +107,7 @@ fn custom_command_and_resize_mode_keys_send_endpoint_requests(cx: &mut gpui::Tes
     };
     for resize in [false, true] {
         let (endpoint, mut server) = connected_endpoint("ssh:fixture");
-        cx.update(|_, cx| {
+        cx.update(|window, cx| {
             view.update(cx, |view, cx| {
                 view.endpoints.truncate(1);
                 view.endpoints.push(endpoint);
@@ -124,7 +126,9 @@ fn custom_command_and_resize_mode_keys_send_endpoint_requests(cx: &mut gpui::Tes
                 relabel(inbox.snapshot.as_mut().unwrap());
                 drop(inbox);
                 assert!(view.input_ready());
-            })
+            });
+            window.focus(&view.read(cx).focus.clone(), cx);
+            window.draw(cx).clear(cx);
         });
         let keys: &[&str] = if resize {
             &["ctrl-b", "r", "h"]

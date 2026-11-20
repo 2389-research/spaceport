@@ -21,6 +21,19 @@ use sheprd_backend::{Role, Size, TerminalId};
 const FIRST_SIZE: (u16, u16) = (80, 24);
 
 impl SheprdWindow {
+    /// The exact pane's focus handle, without selecting a neighbor when absent.
+    pub(crate) fn core_pane_focus(
+        &self,
+        tab: TabId,
+        terminal: &TerminalId,
+        cx: &App,
+    ) -> Option<FocusHandle> {
+        self.core_terminals
+            .views
+            .get(&(tab, terminal.clone()))
+            .map(|view| view.read(cx).focus_handle().clone())
+    }
+
     /// Gives every pane of the focused workspace's herdr-core tabs a view,
     /// once the hub is connected, and drops the views of closed tabs and
     /// panes.
@@ -184,7 +197,7 @@ impl SheprdWindow {
         new: TerminalId,
         window: &mut Window,
         cx: &mut Context<Self>,
-    ) {
+    ) -> bool {
         let placed = match self.core_terminals.tabs.contains_key(&tab) {
             true => Store::update(cx, |store| {
                 store.edit_panes(tab, |panes| panes.split(at, axis, new.clone()))
@@ -201,16 +214,17 @@ impl SheprdWindow {
         if let Err(error) = placed {
             self.show_flash(Flash::warning(error.to_string()), cx);
             self.end_core_terminal(new);
-            return;
+            return false;
         }
         self.sync_core_views(cx);
         self.focus_core_terminal(tab, window, cx);
+        true
     }
 
     /// Takes `terminal` out of `tab`'s panes. The pane beside it, or else
     /// the first, is the tab's pane in use after, and takes the keyboard when
     /// the closed one had it.
-    pub(super) fn remove_core_pane(
+    pub(crate) fn remove_core_pane(
         &mut self,
         tab: TabId,
         terminal: &TerminalId,
@@ -262,7 +276,7 @@ impl SheprdWindow {
 
     /// Ends a terminal on a worker thread, so herdr-core's answer is never
     /// awaited on the UI thread.
-    pub(super) fn end_core_terminal(&self, terminal: TerminalId) {
+    pub(crate) fn end_core_terminal(&self, terminal: TerminalId) {
         let Some(backend) = self.core_terminals.hub.backend().cloned() else {
             return;
         };

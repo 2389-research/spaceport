@@ -1,10 +1,14 @@
-# Error text: protocol jargon and one name per thing
+# Historical error-copy proposal from PR 123
 
-The review finding `cx2r` — "Replace protocol jargon in errors and settle one
-name per thing" — is **not** in this tree. `grep -rn cx2r .` finds nothing in
-`docs/`, `docs/spaceport/`, or elsewhere, and there is no
-`docs/notes-review-*.md` carrying its text. This work therefore starts from
-that one-line summary alone and from what the code and `docs/cli.md` say.
+This note records PR 123's original proposal, before integrating the `cx2r` review fixes.
+Its tables preserve historical wording, including superseded recovery advice.
+Use [the final integration evidence](evidence/review-jargon-main-integration.md) for current behavior.
+The active [error-language evidence](evidence/review-error-language.md) also covers `cx2r`.
+
+Current guidance preserves saved connection data.
+Timed-out requests may have happened; check the result before retrying.
+Timed-out input may have arrived; choose Terminal → Reconnect.
+Shared message-size errors describe the limit without blaming a message sender.
 
 ## Where the user actually reads these strings
 

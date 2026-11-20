@@ -1,3 +1,5 @@
+// ABOUTME: Checks runtime compatibility refusals and their update guidance.
+// ABOUTME: Preserves version bounds and the distinction between outdated app and daemon.
 use super::*;
 use crate::VersionMismatch;
 
@@ -49,7 +51,7 @@ fn generation_says_which_side_is_older_even_in_a_rejection() {
             server_version: Some("0.8.2".into())
         })
     );
-    assert!(older.to_string().contains("run `herdr update`"));
+    assert!(older.to_string().contains("Run `herdr update`"));
 
     // Upstream rejects a generation it does not speak with a welcome carrying
     // its own generation and an error; the generation decides, not the code.
@@ -66,7 +68,7 @@ fn generation_says_which_side_is_older_even_in_a_rejection() {
             server_version: Some("0.8.2".into())
         })
     );
-    assert!(newer.to_string().contains("update Spaceport"));
+    assert!(newer.to_string().contains("Update Spaceport"));
 }
 
 #[test]
@@ -89,7 +91,7 @@ fn missing_required_capabilities_mean_the_daemon_is_outdated() {
             }),
             "{error}"
         );
-        assert!(error.to_string().contains("(version 0.8.2)"), "{error}");
+        assert!(error.to_string().contains("Herdr 0.8.2"), "{error}");
     }
 }
 
@@ -168,7 +170,7 @@ fn connection_reports_the_mismatch_before_disconnecting() {
     let ClientEvent::Disconnected { reason, .. } = event(&client) else {
         panic!("expected disconnect")
     };
-    assert!(reason.contains("is older than this app needs"), "{reason}");
+    assert!(reason.contains("too old for Spaceport"), "{reason}");
     drop(daemon.join().unwrap());
 }
 
@@ -197,7 +199,10 @@ fn a_local_daemon_closing_before_any_welcome_is_outdated() {
             server_version: None
         })
     );
-    assert!(error.to_string().contains("older than 0.9.0"), "{error}");
+    assert!(
+        error.to_string().contains("required version 0.9.0"),
+        "{error}"
+    );
 }
 
 #[test]

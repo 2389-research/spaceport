@@ -361,8 +361,8 @@ impl SettingsWindow {
         if self.busy() {
             return;
         }
-        if matches!(self.section, Section::General | Section::Tabs) {
-            self.sync_remote_history(true, cx);
+        if self.section == Section::Tabs {
+            self.sync_host_history(true, cx);
         }
         self.reload_with(load, cx);
     }

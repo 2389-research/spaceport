@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 use super::*;
 
 #[gpui::test]
@@ -6,7 +8,7 @@ fn hovering_a_card_previews_in_main_windows_and_leaving_restores(cx: &mut TestAp
     let before = source.update(cx, |view, _, _| view.theme.clone()).unwrap();
     let weak = cx.update(|cx| source.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
     let (view, cx) = cx.add_window_view(|window, cx| {
-        let mut view = SettingsWindow::new(weak, cx);
+        let mut view = fixture_new(weak, cx);
         view.theme_io = Some(recording_themes(Default::default(), false));
         view.initialize_theme_browser(window, cx);
         view

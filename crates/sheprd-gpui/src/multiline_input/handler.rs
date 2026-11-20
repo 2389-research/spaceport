@@ -1,3 +1,5 @@
+// ABOUTME: Applies bounded native input and composition to multiline chat fields.
+// ABOUTME: Maps UTF-16 selection and IME geometry to the field's prepared text.
 //! The platform text input boundary and the focus handle for the field.
 
 use std::ops::Range;
@@ -52,6 +54,7 @@ impl EntityInputHandler for MultilineInput {
     }
 
     fn unmark_text(&mut self, _: &mut Window, cx: &mut Context<Self>) {
+        self.cancel_paste(cx);
         self.edit.marked = None;
         cx.notify();
     }
@@ -63,6 +66,9 @@ impl EntityInputHandler for MultilineInput {
         _: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if !self.permits_replacement(self.edit.replaced(range.clone()), text, cx) {
+            return;
+        }
         let changed = self.edit.replace(range, text, false, None, Newlines::Keep);
         self.did_edit(changed, cx);
     }
@@ -75,6 +81,9 @@ impl EntityInputHandler for MultilineInput {
         _: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if !self.permits_replacement(self.edit.replaced(range.clone()), text, cx) {
+            return;
+        }
         let changed = self
             .edit
             .replace(range, text, true, selection, Newlines::Keep);

@@ -1,3 +1,5 @@
+// ABOUTME: Defines bounded Markdown blocks independently from native layout.
+// ABOUTME: Shares parser types and visual ownership across chat preparation.
 //! Structured Markdown kept separately from layout. Parsing is bounded by
 //! the message limit; math rasterization and grammar parsing use Visuals' workers.
 
@@ -9,10 +11,13 @@ mod parse;
 mod quote;
 mod remote;
 
+#[cfg(test)]
+mod work;
+
 pub(super) use code::{CodeText, MAX_CODE_LINE_CHARS, MAX_CODE_LINES, TAB_WIDTH};
 pub(super) use fence::Fence;
 pub(super) use math::draw as draw_math;
-pub(super) use parse::parse;
+pub(super) use parse::{parse, within_word_limit};
 pub(super) use remote::remote_content;
 
 use super::visual::{Source, VisualId, Visuals};
@@ -46,6 +51,16 @@ pub(crate) enum Inline {
     Break,
 }
 
+/// How the final text event reaches the parser input's end.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum SourceTail {
+    // keep-sorted start
+    Trimmed,
+    Unmapped,
+    Verbatim,
+    // keep-sorted end
+}
+
 /// What a paragraph block is, which sets its typography and marker.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Kind {
@@ -59,13 +74,14 @@ pub(crate) enum Kind {
     Rule,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) enum Block {
     Paragraph {
         kind: Kind,
         /// Nested list depth; bounded in the view so deep input stays readable.
         indent: usize,
         content: Vec<Inline>,
+        source_tail: SourceTail,
     },
     Math {
         id: VisualId,
@@ -79,6 +95,7 @@ pub(crate) enum Block {
     Table {
         align: Vec<Alignment>,
         rows: Vec<Vec<Vec<Inline>>>,
+        source_tail: SourceTail,
     },
 }
 
@@ -97,6 +114,10 @@ impl Block {
             _ => None,
         }))
     }
+}
+
+pub(super) fn code_id(language: &str, source: &str) -> VisualId {
+    VisualId::of(("code", language, source))
 }
 
 fn formula(

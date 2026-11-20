@@ -39,10 +39,18 @@ impl SheprdWindow {
             Card::Removing
         } else if endpoint.herdr_missing() {
             Card::HerdrMissing
+        } else if endpoint.herdr_stopped() {
+            Card::HerdrStopped
         } else {
             Card::Reconnecting
         };
         let host = safe_text(&endpoint.label, 80);
+        let button = |id, label| {
+            self.chrome_stop(
+                super::chrome_focus::Region::Notices,
+                card_button(id, label, &self.theme),
+            )
+        };
         let (id, title, reason): (&'static str, _, _) = match kind {
             Card::Reconnecting => (
                 "reconnecting",
@@ -62,10 +70,15 @@ impl SheprdWindow {
                 fl!("window-herdr-missing"),
                 Some(("herdr-missing-note", fl!("window-herdr-missing-note"))),
             ),
+            Card::HerdrStopped => (
+                "herdr-stopped",
+                fl!("window-herdr-stopped"),
+                Some(("herdr-stopped-note", fl!("window-herdr-stopped-note"))),
+            ),
         };
         let theme = &self.theme;
         let retry = |id, label| {
-            card_button(id, label, theme).on_click(cx.listener(|this, _, _, cx| {
+            button(id, label).on_click(cx.listener(|this, _, _, cx| {
                 cx.stop_propagation();
                 this.reconnect(cx);
                 cx.notify();
@@ -78,6 +91,11 @@ impl SheprdWindow {
                     .child(retry("reconnect-now", fl!("window-reconnect-now"))),
             ),
             Card::Removing => None,
+            Card::HerdrStopped => Some(
+                div()
+                    .flex()
+                    .child(retry("start-herdr", fl!("window-start-herdr"))),
+            ),
             // Opens the website only: Spaceport never downloads or runs Herdr's installer.
             Card::HerdrMissing => Some(
                 div()
@@ -85,7 +103,7 @@ impl SheprdWindow {
                     .flex_wrap()
                     .gap(px(8.))
                     .child(
-                        card_button("install-herdr", fl!("window-install-herdr"), theme).on_click(
+                        button("install-herdr", fl!("window-install-herdr")).on_click(
                             |_, _, cx| {
                                 cx.stop_propagation();
                                 cx.open_url(INSTALL_URL);
@@ -151,6 +169,8 @@ enum Card {
     Removing,
     /// This computer has no Herdr to start: offer its website and a retry.
     HerdrMissing,
+    /// Herdr stopped intentionally. Start requires the user's explicit request.
+    HerdrStopped,
 }
 
 /// A button on the card, named for screen readers by its visible label.

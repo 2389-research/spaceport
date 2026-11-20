@@ -1,9 +1,20 @@
-//! Informational and usage-error paths must not reach GPUI or require a desktop/daemon.
+//! ABOUTME: Exercises CLI commands through the compiled executable.
+//! ABOUTME: Checks non-GUI paths without requiring a desktop or daemon.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::disallowed_methods)]
+
+#[path = "support/state_path.rs"]
+mod state_path;
+use state_path::app_state_path;
 
 #[cfg(target_os = "macos")]
 #[path = "cli/clipboard.rs"]
 mod clipboard;
+#[path = "cli/core_guard.rs"]
+mod core_guard;
+#[path = "cli/free_text.rs"]
+mod free_text;
+#[path = "cli/help_contract.rs"]
+mod help_contract;
 #[path = "cli/orchestrator.rs"]
 mod orchestrator;
 #[path = "cli/phone.rs"]
@@ -14,6 +25,16 @@ mod removed_project_open;
 mod removed_scripts;
 #[path = "cli/removed_updater.rs"]
 mod removed_updater;
+#[cfg(unix)]
+#[path = "cli/settings_permissions.rs"]
+mod settings_permissions;
+#[path = "cli/state_isolation.rs"]
+mod state_isolation;
+#[cfg(unix)]
+#[path = "cli/transport.rs"]
+mod transport;
+#[path = "cli/workspace_close.rs"]
+mod workspace_close;
 
 use std::{
     process::{Child, Command, Output, Stdio},
@@ -45,7 +66,9 @@ fn cli_in(args: &[&str], state: Option<&std::path::Path>) -> Output {
             .env_remove("HERDR_SOCKET_PATH")
             .env_remove("HERDR_CLIENT_SOCKET_PATH")
             .env_remove("HERDR_WORKSPACE_ID")
-            .env_remove("HERDR_PANE_ID");
+            .env_remove("HERDR_PANE_ID")
+            .env_remove("HC_TERMINAL_ID")
+            .env_remove("HC_TERMINAL_SOCKET");
     }
     let child = command
         .args(args)
@@ -285,7 +308,7 @@ fn control_commands_list_and_explain_themselves_without_the_app() {
     assert!(output.status.success(), "{output:?}");
     let commands: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert!(
-        commands
+        commands["commands"]
             .as_array()
             .unwrap()
             .iter()

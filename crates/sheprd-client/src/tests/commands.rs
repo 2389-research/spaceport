@@ -1,3 +1,5 @@
+// ABOUTME: Exercises FIFO client commands and correlated endpoint requests.
+// ABOUTME: Prevents stale or unsupported commands from reaching the socket.
 use super::*;
 
 #[test]
@@ -136,6 +138,10 @@ fn public_connect_delivers_shutdown_and_socket_failure() {
             reason: Some("test shutdown".into()),
         },
     );
+    assert!(matches!(
+        event(&client),
+        ClientEvent::Message(ServerMessage::ServerShutdown { .. })
+    ));
     assert!(
         matches!(event(&client), ClientEvent::Disconnected { reason, .. } if reason == "test shutdown")
     );
@@ -207,9 +213,8 @@ fn stale_boot_and_unsupported_commands_never_reach_socket() {
             data: snapshot.to_string(),
         },
     );
-    let message = worker.join().unwrap().unwrap_err().to_string();
-    assert!(
-        message.contains("The daemon's session changed"),
-        "{message}"
-    );
+    assert!(matches!(
+        worker.join().unwrap(),
+        Err(Error::SnapshotIdentity)
+    ));
 }

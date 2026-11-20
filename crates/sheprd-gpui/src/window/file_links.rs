@@ -1,3 +1,5 @@
+// ABOUTME: Resolves local terminal file links without following network paths.
+// ABOUTME: Opens checked documents while fencing asynchronous results to their pane.
 //! Local file paths a pane prints or names in an explicit hyperlink, opened
 //! by a link-modifier click. A path is read from its row alone; the click
 //! resolves it against the pane's working directory and checks that it
@@ -116,11 +118,11 @@ fn real_path(path: &Path) -> Result<PathBuf, Unresolved> {
     pending.reverse();
     let mut followed = 0;
     while let Some(part) = pending.pop() {
-        match Path::new(&part)
+        let component = Path::new(&part)
             .components()
             .next()
-            .ok_or(Unresolved::Unreadable)?
-        {
+            .ok_or(Unresolved::Unreadable)?;
+        match component {
             Component::CurDir => continue,
             Component::ParentDir => {
                 resolved.pop();
@@ -133,6 +135,10 @@ fn real_path(path: &Path) -> Result<PathBuf, Unresolved> {
         }
         if remote(&resolved) {
             return Err(Unresolved::Remote);
+        }
+        // A drive prefix needs its following root before filesystem lookup.
+        if matches!(component, Component::Prefix(_)) && !pending.is_empty() {
+            continue;
         }
         if !std::fs::symlink_metadata(&resolved)
             .map_err(unread)?

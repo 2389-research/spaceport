@@ -1,10 +1,17 @@
+// ABOUTME: Verifies bounded Markdown, math, code, and table preparation.
+// ABOUTME: Checks actual rich-parser contracts separately from native layout.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 use super::*;
 use crate::chat::visual::{Error, Visuals};
 
+mod append_boundaries;
+mod append_provenance;
+mod append_work;
 mod code;
 mod display_math;
+mod parser_work;
 mod prose;
+mod streaming_work;
 
 #[test]
 fn inline_and_display_math_keep_their_place_and_identity_while_streaming() {
@@ -64,7 +71,7 @@ fn a_table_has_cells_alignment_and_inline_content() {
         &mut Visuals::default(),
     )
     .unwrap();
-    let Block::Table { align, rows } = &blocks[0] else {
+    let Block::Table { align, rows, .. } = &blocks[0] else {
         panic!("table")
     };
     assert_eq!(align, &[Alignment::Left, Alignment::Right]);

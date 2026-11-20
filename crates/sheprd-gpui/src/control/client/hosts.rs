@@ -1,3 +1,5 @@
+// ABOUTME: Formats host, port and usage control results.
+// ABOUTME: Preserves named collection results and unavailable-state diagnostics.
 //! `host`, `ports`, and `usage`.
 mod text;
 
@@ -18,7 +20,14 @@ pub(super) fn host(op: HostOp, context: &Context) -> crate::Result<Output> {
         Response::Done { message } => Ok(Output::message(message)),
         Response::Host {
             reply: Reply::Hosts { hosts },
-        } => Output::data(text::hosts(&hosts), &hosts),
+        } => {
+            let output = Output::data(text::hosts(&hosts), &serde_json::json!({ "hosts": hosts }))?;
+            Ok(if hosts.is_empty() {
+                output.nothing()
+            } else {
+                output
+            })
+        }
         response => Err(unexpected(response)),
     }
 }

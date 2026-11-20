@@ -109,9 +109,10 @@ fn switching_devices_holds_commands_until_the_new_surface_is_activated(
 
 #[test]
 fn a_full_queue_holds_the_reload_without_reporting_a_failure() {
+    use sheprd_client::Stream;
     let (mut endpoint, _server) = connected_endpoint("ssh:full");
     // Nothing drains the queue while the connector waits at the gate.
-    let (stream, _peer) = sheprd_client::Stream::pair().unwrap();
+    let (stream, _peer) = Stream::pair().unwrap();
     let (_open, gate) = std::sync::mpsc::channel::<()>();
     let client = sheprd_client::connect_with_connector(
         endpoint.connection.target.clone(),

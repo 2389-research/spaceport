@@ -1,3 +1,5 @@
+// ABOUTME: Builds Settings numeric entry and bounded slider and stepper controls.
+// ABOUTME: Keeps typed entry and button activation on the same edit callbacks.
 //! A number with typed entry, and -/+ steppers and an optional drag slider
 //! unless it is a bare field.
 use crate::config::{Theme, corners};
@@ -199,7 +201,7 @@ pub(in crate::settings_window) fn number(
     }
     let value_text = format!("{}", spec.value as i32);
     let steppers = spec.look != Look::Field;
-    let width = px(if steppers { 44. } else { 56. });
+    let width = rems(if steppers { 2.75 } else { 3.5 });
     let border = match editing {
         Some(edit) if edit.invalid => theme.ink(0xd45b5b),
         _ => theme.active,
@@ -212,6 +214,9 @@ pub(in crate::settings_window) fn number(
             .into_any_element(),
         None => div()
             .id((ElementId::from(id), "value"))
+            .role(Role::Button)
+            .aria_label(value_text.clone())
+            .map(|value| super::focusable(theme, value, enabled))
             .w(width)
             .px(px(6.))
             .text_end()
@@ -262,7 +267,7 @@ pub(in crate::settings_window) fn number(
     root.child(field).when(steppers, |root| {
         root.child(
             div()
-                .text_size(px(10.))
+                .text_size(rems(0.625))
                 .text_color(rgb(theme.muted))
                 .child(fl!(
                     "settings-number-range",
@@ -283,6 +288,9 @@ fn stepper(
 ) -> Stateful<Div> {
     div()
         .id((ElementId::from(id), which))
+        .role(Role::Button)
+        .aria_label(glyph)
+        .map(|stepper| super::focusable(theme, stepper, enabled))
         .debug_selector(move || format!("{id}-{which}"))
         .w(px(20.))
         .py(px(3.))

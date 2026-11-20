@@ -33,6 +33,10 @@ fn only_requests_the_protocol_says_wait_may_park() {
         work::WorkOp,
     };
     for parks in [
+        Request::Chat(call(crate::control::protocol::chat::ChatOp::New {
+            agent: "claude".into(),
+            pane: None,
+        })),
         Request::Tab(call(TabOp::Devices)),
         Request::Host(call(HostOp::OpenPort { port: 80 })),
         Request::Settings(call(SettingsOp::Fonts)),

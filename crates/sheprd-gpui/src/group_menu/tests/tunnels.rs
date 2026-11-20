@@ -1,10 +1,12 @@
+// ABOUTME: Verifies menu tunnel controls against exact children owned by each fixture.
+// ABOUTME: Shares remote port setup with departure tests without contacting an SSH host.
 use super::*;
 use crate::listening_ports::{Key, Tunnel, parse};
 use sheprd_client::ConnectTarget;
 
 /// A remote workspace `w0` listening on loopback alone at 5173 and 5174,
 /// so both open through a tunnel, with the menu of its first group open.
-fn remote_menu(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> GroupId {
+pub(super) fn remote_menu(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> GroupId {
     cx.update(|_, cx| {
         view.update(cx, |view, cx| {
             let mut remote = crate::endpoint::Endpoint::new(
@@ -36,7 +38,7 @@ fn remote_menu(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> Group
     group
 }
 
-fn tunnel_key(
+pub(super) fn tunnel_key(
     view: &Entity<SheprdWindow>,
     cx: &mut VisualTestContext,
     group: GroupId,

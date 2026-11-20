@@ -1,3 +1,5 @@
+// ABOUTME: Provides synthetic usage reports for native presentation consumers.
+// ABOUTME: Keeps display, localization, and popup fixtures independent of provider feeds.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::{
@@ -6,6 +8,7 @@ use super::{
     registry,
 };
 
+mod departure;
 mod display_filter;
 mod en_xa;
 mod example_config;

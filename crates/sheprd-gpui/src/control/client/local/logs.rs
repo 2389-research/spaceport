@@ -4,7 +4,8 @@ use crate::diagnostics::{Record, Tail, log_file, previous_log_file};
 use std::{path::Path, sync::Arc};
 
 pub(crate) fn logs(path: bool, lines: usize) -> crate::Result<Output> {
-    let current = log_file().ok_or(crate::Error::MissingStateRoot)?;
+    let state = crate::preferences::state_dir().ok_or(crate::Error::MissingStateRoot)?;
+    let current = log_file(&state);
     let previous = previous_log_file(&current);
     if path {
         return Output::data(

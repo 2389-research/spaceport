@@ -1,3 +1,5 @@
+// ABOUTME: Checks trusted remote installation selection and compatibility guidance.
+// ABOUTME: Preserves runtime-versus-app update decisions without starting another install.
 use super::*;
 use crate::VersionMismatch;
 
@@ -44,7 +46,7 @@ fn an_outdated_remote_install_is_named_instead_of_a_closed_bridge() {
     ));
     assert_eq!(
         error.to_string(),
-        "The Herdr daemon (version 0.8.0) on this host cannot serve this app; run `herdr update` and reconnect"
+        "Herdr 0.8.0 on this device needs an update. Run `herdr update`, then choose Terminal → Reconnect."
     );
     assert_eq!(
         error.version_mismatch(),
@@ -74,7 +76,7 @@ fn missing_capabilities_and_newer_generations_point_at_the_right_side() {
             server_version: Some("2.0.0".into())
         })
     );
-    assert!(newer.to_string().ends_with("update Spaceport"), "{newer}");
+    assert!(newer.to_string().ends_with("Update Spaceport."), "{newer}");
 }
 
 #[test]

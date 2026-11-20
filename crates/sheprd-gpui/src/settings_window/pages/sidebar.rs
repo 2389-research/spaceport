@@ -29,6 +29,9 @@ pub(in crate::settings_window) enum Spacing {
     HostGap,
 }
 
+#[cfg(test)]
+mod keyboard_tests;
+
 impl Spacing {
     pub(in crate::settings_window) const ALL: [Self; 4] =
         [Self::Indent, Self::RowPadding, Self::RowGap, Self::HostGap];
@@ -305,6 +308,7 @@ impl SettingsWindow {
                 .debug_selector(|| catalog::SIDEBAR_HOST_COLOURS.id.into())
                 .child(super::super::search::track_bounds(
                     catalog::SIDEBAR_HOST_COLOURS.id.into(),
+                    px(0.),
                 )),
         );
         let rows = self.host_rows(cx);
@@ -313,7 +317,7 @@ impl SettingsWindow {
                 div()
                     .debug_selector(|| "sidebar-host-colours-empty".into())
                     .py(px(6.))
-                    .text_size(px(12.))
+                    .text_size(rems(0.75))
                     .text_color(rgb(theme.muted))
                     .child(fl!("settings-sidebar-hosts-empty")),
             );
@@ -445,6 +449,18 @@ impl SettingsWindow {
         slot.child(
             div()
                 .id(id)
+                .role(Role::Button)
+                .aria_label(fl!(
+                    "settings-sidebar-spacing-reset",
+                    setting = spacing.entry().title()
+                ))
+                .map(|reset| {
+                    ui::focusable(
+                        &self.theme,
+                        crate::accessibility::disabled(reset, !ready),
+                        ready,
+                    )
+                })
                 .debug_selector(move || id.into())
                 .text_color(rgb(self.theme.muted))
                 .when(ready, |reset| {

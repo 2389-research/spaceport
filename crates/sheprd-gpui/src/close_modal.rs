@@ -1,3 +1,5 @@
+// ABOUTME: Shares close consent and preferences across Herdr and Core panes.
+// ABOUTME: Keeps captured targets fenced until a fresh confirmation.
 // i18n: migrated
 use crate::i18n::fl;
 use crate::{
@@ -13,16 +15,16 @@ use sheprd_client::{
     protocol::{AgentStatus, ClientShellSnapshot},
 };
 
+mod batch;
+mod core_pane;
 mod sequence;
+mod workspace;
 
 pub(crate) use sequence::CloseRun;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct CloseConfirmation {
-    boot: String,
-    workspace: String,
-    tab: String,
-    pane: Option<String>,
+    target: Target,
     label: String,
     /// The agents closing it would interrupt, as the dialog names them.
     interrupts: Option<String>,
@@ -32,14 +34,49 @@ pub(super) struct CloseConfirmation {
     error: Option<String>,
 }
 
+pub(crate) struct Paint {
+    title: String,
+    note: String,
+    confirm: String,
+    label: String,
+    interrupts: Option<String>,
+    confirm_selected: bool,
+    do_not_ask_again: bool,
+    offers_do_not_ask_again: bool,
+    error: Option<String>,
+    long_labels: bool,
+    offset: Point<Pixels>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum Target {
+    // keep-sorted start
+    Batch(batch::Batch),
+    Core(core_pane::Pane),
+    Herdr(HerdrTarget),
+    Workspace(workspace::Target),
+    // keep-sorted end
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct HerdrTarget {
+    boot: String,
+    workspace: String,
+    tab: String,
+    pane: Option<String>,
+}
+
 impl CloseConfirmation {
     pub(super) fn capture_pane(snapshot: &ClientShellSnapshot, id: &str) -> Option<Self> {
         let pane = snapshot.panes.iter().find(|pane| pane.pane_id == id)?;
         let mut close = Self::capture_tab(snapshot, &pane.tab_id)?;
-        if close.workspace != pane.workspace_id {
+        let Target::Herdr(target) = &mut close.target else {
+            return None;
+        };
+        if target.workspace != pane.workspace_id {
             return None;
         }
-        close.pane = Some(pane.pane_id.clone());
+        target.pane = Some(pane.pane_id.clone());
         close.label = pane.label.clone().unwrap_or_else(|| pane.pane_id.clone());
         close.interrupts = close.interrupted(snapshot);
         close.request(snapshot).ok()?;
@@ -49,10 +86,12 @@ impl CloseConfirmation {
     pub(super) fn capture_tab(snapshot: &ClientShellSnapshot, id: &str) -> Option<Self> {
         let tab = snapshot.tabs.iter().find(|tab| tab.tab_id == id)?;
         let mut close = Self {
-            boot: snapshot.boot_id.clone(),
-            workspace: tab.workspace_id.clone(),
-            tab: tab.tab_id.clone(),
-            pane: None,
+            target: Target::Herdr(HerdrTarget {
+                boot: snapshot.boot_id.clone(),
+                workspace: tab.workspace_id.clone(),
+                tab: tab.tab_id.clone(),
+                pane: None,
+            }),
             label: tab.label.clone(),
             interrupts: None,
             confirm_selected: false,
@@ -68,47 +107,37 @@ impl CloseConfirmation {
             return None;
         }
         controls::request(command, snapshot)?;
-        let tab = snapshot
-            .tabs
-            .iter()
-            .find(|tab| Some(&tab.tab_id) == snapshot.focused_tab_id.as_ref())?;
-        let pane = if command == Command::ClosePane {
-            Some(
-                snapshot
-                    .panes
-                    .iter()
-                    .find(|pane| Some(&pane.pane_id) == snapshot.focused_pane_id.as_ref())?,
-            )
+        if command == Command::ClosePane {
+            Self::capture_pane(snapshot, snapshot.focused_pane_id.as_deref()?)
         } else {
-            None
-        };
-        let mut close = Self {
-            boot: snapshot.boot_id.clone(),
-            workspace: tab.workspace_id.clone(),
-            tab: tab.tab_id.clone(),
-            pane: pane.map(|pane| pane.pane_id.clone()),
-            label: pane
-                .map(|pane| pane.label.clone().unwrap_or_else(|| pane.pane_id.clone()))
-                .unwrap_or_else(|| tab.label.clone()),
-            interrupts: None,
-            confirm_selected: false,
-            do_not_ask_again: false,
-            error: None,
-        };
-        close.interrupts = close.interrupted(snapshot);
-        Some(close)
+            Self::capture_tab(snapshot, snapshot.focused_tab_id.as_deref()?)
+        }
+    }
+
+    fn is_pane(&self) -> bool {
+        match &self.target {
+            Target::Herdr(target) => target.pane.is_some(),
+            Target::Core(_) => true,
+            Target::Batch(_) | Target::Workspace(_) => false,
+        }
     }
 
     /// Names the agents in this pane or tab that are working or waiting on
     /// the user, so the dialog says what closing it stops; none when nothing
     /// is in flight.
     fn interrupted(&self, snapshot: &ClientShellSnapshot) -> Option<String> {
+        let Target::Herdr(target) = &self.target else {
+            return None;
+        };
         let busy: Vec<_> = snapshot
             .agents
             .iter()
             .filter(|agent| {
-                agent.tab_id == self.tab
-                    && self.pane.as_ref().is_none_or(|pane| agent.pane_id == *pane)
+                agent.tab_id == target.tab
+                    && target
+                        .pane
+                        .as_ref()
+                        .is_none_or(|pane| agent.pane_id == *pane)
                     && matches!(
                         agent.agent_status,
                         AgentStatus::Working | AgentStatus::Blocked
@@ -134,43 +163,56 @@ impl CloseConfirmation {
     /// tabs without any, have nothing in flight to lose. Pane closes ask
     /// unless `confirm_close_pane` is off, so this only matters for tabs.
     fn interrupts_agent(&self, snapshot: &ClientShellSnapshot) -> bool {
+        let Target::Herdr(target) = &self.target else {
+            return false;
+        };
         let busy = |status| matches!(status, AgentStatus::Working | AgentStatus::Blocked);
         // The tab's aggregate status may rank a finished agent above a
         // working one, so each agent in the tab is checked as well.
         snapshot
             .tabs
             .iter()
-            .any(|tab| tab.tab_id == self.tab && busy(tab.agent_status))
+            .any(|tab| tab.tab_id == target.tab && busy(tab.agent_status))
             || snapshot
                 .agents
                 .iter()
-                .any(|agent| agent.tab_id == self.tab && busy(agent.agent_status))
+                .any(|agent| agent.tab_id == target.tab && busy(agent.agent_status))
     }
 
     fn request(&self, snapshot: &ClientShellSnapshot) -> Result<(Method, Value)> {
-        if snapshot.boot_id != self.boot
+        let Target::Herdr(target) = &self.target else {
+            return Err(Error::StaleCloseTarget);
+        };
+        target.request(snapshot)
+    }
+}
+
+impl HerdrTarget {
+    fn request(&self, snapshot: &ClientShellSnapshot) -> Result<(Method, Value)> {
+        let target = self;
+        if snapshot.boot_id != target.boot
             || !snapshot
                 .workspaces
                 .iter()
-                .any(|workspace| workspace.workspace_id == self.workspace)
+                .any(|workspace| workspace.workspace_id == target.workspace)
             || !snapshot
                 .tabs
                 .iter()
-                .any(|tab| tab.tab_id == self.tab && tab.workspace_id == self.workspace)
-            || self.pane.as_ref().is_some_and(|id| {
+                .any(|tab| tab.tab_id == target.tab && tab.workspace_id == target.workspace)
+            || target.pane.as_ref().is_some_and(|id| {
                 !snapshot.panes.iter().any(|pane| {
                     &pane.pane_id == id
-                        && pane.tab_id == self.tab
-                        && pane.workspace_id == self.workspace
+                        && pane.tab_id == target.tab
+                        && pane.workspace_id == target.workspace
                 })
             })
         {
             return Err(Error::StaleCloseTarget);
         }
-        Ok(if let Some(id) = &self.pane {
+        Ok(if let Some(id) = &target.pane {
             (Method::PaneClose, json!({"pane_id": id}))
         } else {
-            (Method::TabClose, json!({"tab_id": self.tab}))
+            (Method::TabClose, json!({"tab_id": target.tab}))
         })
     }
 }
@@ -224,7 +266,9 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let immediate = if close.pane.is_some() {
+        let immediate = if matches!(&close.target, Target::Batch(_) | Target::Workspace(_)) {
+            false
+        } else if close.is_pane() {
             !self.config.confirm_close_pane
         } else {
             !self.config.confirm_close_tab
@@ -261,7 +305,7 @@ impl SheprdWindow {
                 .menu
                 .close
                 .as_ref()
-                .is_some_and(|close| close.pane.is_some())
+                .is_some_and(CloseConfirmation::is_pane)
     }
 
     /// Sends the close, returning the preference "Do not ask again" asks to
@@ -272,47 +316,23 @@ impl SheprdWindow {
         cx: &mut Context<Self>,
     ) -> Option<Preference> {
         let close = self.menu.close.as_ref()?;
-        let result = (|| {
-            if !self.menu_target_current() || !self.input_ready() {
-                return Err(Error::StaleConnection);
+        let target = match &close.target {
+            Target::Batch(target) => {
+                self.begin_close_batch(target.clone(), window, cx);
+                return None;
             }
-            if close.pane.is_some()
-                && self
-                    .live
-                    .surface
-                    .as_ref()
-                    .is_some_and(|s| s.popup.is_some())
-            {
-                return Err(Error::ConnectionNotReady);
+            Target::Workspace(target) => {
+                self.send_workspace_close(target.clone(), window, cx);
+                return None;
             }
-            let snapshot = self.live.snapshot.as_ref().ok_or(Error::NotConnected)?;
-            close.request(snapshot)
-        })();
+            Target::Core(target) => return self.send_core_pane_close(target.clone(), window, cx),
+            Target::Herdr(target) => target,
+        };
+        let target = target.clone();
+        let stop_asking = close.do_not_ask_again;
+        let result = self.queue_herdr_close(&target, cx);
         match result {
-            Ok((method, params)) => {
-                let stop_asking = close.do_not_ask_again;
-                let tab = close.pane.is_none().then(|| close.tab.clone());
-                // Closing a tab, or the last pane of one, closes the tab.
-                let closing_tab = self.live.snapshot.as_ref().and_then(|snapshot| {
-                    let last_pane = snapshot
-                        .panes
-                        .iter()
-                        .filter(|p| p.tab_id == close.tab && p.workspace_id == close.workspace)
-                        .count()
-                        <= 1;
-                    (close.pane.is_none() || last_pane)
-                        .then(|| crate::browser::ClosedHerdrTab::capture(snapshot, &close.tab))
-                        .flatten()
-                });
-                let sent = self.request_focus_change(method.as_str(), None, |handle, boot| {
-                    handle.request(boot, method, params)
-                });
-                if sent && let Some(closed) = closing_tab {
-                    self.record_closed_herdr_tab(closed, cx);
-                }
-                if let Some(tab) = tab {
-                    self.close_sent(&tab);
-                }
+            Ok(()) => {
                 self.dismiss_menu(window, cx);
                 stop_asking.then_some(Preference::ConfirmClosePane(false))
             }
@@ -326,6 +346,47 @@ impl SheprdWindow {
         }
     }
 
+    fn queue_herdr_close(&mut self, target: &HerdrTarget, cx: &mut Context<Self>) -> Result<()> {
+        let (method, params) = (|| {
+            if !self.menu_target_current() || !self.input_ready() {
+                return Err(Error::StaleConnection);
+            }
+            if target.pane.is_some()
+                && self
+                    .live
+                    .surface
+                    .as_ref()
+                    .is_some_and(|s| s.popup.is_some())
+            {
+                return Err(Error::ConnectionNotReady);
+            }
+            let snapshot = self.live.snapshot.as_ref().ok_or(Error::NotConnected)?;
+            target.request(snapshot)
+        })()?;
+        // Closing a tab, or the last pane of one, closes the tab.
+        let closing_tab = self.live.snapshot.as_ref().and_then(|snapshot| {
+            let last_pane = snapshot
+                .panes
+                .iter()
+                .filter(|p| p.tab_id == target.tab && p.workspace_id == target.workspace)
+                .count()
+                <= 1;
+            (target.pane.is_none() || last_pane)
+                .then(|| crate::browser::ClosedHerdrTab::capture(snapshot, &target.tab))
+                .flatten()
+        });
+        let sent = self.request_focus_change(method.as_str(), None, |handle, boot| {
+            handle.request(boot, method, params)
+        });
+        if !sent {
+            return Err(Error::ConnectionNotReady);
+        }
+        if let Some(closed) = closing_tab {
+            self.record_closed_herdr_tab(closed, cx);
+        }
+        Ok(())
+    }
+
     pub(super) fn close_confirmation_key(
         &mut self,
         event: &KeyDownEvent,
@@ -335,6 +396,7 @@ impl SheprdWindow {
         cx.stop_propagation();
         window.prevent_default();
         match event.keystroke.key.as_str() {
+            "enter" if event.is_held => {}
             "escape" => self.dismiss_menu(window, cx),
             "tab" | "left" | "right" => {
                 if let Some(close) = &mut self.menu.close {
@@ -369,12 +431,37 @@ impl SheprdWindow {
         }
     }
 
-    pub(super) fn render_close_confirmation(&self, cx: &mut Context<Self>) -> Div {
-        let Some(close) = &self.menu.close else {
-            return div();
-        };
-        let theme = &self.theme;
-        let (title, note, confirm) = if close.pane.is_some() {
+    pub(crate) fn close_confirmation_paint(&self) -> Option<Paint> {
+        let close = self.menu.close.as_ref()?;
+        let (title, note, confirm) = if let Target::Batch(target) = &close.target {
+            (
+                fl!("close-modal-batch-title", count = target.items.len()),
+                fl!(
+                    "close-modal-batch-note",
+                    panes = target.pane_count(),
+                    views = target.view_count()
+                ),
+                fl!("close-modal-close-batch", count = target.items.len()),
+            )
+        } else if let Target::Workspace(target) = &close.target {
+            (
+                if target.workspace_count() > 1 {
+                    fl!("close-modal-workspace-group-title")
+                } else {
+                    fl!("close-modal-workspace-title")
+                },
+                fl!(
+                    "close-modal-workspace-note",
+                    workspaces = target.workspace_count(),
+                    panes = target.pane_count()
+                ),
+                if target.workspace_count() > 1 {
+                    fl!("close-modal-close-workspace-group")
+                } else {
+                    fl!("close-modal-close-workspace")
+                },
+            )
+        } else if close.is_pane() {
             (
                 fl!("close-modal-pane-title"),
                 fl!("close-modal-pane-note"),
@@ -387,31 +474,80 @@ impl SheprdWindow {
                 fl!("close-modal-close-tab"),
             )
         };
+        Some(Paint {
+            title,
+            note,
+            confirm,
+            label: close.label.clone(),
+            interrupts: close.interrupts.clone(),
+            confirm_selected: close.confirm_selected,
+            do_not_ask_again: close.do_not_ask_again,
+            offers_do_not_ask_again: self.offers_do_not_ask_again(),
+            error: close.error.clone(),
+            long_labels: matches!(&close.target, Target::Batch(_) | Target::Workspace(_)),
+            offset: self.menu.close_targets_scroll.offset(),
+        })
+    }
+
+    pub(super) fn render_close_confirmation(&self, cx: &mut Context<Self>) -> Div {
+        let Some(paint) = self.close_confirmation_paint() else {
+            return div();
+        };
+        self.render_close_content(&paint, true, cx)
+    }
+
+    pub(crate) fn render_close_paint(&self, paint: &Paint, cx: &mut Context<Self>) -> Div {
+        self.render_close_content(paint, false, cx)
+    }
+
+    fn render_close_content(&self, close: &Paint, active: bool, cx: &mut Context<Self>) -> Div {
+        let theme = &self.theme;
         div()
             .p(px(12.))
             .flex()
             .flex_col()
             .gap(px(12.))
             .child(
-                div()
+                close_text("close-title", close.title.clone(), active)
                     .text_size(px(self.config.ui.size * 1.35))
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .child(title),
+                    .font_weight(FontWeight::SEMIBOLD),
             )
-            .child(div().child(close.label.clone()))
+            .child(
+                div()
+                    .id("close-targets")
+                    .debug_selector(|| "close-targets".into())
+                    .when(close.long_labels, |labels| {
+                        labels
+                            .max_h(px(160.))
+                            .when(active, |labels| {
+                                labels
+                                    .overflow_y_scroll()
+                                    .track_scroll(&self.menu.close_targets_scroll)
+                            })
+                            .when(!active, |labels| labels.overflow_hidden())
+                    })
+                    .child(
+                        close_text("close-target-text", close.label.clone(), active)
+                            .debug_selector(|| "close-target-text".into())
+                            .relative()
+                            .when(!active, |label| label.top(close.offset.y)),
+                    ),
+            )
             .when_some(close.interrupts.clone(), |panel, interrupts| {
                 panel.child(
-                    div()
+                    close_text("close-interrupts", interrupts, active)
                         .debug_selector(|| "close-interrupts".into())
-                        .text_color(crate::menu::danger(theme))
-                        .child(interrupts),
+                        .text_color(crate::menu::danger(theme)),
                 )
             })
-            .child(div().text_color(rgb(theme.subtext())).child(note))
+            .child(
+                close_text("close-note", close.note.clone(), active)
+                    .text_color(rgb(theme.subtext())),
+            )
             .when_some(close.error.clone(), |panel, error| {
-                panel.child(div().bg(rgb(theme.active)).p(px(8.)).child(error))
+                panel.child(close_error(error, active).bg(rgb(theme.active)).p(px(8.)))
             })
-            .when(self.offers_do_not_ask_again(), |panel| {
+            .when(close.offers_do_not_ask_again, |panel| {
                 panel.child(
                     div()
                         .id("close-do-not-ask")
@@ -427,7 +563,11 @@ impl SheprdWindow {
                             close.do_not_ask_again,
                         ))
                         .child(fl!("close-modal-do-not-ask"))
-                        .on_click(cx.listener(|this, _, _, cx| this.toggle_do_not_ask_again(cx))),
+                        .when(active, |row| {
+                            row.on_click(
+                                cx.listener(|this, _, _, cx| this.toggle_do_not_ask_again(cx)),
+                            )
+                        }),
                 )
             })
             .child(
@@ -436,8 +576,10 @@ impl SheprdWindow {
                     .justify_end()
                     .gap(px(8.))
                     .child(
-                        div()
-                            .id("close-cancel")
+                        close_button("close-cancel", fl!("close-modal-cancel"), active)
+                            .when(active && !close.confirm_selected, |button| {
+                                button.aria_active_descendant()
+                            })
                             .debug_selector(|| "close-cancel".into())
                             .px(px(12.))
                             .py(px(6.))
@@ -449,15 +591,19 @@ impl SheprdWindow {
                                 theme.foreground
                             }))
                             .cursor_pointer()
-                            .hover(|s| s.bg(rgb(theme.active)))
-                            .child(fl!("close-modal-cancel"))
-                            .on_click(
-                                cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx)),
-                            ),
+                            .when(active, |button| {
+                                button.hover(|s| s.bg(rgb(theme.active))).on_click(
+                                    cx.listener(|this, _, window, cx| {
+                                        this.dismiss_menu(window, cx)
+                                    }),
+                                )
+                            }),
                     )
                     .child(
-                        div()
-                            .id("close-confirm")
+                        close_button("close-confirm", close.confirm.clone(), active)
+                            .when(active && close.confirm_selected, |button| {
+                                button.aria_active_descendant()
+                            })
                             .debug_selector(|| "close-confirm".into())
                             .px(px(12.))
                             .py(px(6.))
@@ -471,13 +617,48 @@ impl SheprdWindow {
                             .bg(rgb(theme.active))
                             .text_color(crate::menu::danger(theme))
                             .cursor_pointer()
-                            .child(confirm)
-                            .on_click(
-                                cx.listener(|this, _, window, cx| this.confirm_close(window, cx)),
-                            ),
+                            .when(active, |button| {
+                                button.on_click(
+                                    cx.listener(|this, _, window, cx| {
+                                        this.confirm_close(window, cx)
+                                    }),
+                                )
+                            }),
                     ),
             )
     }
+}
+
+fn close_text(id: &'static str, text: String, active: bool) -> Stateful<Div> {
+    div()
+        .id(id)
+        .when(active, |label| {
+            label.role(Role::Label).aria_value(text.clone())
+        })
+        .child(text)
+}
+
+fn close_error(error: String, active: bool) -> Stateful<Div> {
+    div()
+        .id("close-error")
+        .when(active, |label| {
+            label
+                .role(Role::Alert)
+                .aria_label(error.clone())
+                .a11y_synthetic_children(|builder| {
+                    builder.parent_node().set_live(accesskit::Live::Assertive);
+                })
+        })
+        .child(error)
+}
+
+fn close_button(id: &'static str, label: String, active: bool) -> Stateful<Div> {
+    div()
+        .id(id)
+        .when(active, |button| {
+            button.role(Role::Button).aria_label(label.clone())
+        })
+        .child(label)
 }
 
 #[cfg(test)]

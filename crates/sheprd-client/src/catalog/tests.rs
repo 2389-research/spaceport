@@ -1,3 +1,5 @@
+// ABOUTME: Checks saved connection parsing and storage error provenance.
+// ABOUTME: Preserves typed sources while excluding sensitive schema fields from display.
 #![allow(clippy::unwrap_used)]
 use super::*;
 
@@ -19,12 +21,12 @@ fn storage_errors_retain_operation_paths_sources_and_redacted_display() {
         (
             &catalog,
             load_path(&catalog).unwrap_err(),
-            "The saved host list cannot be read; update Spaceport, or remove it to start over.",
+            "The saved connections file could not be read.",
         ),
         (
             &selection,
             read_selection(&selection).err().unwrap(),
-            "The saved host selection cannot be read; remove it so Spaceport can write a new one.",
+            "The saved connection choice could not be read.",
         ),
     ] {
         let Error::Storage {
@@ -96,7 +98,7 @@ fn schema_errors_keep_sources_but_redact_display() {
     assert!(matches!(error, Error::CatalogSchema(_)));
     assert_eq!(
         error.to_string(),
-        "The saved host list cannot be read; update Spaceport, or remove it to start over."
+        "The saved connections file could not be read."
     );
     assert_eq!(error.kind(), io::ErrorKind::InvalidData);
     let source = error
@@ -110,7 +112,7 @@ fn schema_errors_keep_sources_but_redact_display() {
     let error = Error::SelectionSchema(source);
     assert_eq!(
         error.to_string(),
-        "The saved host selection cannot be read; remove it so Spaceport can write a new one."
+        "The saved connection choice could not be read."
     );
     assert!(error.source().unwrap().is::<serde_json::Error>());
     assert!(matches!(

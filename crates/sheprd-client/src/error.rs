@@ -1,3 +1,5 @@
+// ABOUTME: Defines typed client failures and their plain-language English diagnostics.
+// ABOUTME: Preserves error sources, operation context, and transport retry categories.
 use std::{
     io,
     path::{Path, PathBuf},
@@ -31,124 +33,122 @@ pub enum Error {
         #[source]
         source: Box<Error>,
     },
-    #[error("Could not talk to the daemon: {0}")]
+    #[error("Could not communicate with Herdr: {0}")]
     Io(#[from] io::Error),
     #[error("{0}")]
     Protocol(#[from] sheprd_protocol::Error),
-    #[error("The daemon's answer was not valid JSON: {0}")]
+    #[error("Spaceport could not read Herdr's reply: {0}")]
     Json(#[from] serde_json::Error),
     // Schema details may contain secret-bearing unknown field names. Keep the
     // source for diagnostics, but never include it in presentation text.
-    #[error("The saved host list cannot be read; update Spaceport, or remove it to start over.")]
+    #[error("The saved connections file could not be read.")]
     CatalogSchema(#[source] serde_json::Error),
-    #[error("The saved host selection cannot be read; remove it so Spaceport can write a new one.")]
+    #[error("The saved connection choice could not be read.")]
     SelectionSchema(#[source] serde_json::Error),
-    #[error("Too many commands are waiting for the daemon; try again.")]
+    #[error("Too many commands are waiting. Let them finish before trying again.")]
     Full,
-    #[error("The app is not connected to the daemon.")]
+    #[error("Spaceport is disconnected from Herdr.")]
     Disconnected,
     #[error(transparent)]
     Clipboard(#[from] crate::clipboard::Error),
-    #[error("The daemon did not take the terminal input in time; reconnect.")]
-    InputWriteTimeout,
-    #[error("That command needs the daemon's session first; reconnect and try again.")]
-    MissingBootId,
-    #[error("The daemon's session changed before the command could run; reconnect and try again.")]
-    CommandBoot,
-    #[error("This Herdr daemon does not offer that request; run `herdr update` and reconnect.")]
-    UnsupportedMethod,
     #[error(
-        "This Herdr daemon cannot send pane screens the way this app asks; run `herdr update` and reconnect."
+        "Spaceport could not finish sending terminal input. Some input may have arrived. Choose Terminal → Reconnect."
     )]
+    InputWriteTimeout,
+    #[error("The connection is not ready for this command. Wait for it to connect.")]
+    MissingBootId,
+    #[error("This command does not match the current connection. Choose Terminal → Reconnect.")]
+    CommandBoot,
+    #[error("This version of Herdr does not support this action.")]
+    UnsupportedMethod,
+    #[error("This version of Herdr cannot safely share these terminal views.")]
     UnsupportedSurfaceInterest,
-    #[error("A pane screen was asked for with no rows or columns; nothing was sent.")]
+    #[error("The terminal view needs a width and height. Resize the window and try again.")]
     EmptySurface,
-    #[error("The pane's screen is larger than the daemon allows; make the pane or window smaller.")]
+    #[error("This terminal size is larger than Herdr supports. Resize the window and try again.")]
     GeometryLimit,
     #[error("That is not a valid session name.")]
     InvalidSession,
-    #[error("A host reached over SSH has no local socket to connect to.")]
+    #[error("This remote connection has no local socket file.")]
     NoLocalSocket,
-    #[error("The connection was stopped.")]
+    #[error("The connection stopped.")]
     Cancelled,
-    #[error("The connection's events stopped.")]
+    #[error("Spaceport stopped receiving connection updates.")]
     EventReceiverDropped,
-    #[error("The daemon closed the connection.")]
+    #[error("The connection to Herdr closed.")]
     SocketClosed,
-    #[error("The daemon started a message and never finished it; reconnect.")]
+    #[error("Herdr stopped partway through a terminal update. Choose Terminal → Reconnect.")]
     PartialFrameTimeout,
-    #[error("The daemon sent a message this app cannot read (bad message prefix); reconnect.")]
+    #[error("Herdr sent terminal data Spaceport could not read. Choose Terminal → Reconnect.")]
     FramePrefix,
-    #[error("The daemon sent a message this app cannot read (bad message length); reconnect.")]
+    #[error("Herdr sent terminal data Spaceport could not read. Choose Terminal → Reconnect.")]
     FrameLength,
-    #[error("The host did not answer its health check in time; check the network and reconnect.")]
+    #[error("Herdr stopped answering connection checks. Choose Terminal → Reconnect.")]
     HealthTimeout,
-    #[error("The host did not finish connecting in time; check the network and reconnect.")]
+    #[error("Herdr did not finish opening the connection in time. Choose Terminal → Reconnect.")]
     HandshakeTimeout,
-    #[error("The daemon did not answer in time; the request was not sent again.")]
+    #[error(
+        "Herdr did not confirm the request. It may have happened; check the result before trying again."
+    )]
     RequestTimeout,
-    #[error("The host did not greet this app as expected; run `herdr update` and reconnect.")]
+    #[error("Herdr did not send the expected connection information. Choose Terminal → Reconnect.")]
     ExpectedWelcome,
     /// The daemon answered the endpoint hello with a pre-endpoint welcome.
     #[error(
-        "This host's Herdr daemon is older than this app needs; run `herdr update` and reconnect."
+        "This Herdr version is too old for Spaceport. Run `herdr update`, then choose Terminal → Reconnect."
     )]
     LegacyDaemon,
     /// A local daemon closed after the hello without any welcome, as every
     /// release before the endpoint protocol does.
     #[error(
-        "The host's Herdr daemon closed the connection without answering; it is likely older than {}, which this app requires. Run `herdr update` and reconnect",
+        "Herdr closed the connection without answering. It may be older than the required version {}. Run `herdr update`, then choose Terminal → Reconnect.",
         crate::compat::MIN_HERDR_VERSION
     )]
     ClosedBeforeWelcome,
     #[error(
-        "This app and the host's Herdr daemon (version {server_version}) speak different protocol versions ({ours} here, {generation} there); {advice}",
-        ours = sheprd_protocol::endpoint::ENDPOINT_PROTOCOL_GENERATION,
-        advice = crate::compat::generation_advice(*.generation)
+        "{}", crate::compat::generation_message(*.generation, .server_version)
     )]
     EndpointGeneration {
         generation: u32,
         server_version: String,
     },
-    #[error(
-        "The host's Herdr daemon sent a greeting this app cannot read; run `herdr update` and reconnect."
-    )]
+    #[error("Herdr sent unsupported connection information. Choose Terminal → Reconnect.")]
     WelcomeKind,
     #[error("The host's Herdr daemon refused the connection ({code}): {message}")]
     WelcomeRejected { code: String, message: String },
-    #[error(
-        "This app and the host's Herdr daemon cannot agree on a protocol; run `herdr update` and reconnect."
-    )]
+    #[error("This version of Herdr uses a terminal format Spaceport does not support.")]
     IncompatibleCodecs,
     #[error(
-        "The Herdr daemon on this host (version {server_version}) cannot send pane screens the way this app asks; run `herdr update` and reconnect"
+        "Herdr {server_version} cannot safely share these terminal views. Run `herdr update`, then choose Terminal → Reconnect."
     )]
     MissingSurfaceInterest { server_version: String },
     #[error(
-        "The Herdr daemon on this SSH host (version {server_version}) has no health check this app can use; run `herdr update` there and reconnect"
+        "Herdr {server_version} on this device cannot report connection health. Run `herdr update` there, then choose Terminal → Reconnect."
     )]
     MissingHealthCheck { server_version: String },
-    #[error("The daemon's session changed, or its screen data went backwards; reconnect.")]
+    #[error("Herdr restarted or sent older session state. Choose Terminal → Reconnect.")]
     SnapshotIdentity,
-    #[error("A pane screen arrived before the daemon's session data; reconnect.")]
+    #[error("Herdr sent a screen before its session information. Choose Terminal → Reconnect.")]
     SurfaceBeforeSnapshot,
-    #[error("A pane screen arrived for the wrong pane or an out-of-date revision; reconnect.")]
+    #[error(
+        "Herdr's terminal screen does not match its session information. Choose Terminal → Reconnect."
+    )]
     SurfaceIdentity,
-    #[error("A pane screen update arrived before the full screen it belongs to; reconnect.")]
+    #[error("Herdr sent a screen update before the initial screen. Choose Terminal → Reconnect.")]
     PatchBeforeBaseline,
-    #[error("An encoded pane screen arrived before the full screen it belongs to; reconnect.")]
+    #[error("Herdr sent a screen update before the initial screen. Choose Terminal → Reconnect.")]
     EncodedSurfaceBeforeBaseline,
     #[error(
-        "This Herdr daemon did not offer the screen encoding this app asked for; run `herdr update` and reconnect."
+        "Herdr sent a terminal format this connection did not agree to use. Choose Terminal → Reconnect."
     )]
     SurfaceEncodingNotNegotiated,
-    #[error("The daemon's session changed while the request was in flight; try again.")]
+    #[error("Herdr's reply belongs to another connection. Choose Terminal → Reconnect.")]
     ResponseBoot,
-    #[error("The daemon's answer was larger than this app accepts.")]
+    #[error("Herdr's reply was too large for Spaceport to read.")]
     ResponseLimit,
-    #[error("The daemon answered a request this app never sent; reconnect.")]
+    #[error("Herdr sent a reply without a matching request. Choose Terminal → Reconnect.")]
     UnsolicitedResponse,
-    #[error("The daemon's answer did not match the request; reconnect.")]
+    #[error("Herdr's reply did not match the waiting request. Choose Terminal → Reconnect.")]
     ResponseId,
     #[error("{0}")]
     ServerShutdown(String),
@@ -164,9 +164,7 @@ pub enum Error {
     /// as unable to serve this client. Fields describe the first one;
     /// `version` is bounded text.
     #[error(
-        "The Herdr daemon{} on this host cannot serve this app; {}",
-        crate::compat::version_note(.version.as_deref()),
-        crate::compat::generation_advice(.generation.unwrap_or(0))
+        "{}", crate::compat::bridge_message(.generation.unwrap_or(0), .version.as_deref())
     )]
     BridgeIncompatible {
         generation: Option<u32>,
@@ -245,47 +243,41 @@ pub enum Error {
     /// Stderr is discarded, as for every SSH child: it can carry banners or secrets.
     #[error("The SSH port forward ended ({0}); check host trust, authentication, and the network.")]
     ForwardExit(std::process::ExitStatus),
-    #[error(
-        "The saved host selection is not a regular file; remove it so Spaceport can write a new one."
-    )]
+    #[error("The saved connection choice path is not a file.")]
     SelectionNotFile,
-    #[error("The saved host selection is larger than Spaceport stores; remove it to start over.")]
+    #[error("The saved connection choice is too large.")]
     SelectionLimit,
-    #[error("The saved host selection is in a format this app does not know; update Spaceport.")]
+    #[error("The saved connection choice uses an unsupported format.")]
     SelectionVersion,
-    #[error("The selected host is not there, or it is turned off; pick another host.")]
+    #[error("The selected connection is missing or disabled. Select another device.")]
     SelectionUnavailable,
     #[error("Spaceport's saved data has a path it cannot use.")]
     StoragePath,
     #[error("Spaceport's saved data is not a regular file.")]
     StorageDestinationNotFile,
-    #[error(
-        "The saved host list is not a regular file; remove it so Spaceport can write a new one."
-    )]
+    #[error("The saved connections path is not a file.")]
     CatalogNotFile,
-    #[error("The saved host list is larger than Spaceport stores; remove a host.")]
+    #[error("The saved connection list is too large.")]
     CatalogLimit,
-    #[error(
-        "The saved host list is in a format this app does not know, or it lists too many hosts; update Spaceport or remove a host."
-    )]
+    #[error("The saved connections use an unsupported format or contain too many entries.")]
     CatalogVersionOrCount,
-    #[error("A saved host has an ID this app cannot use, or two hosts share one; remove one.")]
+    #[error("A saved connection has a missing, invalid, or repeated ID.")]
     ProfileId,
-    #[error("A saved host's label cannot be used.")]
+    #[error("A saved connection has an invalid name.")]
     ProfileLabel,
     /// An endpoint answered a request with an error. The message is the
     /// daemon's own display text, empty when it sent none; act on `code`,
     /// never on the message.
-    #[error("{}", if .message.is_empty() { "The daemon refused the request without saying why." } else { .message.as_str() })]
+    #[error("{}", if .message.is_empty() { "Spaceport could not read Herdr's error explanation." } else { .message.as_str() })]
     Endpoint {
         code: crate::response::EndpointErrorCode,
         message: String,
     },
-    #[error("The daemon's answer is not one this app can read.")]
+    #[error("Spaceport could not read Herdr's reply.")]
     ResponseSchema(#[source] serde_json::Error),
-    #[error("The daemon's answer carried neither a result nor a reason.")]
+    #[error("Herdr's reply contained neither a result nor an explanation.")]
     ResponseMissingResult,
-    #[error("The daemon answered a different request than the one sent.")]
+    #[error("Herdr replied to a different action. Choose Terminal → Reconnect.")]
     ResponseType,
 }
 

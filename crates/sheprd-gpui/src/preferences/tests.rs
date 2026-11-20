@@ -1,9 +1,18 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
 use std::env;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::thread;
 use std::time::{Duration, Instant};
 
 mod core_path;
+mod shutdown;
+
+static TEMP_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+fn write_chrome(path: &Path, chrome: Chrome) -> crate::Result<()> {
+    crate::state_file::write(path, &chrome)
+}
 
 struct TestDirectory(PathBuf);
 
@@ -61,7 +70,7 @@ fn roundtrip_and_reset_drain_after_drop() {
     let worker = preferences.worker.take().unwrap();
     drop(preferences);
     // Only the test waits for persistence before reading or removing files.
-    worker.join().unwrap();
+    worker.finish();
     let mut preferences = Preferences::start(Ok(path.clone()));
     assert_eq!(
         await_loaded(&mut preferences),
@@ -77,7 +86,7 @@ fn roundtrip_and_reset_drain_after_drop() {
     preferences.save(Chrome::default());
     let worker = preferences.worker.take().unwrap();
     drop(preferences);
-    worker.join().unwrap();
+    worker.finish();
     assert_eq!(read_chrome(&path).unwrap(), Chrome::default());
     let mut preferences = Preferences::start(Ok(path));
     assert_eq!(await_loaded(&mut preferences), Chrome::default());
@@ -140,61 +149,6 @@ fn only_a_toggled_sort_is_stored_and_older_files_migrate() {
         assert!(stored.get("agent_sort").is_none(), "{stored}");
         assert_eq!(read_chrome(&path).unwrap(), chrome(agent_sort));
     }
-}
-
-#[core::prelude::v1::test]
-fn drop_does_not_wait_for_blocked_worker_and_queued_saves_still_drain() {
-    let (saves, requests) = mpsc::channel();
-    let (ready_tx, ready) = mpsc::channel();
-    let (release, blocked) = mpsc::channel();
-    let (drained_tx, drained) = mpsc::channel();
-    let worker = thread::spawn(move || {
-        ready_tx.send(()).unwrap();
-        blocked.recv().unwrap();
-        drained_tx
-            .send(requests.into_iter().collect::<Vec<_>>())
-            .unwrap();
-    });
-    let preferences = Preferences {
-        saves: Some(saves),
-        loaded: None,
-        worker: Some(worker),
-    };
-    let queued = [
-        Chrome {
-            activity_panel: None,
-            activity_last_opened: Default::default(),
-            sidebar_width: Some(160.),
-            sidebar_split: None,
-            agent_sort: Some(AgentSort::Grouped),
-            device_order: Vec::new(),
-        },
-        Chrome {
-            activity_panel: None,
-            activity_last_opened: Default::default(),
-            sidebar_width: Some(400.),
-            sidebar_split: Some(0.6),
-            agent_sort: Some(AgentSort::Priority),
-            device_order: Vec::new(),
-        },
-        Chrome::default(),
-    ];
-    for chrome in queued.clone() {
-        preferences.save(chrome);
-    }
-    ready.recv_timeout(Duration::from_secs(5)).unwrap();
-    let (dropped_tx, dropped) = mpsc::channel();
-    let dropper = thread::spawn(move || {
-        drop(preferences);
-        dropped_tx.send(()).unwrap();
-    });
-    let result = dropped.recv_timeout(Duration::from_secs(5));
-    // Release even on failure so a regressed join does not strand the threads.
-    release.send(()).unwrap();
-    let saved = drained.recv_timeout(Duration::from_secs(5)).unwrap();
-    dropper.join().unwrap();
-    assert!(result.is_ok(), "drop waited for the blocked worker");
-    assert_eq!(saved, queued);
 }
 
 #[core::prelude::v1::test]

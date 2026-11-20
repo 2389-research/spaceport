@@ -18,7 +18,7 @@ fn fixture_view(cx: &mut TestAppContext) -> (Fixture, &mut VisualTestContext) {
     let (view, vcx) = cx.add_window_view({
         let (themes, layouts) = (themes.clone(), layouts.clone());
         move |window, cx| {
-            let mut view = SettingsWindow::new(weak, cx);
+            let mut view = fixture_new(weak, cx);
             view.theme_io = Some(recording_themes(themes, false));
             view.layout_io = Some(recording_layouts(layouts, false));
             window.focus(&view.focus, cx);

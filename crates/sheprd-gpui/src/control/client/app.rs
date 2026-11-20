@@ -1,5 +1,7 @@
+// ABOUTME: Presents application, window and chrome control responses.
+// ABOUTME: Refuses incompatible protocol versions before reporting successful status.
 //! `status`, `app`, `window`, `ui`, and `run`.
-use super::{Context, Output, send, unexpected};
+use super::{Context, Output, unexpected};
 use crate::control::protocol::{
     Request, Response,
     app::{
@@ -73,7 +75,7 @@ pub(super) fn describe_core_catalog(catalog: &CoreCatalog) -> String {
 }
 
 pub(super) fn status(context: &Context) -> crate::Result<Output> {
-    let response = send(&Request::Status(context.caller()?))?;
+    let response = context.send(&Request::Status(context.caller()?))?;
     let Response::Status(status) = response else {
         return Err(super::rejected(response));
     };
@@ -86,13 +88,6 @@ pub(super) fn status(context: &Context) -> crate::Result<Output> {
     } = &status;
     let mut text =
         format!("Spaceport {version} is running (pid {pid}, control protocol {protocol})\n");
-    if *protocol != crate::control::protocol::PROTOCOL_VERSION {
-        let _ = writeln!(
-            text,
-            "This command line speaks protocol {}; update the older of the two.",
-            crate::control::protocol::PROTOCOL_VERSION
-        );
-    }
     let _ = writeln!(text, "{}", describe_core_catalog(core_catalog));
     if windows.is_empty() {
         text.push_str("No window is open\n");
@@ -124,7 +119,12 @@ pub(super) fn window(op: WindowOp, context: &Context) -> crate::Result<Output> {
             if windows.is_empty() {
                 text.push_str("No window is open");
             }
-            Output::data(text.trim_end(), &windows)
+            let output = Output::data(text.trim_end(), &serde_json::json!({ "windows": windows }))?;
+            Ok(if windows.is_empty() {
+                output.nothing()
+            } else {
+                output
+            })
         }
         Response::App {
             reply: Reply::Size { width, height },

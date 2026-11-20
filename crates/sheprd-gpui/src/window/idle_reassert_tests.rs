@@ -119,12 +119,15 @@ fn an_idle_window_still_sends_its_own_new_size(cx: &mut gpui::TestAppContext) {
 }
 
 #[gpui::test]
-fn a_pointer_that_did_not_move_is_not_use(cx: &mut gpui::TestAppContext) {
+fn passive_pointer_motion_does_not_claim_input_ownership(cx: &mut gpui::TestAppContext) {
     let (view, cx) = overridden_window(cx);
     view.update(cx, |view, _| {
         let resting = gpui::point(gpui::px(40.), gpui::px(30.));
         view.note_pointer(resting);
-        assert!(view.last_input.is_some(), "pointing at a pane is use");
+        assert!(
+            view.last_input.is_none(),
+            "pointing alone does not claim the pane"
+        );
         view.last_input = None;
         view.note_pointer(resting);
         assert!(
@@ -132,7 +135,29 @@ fn a_pointer_that_did_not_move_is_not_use(cx: &mut gpui::TestAppContext) {
             "a move event for a cursor that did not move is not use"
         );
         view.note_pointer(resting + gpui::point(gpui::px(1.), gpui::px(0.)));
-        assert!(view.last_input.is_some(), "moving the pointer again is use");
+        assert!(
+            view.last_input.is_none(),
+            "passive motion leaves the active client alone"
+        );
+    });
+}
+
+#[gpui::test]
+fn dragging_over_a_pane_counts_as_input_but_hover_does_not(cx: &mut gpui::TestAppContext) {
+    let (view, cx) = overridden_window(cx);
+    cx.update(|window, cx| {
+        view.update(cx, |view, cx| {
+            let mut event = gpui::MouseMoveEvent {
+                position: gpui::point(gpui::px(40.), gpui::px(30.)),
+                ..Default::default()
+            };
+            view.pane_pointer_moved(&event, window, cx);
+            assert!(view.last_input.is_none());
+            event.position.x += gpui::px(1.);
+            event.pressed_button = Some(gpui::MouseButton::Left);
+            view.pane_pointer_moved(&event, window, cx);
+            assert!(view.last_input.is_some());
+        });
     });
 }
 

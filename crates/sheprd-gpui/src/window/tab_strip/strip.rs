@@ -1,3 +1,5 @@
+// ABOUTME: Draws each group's tab strip from shared measurements.
+// ABOUTME: Keeps tab geometry and interactions tied to the same group.
 //! Drawing one group's strip: what it lists and where each tab sits, the
 //! tabs it drew with their closed neighbours, and the bar around them. Each
 //! phase reads what the one before it measured rather than measuring again.

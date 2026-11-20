@@ -134,9 +134,9 @@ mod level_json {
     }
 }
 
-/// The log file, without a state directory none.
-pub fn log_file() -> Option<PathBuf> {
-    sheprd_client::local_path::state_dir().map(|dir| dir.join("logs").join(FILE_NAME))
+/// The log file within the caller's selected application state.
+pub fn log_file(state: &Path) -> PathBuf {
+    state.join("logs").join(FILE_NAME)
 }
 
 /// Where `current` goes when it is rotated.
@@ -148,10 +148,10 @@ pub fn previous_log_file(current: &Path) -> PathBuf {
 /// error, never silently replaced. No tracing-log bridge is installed. Without a
 /// state directory or writer thread, every event counts as dropped. `targets`
 /// are the crates whose events are kept, each with its modules.
-pub fn init(targets: Targets) -> Result<()> {
+pub fn init(targets: Targets, state: Option<&Path>) -> Result<()> {
     let (lines, queued) = mpsc::sync_channel(QUEUE);
     let counters = Arc::new(Counters::default());
-    let path = log_file().and_then(|path| {
+    let path = state.map(log_file).and_then(|path| {
         let writer_path = path.clone();
         let writer_counters = counters.clone();
         thread::Builder::new()

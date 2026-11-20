@@ -1,3 +1,5 @@
+// ABOUTME: Checks removed cloud commands fail before application startup.
+// ABOUTME: Preserves retained host and port argument contracts.
 use super::*;
 
 #[test]
@@ -39,7 +41,7 @@ fn cloud_commands_are_absent_while_host_and_port_targets_remain() {
         LaunchOptions::parse(["host", "list", "--", "ignored"]).unwrap_err(),
         CliError::Unexpected {
             command: "host",
-            argument: "--".into(),
+            argument: "ignored".into(),
         }
     );
 }

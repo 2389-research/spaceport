@@ -19,11 +19,14 @@ impl SheprdWindow {
         chat: &ChatPane,
         parent: EntryId,
         steps: &[EntryId],
-    ) -> Div {
+    ) -> Stateful<Div> {
         let theme = &self.theme;
         let transcript = chat.session.transcript();
         let text = self.chat_tool_text();
         div()
+            .id(("chat-accessible-steps", parent.0))
+            .role(Role::List)
+            .aria_label(steps_label(steps.len()))
             .debug_selector(move || format!("chat-steps-{}", parent.0))
             .flex()
             .flex_col()
@@ -48,6 +51,7 @@ impl SheprdWindow {
                 let id = *id;
                 Some(
                     div()
+                        .map(|row| step_row(id, state, &tool.title, row))
                         .debug_selector(move || format!("chat-step-{}", id.0))
                         .flex()
                         .items_center()
@@ -65,3 +69,16 @@ impl SheprdWindow {
             }))
     }
 }
+
+fn step_row(id: EntryId, state: ToolState, title: &str, row: Div) -> Stateful<Div> {
+    row.id(("chat-accessible-step", id.0))
+        .role(Role::ListItem)
+        .aria_label(format!(
+            "{}: {}",
+            state.label(),
+            crate::notifications::safe_text(&tool_header(title), 400)
+        ))
+}
+
+#[cfg(test)]
+mod tests;

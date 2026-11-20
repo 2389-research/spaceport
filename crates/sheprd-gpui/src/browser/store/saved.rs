@@ -162,6 +162,31 @@ pub(super) fn parse(bytes: &[u8]) -> crate::Result<Saved> {
     })
 }
 
+/// Salvages independent entries only after the original bytes have been preserved.
+pub(super) fn recover(bytes: &[u8]) -> Saved {
+    let Ok(file) = serde_json::from_slice::<serde_json::Value>(bytes) else {
+        return Saved::default();
+    };
+    let mut next = file
+        .get("next")
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0);
+    let entries = file.get("tabs").and_then(serde_json::Value::as_array);
+    let mut tabs = Vec::new();
+    for (index, value) in entries.into_iter().flatten().enumerate() {
+        if let Some(id) = value.get("id").and_then(serde_json::Value::as_u64) {
+            next = next.max(id.saturating_add(1));
+        }
+        if index < MAX_TABS
+            && let Ok(tab) = serde_json::from_value::<SavedTab>(value.clone())
+            && tab.valid()
+        {
+            tabs.extend(tab.restore());
+        }
+    }
+    Saved { tabs, next }
+}
+
 fn bounded_path(text: &str) -> bool {
     !text.is_empty() && text.len() <= 4096 && !text.chars().any(char::is_control)
 }

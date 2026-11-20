@@ -1,3 +1,5 @@
+// ABOUTME: Formats setting commands and routes supported operations to the app.
+// ABOUTME: Uses named collection results and preserves offline local settings behavior.
 //! `config`, `theme`, `font`, `keybinds`, `caffeine`, `sound`, `bell`,
 //! `integrations`, and `language`. What only reads or writes files is done
 //! here, whether or not Sheprd runs; the rest asks the app.
@@ -64,7 +66,7 @@ pub(super) fn theme(command: ThemeCommand, context: &Context) -> crate::Result<O
         ThemeCommand::Set(Some(name)) => {
             match context.act(Request::Settings, SettingsOp::Theme { name: name.clone() }) {
                 // Saving needs no app: it applies the file when it starts.
-                Err(error) if not_running(&error) => {
+                Err(error) if not_running(&error) && context.window.is_none() => {
                     Config::check_files()?.save_theme(&name)?;
                     Ok(Output::message(format!(
                         "Theme set to {name}; Spaceport shows it when it starts"
@@ -79,7 +81,14 @@ pub(super) fn theme(command: ThemeCommand, context: &Context) -> crate::Result<O
 pub(super) fn font(command: ThemeCommand, context: &Context) -> crate::Result<Output> {
     match command {
         ThemeCommand::List => match settings(context, SettingsOp::Fonts)? {
-            Reply::Fonts { fonts } => Output::data(fonts.join("\n"), &fonts),
+            Reply::Fonts { fonts } => {
+                let output = Output::data(fonts.join("\n"), &json!({ "fonts": fonts }))?;
+                Ok(if fonts.is_empty() {
+                    output.nothing()
+                } else {
+                    output
+                })
+            }
             reply => Err(unexpected(Response::Settings { reply })),
         },
         ThemeCommand::Set(name) => context.act(Request::Settings, SettingsOp::Font { name }),
@@ -148,7 +157,7 @@ pub(super) fn sound(command: SoundCommand, context: &Context) -> crate::Result<O
                 .map(|sound| format!("{:<10}{}", sound.name(), text::sound_use(*sound)))
                 .collect::<Vec<_>>()
                 .join("\n");
-            Output::data(listed, &sounds)
+            Output::data(listed, &json!({ "sounds": sounds }))
         }
         SoundCommand::Play(sound) => context.act(Request::Settings, SettingsOp::Sound { sound }),
     }
@@ -173,7 +182,12 @@ pub(super) fn integrations(
                 if integrations.is_empty() {
                     listed = "The host offers no integrations".into();
                 }
-                Output::data(listed, &integrations)
+                let output = Output::data(listed, &json!({ "integrations": integrations }))?;
+                Ok(if integrations.is_empty() {
+                    output.nothing()
+                } else {
+                    output
+                })
             }
             reply => Err(unexpected(Response::Settings { reply })),
         },

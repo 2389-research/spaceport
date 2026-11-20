@@ -1,0 +1,164 @@
+{
+  "source": "b94978e3bb323e7fa9d70934b63401f841bb8dd2",
+  "run": 44669528487,
+  "job": 136067096933,
+  "url": "https://github.com/2389-research/spaceport/actions/runs/44669528487/job/136067096933",
+  "native_capture_result": "passed: four exact owned native pairs, stable bounds, configuration and pane IDs",
+  "scope": "Classic tabs; Nord and Catppuccin Latte; opaque and private image at opacity 0.75; 64 by 34 native pixels",
+  "frames": [
+    {
+      "case": "dark-opaque",
+      "phase": "unfocused",
+      "file": "dark-opaque-unfocused-b94978e3b.png",
+      "bytes": 374,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "286238d063831c4bf70dd77ced3085042b755255edfef984c8ae58d1bc61ff86"
+    },
+    {
+      "case": "dark-opaque",
+      "phase": "focused",
+      "file": "dark-opaque-focused-b94978e3b.png",
+      "bytes": 377,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "f445741372f6feebe87443c0ca37632462b22b39be55b58c444c82a5ec5e31e4"
+    },
+    {
+      "case": "dark-image",
+      "phase": "unfocused",
+      "file": "dark-image-unfocused-b94978e3b.png",
+      "bytes": 526,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "46020a044e5de78274374c12b13423f15fca89527eb852d8a2d1cbde092c4d3a"
+    },
+    {
+      "case": "dark-image",
+      "phase": "focused",
+      "file": "dark-image-focused-b94978e3b.png",
+      "bytes": 478,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "2a17a0b601a4ddd37554f1225bbde41beac84aa5fff58efaf3e33e3785b0b29a"
+    },
+    {
+      "case": "light-opaque",
+      "phase": "unfocused",
+      "file": "light-opaque-unfocused-b94978e3b.png",
+      "bytes": 345,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "8736ec5e113d8493ad06d603c63748b3eeb11212f0ac503c5dd935d869c84881"
+    },
+    {
+      "case": "light-opaque",
+      "phase": "focused",
+      "file": "light-opaque-focused-b94978e3b.png",
+      "bytes": 349,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "f0be7da0020835b8e442eb405697adfcbe9a90aded27ba5d8b5623d4e4216ab9"
+    },
+    {
+      "case": "light-image",
+      "phase": "unfocused",
+      "file": "light-image-unfocused-b94978e3b.png",
+      "bytes": 489,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "3560ef4b977b878e13fb0877b2b3f06993cb52e1db6c3b1745bd13ae025f4d50"
+    },
+    {
+      "case": "light-image",
+      "phase": "focused",
+      "file": "light-image-focused-b94978e3b.png",
+      "bytes": 451,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "5c10ff5793d3051932d57e75e98aaff2f3728b68694cc63a0e6980214413d2ba"
+    }
+  ],
+  "measurements": [
+    {
+      "case": "dark-opaque",
+      "changed_pixels": 342,
+      "all_changed_min_ratio": 3.0039583893062654,
+      "all_changed_max_ratio": 3.0039583893062654,
+      "accent_meets_3_to_1": true
+    },
+    {
+      "case": "dark-image",
+      "changed_pixels": 720,
+      "all_changed_min_ratio": 2.4498556993348655,
+      "all_changed_max_ratio": 9.183882066119851,
+      "bands": {
+        "white": {
+          "pixels": 376,
+          "minimum_ratio_to_same_unfocused_pixels": 8.317674856767916,
+          "maximum_ratio_to_same_unfocused_pixels": 9.183882066119851
+        },
+        "black": {
+          "pixels": 344,
+          "minimum_ratio_to_same_unfocused_pixels": 2.4498556993348655,
+          "maximum_ratio_to_same_unfocused_pixels": 2.524744037441274
+        }
+      },
+      "band_to_band_ratio": 21.0,
+      "complete_band_meets_3_to_1": true,
+      "band_geometry": "complete outer white 2px band and inner black 2px band, every band pixel checked"
+    },
+    {
+      "case": "light-opaque",
+      "changed_pixels": 342,
+      "all_changed_min_ratio": 3.001127682993129,
+      "all_changed_max_ratio": 3.001127682993129,
+      "accent_meets_3_to_1": true
+    },
+    {
+      "case": "light-image",
+      "changed_pixels": 720,
+      "all_changed_min_ratio": 1.3570378408514872,
+      "all_changed_max_ratio": 13.884628091113466,
+      "bands": {
+        "white": {
+          "pixels": 376,
+          "minimum_ratio_to_same_unfocused_pixels": 1.3570378408514872,
+          "maximum_ratio_to_same_unfocused_pixels": 1.541742638014119
+        },
+        "black": {
+          "pixels": 344,
+          "minimum_ratio_to_same_unfocused_pixels": 13.62095039873165,
+          "maximum_ratio_to_same_unfocused_pixels": 13.884628091113466
+        }
+      },
+      "band_to_band_ratio": 21.0,
+      "complete_band_meets_3_to_1": true,
+      "band_geometry": "complete outer white 2px band and inner black 2px band, every band pixel checked"
+    }
+  ],
+  "limits": [
+    "This qualifies these four measured captures only. It is not universal image-background or WCAG conformance proof.",
+    "A two-color ring does not require every band to contrast with every background. Both native image cases retain one complete two-pixel band above 3:1, and their adjacent bands contrast at 21:1.",
+    "No screen-reader speech, Mac Cmd-W, non-US input, or foreground release profile is qualified by these captures.",
+    "The job separately fails ordinary Core text/event qualification; Core observing and resizing pass."
+  ],
+  "measured_cases_qualified": true,
+  "method": "Decode original PNGs; compare every changed RGBA pixel; compute WCAG sRGB relative-luminance ratios. Verify every pixel of both complete 2px image-case bands, without dropping low-contrast pixels. Preserve per-band and overall minima."
+}

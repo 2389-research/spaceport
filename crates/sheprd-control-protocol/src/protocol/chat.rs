@@ -1,3 +1,5 @@
+// ABOUTME: Defines chat control operations and acknowledged creation identities.
+// ABOUTME: Keeps runtime tab namespaces explicit and creation waits bounded.
 //! The native views of `herdr-acp` chats over their panes.
 use super::app::Switch;
 use serde::{Deserialize, Serialize};
@@ -21,6 +23,26 @@ pub enum ChatOp {
         #[serde(default)]
         pane: Option<String>,
     },
+}
+
+/// The maximum wait for runtime creation, without promising agent readiness.
+pub const CREATION_WAIT_SECONDS: u64 = 30;
+
+impl ChatOp {
+    pub fn wait_seconds(&self) -> u64 {
+        match self {
+            Self::New { .. } => CREATION_WAIT_SECONDS,
+            Self::Status | Self::View { .. } => 0,
+        }
+    }
+}
+
+/// A created tab in its owning runtime's ID namespace.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "runtime", rename_all = "snake_case")]
+pub enum Tab {
+    Herdr { tab_id: String },
+    Core { tab_id: u64, terminal_id: String },
 }
 
 /// Who owns input in the conversation pane.
@@ -71,9 +93,12 @@ pub enum Reply {
         pane_id: String,
         shown: bool,
     },
-    /// The chat's tab was asked for; it attaches once its program reports.
-    Started {
+    /// Creation was acknowledged; ACP attachment may still be pending.
+    Created {
         agent: String,
+        window_id: u64,
+        tab: Tab,
+        pane_id: String,
     },
 }
 

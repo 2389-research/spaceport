@@ -23,6 +23,6 @@ fn external_workspace_error_retains_client_source() -> Result<()> {
         error.downcast_ref::<sheprd_client::Error>(),
         Some(sheprd_client::Error::EmptySurface)
     ));
-    assert!(format!("{error:#}").contains("screen was asked for with no rows or columns"));
+    assert!(format!("{error:#}").contains(&sheprd_client::Error::EmptySurface.to_string()));
     Ok(())
 }

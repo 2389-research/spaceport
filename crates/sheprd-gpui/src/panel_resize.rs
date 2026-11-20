@@ -1,3 +1,5 @@
+// ABOUTME: Sizes resizable panels without replacing widths chosen by dragging.
+// ABOUTME: Adapts panel defaults and caps their share of the available window.
 //! Side panels resize the way the sidebar does: drag the edge that faces the
 //! content, double-click it to go back to the default width. A panel never
 //! takes more than `MAX_SHARE` of the window, however wide it was made, so a
@@ -88,6 +90,11 @@ impl PanelWidth {
         }
         self.chosen = Some(width);
         true
+    }
+
+    /// Adjusts the content's default without changing a user's chosen width.
+    pub(crate) fn set_default(&mut self, width: f32) {
+        self.default = width.clamp(self.min, MAX_WIDTH);
     }
 
     /// Back to the default width.

@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 //! A window too short for every category scrolls the list instead of
 //! clipping the last ones, and every category stays reachable.
 use super::*;
@@ -7,7 +9,7 @@ use gpui::{px, size};
 fn a_short_window_scrolls_the_category_list(cx: &mut TestAppContext) {
     let main = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let weak = cx.update(|cx| main.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
-    let (view, cx) = cx.add_window_view(|_, cx| SettingsWindow::new(weak, cx));
+    let (view, cx) = cx.add_window_view(|_, cx| fixture_new(weak, cx));
     cx.simulate_resize(size(px(680.), px(480.)));
     let draw = |cx: &mut VisualTestContext| {
         cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));

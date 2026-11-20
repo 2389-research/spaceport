@@ -1,3 +1,5 @@
+// ABOUTME: Exercises local document resolution and terminal click ownership.
+// ABOUTME: Preserves remote-path refusal and endpoint selection fences.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::sidebar::layout_tests::fixture_window;
@@ -10,6 +12,8 @@ use sheprd_client::{
 };
 use std::sync::Arc;
 
+#[cfg(windows)]
+mod drive_prefixes;
 mod wrapped;
 
 #[test]

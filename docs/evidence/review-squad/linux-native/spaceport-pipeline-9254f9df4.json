@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "scope": "Initial real Spaceport Linux native pipeline; full shortcut finding remains open",
+  "source": "9254f9df4bb8a655c94622ffd8e8f964edc0cbd1",
+  "run": {
+    "id": 44696263047,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44696263047",
+    "job_id": 136153622110,
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "runtime": {
+    "desktop": "private GNOME 46/Mutter 46 Wayland on disposable Ubuntu 24.04",
+    "herdr": "official 0.9.5 Linux x86_64",
+    "herdr_sha256": "14d9e8bc8b4a9e0118d77c32266f76d461f09b40342eb23752960bd89f59929d",
+    "input": "persistent Mutter RemoteDesktop evdev session",
+    "build": "debug functional qualification; not release performance"
+  },
+  "timestamp_semantics": "UTC values identify CI log emissions. GNOME_RECEIPT messages are bounded child-log contents emitted later by the Rust parent.",
+  "checks": {
+    "shared_contract_tests": {
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0
+    },
+    "receipt_export_tests": {
+      "passed": 2,
+      "failed": 0
+    },
+    "native_tests": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "seconds": 3.59
+    }
+  },
+  "observed": [
+    {
+      "utc": "2026-11-20T07:40:30.1238194Z",
+      "message": "GNOME_PROBE native_test_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T07:40:30.1238723Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE shell_user=true overview_active=false private_bus=true"
+    },
+    {
+      "utc": "2026-11-20T07:40:30.1239318Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=new-tab outcome=NewTab native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T07:40:30.1239862Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE case=polish-search outcome=PolishSearch native_evdev=true"
+    },
+    {
+      "utc": "2026-11-20T07:40:30.1240324Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE keys_released=true session_closed=true"
+    },
+    {
+      "utc": "2026-11-20T07:40:30.1244218Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS native PASS: real daemon tab creation and Polish search text"
+    },
+    {
+      "utc": "2026-11-20T07:40:30.1244707Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE PASS: fixed real-app pipeline; keys released, session closed, layout restored, daemon survived GUI exit"
+    },
+    {
+      "utc": "2026-11-20T07:40:30.1382437Z",
+      "message": "GNOME_PROBE shell_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T07:40:30.1403995Z",
+      "message": "GNOME_PROBE bus_reaped=true"
+    }
+  ],
+  "case_contracts": {
+    "new-tab": "Ctrl-Shift-T after READY must add exactly one real daemon tab, focus its new ID, preserve workspace/window identities, and produce coherent snapshot/surface boot and revision.",
+    "polish-search": "Right-Alt-L then Shift-Right-Alt-N after READY must produce exact łŃ in the production theme search, preserve tab/workspace/window identities, and leave that popup active."
+  },
+  "not_qualified": [
+    "Ctrl-Shift-1 through 9 and punctuation matrix",
+    "Bare function/page key terminal bytes",
+    "Revised region/fullscreen/tab/prefix/palette matrix",
+    "Physical keyboard hardware",
+    "Mac foreground, audible screen reader, or release profile gates"
+  ]
+}

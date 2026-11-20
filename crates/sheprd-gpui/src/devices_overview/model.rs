@@ -96,6 +96,7 @@ impl From<Phase> for Link {
             | Phase::DaemonOutdated
             | Phase::ClientOutdated
             | Phase::HerdrMissing
+            | Phase::HerdrStopped
             | Phase::Reconnecting => Self::Offline,
             Phase::Connecting => Self::Connecting,
             Phase::Online => Self::Online,

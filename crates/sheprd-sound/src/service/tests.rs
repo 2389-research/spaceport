@@ -1,3 +1,5 @@
+// ABOUTME: Shares controlled channels for sound service tests.
+// ABOUTME: Builds isolated service fixtures and exact queued notification jobs.
 use super::*;
 
 /// A worker whose playback a test reads from a channel, with the default one
@@ -37,3 +39,4 @@ mod play;
 mod reload;
 mod repeats;
 mod volume;
+mod worker_lifecycle;

@@ -62,10 +62,11 @@ unic-langid          = { features = ["macros"], version = "0.9" }
 # Locates installed font files on Linux, as GPUI's own text system does.
 fontdb               = "0.24"
 foreign-types        = "0.5"
+futures-channel      = "=0.3.34"
 futures-lite         = "2"
 getrandom            = "0.4.3"
-gpui                 = { package = "gpui-pre", version = "=0.3.10" }
-gpui_platform        = { package = "gpui-pre-platform", version = "=0.3.10" }
+gpui                 = { package = "gpui-pre", version = "=0.3.11" }
+gpui_platform        = { package = "gpui-pre-platform", version = "=0.3.11" }
 sheprd-ago            = { path = "crates/sheprd-ago" }
 sheprd-backend        = { path = "crates/sheprd-backend" }
 sheprd-chat-protocol  = { path = "crates/sheprd-chat-protocol" }
@@ -106,7 +107,7 @@ objc                 = "0.2"
 # The Secret Service client GPUI's Linux platform links, with its async-io backend.
 oo7                  = { default-features = false, features = ["async-std", "native_crypto"], version = "0.6" }
 objc2                = "0.6.4"
-objc2-app-kit        = { default-features = false, features = ["NSAppearance", "NSApplication", "NSColor", "NSDockTile", "NSDragging", "NSEvent", "NSGraphics", "NSGraphicsContext", "NSImage", "NSImageRep", "NSPasteboard", "NSPasteboardItem", "NSResponder", "NSTextInputContext", "NSTrackingArea", "NSView", "NSWindow", "block2", "objc2-core-foundation", "std"], version = "0.3.2" }
+objc2-app-kit        = { default-features = false, features = ["NSAccessibility", "NSAppearance", "NSApplication", "NSColor", "NSDockTile", "NSDragging", "NSEvent", "NSGraphics", "NSGraphicsContext", "NSImage", "NSImageRep", "NSPasteboard", "NSPasteboardItem", "NSResponder", "NSTextInputContext", "NSTrackingArea", "NSView", "NSWindow", "NSWorkspace", "block2", "objc2-core-foundation", "std"], version = "0.3.2" }
 objc2-foundation     = { default-features = false, features = ["NSArray", "NSBundle", "NSData", "NSError", "NSPathUtilities", "NSProcessInfo", "NSUserDefaults", "NSValue", "NSString", "NSURL", "std"], version = "0.3.2" }
 block2               = "0.6.2"
 dispatch2            = { default-features = false, features = ["objc2", "std"], version = "0.3.1" }
@@ -114,6 +115,8 @@ objc2-core-foundation = { default-features = false, features = ["CFCGTypes", "st
 # Asks for Dock badge permission; the version GPUI's macOS platform already links.
 objc2-user-notifications ={ default-features = false, features = ["UNUserNotificationCenter", "block2", "std"], version = "0.3.2" }
 raw-window-handle    = "0.6"
+# Windows ACP agents run inside an owned job before their first instruction.
+process-wrap         = { default-features = false, features = ["std", "creation-flags", "job-object"], version = "=10.0.1" }
 # sheprd-acp's in-pane chat view.
 ratatui              = { default-features = false, features = ["crossterm"], version = "0.30" }
 crossterm            = "0.29"
@@ -153,6 +156,10 @@ windows-registry     = "0.100.0"
 # The error type `windows-registry` returns; its own version, not `windows`'s.
 windows-result       = "0.100.0"
 windows-sys          = { features = ["Win32_Foundation", "Win32_System_Pipes"], version = "0.61.2" }
+# Resolve private SSH executables before placing them under a watchdog.
+which                = "=8.0.6"
+# Private SSH listeners terminate when their last owner disappears.
+win32job             = "=2.1.0"
 # Embeds the Windows executable's icon and version information; a build
 # dependency, so it runs on the host.
 winresource          = "0.1.34"

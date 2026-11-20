@@ -1,3 +1,5 @@
+// ABOUTME: Shares frame fixtures for the actual terminal painter and its caches.
+// ABOUTME: Registers scoped rendering, geometry, and image lifecycle regressions.
 use super::*;
 
 use crate::terminal::*;
@@ -23,6 +25,7 @@ mod composition;
 mod diagnostics;
 mod font_weight;
 mod glyph_cache;
+mod glyph_eviction;
 mod grid_edges;
 // Paint counts are recorded only with the integration-test feature.
 #[cfg(feature = "integration-test")]
@@ -30,6 +33,7 @@ mod layers;
 mod link_underline;
 mod placed_images;
 mod prompt_geometry;
+mod theme_cache;
 
 fn cell(symbol: &str) -> CellData {
     CellData {

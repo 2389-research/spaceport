@@ -34,10 +34,15 @@ pub(crate) fn command(program: &str) -> Command {
     ));
     #[cfg(not(windows))]
     let mut command = crate::new_command(program);
-    if let Some(apply) = APPLY.get() {
-        apply(&mut command);
-    }
+    apply(&mut command);
     command
+}
+
+/// Applies the configured environment without converting the executable's OS string.
+pub(crate) fn apply(command: &mut Command) {
+    if let Some(apply) = APPLY.get() {
+        apply(command);
+    }
 }
 
 /// Where `program` is on Windows: `program.exe` in `SystemRoot\System32\OpenSSH`,

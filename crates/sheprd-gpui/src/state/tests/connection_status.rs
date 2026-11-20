@@ -1,3 +1,5 @@
+// ABOUTME: Checks connection-owned status text and command diagnostics.
+// ABOUTME: Prevents old local failures from hiding current disconnection reasons.
 use super::*;
 use std::time::Instant;
 
@@ -37,7 +39,7 @@ fn untracked_daemon_errors_remain_visible_as_readable_messages() {
         (serde_json::json!({"code": "unsupported"}), "unsupported"),
         (
             serde_json::json!({"unexpected": true}),
-            "The daemon refused the request without saying why.",
+            "Spaceport could not read Herdr's error explanation.",
         ),
     ] {
         state.apply(ClientEvent::Response {

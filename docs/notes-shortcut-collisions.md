@@ -6,7 +6,8 @@ Shifted key as its symbol and only the font keys had symbol aliases; (b)
 `ctrl-alt-n`, `ctrl-alt-b`, `ctrl-alt-z`, and `ctrl-alt-w` collide with AltGr
 letters on Windows layouts, where AltGr is Ctrl-Alt; (c) bare F6, Shift-F6,
 F11, and Ctrl-PageUp/PageDown are taken by htop, mc, and programs in a pane;
-(d) `ctrl-alt-shift` with the arrows or `r` may be a GNOME key (unverified).
+(d) GNOME 46 reserves `ctrl-alt-shift` with arrows and `r`.
+Source links and native limits are recorded in [the review evidence](evidence/review-platform-shortcuts.md#gnome-default-correction).
 
 What was confirmed in the dependencies before changing anything:
 
@@ -17,9 +18,8 @@ What was confirmed in the dependencies before changing anything:
   punctuation defaults were dead on Linux.
 - `gpui-pre-windows`'s `need_to_convert_to_shifted_key` covers `VK_0`–`VK_9`
   and the OEM punctuation keys and clears `shift` the same way, so the Windows
-  profile needs the same symbol aliases (it inherits them from the Linux
-  profile). AltGr there arrives as Ctrl-Alt with `prefer_character_input`, so a
-  binding on Ctrl-Alt and a letter takes the letter an AltGr layout types.
+  profile uses the shared Ctrl catalog, separately from Linux GNOME overrides.
+  AltGr arrives with `prefer_character_input`. The app preserves those character events before ordinary shortcut dispatch.
 - macOS is untouched: Cmd bindings already are the platform-verified ones.
 
 Every change below is on the Linux column of the catalog (inherited by
@@ -63,9 +63,9 @@ arm: a captured `literal` is an opaque token and no longer matches the specific
 - New window is Ctrl-Shift-N, as Windows Terminal opens one, and Zen mode keeps
   its `z`. Both drop Ctrl-Alt entirely, so the `ń` a Polish layout types with
   AltGr-N and the `ż` of AltGr-Z reach the pane.
-- The status bar keeps the sidebar's `b` on the app's second tier. AltGr-Shift-B
-  types nothing on the layouts that put letters on AltGr (Polish, Brazilian,
-  Vietnamese), where plain AltGr-B would type a letter.
+- The status bar uses Ctrl-Alt-Shift-B on Windows.
+  This spelling alone does not prove non-US layout safety.
+  The character-input guard preserves character-producing AltGr events.
 - Closing a window has no chord left to move to: `ctrl-alt-shift-w` is Close
   Tab, and Windows closes a window with Alt+F4 through the system, which the
   app documents and its keymap leaves free. `Ctrl-Alt-W` on a Brazilian ABNT2
@@ -101,24 +101,16 @@ README's chrome section names Ctrl+F6.
 
 ## (d) Ctrl-Alt-Shift arrows and Ctrl-Alt-Shift-R
 
-`focus_left/right/up/down` (`ctrl-alt-shift-arrows`), `resume_palette`
-(`ctrl-alt-shift-r`), and the rest of the Ctrl-Alt-Shift tier are unchanged. No
-layout or desktop was measured here, and the finding itself says the GNOME
-question needs a real keyboard. The rows stay as they are; the catalog comment
-above the table records that AltGr-Shift types the capital of an AltGr letter
-where a layout has one, which is the same unverified class.
+Linux leaves direct pane-focus chords unbound and uses Ctrl-Shift-R for Resume.
+Existing Herdr prefix H/J/K/L still focus panes.
+Windows keeps the shared Ctrl-Alt-Shift bindings.
+Actual GNOME interception and non-US keyboard delivery remain unqualified.
 
 ## Not fixed, and worth a follow-up
 
-`shortcuts/windows.rs` keeps the pre-existing overrides that give Windows only
-`ctrl-shift-=` / `ctrl-shift-+` and `ctrl-shift--` for the font rows, with the
-comment "Linux's extra symbol aliases match its backend's Shift removal".
-`gpui-pre-windows`'s `get_keystroke_key` clears Shift for `VK_OEM_PLUS` and
-`VK_OEM_MINUS` too, so those two Windows defaults look like the same dead
-punctuation class as (a): the delivered keystroke is `{control}` + `+` and the
-bound keystrokes both carry Shift. This change leaves them alone because the
-finding did not name them and no Windows host was available to confirm, and it
-notes the class here instead.
+Windows font overrides remain unchanged.
+The review branch also preserves its Windows keyboard-mapper correction and character-input guard.
+Native font-key delivery and non-US keyboard checks remain required.
 
 ## Verification
 

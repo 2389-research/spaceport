@@ -4,8 +4,26 @@
 //! install panel checks.
 use super::*;
 
+fn open_shortcuts(view: &Entity<SheprdWindow>, cx: &mut gpui::VisualTestContext) {
+    let shortcut = crate::controls::COMMANDS
+        .iter()
+        .find(|info| info.command == crate::Command::Keybinds)
+        .unwrap()
+        .default_shortcuts()
+        .first();
+    if let Some(shortcut) = shortcut {
+        cx.simulate_keystrokes(shortcut);
+    } else {
+        cx.update(|window, cx| {
+            view.update(cx, |view, cx| {
+                view.command(crate::Command::Keybinds, window, cx)
+            })
+        });
+    }
+}
+
 pub(super) fn check_shortcut_search(view: &Entity<SheprdWindow>, cx: &mut gpui::VisualTestContext) {
-    cx.simulate_keystrokes(crate::controls::platform_default("cmd-/"));
+    open_shortcuts(view, cx);
     let shortcut_search = cx.update(|window, cx| {
         full_draw(window, cx).clear(cx);
         let search = view.read(cx).menu.keybinds_search.as_ref().unwrap().clone();
@@ -18,16 +36,14 @@ pub(super) fn check_shortcut_search(view: &Entity<SheprdWindow>, cx: &mut gpui::
         assert_eq!(shortcut_search.read(cx).text(), "pane zoom");
     });
     assert!(cx.debug_bounds("shortcut-Toggle Pane Zoom").is_some());
-    cx.simulate_keystrokes("cmd-a");
+    cx.simulate_keystrokes(crate::actions::EDIT_KEYS[3]);
     cx.simulate_input("no-shortcut-matches-xyz");
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
     assert!(cx.debug_bounds("keybinds-empty").is_some());
     cx.simulate_keystrokes(crate::controls::platform_default("cmd-w"));
     cx.update(|_, cx| assert!(view.read(cx).menu.page == Some(crate::menu::Page::Keybinds)));
-    cx.simulate_keystrokes(&format!(
-        "escape {}",
-        crate::controls::platform_default("cmd-/")
-    ));
+    cx.simulate_keystrokes("escape");
+    open_shortcuts(view, cx);
     cx.update(|window, cx| {
         full_draw(window, cx).clear(cx);
         let search = view.read(cx).menu.keybinds_search.as_ref().unwrap().clone();
@@ -59,12 +75,20 @@ pub(super) fn check_theme_picker(view: &Entity<SheprdWindow>, cx: &mut gpui::Vis
     let search = cx.update(|window, cx| {
         view.update(cx, |view, cx| view.open_theme_picker(window, cx));
         full_draw(window, cx).clear(cx);
-        let search = view.read(cx).menu.themes.as_ref().unwrap().search.clone();
+        let search = view
+            .read(cx)
+            .menu
+            .themes
+            .as_ref()
+            .unwrap()
+            .search()
+            .unwrap()
+            .clone();
         assert!(search.read(cx).focus.is_focused(window));
         cx.write_to_clipboard(gpui::ClipboardItem::new_string("catppuccin mocha".into()));
         search
     });
-    cx.simulate_keystrokes("cmd-v");
+    cx.simulate_keystrokes(crate::actions::EDIT_KEYS[2]);
     cx.run_until_parked();
     cx.update(|window, cx| {
         full_draw(window, cx).clear(cx);
@@ -78,7 +102,7 @@ pub(super) fn check_theme_picker(view: &Entity<SheprdWindow>, cx: &mut gpui::Vis
             ["Catppuccin Mocha"]
         );
     });
-    cx.simulate_keystrokes("cmd-a n o r d");
+    cx.simulate_keystrokes(&format!("{} n o r d", crate::actions::EDIT_KEYS[3]));
     cx.run_until_parked();
     cx.update(|window, cx| {
         full_draw(window, cx).clear(cx);
@@ -94,11 +118,11 @@ pub(super) fn check_theme_picker(view: &Entity<SheprdWindow>, cx: &mut gpui::Vis
                 .all(|name| name.to_lowercase().contains("nord"))
         );
     });
-    cx.simulate_keystrokes("cmd-a");
+    cx.simulate_keystrokes(crate::actions::EDIT_KEYS[3]);
     cx.update(|_, cx| {
         cx.write_to_clipboard(gpui::ClipboardItem::new_string("no-such-theme-xyz".into()))
     });
-    cx.simulate_keystrokes("cmd-v");
+    cx.simulate_keystrokes(crate::actions::EDIT_KEYS[2]);
     cx.run_until_parked();
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
     assert!(cx.debug_bounds("theme-empty").is_some());
@@ -106,11 +130,22 @@ pub(super) fn check_theme_picker(view: &Entity<SheprdWindow>, cx: &mut gpui::Vis
     cx.simulate_keystrokes("down enter");
     cx.update(|_, cx| assert!(view.read(cx).menu.page == Some(crate::menu::Page::Themes)));
     cx.simulate_keystrokes("escape");
-    cx.update(|window, cx| {
+    let search = cx.update(|window, cx| {
         assert!(view.read(cx).focus.is_focused(window));
         view.update(cx, |view, cx| view.open_theme_picker(window, cx));
         full_draw(window, cx).clear(cx);
-        assert!(search.read(cx).text().is_empty());
+        let reopened = view
+            .read(cx)
+            .menu
+            .themes
+            .as_ref()
+            .unwrap()
+            .search()
+            .unwrap()
+            .clone();
+        assert_ne!(search.entity_id(), reopened.entity_id());
+        assert!(reopened.read(cx).text().is_empty());
+        reopened
     });
     cx.update(|window, cx| {
         search.update(cx, |search, cx| {

@@ -121,7 +121,7 @@ fn reader_errors_and_deadline_reach_the_caller() {
 #[ignore = "reads the desktop clipboard; copy an image first"]
 fn native_clipboard_image_is_read_off_the_ui_thread() {
     // `None` means the clipboard holds no image.
-    let item = read(true).unwrap().unwrap();
+    let item = read(Mode::Image).unwrap().unwrap();
     let Some(gpui::ClipboardEntry::Image(image)) = item.entries().first() else {
         panic!("not an image: {:?}", item.entries());
     };

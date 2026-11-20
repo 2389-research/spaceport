@@ -1,3 +1,5 @@
+// ABOUTME: Verifies startup modes and prepared first-frame appearance.
+// ABOUTME: Uses isolated settings inputs and exact runtime targets.
 #![allow(clippy::unwrap_used)]
 
 use super::{Config, InitialAppearance, StartupAppearance, Theme};
@@ -10,6 +12,8 @@ use gpui::px;
 
 #[cfg(feature = "integration-test")]
 mod core_window;
+mod fallback_contrast;
+mod window_options;
 
 #[test]
 fn startup_appearance_loads_a_coherent_pair_and_reports_errors() {

@@ -1,3 +1,5 @@
+// ABOUTME: Times brief, reversible transitions in window chrome.
+// ABOUTME: Shares motion policy between geometry and GPUI animations.
 //! Brief motion for things that come and go in the window chrome: tabs, the
 //! notes panel, notes. Each is a function of when it started and the time
 //! now, so a frame never depends on the one before it, and a view keeps
@@ -21,9 +23,27 @@ pub(crate) const ENTER: Duration = Duration::from_millis(180);
 /// How long something takes to shrink out; leaving is a little quicker.
 pub(crate) const LEAVE: Duration = Duration::from_millis(150);
 
+/// Headless unit tests settle reorders; normal and native test binaries animate.
+pub(crate) const REORDER: Duration = if cfg!(test) {
+    Duration::ZERO
+} else {
+    sheprd_reorder::SLIDE
+};
+
+pub(crate) fn slide_duration(length: Duration) -> Duration {
+    if crate::accessibility::policy::reduce_motion() {
+        Duration::ZERO
+    } else {
+        length
+    }
+}
+
 /// How far a motion that began at `since` has come at `now`, eased out, or
 /// `None` once it is done.
 pub(crate) fn progress(since: Instant, now: Instant, length: Duration) -> Option<f32> {
+    if crate::accessibility::policy::reduce_motion() {
+        return None;
+    }
     let k = now.saturating_duration_since(since).as_secs_f32() / length.as_secs_f32();
     (k < 1.).then(|| 1. - (1. - k.clamp(0., 1.)).powi(3))
 }
@@ -49,6 +69,27 @@ pub(crate) fn pop_in<E: IntoElement + Styled + 'static>(
     )
 }
 
+/// The shared disclosure frame, optionally clipped at an explicit visible fraction.
+pub(crate) fn disclosure(content: impl IntoElement, clip: Option<(Pixels, f32)>) -> Div {
+    disclosure_clip(
+        div()
+            // In a list of capped height, it keeps its size as rows do.
+            .flex_none()
+            .flex()
+            .flex_col()
+            .overflow_hidden()
+            .child(div().flex_none().child(content)),
+        clip,
+    )
+}
+
+fn disclosure_clip(element: Div, clip: Option<(Pixels, f32)>) -> Div {
+    match clip {
+        Some((height, shown)) => element.h(height * shown).opacity(shown),
+        None => element,
+    }
+}
+
 /// A disclosure opening, such as a device unfolding its sessions: the space
 /// grows from nothing to the content's height while the content fades in,
 /// so the rows around it move smoothly instead of jumping and then
@@ -71,18 +112,12 @@ pub(crate) fn unfold(
     from: f32,
 ) -> AnimationElement<Div> {
     let measured = height.clone();
-    div()
-        // In a list of capped height, it keeps its size as rows do.
-        .flex_none()
-        .flex()
-        .flex_col()
-        .overflow_hidden()
+    disclosure(content, None)
         .on_children_prepainted(move |bounds, _, _| {
             if let Some(content) = bounds.first() {
                 measured.set(content.size.height);
             }
         })
-        .child(div().flex_none().child(content))
         .with_animation(
             id,
             gpui::Animation::new(duration(ENTER)),
@@ -90,7 +125,7 @@ pub(crate) fn unfold(
             {
                 Some(k) => {
                     let shown = from + (1. - from) * k;
-                    element.h(height.get() * shown).opacity(shown)
+                    disclosure_clip(element, Some((height.get(), shown)))
                 }
                 None => element,
             },
@@ -109,20 +144,14 @@ pub(crate) fn fold(
     height: Pixels,
     since: Instant,
 ) -> AnimationElement<Div> {
-    div()
-        .flex_none()
-        .flex()
-        .flex_col()
-        .overflow_hidden()
-        .child(div().flex_none().child(content))
-        .with_animation(
-            id,
-            gpui::Animation::new(duration(LEAVE)),
-            move |element, _| {
-                let shown = 1. - progress(since, now(), duration(LEAVE)).unwrap_or(1.);
-                element.h(height * shown).opacity(shown)
-            },
-        )
+    disclosure(content, None).with_animation(
+        id,
+        gpui::Animation::new(duration(LEAVE)),
+        move |element, _| {
+            let shown = 1. - progress(since, now(), duration(LEAVE)).unwrap_or(1.);
+            disclosure_clip(element, Some((height, shown)))
+        },
+    )
 }
 
 /// Something that opens and closes, such as a panel: how much of it shows.
@@ -178,40 +207,4 @@ impl Toggle {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn progress_eases_out_and_ends() {
-        let start = Instant::now();
-        assert_eq!(progress(start, start, ENTER), Some(0.));
-        let half = progress(start, start + ENTER / 2, ENTER).unwrap_or_default();
-        assert!(half > 0.8 && half < 1., "{half}");
-        assert_eq!(progress(start, start + ENTER, ENTER), None);
-        // A start still ahead reads as not begun.
-        assert_eq!(progress(start + ENTER, start, ENTER), Some(0.));
-    }
-
-    #[test]
-    fn a_toggle_opens_closes_and_starts_still() {
-        let start = Instant::now();
-        let mut panel = Toggle::default();
-        panel.set(true, start, true);
-        assert_eq!(panel.shown(start), 1.);
-        assert!(!panel.moving(start));
-        panel.set(false, start, false);
-        assert_eq!(panel.shown(start), 1.);
-        assert!(panel.moving(start));
-        assert_eq!(panel.shown(start + LEAVE), 0.);
-        assert!(!panel.moving(start + LEAVE));
-        panel.set(true, start + LEAVE, false);
-        assert_eq!(panel.shown(start + LEAVE), 0.);
-        assert_eq!(panel.shown(start + LEAVE + ENTER), 1.);
-        // Closing half-open continues from where it is.
-        let mid = start + LEAVE + ENTER + ENTER;
-        panel.set(false, mid, false);
-        panel.set(true, mid, false);
-        let shown = panel.shown(mid);
-        assert!(shown > 0.9, "{shown}");
-    }
-}
+mod tests;

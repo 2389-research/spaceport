@@ -1,3 +1,5 @@
+// ABOUTME: Owns one native window's connection and presentation state.
+// ABOUTME: Keeps keyboard ownership and worker lifetimes scoped to their window.
 //! The window entity: the state one GPUI window owns for one client of one
 //! daemon, and the poll task that folds worker results into it. Behavior is
 //! split by responsibility across the submodules below; the fields live here
@@ -16,10 +18,12 @@ mod construct;
 mod copy_mode;
 mod device_themes;
 mod double_shift;
+mod feedback;
 pub(crate) mod file_drop;
 mod file_links;
 mod find;
 mod flash;
+mod messages;
 pub(crate) use commands::run_window_command;
 pub(crate) use flash::Flash;
 pub(crate) use zen::slide_start;
@@ -28,6 +32,8 @@ pub(crate) mod image_source;
 mod images;
 mod input;
 mod layout_save;
+#[cfg(any(test, all(windows, feature = "integration-test")))]
+pub(crate) mod native_images;
 pub(crate) use layout_save::LayoutSaves;
 mod lifecycle;
 pub(crate) use lifecycle::reasserts;
@@ -106,7 +112,6 @@ pub(crate) struct SheprdWindow {
     /// Another window may mute or unmute what this one shows.
     pub(crate) _notification_mutes: Subscription,
     pub(crate) _poll: Task<()>,
-    pub(crate) _prefix_interceptor: Subscription,
     pub(crate) _sidebar_invalidation: Subscription,
     /// Clears `chrome_region` when the terminal takes focus back.
     pub(crate) _terminal_focus: Subscription,
@@ -135,6 +140,7 @@ pub(crate) struct SheprdWindow {
     /// Native views of the `herdr-acp` chats in this daemon's panes.
     pub(crate) chats: crate::chat::Chats,
     /// The chrome region whose controls take Tab; see `chrome_focus`.
+    pub(crate) chrome_entry_focus: FocusHandle,
     pub(crate) chrome_region: Option<chrome_focus::Region>,
     pub(crate) config: config::Config,
     pub(crate) config_load: Option<Task<()>>,
@@ -270,6 +276,7 @@ pub(crate) struct SheprdWindow {
     pub(crate) sessions_anchor: std::rc::Rc<std::cell::Cell<Point<Pixels>>>,
     pub(crate) settings: crate::settings_panel::SettingsPanel,
     pub(super) shift_taps: double_shift::ShiftTaps,
+    pub(crate) shortcut_keys: std::collections::HashMap<String, prefix::HeldShortcut>,
     pub(crate) sidebar_drag: Option<sidebar::SidebarDrag>,
     /// Whether the last spaces list render was folded to its headers for a
     /// lifted device, whose geometry the next frame must not pin from.
@@ -580,7 +587,7 @@ impl SheprdWindow {
             cx.notify();
         }
         self.update_port_forwards(cx);
-        if self.update_listening_ports() {
+        if self.update_listening_ports(cx) {
             cx.notify();
         }
         self.announce_version_mismatch(window, cx);
@@ -588,5 +595,13 @@ impl SheprdWindow {
         self.refresh_palette(window, cx);
         self.report_focus();
         self.sync_window_title(window, cx);
+        #[cfg(all(windows, feature = "integration-test"))]
+        if prefix::native_shortcut_fences_observed() {
+            tracing::debug!(
+                input_ready = self.input_ready(),
+                surface_stream = self.live.supports_surface,
+                "Native shortcut readiness"
+            );
+        }
     }
 }

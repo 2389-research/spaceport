@@ -1,3 +1,5 @@
+// ABOUTME: Exercises palette search, navigation targets, and selection contracts.
+// ABOUTME: Preserves observable behavior while sharing indexed snapshot fixtures.
 use super::*;
 use crate::NavigationTarget;
 use core::prelude::v1::test;
@@ -6,6 +8,7 @@ use sheprd_client::protocol::ClientShellCommand;
 
 mod agent_filter;
 mod background_ranking;
+mod core_only;
 mod en_xa;
 mod frecency_ranking;
 mod go_to_search;
@@ -292,7 +295,12 @@ fn go_to_fixture() -> ClientShellSnapshot {
 fn go_to_lists_every_pane_under_its_workspace() {
     let snapshot = go_to_fixture();
     let mut entries = Vec::new();
-    go_to_entries(crate::endpoint::LOCAL, None, &snapshot, &mut entries);
+    go_to_entries(
+        crate::endpoint::LOCAL,
+        None,
+        &crate::sidebar::IndexedSnapshot::new(&snapshot),
+        &mut entries,
+    );
     let rows: Vec<_> = entries
         .iter()
         .map(|entry| {
@@ -369,7 +377,12 @@ fn go_to_badges_use_the_agents_state_labels() {
             .map(|(state, label)| ((*state).into(), (*label).into()))
             .collect();
         let mut entries = Vec::new();
-        go_to_entries(crate::endpoint::LOCAL, None, &snapshot, &mut entries);
+        go_to_entries(
+            crate::endpoint::LOCAL,
+            None,
+            &crate::sidebar::IndexedSnapshot::new(&snapshot),
+            &mut entries,
+        );
         entries
             .iter()
             .find(|entry| {
@@ -391,7 +404,12 @@ fn go_to_badges_use_the_agents_state_labels() {
 fn go_to_names_remote_hosts_and_hides_a_lone_default_tab() {
     let snapshot = snapshot();
     let mut entries = Vec::new();
-    go_to_entries("ssh:box", Some("Box"), &snapshot, &mut entries);
+    go_to_entries(
+        "ssh:box",
+        Some("Box"),
+        &crate::sidebar::IndexedSnapshot::new(&snapshot),
+        &mut entries,
+    );
     let details: Vec<_> = entries.iter().map(|entry| entry.detail.as_ref()).collect();
     assert_eq!(details, ["Box  #1  main  /repo", "Box  repo  /repo"]);
     assert!(entries.iter().all(|entry| matches!(
@@ -415,7 +433,12 @@ fn go_to_names_remote_hosts_and_hides_a_lone_default_tab() {
 fn go_to_rows_indent_only_beneath_a_visible_workspace_or_tab() {
     let snapshot = go_to_fixture();
     let mut entries = Vec::new();
-    go_to_entries(crate::endpoint::LOCAL, None, &snapshot, &mut entries);
+    go_to_entries(
+        crate::endpoint::LOCAL,
+        None,
+        &crate::sidebar::IndexedSnapshot::new(&snapshot),
+        &mut entries,
+    );
     let depths = |candidates: &[usize]| {
         search::rank(
             &entries,

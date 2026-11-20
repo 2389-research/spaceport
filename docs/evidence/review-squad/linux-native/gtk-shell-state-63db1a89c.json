@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "scope": "GNOME UI-state diagnostic only; native input remains unqualified",
+  "source": "63db1a89ca87d542fa232b9c319be899c60eb837",
+  "run": {
+    "id": 44689975884,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44689975884",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_id": 136133183263
+  },
+  "timestamp_semantics": "UTC values identify CI log emissions. GNOME_INPUT messages are bounded child-log contents emitted later by the Rust parent with GNOME_LOG.",
+  "observed": [
+    {
+      "utc": "2026-11-20T06:45:50.9645860Z",
+      "receipt": "GNOME_PROBE startup=true private_wayland=true private_bus_owner=true spaceport_started=false keyboard_input=false"
+    },
+    {
+      "utc": "2026-11-20T06:46:11.2607572Z",
+      "receipt": "GNOME_PROBE input_driver_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T06:46:11.2613352Z",
+      "receipt": "GNOME_INPUT shell_state phase=mapped state={\"Mode\":\"user\",\"OverviewActive\":true,\"ShellVersion\":\"46.0\"}"
+    },
+    {
+      "utc": "2026-11-20T06:46:11.2614789Z",
+      "receipt": "GNOME_INPUT shell_state phase=deadline state={\"Mode\":\"user\",\"OverviewActive\":true,\"ShellVersion\":\"46.0\"}"
+    },
+    {
+      "utc": "2026-11-20T06:46:11.2615829Z",
+      "receipt": "GNOME_INPUT failed: GTK input deadline: mapped=true active=false text=\"\""
+    },
+    {
+      "utc": "2026-11-20T06:46:11.2616694Z",
+      "receipt": "GNOME_INPUT gtk_native=false transport=evdev sequence_sent=false polish=\"\" keys_released=true session_closed=true layout_restored=true spaceport_started=false"
+    },
+    {
+      "utc": "2026-11-20T06:46:11.2756189Z",
+      "receipt": "GNOME_PROBE shell_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T06:46:11.2812823Z",
+      "receipt": "GNOME_PROBE bus_reaped=true"
+    }
+  ],
+  "finding": "The private user session keeps OverviewActive=true throughout the attempt. GNOME46 installs the Alt-Tab switch-applications handler only for Shell.ActionMode.NORMAL.",
+  "sources": [
+    "https://raw.githubusercontent.com/GNOME/gnome-shell/46.0/js/ui/windowManager.js",
+    "https://raw.githubusercontent.com/GNOME/gnome-shell/46.0/data/dbus-interfaces/org.gnome.Shell.xml",
+    "https://raw.githubusercontent.com/GNOME/gnome-shell/46.0/js/ui/shellDBus.js"
+  ],
+  "next": "Set the private Shell's supported OverviewActive UI property to false once, verify it becomes false, then run native activation and retain all existing text/focus/cleanup assertions.",
+  "not_qualified": [
+    "GTK Polish input",
+    "Spaceport shortcut delivery",
+    "GNOME interception of Spaceport shortcuts"
+  ]
+}

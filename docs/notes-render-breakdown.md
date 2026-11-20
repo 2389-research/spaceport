@@ -1,5 +1,14 @@
 # Render breakdown (issue #128)
 
+## Review-branch integration boundary
+
+The measurements below describe the original PR 140 branch, merged as `eba200955`.
+They do not measure the combined PR 125 tree.
+That integration retains its prepared popup renderer and shortcut-page renderer.
+Those renderers preserve inert departure controls and frozen page ownership.
+Its sidebar toggle also stays local, without a daemon fallback.
+See [the integration evidence](evidence/review-main-integration.md) for combined-source checks and limits.
+
 Measuring and splitting the six 280–370-line render functions, `poll_endpoints`,
 `fn command`, and `SheprdWindow::new`, without a behavior change. Each number
 below is the function's own line count (first line of `fn` through its closing
