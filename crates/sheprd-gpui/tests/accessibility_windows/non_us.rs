@@ -70,11 +70,21 @@ fn native_altgr_text_survives_the_workspace_shortcut_and_restores_layouts() {
     let before = identities(&snapshot(&running));
     assert!(!before.1.is_empty() && !before.2.is_empty() && !before.3.is_empty());
     for (name, content) in [
-        ("uia_altgr.ps1", include_str!("../support/uia_altgr.ps1")),
+        // keep-sorted start
         (
             "native_altgr.cs",
             include_str!("../support/native_altgr.cs"),
         ),
+        (
+            "native_profile_id.cs",
+            include_str!("../support/native_profile_id.cs"),
+        ),
+        (
+            "native_profile_id_tests.cs",
+            include_str!("../support/native_profile_id_tests.cs"),
+        ),
+        ("uia_altgr.ps1", include_str!("../support/uia_altgr.ps1")),
+        // keep-sorted end
     ] {
         fs::write(running.sandbox.dir.join(name), content).unwrap();
     }

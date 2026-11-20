@@ -4,7 +4,8 @@ param([int]$ProcessId, [long]$DeadlineEpochMs)
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\powershell_modules.ps1"
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
-Add-Type -Path "$PSScriptRoot\native_altgr.cs"
+Add-Type -Path @("$PSScriptRoot\native_profile_id.cs", "$PSScriptRoot\native_profile_id_tests.cs", "$PSScriptRoot\native_altgr.cs")
+[SpaceportProfileIdTests]::Run()
 $automation = [System.Windows.Automation.AutomationElement]
 $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
 $owned = [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $ProcessId)

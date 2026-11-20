@@ -66,10 +66,8 @@ public sealed class SpaceportAltGr : IDisposable {
       throw new InvalidOperationException("Enabled profiles changed during enumeration");
     foreach (Profile value in result) {
       if (value.type != 2) continue;
-      if (value.id == null || value.id.Length != 8)
-        throw new InvalidOperationException("Enabled keyboard profile has an unsupported KLID format");
-      foreach (char character in value.id)
-        if (!Uri.IsHexDigit(character)) throw new InvalidOperationException("Enabled keyboard profile has an invalid KLID");
+      string klid = SpaceportProfileId.Klid(value.language, value.id);
+      Console.WriteLine("ALTGR_PROFILE language=" + value.language.ToString("X4") + " klid=" + klid);
     }
     return result;
   }
@@ -80,7 +78,7 @@ public sealed class SpaceportAltGr : IDisposable {
   }
   static bool HasPolish(Profile[] values) {
     foreach (Profile value in values)
-      if (value.type == 2 && value.language == 0x0415 && String.Equals(value.id, "00000415", StringComparison.OrdinalIgnoreCase)) return true;
+      if (value.type == 2 && value.language == 0x0415 && SpaceportProfileId.Klid(value.language, value.id) == "00000415") return true;
     return false;
   }
   static IntPtr LoadedPolish() {
