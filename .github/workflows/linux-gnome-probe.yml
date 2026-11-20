@@ -1,0 +1,84 @@
+# ABOUTME: Runs the private GNOME prerequisite on one owned throwaway branch.
+# ABOUTME: Separates GTK prerequisites from the real Spaceport native pipeline.
+name: Linux GNOME prerequisite probe
+
+on:
+  push:
+    branches: [fix/review-squad-linux-native]
+
+permissions: {}
+
+env:
+  CARGO_PROFILE_DEV_DEBUG: '0'
+
+concurrency:
+  group: linux-gnome-probe-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: >-
+      github.repository == '2389-research/spaceport' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
+      github.ref == 'refs/heads/fix/review-squad-linux-native'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the real GNOME prerequisite
+        run: |
+          apt_temp=$(mktemp -d /tmp/spaceport-gnome-apt.XXXXXX)
+          trap 'rm -rf "$apt_temp"' EXIT
+          mkdir "$apt_temp/parts"
+          chmod 755 "$apt_temp" "$apt_temp/parts"
+          apt_options=(-o "Dir::Etc::SourceList=$apt_temp/ubuntu.sources" -o "Dir::Etc::SourceParts=$apt_temp/parts"
+            -o Acquire::Retries=0 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20)
+          for mirror in primary fallback; do
+            python3 scripts/ubuntu-ci-sources.py --architecture "$(dpkg --print-architecture)" \
+              --mirror "$mirror" /etc/apt/sources.list.d/ubuntu.sources > "$apt_temp/ubuntu.sources"
+            chmod 644 "$apt_temp/ubuntu.sources"
+            if sudo apt-get "${apt_options[@]}" update --error-on=any; then
+              break
+            elif [[ $mirror == fallback ]]; then
+              exit 1
+            fi
+          done
+          sudo apt-get "${apt_options[@]}" install --no-install-recommends -y \
+            gnome-shell gjs gir1.2-gtk-4.0 dbus-x11 at-spi2-core libgl1-mesa-dri mesa-vulkan-drivers
+          gnome-shell --version
+          systemctl is-active systemd-logind
+      - name: Install the canonical Linux build dependencies
+        env:
+          SPACEPORT_CI_APT_MIRROR: '1'
+        run: bash scripts/install-linux-deps.sh
+      - name: Install the pinned Rust toolchain
+        run: rustup show
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          key: checks-all
+          save-if: false
+      - name: Compile the real native test and its shared contract tests
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --test live_gui linux_shortcuts::cases:: -- --nocapture
+          cargo test --locked -p sheprd-gpui --features integration-test --test live_gui --no-run --message-format=json > "$RUNNER_TEMP/native-build.jsonl"
+          jq -ers '[.[] | select(.reason == "compiler-artifact" and .target.name == "live_gui" and .executable != null) | .executable] | if length == 1 then .[0] else error("expected one live_gui executable") end' "$RUNNER_TEMP/native-build.jsonl" > "$RUNNER_TEMP/native-test-path"
+      - name: Stage the checksum-pinned private Herdr fixture
+        run: |
+          curl --fail --location --connect-timeout 20 --max-time 120 \
+            https://github.com/herdrdev/herdr/releases/download/v0.9.5/herdr-linux-x86_64 \
+            --output "$RUNNER_TEMP/herdr-linux-x86_64"
+          echo "14d9e8bc8b4a9e0118d77c32266f76d461f09b40342eb23752960bd89f59929d  $RUNNER_TEMP/herdr-linux-x86_64" | sha256sum --check --strict
+          chmod 700 "$RUNNER_TEMP/herdr-linux-x86_64"
+      - name: Run GTK and Spaceport on the owned GNOME display
+        run: |
+          rustfmt --edition 2024 --check scripts/qualification/linux_gnome_probe.rs
+          rustc --edition 2024 --test scripts/qualification/linux_gnome_probe.rs -o "$RUNNER_TEMP/spaceport-gnome-probe-tests"
+          "$RUNNER_TEMP/spaceport-gnome-probe-tests"
+          rustc --edition 2024 scripts/qualification/linux_gnome_probe.rs -o "$RUNNER_TEMP/spaceport-gnome-probe"
+          test_binary=$(cat "$RUNNER_TEMP/native-test-path")
+          "$RUNNER_TEMP/spaceport-gnome-probe" "$GITHUB_WORKSPACE/scripts/qualification/linux_gnome_input.js" \
+            "$test_binary" "$RUNNER_TEMP/herdr-linux-x86_64"

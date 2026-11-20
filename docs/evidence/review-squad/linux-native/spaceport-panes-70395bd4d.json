@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "scope": "Eight new Linux pane cases pass; whole native run fails at platform window activation",
+  "source": "70395bd4df4314c78ebafbb4fc1cde8268877252",
+  "run": {
+    "id": 44713905098,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44713905098",
+    "job_id": 136212265925,
+    "status": "completed",
+    "conclusion": "failure"
+  },
+  "checks": {
+    "shared_contract_tests": {
+      "passed": 10,
+      "failed": 0
+    },
+    "receipt_tests": {
+      "passed": 2,
+      "failed": 0
+    },
+    "native_test": {
+      "passed": 0,
+      "failed": 1,
+      "seconds": 27.1
+    },
+    "completed_cases": [
+      "new-tab",
+      "tab-1",
+      "tab-2",
+      "tab-3",
+      "tab-4",
+      "tab-5",
+      "tab-6",
+      "tab-7",
+      "tab-8",
+      "tab-9",
+      "font-increase",
+      "font-decrease",
+      "font-reset",
+      "pane-f6",
+      "pane-shift-f6",
+      "pane-f11",
+      "pane-ctrl-page-up",
+      "pane-ctrl-page-down",
+      "direct-next-tab",
+      "direct-previous-tab",
+      "prefix-next-tab",
+      "prefix-previous-tab",
+      "direct-next-region",
+      "direct-previous-region",
+      "prefix-next-region",
+      "prefix-previous-region",
+      "direct-fullscreen-enter",
+      "direct-fullscreen-leave",
+      "prefix-fullscreen-enter",
+      "prefix-fullscreen-leave",
+      "keybindings",
+      "palette",
+      "palette-resume",
+      "settings-alias",
+      "prefix-settings",
+      "split-editor-alias",
+      "next-pane-alias",
+      "previous-pane-alias",
+      "history-back-alias",
+      "history-forward-alias",
+      "prefix-pane-left",
+      "prefix-pane-down",
+      "prefix-pane-up",
+      "prefix-pane-right"
+    ]
+  },
+  "observed": [
+    {
+      "utc": "2026-11-20T09:52:00.8426158Z",
+      "message": "GNOME_PROBE input_driver_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9598124Z",
+      "message": "GNOME_PROBE native_test_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9641907Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE input_submitted=true id=next-pane-alias"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9642743Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE input_submitted=true id=previous-pane-alias"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9643640Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE input_submitted=true id=history-back-alias"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9644482Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE input_submitted=true id=history-forward-alias"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9645452Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE input_submitted=true id=prefix-pane-left"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9646267Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE input_submitted=true id=prefix-pane-down"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9647177Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE input_submitted=true id=prefix-pane-up"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9647965Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE input_submitted=true id=prefix-pane-right"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9649210Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE input_submitted=true id=cycle-windows-alias"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9649571Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE keys_released=true session_closed=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9652115Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=next-pane-alias pane_before=w1:pH pane_target=w1:pF pane_after=w1:pF geometry=two-by-two revision_acknowledged=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9653792Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=previous-pane-alias pane_before=w1:pF pane_target=w1:pH pane_after=w1:pH geometry=two-by-two revision_acknowledged=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9655588Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=history-back-alias pane_before=w1:pG pane_target=w1:pF pane_after=w1:pF geometry=two-by-two revision_acknowledged=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9657403Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=history-forward-alias pane_before=w1:pF pane_target=w1:pG pane_after=w1:pG geometry=two-by-two revision_acknowledged=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9659101Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=prefix-pane-left pane_before=w1:pF pane_target=w1:pE pane_after=w1:pE geometry=two-by-two revision_acknowledged=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9660743Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=prefix-pane-down pane_before=w1:pE pane_target=w1:pH pane_after=w1:pH geometry=two-by-two revision_acknowledged=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9662382Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=prefix-pane-up pane_before=w1:pH pane_target=w1:pE pane_after=w1:pE geometry=two-by-two revision_acknowledged=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9664129Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=prefix-pane-right pane_before=w1:pE pane_target=w1:pF pane_after=w1:pF geometry=two-by-two revision_acknowledged=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9666128Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE window_probe=target state=Probe { active: false, coherent: false, config_loading: false, connected: false, fenced: false, surface_matches: false }"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9667048Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE window_probe=target state=Probe { active: true, coherent: false, config_loading: false, connected: true, fenced: false, surface_matches: false }"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9667959Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE window_probe=target state=Probe { active: true, coherent: true, config_loading: false, connected: true, fenced: false, surface_matches: true }"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9669733Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE window_probe=original state=Probe { active: true, coherent: true, config_loading: false, connected: true, fenced: false, surface_matches: true }"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9670434Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS 89b416d379604a5aaecdec9758dabcd9 ready cycle-windows-alias"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9670890Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE cycle_command_dispatched=true next_window_selected=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9671319Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE cycle_platform_activation_requested=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9671972Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE window_probe=target state=Probe { active: false, coherent: true, config_loading: false, connected: true, fenced: false, surface_matches: true }"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9849470Z",
+      "message": "GNOME_PROBE shell_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T09:52:27.9874342Z",
+      "message": "GNOME_PROBE bus_reaped=true root_preserved_for_runner_cleanup=/tmp/spaceport-gnome-13318-1795168317706283965"
+    }
+  ],
+  "diagnosis": "All eight new pane cases reach exact target IDs in actual two-by-two geometry with a newer daemon revision. Cycle Windows completes native submission, command dispatch, and platform activation request, but its exact target stays inactive. The final Polish case does not run.",
+  "next_action": "Use the published GPUI 0.3.11 activation-context correction, then requalify the unchanged native matrix. Preserve exact pins and existing transitive versions where possible.",
+  "limits": [
+    "Timestamps record parent log export, not original child event times.",
+    "This failed run does not qualify whole-matrix success or daemon survival.",
+    "Polish input remains qualified only on earlier sources until the full matrix succeeds."
+  ]
+}

@@ -25,7 +25,7 @@ pub(crate) use shifted_keys::KeyChars;
 use shifted_keys::Typed;
 pub(super) use shifted_keys::current_layout;
 
-#[cfg(all(windows, feature = "integration-test"))]
+#[cfg(all(any(windows, target_os = "linux"), feature = "integration-test"))]
 pub(super) fn native_shortcuts_observed() -> bool {
     static OBSERVE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *OBSERVE.get_or_init(|| std::env::var_os("HERDR_TEST_SHORTCUT_OBSERVER").is_some())

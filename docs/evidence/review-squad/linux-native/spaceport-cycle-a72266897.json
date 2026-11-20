@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "scope": "Linux Cycle Windows measured input fails after successful native preparation",
+  "source": "a72266897ff97698e1cf9210236ec60231dc9e75",
+  "run": {
+    "id": 44712851380,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44712851380",
+    "job_id": 136208661556,
+    "status": "completed",
+    "conclusion": "failure"
+  },
+  "checks": {
+    "shared_contract_tests": {
+      "passed": 9,
+      "failed": 0
+    },
+    "receipt_tests": {
+      "passed": 2,
+      "failed": 0
+    },
+    "native_test": {
+      "passed": 0,
+      "failed": 1,
+      "seconds": 29.46
+    }
+  },
+  "observed": [
+    {
+      "utc": "2026-11-20T09:45:34.7573815Z",
+      "message": "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.00s"
+    },
+    {
+      "utc": "2026-11-20T09:45:35.8715623Z",
+      "message": "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "utc": "2026-11-20T09:45:42.9889331Z",
+      "message": "GNOME_PROBE input_driver_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T09:45:42.9900177Z",
+      "message": "GNOME_LOG GNOME_INPUT gtk_native=true transport=evdev sequence_sent=true polish=\"łŃ\" keys_released=true session_closed=true layout_restored=true spaceport_started=false"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4662342Z",
+      "message": "GNOME_PROBE native_test_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4698589Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE preparation=original-window native_alt_escape=true"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4699379Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE keys_released=true session_closed=true"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4716284Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=settings-alias settings_window_active=true original_windows_preserved=true"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4720928Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE id=prefix-settings settings_window_active=true original_windows_preserved=true"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4728459Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE empty_group_closed=true before_case=cycle-windows-alias"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4729266Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE other_window_requested=true"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4729887Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE other_window_created=true"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4731197Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE window_probe=target state=Probe { active: false, coherent: false, config_loading: false, connected: false, fenced: false, surface_matches: false }"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4733138Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE window_probe=target state=Probe { active: true, coherent: true, config_loading: false, connected: true, fenced: false, surface_matches: true }"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4734363Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE other_window_prepared=true"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4735373Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS 8d5764ccf8ef4449a042668f008659c3 focus-original cycle-windows-alias"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4737055Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE window_probe=original state=Probe { active: true, coherent: true, config_loading: false, connected: true, fenced: false, surface_matches: true }"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4738515Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS 8d5764ccf8ef4449a042668f008659c3 ready cycle-windows-alias"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4739937Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE window_probe=target state=Probe { active: false, coherent: true, config_loading: false, connected: true, fenced: false, surface_matches: true }"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4741341Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS native FAIL: native case cycle-windows-alias timed out"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4742805Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE qualification FAIL: timed out waiting for Passed(\"cycle-windows-alias\"): LINUX_KEYS 8d5764ccf8ef4449a042668f008659c3 ready prefix-fullscreen-enter"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4769261Z",
+      "message": "GNOME_LOG test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 26 filtered out; finished in 29.46s"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.4981619Z",
+      "message": "GNOME_PROBE shell_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T09:46:12.5021496Z",
+      "message": "GNOME_PROBE bus_reaped=true root_preserved_for_runner_cleanup=/tmp/spaceport-gnome-14071-1795167936074584368"
+    }
+  ],
+  "diagnosis": "Native Alt-Escape preparation succeeds. The exact original is active and coherent before READY, with target inactive. The parent reaches the post-input Passed wait, but the target stays inactive until timeout. Command dispatch versus platform activation remains unproven.",
+  "next_action": "Retain failure criteria. Trace the existing command dispatch and platform activation request without changing input or deadlines. Qualify independent pane cases before Cycle Windows.",
+  "not_qualified": [
+    "Cycle Windows outcome",
+    "Final Polish case on this source",
+    "Whole-matrix success or daemon-survival success on this failed source"
+  ]
+}

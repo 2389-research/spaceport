@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "timestamp_semantics": "UTC values identify CI log emissions. GNOME_INPUT messages are bounded child-log contents emitted later by the Rust parent with GNOME_LOG.",
+  "scope": "Failed GTK input prerequisite; no Spaceport qualification",
+  "log_wrapping": "GNOME_INPUT lines are input.log contents emitted with the GNOME_LOG prefix.",
+  "source": "c3f01ab846dc15c16dc72d9bca86946ed6f0ce69",
+  "run": {
+    "id": 44688433161,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44688433161",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_id": 136128210337
+  },
+  "failure": {
+    "utc": "2026-11-20T06:32:39.5671355Z",
+    "receipt": "GNOME_INPUT failed: window.is_active is not a function",
+    "cause": "GJS exposes Gtk.Window:is-active as a Boolean property. The probe incorrectly calls that property as a method.",
+    "boundary": "Before creating a remote input session or sending the evdev sequence."
+  },
+  "observed": [
+    {
+      "utc": "2026-11-20T06:32:37.8571881Z",
+      "receipt": "GNOME_PROBE startup=true private_wayland=true private_bus_owner=true spaceport_started=false keyboard_input=false"
+    },
+    {
+      "utc": "2026-11-20T06:32:39.5668013Z",
+      "receipt": "GNOME_PROBE input_driver_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T06:32:39.5671933Z",
+      "receipt": "GNOME_INPUT gtk_native=false evdev=true polish=\"\" keys_released=true session_closed=false layout_restored=true spaceport_started=false",
+      "limit": "evdev=true describes the selected transport, not observed input. The correction labels transport and sequence_sent separately."
+    },
+    {
+      "utc": "2026-11-20T06:32:39.5764155Z",
+      "receipt": "GNOME_PROBE shell_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T06:32:39.5795364Z",
+      "receipt": "GNOME_PROBE bus_reaped=true"
+    }
+  ],
+  "warnings": [
+    "GTK/Mesa EGL initialization reports driver and Zink device warnings; no graphics workaround or suppression applied.",
+    "GNOME reports absent auxiliary desktop services. This probe does not qualify a full login session."
+  ],
+  "not_qualified": [
+    "GTK non-US input",
+    "Spaceport startup, input and shortcut delivery",
+    "GNOME interception of app shortcuts"
+  ]
+}

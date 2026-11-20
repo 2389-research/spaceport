@@ -36,6 +36,10 @@ mod clipboard;
 mod live;
 pub(crate) use live::start as start_live;
 
+#[cfg(target_os = "linux")]
+#[path = "smoke_linux_shortcuts.rs"]
+mod linux_shortcuts;
+
 #[cfg(target_os = "macos")]
 #[path = "smoke_preferences.rs"]
 mod preferences;

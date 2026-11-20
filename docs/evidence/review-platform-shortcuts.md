@@ -384,4 +384,40 @@ The Mac desktop, account settings, and unrelated containers remain untouched.
 The [scoped receipt](review-squad/linux-native/gnome-prerequisites-3a0bcb00d.json) records versions and failure boundaries.
 Logs remain `/tmp/spaceport-9s44-gnome-{prerequisites,compositor,system-session,cleanup}.log`.
 A future route needs a working isolated GNOME login session, followed by actual app input checks.
+
+### Remote GNOME startup prerequisite on `1ab605fde`
+
+The separate branch-scoped [probe run](https://github.com/2389-research/spaceport/actions/runs/44686213368) passes on a disposable Ubuntu 24.04 runner.
+Actual logs identify GNOME Shell 46.0 and Mutter 46.2 with a surfaceless renderer.
+The private session publishes virtual monitor `Meta-0`, socket `wayland-0`, and the Shell bus owner.
+Rust directly owns and reaps the non-forking private bus, Shell, and query processes.
+The [scoped receipt](review-squad/linux-native/gnome-startup-1ab605fde.json) preserves the source, times, versions, warnings, and cleanup boundary.
+RealtimeKit and GNOME SessionManager remain absent; the probe does not establish full desktop readiness.
+It starts no Spaceport process and sends no keys.
+The next prerequisite uses a private GTK field and Mutter's persistent input session to test Polish evdev input.
+Spaceport shortcut behavior and actual GNOME interception remain unqualified, so Kata `3wd4` stays open.
+
+The first GTK input attempt on `c3f01ab84` fails before remote-session creation or key injection.
+GJS exposes `Gtk.Window:is-active` as a Boolean property; the probe incorrectly calls it as a method.
+The [failed-attempt receipt](review-squad/linux-native/gtk-input-c3f01ab84.json) retains the exact boundary and cleanup observations.
+The private layout restores, and the input driver, Shell, and bus all reap.
+The correction reads the property and reports the selected transport separately from actual sequence delivery.
+The [actual rerun on `942a5f061`](review-squad/linux-native/gtk-focus-942a5f061.json) passes that API boundary but times out with an inactive window.
+GTK's [`present` contract](https://docs.gtk.org/gtk4/method.Window.present.html) does not guarantee compositor keyboard focus.
+The next attempt requests native Alt-Tab activation after the owned window maps.
+It retains the active-window guard, exact text requirement, original deadline, and cleanup checks.
+No Spaceport keyboard qualification follows from either failed attempt.
+The [Alt-Tab attempt on `d793d0287`](review-squad/linux-native/gtk-activation-d793d0287.json) also times out with a mapped, inactive window.
+It acknowledges the activation sequence, closes the remote session, restores the private layout, and reaps all direct children.
+The next diagnostic reads Shell `Mode`, `OverviewActive`, and `ShellVersion` before choosing another activation change.
+Child-log timestamps identify their later bounded emission by the parent, rather than exact event times.
+The [actual diagnostic on `63db1a89c`](review-squad/linux-native/gtk-shell-state-63db1a89c.json) reports user mode with the overview open at mapping and deadline.
+GNOME 46 installs the Alt-Tab handler only for normal action mode.
+The next correction closes the private overview through its supported UI property and verifies closure before native activation.
+The original active-window, exact-text, deadline, and cleanup requirements remain.
+The [actual rerun on `8e43cd345`](review-squad/linux-native/gtk-input-8e43cd345.json) passes the GTK native-input prerequisite.
+The private overview changes from true to false before activation.
+Native evdev Right Alt plus L, then Shift plus Right Alt plus N, produces `łŃ`.
+Key release, remote-session closure, private layout restoration/readback, and all direct process reaps pass.
+Spaceport has not started in this route; its keyboard normalization, shortcuts, and terminal delivery remain pending.
 Mutter-only or nested startup cannot substitute for those checks.

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "scope": "Disposable Linux GNOME startup prerequisite only",
+  "source": "1ab605fdec68d5c5e2d0912bcb6630ed24470657",
+  "run": {
+    "id": 44686213368,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44686213368",
+    "status": "completed",
+    "conclusion": "success",
+    "job_id": 136121043275
+  },
+  "runtime": {
+    "runner": "GitHub-hosted ubuntu-24.04 x86_64",
+    "rust": "1.99.0-x86_64-unknown-linux-gnu",
+    "gnome_shell": "46.0-0ubuntu6~24.04.17",
+    "mutter": "46.2-1ubuntu0.24.04.18",
+    "renderer": "surfaceless without GPU",
+    "monitor": "Meta-0",
+    "wayland": "wayland-0"
+  },
+  "observed": [
+    {
+      "utc": "2026-11-20T06:22:37.5527524Z",
+      "receipt": "GNOME_PROBE startup=true private_wayland=true private_bus_owner=true spaceport_started=false keyboard_input=false"
+    },
+    {
+      "utc": "2026-11-20T06:22:37.5655779Z",
+      "receipt": "GNOME_PROBE shell_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T06:22:37.5662018Z",
+      "receipt": "GNOME_PROBE bus_reaped=true"
+    }
+  ],
+  "ownership": "0700 private HOME/XDG directories; cleared child environments; directly owned nofork bus, Shell and query handles. Private files and indirectly activated session services remain scoped to runner teardown.",
+  "warnings": [
+    "org.freedesktop.RealtimeKit1 unavailable; KMS realtime scheduling warning",
+    "org.gnome.SessionManager unavailable; WAYLAND_DISPLAY session-manager export warning"
+  ],
+  "not_qualified": [
+    "GNOME startup completion beyond the private display and bus-owner observations",
+    "Spaceport startup, rendering, keyboard input or shortcut behavior",
+    "Non-US input or compositor shortcut interception",
+    "Mac foreground, audible screen-reader or release performance requirements"
+  ]
+}

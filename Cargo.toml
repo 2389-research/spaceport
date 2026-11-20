@@ -65,8 +65,8 @@ foreign-types        = "0.5"
 futures-channel      = "=0.3.34"
 futures-lite         = "2"
 getrandom            = "0.4.3"
-gpui                 = { package = "gpui-pre", version = "=0.3.10" }
-gpui_platform        = { package = "gpui-pre-platform", version = "=0.3.10" }
+gpui                 = { package = "gpui-pre", version = "=0.3.11" }
+gpui_platform        = { package = "gpui-pre-platform", version = "=0.3.11" }
 sheprd-ago            = { path = "crates/sheprd-ago" }
 sheprd-backend        = { path = "crates/sheprd-backend" }
 sheprd-chat-protocol  = { path = "crates/sheprd-chat-protocol" }

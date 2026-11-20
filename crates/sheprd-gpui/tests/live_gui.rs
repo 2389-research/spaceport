@@ -33,6 +33,10 @@ mod chat_start;
 #[path = "live_gui/diagnostics.rs"]
 mod diagnostics;
 
+#[cfg(target_os = "linux")]
+#[path = "live_gui/linux_shortcuts.rs"]
+mod linux_shortcuts;
+
 #[cfg(windows)]
 #[path = "live_gui/pipe_readiness.rs"]
 mod pipe_readiness;

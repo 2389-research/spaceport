@@ -27,6 +27,8 @@ mod persistence;
 mod scrollbar;
 mod search;
 mod section;
+#[cfg(all(feature = "integration-test", target_os = "linux"))]
+pub(crate) mod shortcut_fixture;
 use section::{Group, Section};
 mod sidebar;
 #[cfg(test)]

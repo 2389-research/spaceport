@@ -1,13 +1,16 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `3634e5039` passes all ten workspace jobs, both Mac release builds, Windows installation, ARM native, and supply-chain checks.
-All three Core native cases pass; the earlier ordinary Core failure remains unexplained.
-The x64 native job fails a chat-helper deadline and a keyboard-profile format guard before layout mutation.
-The next candidate reduces redundant chat inspection and tests bounded profile-ID parsing.
+Status: the current candidate integrates the reviewed Linux and Windows native fixtures and exact GPUI 0.3.11 pins.
+Linux source `16a928826` passes all forty-six native cases, including Cycle Windows and cleanup.
+Windows source `7e2459d67` corrects PowerShell case selection; its native outcomes remain pending.
+The shared framework update still needs configured platform CI on the combined source.
+Prior application source `d747cdbdb` passes all eighteen configured CI jobs and its x64 native Core cases.
+Those 0.3.10 results do not qualify the new framework version.
+The earlier ordinary Core failure remains unexplained.
 Four measured native tab contrast cases remain qualified on `b94978e3b`.
 Settings glyphs and clipping are qualified on `7b7498762`; other native accessibility gates remain open.
-Crew tracks 50 done children and three open children for `9s44`.
+Crew tracks 50 done children, two doing, and one in review for `9s44`.
 The closed shortcut child still has an explicitly recorded native qualification gap.
 Kata separately records 49 closed children and four open children.
 Its shortcut finding `3wd4` remains open for the required native qualification.
@@ -29,6 +32,36 @@ Windows CI continues; this instruction does not pause the full review goal.
 Clint confirms at 03:15 UTC that no foreground release profile has run and no measurement evidence exists.
 He retains that dedicated desktop lane; the merged browser refactors remain groundwork rather than profile results.
 His separate 03:17 UTC reply closes his Interrupted/copy review loop without merge or launch authorization.
+
+## Native shortcut integration and framework correction
+
+The topic integration retains main `eba200955` and all reviewed fixes from `53de2db63`.
+It adds repeatable private GNOME input and expanded Windows keyboard fixtures.
+Normal topic-branch integration has no conflicts; it does not merge the draft into main.
+
+The [complete Linux receipt](review-squad/linux-native/spaceport-complete-16a928826.json) records exact source `16a928826`.
+Ten shared tests, two receipt tests, and all forty-six native case outcomes pass.
+The unchanged Cycle Windows regression fails on GPUI 0.3.10 and passes with exact 0.3.11 pins.
+Native input activates the exact coherent private target, then normal cleanup restores the original window.
+Final Polish search, key release, session closure, layout restoration, direct reaping, and daemon survival pass.
+The upstream activation-context fix supplies valid input serial/surface context and separate pending-token ownership.
+Existing non-GPUI dependency versions stay intact; the required new closure and obsolete Metal removal remain explicit.
+
+The [Windows plan](review-squad/windows-native/qualification-plan.md) records partial results and failed attempts.
+Source `c9a585ae5` passes compilation, Clippy, four Rust contracts, extended Polish AltGr, and direct chrome focus.
+Its PowerShell preflight catches aggregate case-table selection before input; the console step skips.
+Four expanded native tests stop at the same boundary.
+Source `7e2459d67` corrects both actual JSON consumers and adds exact scalar-ID guards.
+Its [native probe](https://github.com/2389-research/spaceport/actions/runs/44716174820) remains pending.
+That separate Windows probe still uses GPUI 0.3.10.
+Combined-source Windows CI must qualify those fixtures with 0.3.11.
+
+Canonical quick checks, workflow lint, offline workflow security checks, receipt parsing, and whitespace checks pass.
+Locked workspace metadata resolves without compilation.
+Independent read-only review finds no concrete integration regression in the actual combined diff.
+No local compiler, VM, Mac foreground fixture, or release profile runs in this checkpoint.
+The full configured CI matrix and shared-framework platform checks remain pending.
+Kata stays forty-nine closed and four open; no incomplete child closes.
 The [workspace-name correction](review-workspace-name-qualification.md) records the setup failure and successful native rerun on `1679d74f0`.
 The prior work dashboard is archived; its earlier evidence and attachments remain intact.
 

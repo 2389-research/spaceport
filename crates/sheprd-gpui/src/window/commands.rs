@@ -502,9 +502,19 @@ fn cycle_windows(window: &Window, cx: &mut gpui::App) {
     let Some(next) = next_window(&cx.windows(), window.window_handle()) else {
         return;
     };
+    #[cfg(all(target_os = "linux", feature = "integration-test"))]
+    if super::prefix::native_shortcuts_observed() {
+        eprintln!("LINUX_KEYS_CASE cycle_command_dispatched=true next_window_selected=true");
+    }
     cx.defer(move |cx| {
-        next.update(cx, |_, window, _| window.activate_window())
-            .ok();
+        next.update(cx, |_, window, _| {
+            #[cfg(all(target_os = "linux", feature = "integration-test"))]
+            if super::prefix::native_shortcuts_observed() {
+                eprintln!("LINUX_KEYS_CASE cycle_platform_activation_requested=true");
+            }
+            window.activate_window();
+        })
+        .ok();
     });
 }
 
