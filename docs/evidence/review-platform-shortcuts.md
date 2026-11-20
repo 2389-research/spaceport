@@ -407,4 +407,8 @@ GTK's [`present` contract](https://docs.gtk.org/gtk4/method.Window.present.html)
 The next attempt requests native Alt-Tab activation after the owned window maps.
 It retains the active-window guard, exact text requirement, original deadline, and cleanup checks.
 No Spaceport keyboard qualification follows from either failed attempt.
+The [Alt-Tab attempt on `d793d0287`](review-squad/linux-native/gtk-activation-d793d0287.json) also times out with a mapped, inactive window.
+It acknowledges the activation sequence, closes the remote session, restores the private layout, and reaps all direct children.
+The next diagnostic reads Shell `Mode`, `OverviewActive`, and `ShellVersion` before choosing another activation change.
+Child-log timestamps identify their later bounded emission by the parent, rather than exact event times.
 Mutter-only or nested startup cannot substitute for those checks.

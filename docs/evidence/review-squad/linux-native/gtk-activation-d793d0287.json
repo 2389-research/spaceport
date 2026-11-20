@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "scope": "Failed GTK activation prerequisite; no Spaceport qualification",
+  "source": "d793d0287d5c06fdac954c97ad38523e2ac8a05d",
+  "run": {
+    "id": 44689415126,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44689415126",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_id": 136131387496
+  },
+  "timestamp_semantics": "UTC values identify CI log emissions. GNOME_INPUT messages are bounded child-log contents emitted later by the Rust parent with GNOME_LOG.",
+  "observed": [
+    {
+      "utc": "2026-11-20T06:41:15.2529155Z",
+      "receipt": "GNOME_PROBE startup=true private_wayland=true private_bus_owner=true spaceport_started=false keyboard_input=false"
+    },
+    {
+      "utc": "2026-11-20T06:41:35.4391040Z",
+      "receipt": "GNOME_PROBE input_driver_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T06:41:35.4434371Z",
+      "receipt": "GNOME_INPUT activation_requested=true route=alt-tab private_display=true"
+    },
+    {
+      "utc": "2026-11-20T06:41:35.4434821Z",
+      "receipt": "GNOME_INPUT failed: GTK input deadline: mapped=true active=false text=\"\""
+    },
+    {
+      "utc": "2026-11-20T06:41:35.4435489Z",
+      "receipt": "GNOME_INPUT gtk_native=false transport=evdev sequence_sent=false polish=\"\" keys_released=true session_closed=true layout_restored=true spaceport_started=false"
+    },
+    {
+      "utc": "2026-11-20T06:41:35.4505216Z",
+      "receipt": "GNOME_PROBE shell_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T06:41:35.4527308Z",
+      "receipt": "GNOME_PROBE bus_reaped=true"
+    }
+  ],
+  "cause_limit": "The owned window is mapped but remains inactive after acknowledged Alt-Tab events. The log does not establish Shell overview/modal state.",
+  "next": "Add read-only Shell Mode, OverviewActive and ShellVersion observations at mapping and deadline before choosing another activation change.",
+  "not_qualified": [
+    "Polish text sequence delivery",
+    "Spaceport keyboard behavior",
+    "GNOME interception of Spaceport shortcuts"
+  ]
+}

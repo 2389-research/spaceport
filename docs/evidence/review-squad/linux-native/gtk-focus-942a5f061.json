@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "timestamp_semantics": "UTC values identify CI log emissions. GNOME_INPUT messages are bounded child-log contents emitted later by the Rust parent with GNOME_LOG.",
   "scope": "Failed GTK focus prerequisite; no Spaceport qualification",
   "source": "942a5f061e847eeada44b6ee5fc4079ac0cc9aa4",
   "run": {

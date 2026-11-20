@@ -25,6 +25,23 @@ function call(path, iface, method, parameters = null) {
         Gio.DBusCallFlags.NONE, 2000, null);
 }
 
+function observeShell(phase) {
+    try {
+        const values = bus.call_sync('org.gnome.Shell', '/org/gnome/Shell',
+            'org.freedesktop.DBus.Properties', 'GetAll',
+            new GLib.Variant('(s)', ['org.gnome.Shell']), null,
+            Gio.DBusCallFlags.NONE, 2000, null).deep_unpack()[0];
+        const state = {};
+        for (const name of ['Mode', 'OverviewActive', 'ShellVersion']) {
+            const value = values[name];
+            state[name] = value instanceof GLib.Variant ? value.deep_unpack() : value;
+        }
+        print(`GNOME_INPUT shell_state phase=${phase} state=${JSON.stringify(state)}`);
+    } catch (error) {
+        printerr(`GNOME_INPUT shell_state phase=${phase} unavailable=${error.message}`);
+    }
+}
+
 function key(code, pressed) {
     // Retain uncertain presses until a release call has actually returned.
     if (pressed)
@@ -85,13 +102,16 @@ try {
     window.connect('close-request', () => finish(false));
     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
         try {
-            if (GLib.get_monotonic_time() >= deadline)
+            if (GLib.get_monotonic_time() >= deadline) {
+                observeShell('deadline');
                 throw new Error(`GTK input deadline: mapped=${window.get_mapped()} active=${window.is_active} text=${JSON.stringify(entry.get_text())}`);
+            }
             if (typeof window.is_active !== 'boolean')
                 throw new Error('GTK active-window property is not Boolean');
             if (!window.get_mapped())
                 return GLib.SOURCE_CONTINUE;
             if (session === null) {
+                observeShell('mapped');
                 session = call(managerPath, manager, 'CreateSession').deep_unpack()[0];
                 call(session, sessionInterface, 'Start');
                 if (!window.is_active) {
