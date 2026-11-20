@@ -955,3 +955,22 @@ The native workflow prepares before building, saves preparation evidence, and al
 The app continues to read normal OS preferences and reject reduced-motion Working samples.
 The counter measures existing render calls, not physical display presents or exact CPU-interval frame rates.
 The native branch has not advanced yet; Windows ordinary GREEN remains pending.
+
+At `e076fbac161782d182eba5d689b9af1775b50ff8`, run `44834178683` passed all four ordinary jobs.
+Windows passed 51 harness tests, eight observer tests, the passive counter test, ten accessibility controls, inventory, and Clippy.
+Mac passed 31 harness tests, nine observer tests, the passive counter test, and Clippy.
+Both regression fixes now have actual runtime RED and GREEN on both platforms.
+Known Mac linker and future-compatibility warnings remain; no new warning appeared.
+
+Source `dcadebfaf993392a3774f16f2fd4bfaba47921c4` contains no crate, dependency, lockfile, or Rust-toolchain changes from that GREEN source.
+Its extra changes cover the independently tested desktop helper, workflow wiring, and evidence.
+The final helper-postcondition check is running separately as `44835645896`.
+Native execution still requires its own app-policy, counter, capture, trace-quality, and cleanup audit.
+
+The final helper check passed in run `44835645896`, job `136631244180`, on exact `dcadebfaf`.
+Preparation changed both false values to true; restoration returned both to false, confirmed from fresh processes.
+The native branch then advanced normally from `538ff3ca6` to this exact source.
+Native run `44835762627` is in progress with the real mixed workload and the normal OS motion policy.
+No new native execution result, render cadence, or savings is claimed yet.
+Next audit actual app policy and render counts, visible content, raw clocks, loss counters, identities, and restoration evidence.
+All original performance clauses and Doctor Biz's Mac/speech holds remain in force.
