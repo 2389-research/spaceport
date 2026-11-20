@@ -916,3 +916,18 @@ The counter remains passive and does not notify or schedule frames.
 The shared readiness validator now refuses reduced-motion Working samples at both endpoints.
 The after check still retains partial phase metrics before refusing a changed state.
 Ordinary GREEN and actual native policy/render observations remain pending.
+
+### Disposable Windows animation preparation
+
+The read-only tools job `136626281423` executed the WinRT getter successfully and reported `animations_enabled: false`.
+This is a fresh ordinary runner, not proof of the earlier native runner's policy.
+An isolated animation branch now exercises desktop preparation without app builds, daemons, or tracing.
+Its initial setter does nothing; the fresh-process eligibility assertion should reach runtime RED on a disabled desktop.
+Restoration always reads and verifies the saved Boolean, including after an assertion failure.
+The saved file uses exclusive creation; an existing record refuses rather than replacing restoration authority.
+
+The intended setter is Microsoft's `SystemParametersInfoW`, `SPI_SETCLIENTAREAANIMATION` (`0x1043`).
+Its [documented contract](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfow)
+passes the Boolean as `pvParam`, with zero flags to avoid profile persistence and broadcast.
+The actual WinRT property must become true; an API success return alone cannot qualify the preparation.
+Only disposable Actions desktops enter this helper; app accessibility behavior remains unchanged.

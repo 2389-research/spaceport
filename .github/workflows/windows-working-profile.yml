@@ -1,10 +1,10 @@
 # ABOUTME: Checks native sampling prerequisites on a disposable Windows profile branch.
-# ABOUTME: Lists tools and profiles without recording, installing, or changing system state.
+# ABOUTME: Separates read-only inventory from isolated desktop-preparation contracts.
 name: Windows working profile probe
 
 on:
   push:
-    branches: [fix/review-squad-windows-profile]
+    branches: [fix/review-squad-windows-profile, fix/review-squad-windows-profile-animation]
 
 permissions: {}
 
@@ -153,6 +153,46 @@ jobs:
         timeout-minutes: 1
         shell: powershell
         run: xperf.exe -loggers
+  animations:
+    if: >-
+      github.repository == '2389-research/spaceport' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/fix/review-squad-windows-profile-animation'
+    runs-on: windows-2025
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Prepare the private animation evidence directory
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $directory = Join-Path $env:RUNNER_TEMP 'spaceport-animation-check'
+          if (Test-Path -LiteralPath $directory) { throw 'Refusing an existing animation evidence directory.' }
+          [IO.Directory]::CreateDirectory($directory) | Out-Null
+      - name: Enable animations through the profile preparation helper
+        run: ./scripts/profile/desktop-animations.ps1 -Action Enable -EvidenceDirectory (Join-Path $env:RUNNER_TEMP 'spaceport-animation-check')
+      - name: Require animations in a fresh Windows PowerShell process
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $null = [Windows.UI.ViewManagement.UISettings,Windows.UI.ViewManagement,ContentType=WindowsRuntime]
+          $settings = [Windows.UI.ViewManagement.UISettings]::new()
+          $enabled = [bool]$settings.AnimationsEnabled
+          [ordered]@{animations_enabled = $enabled; scope = 'Fresh process after desktop preparation.'} | ConvertTo-Json -Compress | Write-Output
+          if (-not $enabled) { throw 'AnimationsEnabled is false after desktop preparation.' }
+      - name: Restore and verify the original desktop animation preference
+        if: ${{ always() }}
+        run: |
+          $directory = Join-Path $env:RUNNER_TEMP 'spaceport-animation-check'
+          if (Test-Path -LiteralPath (Join-Path $directory 'desktop-animation-original.json')) {
+            ./scripts/profile/desktop-animations.ps1 -Action Restore -EvidenceDirectory $directory
+          }
+
   retention:
     if: >-
       github.repository == '2389-research/spaceport' &&
