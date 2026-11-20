@@ -452,5 +452,26 @@ The follow-up archive inspection downloads the exact versioned Windows zip into 
 Its 3,862,941 bytes match the manifest's SHA-256 above.
 The archive contains `herdr-core.exe`, `conpty/conpty.dll`, and `conpty/x64/OpenConsole.exe`.
 It also includes an Apache-2.0 license and third-party notices, which the private staging step must retain.
-No archive member is extracted or executed, and no local runtime is installed.
+That inspection extracts or executes no archive member and installs no local runtime.
 This verifies the fixture's input artifact; strict ownership and native behavior remain untested.
+
+### Staging implementation candidate
+
+The existing Windows staging script now accepts `--core` for this exact pinned release.
+Its default CLI still stages the existing Herdr 0.9.5 fixture.
+Both releases share bounded download, hash verification, Windows path checks, and extraction.
+Core's executable, ConPTY files, and notices must exist before extraction starts.
+Nonempty destinations are refused and preserved.
+The fixture User-Agent names Spaceport; the release host refuses Python's default User-Agent with HTTP 403.
+No credentials or installer are used.
+
+The real `--core` CLI scenario fails first against the old usage contract.
+All five staging tests then pass, including both actual release downloads.
+Those tests extract into temporary directories and execute neither staged runtime.
+They cover traversal, alternate streams, missing ConPTY, digest mismatch, and destination preservation.
+Without explicit `SPACEPORT_TEST_RUNTIME_DOWNLOAD=1`, the three archive guards pass and both network cases stay skipped.
+CI's existing script-check step now runs those offline guards.
+Logs: `/tmp/spaceport-9s44-core-staging-{red,green,offline}.log`.
+Local checks use uv with an isolated temporary project; CI retains its existing standard-library Python command.
+Independent review finds no material archive trust, bounds, path, cleanup, or default-contract issue.
+This implements the staging prerequisite; real Windows Core startup and native qualification remain pending.
