@@ -349,6 +349,9 @@ Mono also compiles the complete native helper beside those real tests.
 The private Linux containers use a read-only source mount and remove themselves after each run.
 Their exact IDs are verified absent afterward; no desktop or Windows API executes in those tests.
 Logs: `/tmp/spaceport-9s44-profile-parser-{red,green,final}.log`.
+The runtime is Mono `6.8.0.105+dfsg-3.6ubuntu2` in Ubuntu 24.04 on Linux ARM64.
+The final image is pinned at `sha256:ab18ecc70c55c703eae968948f9f1dbbe662aa8d9badac7c982e6a6237b9d74c`.
+Windows parsing, activation, native translated text, and cleanup remain pending.
 
 ### Disposable GNOME prerequisite probe, November 20
 
@@ -367,6 +370,3 @@ The [scoped receipt](review-squad/linux-native/gnome-prerequisites-3a0bcb00d.jso
 Logs remain `/tmp/spaceport-9s44-gnome-{prerequisites,compositor,system-session,cleanup}.log`.
 A future route needs a working isolated GNOME login session, followed by actual app input checks.
 Mutter-only or nested startup cannot substitute for those checks.
-The runtime is Mono `6.8.0.105+dfsg-3.6ubuntu2` in Ubuntu 24.04 on Linux ARM64.
-The final image is pinned at `sha256:ab18ecc70c55c703eae968948f9f1dbbe662aa8d9badac7c982e6a6237b9d74c`.
-Windows parsing, activation, native translated text, and cleanup remain pending.
