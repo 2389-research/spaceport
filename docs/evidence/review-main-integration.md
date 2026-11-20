@@ -1,9 +1,10 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `a8f7bd371` passes every workspace job, native images, and all three Core native cases.
-The native job fails only workspace-close setup after a partial workspace name is submitted.
-The next candidate adds selected-tab contrast captures and waits for native name acknowledgements before submission.
+Status: `1679d74f0` passes every workspace job and all 25 non-Core native UIA cases.
+Workspace consent now passes; eight tab crops reveal a 2.85:1 light-image focus-ring defect.
+Its Core resize qualifier stops on a missing old output line before measuring new geometry.
+The next candidate fixes translucent tab focus paint and separates later Core caret measurements from old text.
 Settings glyphs and clipping are qualified on `7b7498762`; other native accessibility gates remain open.
 Crew tracks 50 done children and three open children for `9s44`.
 The closed shortcut child still has an explicitly recorded native qualification gap.
@@ -20,6 +21,9 @@ The remaining children cover native Core Cmd-W, accessibility speech/contrast, a
 On November 20 at 02:54 UTC, Doctor Biz explicitly answered “Keep Mac checks pending.”
 Do not launch Mac foreground fixtures until Doctor Biz changes that instruction.
 Windows CI continues; this instruction does not pause the full review goal.
+Clint confirms at 03:15 UTC that no foreground release profile has run and no measurement evidence exists.
+He retains that dedicated desktop lane; the merged browser refactors remain groundwork rather than profile results.
+His separate 03:17 UTC reply closes his Interrupted/copy review loop without merge or launch authorization.
 The [workspace-name correction](review-workspace-name-qualification.md) records the current CI failure and pending native rerun.
 The prior work dashboard is archived; its earlier evidence and attachments remain intact.
 

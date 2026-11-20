@@ -100,12 +100,12 @@ if ($Action -in @('Resize','CoreResize')) {
     Require-Released
     Require-Terminal
   }
-  function Output-CaretBounds {
+  function Output-CaretBounds([bool]$requireOutput) {
     Require-Terminal
     $range = $pattern.DocumentRange
     if ($null -eq $range) { return $null }
     $script:resizeOutputSeen = ($range.GetText(16384) -split '\r?\n') -ccontains 'SP_RESIZE_7'
-    if (-not $script:resizeOutputSeen) { return $null }
+    if ($requireOutput -and -not $script:resizeOutputSeen) { return $null }
     # Pinned AccessKit does not implement FindText; use its proven caret-range contract.
     $selection = $pattern.GetSelection()
     if ($null -eq $selection -or $selection.Length -eq 0) { return $null }
@@ -160,10 +160,11 @@ if ($Action -in @('Resize','CoreResize')) {
     $script:resizeOutputSeen = $false
     $last = 'none'
     do {
-      $rect = Output-CaretBounds
+      # The real Core console may redraw old output during resize; measure its current native caret.
+      $rect = Output-CaretBounds ($stage -eq 'authored_output' -or -not $coreResize)
       if ($null -ne $rect) { $last = "left=$($rect.Left),width=$($rect.Width)" }
       if ($null -ne $rect -and (& $accept $rect)) {
-        [Console]::WriteLine("TERMINAL_RESIZE_STAGE stage=$stage output=true $last")
+        [Console]::WriteLine("TERMINAL_RESIZE_STAGE stage=$stage output=$($script:resizeOutputSeen.ToString().ToLowerInvariant()) $last")
         return $rect
       }
       if ([DateTime]::UtcNow -ge $deadline) {

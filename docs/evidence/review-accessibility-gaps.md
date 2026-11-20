@@ -609,3 +609,57 @@ This candidate covers image-backed translucency, not desktop material compositio
 
 The screen copy follows [CopyFromScreen](https://learn.microsoft.com/en-us/dotnet/api/system.drawing.graphics.copyfromscreen).
 The helper restores the context returned by [SetThreadDpiAwarenessContext](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setthreaddpiawarenesscontext).
+
+### Native tab contrast failure on `1679d74f0`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44663710320/job/136048031195) passes all 25 non-Core UIA cases.
+The workspace-name acknowledgement and four selected-tab capture pairs execute successfully.
+Root decodes and views all eight original crops, then verifies their dimensions and hashes.
+The [receipt and crops](review-squad/tab-focus/contrast-1679d74f0.json) preserve every measurement.
+
+| Actual selected fill | Minimum painted ring ratio |
+| --- | --- |
+| Dark, opaque | 3.00396 |
+| Dark, image backdrop | 3.09499 |
+| Light, opaque | 3.00113 |
+| Light, image backdrop | **2.85149: fails the 3:1 target** |
+
+The focus policy chooses accent ink against the layout's nominal opaque fills.
+The image-backed fill differs after composition, so that policy cannot guarantee the painted ratio.
+This is a real remaining defect; `q72g` stays open.
+
+The correction uses two opaque inset bands only when the tab fill is translucent.
+Opaque tabs keep their current accent ring.
+Black and white bands use the two-color pattern from [W3C C40](https://www.w3.org/WAI/WCAG22/Techniques/css/C40).
+That technique alone does not qualify inset indicators or image backgrounds; actual pixel checks remain required.
+They add no layout width and do not change focus or input ownership.
+A real offscreen Metal regression first reproduces the captured fill's ratios of 2.8514864 and 1.0.
+It then checks the same focus painter against captured, black, white, grey, and accent-colored backgrounds.
+The offscreen check opens no Mac desktop window and makes no native keyboard or speech claim.
+Corrected Windows captures and their measurements remain pending.
+
+### Core resize marker observation on `1679d74f0`
+
+The same job passes ordinary and observing Core text cases.
+Its Core resize case sees the authored line before input, then no longer sees it after Left.
+The helper returns early on that missing marker before measuring the new caret geometry.
+This result does not establish whether the native resize geometry moved.
+
+The helper now separates initial authored-output readiness from later Core caret measurements.
+The initial line and independent runtime byte stream still prove exact input delivery.
+Every Herdr stage still requires its marker.
+Later Core stages still require the current unselected caret, contained line bounds, fixed edges, divider gap, movement, and restoration.
+Stage diagnostics report the actual marker boolean instead of printing a constant success value.
+The final runtime identity and exact cleanup assertions remain unchanged.
+This does not claim that old Core output stays visible or explain its redraw behavior.
+Corrected native execution remains pending.
+
+The new offscreen Metal case fails first on the captured light-image fill at ratios `[2.8514864, 1.0]`.
+It passes after the two-band correction across all five captured/extreme background controls.
+Logs: `/tmp/spaceport-9s44-tab-halo-{red,green}.log`.
+Independent review finds no material focus, layout, fixture, or input-proof regression.
+The focus/tab consumer scope passes ten cases; its separately executed Metal opt-in is skipped in that ordinary batch.
+Host binary/test Clippy and both Windows binary/native-harness feature configurations pass with warnings denied.
+Formatting, file-size, sorted regions, operations, localization, commit subjects, and diff checks pass.
+The existing large debug-link unwind warning and external `block` future-compatibility notice remain unchanged.
+Corrected native Windows pixels and Core resize execution still remain pending.
