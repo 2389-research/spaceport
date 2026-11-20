@@ -185,12 +185,39 @@ jobs:
           $enabled = [bool]$settings.AnimationsEnabled
           [ordered]@{animations_enabled = $enabled; scope = 'Fresh process after desktop preparation.'} | ConvertTo-Json -Compress | Write-Output
           if (-not $enabled) { throw 'AnimationsEnabled is false after desktop preparation.' }
+      - name: Refuse repeated preparation without replacing restoration authority
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $directory = Join-Path $env:RUNNER_TEMP 'spaceport-animation-check'
+          $saved = Join-Path $directory 'desktop-animation-original.json'
+          $before = (Get-FileHash -LiteralPath $saved -Algorithm SHA256).Hash
+          $refused = $false
+          try { ./scripts/profile/desktop-animations.ps1 -Action Enable -EvidenceDirectory $directory }
+          catch { $refused = $true }
+          if (-not $refused) { throw 'Repeated preparation must refuse the existing original-preference record.' }
+          if ((Get-FileHash -LiteralPath $saved -Algorithm SHA256).Hash -ne $before) {
+            throw 'Repeated preparation changed restoration authority.'
+          }
       - name: Restore and verify the original desktop animation preference
         if: ${{ always() }}
         run: |
           $directory = Join-Path $env:RUNNER_TEMP 'spaceport-animation-check'
           if (Test-Path -LiteralPath (Join-Path $directory 'desktop-animation-original.json')) {
             ./scripts/profile/desktop-animations.ps1 -Action Restore -EvidenceDirectory $directory
+          }
+      - name: Verify restoration from a fresh Windows PowerShell process
+        if: ${{ always() }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $saved = Join-Path (Join-Path $env:RUNNER_TEMP 'spaceport-animation-check') 'desktop-animation-original.json'
+          if (Test-Path -LiteralPath $saved) {
+            $original = Get-Content -LiteralPath $saved -Raw | ConvertFrom-Json
+            $null = [Windows.UI.ViewManagement.UISettings,Windows.UI.ViewManagement,ContentType=WindowsRuntime]
+            $settings = [Windows.UI.ViewManagement.UISettings]::new()
+            $actual = [bool]$settings.AnimationsEnabled
+            [ordered]@{animations_enabled = $actual; expected = $original.animations_enabled; scope = 'Fresh process after restoration.'} |
+              ConvertTo-Json -Compress | Write-Output
+            if ($actual -ne $original.animations_enabled) { throw 'Fresh-process animation restoration differs from the saved preference.' }
           }
 
   retention:

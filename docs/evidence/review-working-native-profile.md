@@ -931,3 +931,15 @@ Its [documented contract](https://learn.microsoft.com/en-us/windows/win32/api/wi
 passes the Boolean as `pvParam`, with zero flags to avoid profile persistence and broadcast.
 The actual WinRT property must become true; an API success return alone cannot qualify the preparation.
 Only disposable Actions desktops enter this helper; app accessibility behavior remains unchanged.
+
+At `8dd67cf65`, isolated run `44834668588`, job `136627923986`, reached the intended runtime RED.
+Preparation and fresh-process reads both returned false; the eligibility assertion failed for that reason.
+The always-run restoration control passed and preserved the original false preference.
+No app, daemon, build, trace, or setting mutation entered that RED run.
+
+The setter now calls the documented API with a pointer-sized Boolean and zero persistence/broadcast flags.
+The saved record includes the native client-area value separately from the WinRT property.
+Cleanup restores the native value and verifies both observations, avoiding assumptions that the getters always agree.
+A repeated-preparation control checks exclusive refusal and the unchanged original-record hash.
+Fresh processes verify eligibility and restoration independently.
+Actual setter acceptance and property mapping remain pending.
