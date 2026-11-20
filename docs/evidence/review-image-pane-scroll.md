@@ -296,3 +296,18 @@ Independent review finds no weaker delivery or cleanup condition.
 Both Windows harness cross-lints pass: all features and integration-only without default features.
 Logs: `/tmp/spaceport-9s44-image-silent-command-lint-{all,minimal}.log`.
 Actual native scene, fractional motion, clipping, mapping, and layer qualification remain pending.
+
+## Watchdog result on `81ede63bb`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44645158951/job/135985948983) passes eight GUI cases, pipe ownership, and 23 UIA cases.
+The image case prints both the pointer-failure cleanup receipt and once-only producer submission receipt.
+Its helper then exits with code 73 before reporting a successful scene.
+That code comes from the independent pointer watchdog, five seconds before the parent deadline.
+The helper log does not identify which marker was outstanding, and the assertion omitted the GUI log.
+The cause of the stalled qualification remains unknown; successful command submission proves no asset delivery.
+
+The diagnostic follow-up includes the existing bounded private GUI log when the helper exits unsuccessfully.
+Each existing helper wait also prints its fixed marker once, before polling.
+It preserves input, deadlines, watchdog restoration, once-only submission, and every image assertion.
+Independent read-only diagnosis confirms those missing diagnostics without attributing the stall to ConPTY or rendering.
+Native image qualification and `gfde` remain open.

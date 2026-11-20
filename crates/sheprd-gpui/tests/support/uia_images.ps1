@@ -31,6 +31,7 @@ function Require-Released {
   }
 }
 function Wait-Image([string]$marker, [bool]$pointer) {
+  [Console]::WriteLine("IMAGE_INPUT_WAIT marker=$marker")
   while ($true) {
     Require-Terminal
     Require-Released

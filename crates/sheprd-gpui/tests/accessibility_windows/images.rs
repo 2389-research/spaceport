@@ -160,12 +160,13 @@ fn native_images_preserve_mapping_layers_clipping_and_cached_cell_replay() {
         loop {
             if let Some(status) = running.observer.as_mut().unwrap().try_wait().unwrap() {
                 let output = helper_log(&running);
+                let log = running.gui_log();
                 assert!(
                     status.success()
                         && output.contains(
                             "IMAGE_INPUT native=true wheel=1 pointer_restored=true released=true"
                         ),
-                    "{status}\n{output}"
+                    "{status}\n{output}\nOwned image GUI:\n{log}"
                 );
                 running.observer.take();
                 break;
