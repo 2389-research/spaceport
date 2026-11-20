@@ -2,10 +2,11 @@
 # ABOUTME: Observes real UIA effects and preserves the existing scoped layout cleanup.
 param([int]$ProcessId, [string]$CaseId, [long]$DeadlineEpochMs,
       [string]$FontMarker = '', [double]$ExpectedWidth = 0, [double]$MinimumBefore = 0,
-      [switch]$Measure, [switch]$WaitPrompt, [switch]$ObserveState)
+      [string]$PrepareInput = '', [switch]$Measure, [switch]$WaitPrompt,
+      [switch]$ObserveState, [switch]$ValidateContract, [switch]$Diagnostic)
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\powershell_modules.ps1"
-Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Windows.Forms
 Add-Type -Path @("$PSScriptRoot\native_profile_id.cs", "$PSScriptRoot\native_altgr.cs")
 $tablePath = "$PSScriptRoot\windows_shortcut_cases.json"
 if ((Get-Item -LiteralPath $tablePath).Length -gt 32768) { throw 'Native case table exceeds bound' }
@@ -13,11 +14,45 @@ $table = @(Get-Content -LiteralPath $tablePath -Raw | ConvertFrom-Json)
 $matching = @($table | Where-Object { $_.id -ceq $CaseId })
 if ($matching.Count -ne 1) { throw 'Native input requires one fixed case ID' }
 $case = $matching[0]
+$nativeChords = [System.Collections.Generic.List[int[]]]::new()
+foreach ($entry in $case.chords) {
+  $codes = [int[]]@($entry)
+  if ($codes.Count -lt 1 -or $codes.Count -gt 4 -or @($codes | Select-Object -Unique).Count -ne $codes.Count -or
+      @($codes | Where-Object { $_ -lt 1 -or $_ -gt 255 }).Count -ne 0) { throw 'Native chord violates physical-key bounds' }
+  $nativeChords.Add($codes)
+}
+if ($nativeChords.Count -lt 1 -or $nativeChords.Count -gt 4) { throw 'Native case violates chord-count bounds' }
+if ($ValidateContract) {
+  $tokens = $null
+  $parseErrors = $null
+  [System.Management.Automation.Language.Parser]::ParseFile("$PSScriptRoot\console_shortcuts.ps1", [ref]$tokens, [ref]$parseErrors) | Out-Null
+  if ($parseErrors.Count -ne 0) { throw ($parseErrors | Out-String) }
+  [Console]::WriteLine('WINDOWS_KEYS PowerShell_contract=true console_syntax=true input=false')
+  exit 0
+}
+[Console]::WriteLine("WINDOWS_KEYS stage=case_loaded id=$CaseId chords=$($nativeChords.Count)")
 $automation = [System.Windows.Automation.AutomationElement]
 $tree = [System.Windows.Automation.TreeScope]::Descendants
 $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
 $owned = [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $ProcessId)
 function Windows { return $automation::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children, $owned) }
+if ($Diagnostic) {
+  $privateWindows = @(Windows)
+  [Console]::WriteLine("WINDOWS_KEYS diagnostic_windows=$($privateWindows.Count)")
+  foreach ($privateWindow in $privateWindows | Select-Object -First 4) {
+    $elements = $privateWindow.FindAll($tree, [System.Windows.Automation.Condition]::TrueCondition)
+    foreach ($element in $elements | Select-Object -First 64) {
+      $name = $element.Current.Name
+      if ($name.Length -gt 160) { $name = $name.Substring(0,160) }
+      [Console]::WriteLine("WINDOWS_KEYS diagnostic_node=$($element.Current.ControlType.ProgrammaticName) name=$name focused=$($element.Current.HasKeyboardFocus)")
+      if ($element.Current.ControlType -eq [System.Windows.Automation.ControlType]::Document -and $element.Current.Name -ceq 'Terminal') {
+        $text = $element.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern).DocumentRange.GetText(8192)
+        [Console]::WriteLine("WINDOWS_KEYS private_terminal_begin`n$text`nWINDOWS_KEYS private_terminal_end")
+      }
+    }
+  }
+  exit 0
+}
 $deadline = [DateTimeOffset]::FromUnixTimeMilliseconds($DeadlineEpochMs - 5000).UtcDateTime
 do {
   $windows = @(Windows)
@@ -35,9 +70,12 @@ elseif ($case.outcome.kind -eq 'cycle_windows' -and $windows.Count -eq 2) {
 $handle = [IntPtr]$root.Current.NativeWindowHandle
 if ($handle -eq [IntPtr]::Zero) { throw 'Native case has no HWND' }
 function Wait-For([string]$label, $accept) {
+  $phaseDeadline = [DateTime]::UtcNow.AddSeconds(12)
+  if ($phaseDeadline -gt $deadline.AddSeconds(-1)) { $phaseDeadline = $deadline.AddSeconds(-1) }
+  [Console]::WriteLine("WINDOWS_KEYS wait=$label")
   do {
-    if (& $accept) { return }
-    if ([DateTime]::UtcNow -ge $deadline) { throw "Native case timed out: $label" }
+    if (& $accept) { [Console]::WriteLine("WINDOWS_KEYS acknowledged=$label"); return }
+    if ([DateTime]::UtcNow -ge $phaseDeadline) { throw "Native case timed out: $label" }
     Start-Sleep -Milliseconds 20
   } while ($true)
 }
@@ -63,9 +101,14 @@ function Document {
   return $documents[0]
 }
 function Wait-Keys([int[]]$keys) {
+  $script:lastKeyError = ''
   Wait-For 'released native keys' {
     try { [SpaceportAltGr]::RequireReleased(); [SpaceportAltGr]::RequireKeysReleased($keys); $true }
-    catch { $false }
+    catch {
+      $message = $_.Exception.Message
+      if ($script:lastKeyError -cne $message) { [Console]::WriteLine("WINDOWS_KEYS held=$message"); $script:lastKeyError = $message }
+      $false
+    }
   }
 }
 if ($ObserveState) {
@@ -86,8 +129,25 @@ function Font-Width {
   if ($FontMarker -notmatch '^SP_FONT_[a-f0-9]{32}$') { throw 'Font marker is not a private nonce' }
   $document = Document
   $pattern = $document.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern)
-  $range = $pattern.DocumentRange.FindText($FontMarker, $false, $false)
-  if ($null -eq $range -or $range.GetText(-1) -cne $FontMarker) { return 0 }
+  # Pinned AccessKit implements line/character movement, but not FindText.
+  $range = $pattern.DocumentRange.Clone()
+  $origin = $range.Clone()
+  $start = [System.Windows.Automation.Text.TextPatternRangeEndpoint]::Start
+  $end = [System.Windows.Automation.Text.TextPatternRangeEndpoint]::End
+  $line = [System.Windows.Automation.Text.TextUnit]::Line
+  $character = [System.Windows.Automation.Text.TextUnit]::Character
+  $range.MoveEndpointByRange($end, $origin, $start)
+  $range.ExpandToEnclosingUnit($line)
+  $found = $false
+  for ($index = 0; $index -lt 512; $index++) {
+    if ($range.GetText(4096).TrimEnd() -ceq $FontMarker) { $found = $true; break }
+    if ($range.Move($line, 1) -ne 1) { break }
+  }
+  if (-not $found) { return 0 }
+  $origin = $range.Clone()
+  $range.MoveEndpointByRange($end, $origin, $start)
+  if ($range.MoveEndpointByUnit($end, $character, $FontMarker.Length) -ne $FontMarker.Length -or
+      $range.GetText(4096) -cne $FontMarker) { throw 'Native marker range does not cover its exact authored text' }
   $rectangles = $range.GetBoundingRectangles()
   if ($rectangles.Length -ne 1) { return 0 }
   $rect = $rectangles[0]
@@ -104,7 +164,7 @@ if ($WaitPrompt) {
     $pattern.DocumentRange.GetText(-1).TrimEnd().EndsWith('>')
   }
   [Console]::WriteLine('WINDOWS_KEYS shell_prompt=true input=false')
-  exit 0
+  if ($PrepareInput -eq '') { exit 0 }
 }
 if ($Measure) {
   $script:width = 0
@@ -117,6 +177,21 @@ $document = Document
 $document.SetFocus()
 Wait-For 'terminal focus before native input' { $document.Current.HasKeyboardFocus }
 Require-Root
+if ($PrepareInput -ne '') {
+  if ($PrepareInput.Length -gt 4096 -or $PrepareInput.Contains("`r") -or $PrepareInput.Contains("`n")) {
+    throw 'Pane preparation requires one bounded trusted command'
+  }
+  $pattern = $document.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern)
+  $document.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($PrepareInput)
+  Wait-For 'prepared command echo through the actual GUI input route' {
+    Require-Root
+    $pattern.DocumentRange.GetText(32768).Replace("`r", '').Replace("`n", '').Contains($PrepareInput)
+  }
+  Require-Root
+  [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+  [Console]::WriteLine('WINDOWS_KEYS pane_preparation=true actual_gui_input=true')
+  exit 0
+}
 $beforeHandles = @($windows | ForEach-Object { [IntPtr]$_.Current.NativeWindowHandle })
 $stripsBefore = @(Named $root ([System.Windows.Automation.ControlType]::Tab) 'Tabs').Count
 $paletteName = 'Search workspaces, commands, agents, and projects...'
@@ -138,6 +213,7 @@ $scope = $null
 $passed = $false
 try {
   $scope = [SpaceportAltGr]::Begin($handle, [uint32]$ProcessId, $DeadlineEpochMs)
+  [Console]::WriteLine("WINDOWS_KEYS stage=layout_ready id=$CaseId")
   if ($case.outcome.kind -eq 'resume') {
     $scope.Chord([int[]]@(162,160,80))
     Wait-For 'palette preparation' { @(Named $root ([System.Windows.Automation.ControlType]::Edit) $paletteName).Count -eq 1 }
@@ -149,10 +225,12 @@ try {
     $scope.Chord([int[]]@(27))
     Wait-For 'closed palette before resume' { @(Named $root ([System.Windows.Automation.ControlType]::Edit) $paletteName).Count -eq 0 }
   }
-  foreach ($chord in $case.chords) {
+  foreach ($chord in $nativeChords) {
     Require-Root
+    [Console]::WriteLine("WINDOWS_KEYS stage=chord_begin id=$CaseId keys=$($chord -join ',')")
     Wait-Keys ([int[]]@($chord))
     $scope.Chord([int[]]@($chord))
+    [Console]::WriteLine("WINDOWS_KEYS stage=chord_sent id=$CaseId")
   }
   switch ($case.outcome.kind) {
     'keybinds' {
@@ -234,7 +312,11 @@ try {
   Wait-Keys $allKeys
   $passed = $true
 } finally {
-  if ($null -ne $scope) { $scope.Dispose() }
+  if ($null -ne $scope) {
+    [Console]::WriteLine("WINDOWS_KEYS stage=cleanup_begin id=$CaseId")
+    $scope.Dispose()
+    [Console]::WriteLine("WINDOWS_KEYS stage=cleanup_complete id=$CaseId")
+  }
 }
 if (-not $passed) { throw 'Native case did not complete' }
 if ($case.outcome.kind -notin @('settings','cycle_windows')) {

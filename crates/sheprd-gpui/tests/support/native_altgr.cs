@@ -140,7 +140,10 @@ public sealed class SpaceportAltGr : IDisposable {
       scope.watchdog = new Timer(delegate {
         lock (scope.pressed) {
           if (scope.disposed) return;
-          try { scope.Dispose(); } finally { Environment.Exit(73); }
+          Console.WriteLine("ALTGR watchdog_expired=true tracked_keys=" + scope.pressed.Count);
+          try { scope.Dispose(); }
+          catch (Exception error) { Console.WriteLine("ALTGR watchdog_cleanup_failure=" + error.Message); }
+          finally { Environment.Exit(73); }
         }
       }, null, (int)remaining, Timeout.Infinite);
       return scope;
@@ -172,7 +175,7 @@ public sealed class SpaceportAltGr : IDisposable {
   public static void RequireKeysReleased(int[] keys) {
     foreach (int key in keys) {
       if (key < 1 || key > 255) throw new ArgumentException("Native virtual key exceeds fixture bounds");
-      if ((GetAsyncKeyState(key) & 0x8000) != 0) throw new InvalidOperationException("A fixture key is already held");
+      if ((GetAsyncKeyState(key) & 0x8000) != 0) throw new InvalidOperationException("A fixture key is already held: VK_" + key.ToString("X2"));
     }
   }
   static void Send(Pressed key, bool up) {

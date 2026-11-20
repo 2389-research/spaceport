@@ -51,6 +51,7 @@ jobs:
       - name: Test the fixed input contract
         run: |
           cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows non_us::matrix::tests:: -- --nocapture --test-threads=1
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File crates/sheprd-gpui/tests/support/uia_shortcut_matrix.ps1 -CaseId console-attachment -ValidateContract
       - name: Qualify the real pane console and its keys
         run: |
           cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows non_us::matrix::console::native_pane_program_keeps_bare_function_and_control_page_keys -- --ignored --exact --nocapture --test-threads=1

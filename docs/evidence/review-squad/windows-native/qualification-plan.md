@@ -42,7 +42,7 @@ The JSON table supplies fixed case IDs, scan-code chords, and expected outcomes.
 Rust and PowerShell read that same table.
 The helper never runs commands taken from terminal output or logs.
 Native cases use `SendInput` scan codes under the verified Polish GUI-thread HKL.
-Only preparation uses the production control socket or semantic terminal input.
+Only preparation uses the production control socket or terminal accessibility insertion.
 
 Digit tests prepare nine real tabs, then start each case on a different tab.
 They compare ordered workspace positions with exact daemon IDs and native UIA selection.
@@ -54,8 +54,8 @@ Passive Herdr clients keep their own focus location.
 Fresh passive snapshots seed from the default updated by the GUI's API request.
 The tests therefore reopen read-only snapshots and do not compare their projection revisions.
 See the pinned [snapshot location](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/server/client_shell.rs#L34-L57),
-[connection seed](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/server/headless.rs#L1969-L2010),
-and [GUI request handling](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/server/headless/client_views.rs#L910-L957).
+[connection seed](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/server/headless.rs#L1865-L1908),
+and [GUI request handling](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/server/headless/client_views.rs#L865-L914).
 
 The pane producer checks its console handle before publishing a private nonce-bound READY file.
 An F8 sentinel must return from `Console.ReadKey(true)` before any disputed key runs.
@@ -102,14 +102,48 @@ The earlier scoped formatter skipped children and did not prove crate-root resol
 
 ## Verification boundary
 
-No new Rust, C#, PowerShell, console, or native keyboard test has run yet.
-Static checks cannot establish a green build or native qualification.
-The four Rust contract tests and all native tests remain pending in the exact-branch probe.
+The first [exact-branch probe](https://github.com/2389-research/spaceport/actions/runs/44710504007/job/136200677664)
+ran head `850f9ae40` and failed.
+Formatting, Clippy, and all four Rust contract tests passed.
+The extended Polish AltGr case and existing direct chrome case passed natively.
+The console fixture never observed its attachment READY receipt.
+Three matrix tests reached the layout watchdog's exit 73.
+The digit test missed its first prepared-tab acknowledgement.
+Those failures do not qualify any of the new matrix outcomes.
+
+### First-run corrections
+
+The preparation client was passive, but attempted `ClientShellPaneInput` anyway.
+Pinned Herdr explicitly [rejects input from inactive shell clients](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/server/headless.rs#L2256-L2267).
+Preparation now inserts trusted text through the actual GUI's terminal ValuePattern.
+It acknowledges the real command echo before sending the preparation Enter key.
+Measured cases still use only fixed native scan-code chords.
+The fixture also acknowledges an actual shell prompt before issuing logical preparation commands.
+The first draft only observed the terminal node, which can exist before surface activation opens.
+
+The missing console receipt discarded the only visible program error during sandbox cleanup.
+Failure paths now capture bounded, read-only private terminal and log diagnostics before cleanup.
+The native helper now reports case, chord, wait, held-key, and cleanup stages.
+Each PowerShell observation phase times out before the independent cleanup watchdog.
+The exact cause of the three exit-73 failures remains unproven until that instrumented path runs.
+The watchdog and cleanup-failure assertions remain enabled.
+
+The font path also called `FindText`, which pinned AccessKit does not implement.
+It now finds the authored marker through supported line and character range movement.
+This matches the existing terminal fixture's range-based observation approach.
+The remote preflight also uses the real PowerShell JSON consumer and console-script parser.
+
+The correction has not compiled or run yet.
+Static checks cannot establish that these failures are fixed.
+Scoped Rust formatting, whitespace checks, sorted checks, file-size checks,
+`actionlint`, and offline `zizmor` passed for this correction.
+An independent read-only review found no remaining material findings after checking preparation-error diagnostics.
+The reviewer confirmed the supported range APIs, preparation order, PowerShell scope, and cleanup deadlines.
 Doctor Biz keeps Mac foreground checks pending.
 Root holds local compiler and VM work while the profiling resource question remains unanswered.
 Local compiler-based red/green proof did not run; this does not waive any required qualification.
-PowerShell and C# syntax compilation remain pending on the Windows runner.
-The matrix qualifies the stock Polish programmer layout on Windows x64 only.
+The corrected PowerShell and C# compilation remain pending on the Windows runner.
+The intended matrix covers the stock Polish programmer layout on Windows x64 only.
 It does not qualify ARM64, every keyboard layout, or the whole original finding before execution.
 The Linux/GNOME observer and cases belong to the integrating owner in another worktree.
 Do not modify Herdr or substitute mock peers for keyboard qualification.

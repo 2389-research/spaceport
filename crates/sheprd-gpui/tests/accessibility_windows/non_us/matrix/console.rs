@@ -1,13 +1,12 @@
 // ABOUTME: Observes real pane-console input and native glyph geometry for Windows shortcuts.
 // ABOUTME: Uses trusted preparation commands before sending each measured scan-code case.
 use super::{
-    Case, Duration, Instant, Observer, Outcome, Running, cases, fixture, native, native_with_font,
-    same_scene, snapshot, window_state,
+    Case, Duration, Instant, Outcome, Running, cases, diagnostics, fixture, native,
+    native_with_font, same_scene, snapshot, window_state,
 };
-use sheprd_client::protocol::{ClientKeyCode, ClientKeyKind, ClientPaneInputEvent};
-use std::{collections::BTreeSet, fs, path::Path, thread};
+use std::{collections::BTreeSet, fs, thread};
 
-fn prepare_input(running: &mut Running, observer: &Observer, command: &str) {
+pub(super) fn prepare_input(running: &mut Running, command: Option<&str>) {
     let capture = running.sandbox.dir.join("shell-prompt.log");
     let mut probe = running.powershell(
         &running.sandbox.dir.join("uia_shortcut_matrix.ps1"),
@@ -25,36 +24,26 @@ fn prepare_input(running: &mut Running, observer: &Observer, command: &str) {
         &deadline,
         "-WaitPrompt",
     ]);
-    let output = running
-        .command_output(probe, &capture, Duration::from_secs(40))
-        .unwrap();
+    if let Some(command) = command {
+        probe.args(["-PrepareInput", command]);
+    }
+    let output = match running.command_output(probe, &capture, Duration::from_secs(40)) {
+        Ok(output) => output,
+        Err(error) => {
+            diagnostics(running, "trusted pane preparation");
+            panic!("trusted pane preparation failed: {error}");
+        }
+    };
     assert!(
         output.contains("WINDOWS_KEYS shell_prompt=true input=false"),
         "{output}"
     );
-    let before = &observer.latest;
-    observer
-        .client
-        .handle
-        .send_input(
-            &before.boot_id,
-            before.focused_pane_id.as_ref().unwrap(),
-            [
-                ClientPaneInputEvent::TextCommit(command.to_owned()),
-                ClientPaneInputEvent::Key {
-                    code: ClientKeyCode::Enter,
-                    generated_text: None,
-                    kind: ClientKeyKind::Press,
-                    modifiers: 0,
-                    physical_key_id: None,
-                    repeat_count: 1,
-                    shifted_codepoint: None,
-                    tracks_release: false,
-                    windows_record: None,
-                },
-            ],
-        )
-        .unwrap();
+    if command.is_some() {
+        assert!(
+            output.contains("WINDOWS_KEYS pane_preparation=true actual_gui_input=true"),
+            "{output}"
+        );
+    }
 }
 
 fn quote(text: &str) -> String {
@@ -85,10 +74,14 @@ fn pane_state(running: &mut Running) -> serde_json::Value {
     serde_json::from_str(output.lines().find(|line| line.starts_with('{')).unwrap()).unwrap()
 }
 
-fn receipt(path: &Path, nonce: &str, id: &str) -> serde_json::Value {
+fn receipt(running: &mut Running, kind: &str, nonce: &str, id: &str) -> serde_json::Value {
+    let path = running
+        .sandbox
+        .dir
+        .join(format!("console-{kind}-{nonce}-{id}.json"));
     let deadline = Instant::now() + Duration::from_secs(40);
     loop {
-        match fs::read(path) {
+        match fs::read(&path) {
             Ok(bytes) => {
                 assert!(bytes.len() <= 4096, "console receipt exceeds bound");
                 let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
@@ -100,10 +93,10 @@ fn receipt(path: &Path, nonce: &str, id: &str) -> serde_json::Value {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(error) => panic!("private console receipt failed: {error}"),
         }
-        assert!(
-            Instant::now() < deadline,
-            "private console receipt did not arrive: {id}"
-        );
+        if Instant::now() >= deadline {
+            diagnostics(running, &format!("console {kind} receipt {id}"));
+            panic!("private console receipt did not arrive: {id}");
+        }
         thread::sleep(Duration::from_millis(20));
     }
 }
@@ -113,7 +106,6 @@ fn receipt(path: &Path, nonce: &str, id: &str) -> serde_json::Value {
 fn native_pane_program_keeps_bare_function_and_control_page_keys() {
     let cases = cases();
     let mut running = fixture();
-    let observer = Observer::attach(&running);
     let before = snapshot(&running);
     let before_windows = window_state(&mut running);
     let before_ui = pane_state(&mut running);
@@ -123,26 +115,18 @@ fn native_pane_program_keeps_bare_function_and_control_page_keys() {
     let script = running.sandbox.dir.join("console_shortcuts.ps1");
     prepare_input(
         &mut running,
-        &observer,
-        &format!(
+        Some(&format!(
             "& {} -Nonce {}",
             quote(script.to_str().unwrap()),
             quote(&nonce)
-        ),
+        )),
     );
     let mut producer = None;
     for case in cases
         .iter()
         .filter(|case| matches!(case.outcome, Outcome::PaneKey { .. }))
     {
-        let ready = receipt(
-            &running
-                .sandbox
-                .dir
-                .join(format!("console-ready-{nonce}-{}.json", case.id)),
-            &nonce,
-            &case.id,
-        );
+        let ready = receipt(&mut running, "ready", &nonce, &case.id);
         let actual = ready["producer"].as_u64().unwrap();
         assert_ne!(actual, u64::from(running.gui.as_ref().unwrap().id()));
         if let Some(expected) = producer {
@@ -152,14 +136,7 @@ fn native_pane_program_keeps_bare_function_and_control_page_keys() {
         }
         // The sentinel must return from ReadKey before any disputed pane key is sent.
         native(&mut running, case);
-        let received = receipt(
-            &running
-                .sandbox
-                .dir
-                .join(format!("console-result-{nonce}-{}.json", case.id)),
-            &nonce,
-            &case.id,
-        );
+        let received = receipt(&mut running, "result", &nonce, &case.id);
         assert_eq!(received["producer"].as_u64(), Some(actual));
         let Outcome::PaneKey { key, modifiers } = &case.outcome else {
             unreachable!()
@@ -190,13 +167,11 @@ fn native_pane_program_keeps_bare_function_and_control_page_keys() {
 }
 
 pub(super) fn fonts(running: &mut Running, cases: &[Case]) {
-    let observer = Observer::attach(running);
     let nonce = uuid::Uuid::new_v4().simple().to_string();
     let marker = format!("SP_FONT_{nonce}");
     prepare_input(
         running,
-        &observer,
-        &format!("Write-Output ('SP_FONT_' + {})", quote(&nonce)),
+        Some(&format!("Write-Output ('SP_FONT_' + {})", quote(&nonce))),
     );
     let reset = cases
         .iter()

@@ -3,9 +3,7 @@
 use super::{Duration, Running, identities, snapshot};
 use crate::GuiTarget;
 use serde::Deserialize;
-use sheprd_client::{
-    Client, ClientEvent, ConnectOptions, ConnectTarget, protocol::ClientShellSnapshot,
-};
+use sheprd_client::protocol::ClientShellSnapshot;
 use std::{collections::BTreeSet, fs, sync::Arc, thread, time::Instant};
 
 #[path = "matrix/console.rs"]
@@ -58,38 +56,19 @@ fn cases() -> Vec<Case> {
 }
 
 struct Observer {
-    client: Client,
     latest: Arc<ClientShellSnapshot>,
 }
 
 impl Observer {
     fn attach(running: &Running) -> Self {
-        let client = sheprd_client::connect_with_surface_active(
-            ConnectTarget::Socket(running.sandbox.socket()),
-            ConnectOptions::default(),
-            false,
-        )
-        .unwrap();
-        let deadline = Instant::now() + Duration::from_secs(10);
-        let latest = loop {
-            match client
-                .events
-                .recv_timeout(deadline.saturating_duration_since(Instant::now()))
-                .unwrap()
-            {
-                ClientEvent::Snapshot(snapshot) => break snapshot,
-                ClientEvent::Disconnected { reason, .. } => {
-                    panic!("private observer disconnected: {reason}")
-                }
-                _ => {}
-            }
-        };
-        Self { client, latest }
+        Self {
+            latest: snapshot(running),
+        }
     }
 
     fn wait(
         &mut self,
-        running: &Running,
+        running: &mut Running,
         label: &str,
         accept: impl Fn(&ClientShellSnapshot) -> bool,
     ) -> Arc<ClientShellSnapshot> {
@@ -102,10 +81,14 @@ impl Observer {
             if accept(&self.latest) {
                 return self.latest.clone();
             }
-            assert!(
-                Instant::now() < deadline,
-                "{label}: acknowledgement missing"
-            );
+            if Instant::now() >= deadline {
+                diagnostics(running, label);
+                panic!(
+                    "{label}: acknowledgement missing; tabs={} panes={}",
+                    self.latest.tabs.len(),
+                    self.latest.panes.len()
+                );
+            }
             thread::sleep(Duration::from_millis(20));
         }
     }
@@ -201,7 +184,34 @@ fn fixture() -> Running {
         tree.contains("Document 'Terminal'") && tree.contains("TabItem '1'")
     });
     running.read("{ESC}");
+    console::prepare_input(&mut running, None);
     running
+}
+
+fn diagnostics(running: &mut Running, label: &str) {
+    use std::io::Read as _;
+    eprintln!("WINDOWS_KEYS failure_stage={label}");
+    let capture = running.sandbox.dir.join("shortcut-diagnostic.log");
+    let mut command = running.powershell(
+        &running.sandbox.dir.join("uia_shortcut_matrix.ps1"),
+        "shortcut-diagnostic.log",
+    );
+    command.args(["-CaseId", "console-attachment", "-Diagnostic"]);
+    match running.command_output(command, &capture, Duration::from_secs(5)) {
+        Ok(output) => eprintln!("{output}"),
+        Err(error) => eprintln!("WINDOWS_KEYS diagnostic_failure={error}"),
+    }
+    for log in ["gui.log", "daemon.log"] {
+        if let Ok(file) = fs::File::open(running.sandbox.dir.join(log)) {
+            let mut bytes = Vec::new();
+            if file.take(16_384).read_to_end(&mut bytes).is_ok() {
+                eprintln!(
+                    "WINDOWS_KEYS private_log={log}\n{}",
+                    String::from_utf8_lossy(&bytes)
+                );
+            }
+        }
+    }
 }
 
 fn native(running: &mut Running, case: &Case) {
@@ -250,7 +260,13 @@ fn native_with_font(
     if measure {
         command.arg("-Measure");
     }
-    let output = running.command_output(command, &capture, limit).unwrap();
+    let output = match running.command_output(command, &capture, limit) {
+        Ok(output) => output,
+        Err(error) => {
+            diagnostics(running, &format!("native helper {}", case.id));
+            panic!("native helper failed for {}: {error}", case.id);
+        }
+    };
     if !measure {
         assert!(output.contains(&format!("WINDOWS_KEYS native PASS id={} klid=00000415 keys_released=true layouts_restored=true", case.id)), "{output}");
         eprintln!("{output}");
@@ -349,7 +365,7 @@ fn native_shifted_digits_select_exact_positional_tab_ids() {
             .clone();
         assert_ne!(before.focused_tab_id.as_ref(), Some(&target));
         native(&mut running, case);
-        let after = observer.wait(&running, "native positional tab focus", |snapshot| {
+        let after = observer.wait(&mut running, "native positional tab focus", |snapshot| {
             snapshot.focused_tab_id.as_ref() == Some(&target)
         });
         same_scene(&before, &after);
@@ -375,13 +391,13 @@ fn native_punctuation_reaches_history_panes_popups_groups_and_windows() {
     let before = observer.focus_tab(&mut running, 3);
     let last = before.focused_pane_id.clone().unwrap();
     native(&mut running, find(Outcome::Back));
-    let back = observer.wait(&running, "native back history", |snapshot| {
+    let back = observer.wait(&mut running, "native back history", |snapshot| {
         snapshot.focused_pane_id.as_ref() == Some(&middle)
     });
     same_scene(&before, &back);
     selected_tab(&mut running, &back);
     native(&mut running, find(Outcome::Forward));
-    let forward = observer.wait(&running, "native forward history", |snapshot| {
+    let forward = observer.wait(&mut running, "native forward history", |snapshot| {
         snapshot.focused_pane_id.as_ref() == Some(&last)
     });
     same_scene(&before, &forward);
@@ -409,7 +425,7 @@ fn native_punctuation_reaches_history_panes_popups_groups_and_windows() {
         };
         let target = panes[(current + offset) % panes.len()].clone();
         native(&mut running, find(outcome));
-        let after = observer.wait(&running, "native pane cycle", |snapshot| {
+        let after = observer.wait(&mut running, "native pane cycle", |snapshot| {
             snapshot.focused_pane_id.as_ref() == Some(&target)
         });
         same_scene(&before, &after);
@@ -497,7 +513,7 @@ fn native_retained_arrow_defaults_focus_exact_adjacent_panes() {
             &mut running,
             cases.iter().find(|case| case.outcome == outcome).unwrap(),
         );
-        let after = observer.wait(&running, "native horizontal pane focus", |snapshot| {
+        let after = observer.wait(&mut running, "native horizontal pane focus", |snapshot| {
             snapshot.focused_pane_id.as_ref() == Some(&target)
         });
         same_scene(&before, &after);
@@ -513,7 +529,7 @@ fn native_retained_arrow_defaults_focus_exact_adjacent_panes() {
             &mut running,
             cases.iter().find(|case| case.outcome == outcome).unwrap(),
         );
-        let after = observer.wait(&running, "native vertical pane focus", |snapshot| {
+        let after = observer.wait(&mut running, "native vertical pane focus", |snapshot| {
             snapshot.focused_pane_id.as_ref() == Some(&target)
         });
         same_scene(&before, &after);
@@ -560,13 +576,13 @@ fn native_revised_defaults_change_their_actual_targets() {
         .tab_id
         .clone();
     native(&mut running, find(Outcome::NextTab));
-    let after = observer.wait(&running, "native next tab", |snapshot| {
+    let after = observer.wait(&mut running, "native next tab", |snapshot| {
         snapshot.focused_tab_id.as_ref() == Some(&second)
     });
     same_scene(&first, &after);
     selected_tab(&mut running, &after);
     native(&mut running, find(Outcome::PreviousTab));
-    let after = observer.wait(&running, "native previous tab", |snapshot| {
+    let after = observer.wait(&mut running, "native previous tab", |snapshot| {
         snapshot.focused_tab_id == first.focused_tab_id
     });
     same_scene(&first, &after);
