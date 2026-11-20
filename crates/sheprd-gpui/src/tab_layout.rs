@@ -197,14 +197,21 @@ impl TabContext<'_> {
         let Some(ring) = self.ring else {
             return control;
         };
+        let translucent = self.fill.translucent();
         control.tab_index(0).focus_visible(move |style| {
-            style.shadow(vec![BoxShadow {
-                color: rgb(ring).into(),
+            let shadow = |color, spread| BoxShadow {
+                color: rgb(color).into(),
                 offset: point(px(0.), px(0.)),
                 blur_radius: px(0.),
-                spread_radius: px(2.),
+                spread_radius: px(spread),
                 inset: true,
-            }])
+            };
+            style.shadow(if translucent {
+                // Image composition must not change the indicator's own colors.
+                vec![shadow(0x000000, 4.), shadow(0xffffff, 2.)]
+            } else {
+                vec![shadow(ring, 2.)]
+            })
         })
     }
 }

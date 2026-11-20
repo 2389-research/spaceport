@@ -1,0 +1,178 @@
+{
+  "source": "1679d74f08ba8a68ce19356f05ac23e57d63e5f5",
+  "run": 44663710320,
+  "job": 136048031195,
+  "url": "https://github.com/2389-research/spaceport/actions/runs/44663710320/job/136048031195",
+  "native_capture_result": "passed: all four owned native pairs, unchanged configuration and pane identities",
+  "contrast_qualified": false,
+  "frames": [
+    {
+      "case": "dark-opaque",
+      "phase": "unfocused",
+      "file": "dark-opaque-unfocused-1679d74f0.png",
+      "bytes": 374,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "286238d063831c4bf70dd77ced3085042b755255edfef984c8ae58d1bc61ff86"
+    },
+    {
+      "case": "dark-opaque",
+      "phase": "focused",
+      "file": "dark-opaque-focused-1679d74f0.png",
+      "bytes": 377,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "f445741372f6feebe87443c0ca37632462b22b39be55b58c444c82a5ec5e31e4"
+    },
+    {
+      "case": "dark-image",
+      "phase": "unfocused",
+      "file": "dark-image-unfocused-1679d74f0.png",
+      "bytes": 526,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "46020a044e5de78274374c12b13423f15fca89527eb852d8a2d1cbde092c4d3a"
+    },
+    {
+      "case": "dark-image",
+      "phase": "focused",
+      "file": "dark-image-focused-1679d74f0.png",
+      "bytes": 500,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "5cd8479d8eb2287be48fe6239057252cb425c54868d0698a80b1eb4e6cbf9842"
+    },
+    {
+      "case": "light-opaque",
+      "phase": "unfocused",
+      "file": "light-opaque-unfocused-1679d74f0.png",
+      "bytes": 345,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "8736ec5e113d8493ad06d603c63748b3eeb11212f0ac503c5dd935d869c84881"
+    },
+    {
+      "case": "light-opaque",
+      "phase": "focused",
+      "file": "light-opaque-focused-1679d74f0.png",
+      "bytes": 349,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "f0be7da0020835b8e442eb405697adfcbe9a90aded27ba5d8b5623d4e4216ab9"
+    },
+    {
+      "case": "light-image",
+      "phase": "unfocused",
+      "file": "light-image-unfocused-1679d74f0.png",
+      "bytes": 489,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "3560ef4b977b878e13fb0877b2b3f06993cb52e1db6c3b1745bd13ae025f4d50"
+    },
+    {
+      "case": "light-image",
+      "phase": "focused",
+      "file": "light-image-focused-1679d74f0.png",
+      "bytes": 471,
+      "dimensions": [
+        64,
+        34
+      ],
+      "sha256": "10f49c8628ce65218e44dc1fd3512f20f096bcb832900a9109291be56e54d120"
+    }
+  ],
+  "measurements": [
+    {
+      "case": "dark-opaque",
+      "changed_border_pixels": 342,
+      "minimum_ratio": 3.0039583893062654,
+      "maximum_ratio": 3.0039583893062654,
+      "target_ratio": 3,
+      "passes": true,
+      "center_top_before": [
+        81,
+        78,
+        94
+      ],
+      "center_top_after": [
+        187,
+        145,
+        179
+      ]
+    },
+    {
+      "case": "dark-image",
+      "changed_border_pixels": 342,
+      "minimum_ratio": 3.0949883364996666,
+      "maximum_ratio": 3.1939487634510937,
+      "target_ratio": 3,
+      "passes": true,
+      "center_top_before": [
+        76,
+        77,
+        90
+      ],
+      "center_top_after": [
+        187,
+        145,
+        179
+      ]
+    },
+    {
+      "case": "light-opaque",
+      "changed_border_pixels": 342,
+      "minimum_ratio": 3.001127682993129,
+      "maximum_ratio": 3.001127682993129,
+      "target_ratio": 3,
+      "passes": true,
+      "center_top_before": [
+        230,
+        206,
+        230
+      ],
+      "center_top_after": [
+        205,
+        57,
+        172
+      ]
+    },
+    {
+      "case": "light-image",
+      "changed_border_pixels": 342,
+      "minimum_ratio": 2.8514863157752215,
+      "maximum_ratio": 2.906686085952195,
+      "target_ratio": 3,
+      "passes": false,
+      "center_top_before": [
+        218,
+        205,
+        220
+      ],
+      "center_top_after": [
+        205,
+        57,
+        172
+      ]
+    }
+  ],
+  "method": "Decode each original CI PNG. Compare RGB at every changed pixel in the two-physical-pixel border. Use the WCAG sRGB relative-luminance ratio. View all eight actual crops.",
+  "limits": [
+    "Classic layout, Nord and Catppuccin Latte, opaque and private-image opacity 0.75 only.",
+    "The light image-backed case fails the target; no tab contrast completion is claimed.",
+    "Core resize fails separately after its old output marker disappears; all 25 non-Core UIA cases pass."
+  ]
+}
