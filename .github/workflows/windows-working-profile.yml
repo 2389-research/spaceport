@@ -1,0 +1,47 @@
+# ABOUTME: Checks native sampling prerequisites on a disposable Windows profile branch.
+# ABOUTME: Lists tools and profiles without recording, installing, or changing system state.
+name: Windows working profile probe
+
+on:
+  push:
+    branches: [fix/review-squad-windows-profile]
+
+permissions: {}
+
+concurrency:
+  group: windows-working-profile-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tools:
+    if: >-
+      github.repository == '2389-research/spaceport' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/fix/review-squad-windows-profile'
+    runs-on: windows-2025
+    timeout-minutes: 3
+    steps:
+      - name: Inspect installed sampling tools and built-in profiles
+        timeout-minutes: 1
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tools = @(foreach ($name in @('wpr.exe', 'xperf.exe', 'WPAExporter.exe', 'tracerpt.exe')) {
+            $command = Get-Command $name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+            [ordered]@{
+              name = $name
+              available_on_path = $null -ne $command
+              path = if ($null -ne $command) { $command.Source } else { $null }
+              version = if ($null -ne $command) { $command.FileVersionInfo.FileVersion } else { $null }
+            }
+          })
+          [ordered]@{
+            stage = 'sampling_tool_inventory'
+            os = Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber
+            tools = $tools
+            limit = 'No GUI, trace, or performance measurement ran.'
+          } | ConvertTo-Json -Depth 4 -Compress | Write-Output
+          $wpr = Get-Command wpr.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($null -eq $wpr) { throw 'Windows Performance Recorder is not available on PATH.' }
+          & $wpr.Source -profiles
+          if ($LASTEXITCODE -ne 0) { throw "WPR profile inventory failed with exit $LASTEXITCODE" }

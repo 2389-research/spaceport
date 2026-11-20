@@ -251,3 +251,34 @@ The latest test harness passes 15 ordinary checks; its real native presentation 
 The final ordinary release test rerun passes fifteen tests with no failures and one native opt-in ignored.
 The log is `/tmp/spaceport-9s44-profile-stop-tests.log`.
 Canonical lint and quick checks pass; actual foreground presentation and CPU measurement remain pending.
+
+## Windows adapter scope, November 20
+
+Kata gg9v requires a release profile before redraw changes.
+It adds no live-provider, model, or credential requirement.
+The controlled Working status above remains a valid first measurement through the real private Herdr API.
+Call it controlled Working status; do not claim execution of an AI agent.
+The settled TUI workload cannot close Core, chat, continuous output, or every mirrored path by itself.
+
+Doctor Biz keeps Mac and audible-speech checks pending.
+Use a disposable windows-2025 runner for this platform adapter.
+Keep the normal app, existing Sandbox, checksum-pinned daemon, authoritative group readiness, and exact owned-child cleanup.
+Reuse the shared observation schema and marker checks instead of duplicating their policy.
+Keep native Windows activation facts distinct from Mac-only AppKit facts.
+Use existing interprocess support and private endpoint policies for the Windows observer.
+Keep observation off the measured interval and blocking I/O off the UI thread.
+
+First inspect installed sampling tools and built-in WPR profiles without starting a trace.
+The branch workflow is windows-working-profile.yml.
+Actual tool availability, permissions, symbols, and trace extraction remain unqualified until observed.
+Retain exact source, release executable identity, raw CPU endpoints, wall interval, and actual frame observations.
+Do not estimate measured CPU from frame count or a nominal frame cost.
+Keep raw captures private until their scope and contents have been inspected.
+
+- [ ] Qualify the runner's actual sampling tools and profile support.
+- [ ] Define Windows transport, native observation, and measurement edges while preserving the Mac path.
+- [ ] Add tests first for real endpoint bounds, native readiness, and CPU-clock semantics.
+- [ ] Run the normal release app with idle, controlled Working, and final idle phases.
+- [ ] Add bounded real output before claiming patch or frame-copy coverage.
+- [ ] Inspect native captures, actual samples, and CPU/frame data before changing redraw behavior.
+- [ ] Verify the original Core, mirror, chat, copying, and polling clauses separately before closing gg9v.
