@@ -54,6 +54,8 @@ struct Sample {
 #[path = "before_sample.rs"]
 mod before_sample;
 #[cfg(test)]
+mod configuration;
+#[cfg(test)]
 #[path = "activation.rs"]
 mod tests;
 
@@ -79,7 +81,7 @@ impl Drop for Fixture {
 }
 
 impl Fixture {
-    fn prepare() -> Result<Self> {
+    fn prepare(core_enabled: bool) -> Result<Self> {
         let fixture = Self {
             sandbox: Some(Sandbox::new()),
             gui: None,
@@ -100,6 +102,12 @@ impl Fixture {
             dir.join("config/spaceport/view.toml"),
             "[ui]\nprompt_new_tab_name=false\nprompt_new_workspace_name=false\n",
         )?;
+        if core_enabled {
+            fs::write(
+                dir.join("config/spaceport/config.local.toml"),
+                "language = \"en-US\"\nherdr_core_enabled = true\n",
+            )?;
+        }
         Ok(fixture)
     }
 
@@ -391,7 +399,7 @@ fn check_environment() -> Result<()> {
 
 pub(crate) fn run() -> Result<()> {
     check_environment()?;
-    let mut fixture = Fixture::prepare()?;
+    let mut fixture = Fixture::prepare(false)?;
     let dir = fixture.sandbox()?.dir.clone();
     let targets = fixture.start_tui()?;
     fixture.launch_gui(|_| {})?;

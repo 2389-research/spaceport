@@ -798,3 +798,24 @@ Source observations below refer to selected candidate `2c86f1971`, not newer mai
 | Window polling | `window_effects` retains its 16 ms timer before `tick`. | Attribute idle and Working wakeup costs before changing scheduling policy. |
 
 These source observations identify work to measure; they do not establish CPU shares or new regressions.
+
+### First mixed native evidence and configuration defect
+
+Native run `44821546335`, job `136583385750`, passed the real mixed case, all nine exports, and encrypted retention.
+Artifact `14673097102` passed archive/ciphertext hashes, private decryption, ZIP integrity, and actual executable/PDB identity checks.
+All three trace statistics report zero lost events and buffers, both total and per trace.
+All six endpoint checks preserve owned foreground HWND 196992, PID 1836, and UI thread 8176.
+Captures 6, 7, 11, and 16 visibly show TUI output and the unique Core marker.
+Capture 12 matches 11; capture 17 matches 16 by exact hashes.
+Core cleanup acknowledges private Stop and successful owned-serve exit; this is not an independent holder-liveness audit.
+
+The capture audit found a transient configuration diagnostic in capture 6, absent from capture 7.
+Private structured logs confirm `MigrationConflict` and a startup listening-port scan.
+The fixture writes common settings into personal `config.toml`, then Core writes different settings into `config.local.toml`.
+The real loader prefers the latter and correctly refuses conflicting migration.
+Thus the hard-coded report field `listening_port_poller_enabled: false` supplies no verified runtime fact for this run.
+The process clocks remain observations; first-idle configuration activity and short unequal intervals prohibit comparison claims.
+
+The new ordinary configuration tests use real `Config::prepare_files` and `Config::load_fixture` consumers.
+Their initial producer retains the conflicting file layout; TUI should pass and mixed should fail with `MigrationConflict`.
+No daemon, window, or recording enters those tests.

@@ -230,7 +230,7 @@ pub(crate) fn run() -> Result<()> {
     check_environment()?;
     let binary = runtime::binary();
     let target = runtime::Target::new();
-    let tui = Fixture::prepare()?;
+    let tui = Fixture::prepare(true)?;
     let directory = tui.sandbox()?.dir.clone();
     let mut fixture = MixedFixture {
         tui,
@@ -266,10 +266,6 @@ pub(crate) fn run() -> Result<()> {
             "generation":fixture.api()?.hello().generation,"version":fixture.api()?.hello().version,
             "state_root":core_root,"frame_probe_enabled":false,
         }))?,
-    )?;
-    fs::write(
-        directory.join("config/spaceport/config.local.toml"),
-        "language = \"en-US\"\nherdr_core_enabled = true\n",
     )?;
     let targets = fixture.tui.start_tui()?;
     fixture.tui.launch_gui(|command| target.apply(command))?;
