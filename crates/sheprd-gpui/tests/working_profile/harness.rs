@@ -95,19 +95,25 @@ impl Fixture {
         );
         fs::create_dir_all(dir.join("config/spaceport"))?;
         fs::write(
-            dir.join("config/spaceport/config.toml"),
-            "show_listening_ports = false\n[agent_skill]\ninstall=\"off\"\n",
+            dir.join("config/spaceport/config.local.toml"),
+            format!(
+                "language = \"en-US\"\nherdr_core_enabled = {core_enabled}\nshow_listening_ports = false\n[agent_skill]\ninstall=\"off\"\n"
+            ),
         )?;
         fs::write(
             dir.join("config/spaceport/view.toml"),
             "[ui]\nprompt_new_tab_name=false\nprompt_new_workspace_name=false\n",
         )?;
-        if core_enabled {
-            fs::write(
-                dir.join("config/spaceport/config.local.toml"),
-                "language = \"en-US\"\nherdr_core_enabled = true\n",
-            )?;
-        }
+        let path = dir.join("config/spaceport/config.toml");
+        let (_lock, _) = sheprd_settings::Config::prepare_files(&path)?;
+        let config =
+            sheprd_settings::Config::load_fixture(&path, &dir.join("config/spaceport/view.toml"))?;
+        ensure!(
+            !config.show_listening_ports
+                && config.agent_skill.install == sheprd_settings::SkillInstall::Off
+                && config.herdr_core_enabled == core_enabled,
+            "private profile settings did not preserve disabled ports/skill and Core={core_enabled}"
+        );
         Ok(fixture)
     }
 
@@ -297,7 +303,7 @@ impl Fixture {
             "sampling":details,"sample_interval_ms":interval_ms,"wall_seconds":wall.as_secs_f64(),"cpu_before_seconds":before.as_secs_f64(),
             "cpu_after_seconds":after.as_secs_f64(),"process_cpu_percent":percentage,"sample_path":path,
             "window_active_before":before_image.window_active,"window_active_after":after_image.window_active,
-            "listening_port_poller_enabled":false,
+            "listening_ports_configured":false,
             "foreground_qualified":foreground_qualified,"activation_scope":activation_scope,
             "before":before_image,"after":after_image});
         fs::write(
@@ -420,7 +426,8 @@ pub(crate) fn run() -> Result<()> {
         "generated_lines":peer::GENERATED_LINES,"generated_bytes":(0..peer::GENERATED_LINES).map(|line| format!("synthetic profile row {line:03}\n").len()).sum::<usize>() + report::MARKER.len() + 1,
         "generated_bytes_scope":"authored UTF-8 text payload with LF separators; Windows console transport/control bytes are not measured",
         "marker":report::MARKER,"workspace":targets.workspace,"boot":targets.boot,
-        "generated_pane":targets.pane,"listening_port_poller_enabled":false,
+        "generated_pane":targets.pane,"listening_ports_configured":false,
+        "configuration_scope":"private settings parsed before launch; no live poller-state probe",
         "cpu_scope":"all-thread process CPU; sample itself perturbs execution", "phases":phases}),
         )?,
     )?;

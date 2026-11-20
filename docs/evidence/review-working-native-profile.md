@@ -819,3 +819,15 @@ The process clocks remain observations; first-idle configuration activity and sh
 The new ordinary configuration tests use real `Config::prepare_files` and `Config::load_fixture` consumers.
 Their initial producer retains the conflicting file layout; TUI should pass and mixed should fail with `MigrationConflict`.
 No daemon, window, or recording enters those tests.
+
+At `3e303a633`, Mac job `136597882525` reached the expected configuration runtime RED.
+The TUI control passed; mixed preparation failed with the real migration-conflict diagnostic.
+The other 28 tests and all nine observer tests passed; scoped Clippy passed.
+Windows job `136597882520` reached the same intended runtime failure, with the TUI control passing.
+Its other 48 harness tests, eight observer tests, ten accessibility controls, inventory, and scoped Clippy passed.
+
+Preparation now writes one combined local override and prepares managed defaults through the real settings crate.
+It parses and validates the required ports, skill, and Core settings before any child starts.
+Report metadata now names configured settings and explicitly excludes a live poller-state claim.
+Remote GREEN and native configuration acceptance remain pending.
+Independent review found no material defect in lock lifetime, startup ordering, configuration scope, or test relevance.
