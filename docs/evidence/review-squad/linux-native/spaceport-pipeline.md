@@ -164,11 +164,13 @@ The separate native branch is `fix/review-squad-linux-native`.
 Source `5979a3a9d` remains the last whole-matrix success, with thirty-seven qualified cases.
 Source `a72266897` passes native focus preparation but fails measured Cycle Windows.
 Source `70395bd4d` passes those eight pane cases and confirms the platform activation call.
-The next checkpoint re-pins GPUI to 0.3.11 for its upstream activation-context correction.
+Source `16a928826` passes the complete forty-six-case native matrix with the corrected GPUI pin.
+Its receipt and this note await the next integration checkpoint; do not push documentation solely to rerun the probe.
 Do not publish a documentation-only checkpoint merely to start another native run.
 
-Run the unchanged native matrix with the corrected GPUI pin, then qualify the other configured platforms before integration.
-The separate Windows fixture correction is source `c9a585ae5`, with native run `44714614632` pending.
+Qualify the other configured platforms before integrating the shared GPUI change.
+Windows source `c9a585ae5` exposes the PowerShell case-table nesting defect before native input.
+The separate Windows correction is source `7e2459d67`; its next native probe remains pending.
 Settings deliberately adds a window and changes activation; the general stable-window guard needs a scoped outcome branch.
 Observe the actual Settings global handle rather than inferring its type from a window count.
 Keep any observation hook behind `integration-test` and inside `settings_window`, whose window type is private.
@@ -349,3 +351,14 @@ Locked workspace metadata resolves without compilation.
 Quick formatting, size, sorting, recipe, i18n, commit checks, receipt JSON, and whitespace checks pass.
 An independent read-only review verifies the published source, checksum, license, coordinated pins, and preserved dependency versions.
 The review finds no blocking issue; it does not replace any pending platform checks.
+
+Source `16a928826` now passes the [complete native run](https://github.com/2389-research/spaceport/actions/runs/44715081137).
+Ten shared contract tests, two receipt tests, and the exact native test pass.
+All forty-six compiled cases complete in the native test's 16.76 seconds.
+Cycle Windows activates the exact coherent target while preserving runtime members.
+Its owned second window closes normally before final Polish search succeeds.
+Key release, session closure, layout restoration, direct-child reaping, and daemon survival all pass.
+The [complete receipt](spaceport-complete-16a928826.json) preserves source limits and the failing 0.3.10 baseline.
+The test's input, deadlines, target guards, and observed success criteria remain unchanged across the pin correction.
+Windows, macOS, and full configured CI still need to qualify the shared framework update.
+Kata remains forty-nine closed and four open; the platform shortcut issue is not complete yet.
