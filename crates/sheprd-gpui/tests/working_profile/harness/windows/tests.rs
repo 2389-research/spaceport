@@ -27,6 +27,7 @@ fn windows_native_helper_rejects_an_invalid_window_without_stealing_focus() -> R
     };
     let observation = serde_json::from_value(json!({
         "request_id":1,"gui_pid":std::process::id(),"release":true,"window_id":1,
+        "reduce_motion":false,"mark_layer_render_calls":0,
         "window_active":true,"window_visible":true,"native_activation":"invalid real HWND control",
         "windows_hwnd":0,"workspace":null,"synthetic_working_panes":[],"groups":[]
     }))?;

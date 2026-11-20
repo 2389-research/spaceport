@@ -17,6 +17,7 @@ fn ready(working: bool) -> Result<(Observation, Targets)> {
     }).collect();
     let observation = serde_json::from_value(
         json!({"request_id":1,"gui_pid":1,"release":true,"window_id":1,
+        "reduce_motion":false,"mark_layer_render_calls":0,
         "window_active":true,"window_visible":true,"native_key":true,"app_active":true,"app_hidden":false,
         "native_activation":"synthetic before-sample contract fixture","workspace":targets.workspace,
         "synthetic_working_panes":if working { vec![targets.pane.clone()] } else { vec![] },"groups":groups}),

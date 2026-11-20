@@ -841,3 +841,16 @@ The native branch advanced normally to this exact source.
 Corrected-config native run `44829422916` is live; no new execution or sampling outcome is claimed yet.
 Inspect its retained settings, structured logs, captures, loss counters, and identities before accepting a new baseline.
 The selected source still has the 30 fps cap and retains the remaining original performance clauses above.
+
+### Motion policy and passive render observations
+
+The app honors Windows `UISettings::AnimationsEnabled` through its cached reduced-motion policy.
+Prior captures and reports did not record that decision or count mark-layer render calls.
+Identical Working endpoint images can alias an animation; they do not establish cadence or prove static rendering.
+
+The private observation schema now carries the cached policy and passive mark-layer render-call count.
+The counter observes existing renders without scheduling frames; it cannot prove physical display cadence.
+The ordinary counter test uses actual headless draws.
+The readiness test requires a Working sample to refuse reduced motion while permitting an idle control.
+The initial counter accessor returns zero and the eligibility guard is absent, so both tests should reach runtime RED.
+The corrected-config native run retains its frozen source and continues independently.

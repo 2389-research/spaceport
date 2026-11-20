@@ -134,6 +134,14 @@ pub(crate) struct MarkLayer {
 }
 
 impl MarkLayer {
+    #[cfg(any(
+        test,
+        all(feature = "integration-test", any(target_os = "macos", windows))
+    ))]
+    pub(crate) fn profile_render_count(&self) -> u64 {
+        0
+    }
+
     /// A layer for `window`, drawing the marks `hosts` reserve.
     pub(crate) fn new(window: &Window, hosts: Vec<EntityId>, cx: &mut App) -> Self {
         let marks = Rc::new(Marks {
@@ -549,6 +557,10 @@ impl Element for Layered {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "mark_layer/tests/profile.rs"]
+mod profile_tests;
 
 #[cfg(test)]
 mod tests {

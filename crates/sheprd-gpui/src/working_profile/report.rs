@@ -77,6 +77,8 @@ pub(crate) struct Observation {
     pub(crate) request_id: u64,
     pub(crate) gui_pid: u32,
     pub(crate) release: bool,
+    pub(crate) reduce_motion: bool,
+    pub(crate) mark_layer_render_calls: u64,
     pub(crate) window_id: u64,
     pub(crate) window_active: bool,
     pub(crate) window_visible: bool,

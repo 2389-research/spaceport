@@ -96,6 +96,8 @@ pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                         request_id: id,
                         gui_pid: std::process::id(),
                         release: !cfg!(debug_assertions),
+                        reduce_motion: crate::accessibility::policy::reduce_motion(),
+                        mark_layer_render_calls: view.mark_layer.read(cx).profile_render_count(),
                         window_id: window.window_handle().window_id().as_u64(),
                         window_active: window.is_window_active(),
                         window_visible: window.is_visible(),

@@ -20,6 +20,7 @@ pub(super) fn read_reply(reader: impl Read) -> Result<Reply> {
 fn reply_with_payload_size(size: usize) -> Result<Reply> {
     let mut reply: Reply = serde_json::from_value(json!({"kind":"observation","data":{
         "request_id":1,"gui_pid":1,"release":true,"window_id":1,
+        "reduce_motion":false,"mark_layer_render_calls":0,
         "window_active":true,"window_visible":true,"native_activation":"",
         "workspace":null,"synthetic_working_panes":[],"groups":[]
     }}))?;

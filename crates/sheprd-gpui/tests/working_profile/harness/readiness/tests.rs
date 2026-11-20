@@ -5,6 +5,8 @@ use crate::working_profile::report::{Core, Group};
 use anyhow::Context as _;
 use serde_json::{Value, json};
 
+mod motion;
+
 fn workload(targets: &Targets) -> Workload<'_> {
     Workload::Mixed {
         tui: targets,
@@ -24,6 +26,7 @@ fn ready(working: bool) -> Result<(Observation, Targets)> {
     };
     let observation = serde_json::from_value(json!({
         "request_id":1,"gui_pid":1,"release":true,"window_id":1,
+        "reduce_motion":false,"mark_layer_render_calls":0,
         "window_active":true,"window_visible":true,"native_key":true,
         "app_active":true,"app_hidden":false,"native_activation":"pure mixed readiness fixture",
         "workspace":targets.workspace,

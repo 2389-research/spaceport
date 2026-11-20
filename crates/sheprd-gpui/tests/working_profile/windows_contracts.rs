@@ -31,6 +31,7 @@ fn windows_cpu_ticks_refuse_invalid_or_overflowing_timespan_values() {
 fn windows_observation_does_not_invent_appkit_facts() -> Result<()> {
     let observation: report::Observation = serde_json::from_value(json!({
         "request_id":1,"gui_pid":42,"release":true,"window_id":1,
+        "reduce_motion":false,"mark_layer_render_calls":0,
         "window_active":true,"window_visible":true,
         "native_key":null,"app_active":null,"app_hidden":null,
         "native_activation":"Win32 HWND supplied by the real window",
