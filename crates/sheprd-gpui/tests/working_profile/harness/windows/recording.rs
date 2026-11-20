@@ -1,6 +1,6 @@
 // ABOUTME: Qualifies Windows recorder ownership before the fixture starts a CPU trace.
 // ABOUTME: Refuses existing or unclassified system sampling without stopping any session.
-use super::{Fixture, command_output, hide};
+use super::{Child, Command, File, Fixture, command_output, hide, wait_for_output};
 use anyhow::{Context as _, Result, ensure};
 use serde_json::json;
 use std::collections::HashSet;
@@ -38,16 +38,20 @@ pub(super) fn local_symbols() -> Result<&'static Path> {
     executable.parent().context("profile executable directory")
 }
 
-pub(super) struct Recording<'a> {
-    fixture: &'a Fixture,
+pub(super) struct Recording {
     authority: Option<String>,
-    name: String,
     path: PathBuf,
-    tools: Tools,
+    receipt: PathBuf,
+    stop: Command,
+    stdout: PathBuf,
 }
 
-impl<'a> Recording<'a> {
-    pub(super) fn start(fixture: &'a Fixture, name: &str) -> Result<Self> {
+impl Recording {
+    pub(super) fn path(&self) -> &Path {
+        &self.path
+    }
+
+    pub(super) fn start(fixture: &Fixture, name: &str) -> Result<Self> {
         local_symbols()?;
         let tools = fixture.recorder_available(name)?;
         let directory = &fixture.sandbox()?.dir;
@@ -63,6 +67,19 @@ impl<'a> Recording<'a> {
                 .to_string_lossy()
         );
         let receipt = directory.join(format!("{name}-recording.json"));
+        // Prepare both Stop logs before Start can create an owned trace.
+        let stdout = directory.join(format!("{name}-wpr-stop.txt"));
+        let mut stop = fixture
+            .sandbox()?
+            .command(&tools.wpr, format!("{name}-wpr-stop.stderr.log"));
+        hide(&mut stop);
+        stop.stdout(File::create(&stdout)?)
+            .arg("-stop")
+            .arg(&path)
+            .arg("Spaceport controlled Working status")
+            .arg("-skipPdbGen")
+            .arg("-instancename")
+            .arg(&instance);
         fs::write(
             &receipt,
             serde_json::to_vec_pretty(
@@ -87,11 +104,11 @@ impl<'a> Recording<'a> {
             "WPR Start was not acknowledged; never stop or cancel an unacknowledged instance",
         )?;
         let recording = Self {
-            fixture,
             authority: Some(instance.clone()),
-            name: name.into(),
             path,
-            tools,
+            receipt: receipt.clone(),
+            stop,
+            stdout,
         };
         // The guard already owns Stop if retaining this acknowledgement fails.
         fs::write(
@@ -104,43 +121,46 @@ impl<'a> Recording<'a> {
     }
 
     pub(super) fn stop(&mut self) -> Result<PathBuf> {
-        let directory = &self.fixture.sandbox()?.dir;
-        let receipt = directory.join(format!("{}-recording.json", self.name));
-        let fixture = self.fixture;
-        let tools = &self.tools;
-        let name = &self.name;
+        let receipt = &self.receipt;
         let path = &self.path;
+        let command = &mut self.stop;
+        let stdout = &self.stdout;
         submit_stop(
             &mut self.authority,
             |instance| {
                 fs::write(
-                    &receipt,
+                    receipt,
                     serde_json::to_vec_pretty(
-                        &json!({"instance":instance,"start":"acknowledged","stop":"submitted; outcome unknown until acknowledgement","raw_trace_private":true}),
+                        &json!({"instance":instance,"start":"acknowledged","stop":"prepared; helper not yet spawned","raw_trace_private":true}),
                     )?,
                 )?;
                 Ok(())
             },
-            |instance| {
-                let mut command = fixture
-                    .sandbox()?
-                    .command(&tools.wpr, format!("{name}-wpr-stop.stderr.log"));
-                hide(&mut command);
-                command
-                    .arg("-stop")
-                    .arg(path)
-                    .arg("Spaceport controlled Working status")
-                    .arg("-skipPdbGen")
-                    .arg("-instancename")
-                    .arg(instance);
-                command_output(command, &directory.join(format!("{name}-wpr-stop.txt")), Duration::from_secs(60))
+            |_| command.spawn().context("spawn prepared owned WPR Stop"),
+            |child, instance| {
+                let pid = child.id();
+                let submitted = (|| -> Result<()> {
+                    fs::write(
+                        receipt,
+                        serde_json::to_vec_pretty(
+                            &json!({"instance":instance,"start":"acknowledged","stop":"submitted; outcome unknown until acknowledgement","stop_helper_pid":pid,"raw_trace_private":true}),
+                        )?,
+                    )?;
+                    Ok(())
+                })();
+                if let Err(error) = &submitted {
+                    eprintln!("WORKING PROFILE Stop submission receipt failed: {error:#}");
+                }
+                // A failed receipt must never skip waiting for this exact child.
+                wait_for_output(child, stdout, Duration::from_secs(60), super::report::MAX_LINE)
                     .context("owned WPR Stop was not acknowledged; preserve partial trace and do not retry blindly")?;
                 fs::write(
-                    &receipt,
+                    receipt,
                     serde_json::to_vec_pretty(
-                        &json!({"instance":instance,"start":"acknowledged","stop":"acknowledged","raw_trace_private":true,"trace":path}),
+                        &json!({"instance":instance,"start":"acknowledged","stop":"acknowledged","stop_helper_pid":pid,"raw_trace_private":true,"trace":path}),
                     )?,
                 )?;
+                submitted.context("owned Stop completed but its submission receipt failed")?;
                 let length = fs::metadata(path)?.len();
                 ensure!(
                     length > 0 && length <= 512 * 1024 * 1024,
@@ -152,7 +172,7 @@ impl<'a> Recording<'a> {
     }
 }
 
-impl Drop for Recording<'_> {
+impl Drop for Recording {
     fn drop(&mut self) {
         if self.authority.is_some()
             && let Err(error) = self.stop()
@@ -165,13 +185,23 @@ impl Drop for Recording<'_> {
 fn submit_stop(
     authority: &mut Option<String>,
     receipt: impl FnOnce(&str) -> Result<()>,
-    stop: impl FnOnce(&str) -> Result<PathBuf>,
+    spawn: impl FnOnce(&str) -> Result<Child>,
+    finish: impl FnOnce(Child, &str) -> Result<PathBuf>,
 ) -> Result<PathBuf> {
     let instance = authority
-        .take()
-        .context("owned trace Stop was already submitted")?;
-    receipt(&instance)?;
-    stop(&instance)
+        .as_ref()
+        .context("owned trace Stop was already submitted")?
+        .clone();
+    let receipt = receipt(&instance);
+    if let Err(error) = &receipt {
+        eprintln!("WORKING PROFILE Stop preparation receipt failed: {error:#}");
+    }
+    let child = spawn(&instance).context("owned Stop helper never started; authority retained")?;
+    // A real child now owns submission. Any later failure is never replayed.
+    authority.take();
+    let path = finish(child, &instance)?;
+    receipt.context("owned Stop completed but its preparation receipt failed")?;
+    Ok(path)
 }
 
 pub(super) fn ensure_available(status: &str, loggers: &str) -> Result<()> {

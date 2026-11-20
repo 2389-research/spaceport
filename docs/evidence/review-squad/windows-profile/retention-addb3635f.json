@@ -1,0 +1,18 @@
+{
+  "source": "addb3635ff9f1a46796104086654dbb21301dfe8",
+  "run_id": 44777201478,
+  "job_id": 136431018132,
+  "artifact_id": 14649278750,
+  "artifact_name": "spaceport-encrypted-retention-probe",
+  "artifact_bytes": 794,
+  "artifact_sha256": "79fc98ed5c55d2fdcd8730e80d1462d6b3d201ec888164a4d659adefe853a6a0",
+  "ciphertext_sha256": "9767137b861ae9669aa35d9d2911dd67ef8e8a86cdc49828ac650fb08a7d08ad",
+  "recipient_fingerprint": "F550E9D83215B9D9A5437A4176C5B051D8CB8646",
+  "windows_gpg": "2.4.9",
+  "decrypted_archive_members": [
+    "marker.txt"
+  ],
+  "marker_sha256": "fe5a3b5d5369375f456ff946498cc14c0c1b23334dce30a5ec44983545a17624",
+  "exact_marker_comparison": "passed",
+  "scope": "Generated marker archive only. No native profile, trace, CPU, stack, or speech qualification."
+}

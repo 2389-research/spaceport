@@ -61,3 +61,25 @@ fn read_only_windows_recorder_inventory() -> Result<()> {
     };
     fixture.recorder_available("inventory").map(|_| ())
 }
+
+#[test]
+fn completed_measurement_survives_a_real_stop_process_failure() -> Result<()> {
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("measurement.json");
+    let measurement = json!({"cpu_before_seconds":1.25,"cpu_after_seconds":1.75,"wall_seconds":5.5,
+        "stop_outcome":"pending; CPU interval completed","fixture":"serialization contract"});
+    let result = retain_before_stop(&path, &measurement, || {
+        match sheprd_client::new_command(directory.path().join("missing-stop-helper.exe")).spawn() {
+            Err(error) => Err(error.into()),
+            Ok(mut child) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                anyhow::bail!("missing stop process unexpectedly started")
+            }
+        }
+    });
+    assert!(result.is_err());
+    let actual: Value = serde_json::from_slice(&fs::read(path)?)?;
+    assert_eq!(actual, measurement);
+    Ok(())
+}

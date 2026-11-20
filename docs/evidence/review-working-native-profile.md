@@ -419,6 +419,13 @@ Convert all four GPG paths through its sibling `cygpath -u` before retrying in a
 Keep native Windows paths for ZIP creation and the upload target.
 The correction still needs a successful remote encryption and private decryption.
 
+At source `addb3635ff9f1a46796104086654dbb21301dfe8`, retention job `136431018132` passed.
+Run `44777201478` uploaded only encrypted artifact `14649278750`.
+The downloaded artifact and ciphertext hashes match the runner's recorded hashes.
+Private decryption recovered a ZIP containing only `marker.txt`.
+Its bytes exactly match the authored marker and its SHA-256 is recorded in the [receipt](review-squad/windows-profile/retention-addb3635f.json).
+This qualifies the generated-marker Windows-to-Mac transfer, not native trace contents or performance.
+
 ### Bootstrap GREEN and real-inventory refusal
 
 Run `44774374418` tested source `9f39d8525519dc9ddffbbe4ddc0b3d74ee00bb90`.
@@ -444,3 +451,34 @@ Independent review confirmed the log-setup gap; native recording stays gated on 
 Also persist completed CPU clocks and wall duration before Stop, so Stop failure cannot erase those observations.
 The current draft still writes that aggregate after successful Stop; this remains a known gap.
 These lifecycle changes require runtime RED, correction, and GREEN before any recording.
+
+At `addb3635ff9f1a46796104086654dbb21301dfe8`, Windows job `136431017530` produced exactly the three ownership REDs.
+The receipt, missing output parent, and missing executable controls failed for their expected authority assertions.
+The unknown-outcome/no-replay control passed; 32 ordinary tests passed and two resource cases remained ignored.
+The separate real recorder inventory passed against 105,752 bytes of actual logger output.
+Scoped Windows app/harness Clippy passed.
+Mac job `136431018190` passed 18 ordinary tests and scoped Clippy.
+No native profile ran.
+
+The marker probe now calls `scripts/profile/encrypt-artifacts.ps1` so real captures use the same encryption path.
+The extraction and its temporary-directory cleanup still need remote verification.
+
+The ownership correction prepares Stop's command and both output files before Start.
+It retains authority when process creation fails and retires authority only after a real child exists.
+Receipt failures cannot skip waiting for that child.
+Completed CPU/wall JSON now persists before Stop and retains an explicit pending outcome on failure.
+Independent static review found no further material defect.
+Runtime GREEN remains pending.
+The new persistence test reads actual saved JSON after a real missing-executable error.
+Its old full-path runtime baseline requires an active WPR recording and was not run while recording remained gated.
+That baseline gap does not substitute for the pending native profile.
+
+### Concurrent redraw change
+
+PR [145](https://github.com/2389-research/spaceport/pull/145) merged as `55c206e7c6be1a16f2e0643819f4dfc5df360f66` on November 20.
+Its only changed file lowers the mark cap from 30 to 20 fps and adds benchmark comments.
+The PR reports lower CPU use, but its referenced `docs/notes-gg9v-redraw.md` returns 404 on main.
+Root requested the retained profile notes and receipts through Crew.
+Those reported numbers remain unverified here.
+The PR explicitly leaves Core/chat and mirrored-picture measurements unqualified.
+Keep Kata gg9v open and choose the exact measured source before starting a native run.

@@ -3,6 +3,28 @@
 use super::*;
 use std::{fs, path::PathBuf};
 
+fn control_child(directory: &Path, script: &str) -> Result<Child> {
+    let root = std::env::var_os("SystemRoot")
+        .ok_or_else(|| anyhow::anyhow!("missing Windows SystemRoot"))?;
+    let binary = Path::new(&root).join("System32/cmd.exe");
+    let mut command = sheprd_client::new_command(binary);
+    command
+        .env_clear()
+        .env("SystemRoot", root)
+        .current_dir(directory)
+        .args(["/d", "/c", script])
+        .stdin(std::process::Stdio::null())
+        .stdout(fs::File::create(directory.join("control.stdout"))?)
+        .stderr(fs::File::create(directory.join("control.stderr"))?);
+    Ok(command.spawn()?)
+}
+
+fn finish_control(child: Child, directory: &Path) -> Result<PathBuf> {
+    let output = directory.join("control.stdout");
+    wait_for_output(child, &output, Duration::from_secs(15), 65_536)?;
+    Ok(output)
+}
+
 const TELEMETRY: &str = r#"Logger Name           : Mellanox-Kernel
 Log File Mode         : Circular PersistOnHybridShutdown
 Trace Flags           : 83793ec3-e8a3-4801-becf-5e921f79f06e:0x7fffffff:0x3
@@ -81,7 +103,7 @@ fn refuses_missing_truncated_or_unclassified_logger_state() {
 #[test]
 fn receipt_failure_still_submits_the_one_owned_stop() -> Result<()> {
     let directory = tempfile::tempdir()?;
-    let stopped = directory.path().join("stopped");
+    let stopped = directory.path().join("control.stdout");
     let mut authority = Some("owned-profile-instance".to_owned());
     let result = submit_stop(
         &mut authority,
@@ -89,29 +111,34 @@ fn receipt_failure_still_submits_the_one_owned_stop() -> Result<()> {
             fs::write(directory.path(), b"receipt")?;
             Ok(())
         },
-        |_| {
-            fs::write(&stopped, b"acknowledged")?;
-            Ok(stopped.clone())
-        },
+        |_| control_child(directory.path(), "echo acknowledged"),
+        |child, _| finish_control(child, directory.path()),
     );
-    assert!(result.is_err());
+    let error = result
+        .err()
+        .ok_or_else(|| anyhow::anyhow!("failed receipt unexpectedly succeeded"))?;
+    assert!(
+        error.downcast_ref::<std::io::Error>().is_some(),
+        "receipt I/O cause was lost: {error:#}"
+    );
     assert!(authority.is_none());
-    assert!(stopped.is_file(), "receipt failure skipped the owned Stop");
+    assert!(
+        fs::read(stopped)?.starts_with(b"acknowledged"),
+        "receipt failure skipped the owned Stop child"
+    );
     Ok(())
 }
 
 #[test]
 fn unknown_stop_outcome_retires_authority_before_any_retry() -> Result<()> {
     let directory = tempfile::tempdir()?;
-    let stopped = directory.path().join("stopped");
+    let replayed = directory.path().join("replayed");
     let mut authority = Some("owned-profile-instance".to_owned());
     let result = submit_stop(
         &mut authority,
         |_| Ok(()),
-        |_| {
-            fs::write(&stopped, b"submitted once")?;
-            Err(std::io::Error::from(std::io::ErrorKind::TimedOut).into())
-        },
+        |_| control_child(directory.path(), "exit 7"),
+        |child, _| finish_control(child, directory.path()),
     );
     assert!(result.is_err());
     assert!(authority.is_none());
@@ -119,12 +146,16 @@ fn unknown_stop_outcome_retires_authority_before_any_retry() -> Result<()> {
         &mut authority,
         |_| Ok(()),
         |_| {
-            fs::write(&stopped, b"replayed")?;
-            Ok(stopped.clone())
+            fs::write(&replayed, b"replayed")?;
+            control_child(directory.path(), "exit 0")
         },
+        |child, _| finish_control(child, directory.path()),
     );
     assert!(replay.is_err());
-    assert_eq!(fs::read(stopped)?, b"submitted once");
+    assert!(
+        !replayed.exists(),
+        "post-spawn failure replayed the owned command"
+    );
     Ok(())
 }
 
@@ -140,6 +171,7 @@ fn output_setup_failure_keeps_authority_when_stop_never_starts() -> Result<()> {
             fs::File::create(directory.path().join("missing-parent/stop.stdout.log"))?;
             anyhow::bail!("invalid output path unexpectedly opened")
         },
+        |child, _| finish_control(child, directory.path()),
     );
     let error = result
         .err()
@@ -167,13 +199,12 @@ fn known_process_spawn_failure_keeps_unsubmitted_stop_authority() -> Result<()> 
         |_| Ok(()),
         |_| {
             // A missing executable produces a real spawn error, with no child to reap.
-            let mut child =
+            Ok(
                 sheprd_client::new_command(directory.path().join("missing-stop-helper.exe"))
-                    .spawn()?;
-            let _ = child.kill();
-            let _ = child.wait();
-            anyhow::bail!("missing process unexpectedly started")
+                    .spawn()?,
+            )
         },
+        |child, _| finish_control(child, directory.path()),
     );
     let error = result
         .err()

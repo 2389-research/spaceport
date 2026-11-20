@@ -423,11 +423,14 @@ fn command_output_bounded(
     bound: u64,
 ) -> Result<Vec<u8>> {
     command.stdout(File::create(output)?);
-    let mut child = Some(
-        command
-            .spawn()
-            .with_context(|| format!("spawn profile command {command:?}"))?,
-    );
+    let child = command
+        .spawn()
+        .with_context(|| format!("spawn profile command {command:?}"))?;
+    wait_for_output(child, output, limit, bound)
+}
+
+fn wait_for_output(child: Child, output: &Path, limit: Duration, bound: u64) -> Result<Vec<u8>> {
+    let mut child = Some(child);
     let result = (|| {
         let deadline = Instant::now() + limit;
         loop {

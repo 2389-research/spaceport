@@ -120,19 +120,26 @@ impl Fixture {
         std::thread::sleep(Duration::from_secs(SAMPLE_SECONDS));
         let after = self.cpu(&format!("{name}-cpu-after"), pid)?;
         let wall = started.elapsed();
-        let stopped = Instant::now();
-        let path = recording.stop()?;
-        let shutdown = stopped.elapsed();
+        let path = recording.path().to_owned();
         let percentage = measurements::process_cpu(before, after, wall)?;
-        // Preserve completed clocks if final capture or later export fails.
-        fs::write(
-            self.sandbox()?.dir.join(format!("{name}-measurement.json")),
-            serde_json::to_vec_pretty(&json!({
-                "phase":name,"pid":pid,"cpu_before_seconds":before.as_secs_f64(),"cpu_after_seconds":after.as_secs_f64(),
-                "wall_seconds":wall.as_secs_f64(),"process_cpu_percent":percentage,"raw_trace":path,"raw_trace_private":true,
-                "qualification":"pending final native observation and stack review","before":observation,
-            }))?,
-        )?;
+        let measurement_path = self.sandbox()?.dir.join(format!("{name}-measurement.json"));
+        let mut measurement = json!({
+            "phase":name,"pid":pid,"cpu_before_seconds":before.as_secs_f64(),"cpu_after_seconds":after.as_secs_f64(),
+            "wall_seconds":wall.as_secs_f64(),"process_cpu_percent":percentage,"raw_trace":path,"raw_trace_private":true,
+            "stop_outcome":"pending; CPU interval completed",
+            "qualification":"pending final native observation and stack review","before":observation,
+        });
+        // Stop failure must not erase already completed clocks and wall duration.
+        let mut shutdown = Duration::ZERO;
+        let path = retain_before_stop(&measurement_path, &measurement, || {
+            let stopped = Instant::now();
+            let outcome = recording.stop();
+            shutdown = stopped.elapsed();
+            outcome
+        })?;
+        measurement["stop_outcome"] = json!("acknowledged");
+        measurement["stop_seconds"] = json!(shutdown.as_secs_f64());
+        fs::write(measurement_path, serde_json::to_vec_pretty(&measurement)?)?;
         Ok(Sample {
             before,
             after,
@@ -233,6 +240,15 @@ fn bounded_diagnostic(path: &Path) -> String {
         Ok(_) => String::from_utf8_lossy(&bytes).into_owned(),
         Err(error) => format!("unavailable ({error})"),
     }
+}
+
+fn retain_before_stop(
+    path: &Path,
+    measurement: &Value,
+    stop: impl FnOnce() -> Result<PathBuf>,
+) -> Result<PathBuf> {
+    fs::write(path, serde_json::to_vec_pretty(measurement)?)?;
+    stop()
 }
 
 #[cfg(test)]

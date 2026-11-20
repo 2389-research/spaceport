@@ -110,30 +110,11 @@ jobs:
           $probeRoot = Join-Path $env:RUNNER_TEMP 'spaceport-retention-probe'
           if (Test-Path $probeRoot) { throw 'Refusing an existing retention probe directory.' }
           $source = Join-Path $probeRoot 'source'
-          $keyring = Join-Path $probeRoot 'gnupg'
           [IO.Directory]::CreateDirectory($source) | Out-Null
-          [IO.Directory]::CreateDirectory($keyring) | Out-Null
           [IO.File]::WriteAllText((Join-Path $source 'marker.txt'), "SPACEPORT_RETENTION_PROBE_v1`n", [Text.UTF8Encoding]::new($false))
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          $archive = Join-Path $probeRoot 'probe.zip'
-          [IO.Compression.ZipFile]::CreateFromDirectory($source, $archive)
-          $gpg = Get-Command gpg.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1
-          $cygpath = Join-Path ([IO.Path]::GetDirectoryName($gpg.Source)) 'cygpath.exe'
-          if (-not (Test-Path $cygpath -PathType Leaf)) { throw 'The installed GPG path converter is missing.' }
           $recipient = Join-Path $env:GITHUB_WORKSPACE 'docs/evidence/review-squad/windows-profile/retention-public.asc'
           $sealed = Join-Path $env:RUNNER_TEMP 'spaceport-retention-probe.zip.gpg'
-          if (Test-Path $sealed) { throw 'Refusing an existing encrypted probe.' }
-          $gpgPaths = @(foreach ($value in @($keyring, $recipient, $sealed, $archive)) {
-            $converted = & $cygpath -u $value
-            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($converted)) { throw 'GPG path conversion failed.' }
-            $converted
-          })
-          & $gpg.Source --no-options --homedir $gpgPaths[0] --version
-          if ($LASTEXITCODE -ne 0) { throw 'GPG version inspection failed.' }
-          & $gpg.Source --no-options --homedir $gpgPaths[0] --batch --no-tty --recipient-file $gpgPaths[1] --output $gpgPaths[2] --encrypt $gpgPaths[3]
-          if ($LASTEXITCODE -ne 0) { throw 'Retention probe encryption failed; nothing may upload.' }
-          if ((Get-Item $sealed).Length -le 0) { throw 'Encrypted probe is empty.' }
-          Get-FileHash -Algorithm SHA256 $sealed
+          & ./scripts/profile/encrypt-artifacts.ps1 -SourceDirectory $source -RecipientFile $recipient -OutputFile $sealed
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: spaceport-encrypted-retention-probe
