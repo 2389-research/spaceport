@@ -1,5 +1,13 @@
+// ABOUTME: Shares deterministic terminal fixtures across focused behavior tests.
+// ABOUTME: Registers tests for output, input, damage, history, and parser boundaries.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod clear;
+mod clear_metadata;
+#[path = "../../test-support/core_output_capture.rs"]
+mod core_output_capture;
+mod core_snapshot;
+mod core_startup;
 mod cursor;
 mod damage;
 mod events;
