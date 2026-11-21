@@ -296,6 +296,12 @@ fn process_and_window_must_match() {
         validate(&before, &after, Mode::Settled),
         Err(Error::WindowIdentity)
     );
+    before.window_id = 0;
+    after.window_id = 0;
+    assert_eq!(
+        validate(&before, &after, Mode::Settled),
+        Err(Error::WindowIdentity)
+    );
 }
 
 #[test]
@@ -334,6 +340,18 @@ fn zero_counter_owner_is_unavailable() {
         validate(&observation, &observation, Mode::Settled),
         Err(Error::CounterOwner { group: 0 })
     );
+}
+
+#[test]
+fn matching_group_indexes_still_need_identified_tabs() {
+    let mut observation = observation(&[stats(41)]);
+    for tab in [None, Some(String::new())] {
+        observation.groups[0].tab = tab;
+        assert_eq!(
+            validate(&observation, &observation, Mode::Settled),
+            Err(Error::GroupMapping)
+        );
+    }
 }
 
 #[test]

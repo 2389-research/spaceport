@@ -1602,3 +1602,49 @@ They borrow temporary selectors, but pinned GPUI's `debug_bounds` requires stati
 Use the existing test-fixture pattern to retain those two selectors for the test process.
 This changes no production cache behavior.
 The seven picture controls and broader group controls remain unverified until the corrected source runs.
+
+### Corrected-source runtime results and invalidation failure
+
+At `dfa929f8667734a703a4a14aa739b7ac2b2dc26f`, run `44861655703` reaches runtime on both platforms.
+Windows job `136716273852` and Mac job `136716274192` pass both observer getters and bridge ownership controls.
+Task 4's observer wiring is complete; the native consumer remains pending.
+The Core observer suites pass 10 Windows cases and 11 Mac cases.
+Both platforms pass all 11 Core view cases, both mark timer cases, and scoped app Clippy.
+
+The envelope suite reaches all 17 expected `CounterUnavailable` failures on each platform.
+Its two passing cases are the real bounded codec round trip and the deliberately vacuous unavailable-input case.
+Total harness results are 53 passing Windows cases and 33 passing Mac cases, alongside those expected failures.
+Task 6 implementation can now proceed without changing its assertions.
+
+The broader terminal-group suite passes 19 cases and fails three on each platform.
+Settled replay, missing frames, closed groups, image preparation, parked padding, activation, and handle swaps pass.
+Changed output reports zero paints instead of a repaint at `picture_paint.rs:91`.
+Actual painter appearance reports zero instead of one paint at `invalidation.rs:164`.
+A changed popup reports zero instead of two paints at `invalidation.rs:191`.
+These are runtime invalidation failures after successful population, not compilation errors or native measurements.
+Investigate the actual pinned GPUI cache and update semantics before changing production code or fixture timing.
+Keep immediate changed-scene assertions and subsequent settled replay requirements.
+The cache remains incomplete and must not qualify a native promotion.
+
+### Picture test measurement order
+
+The three failures above came from the tests' measurement order.
+Cargo.toml and Cargo.lock pin GPUI 0.3.11.
+Its `App::finish_update` flushes effects at the outer update boundary.
+Its test-mode `flush_effects` draws dirty windows before the update returns.
+The old tests reset Counts after that implicit draw, then measured the following replay.
+Those zero counts therefore do not establish a production invalidation bug.
+
+Reset Counts before changing and notifying the view, then inspect the implicit first draw.
+Keep the immediate changed-color, appearance, popup-origin, clipping, and removal assertions.
+Keep the next plain draw's zero-paint requirement.
+The passing Core tests use the same reset-before-mutation order.
+Root reviewed this test-only correction against the pinned source and actual scene assertions.
+No production cache code changed; corrected runtime results remain pending.
+
+Task 6 now implements its pure typed validator after the recorded runtime RED.
+It validates both identities and every shown TUI group's current popup-free presentation.
+It compares stable group, tab, and connection mappings before deduplicating complete snapshot pairs.
+Exhaustive typed destructuring checks every numeric counter before interval-specific growth guards.
+It preserves the original scalar snapshots and performs no arithmetic or I/O.
+Independent review finds no material issue; all 20 cases still need remote GREEN.

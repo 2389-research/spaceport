@@ -9,7 +9,7 @@ use crate::{
     performance::Counts,
     sidebar::layout_tests::full_draw,
 };
-use gpui::{Entity, TestAppContext, VisualTestContext, rgb};
+use gpui::{Context, Entity, TestAppContext, VisualTestContext, rgb};
 use sheprd_client::protocol::CellData;
 use std::sync::Arc;
 
@@ -63,6 +63,20 @@ fn draw(cx: &mut VisualTestContext) -> Counts {
     })
 }
 
+fn paint_change<T: 'static>(
+    cx: &mut VisualTestContext,
+    owner: &Entity<T>,
+    change: impl FnOnce(&mut T, &mut Context<T>),
+) -> Counts {
+    owner.update(cx, |owner, cx| {
+        // GPUI's test effect flush draws the notified window before update returns.
+        *cx.default_global::<Counts>() = Counts::default();
+        change(owner, cx);
+        cx.notify();
+    });
+    cx.update(|_, cx| *cx.global::<Counts>())
+}
+
 #[gpui::test]
 fn settled_picture_replays_without_repainting_cells(cx: &mut TestAppContext) {
     let (_, _, cx) = mirroring_t0(cx);
@@ -78,24 +92,26 @@ fn changed_output_reaches_the_mirror_before_it_replays(cx: &mut TestAppContext) 
     let selector = Box::leak(mirror.selector("mirror-terminal").into_boxed_str());
     let bounds = cx.debug_bounds(selector).unwrap();
     let color = 0x123456;
-    view.update(cx, |view, cx| {
+    let changed = paint_change(cx, &view, |view, _| {
         let surface = Arc::make_mut(view.live.surface.as_mut().unwrap());
         surface.surface_revision += 1;
         surface.panes[0].content_revision += 1;
         surface.frame.cells[0].bg = 0x0200_0000 | color;
         view.endpoints[view.selected_endpoint].live = view.live.clone();
-        cx.notify();
     });
-    for changed in [true, false] {
-        let counts = draw(cx);
-        assert_eq!(counts.paints > 0, changed, "{counts:?}");
+    let assert_mirror_color = |cx: &mut VisualTestContext| {
         cx.update(|window, _| {
             let bounds = bounds.scale(window.scale_factor());
             assert!(window.painted_quads().iter().any(|quad| {
                 quad.background == rgb(color).into() && bounds.contains(&quad.bounds.origin)
             }));
         });
-    }
+    };
+    assert!(changed.paints > 0, "{changed:?}");
+    assert_mirror_color(cx);
+    let settled = draw(cx);
+    assert_eq!(settled.paints, 0, "{settled:?}");
+    assert_mirror_color(cx);
 }
 
 #[gpui::test]

@@ -1,6 +1,6 @@
 // ABOUTME: Exercises picture invalidation with fixed layout metrics and real scene output.
 // ABOUTME: Checks popup clipping and image preparation on unchanged picture draws.
-use super::{draw, surface};
+use super::{draw, paint_change, surface};
 use crate::{
     SheprdWindow,
     browser::{GroupIds, Slot},
@@ -149,7 +149,7 @@ fn actual_painter_appearance_invalidates_a_fixed_picture(cx: &mut TestAppContext
         (18., 20., 0x61b2c3),
         (18., 24., 0x61b2c3),
     ] {
-        owner.update(cx, |owner, cx| {
+        let changed = paint_change(cx, &owner, |owner, cx| {
             owner.source.read(cx).painter.borrow_mut().set_appearance(
                 font_size,
                 cell_height,
@@ -158,9 +158,7 @@ fn actual_painter_appearance_invalidates_a_fixed_picture(cx: &mut TestAppContext
                     ..Theme::default()
                 },
             );
-            cx.notify();
         });
-        let changed = draw(cx);
         assert_eq!(changed.paints, 1, "{changed:?}");
         assert!(changed.glyphs > 0, "{changed:?}");
         assert!(!has_color(cx, 0x4182a3));
@@ -183,12 +181,11 @@ fn changed_popup_is_clipped_and_disappears_with_its_picture(cx: &mut TestAppCont
     let bounds = cx.debug_bounds("mirror-terminal").unwrap();
     let mut old_color = 0x764321;
     for (width, height, color, x, y) in [(8, 2, 0xcb4a92, 60., 60.), (6, 3, 0x427dc9, 70., 50.)] {
-        owner.update(cx, |owner, cx| {
+        let changed = paint_change(cx, &owner, |owner, _| {
             let picture = owner.picture.as_mut().unwrap();
             Arc::make_mut(&mut picture.frame).popup = Some(popup(width, height, color));
-            cx.notify();
         });
-        assert_eq!(draw(cx).paints, 2);
+        assert_eq!(changed.paints, 2, "{changed:?}");
         assert!(!has_color(cx, old_color));
         cx.update(|window, _| {
             let scale = window.scale_factor();
@@ -205,18 +202,16 @@ fn changed_popup_is_clipped_and_disappears_with_its_picture(cx: &mut TestAppCont
         assert!(has_color(cx, color));
         old_color = color;
     }
-    owner.update(cx, |owner, cx| {
+    let changed = paint_change(cx, &owner, |owner, _| {
         Arc::make_mut(&mut owner.picture.as_mut().unwrap().frame).popup = None;
-        cx.notify();
     });
-    assert_eq!(draw(cx).paints, 1);
+    assert_eq!(changed.paints, 1, "{changed:?}");
     assert!(!has_color(cx, old_color));
     assert!(has_color(cx, 0x123456));
-    owner.update(cx, |owner, cx| {
+    let changed = paint_change(cx, &owner, |owner, _| {
         owner.picture = None;
-        cx.notify();
     });
-    assert_eq!(draw(cx).paints, 0);
+    assert_eq!(changed.paints, 0, "{changed:?}");
     assert!(!has_color(cx, 0x123456));
 }
 
