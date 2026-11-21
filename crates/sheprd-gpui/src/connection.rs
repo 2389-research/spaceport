@@ -388,6 +388,12 @@ impl ConnectionBridge {
         self.inbox.try_lock().is_ok_and(|state| state.dirty)
     }
 
+    /// Preserve final reader events until the UI has consumed their projection.
+    pub(crate) fn retry_ready(&self) -> bool {
+        self.drained.load(Ordering::Acquire)
+            && self.inbox.try_lock().is_ok_and(|state| !state.dirty)
+    }
+
     /// Whether the worker has reported this link up, which the window learns
     /// only when it next takes an update. Never blocks: `None` while the event
     /// reader holds the inbox, when the answer is not yet known.

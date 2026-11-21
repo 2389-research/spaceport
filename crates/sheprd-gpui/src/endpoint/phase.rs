@@ -96,6 +96,6 @@ impl Endpoint {
 
     /// Whether the endpoint wants a connection and has no transport.
     pub(super) fn may_dial(&self) -> bool {
-        matches!(self.link, Link::Waiting { .. })
+        matches!(self.link, Link::Waiting { .. }) && self.connection.retry_ready()
     }
 }
