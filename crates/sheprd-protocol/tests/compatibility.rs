@@ -1,8 +1,13 @@
+// ABOUTME: Checks frozen protocol encodings and atomic surface validation.
+// ABOUTME: Exercises real serialized messages and malformed wire boundaries.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use serde::Serialize;
 use sheprd_protocol::{endpoint::*, *};
 use std::io::{self, Read};
+
+#[path = "compatibility/owned_patch.rs"]
+mod owned_patch;
 
 #[test]
 fn errors_preserve_codec_and_io_sources_and_validation_categories() {

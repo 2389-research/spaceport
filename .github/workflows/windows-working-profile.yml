@@ -252,6 +252,32 @@ jobs:
           path: ${{ runner.temp }}/spaceport-retention-probe.zip.gpg
           if-no-files-found: error
           retention-days: 7
+  protocol:
+    if: >-
+      github.repository == '2389-research/spaceport' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/fix/review-squad-windows-profile'
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, windows-2025]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select the pinned Rust toolchain
+        shell: bash
+        run: rustup show
+      - name: Check protocol compatibility and owned patch cells
+        shell: bash
+        run: cargo test --locked -p sheprd-protocol
+      - name: Check client surface delivery and encoding
+        shell: bash
+        run: cargo test --locked -p sheprd-client --lib surface -- --nocapture
   contracts:
     if: >-
       github.repository == '2389-research/spaceport' &&
