@@ -1,3 +1,5 @@
+// ABOUTME: Paints terminal cells, input regions, and transient overlays.
+// ABOUTME: Keeps feedback inside terminal bounds while preserving input geometry.
 //! The terminal's cells: the regions that paint them, the canvas that takes
 //! their input and paints what changed without them, and what sits over them.
 
@@ -82,7 +84,12 @@ impl SheprdWindow {
                                         .rounded_full()
                                         .bg(rgb(flash.accent(&self.theme))),
                                 )
-                                .child(div().truncate().child(flash.text.clone())),
+                                .child(
+                                    div()
+                                        .min_w_0()
+                                        .whitespace_normal()
+                                        .child(flash.text.clone()),
+                                ),
                         ),
                 )
             })
