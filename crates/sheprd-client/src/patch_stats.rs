@@ -140,7 +140,7 @@ pub(crate) fn measure_reconstruction(
     let started = Instant::now();
     let result = reconstruct(base);
     let elapsed = started.elapsed();
-    let cells_copied = result.is_ok().then(|| base.frame.cells.len());
+    let cells_copied = result.is_ok().then_some(base.frame.cells.len());
     (
         result,
         ReconstructionWork {

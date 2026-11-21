@@ -1506,3 +1506,9 @@ Native qualification must retain the exact single-window fixture and a positive 
 First add an optional typed field and a populated Core test while leaving its getter unavailable.
 The test must prove real cell work before failing the missing report assertion.
 Keep normal builds and the bounded observer transport unchanged.
+
+At `dfc6d4e9cefc563abf6aaa4a19cd97193d6169e9`, Mac job `136708453128` passes all 15 counter cases.
+Its default surface run also passes all 38 cases.
+Clippy rejects one unnecessary lazy closure around the baseline cell length.
+Use `then_some` for that cheap scalar value; runtime and ownership behavior stay unchanged.
+A warning-free remote gate remains pending.
