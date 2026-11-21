@@ -32,8 +32,9 @@ The observed-shutdown guard cannot make remote attachment atomic with an externa
    Inspect actual CI failure before changing the client.
 2. Forward the existing Shutdown Message in `crates/sheprd-client/src/session.rs` before returning its existing shutdown error.
    Keep event FIFO, bounded delivery, cancellation, and disconnect handling unchanged.
-3. Add endpoint policy and readiness tests under `crates/sheprd-gpui/src/endpoint/lifecycle_tests/`.
+3. Add wire-level endpoint policy tests under `crates/sheprd-gpui/src/endpoint/lifecycle_tests/`.
    Cover stopped targets, ordinary loss, socket retry, retained advice, and successful explicit recovery.
+   Add pure readiness cases in `crates/sheprd-gpui/src/endpoint/tests/retry_readiness.rs`.
    Exercise undrained, dirty, and lock-contended inbox states without timing guesses.
 4. Retain shutdown in `crates/sheprd-gpui/src/state.rs` through disconnect and include it in display equality.
    Clear it on accepted Connected.
