@@ -278,6 +278,9 @@ jobs:
       - name: Check client surface delivery and encoding
         shell: bash
         run: cargo test --locked -p sheprd-client --lib surface -- --nocapture
+      - name: Lint protocol and client targets
+        shell: bash
+        run: cargo clippy --locked -p sheprd-protocol -p sheprd-client --all-targets --all-features -- -D warnings
   contracts:
     if: >-
       github.repository == '2389-research/spaceport' &&

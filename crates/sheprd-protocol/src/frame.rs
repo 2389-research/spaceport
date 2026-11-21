@@ -1,3 +1,5 @@
+// ABOUTME: Validates complete terminal frames and atomic surface patches.
+// ABOUTME: Commits accepted owned cells without copying their text buffers.
 //! Surface frame invariants: cell/cursor/hyperlink validation and the atomic
 //! patch application that keeps a projection consistent or rejects it whole.
 
@@ -77,7 +79,12 @@ impl PaneSurfaceFrame {
     pub(crate) fn commit_patch(&mut self, patch: PaneSurfacePatch) {
         for row in patch.rows {
             let start = usize::from(row.y) * usize::from(self.frame.width) + usize::from(row.x);
-            self.frame.cells[start..start + row.cells.len()].clone_from_slice(&row.cells);
+            for (target, cell) in self.frame.cells[start..start + row.cells.len()]
+                .iter_mut()
+                .zip(row.cells)
+            {
+                *target = cell;
+            }
         }
         for pane in patch.panes {
             if let Some(existing) = self.panes.iter_mut().find(|p| p.pane_id == pane.pane_id) {

@@ -22,7 +22,7 @@ Mac `sample`/`ps` support remains separate from the held Mac native checks.
 - Native `dcadebfaf` passed with real animation activity, verified clocks, captures, identities, and zero-loss traces; dominant CPU attribution remains unresolved.
 - Localized `acc229aeb` has clean runtime RED on both platforms: 760 repeated paints instead of zero.
 - Cache `7657ed297` passed all four ordinary jobs, including the paint regression and all 11 Core view controls on both platforms.
-- The passive Windows native text reader passed independent source review; remote compilation and real native controls remain pending.
+- Reader `23884df4c` passed independent source review and all four ordinary CI jobs; native run `44848451781` is in progress.
 
 ## Authority and limits
 
@@ -1192,4 +1192,49 @@ Local `just format-check check-file-size check-sorted check-i18n check-commits` 
 `git diff --cached --check` also passed.
 No local compilation, native app, VM, or speech check ran.
 Independent spec and code-quality review found no blocking source issues.
-Windows compilation, PowerShell assembly loading, and real native controls remain pending.
+At `23884df4c16a72eca3404bc2fef915f796ca6582`, ordinary run `44847320619` passed all four executed jobs.
+Windows passed 51 harness cases, nine observer cases, one mark-counter case, 11 Core view controls, ten accessibility controls, one fixture case, and scoped Clippy.
+Three harness and 34 accessibility cases remain ignored because they need explicit native resources.
+Mac passed 31 harness cases, ten observer cases, one mark-counter case, 11 Core view controls, and scoped Clippy.
+One Mac harness case remains ignored; the known `block` and linker warnings persist.
+Sampling tools and encrypted retention also passed; the unrelated animation-only job was policy-skipped.
+The native branch advanced normally from `dcadebfaf` to this exact validated source.
+Native run `44848451781` is in progress.
+PowerShell assembly loading, real text controls, native captures, and profile attribution remain pending.
+
+### Frame-copy ownership boundary
+
+Read-only inspection at `7657ed297` confirms shared-baseline copying in `sheprd-client/src/session.rs`.
+Ordinary and scroll patches call `Arc::make_mut`; a published baseline normally has other strong owners.
+`PaneSurfaceFrame` derives `Clone`, and its flat cells contain owned symbol strings.
+An unpublished, uniquely owned baseline can mutate without that clone.
+One clone occurs at mutation, rather than once per downstream owner.
+
+The inbox, presentation, region caches, mirrors, and smooth scrolling retain immutable snapshots for valid reasons.
+Removing those owners would break observable behavior; additional render caching does not remove this copy boundary.
+Delta and reuse encodings also reconstruct complete cell vectors through their own paths.
+The existing worker surface test explicitly requires a previously published cell to remain unchanged after a patch.
+
+The settled native producer finishes output before measurement and cannot qualify continuous patch costs.
+Use bounded real TUI updates and worker evidence before choosing a representation change.
+Immutable row or block sharing would require a separate cross-layer design that preserves wire compatibility and snapshot values.
+Moving already-owned patch cells could avoid one redundant payload clone, but would leave full-baseline copying intact.
+No frame-copy optimization or native streaming qualification is claimed.
+
+### Owned patch payload regression
+
+The shared patch commit consumes owned rows but clones each accepted cell into its destination.
+A small regression now checks allocation transfer, complete surface equality, and later overlapping rows winning.
+The existing atomic-rejection control remains part of the same compatibility suite.
+No wire type, field order, event ownership, or public signature changes.
+
+At `65d248794c62ee9ca4d43d7e7a2053f6352d1500`, run `44848868008` reaches the intended runtime failure on both platforms.
+Mac job `136675194798` and Windows job `136675194477` pass eight existing compatibility cases.
+The new case passes complete surface equality, then fails the allocation identity assertion at line 48.
+An accepted patch copied the first symbol rather than retaining its owned allocation.
+The proposed commit loop moves accepted cells only after the existing validation succeeds.
+Static formatting, file size, sorting, commit-message, and diff checks pass.
+Independent source review found no material issue in ownership transfer, overlap ordering, atomic rejection, or wire compatibility.
+Runtime GREEN remains pending.
+This change removes a redundant patch-payload copy only; it does not eliminate shared-baseline copying.
+Native source `23884df4c` predates this smaller change and cannot qualify it.
