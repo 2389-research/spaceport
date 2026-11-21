@@ -166,16 +166,7 @@ impl SheprdWindow {
                     .on_click(cx.listener(|this, _, _, cx| this.open_report_issue(cx))),
                 )
             })
-            .child(
-                div()
-                    .id("status-version")
-                    .debug_selector(|| "status-version".into())
-                    .aria_label(fl!("status-bar-version", version = APP_VERSION))
-                    .flex_none()
-                    .whitespace_nowrap()
-                    .text_color(rgb(self.theme.muted))
-                    .child(APP_VERSION),
-            )
+            .child(version(&self.theme))
     }
 
     /// The focused agent's model, from the `model` and `effort` tokens its
@@ -514,3 +505,17 @@ fn glyph(path: &'static str, color: u32) -> Svg {
         .flex_none()
         .text_color(rgb(color))
 }
+
+fn version(theme: &crate::config::Theme) -> Stateful<Div> {
+    div()
+        .id("status-version")
+        .debug_selector(|| "status-version".into())
+        .aria_label(fl!("status-bar-version", version = APP_VERSION))
+        .flex_none()
+        .whitespace_nowrap()
+        .text_color(rgb(theme.muted))
+        .child(APP_VERSION)
+}
+
+#[cfg(test)]
+mod tests;

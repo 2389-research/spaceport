@@ -307,6 +307,9 @@ jobs:
           skip=()
           if [[ $RUNNER == windows-11-arm ]]; then skip=(--skip native_gui_live); fi
           cargo test --locked -p sheprd-gpui --features integration-test --test live_gui -- --ignored --nocapture --test-threads=1 "${skip[@]}"
+      - name: Native accessibility tree and keyboard regions
+        if: matrix.runner == 'windows-2025'
+        run: cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows ui_automation_names_the_chrome_and_ctrl_f6_reaches_it -- --ignored --exact --nocapture --test-threads=1
       - name: Release-mode performance budget
         env:
           HERDR_PERF_P95_MS: '100'
