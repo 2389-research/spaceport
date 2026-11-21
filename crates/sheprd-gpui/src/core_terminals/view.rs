@@ -4,6 +4,7 @@
 //! text, painted with the window's terminal painter. One per tab showing it;
 //! any number may show the same terminal, as observers.
 
+mod cells;
 #[cfg(all(windows, feature = "integration-test"))]
 mod frame_probe;
 pub(super) mod keys;
@@ -65,6 +66,7 @@ pub(crate) struct PaneLook {
 pub(crate) struct CoreTerminalView {
     /// Where the cells were last painted, for the IME's candidate window.
     bounds: Option<Bounds<Pixels>>,
+    cells: Option<Entity<cells::Cells>>,
     focus: FocusHandle,
     /// Releases for keys pressed while the program asked for them.
     held_keys: HeldKeys,
@@ -107,6 +109,7 @@ impl CoreTerminalView {
     ) -> Self {
         Self {
             bounds: None,
+            cells: None,
             focus: cx.focus_handle(),
             held_keys: HeldKeys::default(),
             hovered: None,
@@ -160,7 +163,10 @@ impl CoreTerminalView {
 
     /// The frame to paint: a veiled pane's with its cursor hidden.
     fn frame_to_paint(&mut self) -> Option<Arc<FrameData>> {
-        let frame = self.screen.frame.clone()?;
+        let Some(frame) = self.screen.frame.clone() else {
+            self.sleeping = None;
+            return None;
+        };
         let veiled = self.pane.is_some_and(|pane| pane.veil.is_some());
         if !veiled || frame.cursor.is_none() {
             self.sleeping = None;
@@ -320,8 +326,6 @@ impl Render for CoreTerminalView {
         self.report_focus(window);
         let entity = cx.entity();
         let fitting = entity.clone();
-        let painter = self.painter.clone();
-        let look = self.look.clone();
         let frame = self.frame_to_paint();
         let accessible_frame = window.is_a11y_active().then(|| frame.clone()).flatten();
         let selection = self.selection;
@@ -333,7 +337,7 @@ impl Render for CoreTerminalView {
             .map(|_| Rc::new(GeometryCell::new(None)));
         let canvas_bounds = accessible_bounds.clone();
         let scale = window.scale_factor();
-        let highlights = self.highlights();
+        let cells = self.cell_layer(frame, scale, cx);
         let pane = self.pane;
         let background = self.look.background;
         let focus = self.focus.clone();
@@ -358,31 +362,11 @@ impl Render for CoreTerminalView {
                             crate::input::TerminalInputHandler::new(bounds, entity, false),
                             cx,
                         );
-                        let Some(frame) = &frame else {
-                            return;
-                        };
-                        #[cfg(test)]
-                        crate::window::native_images::cells(window.window_handle().window_id());
-                        window.with_content_mask(Some(ContentMask { bounds }), |window| {
-                            painter.borrow_mut().paint_frame(
-                                frame,
-                                bounds.origin,
-                                Some(bounds.size),
-                                look.ground,
-                                look.cell_width,
-                                &look.font,
-                                &highlights,
-                                &[],
-                                None,
-                                None,
-                                window,
-                                cx,
-                            );
-                        });
                     },
                 )
                 .size_full(),
             )
+            .children(cells)
             .when_some(pane.and_then(|pane| pane.veil), |body, veil| {
                 body.child(
                     div()

@@ -8,6 +8,7 @@ use gpui::{AppContext, Bounds, point, px, size};
 use sheprd_backend::TerminalId;
 
 mod accessibility;
+mod paint_cache;
 mod paste;
 
 #[gpui::test]

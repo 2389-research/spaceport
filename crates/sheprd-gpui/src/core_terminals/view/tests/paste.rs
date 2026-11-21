@@ -9,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-fn terminal(
+pub(super) fn terminal(
     cx: &mut gpui::TestAppContext,
 ) -> (
     gpui::Entity<CoreTerminalView>,

@@ -20,8 +20,8 @@ Mac `sample`/`ps` support remains separate from the held Mac native checks.
 - Ordinary `e076fbac1` passed both motion regressions after actual RED; published `7d1772994` passed all four ordinary jobs again.
 - Disposable desktop preparation passed real enable, repeated-refusal, restoration, and fresh-process checks at `dcadebfaf`.
 - Native `dcadebfaf` passed with real animation activity, verified clocks, captures, identities, and zero-loss traces; dominant CPU attribution remains unresolved.
-- Core `454d16f22` reached the intended paint failure but broke a projection control; localized setup `acc229aeb` awaits CI.
-- Core caching has not been implemented; the proposed boundary and controls appear at this document's end.
+- Localized `acc229aeb` now has clean runtime RED on both platforms; the Core-only paint cache is in implementation.
+- The cell-only cache passes static review; remote GREEN and native qualification remain pending.
 
 ## Authority and limits
 
@@ -1063,9 +1063,61 @@ Initialization now occurs only inside the rendering test, with the paint probe a
 It restores the controlled view after the normal synchronizer prepares pane state.
 No cache implementation has been added; clean controls and the isolated intended RED remain pending.
 
+At `acc229aeb`, run `44839709650` reached clean runtime RED on both platforms.
+Windows job `136644767331` passed eight observer controls; only the zero-Core-paint assertion failed with 760 paints.
+Mac job `136644767013` passed nine observer controls and reached the same sole failure with 760 paints.
+Both restored projection-only controls pass, as do the initial paint, bounds, mark-advance, stable-frame, and no-failure preconditions.
+Ordinary harness, passive counter, lint, tools, and retention checks also pass.
+This authorizes implementation against a demonstrated regression; it does not qualify native savings.
+
 The next native analysis also exports stacks for the exact GUI PID across all its threads.
 It uses the existing verified xperf stack flags without the UI-thread filter.
 This read-only export uses already-stopped traces; it starts no new recording and remains bounded to 32 MiB.
 It may expose callers beneath unresolved worker leaves; readability or command success alone cannot qualify attribution.
 The existing ledger keeps qualification false until actual outputs are reviewed.
 No new native run is launched solely for this export; it accompanies the next justified recording.
+
+## Task 1: Cache Core cell painting
+
+Implement only the Core cell-paint cache in the current profile task worktree.
+Root owns tests, workflows, evidence, commits, pushes, and remote execution.
+The implementer owns `src/core_terminals/view.rs`, a focused child module, and the painter's appearance snapshot.
+Paths above are relative to `crates/sheprd-gpui/`.
+Preserve Root's staged test and workflow changes.
+Do not edit Herdr, shared configuration contracts, unrelated modules, or other worktrees.
+
+The regression has actual clean runtime RED on Windows and Mac at `acc229aeb`.
+Run `44839709650` reports 760 Core paints instead of zero after all rendering preconditions pass.
+Every other observer control passes; ordinary harness, counter, lint, tools, and retention gates also pass.
+Native baseline `dcadebfaf` independently observes Core paint during real Working animation.
+
+Use a private cached child for cell painting only.
+Keep the existing Core view uncached.
+Preserve its geometry fitting, focus reporting, input registration, events, accessibility, and synthetic transcript bounds.
+Match the existing cell canvas's bounds, mask, padding, veil, and status order.
+Use existing GPUI cached-view patterns from `window/regions.rs` and the PR 147 picture view.
+Use the pinned `gpui-pre` 0.3.11 sources for read-only cache-contract reference.
+
+Invalidate for changed frame/cursor, selection highlights, pane appearance, font, metrics, ground, and actual painter appearance.
+The painter's actual theme, font size, and cell height must participate independently of Core `Look`.
+Expose a narrow typed read-only snapshot if needed.
+Retain one authoritative painter configuration; the cache stores only an immutable paint snapshot.
+Use shared immutable frame data; do not deep-copy cells merely to compare them.
+Handle missing frames and preserve existing cursor-veiling reuse.
+Remove obsolete paint captures or helpers made unnecessary by this extraction.
+Do not change animation cadence, polling, chat, or other terminal caches in this task.
+
+Root adds controls under `core_terminals/view/tests/paint_cache.rs` and runs the existing input tests too.
+They cover changed scene content, foreground-only theme, font size, selection/veil, text dispatch, resize, and IME bounds.
+Keep the regression's scoped paint probe attached to the actual cell paint call after extraction.
+Add no dependency, runtime, service, transport, unsafe Rust, or public CLI command.
+Start each new handwritten source file with two brief `ABOUTME:` comments.
+Keep APIs private or narrowly scoped; add no production `unwrap` or `expect`.
+Follow the existing file-size, privacy, typed-error, and UI-thread rules.
+
+Do not run builds, tests, native apps, VMs, or Cargo compilation locally.
+Formatting and read-only source inspection are allowed.
+Do not commit, push, publish, or call external write APIs.
+Root runs remote validation and one independent spec/quality review before accepting the change.
+Report changed files, design choices, static review, unrun checks, and concerns in the requested report file.
+Do not claim GREEN or task completion from source inspection.

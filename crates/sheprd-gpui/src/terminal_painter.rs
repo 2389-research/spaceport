@@ -43,6 +43,14 @@ use gpui::Font;
 use gpui::{Bounds, Pixels, Rgba};
 use std::time::Instant;
 
+/// The painter settings that affect the recorded cell scene.
+#[derive(PartialEq)]
+pub(crate) struct Appearance {
+    font_size: f32,
+    cell_height: f32,
+    theme: Theme,
+}
+
 pub(crate) struct TerminalPainter {
     font_size: f32,
     cell_height: f32,
@@ -61,6 +69,16 @@ pub(crate) struct TerminalPainter {
     painted_separators: Vec<(Bounds<Pixels>, Rgba)>,
     #[cfg(feature = "integration-test")]
     pub uncached: bool,
+}
+
+impl TerminalPainter {
+    pub(crate) fn appearance(&self) -> Appearance {
+        Appearance {
+            font_size: self.font_size,
+            cell_height: self.cell_height,
+            theme: self.theme.clone(),
+        }
+    }
 }
 
 impl Default for TerminalPainter {
