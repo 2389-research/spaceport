@@ -14,6 +14,8 @@ use std::{
 mod display;
 #[path = "../../../test-support/executable.rs"]
 mod executable;
+#[path = "shutdown/start_button.rs"]
+mod start_button;
 #[path = "shutdown/witness.rs"]
 mod witness;
 
@@ -87,6 +89,7 @@ impl Drop for Qualification {
             "xvfb.log",
             "capture.log",
             "ocr.log",
+            "input.log",
             "state/spaceport/logs/spaceport.jsonl",
             "started",
         ] {
@@ -334,7 +337,7 @@ fn native_local_shutdown_and_reconnect() {
     test.record("second-welcome.json", second.receipt());
     assert_ne!(first.boot, second.boot);
     test.await_state("Herdr stopped", None, Some(640), "before-reconnect");
-    test.action(&["window", "reconnect"]);
+    start_button::click(&desktop, &mut test, &native_window);
     test.await_state("online", Some(&second.workspace), Some(640), "recovered");
     assert!(
         desktop.capture(&test, &native_window, "recovered", 640, false),

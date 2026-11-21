@@ -80,28 +80,20 @@ Keep native screenshots, real SSH/WSL recovery, and unsupported platform resourc
 Doctor Biz's Mac foreground and audible-speech holds remain in force.
 No native or release completion follows from source review or headless metadata.
 
-### Linux native qualification
+### Linux CLI recovery checkpoint at `ab8cbf3df`
 
-The Ubuntu 24.04 x64 all-features CI leg runs the ignored
-`shutdown::native_local_shutdown_and_reconnect` case on a fresh private Xvfb display.
-It verifies the Linux x86_64 Herdr v0.9.5 digest before launching either server.
-Both servers use the same private socket. Each has its own restore directory.
-The normal Local GUI uses a private startup trap and keeps the same window throughout.
+At this checkpoint, the Ubuntu 24.04 x64 all-features job ran
+`shutdown::native_local_shutdown_and_reconnect` on a private Xvfb display.
+The harness verified the Herdr v0.9.5 Linux x86_64 digest before starting either server.
+Both servers shared the private socket and had separate restore directories.
+The Local GUI kept its original window and a private startup trap.
 
-The Linux shutdown artifact records the checked-out source SHA, server digest,
-wire events, state receipts, bounded logs, and actual window captures.
-Inspect the 900px and 640px stopped images for legibility and clipping.
-The recovered 640px image must show the replacement shell prompt.
-The test uses the window reconnect CLI. Native button activation and
-app-owned startup from absence still need separate evidence.
-
-Apply the same qualification patch to the producer-before-card revision `583b83f13`
-and the fixed revision `43f722feb`. The focused case and upload precede the
-all-features workspace suite so the baseline can retain both widths.
-Accept a baseline RED only after both receipts show the stopped Local window
-and both images visibly show its old reconnect action. Require the missing-label
-assertion after those captures. On the fixed revision, require both new cards,
-the recovered prompt, and the completion receipt. Record each tested checkout SHA.
+The producer-before-card run used product revision `583b83f13`.
+The fixed CLI checkpoint included product revision `43f722feb`.
+After capturing both stopped widths, the fixed checkpoint started the replacement server
+and invoked `spaceport window reconnect` through the private control socket.
+Its artifact recorded the source SHA, binary digest, wire events, window status,
+native images and completion receipt.
 
 The [baseline run](https://github.com/2389-research/spaceport/actions/runs/44900991331/job/136836836772)
 reaches the intended missing-label assertion after both captures.
@@ -112,5 +104,26 @@ Visual inspection confirms the old reconnect card is legible and unclipped at bo
 
 ![Before: 640px native stopped window](herdr-shutdown-native/before-640.png)
 
-Fixed-source execution and image inspection remain pending. macOS and Windows presentation,
-Windows typed shutdown, and real SSH/WSL recovery need separate qualification.
+The fixed CLI run captured the 640px stopped window with `active=false`.
+Its completion receipt confirms GUI exit, replacement survival, and graceful server exit.
+That run qualifies explicit CLI recovery. [Fixed CLI run](https://github.com/2389-research/spaceport/actions/runs/44902091234/job/136840193907).
+
+### Native Start Herdr input
+
+The earlier baseline covers the shutdown and stopped capture checks at 900px and 640px.
+The current case keeps those checks and exercises the visible Start Herdr button
+after the replacement handshake.
+It focuses the same private X11 window and captures a fresh 640px image.
+Tesseract supplies the pixel bounds of the two words on the button.
+The harness requires one complete label and refuses ambiguous or invalid geometry.
+[Tesseract TSV format](https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html#tsv-output).
+
+Before clicking, the harness checks X11 focus, the pointer position and the active
+stopped Local window. It sends one left click through XTest. Inspect
+`start-button.png`, `start-button.tsv`, `focused-stopped.json`, and
+`start-button-click.txt` alongside the recovered image and completion receipt.
+The recovered image must show the replacement shell prompt. [xdotool mouse and focus commands](https://github.com/jordansissel/xdotool/blob/main/xdotool.pod).
+
+The native-click run and image inspection remain pending. Both server launches belong
+to the harness. App-owned startup from absence, macOS and Windows presentation,
+Windows typed shutdown, real SSH/WSL recovery, speech, and performance need separate evidence.
