@@ -31,6 +31,12 @@ READ_ORDER = [
     'docs/SOURCES.md', 'docs/VALIDATION.md', 'BOOTSTRAP_PROMPT.md',
 ]
 REQ_RE = re.compile(r'^### (SP-\d{3}) — (.+)$', re.MULTILINE)
+# D58 permits separately installed Herdr 1 and Core, and D71 records a Core leg
+# only with Core enabled, so each acceptance scenario carries both legs.
+LEG_NAMES = ('herdr1', 'core')
+LEG_KEYS = {'status', 'evidence'}
+ACCEPTANCE_STATUSES = {'not_run', 'passed', 'failed', 'blocked'}
+EXECUTED_STATUSES = {'passed', 'failed'}
 
 
 def reject_constant(value: str) -> None:
@@ -68,6 +74,44 @@ def validate_evidence(root: Path, item: dict[str, Any]) -> None:
         resolved = (root / relative).resolve()
         if not resolved.is_relative_to(root.resolve()) or not resolved.is_file():
             raise ValueError(f"{item['id']}: evidence is not a file in the specification: {relative}")
+
+
+def validate_acceptance_record(root: Path, scenario: dict[str, Any]) -> None:
+    """Each runtime leg is recorded on its own; no leg inherits the other's record.
+
+    The flat per-scenario status/evidence that predates legs is refused rather
+    than defaulted, because the migration onto legs is complete and a guessed
+    leg would attribute one runtime's outcome to the other.
+    """
+    if 'status' in scenario or 'evidence' in scenario:
+        raise ValueError(f"Acceptance scenario keeps a flat status/evidence: {scenario['id']}")
+    legs = scenario.get('legs')
+    if not isinstance(legs, dict):
+        raise ValueError(f"Acceptance scenario records no runtime legs: {scenario['id']}")
+    missing = [name for name in LEG_NAMES if name not in legs]
+    if missing:
+        raise ValueError(f"Acceptance scenario lacks leg(s) {missing}: {scenario['id']}")
+    unknown = sorted(set(legs) - set(LEG_NAMES))
+    if unknown:
+        raise ValueError(f"Unknown acceptance leg(s) {unknown}: {scenario['id']}")
+    for name in LEG_NAMES:
+        leg = legs[name]
+        where = f'{scenario["id"]}.{name}'
+        if not isinstance(leg, dict) or set(leg) != LEG_KEYS:
+            raise ValueError(f'Acceptance leg records something other than status and evidence: {where}')
+        if leg['status'] not in ACCEPTANCE_STATUSES:
+            raise ValueError(f'Invalid acceptance leg status: {where} {leg["status"]!r}')
+        evidence = leg['evidence']
+        if not isinstance(evidence, list):
+            raise ValueError(f'Acceptance leg evidence is not a list: {where}')
+        if leg['status'] in EXECUTED_STATUSES and not evidence:
+            raise ValueError(f'Executed acceptance leg lacks evidence: {where}')
+        validate_evidence(root, {'id': where, 'evidence': evidence})
+
+
+def executed_legs(scenario: dict[str, Any]) -> list[str]:
+    """A passing Herdr 1 leg never stands in for the Core leg, or the reverse."""
+    return [name for name in LEG_NAMES if scenario['legs'][name]['status'] in EXECUTED_STATUSES]
 
 
 def index(items: list[dict[str, Any]], kind: str) -> dict[str, dict[str, Any]]:
@@ -261,11 +305,7 @@ def validate(root: Path, require_schema: bool = True) -> dict[str, Any]:
     covered: set[str] = set()
     for scenario in r['acceptance'].values():
         refs(scenario['requirements'], r['requirements'], scenario['id'])
-        if scenario['status'] not in {'not_run','passed','failed','blocked'}:
-            raise ValueError(f"Invalid acceptance status: {scenario['id']}")
-        if scenario['status'] in {'passed','failed'} and not scenario['evidence']:
-            raise ValueError(f"Executed scenario lacks evidence: {scenario['id']}")
-        validate_evidence(root, scenario)
+        validate_acceptance_record(root, scenario)
         covered.update(scenario['requirements'])
     if covered != set(r['requirements']):
         raise ValueError(f'Uncovered requirements: {sorted(set(r["requirements"])-covered)}')
@@ -312,7 +352,8 @@ def validate(root: Path, require_schema: bool = True) -> dict[str, Any]:
             'result':'passed', 'counts':{k:len(v) for k,v in r.items()},
             'strict_json_files':len(json_files),'local_file_links_checked':links_checked,
             'schema_validation':schema_status,'schema_examples':schema_examples,
-            'application_scenarios_executed':sum(x['status'] in {'passed','failed'} for x in r['acceptance'].values()),
+            'application_scenarios_executed':sum(bool(executed_legs(x)) for x in r['acceptance'].values()),
+            'application_legs_executed':sum(len(executed_legs(x)) for x in r['acceptance'].values()),
             'input_sha256':input_hashes(root)}
 
 

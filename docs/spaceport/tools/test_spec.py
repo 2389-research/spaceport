@@ -45,7 +45,8 @@ class SpecificationToolsTests(unittest.TestCase):
         self.assertIn('SP-025',packet)
         self.assertIn('input_sha256',packet)
         self.assertIn('No broad code deletion',packet)
-        self.assertIn('"status": "passed"',packet)
+        self.assertIn('"legs": {',packet)
+        self.assertIn('"herdr1": {',packet)
         self.assertNotIn('All application scenarios begin not_run',packet)
 
     def test_all_packets_fit_default_budget(self):
@@ -76,6 +77,55 @@ class SpecificationToolsTests(unittest.TestCase):
             self.assertIn('evidence/gone.md',str(missing.exception))
             with self.assertRaises(ValueError):
                 spec.validate_evidence(root,{'id':'A','evidence':['../outside.md']})
+
+    def leg(self,status,evidence=()):
+        return {'status':status,'evidence':list(evidence)}
+
+    def scenario(self,herdr1,core):
+        return {'id':'A01','legs':{'herdr1':herdr1,'core':core}}
+
+    def test_scenario_without_a_leg_is_rejected(self):
+        scenario=self.scenario(self.leg('not_run'),self.leg('not_run'))
+        del scenario['legs']['core']
+        with self.assertRaises(ValueError) as missing:
+            spec.validate_acceptance_record(spec.ROOT,scenario)
+        self.assertIn('core',str(missing.exception))
+
+    def test_pre_leg_flat_status_is_not_backward_compatible(self):
+        scenario=self.scenario(self.leg('not_run'),self.leg('not_run'))
+        scenario['status']='not_run'
+        scenario['evidence']=[]
+        with self.assertRaises(ValueError) as flat:
+            spec.validate_acceptance_record(spec.ROOT,scenario)
+        self.assertIn('flat status/evidence',str(flat.exception))
+
+    def test_passed_leg_without_evidence_is_rejected(self):
+        with self.assertRaises(ValueError) as missing:
+            spec.validate_acceptance_record(spec.ROOT,self.scenario(self.leg('passed'),self.leg('not_run')))
+        self.assertIn('A01.herdr1',str(missing.exception))
+
+    def test_unknown_leg_status_is_rejected(self):
+        with self.assertRaises(ValueError) as invalid:
+            spec.validate_acceptance_record(spec.ROOT,self.scenario(self.leg('done'),self.leg('not_run')))
+        self.assertIn('A01.herdr1',str(invalid.exception))
+
+    def test_unknown_leg_name_is_rejected(self):
+        scenario=self.scenario(self.leg('not_run'),self.leg('not_run'))
+        scenario['legs']['herdr2']=self.leg('not_run')
+        with self.assertRaises(ValueError) as unknown:
+            spec.validate_acceptance_record(spec.ROOT,scenario)
+        self.assertIn('herdr2',str(unknown.exception))
+
+    def test_leg_evidence_must_name_an_existing_file(self):
+        with self.assertRaises(ValueError) as missing:
+            spec.validate_acceptance_record(
+                spec.ROOT,self.scenario(self.leg('not_run'),self.leg('failed',['evidence/gone.md'])))
+        self.assertIn('A01.core',str(missing.exception))
+
+    def test_one_executed_leg_does_not_execute_the_other(self):
+        scenario=self.scenario(self.leg('passed',['evidence/t00-baseline.md']),self.leg('not_run'))
+        spec.validate_acceptance_record(spec.ROOT,scenario)
+        self.assertEqual(spec.executed_legs(scenario),['herdr1'])
 
     def test_unknown_outcome_cannot_be_retry_safe(self):
         from jsonschema import Draft202012Validator
@@ -130,8 +180,12 @@ class SpecificationToolsTests(unittest.TestCase):
         report=spec.validate(spec.ROOT)
         self.assertEqual(report['result'],'passed')
         scenarios=spec.load(spec.ROOT/'plan/acceptance.json')['scenarios']
-        executed=sum(item['status'] in {'passed','failed'} for item in scenarios)
+        executed=sum(bool(spec.executed_legs(item)) for item in scenarios)
         self.assertEqual(report['application_scenarios_executed'],executed)
+        self.assertEqual(report['application_legs_executed'],
+                         sum(len(spec.executed_legs(item)) for item in scenarios))
+        for item in scenarios:
+            self.assertEqual(set(item['legs']),set(spec.LEG_NAMES))
 
 
 if __name__=='__main__':

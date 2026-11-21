@@ -40,7 +40,7 @@ Keep this package intact under `docs/spaceport/` in the new fork, or at one expl
 | `SPEC.md` | Product requirements, identified by `SP-xxx` |
 | `SYSTEM.md`, `docs/01-*`, `docs/02-*`, `docs/06-*` | System boundaries and implementation contracts |
 | `plan/tasks.json` | Work graph and task status; no parallel handwritten progress tracker |
-| `plan/acceptance.json` | Planned scenarios and their actual execution status; initially all `not_run` |
+| `plan/acceptance.json` | Planned scenarios with independent Herdr 1 and Core leg outcomes; every leg begins `not_run` |
 | `plan/capabilities.json` | Source-observed backing mechanisms and unresolved compatibility gates |
 | `plan/removals.json` | Feature disposition and candidate code/dependency roots |
 | `plan/sources.json` | Exact upstream evidence revisions; not deployment pins |
@@ -685,7 +685,7 @@ A releasable build requires all mandatory acceptance gates or explicit owner-app
 
 # Verification and agent-ergonomic acceptance
 
-The canonical scenarios are `plan/acceptance.json`. All application scenarios initially have `status: not_run`. The package validator checks links, references and shapes—not Spaceport's behavior.
+The canonical scenarios are `plan/acceptance.json`. Each scenario records a Herdr 1 leg and a Core leg independently, and both begin `not_run`; a passing leg never stands in for the other. The package validator checks links, references and shapes—not Spaceport's behavior.
 
 ## Evidence levels
 
