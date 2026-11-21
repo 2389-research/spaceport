@@ -267,7 +267,7 @@ pub(crate) fn run() -> Result<()> {
             "state_root":core_root,"frame_probe_enabled":false,
         }))?,
     )?;
-    let targets = fixture.tui.start_tui()?;
+    let targets = fixture.tui.start_tui(|_| {})?;
     fixture.tui.launch_gui(|command| target.apply(command))?;
     let window = fixture.tui.split_window(&targets)?;
     fixture.tui.cli(

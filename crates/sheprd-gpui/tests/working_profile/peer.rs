@@ -17,6 +17,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(windows)]
+pub(super) mod output;
+
 const LIMIT: Duration = Duration::from_secs(20);
 pub(super) const GENERATED_LINES: usize = 120;
 
@@ -116,8 +119,12 @@ impl Peer {
             .context("missing TUI response result")
     }
 
-    pub(super) fn seed(&mut self, directory: &Path) -> Result<Targets> {
-        let result = self.seed_inner(directory);
+    pub(super) fn seed(
+        &mut self,
+        directory: &Path,
+        on_workspace: impl FnOnce(&str),
+    ) -> Result<Targets> {
+        let result = self.seed_inner(directory, on_workspace);
         let diagnostic = serde_json::to_vec_pretty(&self.diagnostic())?;
         if let Err(error) = std::fs::write(directory.join("seed-observation.json"), diagnostic) {
             eprintln!("WORKING PROFILE could not retain seed observation: {error}");
@@ -143,15 +150,17 @@ impl Peer {
         json!({"snapshot_events":self.snapshots,"surface_events":self.surfaces,"snapshot":snapshot,"surface":surface})
     }
 
-    fn seed_inner(&mut self, directory: &Path) -> Result<Targets> {
+    fn seed_inner(&mut self, directory: &Path, on_workspace: impl FnOnce(&str)) -> Result<Targets> {
         let created = self.request(
             Method::WorkspaceCreate,
             json!({"cwd": directory, "focus": true, "label": "Spaceport synthetic profile"}),
         )?;
         let workspace = created["workspace"]["workspace_id"]
             .as_str()
+            .filter(|workspace| !workspace.is_empty())
             .context("created workspace ID")?
             .to_owned();
+        on_workspace(&workspace);
         if self
             .snapshot
             .as_ref()
@@ -192,7 +201,12 @@ impl Peer {
                 },
             ],
         )?;
-        self.until("generated output marker", |event| matches!(event, ClientEvent::Surface(surface) if marker_visible(&surface.frame)))?;
+        self.until("generated output marker", |event| {
+            matches!(event, ClientEvent::Surface(surface)
+                if surface.boot_id == targets.boot
+                    && surface.panes.iter().any(|pane| pane.pane_id == targets.pane)
+                    && marker_visible(&surface.frame))
+        })?;
         Ok(targets)
     }
 

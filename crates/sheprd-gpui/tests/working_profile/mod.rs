@@ -15,3 +15,5 @@ mod report;
 pub(super) use harness::run;
 #[cfg(windows)]
 pub(super) use harness::run_core;
+#[cfg(windows)]
+pub(super) use harness::run_output_contract;

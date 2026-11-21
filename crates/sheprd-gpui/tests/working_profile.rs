@@ -17,3 +17,10 @@ fn working_terminal_groups_profile() -> anyhow::Result<()> {
 fn working_tui_and_core_profile() -> anyhow::Result<()> {
     working_profile::run_core()
 }
+
+#[cfg(windows)]
+#[test]
+#[ignore = "requires release Windows, explicit HERDR_TEST_BINARY and HERDR_TEST_TMPDIR; owns a private TUI server"]
+fn bounded_tui_output_contract() -> anyhow::Result<()> {
+    working_profile::run_output_contract()
+}

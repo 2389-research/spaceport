@@ -1648,3 +1648,64 @@ It compares stable group, tab, and connection mappings before deduplicating comp
 Exhaustive typed destructuring checks every numeric counter before interval-specific growth guards.
 It preserves the original scalar snapshots and performs no arithmetic or I/O.
 Independent review finds no material issue; all 20 cases still need remote GREEN.
+
+## Task 7: Prove bounded output through the private TUI
+
+Use the existing private Peer, explicit pinned Herdr binary, and owned fixture workspace.
+Prefer one self-ending authored PowerShell loop over a producer thread and repeated input commands.
+Bound it to 64 output steps, paced at 200 milliseconds, within an absolute 20-second deadline.
+Send the command once; queued input never proves output and uncertain input must not be resent.
+Split marker literals through the shell's formatting so input echo cannot establish success.
+Keep the ordinary ready marker visible in each authored output row.
+Use content-free new error paths; never call Peer::diagnostic for streaming failures.
+Keep all reads, waits, and cleanup in the harness, outside the GUI thread.
+
+Expose a small private start, pump, and finish contract so later sampling can drain output during its CPU wait.
+Retain only scalar progress and generated-marker matches in the result.
+Natural completion must leave no running producer; close the exact fixture workspace on success and failure.
+Preserve partial private failure evidence and propagate cleanup failure without replaying non-idempotent actions.
+No provider, credential, new transport, subprocess launcher, normal CLI verb, or Herdr modification is permitted.
+
+First add a Windows-only ignored real-TUI contract test and compile-ready refusing start/pump/finish API.
+The fixture must establish its actual generated ready output before the missing producer assertion fails.
+Prepare its private output directory and explicit binary through the existing native workflow.
+Run it before either GUI profile; a deliberate contract failure supplies no GUI or CPU qualification.
+Ordinary platform checks must pass before the native test-only candidate is promoted.
+Release the producer implementation only after its actual runtime RED is inspected.
+
+This refines the earlier harness-paced proposal without adding a producer thread.
+The implementer owns the new Peer output module, real-TUI contract helper, and test/export declarations.
+Root owns workflow changes, sampler integration, observer stream metadata, commits, review, and remote validation.
+No local product builds, tests, compilers, native processes, VMs, or daemons are allowed.
+
+### Picture cache and passive envelope GREEN
+
+Source `129c36d0d9cc8610b0207c3a85ee614d63a935cc` passes all six executed jobs in run `44863185185`.
+Mac app job `136720933188` and Windows app job `136720933239` pass all 20 envelope cases.
+Their complete harness results are 51 passing Mac cases and 71 passing Windows cases.
+Both platforms pass all 22 terminal-group cases, including all seven picture controls and both counter-owner controls.
+Changed cells, actual painter appearance, popup clipping/removal, image preparation, and settled replay all pass.
+Both also pass all 11 Core view cases, both timer cases, and scoped app Clippy.
+Core observer suites pass 11 Mac cases and 10 Windows cases.
+The known Mac linker unwind-table and `block` future-compatibility warnings remain; Windows logs introduce no warning.
+
+The picture-cache implementation and passive envelope validator are complete within their automated scope.
+Native glyphs, picture costs, streaming copy costs, and CPU savings remain unqualified for this newer source.
+Kata gg9v remains open, with Doctor Biz's Mac and audible-speech holds unchanged.
+
+The next test-only native candidate runs the ignored bounded-output contract before either GUI profile.
+If that deliberate missing-producer gate fails, skip trace export because no profile was attempted.
+Keep desktop preference restoration and encrypted partial-evidence sealing active.
+The exact workspace ID is captured immediately after the correlated creation reply for failure cleanup.
+The contract uses event-driven progress receives and one failure deadline, rather than polling wall time.
+
+The new real-TUI contract passed independent source review after removing deadline polling.
+It waits for the first step, a later progress event, and natural completion through one shared failure bound.
+Producer methods still return the explicit unavailable error; no output loop exists yet.
+Expected native RED requires the real seed marker, unavailable-producer cause, and exact workspace-close acknowledgement.
+A setup, compilation, retention, or cleanup failure does not satisfy that RED gate.
+Ordinary CI and actual private-TUI execution remain pending for this new test-only checkpoint.
+
+Kata gg9v comment `3105` records the earlier `129c36d0d` green milestone.
+Fresh readback matches its submitted body and preserves the issue's open status.
+Its original 53-child set still contains 50 closed issues and three open issues.

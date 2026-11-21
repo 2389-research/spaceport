@@ -36,6 +36,11 @@ mod core;
 #[cfg(windows)]
 pub(crate) use core::run as run_core;
 
+#[cfg(windows)]
+mod output_contract;
+#[cfg(windows)]
+pub(crate) use output_contract::run as run_output_contract;
+
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(windows)]
@@ -200,7 +205,7 @@ impl Fixture {
         serde_json::from_slice(&bytes).with_context(|| format!("profile CLI {name} output"))
     }
 
-    fn start_tui(&mut self) -> Result<Targets> {
+    fn start_tui(&mut self, on_workspace: impl FnOnce(&str)) -> Result<Targets> {
         self.server = Some(
             self.sandbox()?
                 .command(daemon_binary(), "daemon.log")
@@ -210,7 +215,7 @@ impl Fixture {
         let sandbox = self.sandbox.as_ref().context("profile sandbox")?;
         sandbox.wait_for_daemon(self.server.as_mut().context("profile server")?, STARTUP);
         let mut peer = Peer::open(&sandbox.socket())?;
-        peer.seed(&sandbox.dir)
+        peer.seed(&sandbox.dir, on_workspace)
     }
 
     fn launch_gui(&mut self, configure: impl FnOnce(&mut Command)) -> Result<()> {
@@ -399,7 +404,7 @@ pub(crate) fn run() -> Result<()> {
     check_environment()?;
     let mut fixture = Fixture::prepare(false)?;
     let dir = fixture.sandbox()?.dir.clone();
-    let targets = fixture.start_tui()?;
+    let targets = fixture.start_tui(|_| {})?;
     fixture.launch_gui(|_| {})?;
     let window = fixture.split_window(&targets)?;
     fixture.cli("new-tab", &["run", "new_tab", "--window", &window])?;
