@@ -1,3 +1,5 @@
+// ABOUTME: Checks platform shortcut routing and preserves terminal and system keys.
+// ABOUTME: Verifies actual catalog bindings without assuming equal platform counts.
 use super::*;
 
 #[test]
@@ -13,16 +15,11 @@ fn function_keys_can_be_configured_without_taking_ordinary_typing() {
 }
 
 #[test]
-fn platform_defaults_are_complete_unique_and_leave_edit_keys_available() {
+fn platform_defaults_are_unique_and_leave_edit_keys_available() {
     let keymap = with(&[]).unwrap();
     let mut seen = HashMap::new();
     for info in COMMANDS {
-        // A platform can append aliases for normalized backend keystrokes.
-        assert!(
-            info.default_shortcuts().len() >= info.base_shortcuts().len(),
-            "{}",
-            info.name
-        );
+        // Catalog tests cover intentional platform differences, including unbound keys.
         for shortcut in info.default_shortcuts() {
             let key = keystroke(shortcut);
             assert!(

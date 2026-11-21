@@ -295,6 +295,8 @@ mod browser_page;
 mod drive_paths;
 mod escaped_paths;
 mod external;
+#[cfg(windows)]
+mod osc8_drives;
 mod paths;
 mod wide_paths;
 mod wrapped;
