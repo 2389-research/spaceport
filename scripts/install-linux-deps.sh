@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Ubuntu 24.04, native x86_64 or ARM64. GPUI 0.2.2 defaults enable X11 and Wayland.
+# ABOUTME: Installs Ubuntu 24.04 build dependencies for native x86_64 and ARM64.
+# ABOUTME: Adds capture and OCR tools for the private Linux saved-state fixture.
 set -euo pipefail
 # A developer and a CI runner need sudo; root in a container has none installed.
 if [[ $EUID -eq 0 ]]; then sudo=(); else sudo=(sudo); fi
@@ -42,8 +43,12 @@ if [[ ${SPACEPORT_CI_APT_MIRROR:-0} == 1 ]]; then
 else
   "${sudo[@]+"${sudo[@]}"}" apt-get update
 fi
+desktop_packages=()
+if [[ ${SPACEPORT_CI_SAVED_STATE_DESKTOP:-false} == true ]]; then
+  desktop_packages=(xvfb xdotool imagemagick mesa-vulkan-drivers tesseract-ocr tesseract-ocr-eng)
+fi
 # Installation is never retried: only a successful metadata refresh reaches it.
 "${sudo[@]+"${sudo[@]}"}" apt-get "${apt_sources[@]+"${apt_sources[@]}"}" install --no-install-recommends -y \
   build-essential pkg-config libxkbcommon-dev libxkbcommon-x11-dev libxcb1-dev \
   libfreetype6-dev libfontconfig1-dev fonts-dejavu-core libasound2-dev \
-  python3 jq zstd
+  python3 jq zstd "${desktop_packages[@]+"${desktop_packages[@]}"}"
