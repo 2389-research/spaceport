@@ -10,6 +10,8 @@ use sheprd_client::{
 };
 use std::sync::Arc;
 
+#[cfg(windows)]
+mod drive_prefixes;
 mod wrapped;
 
 #[test]
