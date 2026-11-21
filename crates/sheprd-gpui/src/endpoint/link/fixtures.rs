@@ -31,6 +31,7 @@ impl Endpoint {
         }));
     }
 
+    #[cfg(unix)]
     pub(crate) fn clear_outage_for_test(&mut self) {
         self.set_failure_for_test(None);
     }
@@ -56,6 +57,7 @@ impl Endpoint {
         self.enter(Transition::Observe(Instant::now()));
     }
 
+    #[cfg(unix)]
     pub(in crate::endpoint) fn online_since(&self) -> Option<Instant> {
         match self.link {
             Link::Up { since, .. } => since,
@@ -63,6 +65,7 @@ impl Endpoint {
         }
     }
 
+    #[cfg(unix)]
     pub(in crate::endpoint) fn clear_stability_for_test(&mut self) {
         if let Link::Up { retry_at, .. } = self.link {
             self.enter(Transition::Fixture(Link::Up {
