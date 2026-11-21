@@ -1,3 +1,5 @@
+// ABOUTME: Exercises terminal group ownership, projection, and parked connections.
+// ABOUTME: Shares paired peers and window layouts across focused group tests.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::{
@@ -14,6 +16,7 @@ use std::sync::Arc;
 mod idle_reassert;
 mod mirror_canvas;
 mod padding;
+mod parked_startup;
 mod titlebar_navigation;
 
 /// A coherent surface for `snapshot`, as the daemon projects one.

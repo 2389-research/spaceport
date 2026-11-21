@@ -37,6 +37,7 @@ The observed-shutdown guard cannot make remote attachment atomic with an externa
    Add pure readiness cases in `crates/sheprd-gpui/src/endpoint/tests/retry_readiness.rs`.
    Exercise undrained, dirty, and lock-contended inbox states without timing guesses.
 4. Retain shutdown in `crates/sheprd-gpui/src/state.rs` through disconnect and include it in display equality.
+   Require a whole-window update before disconnect in `crates/sheprd-gpui/src/state/tests/shutdown.rs`.
    Clear it on accepted Connected.
 5. Add Stopped advice in `crates/sheprd-gpui/src/endpoint/link.rs` and its phase in `endpoint/phase.rs`.
    Preserve version precedence and existing missing-install retry policy.
