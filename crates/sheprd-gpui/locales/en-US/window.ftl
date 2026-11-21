@@ -5,6 +5,9 @@
 # The card over a dropped connection; $host is the device's name.
 window-reconnecting = Reconnecting to { $host }
 window-reconnect-now = Reconnect now
+window-herdr-stopped = Herdr stopped
+window-herdr-stopped-note = Herdr was stopped. Start it again when you're ready.
+window-start-herdr = Start Herdr
 # The card in its place when this computer has no Herdr to start. Install
 # Herdr opens the Herdr website; nothing is downloaded or run.
 window-herdr-missing = Herdr isn't installed on this computer

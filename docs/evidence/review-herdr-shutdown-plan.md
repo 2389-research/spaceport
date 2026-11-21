@@ -103,5 +103,14 @@ and both images visibly show its old reconnect action. Require the missing-label
 assertion after those captures. On the fixed revision, require both new cards,
 the recovered prompt, and the completion receipt. Record each tested checkout SHA.
 
-Both runs and visual inspection remain pending. macOS and Windows presentation,
+The [baseline run](https://github.com/2389-research/spaceport/actions/runs/44900991331/job/136836836772)
+reaches the intended missing-label assertion after both captures.
+The [receipt](herdr-shutdown-native/baseline.json) records source, binary, event, hold, window, and image identities.
+Visual inspection confirms the old reconnect card is legible and unclipped at both widths.
+
+![Before: 900px native stopped window](herdr-shutdown-native/before-900.png)
+
+![Before: 640px native stopped window](herdr-shutdown-native/before-640.png)
+
+Fixed-source execution and image inspection remain pending. macOS and Windows presentation,
 Windows typed shutdown, and real SSH/WSL recovery need separate qualification.
