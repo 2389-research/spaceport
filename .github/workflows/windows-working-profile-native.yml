@@ -87,6 +87,9 @@ jobs:
           })
           [ordered]@{source = $env:GITHUB_SHA; run_id = $env:GITHUB_RUN_ID; files = $files; qualification = 'unreviewed native capture'} |
             ConvertTo-Json -Depth 4 | Set-Content -Encoding UTF8 (Join-Path $destination 'identity.json')
+      - name: Profile controlled Working TUI with a populated parked group
+        timeout-minutes: 15
+        run: cargo test --locked --release --target x86_64-pc-windows-msvc -p sheprd-gpui --features integration-test --test working_profile working_terminal_groups_profile -- --ignored --exact --nocapture
       - name: Profile controlled Working TUI beside private Core
         timeout-minutes: 15
         run: cargo test --locked --release --target x86_64-pc-windows-msvc -p sheprd-gpui --features integration-test --test working_profile working_tui_and_core_profile -- --ignored --exact --nocapture
