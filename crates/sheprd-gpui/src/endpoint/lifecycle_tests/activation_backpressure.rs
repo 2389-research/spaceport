@@ -91,8 +91,10 @@ fn activation_recovers(cx: &mut gpui::TestAppContext, initial: bool) {
                 ClientMessage::ClientShellEndpointRequest { request, .. } => {
                     let request: serde_json::Value = serde_json::from_str(&request).unwrap();
                     assert_eq!(request["method"], Method::ClientShellSurfaceSet.as_str());
-                    background_commands::acknowledge_activation(&mut server, &request);
+                    // Deposit the surface and release its lock before the
+                    // acknowledgement wakes the reader-driven projection wait.
                     inbox.lock().unwrap().apply(ClientEvent::Surface(frame));
+                    background_commands::acknowledge_activation(&mut server, &request);
                     return server;
                 }
                 message => panic!("unexpected retry frame: {message:?}"),
