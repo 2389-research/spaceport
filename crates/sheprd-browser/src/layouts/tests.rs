@@ -55,6 +55,7 @@ fn saved_layouts_round_trip_and_damaged_files_are_refused() {
     let saved = parsed.get(&key).unwrap();
     assert_eq!(serde_json::to_string(saved).unwrap(), layout);
     let bytes = serde_json::to_vec(&Saved {
+        next_tab_id: 0,
         layouts: vec![Entry {
             scope: key.0.clone(),
             workspace: key.1.clone(),

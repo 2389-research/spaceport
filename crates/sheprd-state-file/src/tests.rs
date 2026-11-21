@@ -1,5 +1,10 @@
+// ABOUTME: Exercises bounded state reads and the coalescing file writer.
+// ABOUTME: Verifies persisted values and rejected-file preservation.
+
 #![allow(clippy::unwrap_used)]
 use super::*;
+
+mod rejected;
 
 #[test]
 fn missing_files_are_empty_and_oversized_files_are_rejected() {

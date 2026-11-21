@@ -327,3 +327,74 @@ fn recovery_keeps_the_saved_layout_floor_and_tab_sequence_across_two_reloads() {
     assert_eq!(next, Some(TabId::test(302)));
     assert!(again.get(opened.unwrap()).is_none());
 }
+
+#[test]
+fn recovery_saves_existing_tabs_when_layout_references_exhaust_new_ids() {
+    let folder = tempfile::tempdir().unwrap();
+    let path = folder.path().join(TABS_FILE);
+    fs::write(&path, format!(r#"{{"tabs":[{GOOD}]}}"#)).unwrap();
+    write_layout(
+        folder.path(),
+        "w",
+        json!({"pick": {"kind": "page", "id": u64::MAX}, "share": 1}),
+    );
+    let mut store = Store::load(Some(path.clone()));
+    let admission = store.check_new_tab_id();
+    let opened = open_devices(&mut store);
+    let visited = store.visited(TabId::test(2), None, Some("Updated"));
+    let joined = finish_writes(&mut store);
+    assert!(matches!(admission, Err(Error::TabIdsExhausted)));
+    assert!(opened.is_none());
+    assert!(visited && joined);
+
+    let mut reloaded = Store::load(Some(path));
+    let title = reloaded.get(TabId::test(2)).map(|tab| tab.title.clone());
+    let opened = open_devices(&mut reloaded);
+    let joined = finish_writes(&mut reloaded);
+    assert_eq!(title.as_deref(), Some("Updated"));
+    assert!(opened.is_none());
+    assert!(joined);
+}
+
+#[test]
+fn recovery_rejects_duplicate_tab_fields_without_losing_their_id() {
+    let folder = tempfile::tempdir().unwrap();
+    let path = folder.path().join(TABS_FILE);
+    let duplicate = r#"{"id":70,"scope":"local","workspace_id":"w","location":{"kind":"devices"},"title":"First","title":"Second"}"#;
+    let original = format!(r#"{{"tabs":[{GOOD},{duplicate}]}}"#);
+    fs::write(&path, &original).unwrap();
+
+    let mut store = Store::load(Some(path));
+    let good = store.get(TabId::test(2)).is_some();
+    let duplicate = store.get(TabId::test(70)).is_some();
+    let opened = open_devices(&mut store);
+    let joined = finish_writes(&mut store);
+    assert!(good);
+    assert!(!duplicate);
+    assert_eq!(opened, Some(TabId::test(71)));
+    assert!(joined);
+    let copies = backups(folder.path());
+    assert_eq!(copies.len(), 1);
+    assert_eq!(fs::read(&copies[0]).unwrap(), original.as_bytes());
+}
+
+#[test]
+fn positional_tab_rows_reserve_their_id_when_an_entry_is_rejected() {
+    for (kind, restored) in [("devices", true), ("future", false)] {
+        let folder = tempfile::tempdir().unwrap();
+        let path = folder.path().join(TABS_FILE);
+        let row = json!([300, "local", "w", {"kind": kind}, "Positional", null, "group"]);
+        let original = format!(r#"{{"tabs":[{GOOD},{row},false],"next":3}}"#);
+        fs::write(&path, &original).unwrap();
+
+        let mut store = Store::load(Some(path));
+        let good = store.get(TabId::test(2)).is_some();
+        let positional = store.get(TabId::test(300)).is_some();
+        let opened = open_devices(&mut store);
+        let joined = finish_writes(&mut store);
+        assert!(good);
+        assert_eq!(positional, restored);
+        assert_eq!(opened, Some(TabId::test(301)));
+        assert!(joined);
+    }
+}

@@ -301,3 +301,31 @@ fn recovery_creates_a_layout_file_when_the_saved_file_is_missing() {
     assert_eq!(reloaded.layouts.get(&key), Some(&layout));
     assert!(backups(folder.path()).is_empty());
 }
+
+#[test]
+fn positional_layout_references_survive_key_replacement_and_entry_rejection() {
+    let page = json!({"kind": "page", "id": 300});
+    let unknown = json!({"kind": "future", "id": 7});
+    for group in [json!([page, 1, [], []]), json!([unknown, 1, [], [page]])] {
+        let folder = tempfile::tempdir().unwrap();
+        let path = folder.path().join(LAYOUTS_FILE);
+        let high = json!(["local", "w", {"groups": [group], "active": 0}]);
+        let low = entry("w", 2, 1);
+        let original = serde_json::to_vec(&json!({"layouts": [high, low]})).unwrap();
+        fs::write(&path, &original).unwrap();
+
+        assert_eq!(reserved_next(&path).unwrap(), 301);
+        let mut layouts = Layouts::load(Some(path.clone()));
+        layouts.save();
+        assert!(finish_writes(&mut layouts));
+        let bytes = fs::read(&path).unwrap();
+        let saved: Value = serde_json::from_slice(&bytes).unwrap();
+        let key = (Scope::endpoint("local"), "w".to_owned());
+        let expected: SavedLayout = serde_json::from_value(low["layout"].clone()).unwrap();
+        let restored = parse(&bytes).unwrap();
+        assert_eq!(restored.len(), 1);
+        assert_eq!(restored.get(&key), Some(&expected));
+        assert_eq!(saved["next_tab_id"], json!(301));
+        assert_eq!(reserved_next(&path).unwrap(), 301);
+    }
+}

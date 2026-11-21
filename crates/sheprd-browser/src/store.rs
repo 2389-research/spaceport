@@ -7,9 +7,10 @@ use crate::Error;
 use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use sheprd_reorder::Beside;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
+pub(super) mod identities;
 mod saved;
 
 const MAX_TABS: usize = 256;
@@ -201,6 +202,24 @@ struct Saved {
     next: u64,
 }
 
+/// Tests each entry against its original schema during partial recovery.
+#[derive(Deserialize)]
+#[serde(untagged)]
+pub(super) enum SavedEntry<T> {
+    // An array of small rejected values must not reserve a full tab per slot.
+    Parsed(Box<T>),
+    Rejected(serde::de::IgnoredAny),
+}
+
+impl<T> SavedEntry<T> {
+    pub(super) fn parsed(self) -> Option<T> {
+        match self {
+            Self::Parsed(value) => Some(*value),
+            Self::Rejected(serde::de::IgnoredAny) => None,
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct Store {
     tabs: Vec<Tab>,
@@ -208,6 +227,7 @@ pub struct Store {
     pub(super) closed: super::closed::ClosedTabs,
     writer: Option<sheprd_state_file::Writer<Saved>>,
     quitting: bool,
+    restoration_blocked: bool,
 }
 
 impl Global for Store {}
@@ -226,46 +246,66 @@ fn clean_title(title: &str) -> String {
 impl Store {
     #[cfg(any(test, feature = "test-support"))]
     pub fn restored_for_test(bytes: &[u8]) -> crate::Result<Self> {
-        Ok(Self::with_saved(saved::parse(bytes)?, None))
-    }
-
-    /// Called before starting GPUI, like the window state, with the file the
-    /// app keeps its tabs in. A missing or damaged file starts with no tabs.
-    pub fn load(path: Option<PathBuf>) -> Self {
-        let tabs = path
-            .as_deref()
-            .map(|path| {
-                sheprd_state_file::read(path, MAX_FILE_BYTES)
-                    .map_err(Error::from)
-                    .and_then(|bytes| bytes.as_deref().map_or(Ok(Saved::default()), saved::parse))
-            })
-            .transpose()
-            .unwrap_or_else(|error| {
-                tracing::warn!(%error, "Cannot restore browser tabs");
-                None
-            })
-            .unwrap_or_default();
-        let writer =
-            path.and_then(
-                |path| match sheprd_state_file::Writer::start("browser-tabs", path) {
-                    Ok(writer) => Some(writer),
-                    Err(error) => {
-                        tracing::warn!(%error, "Cannot start browser-tab worker");
-                        None
-                    }
-                },
-            );
-        Self::with_saved(tabs, writer)
-    }
-
-    fn with_saved(saved: Saved, writer: Option<sheprd_state_file::Writer<Saved>>) -> Self {
-        Self {
+        let saved = saved::parse(bytes)?;
+        Ok(Self {
             tabs: saved.tabs,
             next: saved.next,
-            closed: Default::default(),
-            writer,
-            quitting: false,
+            ..Self::default()
+        })
+    }
+
+    /// Restores tabs before GPUI starts. Both saved files can name tab IDs.
+    pub fn load(path: Option<PathBuf>) -> Self {
+        let mut store = Self::default();
+        let Some(path) = path else { return store };
+        let restored = store.restore_tabs(&path).and_then(|()| {
+            super::layouts::reserved_next(&path.with_file_name("editor-groups.json"))
+        });
+        match restored {
+            Ok(next) => store.next = store.next.max(next),
+            Err(error) => {
+                tracing::warn!(%error, "Cannot restore saved tab state; saving and new tabs are blocked");
+                store.restoration_blocked = true;
+                return store;
+            }
         }
+        match sheprd_state_file::Writer::start("browser-tabs", path) {
+            Ok(writer) => store.writer = Some(writer),
+            Err(error) => tracing::warn!(%error, "Cannot start browser-tab worker"),
+        }
+        store
+    }
+
+    fn restore_tabs(&mut self, path: &Path) -> crate::Result<()> {
+        let Some(bytes) = sheprd_state_file::read(path, MAX_FILE_BYTES)? else {
+            return Ok(());
+        };
+        match saved::parse(&bytes) {
+            Ok(saved) => {
+                self.tabs = saved.tabs;
+                self.next = saved.next;
+            }
+            Err(error) => {
+                tracing::warn!(%error, "Cannot fully restore browser tabs");
+                let saved = saved::recover(&bytes);
+                self.tabs = saved.tabs;
+                sheprd_state_file::preserve_rejected(path, &bytes)?;
+                self.next = saved.next.max(identities::tabs(&bytes)?);
+            }
+        }
+        Ok(())
+    }
+
+    /// Checks whether a new tab can receive an ID before its caller starts a terminal.
+    pub fn check_new_tab_id(&self) -> crate::Result<()> {
+        self.following_tab_id().map(|_| ())
+    }
+
+    fn following_tab_id(&self) -> crate::Result<u64> {
+        if self.restoration_blocked {
+            return Err(Error::RestorationBlocked);
+        }
+        self.next.checked_add(1).ok_or(Error::TabIdsExhausted)
     }
 
     pub fn install(self, cx: &mut App) {
@@ -337,8 +377,7 @@ impl Store {
             .filter(move |tab| tab.core_group().as_ref() == Some(key))
     }
 
-    /// Opens a tab for the strips, or returns `None` when the app already
-    /// holds the most it keeps.
+    /// Opens a tab when the store has room and can allocate an ID.
     pub fn open(
         &mut self,
         scope: Scope,
@@ -369,7 +408,7 @@ impl Store {
         if self.tabs.len() >= MAX_TABS {
             return None;
         }
-        let following = self.next.checked_add(1)?;
+        let following = self.following_tab_id().ok()?;
         let id = TabId(self.next);
         self.next = following;
         tab.id = id;

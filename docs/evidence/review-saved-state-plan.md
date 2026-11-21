@@ -103,6 +103,8 @@ Keep file I/O before GPUI startup and writer completion off the UI thread.
 - Modify `crates/sheprd-gpui/src/devices_overview.rs`.
 - Modify `crates/sheprd-gpui/src/browser/view.rs` if its corresponding test action needs the same message.
 - Modify `crates/sheprd-gpui/src/core_terminals.rs`.
+- Share the refusal message through `browser.rs` and `browser/view.rs`.
+- Use it in `browser/closed.rs`, `core_terminals/commands.rs`, and `core_terminals/workspace_ui.rs`.
 - Add focused GPUI topic tests and localized repair guidance.
 
 **Interfaces:** Use the Store restoration flag and the existing error localization boundary.
@@ -137,6 +139,17 @@ This adds no capacity reservation or queued-request lifecycle policy.
 - [ ] Update the existing dashboard row without changing other rows or people's feedback.
 - [ ] Leave PR #125 preserved as a draft checkpoint.
 
+The native Linux case uses one private Xvfb desktop and one pinned, owned Herdr server.
+Seed synthetic files under the sandbox's `state/spaceport` directory before normal GUI startup.
+Launch A must retain tab 2, discard the invalid sibling, and allocate above hidden layout ID 300.
+After quitting A, launch B against its untouched files and verify the actual persisted entries.
+After quitting B, launch C with an ambiguous layout and verify refusal without replacing either primary file.
+Reap each exact GUI child before reading or changing its state files.
+Keep the server alive across all three launches and verify that the startup trap stays empty.
+Capture fresh warning pixels at 900px and 640px, with source, PID, XID, file hashes, and cleanup receipts.
+The existing flash lasts two seconds and truncates text; inspect actual readability before accepting the warning.
+The native case must reuse neutral test helpers from PR164 without importing its unrelated product changes.
+
 ## Evidence
 
 Tests-only head `0cef725631188ec430e9f3501a6a7a79bf2cbab5` has actual behavioral RED in CI44908322454 attempt 2.
@@ -150,10 +163,17 @@ The [baseline receipt](saved-state-recovery/baseline.json) records source, check
 No product fix or GREEN result is claimed at this checkpoint.
 
 Independent review found that the proposed `Value` fallback loses earlier duplicate identity fields.
-The proposed production patch remains uncommitted while new regression cases establish this boundary.
+The proposed production patch remains uncommitted while identity handling is corrected.
 Those cases cover tab IDs, saved counters, tab lists, and layout IDs, picks, and kinds.
 They also protect writable recovery of valid siblings beside unrelated invalid scalar entries.
 The follow-up contains tests, the plan, and baseline evidence; it contains no production fix.
+
+Follow-up head `38b80ff00a94f720db9e1a66028969268e9fe683` reaches the nine additional assertions in CI44912316144.
+Linux x64 all-features job136870656024 has 27 storage and four UI failures, all expected regression cases.
+All eight identity cases and the exhausted-ID Core case fail at their intended assertions.
+The three original controls still pass.
+The [identity baseline receipt](saved-state-recovery/identity-baseline.json) records checkout, cases, assertions, and limits.
+The storage ambiguity repair and UI admission changes are now authorized to proceed through review and CI.
 
 Attempt 1 failed checkout after two github.com:443 connection failures.
 Root retried the terminal checkout job through GitHub's supported job rerun action.

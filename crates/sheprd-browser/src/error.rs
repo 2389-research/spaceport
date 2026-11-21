@@ -1,8 +1,9 @@
+// ABOUTME: Defines failures when reading saved tabs, layouts, and native references.
+// ABOUTME: Keeps restoration refusal distinct from exhausted tab identities.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-/// Why a saved tab or layout could not be read. Every one of them is a file
-/// this app wrote, so a build that cannot read one starts without it rather
-/// than failing the window.
+/// Why saved tabs, layouts, or new tab identities cannot be used safely.
+/// Restoration failures preserve the source before allowing replacement writes.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     // keep-sorted start
@@ -22,7 +23,15 @@ pub enum Error {
     InvalidReviewCheckout,
     #[error("{0}")]
     Json(#[from] serde_json::Error),
+    #[error(
+        "Saved tabs or layouts need repair. Check browser-tabs.json and editor-groups.json, then restart Spaceport before opening new tabs."
+    )]
+    RestorationBlocked,
     #[error(transparent)]
     StateFile(#[from] sheprd_state_file::Error),
+    #[error(
+        "Saved tab IDs are exhausted. Check browser-tabs.json and editor-groups.json, then restart Spaceport before opening new tabs."
+    )]
+    TabIdsExhausted,
     // keep-sorted end
 }
