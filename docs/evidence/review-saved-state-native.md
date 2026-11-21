@@ -44,20 +44,30 @@ It validates repeated shutdown notices and requires their expected reason before
 It does not require the separate PR160 client correction.
 Independent re-review approves that observer correction.
 A headless regression measures the actual repair flash at both widths against a short confirmation.
-The production renderer remains unchanged while CI must reach the intended clipping assertions.
+Source `e9aa0abbf` reaches the intended native clipping assertion after full cleanup.
+Its Linux ARM all-features job also fails the expected one-row geometry assertion.
+Parent `244a7d529` then replaces truncation with normal wrapping in the existing text container.
+Combined source `33e289a6c` passes that geometry case, with 3686 app cases passing on Linux ARM all-features.
+Its native PNGs show the complete message, both filenames, and restart advice at both widths.
+That native run still fails because OCR reads filename periods as commas.
+The scorer now accepts only that evidenced substitution within each complete known filename.
+It still requires both filenames and the complete repair and restart clauses.
+Pure cases retain the two clipped transcripts and a missing filename as rejected controls.
+Raw OCR and PNGs remain unchanged. Independent review approves the recognition correction.
 
 - [x] Independent task review approved specification compliance and code quality.
 - [x] `just format-check`, `just check-file-size`, and `python3 scripts/check-sorted.py` pass.
 - [x] `actionlint .github/workflows/ci.yml` and `bash -n scripts/install-linux-deps.sh` pass.
 - [x] `python3 scripts/release/test-release-security.py` passes all three offline workflow checks.
 - [x] `git diff --check` passes. The fixture contains synthetic data and owned process handles.
-- [ ] Run `saved_state::recovery::native_saved_state_recovery` in disposable Linux x64 CI.
-- [ ] Inspect both native screenshots for the warning, filenames, and restart advice.
+- [ ] Pass `saved_state::recovery::native_saved_state_recovery` in disposable Linux x64 CI.
+- [x] Inspect both native screenshots from `33e289a6c` for the full warning, filenames, and restart advice.
 - [ ] Verify the source, state hashes, backup, process exits, and completion receipt from that run.
 
 No local product build, test, compiler, app, daemon, VM, or SSH probe ran.
-The existing two-second warning truncates text; clipping or OCR failure remains possible.
-Inspect the actual PNGs before accepting native readability.
+The warning retains its existing two-second lifetime.
+The wrapping correction fixes observed clipping. The scorer correction still needs a successful native rerun.
+Inspect the actual PNGs before accepting native readability; OCR alone does not prove glyph visibility.
 This test does not qualify macOS, Windows, audible speech, performance, WSL, or remote SSH.
 Those checks retain their existing status.
 PR125 stays a draft checkpoint. No main merge or release is authorized.

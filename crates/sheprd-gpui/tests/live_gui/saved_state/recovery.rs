@@ -10,8 +10,8 @@ const LAYOUTS: &str = "editor-groups.json";
 const SAVED_WORKSPACE: &str = "saved-state-fixture";
 const REPAIR: [&str; 4] = [
     "saved tabs or layouts need repair",
-    "browser-tabs.json",
-    "editor-groups.json",
+    TABS,
+    LAYOUTS,
     "restart spaceport before opening new tabs",
 ];
 
@@ -163,13 +163,51 @@ fn repair_score(text: &str) -> (bool, usize) {
         .collect::<Vec<_>>()
         .join(" ")
         .to_lowercase();
+    let contains = |part: &str| match part {
+        TABS | LAYOUTS => {
+            // Native OCR sometimes reads the extension's period as a comma.
+            let misread = part.replace('.', ",");
+            text.split_whitespace().any(|word| {
+                let name = word.strip_suffix(',').unwrap_or(word);
+                name == part || name == misread
+            })
+        }
+        _ => text.contains(part),
+    };
     let words = REPAIR
         .into_iter()
         .flat_map(str::split_whitespace)
-        .filter(|&word| text.contains(word))
+        .filter(|&word| contains(word))
         .count();
-    let readable = REPAIR.into_iter().all(|clause| text.contains(clause));
+    let readable = REPAIR.into_iter().all(contains);
     (readable, words)
+}
+
+#[test]
+fn complete_native_repair_lines_are_readable_at_both_widths() {
+    for lines in [
+        "., Saved tabs or layouts need repair. Check browser-tabs,json and editor-groups.json, then
+
+restart Spaceport before opening new tabs.",
+        "‘Saved tabs or layouts need repair. Check
+
+© browser-tabs,json and editor-groups,json, then
+
+restart Spaceport before opening new tabs.",
+    ] {
+        assert!(repair_score(lines).0, "{lines}");
+    }
+}
+
+#[test]
+fn clipped_or_missing_repair_guidance_is_unreadable() {
+    for lines in [
+        "© Saved tabs or layouts need repair. Check browser-tabs.json and editor-groups.json, then r.",
+        "{ © Saved tabs or layouts need repair. Check brows...",
+        "Saved tabs or layouts need repair. Check browser-tabs,json, then restart Spaceport before opening new tabs.",
+    ] {
+        assert!(!repair_score(lines).0, "{lines}");
+    }
 }
 
 #[test]
