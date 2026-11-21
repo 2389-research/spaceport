@@ -16,6 +16,8 @@ use std::sync::Arc;
 mod idle_reassert;
 mod mirror_canvas;
 mod padding;
+#[cfg(unix)]
+mod parked_start_ownership;
 mod parked_startup;
 mod titlebar_navigation;
 

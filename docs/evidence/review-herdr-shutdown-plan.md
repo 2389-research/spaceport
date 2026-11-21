@@ -46,6 +46,7 @@ The observed-shutdown guard cannot make remote attachment atomic with an externa
 7. Thread the original Start permission through `daemon.rs`, `connection.rs`, and their existing callers.
    Primary endpoints use WhenMissing; parked connections use Never.
    Guard new parked bridges in `group_terminals.rs` until the primary serves.
+   Test startup ownership in an isolated subprocess under `group_terminals/tests/parked_start_ownership.rs`.
 8. Add focused parked-startup and recovery-card tests.
    Reuse `window/reconnecting.rs` and the existing reconnect action for the stopped card.
    Add only the required en-US endpoint and window messages.
