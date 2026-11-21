@@ -22,7 +22,8 @@ Mac `sample`/`ps` support remains separate from the held Mac native checks.
 - Native `dcadebfaf` passed with real animation activity, verified clocks, captures, identities, and zero-loss traces; dominant CPU attribution remains unresolved.
 - Localized `acc229aeb` has clean runtime RED on both platforms: 760 repeated paints instead of zero.
 - Cache `7657ed297` passed all four ordinary jobs, including the paint regression and all 11 Core view controls on both platforms.
-- Reader `23884df4c` passed independent source review and all four ordinary CI jobs; native run `44848451781` is in progress.
+- Reader `23884df4c` passed ordinary and native checks; reviewed captures and bounded UIA controls qualify native Core content.
+- Owned-payload fix `c4a881ddb` passed all six ordinary jobs; it is newer than the native candidate.
 
 ## Authority and limits
 
@@ -1186,7 +1187,8 @@ It runs after trace extraction and before observer shutdown and cleanup.
 Both controls read real UIA TextPattern data from visible `Terminal` documents.
 The second control also requires the real marker, preventing an empty-tree false pass.
 Receipts retain bounds, counts, identity, stages, and failure metadata without document text.
-The check covers two bounded text reads after recording; pixel, continuous accessibility, keyboard, and speech checks remain separate.
+The check runs two bounded control scans after recording; each reads prefixes from the visible terminal documents.
+Pixel, continuous accessibility, keyboard, and speech checks remain separate.
 
 Local `just format-check check-file-size check-sorted check-i18n check-commits` passed.
 `git diff --cached --check` also passed.
@@ -1235,6 +1237,70 @@ An accepted patch copied the first symbol rather than retaining its owned alloca
 The proposed commit loop moves accepted cells only after the existing validation succeeds.
 Static formatting, file size, sorting, commit-message, and diff checks pass.
 Independent source review found no material issue in ownership transfer, overlap ordering, atomic rejection, or wire compatibility.
-Runtime GREEN remains pending.
+At `c4a881ddb7f44252e913378639ea2f2b4dc0bd7d`, run `44849354667` passes all six executed jobs.
+Both protocol jobs pass the full protocol suite, including all nine compatibility cases.
+Windows passes 22 client surface cases; Mac passes 23.
+Both pass protocol/client Clippy with all targets and features; those logs contain no warnings.
+Both GPUI contract jobs, sampling tools, and encrypted retention also pass.
+The unrelated animation-only job is policy-skipped.
 This change removes a redundant patch-payload copy only; it does not eliminate shared-baseline copying.
 Native source `23884df4c` predates this smaller change and cannot qualify it.
+
+### Native Core cache and text qualification
+
+Native run `44848451781`, job `136673854903`, passes at exact `23884df4c16a72eca3404bc2fef915f796ca6582`.
+The reviewed receipt is [native-23884df4c.json](review-squad/windows-profile/native-23884df4c.json).
+Artifact `14685570397` contains 89,821,150 bytes; its archive and ciphertext hashes match the retained identities.
+Private decryption, ZIP integrity, and all 249 normalized members pass validation.
+Extraction reports the expected Windows backslash warning; no CRC or member failure occurs.
+The actual executable and PDB match their retained hashes.
+All three retained profiles and traces also match their recorded hashes.
+
+All six endpoints identify visible foreground HWND `327794`, GUI PID `7480`, and UI thread `6628`.
+Each endpoint reports reduced motion off and the same live Core identity and projected marker.
+Root reviewed captures 6, 11, 12, and 16: real TUI and Core output remain populated.
+The authored Core marker remains visible in every reviewed image.
+Idle captures 6/7 and 16/17 match by hash; Working captures 11/12 differ.
+This verifies native content while the mark layer advances, rather than proving zero native paint calls.
+
+The late UIA reader completes both controls on their first attempts.
+Each control sees two named, visible, readable `Terminal` documents with finite positive bounds.
+Exactly one document contains the real Core marker in both scans; none contains the absent marker.
+Ownership matches before and after, reader stderr is empty, and reader receipts contain no document text.
+The reader starts at `01:31:05.1541519Z`, after all recordings and in-harness UI stack extraction.
+Its scans finish at `01:31:06.5258036Z`.
+Later workflow exports read stopped traces and do not change the measured workload.
+This qualifies bounded post-recording text prefixes, not continuous accessibility, keyboard input, or audible speech.
+
+| Phase | CPU delta across all app threads | Recorded wall | Percent relative to one core | Mark renders before/after |
+| --- | --- | --- | --- | --- |
+| Idle before | 0.125 seconds | 5.534036 seconds | 2.258749311% | 46 / 46 |
+| Synthetic Working | 18.5 seconds | 6.4942344 seconds | 284.868066973% | 100 / 257 |
+| Idle after | 0.0625 seconds | 5.473268 seconds | 1.141913752% | 275 / 275 |
+
+Actual raw process ticks reproduce these values.
+Mark endpoints surround recorder setup and stop; dividing their delta by CPU wall time would not measure frame rate.
+All three traces explicitly report zero lost events and buffers, and all 12 exports succeed.
+Their whole-trace Sampled Profile counts are 23,668 / 30,408 / 23,092.
+Those counts include other processes and differ from the owned-process stack population.
+The frequency export reports period `1000.0`; no unit or exact cadence is inferred here.
+
+The owned UI export has 297 hits: Core view render one, window-body render 35, tick 14, and DirectX draw 39.
+It contains no `TerminalPainter` symbol hit; sampling does not prove an absent call.
+The new all-thread owned-process export has 24,426 hits.
+`D3D10Warp.dll` appears in 23,872 unique-inclusive hits; unknown leaves account for 23,537 exclusive hits.
+This establishes WARP caller context around the dominant unresolved stack population.
+It does not assign CPU shares, identify the selected adapter, or measure GPU execution time.
+The sampled leaf report also leaves 24,701,188 of 25,630,741 process weight unresolved.
+Do not sum overlapping hits or claim CPU savings, portable hardware results, or cross-run improvement.
+
+Configuration loads without migration conflict or a startup port scan; no live poller-state probe ran.
+Two jump-list warnings and two aggregate paint warnings remain outside any qualified phase attribution.
+The fixture daemon also logs one unknown-pane `PaneDied` warning after the text reader; the prior moving baseline logs the same warning.
+Its root cause is not established here; Herdr remains a read-only dependency.
+Core Stop and owned-serve exit succeed; no independent OS holder-liveness audit ran.
+Native and WinRT animation values change false/false to true/true and restore to false/false.
+The app's accessibility policy is unchanged.
+Independent raw-evidence and publication review found no material blocker.
+The review added explicit whole-trace count labels to prevent population confusion.
+All original performance clauses remain tracked, with Mac and actual-speech holds unchanged.

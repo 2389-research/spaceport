@@ -1,0 +1,263 @@
+{
+  "source": "23884df4c16a72eca3404bc2fef915f796ca6582",
+  "run_id": 44848451781,
+  "job_id": 136673854903,
+  "artifact_id": 14685570397,
+  "artifact_bytes": 89821150,
+  "artifact_sha256": "47eae3194d699b8eae3577cf02a0a81ef8e7b1e096443f955d645adb168b9e67",
+  "ciphertext_sha256": "a3a7bcdec5fb95faa828e57a13917e6325cfbad92c6a1e8e52c0df5866a64e2a",
+  "private_decryption_verified": true,
+  "zip_crc_verified": true,
+  "normalized_members_verified": 249,
+  "windows_zip_separators": true,
+  "binary": {
+    "bytes": 57104384,
+    "sha256": "fd39f0a1cf9f9f01da3c3a6e8af1e2dd1f1325da88f1d41199ba9e6139a43f81"
+  },
+  "pdb": {
+    "bytes": 170831872,
+    "sha256": "0d15d3552e713928089617e60b38fc730f98862dfcbf04f5b18eddd953ea1bde"
+  },
+  "workload": {
+    "kind": "settled real TUI beside private Core; controlled synthetic Working status",
+    "groups": 2,
+    "tui_generated_lines": 120,
+    "core_generated_lines": 120,
+    "provider_used": false,
+    "configuration_load_accepted": true,
+    "live_poller_state_probed": false,
+    "continuous_output_qualified": false
+  },
+  "desktop_animations": {
+    "original": {
+      "native": false,
+      "winrt": false
+    },
+    "enabled": {
+      "native": true,
+      "winrt": true
+    },
+    "restored": {
+      "native": false,
+      "winrt": false
+    },
+    "app_policy_bypassed": false
+  },
+  "phases": [
+    {
+      "phase": "idle-before",
+      "pid": 7480,
+      "thread_id": 6628,
+      "hwnd": 327794,
+      "cpu_before_ticks": 120937500,
+      "cpu_after_ticks": 122187500,
+      "cpu_delta_seconds": 0.125,
+      "wall_seconds": 5.534036,
+      "process_cpu_percent_one_core": 2.2587493106297103,
+      "reduce_motion_before": false,
+      "reduce_motion_after": false,
+      "mark_render_calls_before": 46,
+      "mark_render_calls_after": 46,
+      "endpoint_foreground": true,
+      "uninterrupted_foreground_proven": false,
+      "stop_acknowledged": true,
+      "lost_events_reported": 0,
+      "lost_buffers_reported": 0,
+      "sampled_profile_events": 23668,
+      "sampled_profile_events_with_stacks": 1855,
+      "stack_walk_records": 2604,
+      "profile_bytes": 1641,
+      "profile_sha256": "b85415f22593dcc7214c121df856877c9ef8c7eebd4c3e1157f0d506020475bc",
+      "etl_sha256": "1a15ead36c9ffd6ba618f7d58a76a222e4ec1b20e135d3258a3effcf9db481e1",
+      "core_live_at_both_endpoints": true,
+      "core_projected_marker_at_both_endpoints": true
+    },
+    {
+      "phase": "synthetic-working",
+      "pid": 7480,
+      "thread_id": 6628,
+      "hwnd": 327794,
+      "cpu_before_ticks": 399218750,
+      "cpu_after_ticks": 584218750,
+      "cpu_delta_seconds": 18.5,
+      "wall_seconds": 6.4942344,
+      "process_cpu_percent_one_core": 284.8680669733757,
+      "reduce_motion_before": false,
+      "reduce_motion_after": false,
+      "mark_render_calls_before": 100,
+      "mark_render_calls_after": 257,
+      "endpoint_foreground": true,
+      "uninterrupted_foreground_proven": false,
+      "stop_acknowledged": true,
+      "lost_events_reported": 0,
+      "lost_buffers_reported": 0,
+      "sampled_profile_events": 30408,
+      "sampled_profile_events_with_stacks": 26659,
+      "stack_walk_records": 27577,
+      "profile_bytes": 1641,
+      "profile_sha256": "b85415f22593dcc7214c121df856877c9ef8c7eebd4c3e1157f0d506020475bc",
+      "etl_sha256": "c96e4dfbca9b8d3a5c983d0a0211c445fd4c17bfb1f1769a9555461c1083036b",
+      "core_live_at_both_endpoints": true,
+      "core_projected_marker_at_both_endpoints": true
+    },
+    {
+      "phase": "idle-after",
+      "pid": 7480,
+      "thread_id": 6628,
+      "hwnd": 327794,
+      "cpu_before_ticks": 729062500,
+      "cpu_after_ticks": 729687500,
+      "cpu_delta_seconds": 0.0625,
+      "wall_seconds": 5.473268,
+      "process_cpu_percent_one_core": 1.1419137524418683,
+      "reduce_motion_before": false,
+      "reduce_motion_after": false,
+      "mark_render_calls_before": 275,
+      "mark_render_calls_after": 275,
+      "endpoint_foreground": true,
+      "uninterrupted_foreground_proven": false,
+      "stop_acknowledged": true,
+      "lost_events_reported": 0,
+      "lost_buffers_reported": 0,
+      "sampled_profile_events": 23092,
+      "sampled_profile_events_with_stacks": 1628,
+      "stack_walk_records": 2265,
+      "profile_bytes": 1641,
+      "profile_sha256": "b85415f22593dcc7214c121df856877c9ef8c7eebd4c3e1157f0d506020475bc",
+      "etl_sha256": "14c1456468dcd41e19476c54947cc84da6ea96ae8fe0169339ea35093d5c8bbd",
+      "core_live_at_both_endpoints": true,
+      "core_projected_marker_at_both_endpoints": true
+    }
+  ],
+  "native_core_text": {
+    "status": "qualified",
+    "scope": "two bounded post-recording TextPattern control scans; each reads prefixes from two visible documents; no continuous accessibility, keyboard or speech qualification",
+    "hwnd": 327794,
+    "pid": 7480,
+    "thread_id": 6628,
+    "positive_attempt": 1,
+    "absent_attempt": 1,
+    "named_documents_each": 2,
+    "visible_documents_each": 2,
+    "readable_documents_each": 2,
+    "positive_matches_each": 1,
+    "absent_matches": 0,
+    "bounds_finite_positive": true,
+    "reader_stderr_bytes": 0,
+    "document_text_retained_in_reader_receipts": false,
+    "initial_stage_utc": "2026-11-21T01:31:05.1541519Z",
+    "completed_stage_utc": "2026-11-21T01:31:06.5258036Z"
+  },
+  "working_ui_stack_observations": {
+    "scope": "owned UI thread; exported overlapping hits, not whole-process CPU shares",
+    "total_hits": 297,
+    "core_view_render_inclusive_hits": 1,
+    "terminal_painter_symbol_present": false,
+    "window_render_body_inclusive_hits": 35,
+    "window_tick_inclusive_hits": 14,
+    "poll_chats_inclusive_hits": 1,
+    "directx_draw_inclusive_hits": 39,
+    "directx_render_inclusive_hits": 24
+  },
+  "working_process_stack_observations": {
+    "scope": "all owned process threads; exported hit population does not preserve event identity",
+    "total_hits": 24426,
+    "warp_module_uniinclusive_hits": 23872,
+    "warp_module_exclusive_hits": 268,
+    "unknown_module_exclusive_hits": 23537,
+    "warp_caller_context_observed": true,
+    "whole_process_cpu_share_by_function_qualified": false,
+    "selected_graphics_adapter_qualified": false,
+    "gpu_execution_timing_qualified": false,
+    "sampled_process_leaf_weight": 25630741,
+    "unknown_sampled_leaf_weight": 24701188
+  },
+  "captures": {
+    "reviewed_request_ids": [
+      6,
+      11,
+      12,
+      16
+    ],
+    "other_idle_captures_identical_by_sha256": true,
+    "populated_tui_and_core_verified": true,
+    "authored_core_marker_visible": true,
+    "working_endpoint_images_differ": true,
+    "hashes": [
+      {
+        "file": "capture-11.png",
+        "sha256": "a41dbc829af867f84e56a9c0d7c8d33dd2b7afd454eefc5ad8c2d18db937a75b",
+        "bytes": 330641
+      },
+      {
+        "file": "capture-12.png",
+        "sha256": "4533b0d47df76d336984898bb2828eb6ec33043b1d5a3968859bed463c27bc4c",
+        "bytes": 330621
+      },
+      {
+        "file": "capture-16.png",
+        "sha256": "844f343d3d93bdbfc1e6fd665cd741f9ec7128250d1d7ea09d76da657df775ad",
+        "bytes": 330649
+      },
+      {
+        "file": "capture-17.png",
+        "sha256": "844f343d3d93bdbfc1e6fd665cd741f9ec7128250d1d7ea09d76da657df775ad",
+        "bytes": 330649
+      },
+      {
+        "file": "capture-6.png",
+        "sha256": "cbdf8ebb8c8cb6a3625e407584374fac15df18d21ca63793962bd61875711909",
+        "bytes": 326045
+      },
+      {
+        "file": "capture-7.png",
+        "sha256": "cbdf8ebb8c8cb6a3625e407584374fac15df18d21ca63793962bd61875711909",
+        "bytes": 326045
+      }
+    ]
+  },
+  "core_shutdown": {
+    "stop_acknowledged": true,
+    "owned_serve_exited": true,
+    "independent_os_holder_liveness_audit": false
+  },
+  "all_twelve_exports_succeeded": true,
+  "warnings": {
+    "jump_list": 2,
+    "paint_aggregates": [
+      {
+        "count": 48,
+        "mean_ms": 4.491570833333333,
+        "max_ms": 83.9714,
+        "slow_count": 3
+      },
+      {
+        "count": 4,
+        "mean_ms": 55.41815,
+        "max_ms": 220.9161,
+        "slow_count": 1
+      }
+    ],
+    "paint_scope": "aggregate; not phase-specific or Core-only; last warning follows recording",
+    "scope": "Application structured log; fixture daemon warning listed separately.",
+    "fixture_daemon": {
+      "count": 1,
+      "kind": "PaneDied for unknown pane",
+      "after_native_text": true,
+      "also_seen_in_prior_moving_baseline": true,
+      "root_cause_qualified": false
+    }
+  },
+  "interpretation": {
+    "native_core_content_and_bounded_text_qualified": true,
+    "native_zero_paint_calls_proven": false,
+    "exact_mark_frame_rate_qualified": false,
+    "native_cpu_savings_qualified": false,
+    "cross_run_comparison_qualified": false,
+    "portable_hardware_result_qualified": false,
+    "mirror_chat_and_streaming_qualified": false,
+    "newer_owned_patch_fix_included": false,
+    "remaining_original_performance_clauses_open": true
+  },
+  "trace_event_counts_scope": "Whole-trace counters include other processes; owned-process stack hits have their own population."
+}
