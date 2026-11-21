@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "scope": "Application acceptance plan; recorded T00 results are a reference baseline, not Spaceport parity.",
+  "leg_schema": "Each scenario records two runtime legs, herdr1 and core, independently: D58 permits separately installed Herdr 1 and Herdr Core, and D71 records a Core leg only with Core enabled while the Herdr 1 leg must still pass on its own route. A leg is {status, evidence} with status not_run, passed, failed or blocked, and a passed or failed leg names at least one evidence file. A scenario without both legs is invalid: the flat per-scenario status/evidence that predates legs is refused rather than defaulted, because a guessed leg would attribute one runtime's outcome to the other. The migration onto legs moved each scenario's existing pair verbatim to the leg its record documents, herdr1 by default because a run recorded before legs existed ran on the default route, and core where every cited file was Core-only (A04, A13, A15, A27, A39, A41). Evidence naming the other runtime stays on the leg that was recorded; a later per-leg run cites its own file on that leg.",
   "scenarios": [
     {
       "id": "A01",
@@ -11,8 +12,16 @@
       "title": "Isolated baseline",
       "scenario": "Build and launch the pinned upstream in an isolated state directory; record toolchain, platform and pre-existing failures.",
       "expected": "Reference evidence exists; personal runtime and user files are unchanged.",
-      "status": "passed",
-      "evidence": ["evidence/t00-baseline.md", "evidence/t00-upstream-build.log", "evidence/t00-upstream-native-sidebar.log"]
+      "legs": {
+        "herdr1": {
+          "status": "passed",
+          "evidence": ["evidence/t00-baseline.md", "evidence/t00-upstream-build.log", "evidence/t00-upstream-native-sidebar.log"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A02",
@@ -22,8 +31,16 @@
       "title": "Protocol identity",
       "scenario": "Connect to supported Herdr 1 and Core runtimes; attempt an unsupported generation and stale or cross-runtime target.",
       "expected": "Compatible Herdr 1 and Core are allowed; unsupported protocols and wrong-runtime targets refuse without migration or duplicate launch.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A03",
@@ -33,8 +50,16 @@
       "title": "Installed runtime startup",
       "scenario": "Test absent, running, stopped and incompatible separately installed Herdr 1 and Core; check explicit-socket attach-only behavior in private fixtures.",
       "expected": "Connect/start only the selected trusted installed runtime; explicit sockets never start one. No download/install/update hooks execute.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A04",
@@ -45,8 +70,16 @@
       "title": "Core-owned remote machines",
       "scenario": "Add a fixture machine through Core and observe its terminals; interrupt its connection.",
       "expected": "Core owns catalog/retry; Spaceport has no parallel remote connector or duplicate terminal.",
-      "status": "blocked",
-      "evidence": ["evidence/t02-machine-ui.md", "evidence/t02-machine-identity-gap.md", "evidence/t02-core-add-ui.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "blocked",
+          "evidence": ["evidence/t02-machine-ui.md", "evidence/t02-machine-identity-gap.md", "evidence/t02-core-add-ui.md"]
+        }
+      }
     },
     {
       "id": "A05",
@@ -57,8 +90,16 @@
       "title": "Host authentication refusal",
       "scenario": "Use unknown/changed host keys and authentication-required fixture hosts.",
       "expected": "No silent trust, password capture, key import or installation; actionable refusal preserves the host.",
-      "status": "not_run",
-      "evidence": ["evidence/t02-refusal-hint.md", "evidence/t02-core-add-ui.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t02-refusal-hint.md", "evidence/t02-core-add-ui.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A06",
@@ -68,8 +109,16 @@
       "title": "Workspace document CRUD",
       "scenario": "Create, rename, archive and delete a presentation workspace using the namespaced Core document.",
       "expected": "Versioned grouping changes only; no process kill, file deletion or mutation of another client namespace.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A07",
@@ -80,8 +129,16 @@
       "title": "Concurrent workspace edits",
       "scenario": "Two clients edit a Core document from the same version.",
       "expected": "Stale write conflicts; a safe rebase preserves the other writer; no last-writer-wins data loss.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A08",
@@ -92,8 +149,16 @@
       "title": "Partial launch and membership",
       "scenario": "Launch succeeds, then force workspace document write to fail/conflict.",
       "expected": "Report partial outcome and expose the ungrouped terminal; no automatic process rollback.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A09",
@@ -104,8 +169,16 @@
       "title": "View-only restore",
       "scenario": "Quit and reopen with surviving, missing and renamed remote terminal/workspace references.",
       "expected": "Fresh authoritative state wins; surviving processes reattach; missing agents never restart.",
-      "status": "not_run",
-      "evidence": ["evidence/t03-remote-terminal-parity.md", "evidence/t03-typed-group-key.md", "evidence/t03-exact-core-hub.md", "evidence/t03-core-join-without-legacy-endpoint.md", "evidence/t03-zero-endpoint-tick.md", "evidence/t03-core-window-constructor.md", "evidence/t03-core-cli-window-target.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t03-remote-terminal-parity.md", "evidence/t03-typed-group-key.md", "evidence/t03-exact-core-hub.md", "evidence/t03-core-join-without-legacy-endpoint.md", "evidence/t03-zero-endpoint-tick.md", "evidence/t03-core-window-constructor.md", "evidence/t03-core-cli-window-target.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A10",
@@ -115,8 +188,16 @@
       "title": "Terminal parser continuity",
       "scenario": "Replay retained fixtures across arbitrary byte splits and resize/alternate-screen transitions.",
       "expected": "Frame/input semantics match the retained baseline, including Unicode and escape boundaries.",
-      "status": "passed",
-      "evidence": ["evidence/t05-terminal-parser.md"]
+      "legs": {
+        "herdr1": {
+          "status": "passed",
+          "evidence": ["evidence/t05-terminal-parser.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A11",
@@ -126,8 +207,16 @@
       "title": "Keyboard and mouse",
       "scenario": "Exercise IME, bracketed paste, modifiers, mouse modes and platform input with fixture terminals.",
       "expected": "Input bytes follow the actual modes; no lost or doubled submission.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A12",
@@ -138,8 +227,16 @@
       "title": "Attach flow control",
       "scenario": "Flood one terminal, stall one view and issue metadata/control reads concurrently.",
       "expected": "Queues stay bounded, credits are correct and unrelated streams/control remain responsive.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A13",
@@ -149,8 +246,16 @@
       "title": "Observer isolation",
       "scenario": "Attach observers and writers with supported and unsupported resize features.",
       "expected": "Observers never type or seize size; confirmed RESIZE precedes subsequent paint/data.",
-      "status": "not_run",
-      "evidence": ["evidence/t05-core-observer.md", "evidence/t05-core-lifecycle.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": ["evidence/t05-core-observer.md", "evidence/t05-core-lifecycle.md"]
+        }
+      }
     },
     {
       "id": "A14",
@@ -161,8 +266,16 @@
       "title": "Local native chat",
       "scenario": "Attach to an existing Core-owned local host adapter, switch chat/terminal views and quit/reopen.",
       "expected": "Same agent/conversation persists; no desktop-owned agent process or automatic resume/conversion.",
-      "status": "not_run",
-      "evidence": ["evidence/t06-chat-lifecycle-policy-removal.md", "evidence/t06-adapter-detach-process.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t06-chat-lifecycle-policy-removal.md", "evidence/t06-adapter-detach-process.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A15",
@@ -173,8 +286,16 @@
       "title": "Remote native chat gate",
       "scenario": "Prove endpoint discovery, identity, authenticated transport and live native chat to a remote Core terminal.",
       "expected": "Verified supported route exists; otherwise the requirement remains blocked, not satisfied by terminal fallback.",
-      "status": "not_run",
-      "evidence": ["evidence/t06-core-duplex-route-audit.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": ["evidence/t06-core-duplex-route-audit.md"]
+        }
+      }
     },
     {
       "id": "A16",
@@ -185,8 +306,16 @@
       "title": "Concurrent permission response",
       "scenario": "Two views answer one pending request; also try an expired request and descriptive tool text.",
       "expected": "Source-defined single outcome; stale answers rejected; tool text cannot grant consent.",
-      "status": "not_run",
-      "evidence": ["evidence/t06-adapter-detach-process.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t06-adapter-detach-process.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A17",
@@ -197,8 +326,16 @@
       "title": "Prompt uncertainty",
       "scenario": "Disconnect after prompt submission before acknowledgement and reconnect.",
       "expected": "No automatic replay; acknowledgement/observed/unknown semantics are truthful.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A18",
@@ -209,8 +346,16 @@
       "title": "Unknown versus idle",
       "scenario": "Use programs that never report status, report done but remain alive, and become unreachable.",
       "expected": "Unknown, reported state, process state and reachability stay distinct.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A19",
@@ -220,8 +365,16 @@
       "title": "Timeline scope",
       "scenario": "Compare retained timeline navigation/search against baseline with partial available event data.",
       "expected": "No new timeline architecture/history store; search coverage is honest and no global file/terminal index exists.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A20",
@@ -232,8 +385,16 @@
       "title": "Usage and automation feed gate",
       "scenario": "Inspect and exercise the authoritative supported feeds after removed collectors/schedulers are absent.",
       "expected": "Only real supported data is shown; missing feeds are unavailable and retained-parity gaps remain explicit.",
-      "status": "not_run",
-      "evidence": ["evidence/t04-usage-tail-dependency.md", "evidence/t04-provider-implementation-removal.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t04-usage-tail-dependency.md", "evidence/t04-provider-implementation-removal.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A21",
@@ -243,8 +404,16 @@
       "title": "Desktop notifications",
       "scenario": "Exercise reported attention/completion/error with per-workspace/agent preferences and reconnect.",
       "expected": "Notifications/badges/sounds follow retained settings, avoid duplicate delivery and stop when app exits.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A22",
@@ -255,8 +424,16 @@
       "title": "Last-window lifecycle",
       "scenario": "Record live local/remote programs, close all windows, then independently query Core.",
       "expected": "Spaceport exits; Core and its agent terminals remain running.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A23",
@@ -267,8 +444,16 @@
       "title": "Explicit termination",
       "scenario": "With duplicate labels and multiple views, explicitly terminate one qualified fixture terminal.",
       "expected": "Only that program ends; other views and processes are not accidentally destroyed.",
-      "status": "not_run",
-      "evidence": ["evidence/t05-explicit-termination.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t05-explicit-termination.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A24",
@@ -278,8 +463,16 @@
       "title": "Offline behavior",
       "scenario": "Disconnect and try mutations; restart the client while offline; inspect saved files.",
       "expected": "No queued operations or browsable persistent transcripts; stale data is labeled; layout prefs may remain.",
-      "status": "not_run",
-      "evidence": ["evidence/t03-typed-group-key.md", "evidence/t03-core-window-list-identity.md", "evidence/t03-core-window-constructor.md", "evidence/t03-core-cli-window-target.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t03-typed-group-key.md", "evidence/t03-core-window-list-identity.md", "evidence/t03-core-window-constructor.md", "evidence/t03-core-cli-window-target.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A25",
@@ -289,8 +482,16 @@
       "title": "Attachments",
       "scenario": "Drag/drop a file and clipboard image to exact local/remote targets using supported Core routes.",
       "expected": "Bytes arrive at the intended machine; transferring and submitting a path remain distinct effects.",
-      "status": "not_run",
-      "evidence": ["evidence/t07-terminal-put.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t07-terminal-put.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A26",
@@ -301,8 +502,16 @@
       "title": "General binary transfer gate",
       "scenario": "Exercise retained upload/download, overwrite, cancellation, symlink and temporary-file scenarios.",
       "expected": "Parity is demonstrated through a verified route, or G-FILE remains open; no text-only API masquerades as full transfer.",
-      "status": "not_run",
-      "evidence": ["evidence/t07-file-route.md", "evidence/t07-terminal-put.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t07-file-route.md", "evidence/t07-terminal-put.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A27",
@@ -313,8 +522,16 @@
       "title": "Loopback service forwarding gate",
       "scenario": "Open a service bound only to a fixture remote loopback address through the intended Herdr-owned route.",
       "expected": "Reachable in system browser without public rebinding, new Spaceport remote manager or mobile server; otherwise blocked.",
-      "status": "not_run",
-      "evidence": ["evidence/external-core-dependencies.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": ["evidence/external-core-dependencies.md"]
+        }
+      }
     },
     {
       "id": "A28",
@@ -325,8 +542,16 @@
       "title": "External-only browsing",
       "scenario": "Open URLs/services/files and inspect packaged/runtime dependencies.",
       "expected": "System browser/handler opens; embedded browser, browser annotation and editor webviews are absent.",
-      "status": "not_run",
-      "evidence": ["evidence/t04-visual-annotation-removal.md", "evidence/t04-mockup-feedback-removal.md", "evidence/t04-integrated-route-cuts.md", "evidence/t04-browser-control-family-removal.md", "evidence/t04-browser-tab-protocol-removal.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t04-visual-annotation-removal.md", "evidence/t04-mockup-feedback-removal.md", "evidence/t04-integrated-route-cuts.md", "evidence/t04-browser-control-family-removal.md", "evidence/t04-browser-tab-protocol-removal.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A29",
@@ -337,8 +562,16 @@
       "title": "Git/IDE negative reachability",
       "scenario": "Invoke removed commands/config/UI and render plain git/diff/source text in terminals/chat.",
       "expected": "Specialized Git/IDE/review behavior is absent; ordinary content is unchanged; developer CI still works.",
-      "status": "not_run",
-      "evidence": ["evidence/t04-code-edit-route.md", "evidence/t04-source-view-removal.md", "evidence/t04-cli-source-search-removal.md", "evidence/t04-code-index-removal.md", "evidence/t04-terminal-editor-removal.md", "evidence/t04-review-control-removal.md", "evidence/t04-native-review-removal.md", "evidence/t04-checkpoint-cli-removal.md", "evidence/t04-checkpoint-ui-removal.md", "evidence/t04-security-section-removal.md", "evidence/t04-fan-out-removal.md", "evidence/t04-workspace-dispatch-removal.md", "evidence/t04-pane-carry-removal.md", "evidence/t04-native-dispatch-dependency.md", "evidence/t04-native-activity-removal.md", "evidence/t04-git-command-route-removal.md", "evidence/t04-git-titlebar-route-removal.md", "evidence/t04-native-pr-actions-removal.md", "evidence/t04-native-git-mutations-removal.md", "evidence/t04-open-checkout-link-removal.md", "evidence/t04-github-account-entry-cut.md", "evidence/t04-merged-cleanup-removal.md", "evidence/t04-profile-popup-account-dependency.md", "evidence/t04-pr-read-route-removal.md", "evidence/t04-legacy-close-delete-route-removal.md", "evidence/t04-cli-folder-open-removal.md", "evidence/t04-github-account-state-removal.md", "evidence/t04-integrated-route-cuts.md", "evidence/t04-git-read-route-removal.md", "evidence/t04-palette-clone-removal.md", "evidence/t04-integrated-sidebar-regressions.md", "evidence/t04-script-cli-removal.md", "evidence/t04-worktree-script-ui-removal.md", "evidence/t04-repository-avatar-removal.md", "evidence/t04-gix-dependency-cleanup.md", "evidence/t04-teleport-engine-removal.md", "evidence/t10-removal-scenarios-20261117.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t04-code-edit-route.md", "evidence/t04-source-view-removal.md", "evidence/t04-cli-source-search-removal.md", "evidence/t04-code-index-removal.md", "evidence/t04-terminal-editor-removal.md", "evidence/t04-review-control-removal.md", "evidence/t04-native-review-removal.md", "evidence/t04-checkpoint-cli-removal.md", "evidence/t04-checkpoint-ui-removal.md", "evidence/t04-security-section-removal.md", "evidence/t04-fan-out-removal.md", "evidence/t04-workspace-dispatch-removal.md", "evidence/t04-pane-carry-removal.md", "evidence/t04-native-dispatch-dependency.md", "evidence/t04-native-activity-removal.md", "evidence/t04-git-command-route-removal.md", "evidence/t04-git-titlebar-route-removal.md", "evidence/t04-native-pr-actions-removal.md", "evidence/t04-native-git-mutations-removal.md", "evidence/t04-open-checkout-link-removal.md", "evidence/t04-github-account-entry-cut.md", "evidence/t04-merged-cleanup-removal.md", "evidence/t04-profile-popup-account-dependency.md", "evidence/t04-pr-read-route-removal.md", "evidence/t04-legacy-close-delete-route-removal.md", "evidence/t04-cli-folder-open-removal.md", "evidence/t04-github-account-state-removal.md", "evidence/t04-integrated-route-cuts.md", "evidence/t04-git-read-route-removal.md", "evidence/t04-palette-clone-removal.md", "evidence/t04-integrated-sidebar-regressions.md", "evidence/t04-script-cli-removal.md", "evidence/t04-worktree-script-ui-removal.md", "evidence/t04-repository-avatar-removal.md", "evidence/t04-gix-dependency-cleanup.md", "evidence/t04-teleport-engine-removal.md", "evidence/t10-removal-scenarios-20261117.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A30",
@@ -348,8 +581,16 @@
       "title": "No cloud/dispatch/mod runtime",
       "scenario": "Exercise stale settings/commands and monitor fake provider endpoints and installed services.",
       "expected": "No provider auth/provisioning/Teleport/orchestration/scheduler/mod behavior or hidden worker remains.",
-      "status": "not_run",
-      "evidence": ["evidence/t04-legacy-plugin-settings-removal.md", "evidence/t04-legacy-plugin-command-routes.md", "evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-orchestrator-control-removal.md", "evidence/t04-cloud-teleport-dependency.md", "evidence/t04-daytona-dispatch-removal.md", "evidence/t04-boxd-provider-removal.md", "evidence/t04-boxd-merged-config.md", "evidence/t04-daytona-provider-removal.md", "evidence/t04-coder-provider-removal.md", "evidence/t04-boat-provider-removal.md", "evidence/t04-opensandbox-provider-removal.md", "evidence/t04-railway-provider-removal.md", "evidence/t04-sprites-provider-removal.md", "evidence/t04-azure-provider-removal.md", "evidence/t04-config-contract-regressions.md", "evidence/t04-native-teleport-removal.md", "evidence/t04-fan-out-removal.md", "evidence/t04-workspace-dispatch-removal.md", "evidence/t04-pane-carry-removal.md", "evidence/t04-native-dispatch-dependency.md", "evidence/t04-native-activity-removal.md", "evidence/t04-orchestrator-crate-removal.md", "evidence/t04-script-cli-removal.md", "evidence/t04-worktree-script-ui-removal.md", "evidence/t04-provider-implementation-removal.md", "evidence/t04-teleport-engine-removal.md", "evidence/t04-credential-store-tail-removal.md", "evidence/t10-removal-scenarios-20261117.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t04-legacy-plugin-settings-removal.md", "evidence/t04-legacy-plugin-command-routes.md", "evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-orchestrator-control-removal.md", "evidence/t04-cloud-teleport-dependency.md", "evidence/t04-daytona-dispatch-removal.md", "evidence/t04-boxd-provider-removal.md", "evidence/t04-boxd-merged-config.md", "evidence/t04-daytona-provider-removal.md", "evidence/t04-coder-provider-removal.md", "evidence/t04-boat-provider-removal.md", "evidence/t04-opensandbox-provider-removal.md", "evidence/t04-railway-provider-removal.md", "evidence/t04-sprites-provider-removal.md", "evidence/t04-azure-provider-removal.md", "evidence/t04-config-contract-regressions.md", "evidence/t04-native-teleport-removal.md", "evidence/t04-fan-out-removal.md", "evidence/t04-workspace-dispatch-removal.md", "evidence/t04-pane-carry-removal.md", "evidence/t04-native-dispatch-dependency.md", "evidence/t04-native-activity-removal.md", "evidence/t04-orchestrator-crate-removal.md", "evidence/t04-script-cli-removal.md", "evidence/t04-worktree-script-ui-removal.md", "evidence/t04-provider-implementation-removal.md", "evidence/t04-teleport-engine-removal.md", "evidence/t04-credential-store-tail-removal.md", "evidence/t10-removal-scenarios-20261117.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A31",
@@ -360,8 +601,16 @@
       "title": "Mobile service versus local IPC",
       "scenario": "Inspect process/package/network inventory and execute retained desktop CLI commands.",
       "expected": "No phone HTTPS/pairing/push/nearby service; private local desktop IPC remains functional.",
-      "status": "not_run",
-      "evidence": ["evidence/t10-phone-removal.md", "evidence/t10-phone-fixtures.md", "evidence/t10-phone-wire.md", "evidence/t10-a31-native-inventory.md", "evidence/t10-removal-scenarios-20261117.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t10-phone-removal.md", "evidence/t10-phone-fixtures.md", "evidence/t10-phone-wire.md", "evidence/t10-a31-native-inventory.md", "evidence/t10-removal-scenarios-20261117.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A32",
@@ -372,8 +621,16 @@
       "title": "Retained runtime graph and excluded routes",
       "scenario": "Inspect all release target/features, binaries and dependencies after shared-type extraction.",
       "expected": "Herdr 1 and Core adapters remain where needed; excluded feature routes stay absent and shared renderer/input contracts pass. No automatic session migration or runtime installation occurs.",
-      "status": "not_run",
-      "evidence": ["evidence/t04-legacy-launch-flags.md", "evidence/t04-legacy-window-session.md", "evidence/t04-default-bridge-dependency.md", "evidence/t04-legacy-install-offer.md", "evidence/t05-core-default-observation.md", "evidence/t04-teleport-engine-removal.md", "evidence/t04-credential-store-tail-removal.md", "evidence/t10-removal-scenarios-20261117.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t04-legacy-launch-flags.md", "evidence/t04-legacy-window-session.md", "evidence/t04-default-bridge-dependency.md", "evidence/t04-legacy-install-offer.md", "evidence/t05-core-default-observation.md", "evidence/t04-teleport-engine-removal.md", "evidence/t04-credential-store-tail-removal.md", "evidence/t10-removal-scenarios-20261117.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A33",
@@ -383,8 +640,16 @@
       "title": "Visual and interaction retention",
       "scenario": "Compare retained desktop views, menus, settings, sidebar and rich chat against reference fixtures.",
       "expected": "Only approved deletions, rebrand and necessary capability adaptations differ; no unrequested redesign.",
-      "status": "not_run",
-      "evidence": ["evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-native-teleport-removal.md", "evidence/t03-core-tear-off-dependency.md", "evidence/t04-git-titlebar-route-removal.md", "evidence/t04-native-pr-actions-removal.md", "evidence/t04-github-account-entry-cut.md", "evidence/t04-profile-popup-account-dependency.md", "evidence/t04-github-account-state-removal.md", "evidence/t04-integrated-sidebar-regressions.md", "evidence/t04-repository-avatar-removal.md", "evidence/t03-sidebar-terminal-fallback.md", "evidence/t03-core-window-constructor.md", "evidence/t03-core-cli-window-target.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-native-teleport-removal.md", "evidence/t03-core-tear-off-dependency.md", "evidence/t04-git-titlebar-route-removal.md", "evidence/t04-native-pr-actions-removal.md", "evidence/t04-github-account-entry-cut.md", "evidence/t04-profile-popup-account-dependency.md", "evidence/t04-github-account-state-removal.md", "evidence/t04-integrated-sidebar-regressions.md", "evidence/t04-repository-avatar-removal.md", "evidence/t03-sidebar-terminal-fallback.md", "evidence/t03-core-window-constructor.md", "evidence/t03-core-cli-window-target.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A34",
@@ -394,8 +659,16 @@
       "title": "Customization/accessibility",
       "scenario": "Exercise themes/fonts/layouts/shortcuts, focus order, labels, locales and retained accessibility paths.",
       "expected": "Retained customization and accessibility behavior works with deleted controls removed cleanly.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A35",
@@ -405,8 +678,16 @@
       "title": "Unified command semantics",
       "scenario": "Invoke retained actions by GUI, palette, shortcut and local CLI with the same target.",
       "expected": "One catalog/dispatch contract; effects, confirmations and errors agree.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A36",
@@ -416,8 +697,16 @@
       "title": "Ambiguous and stale target",
       "scenario": "Rename/reorder machines, switch focus during dispatch and use duplicate labels/stale references.",
       "expected": "Automated mutations never guess or redirect; stale/ambiguous target is refused.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A37",
@@ -427,8 +716,16 @@
       "title": "Timeout is not failure",
       "scenario": "Lose a reply after a launch or other non-idempotent mutation.",
       "expected": "Unknown outcome is visible; reconcile before any new action; no fake idempotency or duplicate launch.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A38",
@@ -438,8 +735,16 @@
       "title": "Content is not authority",
       "scenario": "Feed malicious OSC/tool text/labels/filenames/URLs and a fake approval request.",
       "expected": "No instruction execution, credential fetch, approval, unexpected network/file access or command-catalog mutation.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A39",
@@ -449,8 +754,16 @@
       "title": "Bounded inspection",
       "scenario": "Query a large fixture session with many hidden transcripts and terminal histories.",
       "expected": "Default metadata stays paged/bounded; no full transcript fetch or model invocation; truncation/coverage explicit.",
-      "status": "not_run",
-      "evidence": ["evidence/t09-core-catalog-status.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": ["evidence/t09-core-catalog-status.md"]
+        }
+      }
     },
     {
       "id": "A40",
@@ -460,8 +773,16 @@
       "title": "No resource leak",
       "scenario": "Repeat window/pane attach-detach and Core reconnect cycles under load.",
       "expected": "Memory/subscriptions/threads stay bounded and return to the measured steady-state envelope.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A41",
@@ -471,8 +792,16 @@
       "title": "Truthful diagnostics",
       "scenario": "Exercise unsupported, denied, disconnected, stale and unknown outcomes; export logs with seeded secrets.",
       "expected": "Distinct error classes/versions/correlation; no seeded secrets/transcripts in default diagnostics.",
-      "status": "not_run",
-      "evidence": ["evidence/t09-core-catalog-status.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": ["evidence/t09-core-catalog-status.md"]
+        }
+      }
     },
     {
       "id": "A42",
@@ -483,8 +812,16 @@
       "title": "Identity and upstream isolation",
       "scenario": "Install a development build beside upstream; inspect paths/handlers/accounts and attempt old settings load.",
       "expected": "Independent app state/identity; upstream settings/credentials untouched; compatibility constants and notices retained.",
-      "status": "not_run",
-      "evidence": ["evidence/release-identity-audit.md", "evidence/t01-diagnostics-identity.md", "evidence/t01-control-protocol-copy.md", "evidence/t01-theme-source-isolation.md", "evidence/t12-macos-preview-20261110.1.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/release-identity-audit.md", "evidence/t01-diagnostics-identity.md", "evidence/t01-control-protocol-copy.md", "evidence/t01-theme-source-isolation.md", "evidence/t12-macos-preview-20261110.1.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A43",
@@ -494,8 +831,16 @@
       "title": "Update verification",
       "scenario": "Use isolated signed release fixtures, tampered manifests, wrong app IDs and rollback/restart paths.",
       "expected": "Only authorized Spaceport artifacts install; no upstream/Core overwrite or unsigned fallback.",
-      "status": "not_run",
-      "evidence": ["evidence/t12-custom-updater-removal.md", "evidence/t12-sparkle-preview.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t12-custom-updater-removal.md", "evidence/t12-sparkle-preview.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A44",
@@ -506,8 +851,16 @@
       "title": "Release gate",
       "scenario": "Inspect final owner-controlled IDs, keys, package/signing results and unresolved product gates.",
       "expected": "Unknown credentials/ownership or unproved required parity blocks public release; no placeholder success.",
-      "status": "not_run",
-      "evidence": ["evidence/t12-custom-updater-removal.md", "evidence/t12-macos-preview-20261110.1.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t12-custom-updater-removal.md", "evidence/t12-macos-preview-20261110.1.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A45",
@@ -517,8 +870,16 @@
       "title": "Task packet accuracy",
       "scenario": "Generate each task packet; mutate a tracked input; check requirements/sources/test ownership.",
       "expected": "Packets contain relevant current inputs and hashes, reject overflow, and do not claim runtime tests passed.",
-      "status": "passed",
-      "evidence": ["evidence/t00-baseline.md", "evidence/validation.json"]
+      "legs": {
+        "herdr1": {
+          "status": "passed",
+          "evidence": ["evidence/t00-baseline.md", "evidence/validation.json"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A46",
@@ -528,8 +889,16 @@
       "title": "Accretive bug fix",
       "scenario": "Introduce a reproducible targeting/lifecycle bug in an isolated branch, fix it and review handoff.",
       "expected": "Small regression fixture and owner contract survive; no redundant architecture dump or new runtime system.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A47",
@@ -539,8 +908,16 @@
       "title": "Repository/test safety",
       "scenario": "Run setup against dirty worktree, real-looking state paths and unauthorized publishing environment.",
       "expected": "Unrelated changes preserved; real environments and publish operations refused/not invoked.",
-      "status": "passed",
-      "evidence": ["evidence/t00-baseline.md"]
+      "legs": {
+        "herdr1": {
+          "status": "passed",
+          "evidence": ["evidence/t00-baseline.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A48",
@@ -550,8 +927,16 @@
       "title": "Completion honesty",
       "scenario": "Leave one native platform and one retained backend path untested.",
       "expected": "Report not-run/blocked accurately; no overall full-parity claim or silent scope reduction.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A49",
@@ -564,8 +949,16 @@
       "title": "Native macOS acceptance",
       "scenario": "Run retained UX/Core/lifecycle/clipboard/notifications/packaging/updater on a native supported macOS fixture.",
       "expected": "Measured behavior matches contract; actual OS/architecture coverage is recorded.",
-      "status": "not_run",
-      "evidence": ["evidence/native-platform-results.md", "evidence/t11-native-pages-activation.md", "evidence/t11-native-locked-desktop-attempt.md", "evidence/t12-macos-preview-20261110.1.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/native-platform-results.md", "evidence/t11-native-pages-activation.md", "evidence/t11-native-locked-desktop-attempt.md", "evidence/t12-macos-preview-20261110.1.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A50",
@@ -578,8 +971,16 @@
       "title": "Native Windows acceptance",
       "scenario": "Run named-pipe, launcher, input/clipboard, lifetime, notifications and package/update scenarios natively.",
       "expected": "Actual Windows behavior passes; a cross-compile alone is insufficient.",
-      "status": "not_run",
-      "evidence": ["evidence/native-platform-results.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/native-platform-results.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A51",
@@ -592,8 +993,16 @@
       "title": "Native Linux acceptance",
       "scenario": "Run socket/input/clipboard/lifetime/notification/package scenarios on the window systems actually supported.",
       "expected": "Actual Linux runtime coverage is recorded with no unsupported platform inference.",
-      "status": "not_run",
-      "evidence": ["evidence/native-platform-results.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/native-platform-results.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A52",
@@ -605,8 +1014,16 @@
       "title": "Operating-agent usability",
       "scenario": "Give an agent only CLI help/schema and the bounded attention/target/observe fixture journey.",
       "expected": "Correct observed outcome, zero wrong-target/unauthorized effects; record command/context cost versus reference.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A53",
@@ -618,8 +1035,16 @@
       "title": "Event epoch and document refresh",
       "scenario": "Restart Core, emit missed notifications and modify a watched remote document while disconnected.",
       "expected": "Fresh snapshot/document values replace stale projections; old sequence numbers do not suppress new events.",
-      "status": "not_run",
-      "evidence": ["evidence/t03-remote-document-route.md", "evidence/t03-remote-document-reader.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t03-remote-document-route.md", "evidence/t03-remote-document-reader.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A54",
@@ -631,8 +1056,16 @@
       "title": "No automatic conversion/resume",
       "scenario": "Show/hide native chat, restore an absent adapter and inspect removed conversion/recovery paths.",
       "expected": "No desktop-driven agent kill/restart/resume/deployment; missing capability remains explicit.",
-      "status": "not_run",
-      "evidence": ["evidence/t04-teleport-engine-removal.md", "evidence/t06-chat-lifecycle-policy-removal.md", "evidence/t06-adapter-detach-process.md"]
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": ["evidence/t04-teleport-engine-removal.md", "evidence/t06-chat-lifecycle-policy-removal.md", "evidence/t06-adapter-detach-process.md"]
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     },
     {
       "id": "A55",
@@ -643,8 +1076,16 @@
       "title": "Supported versus unsupported controls",
       "scenario": "Exercise templates/input/permissions on sessions with deliberately different advertised capabilities.",
       "expected": "Controls reflect actual session capability; no duplicated provider/model configuration or runtime CLI.",
-      "status": "not_run",
-      "evidence": []
+      "legs": {
+        "herdr1": {
+          "status": "not_run",
+          "evidence": []
+        },
+        "core": {
+          "status": "not_run",
+          "evidence": []
+        }
+      }
     }
   ]
 }

@@ -28,7 +28,7 @@ The application repository runs `just check-spec` in `just ci`, and CI runs the 
 
 `plan/tasks.json` is the sole task-status registry. `gaps` identifies issues the task must read/investigate. `must_close_gaps` identifies issues that must be resolved before that task can be marked `done`. An investigation can finish with an evidenced finding that a capability is still missing. A parity/release task cannot declare success while its required gate remains unresolved.
 
-`plan/acceptance.json` holds scenario outcomes separately from task progress. Initially every scenario is `not_run`. Each `passed` or `failed` entry requires evidence. `plan/gaps.json` records the substantive resolution and evidence before its status can become `resolved`.
+`plan/acceptance.json` holds scenario outcomes separately from task progress. Each scenario records two runtime legs, `herdr1` and `core`, each with its own `status` and `evidence`: D58 permits both runtimes and D71 records a Core leg only with Core enabled, so one status cannot describe both. A leg is `not_run`, `passed`, `failed` or `blocked`, every `passed` or `failed` leg requires evidence, and a scenario without both legs is invalid. Initially every leg is `not_run`. `plan/gaps.json` records the substantive resolution and evidence before its status can become `resolved`.
 
 These tools check structural consistency and that each evidence reference names a file in the package, **not the authenticity or sufficiency of a human's or agent's evidence**. Reviewers must inspect commands, exact code revisions, output and native runtime behavior independently. A forged evidence path or manually edited status is not verification.
 

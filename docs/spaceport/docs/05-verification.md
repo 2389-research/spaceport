@@ -1,6 +1,6 @@
 # Verification and agent-ergonomic acceptance
 
-The canonical scenarios are `plan/acceptance.json`. All application scenarios initially have `status: not_run`. The package validator checks links, references and shapes—not Spaceport's behavior.
+The canonical scenarios are `plan/acceptance.json`. Each scenario records a Herdr 1 leg and a Core leg independently, and both begin `not_run`; a passing leg never stands in for the other. The package validator checks links, references and shapes—not Spaceport's behavior.
 
 ## Evidence levels
 
