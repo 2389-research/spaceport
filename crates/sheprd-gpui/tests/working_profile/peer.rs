@@ -31,6 +31,7 @@ pub(super) struct Peer {
     surfaces: usize,
 }
 
+#[derive(Clone)]
 pub(super) struct Targets {
     pub(super) boot: String,
     pub(super) workspace: String,
@@ -39,21 +40,25 @@ pub(super) struct Targets {
 
 impl Peer {
     pub(super) fn open(socket: &Path) -> Result<Self> {
+        let mut peer = Self::begin(socket)?;
+        peer.until("initial snapshot", |event| {
+            matches!(event, ClientEvent::Snapshot(_))
+        })?;
+        Ok(peer)
+    }
+
+    fn begin(socket: &Path) -> sheprd_client::Result<Self> {
         let client = sheprd_client::connect(
             ConnectTarget::Socket(socket.to_owned()),
             ConnectOptions::default(),
         )?;
-        let mut peer = Self {
+        Ok(Self {
             client,
             snapshot: None,
             surface: None,
             snapshots: 0,
             surfaces: 0,
-        };
-        peer.until("initial snapshot", |event| {
-            matches!(event, ClientEvent::Snapshot(_))
-        })?;
-        Ok(peer)
+        })
     }
 
     fn until(&mut self, stage: &str, mut accept: impl FnMut(&ClientEvent) -> bool) -> Result<()> {
@@ -182,11 +187,21 @@ impl Peer {
                 .context("created pane ID")?,
         };
         // The input echo contains a format placeholder, never the complete ready marker.
-        let command = generated_command();
+        self.send_line(&targets, generated_command())?;
+        self.until("generated output marker", |event| {
+            matches!(event, ClientEvent::Surface(surface)
+                if surface.boot_id == targets.boot
+                    && surface.panes.iter().any(|pane| pane.pane_id == targets.pane)
+                    && marker_visible(&surface.frame))
+        })?;
+        Ok(targets)
+    }
+
+    fn send_line(&self, targets: &Targets, command: String) -> sheprd_client::Result<()> {
         self.client.handle.send_input(
             &targets.boot,
             &targets.pane,
-            vec![
+            [
                 ClientPaneInputEvent::TextCommit(command),
                 ClientPaneInputEvent::Key {
                     code: ClientKeyCode::Enter,
@@ -200,14 +215,7 @@ impl Peer {
                     windows_record: None,
                 },
             ],
-        )?;
-        self.until("generated output marker", |event| {
-            matches!(event, ClientEvent::Surface(surface)
-                if surface.boot_id == targets.boot
-                    && surface.panes.iter().any(|pane| pane.pane_id == targets.pane)
-                    && marker_visible(&surface.frame))
-        })?;
-        Ok(targets)
+        )
     }
 
     pub(super) fn close_workspace(&mut self, workspace: &str) -> Result<()> {

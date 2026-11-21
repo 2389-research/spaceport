@@ -1,0 +1,67 @@
+{
+  "source": "1b8c9be97f198936d483f7eb7e46643fb5d1d32d",
+  "run_id": "44865905881",
+  "job_id": "136729378404",
+  "qualification": "Expected runtime RED for missing bounded TUI producer; no GUI or performance qualification",
+  "artifact": {
+    "id": "14692697184",
+    "archive_bytes": 72564576,
+    "archive_sha256": "9eb422bfd24ae1b25582ef8b26144a80f185d1d0aed48e960d0f3fb3d916fcb9",
+    "cipher_sha256": "33f92c9d3761ff86fc1a581e26d79c4423f802661e158c980ad7e3725683b56c",
+    "inner_members": 26,
+    "crc_checked": true,
+    "safe_paths_checked": true,
+    "actual_member_sizes_checked": true,
+    "decryption_mdc": "good"
+  },
+  "build": [
+    {
+      "name": "spaceport.exe",
+      "sha256": "CF61C30727800F058D9257C1A8890D89CAA9B9B45348BE9699B7CD7CB3C1AE61",
+      "bytes": 57434112
+    },
+    {
+      "name": "spaceport.pdb",
+      "sha256": "33F014EC0D0D32E6FCA35ED7D2CD9E686451466D545F5973D79EB5DC57A57784",
+      "bytes": 171487232
+    }
+  ],
+  "seed": {
+    "snapshotEvents": 3,
+    "surfaceEvents": 15,
+    "bootMatches": true,
+    "paneMatches": true,
+    "generatedReady": true,
+    "configDiagnosticAbsent": true,
+    "width": 80,
+    "height": 24,
+    "workspacePresent": true,
+    "tabPresent": true
+  },
+  "contract": {
+    "generated_ready_observed": true,
+    "expected_unavailable_error": true,
+    "exact_workspace_close_acknowledged": true,
+    "independent_terminal_holder_liveness_audit": false
+  },
+  "workflow": {
+    "release_build": "success",
+    "gui_profiles": "skipped",
+    "trace_exports": "skipped",
+    "desktop_restore": "success",
+    "encrypted_upload": "success"
+  },
+  "desktop": {
+    "original": {
+      "animations_enabled": false,
+      "client_area_animations": false
+    },
+    "restored": {
+      "action": "Restore",
+      "original": false,
+      "native_original": false,
+      "animations_enabled": false,
+      "client_area_animations": false
+    }
+  }
+}

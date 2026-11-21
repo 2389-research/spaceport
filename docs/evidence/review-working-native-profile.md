@@ -1709,3 +1709,56 @@ Ordinary CI and actual private-TUI execution remain pending for this new test-on
 Kata gg9v comment `3105` records the earlier `129c36d0d` green milestone.
 Fresh readback matches its submitted body and preserves the issue's open status.
 Its original 53-child set still contains 50 closed issues and three open issues.
+
+### Bounded private output contract runtime RED
+
+Source `1b8c9be97f198936d483f7eb7e46643fb5d1d32d` passes all six executed ordinary jobs in run `44864794032`.
+The Windows harness passes 71 cases and ignores four, including the new native contract.
+The Mac harness passes 51 cases and ignores one.
+Both app jobs pass the existing group, observer, Core, timer, and scoped Clippy checks.
+Those results permit a normal forward update of the native test branch to that exact source.
+
+Native run `44865905881`, job `136729378404`, reaches the intended missing-producer failure.
+The release build succeeds.
+The contract observes the generated ready marker and acknowledges closing the exact owned workspace.
+It then fails specifically because the bounded output producer is unavailable.
+The two GUI profiles and trace exports are skipped.
+Desktop preference restoration and encrypted partial-evidence upload succeed.
+
+Artifact `14692697184` matches its published archive hash and decrypts with authenticated integrity.
+All 26 inner members pass path, type, size, and CRC checks before private extraction.
+Actual app and symbol hashes match the identity receipt's exact source and run.
+The retained seed matches its snapshot boot and pane and contains the generated ready marker.
+The restoration receipt matches both original animation settings.
+Workspace acknowledgement does not establish an independent terminal-holder liveness audit.
+No GUI, glyph, CPU, copy-cost, or speech qualification comes from this deliberate failure.
+
+The [bounded receipt](review-squad/windows-profile/native-1b8c9be97-output-red.json) contains scalar facts and hashes only.
+Raw rows, shell history, local configuration, binaries, and logs remain in private encrypted retention.
+Task 7's producer implementation may now proceed against the unchanged real-TUI contract.
+Kata gg9v remains open; Mac and audible-speech checks remain held.
+
+### Bounded output producer source checkpoint
+
+The producer now sends one fixed PowerShell loop through the existing private Peer.
+It emits 64 numbered rows, paced at 200 milliseconds, followed by a distinct completion marker.
+Split formatting prevents command echo from containing either complete authored marker.
+The parser reads only the exact pane rectangle in the expected daemon boot.
+It retains scalar progress and rejects skipped steps, regression, malformed markers, and inconsistent completion.
+Seven focused parser cases accompany the unchanged real-TUI contract.
+Ordinary Windows CI and release native GREEN remain pending.
+
+Independent review identifies one explicit exception to AGENTS.md's single-clock test rule.
+The producer checks expiry after each received event, alongside the existing absolute receive deadline.
+Crossbeam can return queued events after that deadline; removing the check would weaken the failure bound.
+Keep that check as an event-admission rule.
+Only blocking event receives drive waiting; the harness adds no clock polling, sleep, or yield loop.
+This exception applies only to this producer's received-event expiry check.
+It permits no elapsed-time success assertion or general test synchronization by the clock.
+Root chooses this smaller correction under the repository's intent and correctness priorities.
+The phase contract still uses one shared 20-second failure deadline.
+
+This fixture starts once in a fresh owned pane.
+Later streaming integration must preserve exact targeting when the generated pane is parked.
+It must share marker parsing and distinguish the raw counter envelope from the process CPU interval.
+No sampler, GUI stream metadata, chat, or polling behavior changes in this checkpoint.
