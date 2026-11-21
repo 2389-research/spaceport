@@ -5,12 +5,21 @@
 //! minidump for a panic and for a crash Rust never sees, such as an access
 //! violation (`windows`). Only the newest few of each are kept.
 //!
+//! A panic message is arbitrary text a `Debug` call or `format!` built, so it
+//! can hold terminal output, a file's contents, or a home path. Both it and
+//! the backtrace are bounded and made control-character-free before they reach
+//! the report or the log, and the home directory reads `~`. Redacting
+//! credential-shaped values is deliberately not done here: the app's
+//! diagnostics bundle owns that policy, and a second rule here would disagree
+//! with it.
+//!
 //! On macOS and Linux a signal such as `SIGSEGV` leaves no report here; the
 //! system's own crash reporter, if any, still sees it.
 
 #[cfg(windows)]
 mod windows;
 
+use crate::{Bounded, MAX_BYTES};
 use std::{
     backtrace::Backtrace,
     fmt::Write as _,
@@ -32,6 +41,13 @@ pub const DUMP_EXTENSION: &str = "dmp";
 const TIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S%.3f %:z";
 /// How long a crashing process waits for its log record to reach the disk.
 const FLUSH: Duration = Duration::from_secs(2);
+/// A panic message's budget, the same as a log line's, which it also becomes.
+const MAX_MESSAGE: usize = MAX_BYTES;
+/// A backtrace's budget in the report: room for a fully symbolized stack,
+/// bounded so a pathological one cannot fill the file.
+const MAX_BACKTRACE: usize = 32 * 1024;
+/// What a bounded message or backtrace ends with, as a log record does.
+const TRUNCATED: &str = " [truncated]";
 
 /// Where reports go: the log file's directory.
 pub fn dir() -> Option<PathBuf> {
@@ -45,21 +61,23 @@ pub fn install(version: &'static str) {
     let Some(dir) = dir() else {
         return;
     };
+    // Read once here: the hook runs while the process is already failing.
+    let home = sheprd_client::local_path::home_dir();
     #[cfg(windows)]
     windows::install(dir.clone(), version);
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
-        record(&dir, version, info);
+        record(&dir, version, home.as_deref(), info);
         previous(info);
     }));
 }
 
-fn record(dir: &Path, version: &str, info: &PanicHookInfo<'_>) {
+fn record(dir: &Path, version: &str, home: Option<&Path>, info: &PanicHookInfo<'_>) {
     let now = chrono::Local::now();
     let backtrace = Backtrace::force_capture();
     let thread = std::thread::current();
     let thread = thread.name().unwrap_or("unnamed");
-    let message = message(info.payload());
+    let message = bounded(message(info.payload()), home, MAX_MESSAGE);
     let location = info
         .location()
         .map(|location| location.to_string())
@@ -68,16 +86,16 @@ fn record(dir: &Path, version: &str, info: &PanicHookInfo<'_>) {
         version,
         &now.format(TIME_FORMAT).to_string(),
         thread,
-        message,
+        &message,
         &location,
-        &backtrace.to_string(),
+        &bounded(&backtrace.to_string(), home, MAX_BACKTRACE),
     );
     let name = file_name(now.to_utc(), std::process::id(), REPORT_EXTENSION);
     let written = write_new(&dir.join(&name), &text);
     prune(dir, REPORT_EXTENSION, KEEP_REPORTS);
     match &written {
         Ok(()) => tracing::error!(
-            panic = message,
+            panic = message.as_str(),
             location,
             thread,
             report = name,
@@ -85,7 +103,7 @@ fn record(dir: &Path, version: &str, info: &PanicHookInfo<'_>) {
             "Spaceport panicked"
         ),
         Err(error) => tracing::error!(
-            panic = message,
+            panic = message.as_str(),
             location,
             thread,
             %error,
@@ -105,6 +123,25 @@ fn message(payload: &(dyn std::any::Any + Send)) -> &str {
         .copied()
         .or_else(|| payload.downcast_ref::<String>().map(String::as_str))
         .unwrap_or("Box<dyn Any>")
+}
+
+/// `text` as it goes into a report and the log: `home` reads `~`, control
+/// characters become spaces so a message cannot forge a report line, and the
+/// result ends with [`TRUNCATED`] past `limit` bytes. The text is arbitrary:
+/// it can be a panic a `Debug` implementation built out of terminal output or
+/// a settings file, and the report is written where a user may share it.
+fn bounded(text: &str, home: Option<&Path>, limit: usize) -> String {
+    let text = match home.and_then(Path::to_str) {
+        // One character would rewrite every separator in a path.
+        Some(home) if home.len() > 1 => text.replace(home, "~"),
+        _ => text.to_owned(),
+    };
+    let mut out = Bounded::new(limit);
+    let _ = out.write_str(&text);
+    if out.truncated {
+        out.text.push_str(TRUNCATED);
+    }
+    out.text
 }
 
 fn report(

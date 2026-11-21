@@ -39,7 +39,8 @@ use tracing::{
 };
 use tracing_subscriber::{Layer, layer::Context, prelude::*, registry::LookupSpan};
 
-const MAX_BYTES: usize = 4096;
+/// One log line's budget in bytes, shared with a crash report's message.
+pub(crate) const MAX_BYTES: usize = 4096;
 const TIMESTAMP_FORMAT: &str = "[%Y-%m-%d %H:%M:%S]";
 const FILE_NAME: &str = "spaceport.jsonl";
 const PREVIOUS_FILE_NAME: &str = "spaceport.1.jsonl";
@@ -525,14 +526,16 @@ impl<S: Subscriber + for<'a> LookupSpan<'a>> Layer<S> for Capture {
     }
 }
 
-struct Bounded {
-    text: String,
-    truncated: bool,
+/// A bounded, control-character-free copy of text that may be untrusted: a
+/// log field, or a crash report's message and backtrace.
+pub(crate) struct Bounded {
+    pub(crate) text: String,
+    pub(crate) truncated: bool,
     remaining: usize,
 }
 
 impl Bounded {
-    fn new(remaining: usize) -> Self {
+    pub(crate) fn new(remaining: usize) -> Self {
         Self {
             text: String::new(),
             truncated: false,
