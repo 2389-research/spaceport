@@ -25,8 +25,8 @@ pub(super) enum Scope {
 }
 
 impl Scope {
-    pub(super) fn editable(self) -> bool {
-        self == Self::App || cfg!(unix)
+    pub(super) const fn editable(self) -> bool {
+        matches!(self, Self::App) || cfg!(unix)
     }
 }
 

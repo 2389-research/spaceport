@@ -102,12 +102,18 @@ macro_rules! catalog {
     };
 }
 
+const THEME_SOURCE_DESCRIPTION: &str = if super::themes::Scope::Herdr.editable() {
+    "settings-theme-source-description"
+} else {
+    "settings-theme-library-read-only"
+};
+
 catalog! {
     THEME_MODE = entry(Section::Theme, "theme-mode", "settings-theme-mode", "settings-theme-mode-hint");
     THEME_SIDE = entry(Section::Theme, "theme-side", "settings-theme-side", "settings-theme-side-description").only(Availability::FollowingSystemTheme);
     THEME_FOLLOW = entry(Section::Theme, "theme-follow", "settings-theme-follow", "settings-theme-follow-description");
     THEME_CONTRAST = entry(Section::Theme, "theme-contrast", "settings-theme-contrast", "settings-theme-contrast-description");
-    THEME_SOURCE = entry(Section::Theme, "theme-source", "settings-theme-source", "settings-theme-source-description");
+    THEME_SOURCE = entry(Section::Theme, "theme-source", "settings-theme-source", THEME_SOURCE_DESCRIPTION);
     THEME_BACKDROP = entry(Section::Theme, "theme-backdrop", "settings-theme-backdrop", "settings-theme-backdrop-description");
     THEME_PADDING_LEFT = entry(Section::Theme, "theme-padding-left", "settings-theme-padding-left", "settings-theme-padding-left-hint");
     THEME_PADDING_RIGHT = entry(Section::Theme, "theme-padding-right", "settings-theme-padding-right", "settings-theme-padding-right-description");
