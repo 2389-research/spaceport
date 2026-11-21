@@ -98,6 +98,8 @@ pub struct LiveState {
     /// Why `ssh` refused the bridge, when that is how the connection ended.
     pub(crate) ssh_failure: Option<sheprd_client::SshFailure>,
     pub missing_installation: bool,
+    /// An intentional shutdown survives its following disconnect until a new handshake.
+    pub(crate) server_stopped: bool,
     /// The daemon's reported version, from an accepted handshake or mismatch notice.
     pub daemon_version: Option<String>,
     /// Why the last handshake was refused, when updating one side fixes it.
@@ -213,6 +215,7 @@ impl Default for LiveState {
             notices: Default::default(),
             ssh_failure: None,
             missing_installation: false,
+            server_stopped: false,
             daemon_version: None,
             version_mismatch: None,
             local_daemon_peer: false,
@@ -307,6 +310,7 @@ impl LiveState {
             notices,
             ssh_failure,
             missing_installation,
+            server_stopped,
             daemon_version,
             version_mismatch,
             local_daemon_peer,
@@ -365,6 +369,7 @@ impl LiveState {
             && *notices == self.notices
             && *ssh_failure == self.ssh_failure
             && *missing_installation == self.missing_installation
+            && *server_stopped == self.server_stopped
             && *daemon_version == self.daemon_version
             && *version_mismatch == self.version_mismatch
             && *local_daemon_peer == self.local_daemon_peer
@@ -526,6 +531,7 @@ impl LiveState {
                             welcome.capabilities.iter().any(|value| value == capability)
                         });
                 self.missing_installation = false;
+                self.server_stopped = false;
                 self.version_mismatch = None;
                 // The daemon reports the mode to each new connection.
                 self.keyboard_report_all = false;
@@ -708,6 +714,9 @@ impl LiveState {
                 }
                 self.keyboard_report_all = enabled;
             }
+            ClientEvent::Message(ServerMessage::ServerShutdown { .. }) => {
+                self.server_stopped = true;
+            }
             // Herdr's own TUI drops `Notify` in client-shell mode as well. A
             // shell client is notified through `SemanticNotification`, which
             // drives toasts and sounds here; `Notify` is the flat form for
@@ -733,7 +742,6 @@ impl LiveState {
             // handles before anything reaches this state.
             | ClientEvent::Message(ServerMessage::Welcome { .. })
             | ClientEvent::Message(ServerMessage::ClientShellSnapshot(_))
-            | ClientEvent::Message(ServerMessage::ServerShutdown { .. })
             // Consumed by the session worker and never forwarded here.
             | ClientEvent::Message(ServerMessage::PaneSurface(_))
             | ClientEvent::Message(ServerMessage::PaneSurfacePatch(_))

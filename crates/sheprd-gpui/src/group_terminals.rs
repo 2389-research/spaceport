@@ -1,3 +1,5 @@
+// ABOUTME: Assigns one client transport to each editor group showing a terminal.
+// ABOUTME: Fences parked connection creation and trades primary input ownership.
 //! A client connection per editor group that shows a terminal.
 //!
 //! The daemon keeps a focused tab and projects a surface per client, so each
@@ -280,6 +282,7 @@ impl SheprdWindow {
             .connection
             .target
             .clone();
+        let endpoint_serving = self.endpoints[self.selected_endpoint].serving();
         for (group, tab) in &needed {
             let existing = terminals
                 .parked
@@ -288,6 +291,7 @@ impl SheprdWindow {
             match existing {
                 Some(parked) => parked.steer(tab, now, last_input),
                 None if terminals.retry.iter().any(|(waiting, _)| waiting == group) => {}
+                None if !endpoint_serving => {}
                 None => {
                     let mut connection = ConnectionBridge::new(target.clone());
                     connection.reconnect(self.options, false, true);

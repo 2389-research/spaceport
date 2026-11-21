@@ -36,6 +36,13 @@ fn shutdown_holds_retry(target: ConnectTarget) {
     assert_eq!(endpoint.outage(), Some(REASON));
     assert_eq!(endpoint.status(), "Herdr stopped");
     assert!(!endpoint.may_dial(), "shutdown requires explicit recovery");
+    assert_eq!(endpoint.status_label(), "Herdr stopped");
+    crate::i18n::show(&sheprd_i18n::Pseudo::Accented.locale());
+    let pseudo = endpoint.status_label();
+    let command = endpoint.status();
+    crate::i18n::show(&sheprd_i18n::Locale::FALLBACK);
+    assert!(sheprd_i18n::pseudo::is_marked(&pseudo), "{pseudo}");
+    assert_eq!(command, "Herdr stopped");
 }
 
 #[test]

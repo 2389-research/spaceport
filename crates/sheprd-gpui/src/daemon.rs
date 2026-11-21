@@ -1,3 +1,5 @@
+// ABOUTME: Attaches to installed local Herdr runtimes and owns permitted startup.
+// ABOUTME: Keeps explicit sockets and development sessions attach-only.
 #![forbid(unsafe_code)]
 // i18n: migrated
 
@@ -37,6 +39,17 @@ pub(super) fn is_missing_installation(error: &io::Error) -> bool {
         .is_some_and(|source| source.is::<MissingInstallation>())
 }
 
+pub(crate) fn may_start(target: &ConnectTarget) -> bool {
+    matches!(
+        target,
+        ConnectTarget::Local
+            | ConnectTarget::Session {
+                development: false,
+                ..
+            }
+    )
+}
+
 pub fn connect(
     target: &ConnectTarget,
     stop: &AtomicBool,
@@ -60,14 +73,7 @@ pub fn connect(
             pin_config_home(&mut command, sheprd_client::local_var("XDG_CONFIG_HOME"));
             command
         },
-        matches!(
-            target,
-            ConnectTarget::Local
-                | ConnectTarget::Session {
-                    development: false,
-                    ..
-                }
-        ),
+        may_start(target),
     )?;
     let local = local_peer(&stream, target, &socket);
     Ok((stream, local))

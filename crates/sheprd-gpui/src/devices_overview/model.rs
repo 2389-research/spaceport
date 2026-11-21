@@ -1,3 +1,5 @@
+// ABOUTME: Builds device overview rows from endpoint state and current snapshots.
+// ABOUTME: Keeps offline classification and device search independent of rendering.
 //! What the overview shows for one device, gathered from its endpoint and
 //! live state before drawing, and the search that narrows the list.
 
@@ -87,8 +89,7 @@ pub(crate) enum Link {
 }
 
 impl From<Phase> for Link {
-    /// The overview's four states for the endpoint's eight: a host that is
-    /// detached, refused as outdated, missing Herdr, or waiting to reconnect is offline.
+    /// Detached, refused, stopped, missing, and reconnecting endpoints are offline.
     fn from(phase: Phase) -> Self {
         match phase {
             Phase::Disabled => Self::Disabled,
@@ -96,6 +97,7 @@ impl From<Phase> for Link {
             | Phase::DaemonOutdated
             | Phase::ClientOutdated
             | Phase::HerdrMissing
+            | Phase::HerdrStopped
             | Phase::Reconnecting => Self::Offline,
             Phase::Connecting => Self::Connecting,
             Phase::Online => Self::Online,
