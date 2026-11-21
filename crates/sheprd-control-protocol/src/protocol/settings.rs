@@ -143,7 +143,8 @@ pub enum Reply {
         bindings: Vec<BindingInfo>,
         custom: Vec<CustomInfo>,
     },
-    /// "off", "pending", or "on".
+    /// "off", "pending", "on", or "until_agents_finish", the status bar
+    /// cup's mode that no control request sets.
     Caffeine {
         state: String,
         /// Seconds until a timed hold ends, when one was set.

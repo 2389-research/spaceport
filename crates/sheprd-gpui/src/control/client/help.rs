@@ -2,10 +2,12 @@
 use crate::cli::control::FAMILIES;
 
 const COMMON: &str = "\
-Every command accepts --json, printing one JSON document, and --window ID,
-acting in that window (IDs come from `window list`). By default a command
-acts in the window showing the caller's workspace (HERDR_WORKSPACE_ID), and
-exits 5 when no window shows it; outside Herdr, in the frontmost window.
+Every command accepts --json, printing one JSON document (`events --follow`
+writes one object per line instead), and --window ID, acting in that window
+(IDs come from `window list`); a command about the whole app, such as `status`
+or `caffeine`, only checks that the window is there. By default a command acts
+in the window showing the caller's workspace (HERDR_WORKSPACE_ID), and exits 5
+when no window shows it; outside Herdr, in the frontmost window.
 Exit status: 0 done, 1 refused, 2 invalid arguments, 3 Spaceport not running,
 4 nothing yet (no notes, no events, no chat panes, no ports, no usage, no log,
 a key not set, or the wait not met), 5 not found, 6 busy (a dialog is open),

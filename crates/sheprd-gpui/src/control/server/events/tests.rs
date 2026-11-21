@@ -1,5 +1,41 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
+use crate::control::protocol::ErrorCode;
+
+mod online_target;
+
+/// A caller in workspace `workspace` of the fixture window's daemon.
+fn caller(workspace: Option<&str>) -> Caller {
+    Caller {
+        workspace_id: workspace.map(str::to_owned),
+        ..Caller::default()
+    }
+}
+
+/// The layout fixture in a window, with w0 focused as a daemon reports it.
+fn window(
+    cx: &mut gpui::TestAppContext,
+) -> (
+    gpui::Entity<crate::SheprdWindow>,
+    &mut gpui::VisualTestContext,
+) {
+    cx.add_window_view(|window, cx| {
+        let mut view = crate::sidebar::layout_tests::fixture_window(window, cx);
+        if let Some(snapshot) = &view.live.snapshot {
+            let mut snapshot = (**snapshot).clone();
+            snapshot.focused_workspace_id = Some("w0".into());
+            view.live.snapshot = Some(std::sync::Arc::new(snapshot));
+        }
+        view
+    })
+}
+
+fn error_code(response: &Response) -> Option<ErrorCode> {
+    match response {
+        Response::Error { code, .. } => Some(*code),
+        _ => None,
+    }
+}
 
 #[test]
 fn readers_get_what_came_after_their_sequence_number() {

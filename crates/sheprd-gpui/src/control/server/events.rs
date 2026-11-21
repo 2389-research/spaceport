@@ -6,7 +6,7 @@ use super::{Watches, main_windows, socket, window_for};
 use crate::{
     browser::Store,
     control::protocol::{
-        Call, Response,
+        Call, Caller, Response,
         events::{Condition, Event, EventKind, EventsOp, Reply},
     },
 };
@@ -178,11 +178,15 @@ pub(super) fn record(cx: &mut App) {
     *cx.global_mut::<Log>() = log;
 }
 
-fn condition_holds(
-    condition: Condition,
-    caller: &crate::control::protocol::Caller,
-    cx: &mut App,
-) -> bool {
+/// A wait for the selected host is about one window's host, so its window is
+/// resolved once, before the request parks: a caller in a session no window
+/// shows is refused now, rather than told the wait was not met after watching
+/// another session's window for the whole timeout.
+fn online_window(caller: &Caller, cx: &mut App) -> Result<(), Response> {
+    window_for(caller, cx).map(|_| ())
+}
+
+fn condition_holds(condition: Condition, caller: &Caller, cx: &mut App) -> bool {
     match condition {
         Condition::Window => !main_windows(cx).is_empty(),
         Condition::TabClosed { id } => cx
@@ -241,6 +245,12 @@ pub(super) fn serve(
             wait_seconds,
         } => {
             let caller = call.caller;
+            if condition == Condition::Online
+                && let Err(response) = online_window(&caller, cx)
+            {
+                incoming.respond(response);
+                return;
+            }
             watches.add(
                 incoming,
                 Duration::from_secs(wait_seconds),

@@ -37,7 +37,10 @@ only to that existing daemon, discovering and starting no other.
 
 Every command accepts, after its command word:
 
-- `--json`: print one JSON document instead of text. Errors become
+- `--json`: print one JSON document instead of text, the reply as the control
+  protocol defines it (`crates/sheprd-control-protocol/src/protocol` holds each
+  family's types; an answer the app sends is bounded to the same 256 KiB as
+  every response). Errors become
   `{"error": {"code", "message"}}` on standard output. `events --follow`
   is the one stream: it writes one JSON object per line, each with its
   `cursor`, so a follower can resume after any event. `--help` and `skill`
@@ -48,7 +51,11 @@ Every command accepts, after its command word:
   it, as for a session the app does not show, the command exits 5 rather than
   act on another session's window. Outside Herdr, it acts in the frontmost
   window. A command this process answers from files alone, marked "no app
-  needed" below, accepts the ID and ignores it, so it never refuses one.
+  needed" below, accepts the ID and ignores it, so it never refuses one. A
+  command about the whole app rather than one window — `status`, `window
+  list`, `tab list`, `events`, `notes list`, `caffeine`, `font`, `language`,
+  `app hide`, and `app quit` — likewise changes nothing window by window, but
+  the app still refuses an ID no window has.
 
 Both options follow the command word: `spaceport --json status` is an
 unknown option, not `status` asked for JSON.
@@ -139,7 +146,7 @@ not take it either.
 | --- | --- |
 | `host [list]`, `host select ID` | The window's hosts, with their tags; show another one |
 | `host mute\|unmute [HOST]` | Silence a host's notifications as a whole, or let them through again, by ID or label; absent, your host. Works while it is offline |
-| `host tag ID [TAG...]` | Replace the local tags that group a host in the sidebar; with no tags, clear them |
+| `host tag ID [TAG...]` | Replace the local tags that group a host in the sidebar; with no tags, clear them. At most 8 tags of 24 characters each, as the sidebar keeps them |
 | `ports [list]` | Ports your workspace listens on, and forwards |
 | `ports forward\|unforward PORT` | Forward a port of the SSH host to this machine |
 | `ports open PORT` | Open `localhost:PORT` with the system handler; forwards a remote port before opening |
@@ -158,7 +165,7 @@ not take it either.
 | `font [list]`, `font set NAME`, `font reset` | The terminal font of every face, or back to the default. Needs the running app, which knows the installed fonts |
 | `language [status]`, `language list`, `language set system\|TAG` | The language set and the locale Spaceport shows, the languages there are, each with its name in itself as Settings > General lists it, or save the `language` setting (a BCP 47 tag; `en-XA` and `en-XB` are pseudo-locales). Only `status` asks the app, and without it reports what it would show |
 | `keybinds [list]`, `keybinds check` | Shortcuts and reachable non-plugin custom Herdr commands |
-| `caffeine [status]`, `caffeine on\|off\|toggle [--for 30m]` | Keep the machine awake |
+| `caffeine [status]`, `caffeine on\|off\|toggle [--for 30m]` | Keep the machine awake. `status` reports `off`, `pending`, `on`, or `until_agents_finish` (the status bar cup's agents mode, which no command sets); `--for` takes `90s`, `30m`, or `2h`, from 1 second to 24 hours, and turns it off then |
 | `sound [list]`, `sound play [done\|request]`, `bell` | Sounds play at `sound.volume` percent (`config set sound.volume 30`) |
 | `integrations [list]` | What Herdr offers the selected host |
 | `integrations install-skill` | Install the agent skill (no app needed) |
@@ -204,7 +211,7 @@ event the new run has kept, so a restart never hides events.
 
 | Command | What it does |
 | --- | --- |
-| `wait window\|online\|tab-closed ID [--timeout SECONDS]` | Block until the app has a window, the selected host comes online, or app tab `ID` closes: 60 seconds unless `--timeout` says otherwise, and at most 600. Exits 4 when the time runs out |
+| `wait window\|online\|tab-closed ID [--timeout SECONDS]` | Block until the app has a window, the selected host comes online, or app tab `ID` closes: 60 seconds unless `--timeout` says otherwise, and at most 600. Exits 4 when the time runs out. `wait online` is about the window's host, so it exits 5 at once when no window shows the caller's workspace |
 
 ```sh
 spaceport events --follow --kind tab_closed
@@ -228,6 +235,12 @@ runs it.
 Herdr 1 scrollback search is not repeated here: `herdr pane read` covers it. Moving a
 window and capturing a whole window have no command because the app cannot
 do them.
+
+The other way round, a few commands do what no window, menu, or palette entry
+does, and exist for a shell: `window size WIDTHxHEIGHT` gives a window an
+exact size no drag produces, `bell` rings the bell on demand, `config path`
+and `config get` read the settings files rather than a settings page, and
+`status`, `events`, and `wait` report or wait on the app itself.
 
 ## Links
 
