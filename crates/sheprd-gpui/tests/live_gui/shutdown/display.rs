@@ -137,6 +137,7 @@ impl Display {
             // A resize or reconnect can be acknowledged before the window repaints.
             if size == (width, 600) {
                 let mut read = sandbox.command("/usr/bin/tesseract", "ocr.log");
+                self.configure(&mut read);
                 let (status, text) = run(
                     sandbox,
                     read.arg(&path).args(["stdout", "-l", "eng", "--psm", "11"]),
