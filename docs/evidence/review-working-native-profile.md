@@ -1762,3 +1762,94 @@ This fixture starts once in a fresh owned pane.
 Later streaming integration must preserve exact targeting when the generated pane is parked.
 It must share marker parsing and distinguish the raw counter envelope from the process CPU interval.
 No sampler, GUI stream metadata, chat, or polling behavior changes in this checkpoint.
+
+## Task 8: Qualify the GUI's bounded output workload
+
+Measure one complete authored output workload through the existing Windows recorder and private observer.
+Require target-specific progress from actual GUI presentations, alongside the producer's independent stream history.
+Keep native inspections and screenshots outside the producer's active interval.
+Use fast raw observations through the existing private handshake for the counter envelope.
+Keep its request correlation, owned GUI identity, release check, and response bounds.
+Do not add another endpoint, receiver clone, producer thread, provider, credential, or Herdr change.
+
+### Phase A: Establish the missing GUI observation
+
+Add shared scalar `OutputProgress { last_step: u8, complete: bool }` and `PaneOutput { pane_id: String, progress: OutputProgress }` types.
+Add optional `Frame.outputs: Option<Vec<PaneOutput>>`, defaulting to unavailable when absent.
+Declare `report::output::observe(surface: &PaneSurfaceFrame) -> Option<Vec<PaneOutput>>` with a deliberately unavailable result.
+Have the real group observer obtain this field from each actually presented surface.
+Keep projected surfaces separate; add no retained frame or asset owner.
+
+Add a focused headless group test through the actual `working_profile_groups` consumer.
+First prove current populated presentation and a generated output row inside the expected pane.
+Then require that pane's exact scalar progress through the new observer field.
+The unavailable implementation must fail that assertion at runtime after its preconditions pass.
+Exercise the real bounded reply encoder and reader with the new typed scalar metadata.
+Missing metadata must remain unqualified, rather than becoming a zero-progress success.
+Do not move the existing producer parser or implement observation until this runtime RED is inspected.
+
+Root owns the native workflow, sampler, review, commits, and remote qualification.
+The implementer owns the schema, refusing getter, observer wiring, and focused tests.
+No local product build, test, compiler, linter, GUI, VM, or daemon may run.
+Formatting, static validators, Git, and read-only source inspection remain allowed.
+
+### Phase B: Share marker parsing and observe presented progress
+
+After Phase A runtime RED, move the existing lexical marker grammar into the shared profile module.
+Keep one source of marker constants, kinds, numeric limits, and parsing rules.
+Reuse it from the producer and GUI observation; remove the superseded private parser.
+Keep the producer's contiguous all-step history distinct from the GUI's visible endpoint observation.
+Observe only markers inside each exact pane rectangle.
+Reject malformed, ambiguous, or inconsistent output metadata without exposing row text.
+Require the final STEP marker alongside the distinct final DONE marker for completion.
+Test pane clipping, wrapping, partial rows, decoration, absent output, and malformed completion.
+Keep existing producer cases and require both platform headless GREEN before native promotion.
+
+### Phase C: Measure and retain the whole workload
+
+Establish exact GUI, window, HWND, workspace, boot, pane, tab, and connection identities first.
+Restore and verify the original generated target if split setup parks it; never retarget input by current focus.
+Complete slow recorder setup before starting output.
+Capture a fast raw baseline, then read the first process CPU clock.
+Start the producer once, observe intermediate output, and finish naturally at step 64.
+Read the final process CPU clock and collect the raw observer endpoint.
+Use a variable whole-workload duration; do not relabel it as the existing five-second sample.
+
+The counter envelope contains the CPU-read interval and endpoint overhead.
+Require target-specific GUI progress and accepted growth on that target's stable connection.
+Preserve all passive envelope checks, including resets, overflow, popup state, and unavailable counters.
+Retain processwide paint readings separately from per-connection counters.
+Report neither as pane frame rate, copied bytes, or attributed CPU cost.
+Bracket CPU helper calls and retain raw clocks; helper latency limits precise utilization claims.
+Do not claim uninterrupted output throughout the wider CPU envelope.
+
+Retain completed clocks and available observations before validation or Stop can fail.
+Preserve the recorder guard's exact acknowledged Stop authority and partial receipts.
+Close the captured workspace on every returned success or failure path.
+Preserve primary, Stop, and workspace-close failures without retrying uncertain mutations.
+Add the new trace explicitly to native exports.
+Require real Windows release execution and retained-artifact review for positive qualification.
+Mac keyboard checks and audible speech remain held.
+Chat rendering, polling costs, and remaining performance conclusions stay separate open clauses.
+
+### Producer ordinary GREEN and next observation RED candidate
+
+Source `67bbb1745be8d54bbdb9418adbe3434535997ebf` passes all six executed ordinary jobs in run `44869457594`.
+Windows app job `136740474335` passes all seven new producer parser cases.
+Its complete harness result is 78 passed and four ignored.
+Mac app job `136740474328` passes 51 harness cases and ignores one.
+Both app jobs pass their observer, Core, timer, terminal-group, and scoped Clippy checks.
+The known Mac linker and `block` compatibility warnings remain; Windows introduces no warning.
+
+The native branch advances normally from `1b8c9be97f198936d483f7eb7e46643fb5d1d32d` to that exact validated source.
+Native run `44870432640` is in progress.
+Producer delivery, pacing, natural completion, and newer GUI performance remain unqualified until its actual results are inspected.
+The last qualified native GUI source remains `23884df4c16a72eca3404bc2fef915f796ca6582`.
+
+Task 8A now adds its schema, presented-surface wiring, and deliberately unavailable getter.
+Its headless consumer test proves frame and authored-row preconditions before requiring exact pane progress.
+The intended runtime failure is `None` versus pane `p0`, step one, incomplete.
+Two bounded codec cases check typed completion metadata and unavailable-field omission.
+The unavailable-input control does not prove implemented validation in the refusing getter.
+Independent source review approves this test-only checkpoint; runtime RED remains pending.
+No producer parser, sampler, or normal app behavior changes in this checkpoint.

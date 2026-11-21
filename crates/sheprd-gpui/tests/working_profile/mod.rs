@@ -4,6 +4,7 @@ mod copy_work;
 mod harness;
 mod markers;
 mod measurements;
+mod output_progress;
 mod peer;
 #[cfg(windows)]
 mod windows_contracts;

@@ -75,6 +75,7 @@ fn observation(snapshots: &[Snapshot]) -> Observation {
                 marker_visible: false,
                 current: true,
                 has_popup: Some(false),
+                outputs: None,
             }),
         })
         .collect();

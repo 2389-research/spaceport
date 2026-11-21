@@ -14,6 +14,8 @@ use sheprd_client::protocol::{
 use std::sync::Arc;
 
 mod idle_reassert;
+#[cfg(all(any(target_os = "macos", windows), feature = "integration-test"))]
+mod output_progress;
 mod padding;
 #[cfg(all(any(target_os = "macos", windows), feature = "integration-test"))]
 mod patch_stats;

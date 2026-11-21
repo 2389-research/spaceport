@@ -1,7 +1,7 @@
 // ABOUTME: Reads terminal group presentation for the opt-in native profile observer.
 // ABOUTME: Borrows paired presented assets and keeps latest projections explicitly separate.
 use super::*;
-use crate::working_profile::report::{Frame, Group, marker_visible};
+use crate::working_profile::report::{Frame, Group, marker_visible, output};
 
 impl SheprdWindow {
     pub(crate) fn working_profile_groups(&self, cx: &App) -> Vec<Group> {
@@ -52,6 +52,7 @@ impl SheprdWindow {
                                     && snapshot.revision == surface.projection_revision
                             }),
                         has_popup: Some(surface.popup.is_some()),
+                        outputs: output::observe(surface),
                     })
                 });
                 Group {

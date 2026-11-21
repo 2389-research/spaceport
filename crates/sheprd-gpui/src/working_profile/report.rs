@@ -3,6 +3,9 @@
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
 
+#[path = "report/output.rs"]
+pub(crate) mod output;
+
 pub(crate) const MARKER: &str = "SP_PROFILE_READY";
 pub(crate) const OBSERVER_ENV: &str = "SPACEPORT_WORKING_PROFILE_DIR";
 #[cfg(unix)]
@@ -167,4 +170,18 @@ pub(crate) struct Frame {
     pub(crate) current: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) has_popup: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) outputs: Option<Vec<PaneOutput>>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub(crate) struct OutputProgress {
+    pub(crate) last_step: u8,
+    pub(crate) complete: bool,
+}
+
+#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub(crate) struct PaneOutput {
+    pub(crate) pane_id: String,
+    pub(crate) progress: OutputProgress,
 }
