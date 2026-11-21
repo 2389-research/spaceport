@@ -38,7 +38,7 @@ Refuse new tab creation when restoration cannot establish a safe ID floor.
 **Interfaces:** Use existing loaders, `Store::open`, `Store::get`, `Layouts::save`, and private writer completion in unit tests.
 Do not add production methods or missing-symbol assertions for the RED checkpoint.
 
-- [ ] Write real-file regression tests against unchanged production code.
+- [x] Write real-file regression tests against unchanged production code.
 
 ```rust
 let mut store = Store::load(Some(path.clone()));
@@ -48,13 +48,13 @@ assert!(store.writer.is_none());
 assert_eq!(std::fs::read(&path).unwrap(), original);
 ```
 
-- [ ] Cover mixed valid/rejected entries, torn JSON, read failure, backup failure, oversized files, and missing-file controls.
-- [ ] Check exact backup bytes, unique names, and Unix mode 0600.
-- [ ] Reserve IDs from invalid tabs, saved `next`, and layout picks, tabs, and hidden references.
-- [ ] Cover invalid layout entries, maximum IDs, layout-only writes, last-layout removal, and a second restart.
-- [ ] Finish real writers before inspecting persisted bytes. Do not poll or sleep.
-- [ ] Review the tests independently before committing.
-- [ ] Commit and publish the tests-only draft. Record the exact head and expected assertion failures from CI.
+- [x] Add cases for mixed entries, torn JSON, read failure, backup failure, oversized files, and missing-file controls.
+- [x] Add assertions for exact backup bytes, unique names, and Unix mode 0600.
+- [x] Add ID cases for invalid tabs, saved `next`, and layout picks, tabs, and hidden references.
+- [x] Cover invalid layout entries, maximum IDs, layout-only writes, last-layout removal, and a second restart.
+- [x] Finish real storage writers before assertions. Do not poll or sleep.
+- [x] Review the tests independently before committing.
+- [x] Publish the tests-only draft and inspect actual assertion failures on its exact source.
 
 CI uses existing default and all-feature workspace jobs on Linux, macOS, and Windows.
 Compile failures do not prove these regressions.
@@ -72,7 +72,10 @@ This lets the same baseline run report browser and GPUI regressions.
 - Modify typed errors only where a new failure contract needs one.
 
 **Interfaces:** Add `sheprd_state_file::preserve_rejected(&Path, &[u8]) -> Result<PathBuf>`.
-Expose `Store::restoration_blocked(&self) -> bool` for actual admission callers.
+Expose `Store::check_new_tab_id(&self) -> Result<()>` for actual admission callers.
+Keep its private checked increment shared with `restore_tab`.
+Distinguish `RestorationBlocked` from `TabIdsExhausted` through typed browser errors.
+Keep valid existing-tab saves enabled when IDs are exhausted.
 Keep file I/O before GPUI startup and writer completion off the UI thread.
 
 - [ ] Use `tempfile::Builder` in the source directory with a `<filename>.rejected-` prefix.
@@ -84,6 +87,9 @@ Keep file I/O before GPUI startup and writer completion off the UI thread.
 - [ ] Block allocation and replacement writers when a read, backup, or reference-envelope check fails.
 - [ ] Retain readable tabs while blocked.
 - [ ] Reserve raw numeric IDs using saturating arithmetic. Keep checked allocation.
+- [ ] Inspect identity fields in the original bytes before a JSON map can discard duplicate keys.
+- [ ] If identities are ambiguous, retain readable entries and block allocation and replacement writes.
+- [ ] Keep unrelated invalid scalar entries recoverable without making valid siblings read-only.
 - [ ] Add a defaulted `next_tab_id` field beside saved layouts.
 - [ ] Preserve that floor when layouts change or the last layout is removed.
 - [ ] Test actual file preservation and typed error sources for the new helper.
@@ -103,13 +109,19 @@ Keep file I/O before GPUI startup and writer completion off the UI thread.
 Check `Purpose::Tab` before connecting or queueing terminal creation.
 Keep existing terminal splits available when their identities are already known.
 
-- [ ] Add headless tests for the actual Devices action and Core new-tab path.
+- [x] Add headless tests for the actual Devices action and Core new-tab path.
 - [ ] Verify blocked state emits repair guidance and queues no terminal request.
 - [ ] Retain normal creation and existing-tab controls.
 - [ ] Prove the tests fail for the expected behavioral reason in disposable CI.
 - [ ] Implement the narrow refusal and localized message.
 - [ ] Review the actual callers and test evidence independently.
 - [ ] Require the new tests and full configured CI gates to pass.
+
+The maximum layout ID introduces another admission refusal before terminal creation.
+A private Core case now checks that boundary without escalating a pending join.
+Publish that case in a tests-only follow-up and require its own assertion RED before changing the Core guard.
+Preserve ordinary saves for valid existing tabs when their ID counter is exhausted.
+This adds no capacity reservation or queued-request lifecycle policy.
 
 ## Task 4: Qualify and Publish the Focused Replacement
 
@@ -127,7 +139,25 @@ Keep existing terminal splits available when their identities are already known.
 
 ## Evidence
 
-This plan records intended work. No replacement RED/GREEN result exists yet.
+Tests-only head `0cef725631188ec430e9f3501a6a7a79bf2cbab5` has actual behavioral RED in CI44908322454 attempt 2.
+Linux x64 all-features job136860276395 reproduces 19 storage and three UI failures.
+Windows x64 all-features job136860276365 reproduces 16 storage and two UI failures.
+Linux ARM64 default job136860276381 reproduces the same 19 storage and three UI failures.
+macOS all-features job136860276384 reproduces the same 19 storage and three UI failures.
+Windows ARM64 all-features job136860276352 reproduces the same 16 storage and two UI failures.
+The two missing-file controls and existing Devices tab control pass in all five inspected jobs.
+The [baseline receipt](saved-state-recovery/baseline.json) records source, checkout, jobs, assertions, controls, and limits.
+No product fix or GREEN result is claimed at this checkpoint.
+
+Independent review found that the proposed `Value` fallback loses earlier duplicate identity fields.
+The proposed production patch remains uncommitted while new regression cases establish this boundary.
+Those cases cover tab IDs, saved counters, tab lists, and layout IDs, picks, and kinds.
+They also protect writable recovery of valid siblings beside unrelated invalid scalar entries.
+The follow-up contains tests, the plan, and baseline evidence; it contains no production fix.
+
+Attempt 1 failed checkout after two github.com:443 connection failures.
+Root retried the terminal checkout job through GitHub's supported job rerun action.
+Attempt 2 passed checkout and the existing workflow gates before running the regressions.
 Historical recovery code is in `150eed475c4097c63dff86edf8e2b215c64a1d02`.
 The final historical restart fixture is in `aaff481f9703bffdb138374eeb9047a7b58e900e`.
 Those commits contain unrelated changes and must not be cherry-picked whole.

@@ -1,7 +1,10 @@
+// ABOUTME: Checks saved tabs, tab ordering, and runtime identities.
+// ABOUTME: Provides fixtures for recovery and retired tab schema tests.
 #![allow(clippy::unwrap_used)]
 use super::*;
 
 mod core_groups;
+mod identity_ambiguity;
 mod recovery;
 mod retired_code_view;
 mod retired_px0;

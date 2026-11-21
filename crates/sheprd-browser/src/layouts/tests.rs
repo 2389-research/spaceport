@@ -1,6 +1,9 @@
+// ABOUTME: Tests workspace layout validation and persistence.
+// ABOUTME: Checks scope isolation, change recording, and removed workspaces.
 #![allow(clippy::unwrap_used)]
 use super::*;
 
+mod identity_ambiguity;
 mod recovery;
 
 #[test]

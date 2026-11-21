@@ -12,7 +12,10 @@ use sheprd_backend::TerminalId;
 use sheprd_panes::Panes;
 use std::sync::Arc;
 
-fn install_saved_terminal(cx: &mut TestAppContext) -> (tempfile::TempDir, Tab, TerminalId) {
+fn install_saved_terminal(
+    cx: &mut TestAppContext,
+    layouts: &[u8],
+) -> (tempfile::TempDir, Tab, TerminalId) {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("browser-tabs.json");
     let key = CoreGroupKey::new(
@@ -38,7 +41,7 @@ fn install_saved_terminal(cx: &mut TestAppContext) -> (tempfile::TempDir, Tab, T
     };
     let saved = serde_json::json!({"tabs": [&tab], "next": 8});
     std::fs::write(&path, serde_json::to_vec(&saved).unwrap()).unwrap();
-    std::fs::write(dir.path().join("editor-groups.json"), b"{").unwrap();
+    std::fs::write(dir.path().join("editor-groups.json"), layouts).unwrap();
     let store = Store::load(Some(path));
     cx.update(|cx| store.install(cx));
     (dir, tab, at)
@@ -48,7 +51,38 @@ fn install_saved_terminal(cx: &mut TestAppContext) -> (tempfile::TempDir, Tab, T
 fn the_core_tab_command_warns_without_upgrading_a_join_when_layouts_are_unreadable(
     cx: &mut TestAppContext,
 ) {
-    let (_dir, saved, _) = install_saved_terminal(cx);
+    assert_core_tab_refused(
+        cx,
+        b"{",
+        "Saved tabs or layouts need repair. Check browser-tabs.json and editor-groups.json, \
+         then restart Spaceport before opening new tabs.",
+    );
+}
+
+#[gpui::test]
+fn the_core_tab_command_refuses_exhausted_saved_ids_without_upgrading_a_join(
+    cx: &mut TestAppContext,
+) {
+    let layouts = serde_json::json!({
+        "layouts": [{
+            "scope": "local",
+            "workspace": "w0",
+            "layout": {
+                "groups": [{"pick": {"kind": "page", "id": u64::MAX}, "share": 1}],
+                "active": 0,
+            },
+        }],
+    });
+    assert_core_tab_refused(
+        cx,
+        &serde_json::to_vec(&layouts).unwrap(),
+        "Saved tab IDs are exhausted. Check browser-tabs.json and editor-groups.json, \
+         then restart Spaceport before opening new tabs.",
+    );
+}
+
+fn assert_core_tab_refused(cx: &mut TestAppContext, layouts: &[u8], expected: &'static str) {
+    let (_dir, saved, _) = install_saved_terminal(cx, layouts);
     let (view, visual) = cx.add_window_view(fixture_core_window);
     let (flash, join_unchanged, idle, restored) = visual.update(|window, cx| {
         view.update(cx, |view, cx| {
@@ -76,13 +110,7 @@ fn the_core_tab_command_warns_without_upgrading_a_join_when_layouts_are_unreadab
     });
     cx.quit();
 
-    assert_eq!(
-        flash,
-        Some(Flash::warning(
-            "Saved tabs or layouts need repair. Check browser-tabs.json and editor-groups.json, \
-             then restart Spaceport before opening new tabs."
-        ))
-    );
+    assert_eq!(flash, Some(Flash::warning(expected)));
     assert!(join_unchanged);
     assert!(idle);
     assert_eq!(restored, Some(saved));
@@ -95,7 +123,7 @@ fn unreadable_layouts_refuse_a_new_core_tab_before_sending_a_request(cx: &mut Te
     use sheprd_backend::Spawn;
     use sheprd_panes::Axis;
 
-    let (_dir, saved, at) = install_saved_terminal(cx);
+    let (_dir, saved, at) = install_saved_terminal(cx, b"{");
     let (view, visual) = cx.add_window_view(fixture_core_window);
     let (backend, mut peer) = super::scripted_core::connect("core-a");
     let (result, idle, ready, restored, split) = visual.update(|_, cx| {
