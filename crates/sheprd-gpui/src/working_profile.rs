@@ -28,8 +28,14 @@ use std::{
 #[error("{0}")]
 struct NativeHandleError(raw_window_handle::HandleError);
 
-pub(crate) fn paint_work(_cx: &App) -> Option<report::PaintWork> {
-    None
+pub(crate) fn paint_work(cx: &App) -> Option<report::PaintWork> {
+    cx.try_global::<crate::performance::Counts>()
+        .map(|counts| report::PaintWork {
+            paints: counts.paints,
+            quads: counts.quads,
+            glyphs: counts.glyphs,
+            text_paint_errors: counts.paint_errors,
+        })
 }
 
 pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
@@ -145,7 +151,7 @@ pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                             serde_json::to_vec_pretty(&observation)?,
                         )?;
                     }
-                    answer(stream, &Reply::Observation(observation))
+                    answer(stream, &Reply::Observation(Box::new(observation)))
                 })
                 .await?;
             }

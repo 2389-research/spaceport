@@ -143,6 +143,7 @@ impl Fixture {
             },
         )? {
             Reply::Observation(observation) => {
+                let observation = *observation;
                 ensure!(
                     observation.request_id == request,
                     "uncorrelated profile observation"

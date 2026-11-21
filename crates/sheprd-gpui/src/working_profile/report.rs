@@ -68,7 +68,7 @@ pub(crate) enum Request {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case")]
 pub(crate) enum Reply {
-    Observation(Observation),
+    Observation(Box<Observation>),
     Stopped,
 }
 
@@ -101,7 +101,8 @@ pub(crate) struct PaintWork {
     pub(crate) paints: usize,
     pub(crate) quads: usize,
     pub(crate) glyphs: usize,
-    pub(crate) paint_errors: usize,
+    /// Text submissions only; image failures use the painter's separate diagnostics.
+    pub(crate) text_paint_errors: usize,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -164,4 +165,6 @@ pub(crate) struct Frame {
     pub(crate) paired_image_assets: usize,
     pub(crate) marker_visible: bool,
     pub(crate) current: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) has_popup: Option<bool>,
 }

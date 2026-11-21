@@ -12,15 +12,19 @@ impl SheprdWindow {
             .map(|slot| {
                 let primary = Some(slot.id) == primary_group;
                 let state = if primary {
-                    Some((&self.live, &self.presentation))
+                    Some((
+                        &self.live,
+                        &self.presentation,
+                        &self.endpoints[self.selected_endpoint].connection,
+                    ))
                 } else {
                     self.group_terminals
                         .parked
                         .iter()
                         .find(|parked| parked.group == slot.id)
-                        .map(|parked| (&parked.live, &parked.presentation))
+                        .map(|parked| (&parked.live, &parked.presentation, &parked.connection))
                 };
-                let presented = state.and_then(|(live, presentation)| {
+                let presented = state.and_then(|(live, presentation, _)| {
                     let (surface, images) = presentation.profile_presented()?;
                     let frame = &surface.frame;
                     let snapshot = live.snapshot.as_deref();
@@ -47,6 +51,7 @@ impl SheprdWindow {
                                 snapshot.boot_id == surface.boot_id
                                     && snapshot.revision == surface.projection_revision
                             }),
+                        has_popup: Some(surface.popup.is_some()),
                     })
                 });
                 Group {
@@ -57,7 +62,7 @@ impl SheprdWindow {
                     index: slot.index,
                     primary,
                     shown_terminal: self.group_shown(slot.id, cx) == Shown::Terminal,
-                    connected: state.is_some_and(|(live, _)| live.status.is_connected()),
+                    connected: state.is_some_and(|(live, _, _)| live.status.is_connected()),
                     bounds: bounds.get(&slot.id).map_or([0.; 4], |bounds| {
                         [
                             f32::from(bounds.left()),
@@ -66,13 +71,15 @@ impl SheprdWindow {
                             f32::from(bounds.size.height),
                         ]
                     }),
-                    tab: state.and_then(|(live, _)| live.snapshot.as_ref()?.focused_tab_id.clone()),
-                    projected_revision: state.and_then(|(live, _)| {
+                    tab: state
+                        .and_then(|(live, _, _)| live.snapshot.as_ref()?.focused_tab_id.clone()),
+                    projected_revision: state.and_then(|(live, _, _)| {
                         live.surface
                             .as_ref()
                             .map(|surface| surface.projection_revision)
                     }),
-                    patch_stats: None,
+                    patch_stats: state
+                        .and_then(|(_, _, connection)| connection.handle.as_ref()?.patch_stats()),
                     presented,
                 }
             })

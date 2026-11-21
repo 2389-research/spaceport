@@ -1,5 +1,6 @@
 // ABOUTME: Groups native working-profile measurement and workload helpers.
 // ABOUTME: Keeps pure clock parsing checks independent of profile execution.
+mod copy_work;
 mod harness;
 mod markers;
 mod measurements;

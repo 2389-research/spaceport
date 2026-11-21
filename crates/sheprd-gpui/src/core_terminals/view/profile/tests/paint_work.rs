@@ -27,7 +27,7 @@ fn profile_paint_work_observes_real_cell_painting(cx: &mut TestAppContext) {
     assert_eq!(observed.paints, expected.paints);
     assert_eq!(observed.quads, expected.quads);
     assert_eq!(observed.glyphs, expected.glyphs);
-    assert_eq!(observed.paint_errors, expected.paint_errors);
+    assert_eq!(observed.text_paint_errors, expected.paint_errors);
     cx.update(|window, cx| {
         window.draw(cx).clear(cx);
         assert_eq!(working_profile::paint_work(cx), Some(observed));

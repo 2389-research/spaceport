@@ -1500,7 +1500,8 @@ Both scoped app lint steps pass.
 Production picture integration can now proceed.
 
 The private observer will also expose the existing process-wide cell-work counters.
-These scalar totals measure paint callbacks, quads, glyphs, and paint errors across the GUI process.
+These scalar totals measure cell paints, quads, glyphs, and text-paint errors across the GUI process.
+The text error count does not cover image failures or prove complete graphics success.
 They do not measure CPU time, frame rate, per-window work, or picture-specific work.
 Native qualification must retain the exact single-window fixture and a positive warm-paint baseline.
 First add an optional typed field and a populated Core test while leaving its getter unavailable.
@@ -1538,3 +1539,60 @@ The private owner and paint-work getters remain deliberately unavailable for the
 The earlier queued observer-only run `44859319582` was superseded and cancelled before execution.
 That cancelled run supplies no test evidence.
 The current combined source will retain those missing-getter assertions until they fail for the expected reasons.
+
+## Task 6: Validate passive copy envelopes before native use
+
+Add one pure harness validator for before/after observations; keep raw snapshots rather than inventing copy-cost estimates.
+Select only shown, connected TUI groups with current populated presented frames.
+Add a private presented-frame popup flag and refuse popup-bearing measurements.
+Require the same nonzero GUI PID, window ID, terminal tabs, and counter owners across the envelope.
+Deduplicate connection snapshots by their process-local identity; refuse conflicting duplicate readings.
+Refuse unavailable snapshots, overflow, backward counters, and new unsupported popup or empty-baseline work.
+Unchanged historical popup and empty counts remain outside this interval's qualification.
+Keep ordinary, scroll, delta, reuse, replacement, and elapsed-wall counters distinct.
+In streaming mode, require actual accepted-update or full-message growth; settled mode permits no growth.
+Return bounded scalar before/after records using the existing client snapshot type.
+Never infer bytes, CPU attribution, frame rate, or an output producer's success from these counters.
+
+First add typed errors, scalar result types, and tests with a deliberately refusing validator.
+Prove valid envelopes fail for missing implementation while refusal controls remain meaningful.
+Exercise the real bounded report encoder and reply reader with a counter-bearing observation.
+Release implementation only after remote runtime RED.
+The implementer owns a new focused harness module and its tests, plus the popup schema and producer flag.
+Root owns sampler integration, output production, workflows, commits, and remote validation.
+Do not run local product builds, tests, compilers, native apps, VMs, or daemons.
+
+### Client instrumentation GREEN
+
+Task 3's client implementation is complete at `b629b4432d331e16765661cd50faa89f76ff7d37`.
+Run `44859379338` passes protocol Mac job `136711306277` and Windows job `136711306356`.
+Both run the full protocol suite, all 15 feature-enabled counter cases, and all-target/all-feature Clippy.
+Default surface runs pass 38 Mac cases and 37 Windows cases.
+No source warning remains in those lints.
+Mac dependency fetching recovers from network warnings before the passing build and tests.
+Independent source review and earlier ownership/operation runtime RED remain recorded above.
+App observer, native workload, counter-envelope validation, and copy-cost qualification remain separate pending tasks.
+
+### Observer ownership and actual paint-work runtime RED
+
+At `b629b4432d331e16765661cd50faa89f76ff7d37`, both app jobs reach the intended observer failures.
+Windows job `136711306062` and Mac job `136711306327` first prove actual populated cell painting.
+They then fail the unavailable paint-work getter assertion at `paint_work.rs:26`.
+The bridge-swap case first proves different real handle identities and the actual primary swap.
+It then reports `[None, None]` instead of those two handles' snapshots.
+The missing-handle JSON control passes on both platforms.
+The unchanged uncached mirror still reaches its separately recorded paint-budget failure.
+Existing Core view, mark timer, and other observer controls pass.
+
+The getters now read the selected endpoint or matched parked bridge and the existing GUI counters.
+Counter reads retain the client's nonblocking unavailable result.
+Independent review finds no material ownership or getter issue.
+Both lints also expose the expanded private reply enum's 224-byte payload.
+Box its observation and adapt its two by-value callers without changing JSON representation.
+The new encoder/reader control preserves complete typed counters and popup facts.
+
+Task 6 Phase A adds 19 cases while its validator deliberately refuses qualification.
+Expect 17 runtime failures and two passes; only the codec round trip is an independent passing control.
+The missing-stats case passes because it shares the deliberate refusal and proves no implemented validator.
+The full validator remains unimplemented until those runtime contract failures are observed.
+Formatting and source review pass; remote getter GREEN and envelope RED remain pending.
