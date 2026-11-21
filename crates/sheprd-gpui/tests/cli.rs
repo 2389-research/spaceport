@@ -276,10 +276,10 @@ fn control_commands_list_and_explain_themselves_without_the_app() {
     for family in ["status", "window", "events", "diagnostics"] {
         assert!(help.contains(&format!("  {family} ")), "{family}: {help}");
     }
-    let output = cli(&["notes", "--help"]);
+    let output = cli(&["config", "--help"]);
     assert!(output.status.success(), "{output:?}");
     let usage = String::from_utf8(output.stdout).unwrap();
-    assert!(usage.contains("spaceport notes set TEXT"), "{usage}");
+    assert!(usage.contains("spaceport config"), "{usage}");
     assert!(usage.contains("Exit status:"), "{usage}");
     let output = cli(&["commands", "--json"]);
     assert!(output.status.success(), "{output:?}");
