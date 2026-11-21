@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Ubuntu 24.04, native x86_64 or ARM64. GPUI 0.2.2 defaults enable X11 and Wayland.
+# ABOUTME: Installs Ubuntu 24.04 build dependencies for native x86_64 and ARM64.
+# ABOUTME: Adds desktop tools only for the isolated Linux shutdown CI fixture.
 set -euo pipefail
 # A developer and a CI runner need sudo; root in a container has none installed.
 if [[ $EUID -eq 0 ]]; then sudo=(); else sudo=(sudo); fi
