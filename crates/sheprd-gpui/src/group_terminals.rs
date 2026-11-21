@@ -22,18 +22,22 @@ use crate::{
     connection::ConnectionBridge,
     presentation::{Picture, Presentation},
     state::{ConnectionStatus, LiveState},
-    terminal::{CellMetrics, popup_origin, viewport},
-    terminal_painter::{Ground, ImageTarget, PlacedImages},
+    terminal::viewport,
     window::reasserts,
 };
 use gpui::{prelude::*, *};
+use picture::{PictureLook, PictureView};
 use serde_json::json;
 use sheprd_client::{ConnectOptions, Method};
 use std::time::{Duration, Instant};
 
+mod picture;
+
 #[cfg(all(any(target_os = "macos", windows), feature = "integration-test"))]
 #[path = "working_profile/groups.rs"]
 mod working_profile;
+
+pub(crate) use picture::GroupPicture;
 
 /// How long a parked connection waits for its tab before asking again.
 const REFOCUS_AFTER: Duration = Duration::from_secs(1);
@@ -500,26 +504,34 @@ impl SheprdWindow {
         self.group_terminals.primary = Some(group);
     }
 
+    pub(crate) fn terminal_picture_look(
+        &self,
+        font: Font,
+        cell_height: f32,
+        scale: f32,
+    ) -> PictureLook {
+        PictureLook {
+            appearance: self.painter.borrow().appearance(),
+            cell_height,
+            cell_width: self.cell_width,
+            font,
+            ground: self.ground(),
+            scale,
+        }
+    }
+
     /// A parked group's terminal: its connection's frame, painted without
     /// input. Pressing the group makes it the group in use, which gives it
     /// the window's connection and its input.
     pub(crate) fn render_parked_terminal(
         &mut self,
+        previous: &mut Vec<GroupPicture>,
         slot: Slot,
-        font: Font,
-        cell_height: f32,
+        look: PictureLook,
         cx: &mut Context<Self>,
     ) -> AnyElement {
         let surface = self.parked_frame(slot.id);
-        self.render_terminal_picture(
-            slot,
-            "parked-terminal",
-            surface,
-            true,
-            font,
-            cell_height,
-            cx,
-        )
+        self.render_terminal_picture(previous, slot, "parked-terminal", surface, true, look, cx)
     }
 
     /// The live frame of `tab` in whichever group holds it: the window's
@@ -546,117 +558,98 @@ impl SheprdWindow {
     /// clipped or padded; pressing the group brings the live tab here.
     pub(crate) fn render_terminal_mirror(
         &mut self,
+        previous: &mut Vec<GroupPicture>,
         slot: Slot,
         surface: Option<Picture>,
-        font: Font,
-        cell_height: f32,
+        look: PictureLook,
         cx: &mut Context<Self>,
     ) -> AnyElement {
-        self.render_terminal_picture(
-            slot,
-            "mirror-terminal",
-            surface,
-            false,
-            font,
-            cell_height,
-            cx,
-        )
+        self.render_terminal_picture(previous, slot, "mirror-terminal", surface, false, look, cx)
     }
 
     /// A terminal frame painted without input. `place` sizes the group's
-    /// parked connection to where it is drawn.
+    /// parked connection to where it is drawn. The picture is a cached view
+    /// out of `previous`, so a frame that changed nothing else replays its
+    /// scene instead of painting the grid again.
     #[allow(clippy::too_many_arguments)]
     fn render_terminal_picture(
         &mut self,
+        previous: &mut Vec<GroupPicture>,
         slot: Slot,
         name: &'static str,
         surface: Option<Picture>,
         place: bool,
-        font: Font,
-        cell_height: f32,
+        look: PictureLook,
         cx: &mut Context<Self>,
     ) -> AnyElement {
         let group = slot.id;
         let entity = cx.entity();
-        let painter = self.painter.clone();
-        let cell_width = self.cell_width;
-        let ground = self.ground();
+        let cell_height = look.cell_height;
+        let view = self.picture_view(previous, group, surface, look, cx);
+        let placing = place.then(move || {
+            canvas(
+                move |bounds, _, cx| {
+                    entity.update(cx, |this, _| {
+                        this.place_parked_terminal(group, bounds, cell_height);
+                    });
+                },
+                |_, _, _, _| (),
+            )
+            .size_full()
+            .into_any_element()
+        });
         crate::config::pad(div(), self.config.terminal_padding)
             .id(SharedString::from(slot.selector(name)))
             .debug_selector(move || slot.selector(name))
+            .relative()
             .flex_1()
             .min_h_0()
             .min_w_0()
             .overflow_hidden()
             .bg(self.fill().base(self.terminal_theme().background))
+            // The picture fills the box inside the padding, as the canvas it
+            // replaces did.
             .child(
-                canvas(
-                    move |bounds, _, cx| {
-                        if place {
-                            entity.update(cx, |this, _| {
-                                this.place_parked_terminal(group, bounds, cell_height);
-                            });
-                        }
-                    },
-                    move |bounds, _, window, cx| {
-                        let Some(Picture {
-                            frame: surface,
-                            images,
-                        }) = &surface
-                        else {
-                            return;
-                        };
-                        // A frame wider than the group stays inside it.
-                        window.with_content_mask(Some(ContentMask { bounds }), |window| {
-                            painter.borrow_mut().paint_frame(
-                                &surface.frame,
-                                bounds.origin,
-                                Some(bounds.size),
-                                ground,
-                                cell_width,
-                                &font,
-                                &[],
-                                &surface.panes,
-                                None,
-                                Some(PlacedImages {
-                                    placements: &surface.graphics.placements,
-                                    images,
-                                    target: ImageTarget::Main,
-                                }),
-                                window,
-                                cx,
-                            );
-                            if let Some(popup) = &surface.popup {
-                                let offset = popup_origin(
-                                    &surface.frame,
-                                    &popup.frame,
-                                    CellMetrics::new(cell_width, cell_height),
-                                );
-                                painter.borrow_mut().paint_frame(
-                                    &popup.frame,
-                                    bounds.origin + offset,
-                                    None,
-                                    Ground::Opaque,
-                                    cell_width,
-                                    &font,
-                                    &[],
-                                    &[],
-                                    None,
-                                    Some(PlacedImages {
-                                        placements: &surface.graphics.placements,
-                                        images,
-                                        target: ImageTarget::Popup(&popup.terminal_id),
-                                    }),
-                                    window,
-                                    cx,
-                                );
-                            }
-                        });
-                    },
-                )
-                .size_full(),
+                div().relative().size_full().children(placing).child(
+                    view.cached(
+                        StyleRefinement::default()
+                            .absolute()
+                            .top_0()
+                            .left_0()
+                            .size_full(),
+                    ),
+                ),
             )
             .into_any_element()
+    }
+
+    /// The view painting `group`'s picture: the one this group painted in the
+    /// last frame while `picture` through `look` still paints the same cells,
+    /// and otherwise a fresh one, which has no scene to replay.
+    fn picture_view(
+        &mut self,
+        previous: &mut Vec<GroupPicture>,
+        group: GroupId,
+        picture: Option<Picture>,
+        look: PictureLook,
+        cx: &mut Context<Self>,
+    ) -> Entity<PictureView> {
+        let kept = previous
+            .iter()
+            .position(|painted| painted.group() == group)
+            .map(|index| previous.swap_remove(index))
+            .filter(|painted| painted.paints_like(&picture, &look));
+        let painted = match kept {
+            Some(painted) => painted.adopt(picture, look, cx),
+            None => {
+                let view = cx
+                    .new(|_| PictureView::new(self.painter.clone(), picture.clone(), look.clone()));
+                GroupPicture::new(group, picture, look, view)
+            }
+        };
+        let view = painted.view().clone();
+        self.group_pictures.push(painted);
+        view
     }
 
     /// Drops every parked connection: the window left their workspace or

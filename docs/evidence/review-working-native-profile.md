@@ -1512,3 +1512,29 @@ Its default surface run also passes all 38 cases.
 Clippy rejects one unnecessary lazy closure around the baseline cell length.
 Use `then_some` for that cheap scalar value; runtime and ownership behavior stay unchanged.
 A warning-free remote gate remains pending.
+
+The next native workflow will run the existing TUI-only fixture before the mixed Core fixture.
+That TUI-only case already requires two populated distinct tabs and owns their private server.
+Its inactive terminal group exercises the shared picture renderer through a parked connection.
+The mixed fixture's late UIA scan stays after these CPU recordings.
+Both fixtures retain their own directories, process identities, phases, and traces.
+Existing export and sealing loops already walk those separate directories.
+Neither a new native run nor a picture savings claim is established by this workflow edit.
+
+### Integrated picture cache source checkpoint
+
+The candidate ports PR 147's cell-paint child and keys it with actual painter appearance and window scale.
+Frame and image identities remain immutable shared snapshots.
+Graphics placements bypass replay so normal preparation refreshes texture leases.
+Parked placement stays outside the cached child, and unclaimed views drop each frame.
+Seven focused cases cover settled replay, changed scene content, actual appearance, popups, images, and removal.
+The ordinary workflow now runs the broader terminal-group filter, including existing padding and activation controls.
+Independent source review found no material issue in the cache or added native workload.
+Formatting, file-size, sorted-region, workflow, and diff checks pass.
+The sorted-region validator also runs its ten Python self-tests; no product tests ran locally.
+Platform compilation, runtime controls, native pixels, and measured savings remain pending.
+
+The private owner and paint-work getters remain deliberately unavailable for their runtime RED checkpoint.
+The earlier queued observer-only run `44859319582` was superseded and cancelled before execution.
+That cancelled run supplies no test evidence.
+The current combined source will retain those missing-getter assertions until they fail for the expected reasons.

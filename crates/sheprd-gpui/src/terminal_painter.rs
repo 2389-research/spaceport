@@ -44,7 +44,7 @@ use gpui::{Bounds, Pixels, Rgba};
 use std::time::Instant;
 
 /// The painter settings that affect the recorded cell scene.
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct Appearance {
     font_size: f32,
     cell_height: f32,

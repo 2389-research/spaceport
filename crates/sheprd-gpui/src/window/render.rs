@@ -557,6 +557,10 @@ impl SheprdWindow {
                 .is_some_and(|first| self.tabs_in_titlebar(first.id, cx));
         let count = slots.len();
         let mut groups = Vec::with_capacity(count);
+        // The pictures the last frame painted. Each group keeps its own view
+        // out of this while what it paints has not changed; whatever no group
+        // keeps is dropped with the views it painted.
+        let mut previous = std::mem::take(&mut self.group_pictures);
         for (slot, shown) in slots.into_iter().zip(shown) {
             let owns_keyboard = keyboard == Some(slot.id);
             let tab = match &shown {
@@ -580,7 +584,12 @@ impl SheprdWindow {
                     .map(IntoElement::into_any_element)
                     .unwrap_or_else(|| div().into_any_element()),
                 (Shown::Terminal, _) if self.shows_parked_terminal(slot.id, cx) => {
-                    self.render_parked_terminal(slot, parked_font.clone(), cell_height, cx)
+                    let look = self.terminal_picture_look(
+                        parked_font.clone(),
+                        cell_height,
+                        window.scale_factor(),
+                    );
+                    self.render_parked_terminal(&mut previous, slot, look, cx)
                 }
                 (Shown::Page(_), Some(tab)) => match tab.location {
                     None if tab.core_group().is_some() => {
@@ -596,13 +605,14 @@ impl SheprdWindow {
                     None => div().into_any_element(),
                 },
                 (Shown::Elsewhere(tab), _) => match self.live_frame_of(tab, window_frame.clone()) {
-                    Some(frame) => self.render_terminal_mirror(
-                        slot,
-                        Some(frame),
-                        parked_font.clone(),
-                        cell_height,
-                        cx,
-                    ),
+                    Some(frame) => {
+                        let look = self.terminal_picture_look(
+                            parked_font.clone(),
+                            cell_height,
+                            window.scale_factor(),
+                        );
+                        self.render_terminal_mirror(&mut previous, slot, Some(frame), look, cx)
+                    }
                     None => self.render_stand_in(slot, &shown, owns_keyboard, cx),
                 },
                 _ => self.render_stand_in(slot, &shown, owns_keyboard, cx),

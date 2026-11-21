@@ -2,14 +2,20 @@
 // ABOUTME: Requires settled draws to replay the existing scene.
 use super::{fixture_window_on_t0, surface};
 use crate::{
-    browser::Pick, controls::Command, group_terminals::Shown, performance::Counts,
+    SheprdWindow,
+    browser::{Pick, Slot},
+    controls::Command,
+    group_terminals::Shown,
+    performance::Counts,
     sidebar::layout_tests::full_draw,
 };
+use gpui::{Entity, TestAppContext, VisualTestContext, rgb};
 use sheprd_client::protocol::CellData;
 use std::sync::Arc;
 
-#[gpui::test]
-fn settled_picture_replays_without_repainting_cells(cx: &mut gpui::TestAppContext) {
+mod invalidation;
+
+fn mirroring_t0(cx: &mut TestAppContext) -> (Entity<SheprdWindow>, Slot, &mut VisualTestContext) {
     let (view, cx) = fixture_window_on_t0(cx);
     let warmed = cx.update(|window, cx| {
         view.update(cx, |view, cx| {
@@ -43,15 +49,93 @@ fn settled_picture_replays_without_repainting_cells(cx: &mut gpui::TestAppContex
         *cx.default_global::<Counts>()
     });
     assert!(warmed.paints > 0 && warmed.glyphs > 0, "{warmed:?}");
-    let shown = view.read_with(cx, |view, cx| {
-        view.group_shown(view.group_slots()[1].id, cx)
-    });
+    let mirror = view.read_with(cx, |view, _| view.group_slots()[1]);
+    let shown = view.read_with(cx, |view, cx| view.group_shown(mirror.id, cx));
     assert_eq!(shown, Shown::Elsewhere("t0".into()));
-    let settled = cx.update(|window, cx| {
+    (view, mirror, cx)
+}
+
+fn draw(cx: &mut VisualTestContext) -> Counts {
+    cx.update(|window, cx| {
         *cx.default_global::<Counts>() = Counts::default();
         window.draw(cx).clear(cx);
         *cx.default_global::<Counts>()
-    });
+    })
+}
+
+#[gpui::test]
+fn settled_picture_replays_without_repainting_cells(cx: &mut TestAppContext) {
+    let (_, _, cx) = mirroring_t0(cx);
+    let settled = draw(cx);
     assert_eq!(settled.paints, 0, "settled picture repainted: {settled:?}");
     assert_eq!((settled.quads, settled.glyphs), (0, 0), "{settled:?}");
+}
+
+#[gpui::test]
+fn changed_output_reaches_the_mirror_before_it_replays(cx: &mut TestAppContext) {
+    let (view, mirror, cx) = mirroring_t0(cx);
+    let bounds = cx
+        .debug_bounds(&mirror.selector("mirror-terminal"))
+        .unwrap();
+    let color = 0x123456;
+    view.update(cx, |view, cx| {
+        let surface = Arc::make_mut(view.live.surface.as_mut().unwrap());
+        surface.surface_revision += 1;
+        surface.panes[0].content_revision += 1;
+        surface.frame.cells[0].bg = 0x0200_0000 | color;
+        view.endpoints[view.selected_endpoint].live = view.live.clone();
+        cx.notify();
+    });
+    for changed in [true, false] {
+        let counts = draw(cx);
+        assert_eq!(counts.paints > 0, changed, "{counts:?}");
+        cx.update(|window, _| {
+            let bounds = bounds.scale(window.scale_factor());
+            assert!(window.painted_quads().iter().any(|quad| {
+                quad.background == rgb(color).into() && bounds.contains(&quad.bounds.origin)
+            }));
+        });
+    }
+}
+
+#[gpui::test]
+fn missing_live_frame_replaces_the_mirror_with_a_stand_in(cx: &mut TestAppContext) {
+    let (view, mirror, cx) = mirroring_t0(cx);
+    let cached = |cx: &mut VisualTestContext| {
+        view.read_with(cx, |view, _| {
+            view.group_pictures
+                .iter()
+                .any(|entry| entry.group() == mirror.id)
+        })
+    };
+    assert!(cached(cx));
+    view.update(cx, |view, cx| {
+        view.live.surface = None;
+        view.endpoints[view.selected_endpoint].live = view.live.clone();
+        view.presentation.clear();
+        cx.notify();
+    });
+    draw(cx);
+    assert_eq!(
+        view.read_with(cx, |view, cx| view.group_shown(mirror.id, cx)),
+        Shown::Elsewhere("t0".into())
+    );
+    assert!(cx.debug_bounds(&mirror.selector("stand-in")).is_some());
+    assert!(!cached(cx));
+}
+
+#[gpui::test]
+fn closing_a_mirror_retires_its_picture(cx: &mut TestAppContext) {
+    let (view, mirror, cx) = mirroring_t0(cx);
+    assert!(view.read_with(cx, |view, _| {
+        view.group_pictures
+            .iter()
+            .any(|entry| entry.group() == mirror.id)
+    }));
+    cx.update(|window, cx| view.update(cx, |view, cx| view.close_group(mirror.id, window, cx)));
+    draw(cx);
+    view.read_with(cx, |view, _| {
+        assert!(!view.group_slots().iter().any(|slot| slot.id == mirror.id));
+        assert!(view.group_pictures.is_empty());
+    });
 }

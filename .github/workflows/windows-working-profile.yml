@@ -334,14 +334,11 @@ jobs:
         if: ${{ !cancelled() }}
         shell: bash
         run: cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport core_terminals::view::tests -- --nocapture
-      - name: Exercise settled picture painting headlessly
+      - name: Exercise picture painting, parked placement, and group ownership headlessly
         if: ${{ !cancelled() }}
         shell: bash
-        run: cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport group_terminals::tests::picture_paint -- --nocapture
-      - name: Exercise observed client counter ownership headlessly
-        if: ${{ !cancelled() }}
-        shell: bash
-        run: cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport group_terminals::tests::patch_stats -- --nocapture
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport group_terminals:: -- --nocapture
       - name: Exercise ordinary Windows Core fixture contracts
         if: ${{ !cancelled() && runner.os == 'Windows' }}
         shell: bash

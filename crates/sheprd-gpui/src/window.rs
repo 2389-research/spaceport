@@ -185,6 +185,8 @@ pub(crate) struct SheprdWindow {
     pub(crate) flash: Option<(Flash, std::time::Instant)>,
     pub(crate) flash_motion: flash::Motion,
     pub(crate) focus: FocusHandle,
+    /// Paint-only views for the window's parked and mirrored groups.
+    pub(crate) group_pictures: Vec<crate::group_terminals::GroupPicture>,
     /// The connection behind each terminal group of this window's split
     /// layouts, and the groups whose connections are parked or retrying; see
     /// `group_terminals`. It holds connections, presentation and painters, none
