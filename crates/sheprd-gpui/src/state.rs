@@ -1,3 +1,5 @@
+// ABOUTME: Reduces ordered connection events into the window's displayed state.
+// ABOUTME: Keeps snapshot and surface revisions coherent for rendering.
 //! A connection's live state, as the window reads it.
 // i18n: migrated
 use crate::i18n::{Localize, fl};
@@ -731,8 +733,8 @@ impl LiveState {
             // handles before anything reaches this state.
             | ClientEvent::Message(ServerMessage::Welcome { .. })
             | ClientEvent::Message(ServerMessage::ClientShellSnapshot(_))
-            // Consumed by the session worker and never forwarded here.
             | ClientEvent::Message(ServerMessage::ServerShutdown { .. })
+            // Consumed by the session worker and never forwarded here.
             | ClientEvent::Message(ServerMessage::PaneSurface(_))
             | ClientEvent::Message(ServerMessage::PaneSurfacePatch(_))
             | ClientEvent::Message(ServerMessage::ClientShellEndpointResponseChunk { .. })
