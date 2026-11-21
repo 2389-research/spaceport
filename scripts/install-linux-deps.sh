@@ -42,8 +42,13 @@ if [[ ${SPACEPORT_CI_APT_MIRROR:-0} == 1 ]]; then
 else
   "${sudo[@]+"${sudo[@]}"}" apt-get update
 fi
+# The real Herdr shutdown case runs only on the x64 all-features desktop.
+desktop_packages=()
+if [[ ${SPACEPORT_CI_SHUTDOWN_DESKTOP:-false} == true ]]; then
+  desktop_packages=(xvfb xdotool imagemagick mesa-vulkan-drivers tesseract-ocr tesseract-ocr-eng)
+fi
 # Installation is never retried: only a successful metadata refresh reaches it.
 "${sudo[@]+"${sudo[@]}"}" apt-get "${apt_sources[@]+"${apt_sources[@]}"}" install --no-install-recommends -y \
   build-essential pkg-config libxkbcommon-dev libxkbcommon-x11-dev libxcb1-dev \
   libfreetype6-dev libfontconfig1-dev fonts-dejavu-core libasound2-dev \
-  python3 jq zstd
+  python3 jq zstd "${desktop_packages[@]+"${desktop_packages[@]}"}"

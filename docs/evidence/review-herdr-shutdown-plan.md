@@ -79,3 +79,29 @@ Qualify the stopped card and explicit recovery at normal and narrow widths.
 Keep native screenshots, real SSH/WSL recovery, and unsupported platform resources explicitly pending until exercised.
 Doctor Biz's Mac foreground and audible-speech holds remain in force.
 No native or release completion follows from source review or headless metadata.
+
+### Linux native qualification
+
+The Ubuntu 24.04 x64 all-features CI leg runs the ignored
+`shutdown::native_local_shutdown_and_reconnect` case on a fresh private Xvfb display.
+It verifies the Linux x86_64 Herdr v0.9.5 digest before launching either server.
+Both servers use the same private socket. Each has its own restore directory.
+The normal Local GUI uses a private startup trap and keeps the same window throughout.
+
+The Linux shutdown artifact records the checked-out source SHA, server digest,
+wire events, state receipts, bounded logs, and actual window captures.
+Inspect the 900px and 640px stopped images for legibility and clipping.
+The recovered 640px image must show the replacement shell prompt.
+The test uses the window reconnect CLI. Native button activation and
+app-owned startup from absence still need separate evidence.
+
+Apply the same qualification patch to the producer-before-card revision `583b83f13`
+and the fixed revision `43f722feb`. The focused case and upload precede the
+all-features workspace suite so the baseline can retain both widths.
+Accept a baseline RED only after both receipts show the stopped Local window
+and both images visibly show its old reconnect action. Require the missing-label
+assertion after those captures. On the fixed revision, require both new cards,
+the recovered prompt, and the completion receipt. Record each tested checkout SHA.
+
+Both runs and visual inspection remain pending. macOS and Windows presentation,
+Windows typed shutdown, and real SSH/WSL recovery need separate qualification.
