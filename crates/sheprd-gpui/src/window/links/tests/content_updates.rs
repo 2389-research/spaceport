@@ -1,3 +1,5 @@
+// ABOUTME: Exercises link clicks across terminal redraws and target changes.
+// ABOUTME: Compares opened file identities across native path spellings.
 use super::*;
 use gpui::MouseButton;
 use sheprd_client::{ConnectTarget, protocol::PaneSurfaceScrollMetrics};
@@ -226,8 +228,8 @@ fn a_file_link_survives_a_redraw_and_a_resolved_span_is_no_click(cx: &mut gpui::
     release_after(&view, cx, link, modifiers, |view| place(view, path, 4));
     let opened = cx.opened_url().unwrap();
     let real = folder.path().join(path).canonicalize().unwrap();
-    let expected = url::Url::from_file_path(real).unwrap();
-    assert_eq!(opened, expected.as_str());
+    let opened_path = url::Url::parse(&opened).unwrap().to_file_path().unwrap();
+    assert_eq!(opened_path.canonicalize().unwrap(), real);
     // Nothing else opens from here on.
     let nothing_more =
         |cx: &mut VisualTestContext| assert_eq!(cx.opened_url(), Some(opened.clone()));
