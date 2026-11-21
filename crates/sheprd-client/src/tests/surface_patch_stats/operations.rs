@@ -3,6 +3,10 @@
 use super::*;
 use crate::{
     patch_stats::{MutationCounters, ReconstructionCounters, Snapshot},
+    protocol::{
+        surface_delta::{GridUpdate, SurfaceDelta},
+        surface_reuse::SurfaceReuse,
+    },
     tests::surface_encoding::{
         ALL, delta_message, grid, reuse_message, scroll_message, symbols, welcome_with,
     },
@@ -12,6 +16,14 @@ fn recorded_stats(client: &Client, connection_id: u64) -> Snapshot {
     let stats = client.handle.patch_stats().unwrap();
     assert_eq!(stats.connection_id, connection_id);
     stats
+}
+
+fn expect_protocol_disconnect(client: &Client, error: protocol::Error) {
+    let ClientEvent::Disconnected { reason, ssh: None } = event(client) else {
+        panic!("an invalid update must disconnect the worker without a new surface");
+    };
+    assert_eq!(reason, Error::Protocol(error).to_string());
+    await_worker_exit(client);
 }
 
 #[test]
@@ -96,6 +108,101 @@ fn reuse_records_its_reconstruction_and_acceptance() {
 }
 
 #[test]
+fn reuse_counts_reconstruction_work_when_acceptance_fails() {
+    let (client, mut server) = connected_client_with_welcome(&welcome_with(&ALL));
+    let connection_id = client.handle.patch_stats().unwrap().connection_id;
+    let base = grid();
+    send(&mut server, ServerMessage::PaneSurface(base.clone()));
+    let old = received_surface(&client);
+    let mut surface = base.clone();
+    surface.surface_revision += 1;
+    surface.frame.cells.clear();
+    surface.frame.cursor = Some(CursorState {
+        x: base.frame.width,
+        y: 0,
+        visible: true,
+        shape: 0,
+    });
+    let reuse = SurfaceReuse {
+        base_surface_revision: base.surface_revision,
+        surface,
+    };
+    send(
+        &mut server,
+        ServerMessage::EndpointControl {
+            kind: surface_reuse::MESSAGE_KIND.into(),
+            data: reuse.encode().unwrap(),
+        },
+    );
+    expect_protocol_disconnect(&client, protocol::Error::CursorBounds);
+    assert_eq!(*old, base);
+
+    let stats = recorded_stats(&client, connection_id);
+    assert_eq!(stats.reuse.attempts, 1);
+    assert_eq!(stats.reuse.reconstructions, 1);
+    assert_eq!(stats.reuse.accepted, 0);
+    assert_eq!(stats.reuse.main_cells_copied, 6);
+    assert_eq!(stats.full_surface_messages, 1);
+    assert!(!stats.overflow);
+}
+
+#[test]
+fn delta_using_old_popup_cells_flags_unsupported_measurement() {
+    let (client, mut server) = connected_client_with_welcome(&welcome_with(&ALL));
+    let connection_id = client.handle.patch_stats().unwrap().connection_id;
+    let mut base = grid();
+    base.popup = Some(Box::new(ClientShellPopupSurface {
+        terminal_id: "popup-1".into(),
+        title: "Popup".into(),
+        width: Some(ClientShellPopupSize::Cells(1)),
+        height: Some(ClientShellPopupSize::Cells(1)),
+        frame: baseline().frame,
+        mouse_reporting: false,
+        sgr_pixel_mouse: false,
+        pixel_width: 0,
+        pixel_height: 0,
+    }));
+    send(&mut server, ServerMessage::PaneSurface(base.clone()));
+    let old = received_surface(&client);
+    let mut expected = base.clone();
+    expected.surface_revision += 1;
+    let patched_popup_cell = &mut expected.popup.as_mut().unwrap().frame.cells[0];
+    patched_popup_cell.symbol = "y".into();
+    let popup_row = PaneSurfacePatchRow {
+        x: 0,
+        y: 0,
+        cells: vec![patched_popup_cell.clone()],
+    };
+    let mut shell = expected.clone();
+    shell.frame.cells.clear();
+    shell.popup.as_mut().unwrap().frame.cells.clear();
+    let delta = SurfaceDelta {
+        base_projection_revision: base.projection_revision,
+        base_surface_revision: base.surface_revision,
+        surface: shell,
+        rows: vec![],
+        popup_cells: Some(GridUpdate::Patch(vec![popup_row])),
+    };
+    send(
+        &mut server,
+        ServerMessage::EndpointControl {
+            kind: surface_delta::MESSAGE_KIND.into(),
+            data: delta.encode().unwrap(),
+        },
+    );
+    assert_eq!(*received_surface(&client), expected);
+    assert_eq!(*old, base);
+
+    disconnect(&client);
+    let stats = recorded_stats(&client, connection_id);
+    assert_eq!(stats.delta.popup_baselines_unsupported, 1);
+    assert_eq!(stats.delta.main_cells_copied, 6);
+    assert_eq!(stats.delta.reconstructions, 1);
+    assert_eq!(stats.delta.accepted, 1);
+    assert!(!stats.overflow);
+}
+
+#[test]
 fn rejected_ordinary_patch_records_work_without_publishing_a_surface() {
     let (client, mut server) = connected_client();
     let connection_id = client.handle.patch_stats().unwrap().connection_id;
@@ -113,15 +220,8 @@ fn rejected_ordinary_patch_records_work_without_publishing_a_surface() {
             }],
         ),
     );
-    let ClientEvent::Disconnected { reason, ssh: None } = event(&client) else {
-        panic!("an invalid patch must disconnect the worker without a new surface");
-    };
-    assert_eq!(
-        reason,
-        Error::Protocol(protocol::Error::PatchRowBounds).to_string()
-    );
+    expect_protocol_disconnect(&client, protocol::Error::PatchRowBounds);
     assert_eq!(*old, base);
-    await_worker_exit(&client);
 
     let stats = recorded_stats(&client, connection_id);
     assert_eq!(
@@ -161,6 +261,7 @@ fn shared_empty_grid_records_an_empty_baseline() {
     assert_eq!(stats.ordinary.attempts, 1);
     assert_eq!(stats.ordinary.successes, 1);
     assert_eq!(stats.ordinary.cow_copies, 0);
+    assert_eq!(stats.ordinary.cow_elapsed_ns, 0);
     assert_eq!(stats.ordinary.main_cells_copied, 0);
     assert_eq!(stats.full_surface_messages, 1);
     assert!(!stats.overflow);
@@ -187,4 +288,19 @@ fn copied_cell_count_saturates_and_flags_overflow() {
     assert_eq!(stats.ordinary.successes, 1);
     assert_eq!(stats.ordinary.cow_copies, 1);
     assert_eq!(stats.full_surface_messages, 1);
+}
+
+#[test]
+fn poisoned_record_leaves_live_surface_delivery_intact() {
+    let (client, mut server) = connected_client();
+    poison_patch_stats(&client.handle);
+
+    let base = two_cell_baseline();
+    send(&mut server, ServerMessage::PaneSurface(base.clone()));
+    let old = received_surface(&client);
+    let expected = send_ordinary_patch(&mut server, &base);
+    assert_eq!(*received_surface(&client), expected);
+    assert_eq!(*old, base);
+    disconnect(&client);
+    assert_eq!(client.handle.patch_stats(), None);
 }

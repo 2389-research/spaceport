@@ -1414,3 +1414,34 @@ This is deliberate TDD evidence; it does not qualify the zero counters for nativ
 
 Phase two first adds real framed-worker scroll, delta, reuse, rejected-patch, empty-grid, and saturation cases.
 Those tests must reach their own missing-counter assertions before Session instrumentation begins.
+
+### Operation RED and Session instrumentation checkpoint
+
+At `65ea402c32c23418f06ac9abe347be7d57259d8b`, run `44857331320` reaches all nine expected counter failures.
+Mac job `136702483422` and Windows job `136702483529` each pass three counter controls in both configurations.
+Each ownership and operation case first verifies its real frame or failure contract.
+Both all-target/all-feature client lints pass without warnings.
+Both app contract jobs also pass.
+
+The next client checkpoint moves the scalar record through Signals into Session.
+Ordinary and scroll counters measure actual nonempty main-grid copies before patch application.
+Failed applications retain their copy counts and report no success.
+Delta and reuse record reconstruction work separately from later acceptance.
+Only decoded full-surface messages increment the full-message count.
+Every addition saturates and flags overflow.
+Delta popup patches flag actual old-popup-grid use; native main-grid qualification must refuse that case.
+Poisoned records leave normal frame delivery intact.
+Normal builds retain their direct paths without counter storage or timing.
+
+Independent source review reports no material finding.
+Formatting, source size, sorted regions, and diff checks pass.
+Remote tests and native qualification remain pending for this implementation.
+
+### Terminal picture paint regression checkpoint
+
+Test-only source `efc377b4c97a540f560d3df5b2aaaa50d3e1558a` starts run `44858335070`.
+The new headless case fills a coherent terminal grid and requires actual warm cell painting.
+It then draws the settled window without invalidation and requires zero new cell paints.
+Its internal duplicate-tab layout exercises the existing Elsewhere picture renderer.
+This fixture does not establish a public CLI contract for creating persistent mirrors.
+The merged picture cache remains outside this checkpoint until runtime RED is verified.

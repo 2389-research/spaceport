@@ -138,13 +138,12 @@ pub fn connect_with_connector(
                         stop: worker_stop,
                         liveness: &worker_liveness,
                         pace: Pace::default(),
+                        #[cfg(any(test, feature = "integration-test"))]
+                        patch_stats: worker_patch_stats,
                     },
                 )
                 // The child guard is dropped before delivering a disconnect event.
             })();
-            // Keep the counter record alive through the framed session.
-            #[cfg(any(test, feature = "integration-test"))]
-            drop(worker_patch_stats);
             if worker_stop.load(Ordering::Acquire) {
                 tracing::debug!("connection cancelled");
             } else if let Err(error) = &result {

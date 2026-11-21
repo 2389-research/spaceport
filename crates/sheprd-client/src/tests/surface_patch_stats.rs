@@ -96,6 +96,9 @@ fn assert_ordinary_counts(
     assert_eq!(stats.ordinary.successes, 1);
     assert_eq!(stats.ordinary.cow_copies, cow_copies);
     assert_eq!(stats.ordinary.main_cells_copied, main_cells_copied);
+    if cow_copies == 0 {
+        assert_eq!(stats.ordinary.cow_elapsed_ns, 0);
+    }
     assert_eq!(stats.ordinary.empty_baselines, 0);
     assert_eq!(stats.full_surface_messages, 1);
 }
@@ -195,11 +198,15 @@ fn contended_patch_stats_are_unavailable() {
 fn poisoned_patch_stats_are_unavailable() {
     let (client, _server) = connected_client();
     disconnect(&client);
-    let handle = client.handle.clone();
+    poison_patch_stats(&client.handle);
+    assert_eq!(client.handle.patch_stats(), None);
+}
+
+fn poison_patch_stats(handle: &ClientHandle) {
+    let handle = handle.clone();
     let observer = thread::spawn(move || {
         let _locked = handle.inner.patch_stats.as_ref().unwrap().lock().unwrap();
         panic!("poison the stats fixture");
     });
     assert!(observer.join().is_err());
-    assert_eq!(client.handle.patch_stats(), None);
 }

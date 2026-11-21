@@ -212,6 +212,7 @@ fn test_client_paced(
                 stop: &worker_stop,
                 liveness: &worker_liveness,
                 pace,
+                patch_stats: None,
             },
         )
     });

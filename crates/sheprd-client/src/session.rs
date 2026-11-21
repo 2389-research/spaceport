@@ -6,6 +6,8 @@
 mod barrier;
 pub(crate) use barrier::Barrier;
 
+#[cfg(any(test, feature = "integration-test"))]
+use crate::patch_stats;
 use crate::{
     Error, Result, clipboard,
     event::{ClientEvent, deliver},
@@ -140,6 +142,8 @@ pub(crate) struct Session {
     pub(crate) pending: Option<Pending>,
     pub(crate) barrier: Option<Barrier>,
     pub(crate) pipeline_barriers: bool,
+    #[cfg(any(test, feature = "integration-test"))]
+    patch_stats: Option<patch_stats::Record>,
 }
 
 impl Session {
@@ -157,6 +161,8 @@ impl Session {
             pending: None,
             barrier: None,
             pipeline_barriers: false,
+            #[cfg(any(test, feature = "integration-test"))]
+            patch_stats: None,
         }
     }
 
@@ -301,13 +307,14 @@ pub(crate) fn wait_timeout(
 
 /// What the caller's handle tells the worker between commands, and the pace
 /// of the worker's waits.
-#[derive(Clone, Copy)]
 pub(crate) struct Signals<'a> {
     /// Ends the connection without flushing or replaying anything.
     pub(crate) stop: &'a AtomicBool,
     /// Asks an SSH link for an immediate health probe.
     pub(crate) liveness: &'a AtomicBool,
     pub(crate) pace: Pace,
+    #[cfg(any(test, feature = "integration-test"))]
+    pub(crate) patch_stats: Option<patch_stats::Record>,
 }
 
 pub(crate) fn run_connection(
@@ -323,6 +330,8 @@ pub(crate) fn run_connection(
         stop,
         liveness,
         pace,
+        #[cfg(any(test, feature = "integration-test"))]
+        patch_stats,
     } = signals;
     stream.set_read_timeout(Some(POLL))?;
     stream.set_write_timeout(Some(Duration::from_secs(1)))?;
@@ -354,6 +363,10 @@ pub(crate) fn run_connection(
     )?;
     let mut reader = FrameReader::with_timeout(pace.partial_frame);
     let mut session = Session::new(surface_active, remote);
+    #[cfg(any(test, feature = "integration-test"))]
+    {
+        session.patch_stats = patch_stats;
+    }
     let mut queued: Option<Command> = None;
     while !stop.load(Ordering::Acquire) {
         session.check_timeouts()?;
@@ -611,6 +624,8 @@ impl Session {
             pending,
             barrier,
             pipeline_barriers,
+            #[cfg(any(test, feature = "integration-test"))]
+            patch_stats,
             ..
         } = self;
         if welcome.is_none() {
@@ -706,6 +721,14 @@ impl Session {
                 }
                 let scroll = surface_scroll::decode(&data)?;
                 let current = surface.as_mut().ok_or(Error::PatchBeforeBaseline)?;
+                #[cfg(any(test, feature = "integration-test"))]
+                patch_stats::apply_patch(
+                    patch_stats.as_deref(),
+                    |stats| &mut stats.scroll,
+                    current,
+                    |current| current.apply_scroll_patch(scroll),
+                )?;
+                #[cfg(not(any(test, feature = "integration-test")))]
                 Arc::make_mut(current).apply_scroll_patch(scroll)?;
                 emit_patched(snapshot.as_deref(), current, images, &mut emit)?;
             }
@@ -719,8 +742,31 @@ impl Session {
                 let base = surface
                     .as_deref()
                     .ok_or(Error::EncodedSurfaceBeforeBaseline)?;
-                let next = delta.reconstruct(base)?;
-                accept_surface(next, snapshot.as_deref(), surface, images, &mut emit)?;
+                #[cfg(any(test, feature = "integration-test"))]
+                {
+                    let (next, work) = patch_stats::measure_reconstruction(
+                        base,
+                        matches!(
+                            &delta.popup_cells,
+                            Some(surface_delta::GridUpdate::Patch(_))
+                        ),
+                        |base| delta.reconstruct(base),
+                    );
+                    let result = next.map_err(Error::from).and_then(|next| {
+                        accept_surface(next, snapshot.as_deref(), surface, images, &mut emit)
+                    });
+                    work.record(
+                        patch_stats.as_deref(),
+                        |stats| &mut stats.delta,
+                        result.is_ok(),
+                    );
+                    result?;
+                }
+                #[cfg(not(any(test, feature = "integration-test")))]
+                {
+                    let next = delta.reconstruct(base)?;
+                    accept_surface(next, snapshot.as_deref(), surface, images, &mut emit)?;
+                }
             }
             ServerMessage::EndpointControl { kind, data }
                 if kind == surface_reuse::MESSAGE_KIND =>
@@ -732,15 +778,43 @@ impl Session {
                 let base = surface
                     .as_deref()
                     .ok_or(Error::EncodedSurfaceBeforeBaseline)?;
-                let next = reuse.reconstruct(base)?;
-                accept_surface(next, snapshot.as_deref(), surface, images, &mut emit)?;
+                #[cfg(any(test, feature = "integration-test"))]
+                {
+                    let (next, work) = patch_stats::measure_reconstruction(base, false, |base| {
+                        reuse.reconstruct(base)
+                    });
+                    let result = next.map_err(Error::from).and_then(|next| {
+                        accept_surface(next, snapshot.as_deref(), surface, images, &mut emit)
+                    });
+                    work.record(
+                        patch_stats.as_deref(),
+                        |stats| &mut stats.reuse,
+                        result.is_ok(),
+                    );
+                    result?;
+                }
+                #[cfg(not(any(test, feature = "integration-test")))]
+                {
+                    let next = reuse.reconstruct(base)?;
+                    accept_surface(next, snapshot.as_deref(), surface, images, &mut emit)?;
+                }
             }
             ServerMessage::EndpointControl { .. } => {} // Unknown optional named controls are ignored.
             ServerMessage::PaneSurface(next) => {
+                #[cfg(any(test, feature = "integration-test"))]
+                patch_stats::record_full_surface(patch_stats.as_deref());
                 accept_surface(next, snapshot.as_deref(), surface, images, &mut emit)?;
             }
             ServerMessage::PaneSurfacePatch(patch) => {
                 let current = surface.as_mut().ok_or(Error::PatchBeforeBaseline)?;
+                #[cfg(any(test, feature = "integration-test"))]
+                patch_stats::apply_patch(
+                    patch_stats.as_deref(),
+                    |stats| &mut stats.ordinary,
+                    current,
+                    |current| current.apply_patch(patch),
+                )?;
+                #[cfg(not(any(test, feature = "integration-test")))]
                 Arc::make_mut(current).apply_patch(patch)?;
                 emit_patched(snapshot.as_deref(), current, images, &mut emit)?;
             }
