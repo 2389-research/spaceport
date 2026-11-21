@@ -32,6 +32,10 @@ mod diagnostics;
 #[path = "live_gui/preview_branding.rs"]
 mod preview_branding;
 
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+#[path = "live_gui/saved_state.rs"]
+mod saved_state;
+
 #[cfg(target_os = "macos")]
 #[path = "live_gui/sidebar_routing.rs"]
 mod sidebar_routing;
