@@ -136,6 +136,12 @@ stopped Local window. It sends one left click through XTest. Inspect
 `start-button-click.txt` alongside the recovered image and completion receipt.
 The recovered image must show the replacement shell prompt. [xdotool mouse and focus commands](https://github.com/jordansissel/xdotool/blob/main/xdotool.pod).
 
-The native-click run and image inspection remain pending. Both server launches belong
-to the harness. App-owned startup from absence, macOS and Windows presentation,
+The [native click run](https://github.com/2389-research/spaceport/actions/runs/44903916187/job/136845463720)
+passes its native case, all three parser cases, and the 3,694-test app suite.
+The [input receipt](herdr-shutdown-native/native-input.json) records focus, target words, pointer coordinates, boots, and cleanup.
+The input receipt preserves the exact native OCR bytes and their checksum.
+Visual review confirms the target and recovered images match the existing image hashes exactly.
+The native click uses no CLI fallback. The complete configured CI run passes.
+
+Both server launches belong to the harness. App-owned startup from absence, macOS and Windows presentation,
 Windows typed shutdown, real SSH/WSL recovery, speech, and performance need separate evidence.
