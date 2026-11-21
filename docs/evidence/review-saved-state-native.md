@@ -32,6 +32,20 @@ The completion receipt requires successful recovery, restart, refusal, cleanup, 
 
 ## Verification
 
+The first native attempt ran in CI44917715586, job136886927103, from source `825ec45e4`.
+All three GUI phases reached successful exits before the client-backed shutdown witness failed.
+Artifact14711539874 retains the state receipts, backup, hashes, and both native capture widths.
+Independent byte and hash checks match the recorded files.
+Actual PNGs show clipped restart advice at 900px and clipped filenames at 640px.
+This failed attempt has no completion receipt.
+
+The witness now reads the bounded private protocol directly and checks the server's peer PID.
+It validates repeated shutdown notices and requires their expected reason before clean EOF.
+It does not require the separate PR160 client correction.
+Independent re-review approves that observer correction.
+A headless regression measures the actual repair flash at both widths against a short confirmation.
+The production renderer remains unchanged while CI must reach the intended clipping assertions.
+
 - [x] Independent task review approved specification compliance and code quality.
 - [x] `just format-check`, `just check-file-size`, and `python3 scripts/check-sorted.py` pass.
 - [x] `actionlint .github/workflows/ci.yml` and `bash -n scripts/install-linux-deps.sh` pass.

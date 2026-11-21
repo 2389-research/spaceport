@@ -1,88 +1,201 @@
-// ABOUTME: Observes handshake, focused workspace and ordered shutdown events on the real private socket.
-// ABOUTME: Uses inactive surface interest so the witness does not drive terminal presentation.
+// ABOUTME: Observes the pinned daemon's handshake, workspace and shutdown on its private socket.
+// ABOUTME: Drains bounded wire frames until EOF without requesting terminal surfaces.
 use super::*;
+use nix::sys::socket::{getsockopt, sockopt::PeerCredentials};
 use sheprd_client::{
-    Client, ClientEvent, ConnectTarget, connect_with_surface_active, protocol::ServerMessage,
+    ConnectOptions, Stream,
+    protocol::{
+        ClientMessage, ClientShellSnapshot, MAX_FRAME_SIZE, ServerMessage, endpoint::*,
+        read_message, write_message,
+    },
+};
+use std::{
+    io::{BufRead, BufReader},
+    net::Shutdown,
+    sync::mpsc::{Receiver, SyncSender, sync_channel},
 };
 
-pub(super) struct Witness {
-    client: Client,
-    version: String,
-    server_pid: u32,
-    pub(super) boot: String,
-    pub(super) workspace: String,
+#[derive(Debug)]
+enum Observation {
+    Ready {
+        version: String,
+        boot: String,
+        workspace: String,
+    },
+    Shutdown(Option<String>),
+    Eof,
 }
 
-fn event(client: &Client, deadline: Instant) -> ClientEvent {
+// Both the startup and shutdown waits hold this guard. Closing the socket
+// releases a blocked reader even if the scenario fails between GUI launches.
+struct Observer {
+    stream: Stream,
+    worker: Option<thread::JoinHandle<()>>,
+    events: Receiver<Observation>,
+}
+
+impl Drop for Observer {
+    fn drop(&mut self) {
+        let _ = self.stream.shutdown(Shutdown::Both);
+        if let Some(worker) = self.worker.take() {
+            let _ = worker.join();
+        }
+    }
+}
+
+impl Observer {
+    fn next(&self, deadline: Instant) -> Observation {
+        self.events
+            .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+            .expect("private Herdr observer failed or exceeded its deadline")
+    }
+}
+
+fn observe(stream: Stream, events: SyncSender<Observation>) {
+    let mut wire = BufReader::new(stream);
+    let message = read_message(&mut wire, MAX_FRAME_SIZE).unwrap();
+    let ServerMessage::EndpointControl { kind, data } = message else {
+        panic!("expected the endpoint welcome")
+    };
+    assert_eq!(kind, ENDPOINT_WELCOME_KIND);
+    let welcome: EndpointServerWelcome = serde_json::from_str(&data).unwrap();
+    assert_eq!(welcome.generation, ENDPOINT_PROTOCOL_GENERATION);
     assert!(
-        Instant::now() < deadline,
-        "timed out waiting for Herdr protocol event"
+        welcome.error.is_none(),
+        "welcome rejected: {:?}",
+        welcome.error
     );
-    client
-        .events
-        .recv_timeout(deadline.saturating_duration_since(Instant::now()))
-        .unwrap()
+    assert_eq!(welcome.snapshot_codec, SNAPSHOT_CODEC_V1);
+    assert_eq!(welcome.surface_codec, SURFACE_CODEC_V1);
+    assert_eq!(welcome.input_codec, INPUT_CODEC_V1);
+    assert_eq!(welcome.blob_codec, BLOB_CODEC_V1);
+    assert!(
+        welcome
+            .capabilities
+            .iter()
+            .any(|cap| cap == "surface_interest")
+    );
+    let mut version = Some(welcome.server_version);
+    let mut reported_shutdown = false;
+    // Empty input at a frame boundary is EOF. A truncated frame fails read_message.
+    while !wire.fill_buf().unwrap().is_empty() {
+        match read_message(&mut wire, MAX_FRAME_SIZE).unwrap() {
+            ServerMessage::EndpointControl { kind, data }
+                if version.is_some() && kind == ENDPOINT_SNAPSHOT_KIND =>
+            {
+                let snapshot: ClientShellSnapshot = serde_json::from_str(&data).unwrap();
+                if let Some(workspace) = snapshot.focused_workspace_id {
+                    assert!(!workspace.is_empty() && !snapshot.boot_id.is_empty());
+                    events
+                        .send(Observation::Ready {
+                            version: version.take().unwrap(),
+                            boot: snapshot.boot_id,
+                            workspace,
+                        })
+                        .unwrap();
+                }
+            }
+            ServerMessage::ServerShutdown { reason } => {
+                assert_eq!(reason.as_deref(), Some("server is shutting down"));
+                // Herdr announces the same stop during initiation and completion.
+                if !reported_shutdown {
+                    reported_shutdown = true;
+                    events.send(Observation::Shutdown(reason)).unwrap();
+                }
+            }
+            _ => {}
+        }
+    }
+    events.send(Observation::Eof).unwrap();
+}
+
+pub(super) struct Witness {
+    observer: Observer,
+    version: String,
+    server_pid: u32,
+    boot: String,
+    pub(super) workspace: String,
 }
 
 impl Witness {
     pub(super) fn open(socket: PathBuf, server_pid: u32) -> Self {
-        let client =
-            connect_with_surface_active(ConnectTarget::Socket(socket), Default::default(), false)
-                .unwrap();
         let deadline = Instant::now() + TIMEOUT;
-        let first = event(&client, deadline);
-        let ClientEvent::Connected(welcome) = first else {
-            panic!("expected an endpoint welcome, received {first:?}");
+        let mut stream = Stream::connect(socket).unwrap();
+        let peer = getsockopt(&stream, PeerCredentials).unwrap();
+        assert_eq!(u32::try_from(peer.pid()).unwrap(), server_pid);
+        stream.set_write_timeout(Some(TIMEOUT)).unwrap();
+        let options = ConnectOptions::default();
+        let hello = EndpointClientHello {
+            generation: ENDPOINT_PROTOCOL_GENERATION,
+            cell_width_px: options.cell_width_px,
+            cell_height_px: options.cell_height_px,
+            surface_size: options.surface_size,
+            pixel_mouse: false,
+            direct_graphics: false,
+            endpoint_keybindings: false,
+            mouse_capture: false,
+            surface_active: false,
+            surface_reuse: false,
+            surface_delta: false,
+            surface_scroll: false,
+            snapshot_codecs: vec![SNAPSHOT_CODEC_V1.into()],
+            surface_codecs: vec![SURFACE_CODEC_V1.into()],
+            input_codecs: vec![INPUT_CODEC_V1.into()],
+            blob_codecs: vec![BLOB_CODEC_V1.into()],
         };
-        assert_eq!(welcome.generation, 1);
-        loop {
-            match event(&client, deadline) {
-                ClientEvent::Snapshot(snapshot) => {
-                    let Some(workspace) = snapshot.focused_workspace_id.clone() else {
-                        continue;
-                    };
-                    assert!(!snapshot.boot_id.is_empty());
-                    assert!(!workspace.is_empty());
-                    return Self {
-                        client,
-                        version: welcome.server_version,
-                        server_pid,
-                        boot: snapshot.boot_id.clone(),
-                        workspace,
-                    };
-                }
-                ClientEvent::Disconnected { reason, .. } => {
-                    panic!("disconnected before snapshot: {reason}")
-                }
-                _ => {}
-            }
+        write_message(
+            &mut stream,
+            &ClientMessage::EndpointControl {
+                kind: ENDPOINT_HELLO_KIND.into(),
+                data: serde_json::to_string(&hello).unwrap(),
+            },
+            MAX_FRAME_SIZE,
+        )
+        .unwrap();
+        let reader = stream.try_clone().unwrap();
+        // The observer emits at most one ready receipt, one shutdown and one EOF.
+        let (send, events) = sync_channel(3);
+        let observer = Observer {
+            stream,
+            worker: Some(thread::spawn(move || observe(reader, send))),
+            events,
+        };
+        let first = observer.next(deadline);
+        let Observation::Ready {
+            version,
+            boot,
+            workspace,
+        } = first
+        else {
+            panic!("expected a welcome and focused workspace before {first:?}")
+        };
+        Self {
+            observer,
+            version,
+            server_pid,
+            boot,
+            workspace,
         }
     }
 
     pub(super) fn receipt(&self) -> String {
-        serde_json::json!({"pid": self.server_pid, "generation": 1, "server_version": self.version, "boot": self.boot, "focused_workspace": self.workspace}).to_string()
+        serde_json::json!({"pid": self.server_pid, "generation": ENDPOINT_PROTOCOL_GENERATION, "server_version": self.version, "boot": self.boot, "focused_workspace": self.workspace}).to_string()
     }
 
     pub(super) fn shutdown(&self, receipt: &Path) {
         let mut log = File::create(receipt).unwrap();
-        const REASON: &str = "server is shutting down";
         let deadline = Instant::now() + TIMEOUT;
-        let mut received = false;
-        loop {
-            match event(&self.client, deadline) {
-                ClientEvent::Message(ServerMessage::ServerShutdown { reason }) => {
-                    writeln!(log, "ServerShutdown {reason:?}").unwrap();
-                    assert_eq!(reason.as_deref(), Some(REASON));
-                    received = true;
-                }
-                ClientEvent::Disconnected { reason, .. } => {
-                    writeln!(log, "Disconnected {reason}").unwrap();
-                    assert!(received, "transport closed before typed shutdown");
-                    assert_eq!(reason, REASON);
-                    return;
-                }
-                _ => {}
-            }
-        }
+        let first = self.observer.next(deadline);
+        let Observation::Shutdown(reason) = first else {
+            writeln!(log, "{first:?}").unwrap();
+            panic!("expected typed ServerShutdown before {first:?}");
+        };
+        writeln!(log, "ServerShutdown {reason:?}").unwrap();
+        let end = self.observer.next(deadline);
+        writeln!(log, "{end:?}").unwrap();
+        assert!(
+            matches!(end, Observation::Eof),
+            "expected EOF after ServerShutdown"
+        );
     }
 }
