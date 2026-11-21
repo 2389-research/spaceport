@@ -202,14 +202,11 @@ jobs:
         if: runner.os == 'macOS' && matrix.features == 'all'
         run: cargo test --locked -p sheprd-gpui --features integration-test --test live_gui sidebar_routing::native_host_routing -- --ignored --exact --nocapture --test-threads=1
 
-  # Spaceport Windows jobs are paused until Kata h8g5 fixes native performance.
-  # Keep the jobs and their budgets intact for re-enabling qualification.
   # Match the other platforms' Rust checks without an extra optimized build.
   # Native GUI tests run in windows-native; the optimized Windows build runs
   # in windows-package.
   windows:
     if: >-
-      vars.WINDOWS_ENABLED == 'true' &&
       needs.commits.outputs.code == 'true' &&
       github.repository == '2389-research/spaceport' &&
       (github.event_name == 'pull_request' ||
@@ -256,12 +253,11 @@ jobs:
 
   # The native GUI tests (`just test-gui`, `just test-sidebar`) on a real
   # Windows desktop session against a pinned, checksummed Herdr daemon in the
-  # shared test sandbox, then the release-mode performance budget
-  # (`just test-perf`). Hosted runners have no GPU, so Direct3D runs on WARP:
-  # the budget is a regression tripwire, not a target for real hardware.
+  # shared test sandbox. Only the release-mode performance budget remains
+  # paused for Kata h8g5, controlled by WINDOWS_ENABLED. Hosted runners use
+  # WARP; that unchanged budget remains a Windows qualification gap.
   windows-native:
     if: >-
-      vars.WINDOWS_ENABLED == 'true' &&
       needs.commits.outputs.code == 'true' &&
       github.repository == '2389-research/spaceport' &&
       (github.event_name == 'pull_request' ||
@@ -308,6 +304,7 @@ jobs:
           if [[ $RUNNER == windows-11-arm ]]; then skip=(--skip native_gui_live); fi
           cargo test --locked -p sheprd-gpui --features integration-test --test live_gui -- --ignored --nocapture --test-threads=1 "${skip[@]}"
       - name: Release-mode performance budget
+        if: vars.WINDOWS_ENABLED == 'true'
         env:
           HERDR_PERF_P95_MS: '100'
         run: |
@@ -319,7 +316,6 @@ jobs:
   # change, so this runs only when what those artifacts are made from changes.
   windows-package:
     if: >-
-      vars.WINDOWS_ENABLED == 'true' &&
       needs.commits.outputs.windows_package == 'true' &&
       github.repository == '2389-research/spaceport' &&
       (github.event_name == 'pull_request' ||
@@ -389,7 +385,6 @@ jobs:
       - name: Require all platform checks
         env:
           RESULT: ${{ needs.checks.result }}
-          WINDOWS_ENABLED: ${{ github.repository != '2389-research/spaceport' }}
           WINDOWS: ${{ needs.windows.result }}
           NATIVE: ${{ needs.windows-native.result }}
           PACKAGE: ${{ needs.windows-package.result }}
@@ -417,21 +412,15 @@ jobs:
           else
             test "$MACOS_RELEASE" = skipped || exit 1
           fi
-          if [ "$WINDOWS_ENABLED" = false ]; then
-            test "$WINDOWS" = skipped && test "$NATIVE" = skipped && test "$PACKAGE" = skipped
-          elif [ "$WINDOWS_ENABLED" = true ]; then
-            if [ "$CODE" = true ]; then
-              test "$WINDOWS" = success && test "$NATIVE" = success || exit 1
-            else
-              test "$WINDOWS" = skipped && test "$NATIVE" = skipped || exit 1
-            fi
-            if [ "$PACKAGE_INPUTS" = true ]; then
-              test "$PACKAGE" = success
-            else
-              test "$PACKAGE_INPUTS" = false && test "$PACKAGE" = skipped
-            fi
+          if [ "$CODE" = true ]; then
+            test "$WINDOWS" = success && test "$NATIVE" = success || exit 1
           else
-            exit 1
+            test "$WINDOWS" = skipped && test "$NATIVE" = skipped || exit 1
+          fi
+          if [ "$PACKAGE_INPUTS" = true ]; then
+            test "$PACKAGE" = success
+          else
+            test "$PACKAGE_INPUTS" = false && test "$PACKAGE" = skipped
           fi
 
   # Linux release builds on main, which the release gate requires. No workflow
