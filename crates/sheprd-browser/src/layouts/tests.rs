@@ -1,6 +1,8 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
 
+mod recovery;
+
 #[test]
 fn core_layouts_keep_document_machine_and_page_pick_separate() {
     let group = uuid::Uuid::from_u128(77);

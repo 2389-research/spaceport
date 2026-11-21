@@ -5,6 +5,7 @@ mod focus;
 mod keys;
 mod pane_owner;
 mod paste;
+mod saved_state;
 mod screen;
 #[cfg(unix)]
 pub(crate) mod scripted_core;

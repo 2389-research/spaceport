@@ -194,10 +194,10 @@ jobs:
         run: cargo clippy --locked --workspace --all-targets --no-default-features -- -D warnings
       - name: Test default features and executable CLI
         if: matrix.features == 'default'
-        run: cargo test --locked --workspace
+        run: cargo test --locked --workspace --no-fail-fast
       - name: Test integration-feature build and executable CLI
         if: matrix.features == 'all'
-        run: cargo test --locked --workspace --all-features
+        run: cargo test --locked --workspace --all-features --no-fail-fast
       - name: Test native macOS routing without an unlocked desktop
         if: runner.os == 'macOS' && matrix.features == 'all'
         run: cargo test --locked -p sheprd-gpui --features integration-test --test live_gui sidebar_routing::native_host_routing -- --ignored --exact --nocapture --test-threads=1
@@ -246,10 +246,10 @@ jobs:
         run: cargo clippy --locked --workspace --all-targets --no-default-features -- -D warnings
       - name: Test default features and executable CLI
         if: matrix.features == 'default'
-        run: cargo test --locked --workspace
+        run: cargo test --locked --workspace --no-fail-fast
       - name: Test integration-feature build and executable CLI
         if: matrix.features == 'all'
-        run: cargo test --locked --workspace --all-features
+        run: cargo test --locked --workspace --all-features --no-fail-fast
 
   # The native GUI tests (`just test-gui`, `just test-sidebar`) on a real
   # Windows desktop session against a pinned, checksummed Herdr daemon in the
