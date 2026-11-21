@@ -310,12 +310,37 @@ pub(crate) fn run() -> Result<()> {
     peer::report_status(&directory.join("a.sock"), &targets.pane, "idle", 2)?;
     phases.push(fixture.tui.phase("idle-after", workload, false)?);
     fixture.tui.extract_stacks(&mut phases)?;
+    // Starting UI Automation can activate accessibility. Keep it outside every trace.
+    let native_text = (|| -> Result<()> {
+        let after = phases.last().context("missing final mixed-profile phase")?;
+        let native = serde_json::from_value(after["after"]["windows_native"].clone())
+            .context("decode final phase's observed native window")?;
+        let marker = output["unique_marker"]
+            .as_str()
+            .context("missing authored Core output marker")?;
+        fixture.tui.core_native_text(&native, marker)
+    })();
+    let native_text_status = json!({
+        "platform":"windows",
+        "status":if native_text.is_ok() {"qualified"} else {"failed"},
+        "scope":"one post-recording UI Automation TextPattern check; no pixel, continuous accessibility, keyboard, or speech qualification",
+        "receipt":"core-native-text.json",
+        "stages":"core-native-text.stages.txt",
+        "stderr":"core-native-text.stderr.log",
+        "failure":native_text.as_ref().err().map(ToString::to_string),
+    });
+    let native_text_receipt = directory.join("core-native-text-status.json");
+    let retained = fs::write(
+        &native_text_receipt,
+        serde_json::to_vec_pretty(&native_text_status)?,
+    );
     ensure!(
         matches!(exchange(&directory, &Request::Stop)?, Reply::Stopped),
         "observer failed to stop"
     );
     Peer::open(&fixture.tui.sandbox()?.socket())?.close_workspace(&targets.workspace)?;
     fixture.cleanup()?;
+    retained.context("retain native Core text check status")?;
     fs::write(
         directory.join("report.json"),
         serde_json::to_vec_pretty(&json!({
@@ -323,7 +348,7 @@ pub(crate) fn run() -> Result<()> {
             "synthetic_status":true,"provider_used":false,"workspace":targets.workspace,"boot":targets.boot,
             "generated_pane":targets.pane,"tui_generated_lines":peer::GENERATED_LINES,
             "core_id":core_id,"core_tab":tab,"core_terminal":terminal.address,
-            "core_output":output,"listening_ports_configured":false,
+            "core_output":output,"native_core_text":native_text_status,"listening_ports_configured":false,
             "configuration_scope":"private settings parsed before launch; no live poller-state probe",
             "core_content_scope":"projected frame metadata plus last-layout bounds; no paint receipt or native presentation metric",
             "visible_content_qualified":false,"capture_review_required":true,
@@ -333,5 +358,10 @@ pub(crate) fn run() -> Result<()> {
             "phases":phases,
         }))?,
     )?;
-    Ok(())
+    native_text.with_context(|| {
+        format!(
+            "post-recording native Core text check failed; status={}",
+            native_text_receipt.display()
+        )
+    })
 }

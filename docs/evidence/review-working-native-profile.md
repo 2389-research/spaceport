@@ -20,8 +20,9 @@ Mac `sample`/`ps` support remains separate from the held Mac native checks.
 - Ordinary `e076fbac1` passed both motion regressions after actual RED; published `7d1772994` passed all four ordinary jobs again.
 - Disposable desktop preparation passed real enable, repeated-refusal, restoration, and fresh-process checks at `dcadebfaf`.
 - Native `dcadebfaf` passed with real animation activity, verified clocks, captures, identities, and zero-loss traces; dominant CPU attribution remains unresolved.
-- Localized `acc229aeb` now has clean runtime RED on both platforms; the Core-only paint cache is in implementation.
-- Cache `fcf833f20` passes the paint regression on both platforms; its resize-test fixture needs correction before full GREEN.
+- Localized `acc229aeb` has clean runtime RED on both platforms: 760 repeated paints instead of zero.
+- Cache `7657ed297` passed all four ordinary jobs, including the paint regression and all 11 Core view controls on both platforms.
+- The passive Windows native text reader passed independent source review; remote compilation and real native controls remain pending.
 
 ## Authority and limits
 
@@ -1135,4 +1136,60 @@ For a terminal that is itself the root, that refresh restores full-window layout
 Thus both test observations used the same viewport; this did not measure a resize.
 The corrected control uses the actual test-platform resize callback and adds pane padding to move the cell origin.
 It retains assertions for fewer rows/columns, changed origin, matching IME movement, and caret containment.
-No production code changed for this correction; full GREEN remains pending.
+No production code changed for this correction.
+At `7657ed297`, run `44845210052` passes all four ordinary jobs.
+Windows passes nine observer cases; Mac passes ten.
+Both platforms pass all 11 Core view controls, including actual resize, IME movement, and cell-height invalidation.
+These are headless controls with a scripted backend; native content and performance qualification remain pending.
+
+## Task 2: Qualify native Core text after profiling
+
+Add a focused native UIA read to the existing mixed Windows profile fixture.
+Run it after all CPU phases and stack extraction, before observer shutdown and GUI cleanup.
+Late accessibility activation must not alter the measured workload.
+Root owns commits, pushes, native execution, workflows, and evidence.
+The implementer owns only `tests/working_profile/harness/windows.rs`, `harness/core.rs`, and a focused PowerShell helper there.
+Paths above are relative to `crates/sheprd-gpui/`.
+Preserve other worktree changes and the production cache.
+
+Use the actual unique marker returned by `MixedFixture::seed` in `core_output.unique_marker`.
+Its complete value does not occur in the input echo.
+Select the exact observed owned GUI HWND; verify its process identity before and after reading.
+Never enumerate desktop roots, activate windows, set focus, synthesize input, or call speech/audio APIs.
+Search only that root for visible `Document` elements named `Terminal`.
+Use real `TextPattern.DocumentRange.GetText(16384)` and bounded retry for asynchronous tree readiness.
+Require exactly one matching visible owned document for the real marker.
+Then require zero matches for an authored absent marker while named terminal documents remain available.
+Keep counts, identity, finite positive bounds, and stage/failure metadata in bounded receipts.
+Do not retain terminal text in receipts or log it.
+Preserve receipts before propagating any check failure.
+
+Reuse the existing hidden bounded child runner and explicit ProgramFiles forwarding from `harness/windows.rs`.
+Reuse the explicit Utility module import pattern from `windows_native.ps1`.
+Reference the existing UIA patterns in `tests/support/uia_terminal.ps1` and exact-HWND ownership in `uia_live.cs`.
+Do not invoke those helpers wholesale; their activation and keyboard actions exceed this check.
+Do not interpolate untrusted text into PowerShell code; pass the authored marker as data.
+Report this check separately from painted pixels, continuous accessibility, keyboard correctness, and audible speech.
+On Mac, represent this Windows-only check as unavailable; do not stub success.
+
+Start new source with two `ABOUTME:` comments and preserve narrow APIs and typed Rust propagation.
+Add no dependency, production mode, public command, or unsafe Rust.
+Do not run builds, tests, native apps, VMs, Herdr, Git mutations, or external writes locally.
+Formatting and source inspection are allowed.
+Root runs remote compilation and the real native positive/absent-marker controls after Task 1 qualifies.
+Write the requested report with changed files, static checks, unrun checks, and limitations.
+
+### Native text reader validation
+
+The staged reader uses the final phase's exact owned HWND, PID, and thread.
+It runs after trace extraction and before observer shutdown and cleanup.
+Both controls read real UIA TextPattern data from visible `Terminal` documents.
+The second control also requires the real marker, preventing an empty-tree false pass.
+Receipts retain bounds, counts, identity, stages, and failure metadata without document text.
+The check covers two bounded text reads after recording; pixel, continuous accessibility, keyboard, and speech checks remain separate.
+
+Local `just format-check check-file-size check-sorted check-i18n check-commits` passed.
+`git diff --cached --check` also passed.
+No local compilation, native app, VM, or speech check ran.
+Independent spec and code-quality review found no blocking source issues.
+Windows compilation, PowerShell assembly loading, and real native controls remain pending.

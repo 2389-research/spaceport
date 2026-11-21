@@ -52,14 +52,8 @@ impl Fixture {
         Ok(tools)
     }
 
-    pub(super) fn native_observation(&self, mut observation: Observation) -> Result<Observation> {
-        let hwnd = observation
-            .windows_hwnd
-            .context("Windows observer omitted actual HWND")?;
-        let mut command = self.sandbox()?.command(
-            "powershell.exe",
-            format!("native-{}.stderr.log", observation.request_id),
-        );
+    fn native_powershell(&self, log: impl AsRef<Path>) -> Result<Command> {
+        let mut command = self.sandbox()?.command("powershell.exe", log);
         // These system paths support Windows PowerShell's cmdlet loading.
         for name in ["ProgramFiles", "ProgramFiles(x86)"] {
             if let Some(value) = std::env::var_os(name) {
@@ -67,14 +61,22 @@ impl Fixture {
             }
         }
         hide(&mut command);
-        command
-            .args(["-NoLogo", "-NoProfile", "-NonInteractive", "-Command"])
-            .arg(format!(
-                "& {{\n{}\n}} -WindowHandle {hwnd} -ProcessId {} -ReceiptFile native-{}.stages.txt",
-                include_str!("windows_native.ps1"),
-                observation.gui_pid,
-                observation.request_id,
-            ));
+        command.args(["-NoLogo", "-NoProfile", "-NonInteractive"]);
+        Ok(command)
+    }
+
+    pub(super) fn native_observation(&self, mut observation: Observation) -> Result<Observation> {
+        let hwnd = observation
+            .windows_hwnd
+            .context("Windows observer omitted actual HWND")?;
+        let mut command =
+            self.native_powershell(format!("native-{}.stderr.log", observation.request_id))?;
+        command.arg("-Command").arg(format!(
+            "& {{\n{}\n}} -WindowHandle {hwnd} -ProcessId {} -ReceiptFile native-{}.stages.txt",
+            include_str!("windows_native.ps1"),
+            observation.gui_pid,
+            observation.request_id,
+        ));
         let directory = &self.sandbox()?.dir;
         let output = directory.join(format!("native-{}.json", observation.request_id));
         let bytes =
@@ -94,6 +96,63 @@ impl Fixture {
             })?;
         observation.windows_native = Some(serde_json::from_slice(&bytes)?);
         Ok(observation)
+    }
+
+    pub(super) fn core_native_text(
+        &mut self,
+        native: &report::WindowsNative,
+        marker: &str,
+    ) -> Result<()> {
+        let report::WindowsNative {
+            hwnd,
+            gui_pid,
+            thread_id,
+            ..
+        } = *native;
+        ensure!(
+            hwnd != 0 && thread_id != 0 && gui_pid == self.alive().context("check owned GUI")?,
+            "native Core text target differs from the owned GUI"
+        );
+        let mut command = self
+            .native_powershell("core-native-text.stderr.log")
+            .context("prepare the Windows UI Automation reader")?;
+        command
+            .env("SPACEPORT_PROFILE_CORE_MARKER", marker)
+            .args(["-Mta", "-Command"])
+            .arg(format!(
+                "& {{\n{}\n}} -WindowHandle {hwnd} -ProcessId {gui_pid} -ThreadId {thread_id}",
+                include_str!("windows_core_text.ps1"),
+            ));
+        let output = self.sandbox()?.dir.join("core-native-text.json");
+        command.stdout(File::create(&output).context("prepare native Core text receipt")?);
+        // Keep the marker out of spawn diagnostics by avoiding command debug output.
+        let read = command
+            .spawn()
+            .context("spawn Windows UI Automation reader")
+            .and_then(|child| wait_for_output(child, &output, Duration::from_secs(25), 8192))
+            .context("bounded Windows UI Automation reader failed");
+        ensure!(
+            gui_pid
+                == self
+                    .alive()
+                    .context("check owned GUI after UI Automation")?,
+            "owned GUI changed during the native Core text read"
+        );
+        let receipt: Value =
+            serde_json::from_slice(&read?).context("decode native Core text receipt")?;
+        ensure!(
+            receipt["status"] == "qualified"
+                && receipt["hwnd"] == hwnd
+                && receipt["owner_before"]["pid"] == gui_pid
+                && receipt["owner_after"]["pid"] == gui_pid
+                && receipt["owner_before"]["thread_id"] == thread_id
+                && receipt["owner_after"]["thread_id"] == thread_id
+                && receipt["positive"]["positive_matches"] == 1
+                && receipt["absent"]["positive_matches"] == 1
+                && receipt["absent"]["absent_matches"] == 0,
+            "native Core text receipt lacks exact ownership and both marker controls"
+        );
+        Ok(())
     }
 
     fn cpu(&self, name: &str, pid: u32) -> Result<Duration> {
