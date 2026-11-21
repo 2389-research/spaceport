@@ -1,8 +1,10 @@
+// ABOUTME: Draws shared status marks outside cached window content.
+// ABOUTME: Bounds repeating redraws while preserving clipping and view ownership.
 //! Moving status marks, drawn in a layer of their own.
 //!
 //! An animation asks GPUI to re-render the view drawing it on every frame,
 //! and GPUI re-renders that view's ancestors with it. A working agent's
-//! spinner inside the cached sidebar rebuilt and laid out every row up to 30
+//! spinner inside the cached sidebar rebuilt and laid out every row up to 20
 //! times a second, terminal output or not; one in the tab strip notified the
 //! window, which notifies the sidebar too (`SheprdWindow::new` observes
 //! itself). So in a window with a layer, [`layered`] only reserves the
@@ -30,7 +32,7 @@ type Build = Rc<dyn Fn() -> AnyElement>;
 
 /// The most frames a second a repeating mark asks for. A window can show
 /// many at once, and a turning or pulsing mark reads as smooth at this rate.
-pub(crate) const MAX_FPS: f32 = 30.;
+pub(crate) const MAX_FPS: f32 = 20.;
 
 /// One reserved slot: where it landed, the clip it landed under, and how to
 /// draw the mark there.

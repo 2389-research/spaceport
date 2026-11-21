@@ -1304,3 +1304,21 @@ The app's accessibility policy is unchanged.
 Independent raw-evidence and publication review found no material blocker.
 The review added explicit whole-trace count labels to prevent population confusion.
 All original performance clauses remain tracked, with Mac and actual-speech holds unchanged.
+
+### Working timer budget
+
+Primary GitHub reads confirm PR 145 merged as `55c206e7c6be1a16f2e0643819f4dfc5df360f66`.
+Current main `1ef26ee7122a84db3b70cc32c3bfcd5fff35933c` sets the shared mark limit to 20 fps.
+The native `23884df4c` candidate still uses 30 fps; its earlier measurement cannot qualify the changed limit.
+
+Test-only `fcfb06d246527ee90d52b4a593f648ee3f9c9157` reaches the intended runtime RED on both platforms in run `44852617250`.
+The real Working fixture paints and reports ordinary motion before measurement.
+At 40 milliseconds of GPUI test-clock time, both jobs observe 45 layer renders instead of the initial three.
+The existing render-counter control passes; the new timer-budget assertion alone fails.
+The test performs no forced draw after its initial baseline and requires later timer progress after 60 milliseconds.
+
+The candidate now adopts the same 20 fps constant as main.
+Synced phase, duration, reduced motion, clipping, focus, and input remain unchanged.
+Independent source review found no actionable issue; static format, size, sort, commit-message, and diff checks pass.
+Runtime GREEN and native qualification of this newer candidate remain pending.
+This is a configured timer budget, not a claim about physical display frame rate or CPU savings.
