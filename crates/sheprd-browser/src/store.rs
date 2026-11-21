@@ -132,7 +132,7 @@ impl CoreGroupKey {
 
 impl Scope {
     /// A local daemon, named by the client socket the window connects to.
-    pub fn local(client_socket: &std::path::Path) -> Self {
+    pub fn local(client_socket: &Path) -> Self {
         Self::Legacy(format!("local:{}", client_socket.display()))
     }
 
