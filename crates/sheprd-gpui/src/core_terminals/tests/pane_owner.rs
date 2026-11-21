@@ -4,15 +4,13 @@
 use crate::{
     SheprdWindow,
     browser::{CoreGroupKey, Location, Store, TabId},
-    core_terminals::{
-        self, Error, Start,
-        panes::{Axis, Panes},
-    },
+    core_terminals::{self, Error, Start},
     sidebar::layout_tests::fixture_core_window,
 };
 use gpui::{TestAppContext, WindowHandle};
 use sheprd_backend::TerminalId;
 use sheprd_core_client::wire::Doc;
+use sheprd_panes::{Axis, Panes};
 use uuid::Uuid;
 
 fn id(name: &str) -> TerminalId {
@@ -132,7 +130,8 @@ fn core_panes(tab: TabId, cx: &mut TestAppContext) -> Panes {
 
 #[gpui::test]
 fn a_dragged_split_reaches_the_store_once_the_drag_ends(cx: &mut TestAppContext) {
-    use crate::core_terminals::{panes::Share, split::SplitDrag};
+    use crate::core_terminals::split::SplitDrag;
+    use sheprd_panes::Share;
     let (key, tab) = group_with_tab(cx);
     let window = window_on(&key, cx);
     window

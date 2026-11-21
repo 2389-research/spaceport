@@ -163,11 +163,9 @@ fn placement_drains_the_next_spawn_without_a_hub_change(cx: &mut TestAppContext)
 
 #[gpui::test]
 fn a_split_queued_without_a_backend_keeps_the_restored_tabs_core(cx: &mut TestAppContext) {
-    use super::super::{
-        Hub,
-        panes::{Axis, Panes},
-    };
+    use super::super::Hub;
     use crate::browser::{CoreGroupKey, Location, Store};
+    use sheprd_panes::{Axis, Panes};
     let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     let (other, _peer) = super::scripted_core::connect("core-b");
     cx.update(|_, cx| {
@@ -297,11 +295,9 @@ fn a_worker_creation_failure_reaches_the_placement_warning_and_preserves_fifo(
 
 #[gpui::test]
 fn an_unscoped_split_with_a_fresh_matching_owner_reaches_that_core(cx: &mut TestAppContext) {
-    use super::super::{
-        observation,
-        panes::{Axis, Panes},
-    };
+    use super::super::observation;
     use sheprd_backend::{RunState, TerminalId, TerminalInfo};
+    use sheprd_panes::{Axis, Panes};
     let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     let (backend, mut peer) = super::scripted_core::connect("core-a");
     let at = TerminalId::new("t1").unwrap();

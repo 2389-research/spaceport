@@ -7,12 +7,13 @@ use super::*;
 use crate::{
     SheprdWindow,
     browser::{CoreGroupKey, Location, Pick, Store, TabId},
-    core_terminals::{Error as HubError, Hub, Start, panes::Panes, tests::scripted_core},
+    core_terminals::{Error as HubError, Hub, Start, tests::scripted_core},
     i18n::fl,
 };
 use sheprd_backend::{RunState, TerminalId, TerminalInfo};
 use sheprd_client::protocol::AgentStatus;
 use sheprd_core_client::CoreBackend;
+use sheprd_panes::Panes;
 use std::os::unix::net::UnixStream;
 
 const HUB: &str = "hub-a";

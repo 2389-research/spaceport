@@ -10,6 +10,7 @@
 // i18n: migrated
 
 mod backdrop;
+mod browser;
 mod caffeine;
 mod chat;
 mod chat_protocol;
@@ -36,6 +37,7 @@ mod remote;
 mod root;
 mod shell;
 mod sound;
+mod state_file;
 #[cfg(test)]
 pub(crate) mod tests;
 mod usage;

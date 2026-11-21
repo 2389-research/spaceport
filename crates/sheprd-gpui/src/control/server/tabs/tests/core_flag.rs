@@ -15,7 +15,7 @@ fn disabled_core_tabs_are_hidden_and_direct_actions_preserve_them(cx: &mut gpui:
                 scope.clone(),
                 "w0",
                 Some(Location::CoreTerminal {
-                    panes: crate::core_terminals::panes::Panes::single(
+                    panes: sheprd_panes::Panes::single(
                         sheprd_backend::TerminalId::new("fixture-shell").unwrap(),
                     ),
                     observe: true,

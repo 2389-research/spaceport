@@ -26,17 +26,21 @@ gpui_platform                  = { features = ["font-kit", "runtime_shaders", "w
 sheprd-ago.workspace            = true
 sheprd-chat-protocol.workspace  = true
 sheprd-backend.workspace        = true
+sheprd-browser.workspace        = true
 sheprd-client.workspace         = true
 sheprd-commands.workspace       = true
 sheprd-control-protocol.workspace = true
 sheprd-core-client.workspace    = true
 sheprd-diagnostics.workspace    = true
 sheprd-i18n.workspace           = true
+sheprd-motion.workspace         = true
 sheprd-osc52.workspace          = true
+sheprd-panes.workspace          = true
 sheprd-remote.workspace         = true
 sheprd-reorder.workspace         = true
 sheprd-settings.workspace        = true
 sheprd-sound.workspace          = true
+sheprd-state-file.workspace     = true
 sheprd-usage.workspace          = true
 sheprd-truncate.workspace       = true
 sheprd-words.workspace          = true
@@ -80,6 +84,7 @@ sha2.workspace = true
 # `i18n/errors/tests/sound.rs` names the audio library's own error types.
 rodio.workspace = true
 gpui = { features = ["test-support"], workspace = true }
+sheprd-browser = { features = ["test-support"], workspace = true }
 sheprd-client = { features = ["test-support"], workspace = true }
 sheprd-reorder = { features = ["test-support"], workspace = true }
 sheprd-settings = { features = ["test-support"], workspace = true }

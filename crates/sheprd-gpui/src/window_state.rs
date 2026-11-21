@@ -5,7 +5,6 @@
 //! every display at origin (0, 0), so a position is only meaningful together
 //! with its display. Each window records its display's persistent UUID and is
 //! reopened on that display, falling back to the primary one when it is gone.
-use crate::state_file;
 use gpui::{App, Bounds, Context, DisplayId, Global, Pixels, Window, WindowId, point, px, size};
 use serde::{Deserialize, Serialize};
 use std::{collections::VecDeque, path::Path};
@@ -86,7 +85,7 @@ fn fit(mut geometry: Geometry, display: Option<Bounds<Pixels>>) -> Geometry {
 }
 
 fn read(path: &Path) -> crate::Result<Vec<Geometry>> {
-    let Some(bytes) = state_file::read(path, 64 * 1024)? else {
+    let Some(bytes) = sheprd_state_file::read(path, 64 * 1024).map_err(crate::Error::from)? else {
         return Ok(Vec::new());
     };
     let windows: Vec<Geometry> = serde_json::from_slice(&bytes)?;
@@ -98,10 +97,10 @@ fn read(path: &Path) -> crate::Result<Vec<Geometry>> {
 
 #[cfg(test)]
 fn write(path: &Path, windows: &[Geometry]) -> crate::Result<()> {
-    state_file::write(path, windows)
+    sheprd_state_file::write(path, windows).map_err(crate::Error::from)
 }
 
-type Writer = state_file::Writer<Vec<Geometry>>;
+type Writer = sheprd_state_file::Writer<Vec<Geometry>>;
 
 pub(crate) struct WindowState {
     restored: VecDeque<Geometry>,

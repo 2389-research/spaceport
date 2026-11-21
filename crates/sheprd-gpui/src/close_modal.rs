@@ -15,8 +15,6 @@ use sheprd_client::{
 
 mod sequence;
 
-pub(crate) use sequence::CloseRun;
-
 #[derive(Debug, PartialEq, Eq)]
 pub(super) struct CloseConfirmation {
     boot: String,

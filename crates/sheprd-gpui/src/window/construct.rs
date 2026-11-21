@@ -59,7 +59,7 @@ impl SheprdWindow {
         let menu = menu::MenuState::new(cx);
         let sidebar_search = sidebar::SidebarSearch::new(cx);
         let surface_signal = cx.new(|_| SurfaceSignal);
-        let browser = crate::browser::Browser::new(cx);
+        let browser = crate::browser::new_browser(cx);
         let device_tags = crate::device_tags::DeviceTags::current(cx);
         // The Core group this window shows, if it was opened for one.
         let core_key = launched.core_key.clone();

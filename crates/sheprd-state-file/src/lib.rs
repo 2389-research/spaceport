@@ -1,0 +1,106 @@
+//! Small app-owned JSON state files. Reads are bounded, writes replace the
+//! file atomically, and the latest value is saved on a worker so a change made
+//! on the UI thread never waits for the disk.
+
+mod error;
+
+pub use error::{Error, Result};
+
+use serde::Serialize;
+use std::{
+    fs,
+    io::{self, Read, Write},
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex, mpsc},
+    thread::{self, JoinHandle},
+};
+
+/// The file's bytes, or `None` when it does not exist yet.
+pub fn read(path: &Path, limit: u64) -> Result<Option<Vec<u8>>> {
+    let file = match fs::File::open(path) {
+        Ok(file) => file,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(error.into()),
+    };
+    let mut bytes = Vec::new();
+    file.take(limit + 1).read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > limit {
+        return Err(Error::Size {
+            path: path.to_owned(),
+            limit,
+        });
+    }
+    Ok(Some(bytes))
+}
+
+pub fn write<T: Serialize + ?Sized>(path: &Path, value: &T) -> Result<()> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| Error::MissingRoot(path.to_owned()))?;
+    fs::create_dir_all(parent)?;
+    let mut file = tempfile::NamedTempFile::new_in(parent)?;
+    // Buffered: the serializer writes each escape and punctuation mark on its
+    // own, which unbuffered is a system call apiece.
+    let mut buffer = io::BufWriter::new(&mut file);
+    serde_json::to_writer(&mut buffer, value)?;
+    buffer.write_all(b"\n")?;
+    buffer.flush()?;
+    drop(buffer);
+    // No fsync: on macOS it is F_FULLFSYNC, which can outlast GPUI's 100 ms
+    // quit budget. The rename still replaces the file atomically, and a file
+    // torn by power loss is rejected on load in favor of the defaults.
+    file.persist(path).map_err(|error| error.error)?;
+    Ok(())
+}
+
+/// Saves the most recent value handed to it. Values replaced before the
+/// worker reads them are never written.
+pub struct Writer<T> {
+    pending: Arc<Mutex<Option<T>>>,
+    wake: mpsc::SyncSender<()>,
+    worker: JoinHandle<()>,
+}
+
+impl<T: Serialize + Send + 'static> Writer<T> {
+    pub fn start(name: &str, path: PathBuf) -> io::Result<Self> {
+        let pending = Arc::new(Mutex::new(None::<T>));
+        let mailbox = pending.clone();
+        let (wake, receiver) = mpsc::sync_channel(1);
+        let label = name.to_owned();
+        let worker = thread::Builder::new().name(name.into()).spawn(move || {
+            for () in receiver {
+                let snapshot = mailbox.lock().ok().and_then(|mut pending| pending.take());
+                if let Some(snapshot) = snapshot
+                    && let Err(error) = write(&path, &snapshot)
+                {
+                    tracing::warn!(%error, file = label, "Cannot save state");
+                }
+            }
+        })?;
+        Ok(Self {
+            pending,
+            wake,
+            worker,
+        })
+    }
+
+    pub fn save(&self, value: T) {
+        if let Ok(mut pending) = self.pending.lock() {
+            *pending = Some(value);
+        }
+        // A full wake queue already guarantees that the latest value is read.
+        let _ = self.wake.try_send(());
+    }
+
+    /// Writes whatever is still pending, then stops the worker. Blocks, so
+    /// callers run it off the UI thread.
+    pub fn finish(self) {
+        drop(self.wake);
+        if self.worker.join().is_err() {
+            tracing::warn!("State writer panicked");
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests;

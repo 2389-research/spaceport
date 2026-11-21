@@ -1,5 +1,5 @@
 use super::*;
-use crate::{browser::tab_body::Span, config::TabLayoutMode};
+use crate::{browser::Span, config::TabLayoutMode};
 
 fn redraw(cx: &mut VisualTestContext) {
     cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));

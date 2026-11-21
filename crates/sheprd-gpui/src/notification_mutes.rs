@@ -25,7 +25,6 @@ mod error;
 
 pub(crate) use error::Error;
 
-use crate::state_file;
 use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use sheprd_client::{ConnectTarget, protocol::ClientShellSnapshot};
@@ -327,7 +326,7 @@ pub(crate) struct Mutes {
     mutes: Vec<Mute>,
     /// The endpoints of the muted devices, least recently muted first.
     hosts: Vec<String>,
-    writer: Option<state_file::Writer<Saved>>,
+    writer: Option<sheprd_state_file::Writer<Saved>>,
     quitting: bool,
     /// Counts changes, so a window can tell another one changed a mute.
     revision: u64,
@@ -350,11 +349,13 @@ impl Mutes {
         let saved = path
             .as_deref()
             .map(|path| {
-                state_file::read(path, MAX_FILE_BYTES).and_then(|bytes| {
-                    bytes
-                        .as_deref()
-                        .map_or(Ok(Saved::default()), |bytes| Ok(parse(bytes)?))
-                })
+                sheprd_state_file::read(path, MAX_FILE_BYTES)
+                    .map_err(crate::Error::from)
+                    .and_then(|bytes| {
+                        bytes
+                            .as_deref()
+                            .map_or(Ok(Saved::default()), |bytes| Ok(parse(bytes)?))
+                    })
             })
             .transpose()
             .unwrap_or_else(|error| {
@@ -362,16 +363,15 @@ impl Mutes {
                 None
             })
             .unwrap_or_default();
-        let writer =
-            path.and_then(
-                |path| match state_file::Writer::start("notification-mutes", path) {
-                    Ok(writer) => Some(writer),
-                    Err(error) => {
-                        tracing::warn!(%error, "Cannot start the notification mutes worker");
-                        None
-                    }
-                },
-            );
+        let writer = path.and_then(|path| {
+            match sheprd_state_file::Writer::start("notification-mutes", path) {
+                Ok(writer) => Some(writer),
+                Err(error) => {
+                    tracing::warn!(%error, "Cannot start the notification mutes worker");
+                    None
+                }
+            }
+        });
         Self {
             mutes: saved.mutes,
             hosts: saved.hosts,

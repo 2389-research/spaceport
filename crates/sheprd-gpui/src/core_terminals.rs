@@ -20,7 +20,6 @@ mod hub;
 mod infos;
 mod observation;
 
-pub(crate) mod panes;
 mod screen;
 mod selection;
 mod sidebar;
@@ -215,9 +214,9 @@ use crate::{
     window::Flash,
 };
 use gpui::{prelude::*, *};
-use panes::{Axis, Panes};
 use sheprd_backend::{Spawn, TerminalId, TerminalInfo};
 use sheprd_client::ConnectTarget;
+use sheprd_panes::{Axis, Panes};
 use std::collections::HashMap;
 
 /// What a terminal being started is for.
@@ -306,7 +305,7 @@ fn layout(tab: TabId, cx: &App) -> Option<(&Panes, bool)> {
 pub(crate) struct CoreTerminals {
     /// A split's line being dragged and where it is held. The store takes
     /// the share once the drag ends, so a drag saves once.
-    dragging: Option<(split::SplitDrag, panes::Share)>,
+    dragging: Option<(split::SplitDrag, sheprd_panes::Share)>,
     /// The shell shown when no Herdr 1 is installed.
     fallback: fallback::Fallback,
     /// A shown tab whose active pane should take the keyboard once its view

@@ -6340,6 +6340,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "sheprd-browser"
+version = "0.1.0"
+dependencies = [
+ "gpui-pre",
+ "serde",
+ "serde_json",
+ "sheprd-backend",
+ "sheprd-client",
+ "sheprd-motion",
+ "sheprd-panes",
+ "sheprd-reorder",
+ "sheprd-state-file",
+ "sheprd-truncate",
+ "tempfile",
+ "thiserror 2.0.21",
+ "tracing",
+ "url",
+ "uuid",
+]
+
+[[package]]
 name = "sheprd-chat-protocol"
 version = "0.1.0"
 dependencies = [
@@ -6472,6 +6493,7 @@ dependencies = [
  "sha2 0.11.1",
  "sheprd-ago",
  "sheprd-backend",
+ "sheprd-browser",
  "sheprd-chat-protocol",
  "sheprd-client",
  "sheprd-commands",
@@ -6479,11 +6501,14 @@ dependencies = [
  "sheprd-core-client",
  "sheprd-diagnostics",
  "sheprd-i18n",
+ "sheprd-motion",
  "sheprd-osc52",
+ "sheprd-panes",
  "sheprd-remote",
  "sheprd-reorder",
  "sheprd-settings",
  "sheprd-sound",
+ "sheprd-state-file",
  "sheprd-truncate",
  "sheprd-usage",
  "sheprd-words",
@@ -6545,8 +6570,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "sheprd-motion"
+version = "0.1.0"
+
+[[package]]
 name = "sheprd-osc52"
 version = "0.1.0"
+
+[[package]]
+name = "sheprd-panes"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sheprd-backend",
+ "thiserror 2.0.21",
+]
 
 [[package]]
 name = "sheprd-protocol"
@@ -6614,6 +6653,17 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "toml 1.1.6+spec-1.1.0",
+ "tracing",
+]
+
+[[package]]
+name = "sheprd-state-file"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
  "tracing",
 ]
 

@@ -5,11 +5,9 @@
 //! into view again: otherwise its end, with its close button, is left past
 //! the strip's edge until another tab is chosen.
 use super::*;
-use crate::{
-    browser::{Location, Store, TabId},
-    core_terminals::panes::Panes,
-};
+use crate::browser::{Location, Store, TabId};
 use sheprd_backend::TerminalId;
+use sheprd_panes::Panes;
 
 const TITLE: &str = "feat: scroll pane history smoothly, following the trackpad";
 
@@ -70,7 +68,7 @@ fn a_chosen_core_tab_stays_in_view_when_its_title_comes_in(cx: &mut TestAppConte
     cx.update(|_, cx| Store::update(cx, |store| store.visited(opened, None, Some(TITLE))));
     frames(&view, cx);
     let label = view.read_with(cx, |_, cx| {
-        cx.global::<Store>().get(opened).unwrap().label()
+        crate::browser::drawn_label(cx.global::<Store>().get(opened).unwrap())
     });
     assert!(label.starts_with("feat: scroll pane"), "{label}");
     let (left, right) = viewport(cx);

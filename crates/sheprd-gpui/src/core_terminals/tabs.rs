@@ -4,11 +4,7 @@
 //! the pane in use, and panes whose program ended. The layout itself is the
 //! tab's, in the app's store, and every edit here goes through it.
 
-use super::{
-    CoreTerminalView, Mismatch, Start, TabPanes, layout,
-    panes::{Axis, Direction},
-    worker,
-};
+use super::{CoreTerminalView, Mismatch, Start, TabPanes, layout, worker};
 use crate::{
     SheprdWindow,
     browser::{Location, Store, TabId},
@@ -16,6 +12,7 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 use sheprd_backend::{Role, Size, TerminalId};
+use sheprd_panes::{Axis, Direction};
 
 /// The size a terminal starts at, before its pane is laid out.
 const FIRST_SIZE: (u16, u16) = (80, 24);
@@ -191,7 +188,7 @@ impl SheprdWindow {
             }),
             false => None,
         }
-        .unwrap_or_else(|| Err(super::panes::Error::Missing(at.clone())));
+        .unwrap_or_else(|| Err(sheprd_panes::Error::Missing(at.clone())));
         if let Some(shown) = self.core_terminals.tabs.get_mut(&tab)
             && placed.is_ok()
         {

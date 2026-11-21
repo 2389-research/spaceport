@@ -93,7 +93,6 @@ mod settings_window;
 mod sidebar;
 mod smooth_scroll;
 mod state;
-mod state_file;
 mod storage_warning;
 mod tab_layout;
 mod tab_menu;

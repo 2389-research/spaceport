@@ -1,130 +1,61 @@
 //! Client-owned native tabs and shared terminal/chat split layouts.
 //! The selected Herdr runtime owns terminal processes; views only arrange them.
+//! A tab, its saved files and the group algebra are `sheprd-browser`'s; what
+//! stays here is the window's own part: the strips it draws, the groups it
+//! splits, and the words its language gives a tab.
 // i18n: migrated
 
 mod closed;
-mod group_motion;
 mod group_settle;
-mod groups;
 mod groups_view;
-mod hidden;
 mod hosts;
-mod layouts;
-mod location;
-mod store;
 mod strip;
-mod tab_appear;
-pub(crate) mod tab_body;
 mod tab_move;
-mod tab_scroll;
+#[cfg(test)]
+mod tests;
 mod view;
 #[cfg(test)]
 mod view_tests;
 
-pub(crate) use closed::ClosedHerdrTab;
-pub(crate) use group_motion::Fold;
 #[cfg(test)]
-pub(crate) use groups::GroupIds;
-pub(crate) use groups::{GroupId, Pick, Shown, Slot};
-pub(crate) use layouts::Layouts;
-pub(crate) use location::Location;
-pub(crate) use store::{CoreGroupKey, Scope, Store, Tab, TabId};
-pub(crate) use tab_appear::{Leaving, Listed};
-pub(crate) use tab_scroll::{Thumb, ThumbDrag};
-pub(crate) use view::{Browser, PageOpened, scope};
+pub(crate) use sheprd_browser::GroupIds;
+pub(crate) use sheprd_browser::{
+    Browser, BrowserHosts, Cells, CloseRun, ClosedHerdrTab, ClosedTab, CoreGroupKey, Fold, GroupId,
+    Layout, Layouts, Leaving, List, Listed, Location, Pick, Scope, Shown, Slot, Span, Store, Tab,
+    TabId, Thumb, ThumbDrag, WebUrl,
+};
 
-const MAX_URL_BYTES: usize = 8192;
-
-/// A bounded http or https address with a host and no whitespace or controls.
-/// Explicit terminal and service link clicks use this before opening externally.
-#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(try_from = "String", into = "String")]
-pub(crate) struct WebUrl(url::Url);
-
-impl WebUrl {
-    pub(crate) fn as_str(&self) -> &str {
-        self.0.as_str()
-    }
-
-    pub(crate) fn host(&self) -> &str {
-        self.0.host_str().unwrap_or_default()
-    }
+/// The file the app keeps its browser tabs in, or none when it has no state
+/// folder to save them in.
+pub(crate) fn tabs_path() -> Option<std::path::PathBuf> {
+    crate::preferences::state_dir().map(|dir| dir.join("browser-tabs.json"))
 }
 
-impl TryFrom<&str> for WebUrl {
-    type Error = crate::Error;
+/// The file the app keeps each workspace's saved editor groups in.
+pub(crate) fn layouts_path() -> Option<std::path::PathBuf> {
+    crate::preferences::state_dir().map(|dir| dir.join("editor-groups.json"))
+}
+pub(crate) use view::{PageOpened, new_browser, scope};
 
-    fn try_from(value: &str) -> crate::Result<Self> {
-        if value.len() > MAX_URL_BYTES || value.chars().any(|c| c.is_control() || c.is_whitespace())
+/// The title the window shows for `tab`: what its content names itself, or
+/// the words this window's language gives a tab that has not. A terminal tab
+/// shows its program's title once the program sets one.
+pub(crate) fn drawn_label(tab: &Tab) -> String {
+    match &tab.location {
+        None => crate::i18n::fl!("browser-tab-new"),
+        Some(location @ Location::CoreTerminal { .. })
+            if !tab.title.is_empty() && tab.title != location.default_title() =>
         {
-            return Err(crate::Error::InvalidBrowserUrl);
+            tab.title.clone()
         }
-        let url = url::Url::parse(value).map_err(|_| crate::Error::InvalidBrowserUrl)?;
-        if !matches!(url.scheme(), "http" | "https") || url.host_str().is_none_or(str::is_empty) {
-            return Err(crate::Error::InvalidBrowserUrl);
-        }
-        // Serialization can lengthen an address, for example by
-        // percent-encoding, so the bound applies to what a page is given too.
-        if url.as_str().len() > MAX_URL_BYTES {
-            return Err(crate::Error::InvalidBrowserUrl);
-        }
-        Ok(Self(url))
+        Some(location) => drawn_title(location),
     }
 }
 
-impl TryFrom<String> for WebUrl {
-    type Error = crate::Error;
-
-    fn try_from(value: String) -> crate::Result<Self> {
-        Self::try_from(value.as_str())
-    }
-}
-
-impl From<WebUrl> for String {
-    fn from(url: WebUrl) -> Self {
-        url.0.into()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #![allow(clippy::unwrap_used)]
-    use super::*;
-
-    #[test]
-    fn only_bounded_web_addresses_with_a_host_are_accepted() {
-        for valid in [
-            "http://localhost:3000/",
-            "https://example.com/a?b#c",
-            "https://[::1]:8080/",
-        ] {
-            assert!(WebUrl::try_from(valid).is_ok(), "{valid}");
-        }
-        for invalid in [
-            "file:///etc/passwd",
-            "javascript:alert(1)",
-            "data:text/html,hi",
-            "vscode://open",
-            "https://",
-            "https://a.test/\nb",
-            "https://a.test/ b",
-            "not a url",
-        ] {
-            assert!(
-                matches!(
-                    WebUrl::try_from(invalid),
-                    Err(crate::Error::InvalidBrowserUrl)
-                ),
-                "{invalid}"
-            );
-        }
-        let long = format!("https://a.test/{}", "x".repeat(MAX_URL_BYTES));
-        assert!(WebUrl::try_from(long.as_str()).is_err());
-    }
-
-    #[test]
-    fn saved_addresses_are_validated_when_read() {
-        assert!(serde_json::from_str::<WebUrl>(r#""https://a.test/""#).is_ok());
-        assert!(serde_json::from_str::<WebUrl>(r#""file:///etc/passwd""#).is_err());
+/// The title of a tab the app draws, in the window's language.
+fn drawn_title(location: &Location) -> String {
+    match location {
+        Location::Devices => crate::i18n::fl!("browser-tab-devices"),
+        Location::CoreTerminal { .. } => crate::i18n::fl!("browser-tab-terminal"),
     }
 }

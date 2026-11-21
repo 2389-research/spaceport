@@ -448,13 +448,13 @@ pub(crate) fn run() -> std::process::ExitCode {
     };
     // Fixtures start with no tabs and never write the file.
     let browser_tabs = if mode == LaunchMode::Normal {
-        crate::browser::Store::load()
+        crate::browser::Store::load(crate::browser::tabs_path())
     } else {
         crate::browser::Store::default()
     };
     // Nor with saved editor groups, which they would overwrite.
     let group_layouts = if mode == LaunchMode::Normal {
-        crate::browser::Layouts::load()
+        crate::browser::Layouts::load(crate::browser::layouts_path())
     } else {
         crate::browser::Layouts::default()
     };

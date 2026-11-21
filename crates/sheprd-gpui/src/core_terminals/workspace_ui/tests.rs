@@ -537,12 +537,13 @@ fn an_uncertain_worker_keeps_the_version_fenced_after_its_window_closes() {
 fn a_pending_core_pane_cannot_take_focus_after_its_group_is_hidden(cx: &mut gpui::TestAppContext) {
     use crate::{
         browser::{CoreGroupKey, Location, Store},
-        core_terminals::{CoreTerminalView, Error, panes::Panes, worker::Link},
+        core_terminals::{CoreTerminalView, Error, worker::Link},
         sidebar,
     };
     use gpui::prelude::*;
     use sheprd_backend::TerminalId;
     use sheprd_core_client::wire::Doc;
+    use sheprd_panes::Panes;
     use uuid::Uuid;
 
     let first = Uuid::from_u128(71);

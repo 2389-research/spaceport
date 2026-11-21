@@ -5,10 +5,7 @@
 
 use crate::{
     SheprdWindow,
-    browser::{
-        Pick, Slot,
-        tab_body::{Cells, List, Span},
-    },
+    browser::{Cells, List, Pick, Slot, Span},
     tab_layout::Connected,
 };
 use gpui::{prelude::*, *};

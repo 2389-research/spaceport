@@ -6,10 +6,7 @@
 use super::{store, tab_label};
 use crate::{
     SheprdWindow,
-    browser::{
-        Location, Tab, TabId,
-        groups::{Pick, Slot},
-    },
+    browser::{Location, Pick, Slot, Tab, TabId},
     tab_layout::{Mark, Probe, TabContext, TabFace},
 };
 use gpui::{prelude::*, *};
@@ -51,7 +48,7 @@ impl SheprdWindow {
                     .id(SharedString::from(format!("browser-tab-{id}")))
                     .debug_selector(move || slot.selector(&format!("browser-tab-{id}")));
                 let face = TabFace {
-                    label: tab_label(&tab.label()),
+                    label: tab_label(&super::super::drawn_label(&tab)),
                     mark,
                     zoomed: false,
                     muted: false,

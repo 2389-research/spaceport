@@ -231,7 +231,9 @@ pub(crate) fn unexpected(response: Response) -> crate::Error {
 /// The exit status an error maps to.
 pub(crate) fn status(error: &crate::Error) -> u8 {
     match error {
-        crate::Error::InvalidBrowserUrl | crate::Error::InvalidLocalPage => exit::USAGE,
+        crate::Error::Browser(
+            sheprd_browser::Error::InvalidBrowserUrl | sheprd_browser::Error::InvalidLocalPage,
+        ) => exit::USAGE,
         crate::Error::Control(crate::control::Error::Unavailable { .. }) => exit::NOT_RUNNING,
         crate::Error::Control(crate::control::Error::Rejected { code, .. }) => match code {
             ErrorCode::InvalidUrl => exit::USAGE,
