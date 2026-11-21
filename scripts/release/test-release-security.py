@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# ABOUTME: Checks CI trust gates and shipped dependency targets offline.
+# ABOUTME: Keeps platform build, test, and signing contracts explicit.
 """Offline CI workflow and dependency-target contract tests."""
 
 from pathlib import Path
@@ -84,8 +86,8 @@ class ReleaseTargets(unittest.TestCase):
         legs = {"cargo fmt --all -- --check": "default",
                 "cargo clippy --locked --workspace --all-targets --all-features -- -D warnings": "all",
                 "cargo clippy --locked --workspace --all-targets --no-default-features -- -D warnings": "default",
-                "cargo test --locked --workspace": "default",
-                "cargo test --locked --workspace --all-features": "all"}
+                "cargo test --locked --workspace --no-fail-fast": "default",
+                "cargo test --locked --workspace --all-features --no-fail-fast": "all"}
         for name in ("checks", "windows"):
             self.assertIn("        features: [default, all]\n", jobs[name])
             self.assertIn("${{ matrix.features }})\n", re.search(r"^    name: .+\n", jobs[name], re.M)[0])

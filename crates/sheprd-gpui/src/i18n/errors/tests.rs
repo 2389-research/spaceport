@@ -8,6 +8,7 @@ use sheprd_i18n::{Locale, Pseudo};
 use std::fmt::Display;
 
 mod backdrop;
+mod browser;
 mod caffeine;
 mod chat;
 mod chat_protocol;

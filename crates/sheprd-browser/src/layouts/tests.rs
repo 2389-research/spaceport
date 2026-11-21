@@ -1,5 +1,10 @@
+// ABOUTME: Tests workspace layout validation and persistence.
+// ABOUTME: Checks scope isolation, change recording, and removed workspaces.
 #![allow(clippy::unwrap_used)]
 use super::*;
+
+mod identity_ambiguity;
+mod recovery;
 
 #[test]
 fn core_layouts_keep_document_machine_and_page_pick_separate() {
@@ -50,6 +55,7 @@ fn saved_layouts_round_trip_and_damaged_files_are_refused() {
     let saved = parsed.get(&key).unwrap();
     assert_eq!(serde_json::to_string(saved).unwrap(), layout);
     let bytes = serde_json::to_vec(&Saved {
+        next_tab_id: 0,
         layouts: vec![Entry {
             scope: key.0.clone(),
             workspace: key.1.clone(),
