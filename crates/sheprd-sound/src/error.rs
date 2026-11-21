@@ -47,6 +47,27 @@ impl Error {
             source: Box::new(self),
         }
     }
+
+    /// What failed, without the message: a log line says which part of sound
+    /// broke while leaving out what a message can quote. A settings load
+    /// failure names the file's home path and, for a TOML error, the offending
+    /// line of the user's own config, so the worker logs this instead.
+    pub(crate) fn kind(&self) -> &'static str {
+        match self {
+            Self::Cancelled => "cancelled",
+            Self::ConfigSize => "config-size",
+            Self::Decode(_) => "decode",
+            Self::Device(_) => "device",
+            Self::File { .. } => "file",
+            Self::FileSize => "file-size",
+            Self::Io(_) => "io",
+            // The path is the context; the failure is the source's kind.
+            Self::Path { source, .. } => source.kind(),
+            Self::Stream(_) => "stream",
+            Self::Timeout => "timeout",
+            Self::Toml(_) => "toml",
+        }
+    }
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

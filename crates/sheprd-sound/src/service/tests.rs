@@ -32,6 +32,7 @@ fn send(service: &Service, boot: Option<&str>, event: SemanticNotification, queu
         .unwrap();
 }
 
+mod load_failure;
 mod mutes;
 mod play;
 mod reload;
