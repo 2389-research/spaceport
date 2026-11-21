@@ -334,6 +334,10 @@ jobs:
         if: ${{ !cancelled() }}
         shell: bash
         run: cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport core_terminals::view::tests -- --nocapture
+      - name: Exercise settled picture painting headlessly
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport group_terminals::tests::picture_paint -- --nocapture
       - name: Exercise ordinary Windows Core fixture contracts
         if: ${{ !cancelled() && runner.os == 'Windows' }}
         shell: bash

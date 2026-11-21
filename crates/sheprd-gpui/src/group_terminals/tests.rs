@@ -1,3 +1,5 @@
+// ABOUTME: Exercises terminal group ownership and parked connections.
+// ABOUTME: Shares coherent surface fixtures with focused rendering tests.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::{
@@ -13,6 +15,8 @@ use std::sync::Arc;
 
 mod idle_reassert;
 mod padding;
+#[cfg(feature = "integration-test")]
+mod picture_paint;
 mod titlebar_navigation;
 
 /// A coherent surface for `snapshot`, as the daemon projects one.
