@@ -1596,3 +1596,9 @@ Expect 17 runtime failures and two passes; only the codec round trip is an indep
 The missing-stats case passes because it shares the deliberate refusal and proves no implemented validator.
 The full validator remains unimplemented until those runtime contract failures are observed.
 Formatting and source review pass; remote getter GREEN and envelope RED remain pending.
+
+At `c14355aca20c3bbb22615edc37c39db33d2a684d`, Mac job `136713763082` cannot compile two new picture tests.
+They borrow temporary selectors, but pinned GPUI's `debug_bounds` requires static strings.
+Use the existing test-fixture pattern to retain those two selectors for the test process.
+This changes no production cache behavior.
+The seven picture controls and broader group controls remain unverified until the corrected source runs.

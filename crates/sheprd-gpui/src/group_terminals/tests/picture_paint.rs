@@ -74,9 +74,9 @@ fn settled_picture_replays_without_repainting_cells(cx: &mut TestAppContext) {
 #[gpui::test]
 fn changed_output_reaches_the_mirror_before_it_replays(cx: &mut TestAppContext) {
     let (view, mirror, cx) = mirroring_t0(cx);
-    let bounds = cx
-        .debug_bounds(&mirror.selector("mirror-terminal"))
-        .unwrap();
+    // GPUI's test selector API requires a static string.
+    let selector = Box::leak(mirror.selector("mirror-terminal").into_boxed_str());
+    let bounds = cx.debug_bounds(selector).unwrap();
     let color = 0x123456;
     view.update(cx, |view, cx| {
         let surface = Arc::make_mut(view.live.surface.as_mut().unwrap());
@@ -120,7 +120,8 @@ fn missing_live_frame_replaces_the_mirror_with_a_stand_in(cx: &mut TestAppContex
         view.read_with(cx, |view, cx| view.group_shown(mirror.id, cx)),
         Shown::Elsewhere("t0".into())
     );
-    assert!(cx.debug_bounds(&mirror.selector("stand-in")).is_some());
+    let selector = Box::leak(mirror.selector("stand-in").into_boxed_str());
+    assert!(cx.debug_bounds(selector).is_some());
     assert!(!cached(cx));
 }
 
