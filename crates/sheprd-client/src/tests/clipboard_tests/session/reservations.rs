@@ -1,3 +1,5 @@
+// ABOUTME: Checks ownership and bounds of clipboard and input queue reservations.
+// ABOUTME: Verifies release, cancellation, and publication use the same bounded lease.
 use super::*;
 
 #[test]
@@ -11,6 +13,7 @@ fn reservation_validation_busy_drop_and_queue_bounds() {
             image_busy: Arc::new(AtomicBool::new(false)),
             last_queued_theme: Default::default(),
             liveness: Default::default(),
+            patch_stats: None,
         }),
     };
     let target = ClientClipboardImageTarget::Pane("p".into());
@@ -86,6 +89,7 @@ fn input_reservations_share_queue_bound_without_claiming_or_releasing_image_leas
             image_busy: Arc::new(AtomicBool::new(false)),
             last_queued_theme: Default::default(),
             liveness: Default::default(),
+            patch_stats: None,
         }),
     };
     let target = ClientClipboardImageTarget::Pane("p".into());
@@ -237,6 +241,7 @@ fn finished_tracks_slot_drop_not_publication_or_cancellation() {
                 image_busy: Arc::new(AtomicBool::new(false)),
                 last_queued_theme: Default::default(),
                 liveness: Default::default(),
+                patch_stats: None,
             }),
         };
         let upload = handle

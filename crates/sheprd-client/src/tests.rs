@@ -46,6 +46,7 @@ mod partial_input;
 mod partial_input_windows;
 mod session_state;
 mod surface_encoding;
+mod surface_patch_stats;
 mod surfaces;
 mod version_mismatch;
 mod worker_panic;
@@ -220,6 +221,7 @@ fn test_client_paced(
                     image_busy: Arc::new(AtomicBool::new(false)),
                     last_queued_theme: Default::default(),
                     liveness,
+                    patch_stats: None,
                 }),
             },
             events,

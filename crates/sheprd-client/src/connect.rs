@@ -3,6 +3,8 @@
 //! Spawning a connection worker. Setup, handshake, and teardown all happen off
 //! the caller's thread; failures arrive as events rather than as a return value.
 
+#[cfg(any(test, feature = "integration-test"))]
+use crate::patch_stats;
 use crate::{
     ConnectTarget, Error, Result, catalog,
     discovery::session_socket,
@@ -89,6 +91,10 @@ pub fn connect_with_connector(
     let worker_stop = stop.clone();
     let liveness = Arc::new(AtomicBool::new(false));
     let worker_liveness = liveness.clone();
+    #[cfg(any(test, feature = "integration-test"))]
+    let patch_stats = patch_stats::new_record();
+    #[cfg(any(test, feature = "integration-test"))]
+    let worker_patch_stats = patch_stats.clone();
     thread::Builder::new()
         .name("herdr-client-io".into())
         .spawn(move || {
@@ -136,6 +142,9 @@ pub fn connect_with_connector(
                 )
                 // The child guard is dropped before delivering a disconnect event.
             })();
+            // Keep the counter record alive through the framed session.
+            #[cfg(any(test, feature = "integration-test"))]
+            drop(worker_patch_stats);
             if worker_stop.load(Ordering::Acquire) {
                 tracing::debug!("connection cancelled");
             } else if let Err(error) = &result {
@@ -177,6 +186,8 @@ pub fn connect_with_connector(
                 image_busy: Arc::new(AtomicBool::new(false)),
                 last_queued_theme: Default::default(),
                 liveness,
+                #[cfg(any(test, feature = "integration-test"))]
+                patch_stats,
             }),
         },
         events,

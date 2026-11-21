@@ -278,7 +278,12 @@ jobs:
       - name: Check client surface delivery and encoding
         shell: bash
         run: cargo test --locked -p sheprd-client --lib surface -- --nocapture
+      - name: Check opt-in client copy counter contracts
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: cargo test --locked -p sheprd-client --features integration-test --lib surface_patch_stats
       - name: Lint protocol and client targets
+        if: ${{ !cancelled() }}
         shell: bash
         run: cargo clippy --locked -p sheprd-protocol -p sheprd-client --all-targets --all-features -- -D warnings
   contracts:

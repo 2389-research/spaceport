@@ -1320,5 +1320,82 @@ The test performs no forced draw after its initial baseline and requires later t
 The candidate now adopts the same 20 fps constant as main.
 Synced phase, duration, reduced motion, clipping, focus, and input remain unchanged.
 Independent source review found no actionable issue; static format, size, sort, commit-message, and diff checks pass.
-Runtime GREEN and native qualification of this newer candidate remain pending.
+At `8e2b573dbc4bd8f6fc6fe6884347707afcfb37fa`, run `44854429578` passes all six executed jobs.
+Both platforms pass the new timer-budget case and the existing counter control.
+Their Core observer, Core view, protocol, client surface, and scoped lint controls also pass.
+Native qualification of this newer candidate remains pending.
 This is a configured timer budget, not a claim about physical display frame rate or CPU savings.
+
+## Task 3: Measure copies in each GUI connection
+
+Add passive counters to the existing client worker; preserve frame ownership and every wire contract.
+Normal builds must omit the storage, counter updates, and handle accessor.
+Add client feature `integration-test`; compile the module and wiring under `cfg(any(test, feature = "integration-test"))`.
+Use existing serde dependencies for one typed snapshot shared with the later private observer.
+Expose gated `patch_stats::Snapshot` and `ClientHandle::patch_stats() -> Option<patch_stats::Snapshot>`.
+Root owns app feature forwarding, observer integration, workflows, commits, pushes, and remote validation.
+The implementer owns client files only.
+Do not modify Herdr or introduce a runtime, dependency, socket, event subscriber, or allocation hook.
+
+### Counter contract
+
+Give each connection one scalar record shared by its handle and worker.
+Use `Arc<Mutex<_>>`; hold its lock only while copying or updating scalar fields.
+The handle accessor must use `try_lock` and return unavailable for contention or poison.
+Never wait on this lock from a UI update.
+Snapshots contain a process-local connection number and an overflow flag.
+Connection numbers must increase without reuse; exhaustion makes stats unavailable rather than resetting an identity.
+Swapping handles must carry the record; reconnecting must allocate a different record.
+No record may retain a frame, cell, terminal string, receiver, or process handle.
+
+Keep ordinary patches, scroll patches, delta reconstruction, reuse reconstruction, and full surface messages distinct.
+Mutation counters record completed attempts, successes, actual nonempty COW copies, copied main cells, and empty baselines.
+Measure elapsed `Arc::make_mut` time separately from reconstruction time; neither is CPU time.
+Delta/reuse counters distinguish attempts, successful reconstruction, accepted results, and main cells copied.
+Flag popup-baseline use as unsupported for the proposed native measurement.
+A full decoded surface message is a replacement, not a baseline copy.
+Saturate counter arithmetic and flag overflow; later qualification must reject overflow.
+
+For ordinary/scroll copies, compare the nonempty cells pointer immediately before and after `Arc::make_mut`.
+Compare before applying the patch; do not dereference or serialize the old pointer.
+Do not retain an extra Arc or infer copies from a racy strong count.
+An empty grid cannot prove an allocation; classify it separately.
+Preserve weak-only relocation and every published old snapshot.
+Keep validation and event delivery in their existing order.
+Never hold the counter lock during mutation, reconstruction, event delivery, or I/O.
+
+### Phase one: wiring and behavior RED
+
+Create typed storage, connection identity, feature gates, and the nonblocking handle accessor.
+Leave operation counters at zero; do not instrument Session yet.
+This deliberate wiring checkpoint must never qualify a native measurement.
+Add topic tests using the existing real framed worker and socket fixtures.
+First prove frame contents, old-snapshot immutability, and connection identity; then assert the missing counters.
+Cover a retained shared baseline, an unpublished unique baseline, and weak-only relocation.
+The counter assertions must fail at runtime, rather than failing to compile for missing APIs.
+Keep unchanged test controls for distinct connection identities and unavailable snapshots.
+Do not add test-only public mutation helpers or widen lint allowances.
+
+Root will run the scoped client tests remotely and retain their exact RED evidence.
+Stop after the phase-one report; Root releases Session instrumentation only after that result.
+
+### Phase two and later native work
+
+After Root releases phase two, record the actual worker operations and add scroll/delta/reuse/error controls.
+Keep failed apply attempts distinct from successful application and reconstruction acceptance.
+An invalid patch may already copy before validation; instrumentation must report that work without changing it.
+Run default and feature-enabled client tests and lints through disposable CI.
+Use one independent main-model review before accepting the implementation.
+
+Later app wiring must select the primary or parked bridge's actual handle, with no receiver clones.
+The private observer will deduplicate `(GUI PID, connection number)` and refuse missing or changed counter owners.
+Keep its existing response-size bound and platform gates.
+A separate bounded producer will use the existing private Peer and real authored shell output.
+It must not use `Peer::diagnostic`, which includes terminal rows, in public failure output.
+Counter envelopes and CPU intervals remain distinct; native copy cost remains unqualified until that workload runs.
+
+Do not run local builds, tests, compilers, native apps, VMs, or daemons.
+Formatting and source inspection are allowed.
+Do not commit, push, publish, or perform external writes.
+Preserve other worktree edits, add two ABOUTME comments to new sources, and keep each source below 1,000 lines.
+Write the requested report with changed files, static checks, unrun validation, and concerns.

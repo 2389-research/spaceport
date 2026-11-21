@@ -28,6 +28,8 @@ pub mod local_path;
 pub mod login_env;
 mod method;
 mod options;
+#[cfg(any(test, feature = "integration-test"))]
+pub mod patch_stats;
 pub mod private_endpoint;
 mod process;
 pub mod process_output;

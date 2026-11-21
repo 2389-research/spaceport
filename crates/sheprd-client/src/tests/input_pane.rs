@@ -1,3 +1,5 @@
+// ABOUTME: Checks the pane identity attached to queued semantic input.
+// ABOUTME: Prevents later focus changes from retargeting an accepted command.
 use super::*;
 
 #[test]
@@ -11,6 +13,7 @@ fn only_pane_input_captures_its_explicit_destination_before_queueing() {
             image_busy: Arc::new(AtomicBool::new(false)),
             last_queued_theme: Default::default(),
             liveness: Arc::new(AtomicBool::new(false)),
+            patch_stats: None,
         }),
     };
     handle

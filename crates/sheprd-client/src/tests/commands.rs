@@ -65,6 +65,7 @@ fn bounded_command_queue_and_outbound_limit_are_explicit() {
             image_busy: Arc::new(AtomicBool::new(false)),
             last_queued_theme: Default::default(),
             liveness: Default::default(),
+            patch_stats: None,
         }),
     };
     assert!(matches!(

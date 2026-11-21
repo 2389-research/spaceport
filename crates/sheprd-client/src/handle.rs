@@ -1,7 +1,11 @@
+// ABOUTME: Provides ordered client commands and connection-scoped observations.
+// ABOUTME: Preserves cancellation and bounded access to the worker's shared state.
 //! The owner-facing half of a connection: the cloneable handle that queues
 //! ordered commands and typed API requests, and the event receiver beside it.
 //! Dropping the last handle stops the worker; queueing is never daemon ack.
 
+#[cfg(any(test, feature = "integration-test"))]
+use crate::patch_stats;
 use crate::{
     Error, Result, SendError,
     clipboard::{ClipboardImageUpload, ImageLease, ImageSlot, WakeOnDrop},
@@ -38,6 +42,8 @@ pub(crate) struct HandleInner {
     pub(crate) last_queued_theme: Mutex<Option<HostTheme>>,
     /// Set to have the worker ping an SSH link now; see `check_liveness`.
     pub(crate) liveness: Arc<AtomicBool>,
+    #[cfg(any(test, feature = "integration-test"))]
+    pub(crate) patch_stats: Option<patch_stats::Record>,
 }
 impl Drop for HandleInner {
     fn drop(&mut self) {
@@ -79,6 +85,13 @@ pub(crate) struct PendingRequest {
 }
 
 impl ClientHandle {
+    /// Read this connection's counters without waiting for the worker.
+    #[cfg(any(test, feature = "integration-test"))]
+    pub fn patch_stats(&self) -> Option<patch_stats::Snapshot> {
+        let record = self.inner.patch_stats.as_ref()?;
+        Some(*record.try_lock().ok()?)
+    }
+
     /// Reserve FIFO position now, before reading an image in the background.
     /// Only one image may be preparing, queued, or writing per connection.
     pub fn reserve_clipboard_image(
