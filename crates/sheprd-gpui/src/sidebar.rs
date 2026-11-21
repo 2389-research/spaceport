@@ -1,3 +1,5 @@
+// ABOUTME: Builds workspace and agent navigation in the sidebar.
+// ABOUTME: Shares sidebar presentation and accessibility behavior with the window.
 //! The sidebar: spaces and agents, the rows that show them, and the hover
 //! menu a resting pointer opens.
 // i18n: migrated
@@ -58,7 +60,7 @@ pub(crate) use order::step as sidebar_step;
 #[cfg(any(test, feature = "integration-test"))]
 pub(crate) use metrics::LABEL_WIDTH;
 
-pub(crate) use view::cached as cached_view;
+pub(crate) use view::element as view_element;
 
 use agents::agents_sort;
 use metrics::*;
