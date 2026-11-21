@@ -10,6 +10,7 @@ use gpui::px;
 
 #[cfg(feature = "integration-test")]
 mod core_window;
+mod window_options;
 
 #[test]
 fn startup_appearance_loads_a_coherent_pair_and_reports_errors() {

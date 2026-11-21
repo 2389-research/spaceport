@@ -407,9 +407,12 @@ dropped, and no date was changed.
 ## 2026-11-10 — Hosted repository move and permissions (D66)
 
 - **RULE**: D66 moves the hosted repository and active feed to
-  `2389-research/spaceport`, keeps trusted actor `harperreed`, and pauses
-  Spaceport Windows CI until Kata h8g5 fixes native performance; all active
-  macOS/Linux release checks remain required. Organization members inherit
+  `2389-research/spaceport` and keeps trusted actor `harperreed`.
+  Review jvcf restores ordinary Windows check, native and selected package jobs.
+  Only the performance step stays gated by `WINDOWS_ENABLED` pending h8g5.
+  Require scheduled Windows jobs in aggregate and preview source checks.
+  A green run does not establish Windows performance acceptance.
+  Keep macOS/Linux release checks required. Organization members inherit
   repository permissions after transfer, so do not retain the old sole-writer
   assumption. Do not recreate `harperreed/spaceport`.
 - **SYMPTOM**: Existing installed previews cannot reach the transferred feed.
