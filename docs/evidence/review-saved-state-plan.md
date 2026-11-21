@@ -78,23 +78,23 @@ Distinguish `RestorationBlocked` from `TabIdsExhausted` through typed browser er
 Keep valid existing-tab saves enabled when IDs are exhausted.
 Keep file I/O before GPUI startup and writer completion off the UI thread.
 
-- [ ] Use `tempfile::Builder` in the source directory with a `<filename>.rejected-` prefix.
-- [ ] Write every original byte and call `sync_all()` on the backup file.
-- [ ] On Unix, sync the parent directory before enabling replacement writes.
-- [ ] Retain the unique backup with `keep()`. Leave ordinary writer syncing unchanged.
-- [ ] Reuse strict entry validators for independently recoverable entries.
-- [ ] Preserve strict `parse` behavior for its existing callers and schema tests.
-- [ ] Block allocation and replacement writers when a read, backup, or reference-envelope check fails.
-- [ ] Retain readable tabs while blocked.
-- [ ] Reserve raw numeric IDs using saturating arithmetic. Keep checked allocation.
-- [ ] Inspect identity fields in the original bytes before a JSON map can discard duplicate keys.
-- [ ] If identities are ambiguous, retain readable entries and block allocation and replacement writes.
-- [ ] Keep unrelated invalid scalar entries recoverable without making valid siblings read-only.
-- [ ] Add a defaulted `next_tab_id` field beside saved layouts.
-- [ ] Preserve that floor when layouts change or the last layout is removed.
-- [ ] Test actual file preservation and typed error sources for the new helper.
-- [ ] Review the production diff independently before committing.
-- [ ] Publish the fix and require the Task 1 assertions to pass in CI.
+- [x] Use `tempfile::Builder` in the source directory with a `<filename>.rejected-` prefix.
+- [x] Write every original byte and call `sync_all()` on the backup file.
+- [x] On Unix, sync the parent directory before enabling replacement writes.
+- [x] Retain the unique backup with `keep()`. Leave ordinary writer syncing unchanged.
+- [x] Reuse strict entry validators for independently recoverable entries.
+- [x] Preserve strict `parse` behavior for its existing callers and schema tests.
+- [x] Block allocation and replacement writers when a read, backup, or reference-envelope check fails.
+- [x] Retain readable tabs while blocked.
+- [x] Reserve raw numeric IDs using saturating arithmetic. Keep checked allocation.
+- [x] Inspect identity fields in the original bytes before a JSON map can discard duplicate keys.
+- [x] If identities are ambiguous, retain readable entries and block allocation and replacement writes.
+- [x] Keep unrelated invalid scalar entries recoverable without making valid siblings read-only.
+- [x] Add a defaulted `next_tab_id` field beside saved layouts.
+- [x] Preserve that floor when layouts change or the last layout is removed.
+- [x] Test real-file preservation and typed error sources for the new helper in disposable CI.
+- [x] Review the production diff independently before committing.
+- [x] Publish the fix and require the Task 1 assertions to pass in CI.
 
 ## Task 3: Refuse Unsafe New Tabs Before Side Effects
 
@@ -112,12 +112,12 @@ Check `Purpose::Tab` before connecting or queueing terminal creation.
 Keep existing terminal splits available when their identities are already known.
 
 - [x] Add headless tests for the actual Devices action and Core new-tab path.
-- [ ] Verify blocked state emits repair guidance and queues no terminal request.
-- [ ] Retain normal creation and existing-tab controls.
-- [ ] Prove the tests fail for the expected behavioral reason in disposable CI.
-- [ ] Implement the narrow refusal and localized message.
-- [ ] Review the actual callers and test evidence independently.
-- [ ] Require the new tests and full configured CI gates to pass.
+- [x] Verify blocked state emits repair guidance and queues no terminal request.
+- [x] Retain normal creation and existing-tab controls.
+- [x] Prove the tests fail for the expected behavioral reason in disposable CI.
+- [x] Implement the narrow refusal and localized message.
+- [x] Review the actual callers and test evidence independently.
+- [x] Require the new tests and full configured CI gates to pass.
 
 The maximum layout ID introduces another admission refusal before terminal creation.
 A private Core case now checks that boundary without escalating a pending join.
@@ -129,15 +129,15 @@ This adds no capacity reservation or queued-request lifecycle policy.
 
 **Files:** Update this plan and the replacement PR QA checklist.
 
-- [ ] Inspect every commit and the complete branch diff.
-- [ ] Review secrets, destination visibility, changed paths, file sizes, and formatting.
-- [ ] Record exact CI heads, job IDs, RED assertions, and GREEN results.
+- [x] Inspect every commit and the complete branch diff.
+- [x] Review secrets, destination visibility, changed paths, file sizes, and formatting.
+- [x] Record exact CI heads, job IDs, RED assertions, and GREEN results.
 - [ ] Exercise synthetic saved state across restart on a disposable native desktop when available.
 - [ ] Capture real repair guidance screenshots if visible behavior changes.
-- [ ] Leave unavailable native checks unticked and name their limits.
-- [ ] Refresh PR metadata and verify its remote body, base, head, and draft state.
-- [ ] Update the existing dashboard row without changing other rows or people's feedback.
-- [ ] Leave PR #125 preserved as a draft checkpoint.
+- [x] Leave unavailable native checks unticked and name their limits.
+- [x] Refresh PR metadata and verify its remote body, base, head, and draft state.
+- [x] Update the existing dashboard row without changing other rows or people's feedback.
+- [x] Leave PR #125 preserved as a draft checkpoint.
 
 The native Linux case uses one private Xvfb desktop and one pinned, owned Herdr server.
 Seed synthetic files under the sandbox's `state/spaceport` directory before normal GUI startup.
@@ -158,7 +158,28 @@ Importing `Path` makes the existing `Scope::local` qualification redundant.
 Use the imported type without changing the function contract.
 The next run `44916441550` reaches the inherited schema test and exposes its matching redundant qualification.
 Use the imported type there too. The affected storage modules have no remaining equivalent qualification.
-The regression tests have not reached GREEN on the fixed source yet.
+Both qualification corrections are committed in `8a8c332b28dea2d9b4adb541162134f6b177a024`.
+Its complete configured CI `44916693681` passes.
+The [GREEN receipt](saved-state-recovery/green.json) records all job outcomes and five inspected platform logs.
+Linux x64, Linux ARM64, and macOS each pass all 41 relevant cases.
+Windows x64 and ARM64 each pass 37 cases, omitting four Unix-only cases.
+All original and additional baseline regressions and controls pass where compiled.
+Native restart behavior and actual warning readability remain separate pending gates in draft PR166.
+
+The first native attempt at `825ec45e4` runs all three GUI phases in CI44917715586, job136886927103.
+Its [partial receipt](saved-state-recovery/native/baseline.json) records exact bytes, backups, hashes, and GUI exits.
+The copied client-backed witness then fails because its shutdown event requires the separate PR160 correction.
+The revised test observes the bounded real protocol directly and keeps the typed shutdown-before-EOF assertion.
+It validates Herdr's repeated shutdown reason rather than rejecting the second legitimate notice.
+That observer and a headless geometry regression are independently reviewed and published as `e9aa0abbf` in PR166.
+CI44919201790, job136891435585, reaches the intended unreadable-warning assertion at both widths.
+Its [clipping RED receipt](saved-state-recovery/native/clipping-red.json) records the typed shutdown, EOF, and cleanup receipts.
+The renderer correction replaces truncation with constrained, normally wrapping text.
+The same native test and actual after images must pass before accepting the correction.
+The actual [900px](saved-state-recovery/native/repair-before-900.png) and [640px](saved-state-recovery/native/repair-before-640.png) frames confirm clipped repair guidance.
+No complete native qualification is claimed from that failed attempt.
+
+### Historical regression baselines
 
 Tests-only head `0cef725631188ec430e9f3501a6a7a79bf2cbab5` has actual behavioral RED in CI44908322454 attempt 2.
 Linux x64 all-features job136860276395 reproduces 19 storage and three UI failures.
