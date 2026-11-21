@@ -140,7 +140,12 @@ impl Service {
                         match load() {
                             Ok(value) => current = Arc::new(value),
                             Err(error) => {
-                                tracing::warn!(%error, "Could not load local TUI sound settings; retaining settings");
+                                // The error's message names the user's config path and can
+                                // quote the line that failed; the kind is what a log keeps.
+                                tracing::warn!(
+                                    kind = error.kind(),
+                                    "Could not load local TUI sound settings; retaining settings"
+                                );
                             }
                         }
                         if let Ok(mut value) = settings.lock() {
