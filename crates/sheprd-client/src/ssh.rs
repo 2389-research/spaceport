@@ -1,3 +1,6 @@
+//! ABOUTME: Builds SSH bridge and forwarding commands with explicit host-key policy.
+//! ABOUTME: Bounds remote script output and owns each SSH child's transport and cleanup.
+//!
 //! POSIX discovery/stdio bridge adapted from upstream remote/attach.rs.
 //! No installers, daemon restarts, or SSH config edits.
 //! The remote host is POSIX or Windows. On Unix the `ssh` child's standard
@@ -293,7 +296,7 @@ fn run_with_stderr(
     Ok((status, output, stderr))
 }
 
-/// Agent forwarding and connection sharing follow the user's SSH config, as
+/// For verified hosts, agent forwarding and connection sharing follow SSH config, as
 /// upstream's client does. `ForwardAgent yes` lets the remote bridge register
 /// the forwarded agent with the daemon, so remote panes keep a working
 /// `SSH_AUTH_SOCK` across reconnects. A configured `ControlPath` lets a master
