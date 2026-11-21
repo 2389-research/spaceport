@@ -1,16 +1,13 @@
-"""ABOUTME: Verify Spaceport's organization move and temporary Windows CI pause.
+"""ABOUTME: Verify Spaceport's organization move and Windows performance pause.
 ABOUTME: Exercise real workflow conditions and the aggregate shell gate offline.
 """
 import importlib.util
 import json
-import os
 from pathlib import Path
-import subprocess
 import unittest
 
 import test_ci_policy as policy
 
-JOBS = policy.JOBS
 condition_matches = policy.condition_matches
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -21,7 +18,7 @@ SPEC.loader.exec_module(CI)
 
 
 class SpaceportReleaseTransition(unittest.TestCase):
-    def test_new_repository_runs_checks_but_pauses_every_windows_job(self):
+    def test_new_repository_runs_windows_checks_with_performance_disabled(self):
         context = policy.CiPolicy().context(**{
             "github.repository": REPO, "github.event_name": "push",
             "github.ref": "refs/heads/main", "github.actor": "harperreed",
@@ -31,28 +28,31 @@ class SpaceportReleaseTransition(unittest.TestCase):
             self.assertTrue(condition_matches(job, context), job)
         for event in ("push", "pull_request", "workflow_dispatch"):
             for job in ("windows", "windows-native", "windows-package"):
-                self.assertFalse(condition_matches(job, {**context, "github.event_name": event}), job)
+                self.assertTrue(condition_matches(job, {**context, "github.event_name": event}), job)
 
-    def test_paused_windows_gate_requires_skips_and_preserves_other_failures(self):
-        script = JOBS["checks-passed"].split("        run: |\n", 1)[1]
-        script = "\n".join(line[10:] for line in script.splitlines() if line.startswith("          "))
-        env = {**os.environ, "CODE": "true", "RESULT": "success", "COMMITS": "success",
-               "WINDOWS": "skipped", "NATIVE": "skipped", "PACKAGE": "skipped",
-               "WINDOWS_ENABLED": "false", "PACKAGE_INPUTS": "true", "EVENT": "push",
-               "MACOS_RELEASE": "skipped"}
-        for changes, expected in (({}, True), ({"RESULT": "failure"}, False),
-                                  ({"COMMITS": "failure"}, False), ({"CODE": ""}, False),
-                                  ({"WINDOWS": "success"}, False), ({"NATIVE": "failure"}, False),
-                                  ({"PACKAGE": "cancelled"}, False),
-                                  ({"EVENT": "pull_request", "MACOS_RELEASE": "failure"}, False)):
+    def test_restored_windows_gate_requires_success_and_preserves_other_failures(self):
+        context = policy.CiPolicy().context(**{
+            "github.event_name": "push", "needs.commits.outputs.code": "true",
+            "needs.checks.result": "success", "needs.commits.result": "success",
+            "needs.windows.result": "success", "needs.windows-native.result": "success",
+            "needs.windows-package.result": "success", "needs.build-macos.result": "skipped",
+        })
+        for changes, expected in (({}, True), ({"needs.checks.result": "failure"}, False),
+                                  ({"needs.commits.result": "failure"}, False),
+                                  ({"needs.commits.outputs.code": ""}, False),
+                                  ({"needs.windows.result": "skipped"}, False),
+                                  ({"needs.windows-native.result": "failure"}, False),
+                                  ({"needs.windows-package.result": "cancelled"}, False),
+                                  ({"github.event_name": "pull_request",
+                                    "needs.build-macos.result": "failure"}, False)):
             with self.subTest(changes=changes):
-                result = subprocess.run(["bash", "-e", "-c", script], capture_output=True,
-                                        env={**env, **changes})
-                self.assertEqual(result.returncode == 0, expected, result.stderr.decode())
+                self.assertEqual(policy.aggregate_succeeds({**context, **changes}), expected)
 
-    def test_release_gate_requires_all_remaining_platform_jobs(self):
-        # The paused Windows jobs are not part of the gate at all.
-        self.assertFalse([name for name in CI.REQUIRED_JOBS if name.startswith("Windows ")])
+    def test_release_gate_requires_restored_windows_checks_and_native_jobs(self):
+        for runner in ("windows-2025", "windows-11-arm"):
+            self.assertIn(f"Windows native GUI ({runner})", CI.REQUIRED_JOBS)
+            for features in ("default", "all"):
+                self.assertIn(f"Windows check ({runner}, {features})", CI.REQUIRED_JOBS)
         active = [{"name": name, "status": "completed", "conclusion": "success"}
                   for name in CI.REQUIRED_JOBS]
         self.assertFalse(CI.missing_jobs(active))

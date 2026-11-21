@@ -1,3 +1,5 @@
+# ABOUTME: Checks CI scheduling and aggregation against the real workflow.
+# ABOUTME: Keeps actor and credential boundaries separate from performance gates.
 """CI eligibility and credential boundaries; GitHub enforces fork approval online."""
 
 import ast
@@ -18,17 +20,22 @@ REPOSITORY = "2389-research/spaceport"
 OWNER = "harperreed"
 # The repositories this was forked from, and one stranger's fork: none may run a job.
 OTHER_REPOSITORIES = ("sheprd-labs/sheprd", "penso/herdr-gpui", "larry0x/spaceport")
-# Paused until native Windows performance is fixed; the repository variable
-# WINDOWS_ENABLED turns these back on without editing the workflow.
 WINDOWS_JOBS = ("windows", "windows-native", "windows-package")
 # Jobs that never run on main, where they would hold the macOS runners.
 PR_ONLY_JOBS = ("build-macos",)
 
 
 def condition_matches(job, context, jobs=JOBS):
+    expression = re.search(r"^    if: >-\n((?:      .+\n)+)", jobs[job], re.M)[1]
+    return expression_value(expression, context)
+
+
+def expression_value(expression, context):
     # Interpret only the boolean/equality subset used by these job conditions.
     # Unsupported syntax fails rather than executing workflow text as Python.
-    expression = re.search(r"^    if: >-\n((?:      .+\n)+)", jobs[job], re.M)[1]
+    expression = expression.strip().removeprefix("${{").removesuffix("}}").strip()
+    if expression in context:
+        return context[expression]
     expression = " ".join(expression.split()).replace("&&", "and").replace("||", "or")
 
     def evaluate(node):
@@ -53,6 +60,20 @@ def condition_matches(job, context, jobs=JOBS):
         raise AssertionError(f"Unsupported CI expression: {ast.dump(node)}")
 
     return evaluate(ast.parse(expression, mode="eval").body)
+
+
+def aggregate_succeeds(context):
+    bindings = JOBS["checks-passed"].split("        env:\n", 1)[1].split("        run:", 1)[0]
+    environment = {}
+    for name, expression in re.findall(r"^          (\w+): (.+)$", bindings, re.M):
+        value = expression_value(expression, context)
+        environment[name] = str(value).lower() if isinstance(value, bool) else value
+    script = JOBS["checks-passed"].split("        run: |\n", 1)[1]
+    script = "\n".join(line[10:] for line in script.splitlines() if line.startswith("          "))
+    return subprocess.run(
+        ["bash", "-e", "-c", script], capture_output=True,
+        env={**os.environ, **environment},
+    ).returncode == 0
 
 
 class CiPolicy(unittest.TestCase):
@@ -89,7 +110,7 @@ class CiPolicy(unittest.TestCase):
             context = self.context(**{"github.triggering_actor": actor})
             for job in PR_JOBS:
                 with self.subTest(actor=actor, job=job):
-                    self.assertEqual(self.runs(job, context), job not in WINDOWS_JOBS)
+                    self.assertTrue(self.runs(job, context))
             self.assertFalse(self.runs("build", context))
 
     def test_owner_pr_still_runs_checks_but_not_release_build(self):
@@ -99,20 +120,26 @@ class CiPolicy(unittest.TestCase):
             "github.event.pull_request.head.repo.full_name": REPOSITORY,
         })
         for job in PR_JOBS:
-            self.assertEqual(self.runs(job, context), job not in WINDOWS_JOBS, job)
+            self.assertTrue(self.runs(job, context), job)
         self.assertFalse(self.runs("build", context))
 
-    def test_windows_jobs_run_only_when_the_repository_variable_enables_them(self):
+    def test_windows_checks_run_independently_of_the_performance_variable(self):
         self.assertTrue(set(WINDOWS_JOBS) <= set(JOBS))
-        for value, enabled in (("true", True), ("", False), ("false", False), ("1", False)):
+        for value in ("true", "", "false", "1"):
             context = self.context(**{"vars.WINDOWS_ENABLED": value})
             for job in WINDOWS_JOBS:
                 with self.subTest(value=value, job=job):
-                    self.assertEqual(self.runs(job, context), enabled)
-        # The variable gates only the Windows jobs.
-        context = self.context(**{"vars.WINDOWS_ENABLED": "true"})
-        for job in PR_JOBS:
-            self.assertTrue(self.runs(job, context), job)
+                    self.assertTrue(self.runs(job, context))
+
+    def test_only_the_native_performance_budget_needs_the_variable(self):
+        step = JOBS["windows-native"].split("      - name: Release-mode performance budget\n", 1)[1]
+        condition = re.search(r"^        if: (.+)$", step, re.M)
+        for value in ("true", "", "false", "1"):
+            context = self.context(**{"vars.WINDOWS_ENABLED": value})
+            # Earlier steps succeeded, so an absent step condition permits execution.
+            runs = condition is None or expression_value(condition[1], context)
+            with self.subTest(value=value):
+                self.assertEqual(runs, value == "true")
 
     def test_non_pr_events_require_owner_main_and_expected_event(self):
         for event, ref, actor, triggering_actor in itertools.product(
@@ -128,7 +155,7 @@ class CiPolicy(unittest.TestCase):
             for job in JOBS:
                 with self.subTest(job=job, context=context):
                     self.assertEqual(self.runs(job, context),
-                                     allowed and job not in PR_ONLY_JOBS and job not in WINDOWS_JOBS)
+                                     allowed and job not in PR_ONLY_JOBS)
 
     def test_other_repositories_cannot_run_jobs(self):
         for repository, event, actor in itertools.product(
@@ -174,7 +201,7 @@ class CiPolicy(unittest.TestCase):
             context = self.context(**{"needs.commits.outputs.code": code})
             for job in PR_JOBS:
                 self.assertEqual(condition_matches(job, context),
-                                 job not in ("checks", "build-macos", *WINDOWS_JOBS),
+                                 job not in ("checks", "build-macos", "windows", "windows-native"),
                                  (job, code))
 
     def test_macos_release_builds_run_only_for_their_inputs(self):
@@ -182,26 +209,28 @@ class CiPolicy(unittest.TestCase):
             context = self.context(**{"needs.commits.outputs.macos_release": inputs})
             for job in PR_JOBS:
                 self.assertEqual(self.runs(job, context),
-                                 job not in WINDOWS_JOBS and (expected or job != "build-macos"),
+                                 expected or job != "build-macos",
                                  (job, inputs))
 
     def test_required_gate_rejects_failures_skips_and_missing_detection(self):
         # Run the actual shell gate, including the docs-only exception.
-        script = JOBS["checks-passed"].split("        run: |\n", 1)[1]
-        script = "\n".join(line[10:] for line in script.splitlines() if line.startswith("          "))
-
         def gate(code, checks, windows, native, commits, package_inputs="false", package="skipped",
                  event="push", macos=None, macos_inputs="true"):
             if macos is None:
                 macos = "success" if code == "true" and event == "pull_request" else "skipped"
-            return subprocess.run(
-                ["bash", "-e", "-c", script], capture_output=True,
-                env={**os.environ, "CODE": code, "RESULT": checks, "WINDOWS": windows,
-                     "NATIVE": native, "COMMITS": commits, "WINDOWS_ENABLED": "true",
-                     "PACKAGE_INPUTS": package_inputs, "PACKAGE": package,
-                     "EVENT": event, "MACOS_RELEASE": macos,
-                     "MACOS_RELEASE_INPUTS": macos_inputs},
-            ).returncode == 0
+            context = self.context(**{
+                "github.event_name": event,
+                "needs.checks.result": checks,
+                "needs.windows.result": windows,
+                "needs.windows-native.result": native,
+                "needs.windows-package.result": package,
+                "needs.build-macos.result": macos,
+                "needs.commits.result": commits,
+                "needs.commits.outputs.code": code,
+                "needs.commits.outputs.windows_package": package_inputs,
+                "needs.commits.outputs.macos_release": macos_inputs,
+            })
+            return aggregate_succeeds(context)
 
         for code, checks, windows, commits in itertools.product(
                 ("true", "false", ""), ("success", "failure", "cancelled", "skipped"),
