@@ -156,3 +156,50 @@ fn explicit_reconnect_recovers_a_stopped_endpoint_through_a_new_handshake(
     assert_eq!(stopped_status, "Herdr stopped");
     assert!(!stopped_may_dial);
 }
+
+#[gpui::test]
+fn a_stopped_herdr_offers_explicit_start_at_normal_and_narrow_widths(
+    cx: &mut gpui::TestAppContext,
+) {
+    let (mut endpoint, mut server) = connected_endpoint(LOCAL);
+    endpoint.connection.target = ConnectTarget::Local;
+    finish_peer(&mut endpoint, &mut server, true);
+    endpoint.connection.target = ConnectTarget::Socket(server.path.clone());
+    assert_eq!(endpoint.status(), "Herdr stopped");
+    let (view, cx) = cx.add_window_view(|window, cx| {
+        let mut view = crate::sidebar::layout_tests::fixture_window(window, cx);
+        view.endpoints = vec![endpoint];
+        view.selected_endpoint = 0;
+        view.options = ConnectOptions::default();
+        view.reset_selected(cx);
+        view
+    });
+    // 640px is the ordinary native minimum; 480px also stresses the synthetic layout.
+    for width in [900., 640., 480.] {
+        cx.simulate_resize(size(px(width), px(600.)));
+        cx.run_until_parked();
+        let card = cx.debug_bounds("herdr-stopped").unwrap();
+        let button = cx.debug_bounds("start-herdr").unwrap();
+        let terminal = cx.debug_bounds("terminal").unwrap();
+        assert!(cx.debug_bounds("reconnect-now").is_none());
+        assert!(cx.debug_bounds("install-herdr").is_none());
+        assert!(card.left() >= terminal.left() && card.right() <= terminal.right());
+        assert!(card.top() >= terminal.top() && card.bottom() <= terminal.bottom());
+        assert!(button.left() >= card.left() && button.right() <= card.right());
+        assert!(button.top() >= card.top() && button.bottom() <= card.bottom());
+    }
+    let generation = view.read_with(cx, |view, _| view.endpoints[0].generation);
+    let button = cx.debug_bounds("start-herdr").unwrap();
+    cx.simulate_click(button.center(), gpui::Modifiers::default());
+    view.read_with(cx, |view, _| {
+        assert!(view.endpoints[0].generation > generation);
+        assert!(
+            view.endpoints[0].connection.handle.is_some(),
+            "Start Herdr must attempt attachment"
+        );
+        assert!(matches!(
+            &view.endpoints[0].connection.target,
+            ConnectTarget::Socket(path) if path == &server.path
+        ));
+    });
+}
