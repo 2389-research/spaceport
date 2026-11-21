@@ -20,6 +20,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 mod paint_cache;
+mod paint_work;
 
 fn no_core(_: Start) -> Result<sheprd_core_client::CoreBackend, Error> {
     Err(Error::NotInstalled)

@@ -76,6 +76,8 @@ pub(crate) enum Reply {
 pub(crate) struct Observation {
     pub(crate) request_id: u64,
     pub(crate) gui_pid: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) paint_work: Option<PaintWork>,
     pub(crate) release: bool,
     pub(crate) reduce_motion: bool,
     pub(crate) mark_layer_render_calls: u64,
@@ -91,6 +93,15 @@ pub(crate) struct Observation {
     pub(crate) workspace: Option<String>,
     pub(crate) synthetic_working_panes: Vec<String>,
     pub(crate) groups: Vec<Group>,
+}
+
+/// Cumulative cell work across this GUI process, not a frame rate or CPU measurement.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub(crate) struct PaintWork {
+    pub(crate) paints: usize,
+    pub(crate) quads: usize,
+    pub(crate) glyphs: usize,
+    pub(crate) paint_errors: usize,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

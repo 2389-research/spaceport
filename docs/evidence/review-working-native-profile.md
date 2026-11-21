@@ -1489,3 +1489,20 @@ Reuse existing activation and parked-padding tests for input and geometry behavi
 Do not import unverified performance prose or ignored microbenchmarks as native evidence.
 Use one independent main-model review and disposable platform CI before native promotion.
 Later qualify a real populated parked Herdr group through the existing TUI-only native fixture.
+
+### Picture RED and private paint-work reporting
+
+Run `44858335070` reaches the intended populated picture failure on both platforms.
+Mac job `136705666482` and Windows job `136705666170` each report one settled paint instead of zero.
+That draw emits 24 quads and 1,920 glyphs after the populated warm-up succeeds.
+Existing Core paint/input/geometry, observer, and timer controls pass.
+Both scoped app lint steps pass.
+Production picture integration can now proceed.
+
+The private observer will also expose the existing process-wide cell-work counters.
+These scalar totals measure paint callbacks, quads, glyphs, and paint errors across the GUI process.
+They do not measure CPU time, frame rate, per-window work, or picture-specific work.
+Native qualification must retain the exact single-window fixture and a positive warm-paint baseline.
+First add an optional typed field and a populated Core test while leaving its getter unavailable.
+The test must prove real cell work before failing the missing report assertion.
+Keep normal builds and the bounded observer transport unchanged.

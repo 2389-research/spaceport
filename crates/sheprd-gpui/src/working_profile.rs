@@ -28,6 +28,10 @@ use std::{
 #[error("{0}")]
 struct NativeHandleError(raw_window_handle::HandleError);
 
+pub(crate) fn paint_work(_cx: &App) -> Option<report::PaintWork> {
+    None
+}
+
 pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
     let Some(directory) = std::env::var_os(OBSERVER_ENV).map(PathBuf::from) else {
         return;
@@ -95,6 +99,7 @@ pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                     let observation = Observation {
                         request_id: id,
                         gui_pid: std::process::id(),
+                        paint_work: paint_work(cx),
                         release: !cfg!(debug_assertions),
                         reduce_motion: crate::accessibility::policy::reduce_motion(),
                         mark_layer_render_calls: view.mark_layer.read(cx).profile_render_count(),
