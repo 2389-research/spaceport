@@ -47,7 +47,8 @@ class SpecificationToolsTests(unittest.TestCase):
         self.assertIn('SP-025',packet)
         self.assertIn('input_sha256',packet)
         self.assertIn('No broad code deletion',packet)
-        self.assertIn('"status": "passed"',packet)
+        self.assertIn('"legs": {',packet)
+        self.assertIn('"herdr1": {',packet)
         self.assertNotIn('All application scenarios begin not_run',packet)
 
     def test_all_packets_fit_default_budget(self):
@@ -78,6 +79,55 @@ class SpecificationToolsTests(unittest.TestCase):
             self.assertIn('evidence/gone.md',str(missing.exception))
             with self.assertRaises(ValueError):
                 spec.validate_evidence(root,{'id':'A','evidence':['../outside.md']})
+
+    def leg(self,status,evidence=()):
+        return {'status':status,'evidence':list(evidence)}
+
+    def scenario(self,herdr1,core):
+        return {'id':'A01','legs':{'herdr1':herdr1,'core':core}}
+
+    def test_scenario_without_a_leg_is_rejected(self):
+        scenario=self.scenario(self.leg('not_run'),self.leg('not_run'))
+        del scenario['legs']['core']
+        with self.assertRaises(ValueError) as missing:
+            spec.validate_acceptance_record(spec.ROOT,scenario)
+        self.assertIn('core',str(missing.exception))
+
+    def test_pre_leg_flat_status_is_not_backward_compatible(self):
+        scenario=self.scenario(self.leg('not_run'),self.leg('not_run'))
+        scenario['status']='not_run'
+        scenario['evidence']=[]
+        with self.assertRaises(ValueError) as flat:
+            spec.validate_acceptance_record(spec.ROOT,scenario)
+        self.assertIn('flat status/evidence',str(flat.exception))
+
+    def test_passed_leg_without_evidence_is_rejected(self):
+        with self.assertRaises(ValueError) as missing:
+            spec.validate_acceptance_record(spec.ROOT,self.scenario(self.leg('passed'),self.leg('not_run')))
+        self.assertIn('A01.herdr1',str(missing.exception))
+
+    def test_unknown_leg_status_is_rejected(self):
+        with self.assertRaises(ValueError) as invalid:
+            spec.validate_acceptance_record(spec.ROOT,self.scenario(self.leg('done'),self.leg('not_run')))
+        self.assertIn('A01.herdr1',str(invalid.exception))
+
+    def test_unknown_leg_name_is_rejected(self):
+        scenario=self.scenario(self.leg('not_run'),self.leg('not_run'))
+        scenario['legs']['herdr2']=self.leg('not_run')
+        with self.assertRaises(ValueError) as unknown:
+            spec.validate_acceptance_record(spec.ROOT,scenario)
+        self.assertIn('herdr2',str(unknown.exception))
+
+    def test_leg_evidence_must_name_an_existing_file(self):
+        with self.assertRaises(ValueError) as missing:
+            spec.validate_acceptance_record(
+                spec.ROOT,self.scenario(self.leg('not_run'),self.leg('failed',['evidence/gone.md'])))
+        self.assertIn('A01.core',str(missing.exception))
+
+    def test_one_executed_leg_does_not_execute_the_other(self):
+        scenario=self.scenario(self.leg('passed',['evidence/t00-baseline.md']),self.leg('not_run'))
+        spec.validate_acceptance_record(spec.ROOT,scenario)
+        self.assertEqual(spec.executed_legs(scenario),['herdr1'])
 
     def test_unknown_outcome_cannot_be_retry_safe(self):
         from jsonschema import Draft202012Validator
@@ -132,8 +182,12 @@ class SpecificationToolsTests(unittest.TestCase):
         report=spec.validate(spec.ROOT)
         self.assertEqual(report['result'],'passed')
         scenarios=spec.load(spec.ROOT/'plan/acceptance.json')['scenarios']
-        executed=sum(item['status'] in {'passed','failed'} for item in scenarios)
+        executed=sum(bool(spec.executed_legs(item)) for item in scenarios)
         self.assertEqual(report['application_scenarios_executed'],executed)
+        self.assertEqual(report['application_legs_executed'],
+                         sum(len(spec.executed_legs(item)) for item in scenarios))
+        for item in scenarios:
+            self.assertEqual(set(item['legs']),set(spec.LEG_NAMES))
 
     def test_runnable_task_needs_started_prerequisites(self):
         tasks={'A':{'id':'A','status':'done','depends_on':[]},
@@ -162,16 +216,23 @@ class SpecificationToolsTests(unittest.TestCase):
         listed=[s['id'] for group in view['groups'] for s in group['scenarios']]
         listed+=[s['id'] for s in view['unassigned']]
         self.assertEqual(sorted(listed),sorted(acceptance))
-        self.assertEqual(sum(view['counts'].values()),view['total'])
         self.assertEqual(view['total'],len(acceptance))
-        self.assertEqual(view['counts']['not_run']+view['counts']['passed']
-                         +view['counts']['failed']+view['counts']['blocked'],len(acceptance))
+        self.assertEqual(sum(view['counts'].values()),2*view['total'])
+        for name in spec.LEG_NAMES:
+            self.assertEqual(sum(v for k,v in view['counts'].items() if k.startswith(f'{name}:')),
+                             len(acceptance))
 
     def scenario_report_view(self,runnable=True):
         task={'id':'T01','title':'Task one','status':'in_progress'}
-        pending={'id':'A01','title':'One','status':'not_run','requirements':['SP-001']}
-        passed={'id':'A02','title':'Two','status':'passed','requirements':['SP-002']}
-        return {'counts':{'not_run':1,'passed':1,'failed':0,'blocked':0},'total':2,
+        not_run={'status':'not_run','evidence':[]}
+        pending={'id':'A01','title':'One','requirements':['SP-001'],
+                 'legs':{'herdr1':not_run,'core':dict(not_run)}}
+        passed_leg={'status':'passed','evidence':[]}
+        passed={'id':'A02','title':'Two','requirements':['SP-002'],
+                'legs':{'herdr1':dict(passed_leg),'core':dict(passed_leg)}}
+        return {'counts':{'herdr1:not_run':1,'herdr1:passed':1,'herdr1:failed':0,'herdr1:blocked':0,
+                          'core:not_run':1,'core:passed':1,'core:failed':0,'core:blocked':0},
+                'total':2,
                 'broken':{'A02':['evidence/gone.md']},'owners':{'A01':['T01'],'A02':['T01','T02']},
                 'listed':{'A01':'T01','A02':'T01'},
                 'runnable':1 if runnable else 0,'tasks':1,
@@ -180,8 +241,10 @@ class SpecificationToolsTests(unittest.TestCase):
 
     def test_scenarios_report_groups_by_task_with_requirements(self):
         report=spec.scenario_report(self.scenario_report_view())
-        self.assertIn('not_run 1',report)
-        self.assertIn('passed 1',report)
+        self.assertIn('herdr1:not_run 1',report)
+        self.assertIn('herdr1:passed 1',report)
+        self.assertIn('core:not_run 1',report)
+        self.assertIn('core:passed 1',report)
         self.assertIn('T01 — Task one',report)
         self.assertIn('SP-001',report)
         self.assertIn('also T02',report)
@@ -195,18 +258,18 @@ class SpecificationToolsTests(unittest.TestCase):
     def test_scenarios_report_status_filter_hides_other_statuses(self):
         report=spec.scenario_report(self.scenario_report_view(),{'passed'})
         self.assertIn('A02',report)
-        self.assertNotIn('A01  not_run',report)
+        self.assertNotIn('A01  herdr1=not_run',report)
         self.assertIn('No scenario matches the requested filter.',
                       spec.scenario_report(self.scenario_report_view(),set()))
 
     def test_scenarios_next_keeps_only_runnable_not_run(self):
         report=spec.scenario_report(self.scenario_report_view(),next_only=True)
         self.assertIn('Next runnable scenario: A01 — One (T01)',report)
-        self.assertIn('A01  not_run',report)
-        self.assertNotIn('A02  passed',report)
+        self.assertIn('A01  herdr1=not_run',report)
+        self.assertNotIn('A02  herdr1=passed',report)
         blocked=spec.scenario_report(self.scenario_report_view(False),next_only=True)
         self.assertIn('No runnable not_run scenario remains.',blocked)
-        self.assertNotIn('A01  not_run',blocked)
+        self.assertNotIn('A01  herdr1=not_run',blocked)
         self.assertIn('No scenario matches the requested filter.',
                       spec.scenario_report(self.scenario_report_view(),{'passed'},next_only=True))
 
@@ -216,7 +279,7 @@ class SpecificationToolsTests(unittest.TestCase):
         owners=spec.scenario_owners(tasks)
         runnable=spec.runnable_tasks(tasks)
         wanted={key for key,scenario in acceptance.items()
-                if scenario['status']=='not_run'
+                if spec.scenario_matches(scenario,{'not_run'})
                 and any(owner in runnable for owner in owners[key])}
         report=spec.scenario_report(spec.scenario_view(spec.ROOT,next_only=True),next_only=True)
         for key in wanted:
@@ -233,7 +296,7 @@ class SpecificationToolsTests(unittest.TestCase):
 
     def test_scenarios_strict_exits_nonzero_only_while_not_run(self):
         pending=spec.registries(spec.ROOT)['acceptance']
-        remaining=sum(s['status']=='not_run' for s in pending.values())
+        remaining=sum(spec.scenario_matches(s,{'not_run'}) for s in pending.values())
         result=subprocess.run([sys.executable,str(spec.ROOT/'tools/spec.py'),'scenarios','--strict'],
                               capture_output=True,text=True,check=False)
         self.assertEqual(result.returncode,1 if remaining else 0)
@@ -247,10 +310,14 @@ class SpecificationToolsTests(unittest.TestCase):
         def scenarios(*args):
             return subprocess.run([sys.executable,str(spec.ROOT/'tools/spec.py'),'scenarios',*args],
                                   capture_output=True,text=True,check=False)
+        # A leg-aware gate: a scenario shown under a filter still gates while any
+        # of its legs is not_run, even if another leg already passed.
+        def gate_pending(statuses):
+            return sum(spec.scenario_matches(s,statuses) and spec.scenario_matches(s,{'not_run'})
+                       for s in spec.registries(spec.ROOT)['acceptance'].values())
         passed=scenarios('--status','passed','--strict')
-        self.assertEqual(passed.returncode,0)
-        self.assertNotIn('Acceptance gate',passed.stderr)
-        remaining=sum(s['status']=='not_run' for s in spec.registries(spec.ROOT)['acceptance'].values())
+        self.assertEqual(passed.returncode,1 if gate_pending({'passed'}) else 0)
+        remaining=gate_pending({'not_run'})
         pending=scenarios('--status','not_run','--strict')
         self.assertEqual(pending.returncode,1 if remaining else 0)
 
