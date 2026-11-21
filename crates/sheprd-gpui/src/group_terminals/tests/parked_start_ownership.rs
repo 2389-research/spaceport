@@ -105,7 +105,7 @@ fn parked_groups_never_start_the_local_daemon(cx: &mut TestAppContext) {
     let (view, cx) = fixture_window_on_t0(cx);
     let drained = cx.update(|window, cx| {
         view.update(cx, |view, cx| {
-            let left = super::parked_startup::prepare_groups(view, window, cx, &socket, &peer);
+            let left = parked_startup::prepare_groups(view, window, cx, &socket, &peer);
             let key = view.browser_key().unwrap();
             view.endpoints[0].connection.target = ConnectTarget::Local;
             let same_scope = view.browser_key() == Some(key);
