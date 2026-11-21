@@ -3,6 +3,9 @@
 use crate::sidebar::layout_tests::{fixture_window, run_frames};
 use std::time::Duration;
 
+#[path = "timing.rs"]
+mod timing;
+
 #[gpui::test]
 fn profile_counter_advances_when_the_layer_renders(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(fixture_window);

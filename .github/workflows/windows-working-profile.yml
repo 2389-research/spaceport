@@ -321,7 +321,7 @@ jobs:
         if: ${{ !cancelled() }}
         shell: bash
         run: cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport core_terminals::view::profile::tests -- --nocapture
-      - name: Exercise passive mark-layer counter headlessly
+      - name: Exercise mark-layer counter and timer budget headlessly
         if: ${{ !cancelled() }}
         shell: bash
         run: cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport mark_layer::profile_tests -- --nocapture
