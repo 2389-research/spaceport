@@ -91,7 +91,7 @@ fn parked_groups_never_start_the_local_daemon(cx: &mut TestAppContext) {
     assert_eq!(ConnectTarget::Local.socket_path().unwrap(), socket);
     assert!(!socket.exists());
     let stopped = AtomicBool::new(false);
-    let error = crate::daemon::connect(&ConnectTarget::Local, &stopped, || {})
+    let error = crate::daemon::connect(&ConnectTarget::Local, Start::WhenMissing, &stopped, || {})
         .err()
         .unwrap();
     assert!(matches!(

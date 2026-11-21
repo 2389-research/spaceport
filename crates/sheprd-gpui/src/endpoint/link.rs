@@ -1,6 +1,7 @@
 // ABOUTME: Owns endpoint link transitions and the lifetime of each transport attempt.
 // ABOUTME: Keeps retry advice with the link until recovery or an explicit retarget.
 use super::*;
+use crate::daemon::Start;
 
 pub(super) enum Link {
     Disabled,
@@ -173,7 +174,8 @@ impl Endpoint {
                 self.enter(Transition::Stop);
                 self.initial_surface = active;
                 self.attempts = self.attempts.saturating_add(1);
-                self.connection.reconnect(options, false, active);
+                self.connection
+                    .reconnect(options, false, active, Start::WhenMissing);
                 self.live = self.connection.take_update().unwrap_or_default();
                 Link::Dialing {
                     retry_at: Instant::now() + self.retry_delay(),

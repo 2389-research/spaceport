@@ -39,6 +39,15 @@ pub(super) fn is_missing_installation(error: &io::Error) -> bool {
         .is_some_and(|source| source.is::<MissingInstallation>())
 }
 
+/// Whether this connection owns starting an installed local daemon.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Start {
+    // keep-sorted start
+    Never,
+    WhenMissing,
+    // keep-sorted end
+}
+
 pub(crate) fn may_start(target: &ConnectTarget) -> bool {
     matches!(
         target,
@@ -52,6 +61,7 @@ pub(crate) fn may_start(target: &ConnectTarget) -> bool {
 
 pub fn connect(
     target: &ConnectTarget,
+    start: Start,
     stop: &AtomicBool,
     on_start: impl FnOnce(),
 ) -> io::Result<(Stream, LocalPeer)> {
@@ -73,7 +83,7 @@ pub fn connect(
             pin_config_home(&mut command, sheprd_client::local_var("XDG_CONFIG_HOME"));
             command
         },
-        may_start(target),
+        start == Start::WhenMissing && may_start(target),
     )?;
     let local = local_peer(&stream, target, &socket);
     Ok((stream, local))

@@ -20,6 +20,7 @@ use crate::{
     SheprdWindow,
     browser::{GroupId, Pick, Scope, Shown, Slot},
     connection::ConnectionBridge,
+    daemon::Start,
     presentation::{Picture, Presentation},
     state::{ConnectionStatus, LiveState},
     terminal::viewport,
@@ -294,7 +295,7 @@ impl SheprdWindow {
                 None if !endpoint_serving => {}
                 None => {
                     let mut connection = ConnectionBridge::new(target.clone());
-                    connection.reconnect(self.options, false, true);
+                    connection.reconnect(self.options, false, true, Start::Never);
                     terminals.parked.push(Parked {
                         group: *group,
                         workspace: key.clone(),
