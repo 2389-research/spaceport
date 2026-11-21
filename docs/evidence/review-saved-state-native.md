@@ -54,19 +54,26 @@ The scorer now accepts only that evidenced substitution within each complete kno
 It still requires both filenames and the complete repair and restart clauses.
 Pure cases retain the two clipped transcripts and a missing filename as rejected controls.
 Raw OCR and PNGs remain unchanged. Independent review approves the recognition correction.
+Qualification source `7bb50dcc1` passes complete CI44921341819.
+The exact native scenario passes in Linux x64 job136898096754.
+The same job passes the geometry case and both OCR control tests.
+Its app suite reports 3686 passed, zero failed, and nine ignored.
+The [receipt](saved-state-recovery/native/green.json) records the source, artifact digest, state hashes, exact children, and cleanup.
+Root inspected both final PNGs and verified the downloaded state and backup bytes.
+Later evidence changes record those results without changing the qualified product or test code.
 
 - [x] Independent task review approved specification compliance and code quality.
 - [x] `just format-check`, `just check-file-size`, and `python3 scripts/check-sorted.py` pass.
 - [x] `actionlint .github/workflows/ci.yml` and `bash -n scripts/install-linux-deps.sh` pass.
 - [x] `python3 scripts/release/test-release-security.py` passes all three offline workflow checks.
 - [x] `git diff --check` passes. The fixture contains synthetic data and owned process handles.
-- [ ] Pass `saved_state::recovery::native_saved_state_recovery` in disposable Linux x64 CI.
-- [x] Inspect both native screenshots from `33e289a6c` for the full warning, filenames, and restart advice.
-- [ ] Verify the source, state hashes, backup, process exits, and completion receipt from that run.
+- [x] Pass `saved_state::recovery::native_saved_state_recovery` in disposable Linux x64 CI44921341819.
+- [x] Inspect both final screenshots from `7bb50dcc1` for the full warning, filenames, and restart advice.
+- [x] Verify the source, state hashes, backup, process exits, and completion receipt from that run.
 
 No local product build, test, compiler, app, daemon, VM, or SSH probe ran.
 The warning retains its existing two-second lifetime.
-The wrapping correction fixes observed clipping. The scorer correction still needs a successful native rerun.
+The wrapping correction fixes observed clipping. The scorer correction passes the same native scenario and its clipped-message controls.
 Inspect the actual PNGs before accepting native readability; OCR alone does not prove glyph visibility.
 This test does not qualify macOS, Windows, audible speech, performance, WSL, or remote SSH.
 Those checks retain their existing status.

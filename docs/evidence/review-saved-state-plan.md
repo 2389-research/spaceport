@@ -132,8 +132,8 @@ This adds no capacity reservation or queued-request lifecycle policy.
 - [x] Inspect every commit and the complete branch diff.
 - [x] Review secrets, destination visibility, changed paths, file sizes, and formatting.
 - [x] Record exact CI heads, job IDs, RED assertions, and GREEN results.
-- [ ] Exercise synthetic saved state across restart on a disposable native desktop when available.
-- [ ] Capture real repair guidance screenshots if visible behavior changes.
+- [x] Exercise synthetic saved state across restart on a disposable native desktop when available.
+- [x] Capture and inspect real repair guidance screenshots at 900px and 640px.
 - [x] Leave unavailable native checks unticked and name their limits.
 - [x] Refresh PR metadata and verify its remote body, base, head, and draft state.
 - [x] Update the existing dashboard row without changing other rows or people's feedback.
@@ -178,6 +178,20 @@ The renderer correction replaces truncation with constrained, normally wrapping 
 The same native test and actual after images must pass before accepting the correction.
 The actual [900px](saved-state-recovery/native/repair-before-900.png) and [640px](saved-state-recovery/native/repair-before-640.png) frames confirm clipped repair guidance.
 No complete native qualification is claimed from that failed attempt.
+
+Wrapped product source `244a7d529` passes complete configured CI44920108697.
+Combined source `33e289a6c` passes the actual headless geometry case on Linux ARM all-features.
+Its PNGs contain the full warning, but OCR reads filename periods as commas.
+The narrow test correction accepts only that evidenced substitution within both complete known filenames.
+It retains the complete clauses, raw images, raw OCR, and rejected clipped/missing-name controls.
+Independent review approves that correction, published as qualification source `7bb50dcc1`.
+CI44921341819, job136898096754, passes the native scenario and the Linux all-features workspace suite.
+All three focused geometry/OCR tests pass; the app reports 3686 passed, zero failed, and nine ignored.
+The [native GREEN receipt](saved-state-recovery/native/green.json) records actual completion, exact children, hashes, backup, and cleanup.
+Root inspected the actual [900px](saved-state-recovery/native/repair-after-900.png) and [640px](saved-state-recovery/native/repair-after-640.png) after images.
+Both filenames and the full restart instruction remain visible inside the terminal.
+Complete qualification CI44921341819 also passes at `7bb50dcc1`.
+Mac foreground, actual speech, and performance retain their explicit holds.
 
 ### Historical regression baselines
 
