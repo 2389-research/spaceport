@@ -1445,3 +1445,47 @@ It then draws the settled window without invalidation and requires zero new cell
 Its internal duplicate-tab layout exercises the existing Elsewhere picture renderer.
 This fixture does not establish a public CLI contract for creating persistent mirrors.
 The merged picture cache remains outside this checkpoint until runtime RED is verified.
+
+## Task 4: Observe the actual GUI counter owner
+
+Forward the client's test feature from the app's existing `integration-test` feature.
+Extend only the private working-profile Group with an optional typed client counter snapshot.
+Read the primary group's handle from the selected endpoint's connection.
+Read each parked group's handle from its own parked connection.
+Never replace missing, contended, or poisoned snapshots with zeros or another connection's data.
+Keep the current frame/presentation selection and bounded observer transport unchanged.
+Do not clone an event receiver, retain a frame, send a command, or block the UI.
+
+First add the shared schema, feature forwarding, and real framed-worker observer tests.
+Leave the Group field unavailable until the tests prove the missing owner selection at runtime.
+Cover different primary and parked connections, bridge swaps, missing handles, and unavailable snapshots.
+Use existing fixtures and actual handle identities; do not add public mutation APIs.
+Preserve the shared serializer's response-size tests and test both feature configurations through CI.
+Release selection implementation only after the expected runtime RED result.
+
+The assigned implementer owns app Cargo feature forwarding, working_profile groups/schema, and new focused tests.
+Root owns workflows, picture cache integration, commits, pushes, review, and remote validation.
+No local builds, tests, compilers, native processes, VMs, daemons, or external writes are allowed.
+Formatting and static source inspection are allowed.
+This observer is measurement plumbing; deduplication, envelope qualification, and the output producer remain separate work.
+
+## Task 5: Integrate the merged terminal picture cache
+
+Start production integration only after the populated picture test reaches its expected runtime paint failure.
+Port PR 147's five production-file changes from merge `6ceeac5d599ad93b3135e7e3c8edc35c5726e414`.
+Keep the existing Core cache, observer, connection ownership, and public contracts unchanged.
+Use the existing `TerminalPainter::appearance()` value in the picture key.
+Add Clone to that typed value and include the observed window scale.
+Do not duplicate configured theme state as a substitute for actual painter state.
+Preserve placement updates outside the cached cell child.
+Preserve the graphics-placement exclusion so image texture leases still refresh normally.
+Retire unclaimed picture entries after each rendered frame.
+
+Keep the populated runtime regression and add focused observable invalidation controls.
+Require changed frame colors to reach actual painted quads before settled replay.
+Exercise actual painter theme, font size, and cell height with a direct picture owner if needed.
+Cover popup removal, missing pictures, graphics exclusion, and removal of cached groups.
+Reuse existing activation and parked-padding tests for input and geometry behavior.
+Do not import unverified performance prose or ignored microbenchmarks as native evidence.
+Use one independent main-model review and disposable platform CI before native promotion.
+Later qualify a real populated parked Herdr group through the existing TUI-only native fixture.

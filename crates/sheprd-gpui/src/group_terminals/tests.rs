@@ -15,6 +15,8 @@ use std::sync::Arc;
 
 mod idle_reassert;
 mod padding;
+#[cfg(all(any(target_os = "macos", windows), feature = "integration-test"))]
+mod patch_stats;
 #[cfg(feature = "integration-test")]
 mod picture_paint;
 mod titlebar_navigation;

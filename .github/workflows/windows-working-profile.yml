@@ -338,6 +338,10 @@ jobs:
         if: ${{ !cancelled() }}
         shell: bash
         run: cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport group_terminals::tests::picture_paint -- --nocapture
+      - name: Exercise observed client counter ownership headlessly
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport group_terminals::tests::patch_stats -- --nocapture
       - name: Exercise ordinary Windows Core fixture contracts
         if: ${{ !cancelled() && runner.os == 'Windows' }}
         shell: bash

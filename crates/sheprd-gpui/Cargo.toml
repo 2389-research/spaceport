@@ -114,6 +114,7 @@ integration-test = [
   "dep:core-graphics",
   "dep:foreign-types",
   "dep:objc",
+  "sheprd-client/integration-test",
 ]
 
 [target.'cfg(unix)'.dependencies]

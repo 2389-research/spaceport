@@ -72,6 +72,7 @@ impl SheprdWindow {
                             .as_ref()
                             .map(|surface| surface.projection_revision)
                     }),
+                    patch_stats: None,
                     presented,
                 }
             })

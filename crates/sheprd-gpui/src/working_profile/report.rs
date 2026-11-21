@@ -114,6 +114,8 @@ pub(crate) struct Group {
     pub(crate) bounds: [f32; 4],
     pub(crate) tab: Option<String>,
     pub(crate) projected_revision: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) patch_stats: Option<sheprd_client::patch_stats::Snapshot>,
     pub(crate) presented: Option<Frame>,
 }
 
