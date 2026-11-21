@@ -156,6 +156,8 @@ Implementation `736d86d72` preserves rejected files, identity floors, and Core a
 Its first CI run `44915649055` stops at the same lint error on Linux, macOS, and Windows.
 Importing `Path` makes the existing `Scope::local` qualification redundant.
 Use the imported type without changing the function contract.
+The next run `44916441550` reaches the inherited schema test and exposes its matching redundant qualification.
+Use the imported type there too. The affected storage modules have no remaining equivalent qualification.
 The regression tests have not reached GREEN on the fixed source yet.
 
 Tests-only head `0cef725631188ec430e9f3501a6a7a79bf2cbab5` has actual behavioral RED in CI44908322454 attempt 2.
