@@ -12,6 +12,7 @@ use sheprd_client::protocol::{
 use std::sync::Arc;
 
 mod idle_reassert;
+mod mirror_canvas;
 mod padding;
 mod titlebar_navigation;
 
