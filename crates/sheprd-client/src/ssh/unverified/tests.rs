@@ -1,4 +1,10 @@
+// ABOUTME: Tests host-key policy selection, bounds, and command precedence.
+// ABOUTME: Keeps process-wide host choices isolated between fixtures.
+
 use super::*;
+
+#[allow(clippy::unwrap_used)] // Test fixtures only.
+mod forwarding;
 
 // The list is process-wide, so each test uses targets no other test names
 // and changes it only through `while_unverified`.

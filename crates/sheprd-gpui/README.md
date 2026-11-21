@@ -290,7 +290,8 @@ until it restarts; check Core's machine list to see what happened.
 The dialog has no host-key option. Hosts that keep no stable key to check are
 listed by hand under `[ssh] skip_host_key_verification` in the local config,
 by target (see [`config-gpui.example.toml`](../sheprd-settings/config-gpui.example.toml)). For those targets the app passes
-`StrictHostKeyChecking=no` and reads no known hosts file. To verify a host
+`StrictHostKeyChecking=no` and reads no known hosts file. Agent and X11
+forwarding are disabled, even when enabled in SSH config. To verify a host
 again, delete its target from that list; connections opened without checking
 take no new commands once it is gone.
 
