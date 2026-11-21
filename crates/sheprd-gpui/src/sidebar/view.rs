@@ -1,3 +1,5 @@
+// ABOUTME: Renders the sidebar with a cache for ordinary terminal redraws.
+// ABOUTME: Rebuilds its subtree while accessibility needs nodes on every frame.
 //! The sidebar as a cached child view.
 //!
 //! Terminal output redraws the window many times a second, and rebuilding and
@@ -79,9 +81,18 @@ impl Render for SidebarView {
 
 /// The sidebar in the window body, `width` wide as its mode lays it out. The
 /// outer style repeats the sidebar's own root, which GPUI lays out without
-/// rendering while the cache holds.
-pub(crate) fn cached(view: &Entity<SidebarView>, width: f32) -> ViewElement<AnyView> {
-    AnyView::from(view.clone()).cached(
+/// rendering while the cache holds. GPUI does not replay accessibility nodes
+/// from cached views, so active accessibility needs the actual subtree each frame.
+pub(crate) fn element(
+    view: &Entity<SidebarView>,
+    width: f32,
+    accessibility_active: bool,
+) -> ViewElement<AnyView> {
+    let view = AnyView::from(view.clone());
+    if accessibility_active {
+        return view.into_element();
+    }
+    view.cached(
         StyleRefinement::default()
             .w(px(width))
             .flex_none()
