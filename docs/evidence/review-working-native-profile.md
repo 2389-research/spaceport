@@ -21,7 +21,7 @@ Mac `sample`/`ps` support remains separate from the held Mac native checks.
 - Disposable desktop preparation passed real enable, repeated-refusal, restoration, and fresh-process checks at `dcadebfaf`.
 - Native `dcadebfaf` passed with real animation activity, verified clocks, captures, identities, and zero-loss traces; dominant CPU attribution remains unresolved.
 - Localized `acc229aeb` now has clean runtime RED on both platforms; the Core-only paint cache is in implementation.
-- The cell-only cache passes static review; remote GREEN and native qualification remain pending.
+- Cache `fcf833f20` passes the paint regression on both platforms; its resize-test fixture needs correction before full GREEN.
 
 ## Authority and limits
 
@@ -1121,3 +1121,18 @@ Do not commit, push, publish, or call external write APIs.
 Root runs remote validation and one independent spec/quality review before accepting the change.
 Report changed files, design choices, static review, unrun checks, and concerns in the requested report file.
 Do not claim GREEN or task completion from source inspection.
+
+### Core cache first remote execution
+
+At `fcf833f20`, run `44843933965` compiles on both platforms and passes the formerly failing paint regression.
+Windows passes all nine observer cases; Mac passes all ten.
+Both platforms pass changed scene content, missing-frame cleanup, appearance, selection/veil, and dispatched text controls.
+Existing clipboard and accessibility metadata controls also pass.
+The sole failure is the resize control's `new_size.cols() < old_size.cols()` assertion.
+
+`VisualTestContext::draw` draws a temporary element and requests a full window refresh afterward.
+For a terminal that is itself the root, that refresh restores full-window layout before the next observation.
+Thus both test observations used the same viewport; this did not measure a resize.
+The corrected control uses the actual test-platform resize callback and adds pane padding to move the cell origin.
+It retains assertions for fewer rows/columns, changed origin, matching IME movement, and caret containment.
+No production code changed for this correction; full GREEN remains pending.

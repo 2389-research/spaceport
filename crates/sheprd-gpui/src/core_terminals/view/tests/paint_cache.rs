@@ -12,10 +12,7 @@ use crate::{
     terminal_painter::Ground,
     window::native_images::Session,
 };
-use gpui::{
-    Bounds, Entity, EntityInputHandler, IntoElement, TestAppContext, VisualTestContext, point, px,
-    rgb, size,
-};
+use gpui::{Bounds, Entity, EntityInputHandler, TestAppContext, VisualTestContext, px, rgb, size};
 use sheprd_backend::{ClientPaneInputEvent, Size, SurfaceUpdate};
 use sheprd_terminal::{Damage, Emulator};
 use std::{
@@ -209,11 +206,23 @@ fn missing_core_frame_removes_the_old_cell_scene(cx: &mut TestAppContext) {
 fn moved_core_canvas_updates_resize_and_ime_bounds(cx: &mut TestAppContext) {
     let (case, cx) = painted(cx);
     let mut observations = Vec::new();
-    for (origin, extent) in [
-        (point(px(20.), px(30.)), size(px(800.), px(600.))),
-        (point(px(50.), px(70.)), size(px(400.), px(300.))),
+    for (extent, pane) in [
+        (size(px(800.), px(600.)), None),
+        (
+            size(px(400.), px(300.)),
+            Some(PaneLook {
+                corners: (4., 4.),
+                veil: None,
+            }),
+        ),
     ] {
-        cx.draw(origin, extent, |_, _| case.view.clone().into_any_element());
+        case.view.update(cx, |view, cx| {
+            view.set_pane(pane);
+            cx.notify();
+        });
+        cx.simulate_resize(extent);
+        cx.run_until_parked();
+        cx.update(|window, cx| window.draw(cx).clear(cx));
         observations.push(case.view.update_in(cx, |view, window, cx| {
             (
                 view.bounds().unwrap(),
@@ -232,6 +241,7 @@ fn moved_core_canvas_updates_resize_and_ime_bounds(cx: &mut TestAppContext) {
     };
     assert!(new_size.cols() < old_size.cols());
     assert!(new_size.rows() < old_size.rows());
+    assert_ne!(old_bounds.origin, new_bounds.origin);
     assert_eq!(
         new_ime.origin - old_ime.origin,
         new_bounds.origin - old_bounds.origin
