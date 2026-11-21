@@ -2,7 +2,13 @@
 // ABOUTME: Exercises ownership of published, unpublished, and weakly held baselines.
 use super::*;
 
+mod operations;
+
 fn connected_client() -> (Client, Stream) {
+    connected_client_with_welcome(WELCOME)
+}
+
+fn connected_client_with_welcome(welcome: &str) -> (Client, Stream) {
     let (stream, mut server) = Stream::pair().unwrap();
     let client = connect_with_connector(
         ConnectTarget::Local,
@@ -11,7 +17,7 @@ fn connected_client() -> (Client, Stream) {
         |_, _| Ok(stream),
     )
     .unwrap();
-    handshake(&mut server);
+    handshake_with_welcome(&mut server, welcome);
     assert!(matches!(event(&client), ClientEvent::Connected(_)));
     assert!(matches!(event(&client), ClientEvent::Snapshot(s) if s.revision == 7));
     (client, server)
@@ -19,6 +25,10 @@ fn connected_client() -> (Client, Stream) {
 
 fn disconnect(client: &Client) {
     client.handle.disconnect();
+    await_worker_exit(client);
+}
+
+fn await_worker_exit(client: &Client) {
     assert!(matches!(
         client.events.recv_timeout(Duration::from_secs(3)),
         Err(crossbeam_channel::RecvTimeoutError::Disconnected)
@@ -41,21 +51,28 @@ fn send_ordinary_patch(server: &mut Stream, base: &PaneSurfaceFrame) -> PaneSurf
     expected.frame.cells[0].symbol = "y".into();
     send(
         server,
-        ServerMessage::PaneSurfacePatch(PaneSurfacePatch {
-            boot_id: base.boot_id.clone(),
-            projection_revision: base.projection_revision,
-            base_surface_revision: base.surface_revision,
-            surface_revision: expected.surface_revision,
-            rows: vec![PaneSurfacePatchRow {
+        ordinary_patch(
+            base,
+            vec![PaneSurfacePatchRow {
                 x: 0,
                 y: 0,
                 cells: vec![expected.frame.cells[0].clone()],
             }],
-            panes: vec![],
-            cursor: None,
-        }),
+        ),
     );
     expected
+}
+
+fn ordinary_patch(base: &PaneSurfaceFrame, rows: Vec<PaneSurfacePatchRow>) -> ServerMessage {
+    ServerMessage::PaneSurfacePatch(PaneSurfacePatch {
+        boot_id: base.boot_id.clone(),
+        projection_revision: base.projection_revision,
+        base_surface_revision: base.surface_revision,
+        surface_revision: base.surface_revision + 1,
+        rows,
+        panes: vec![],
+        cursor: None,
+    })
 }
 
 fn received_surface(client: &Client) -> Arc<PaneSurfaceFrame> {

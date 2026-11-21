@@ -78,6 +78,10 @@ fn event(client: &Client) -> ClientEvent {
 }
 
 fn handshake(stream: &mut Stream) {
+    handshake_with_welcome(stream, WELCOME);
+}
+
+fn handshake_with_welcome(stream: &mut Stream, welcome: &str) {
     stream
         .set_read_timeout(Some(Duration::from_secs(3)))
         .unwrap();
@@ -97,7 +101,7 @@ fn handshake(stream: &mut Stream) {
         stream,
         ServerMessage::EndpointControl {
             kind: ENDPOINT_WELCOME_KIND.into(),
-            data: WELCOME.into(),
+            data: welcome.into(),
         },
     );
     send(

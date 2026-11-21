@@ -8,20 +8,24 @@ use crate::protocol::{
     surface_scroll::{ScrollPatch, SurfaceScroll},
 };
 
-const ALL: [&str; 3] = [
+pub(super) const ALL: [&str; 3] = [
     surface_reuse::CAPABILITY,
     surface_delta::CAPABILITY,
     surface_scroll::CAPABILITY,
 ];
 
-/// A session whose welcome advertised `capabilities`, at snapshot revision 7.
-fn session_with(capabilities: &[&str]) -> (Session, Vec<ClientEvent>) {
+pub(super) fn welcome_with(capabilities: &[&str]) -> String {
     let mut welcome: Value = serde_json::from_str(WELCOME).unwrap();
     welcome["capabilities"] = json!(capabilities);
+    welcome.to_string()
+}
+
+/// A session whose welcome advertised `capabilities`, at snapshot revision 7.
+fn session_with(capabilities: &[&str]) -> (Session, Vec<ClientEvent>) {
     let mut session = Session::new(true, false);
     let mut events = Vec::new();
     for (kind, data) in [
-        (ENDPOINT_WELCOME_KIND, welcome.to_string()),
+        (ENDPOINT_WELCOME_KIND, welcome_with(capabilities)),
         (ENDPOINT_SNAPSHOT_KIND, SNAPSHOT.into()),
     ] {
         session
@@ -61,7 +65,7 @@ fn control(kind: &str, data: String) -> ServerMessage {
     }
 }
 
-fn grid() -> PaneSurfaceFrame {
+pub(super) fn grid() -> PaneSurfaceFrame {
     let mut surface = baseline();
     let rect = SurfaceRect {
         x: 0,
@@ -95,7 +99,7 @@ fn grid() -> PaneSurfaceFrame {
     surface
 }
 
-fn symbols(surface: &PaneSurfaceFrame) -> String {
+pub(super) fn symbols(surface: &PaneSurfaceFrame) -> String {
     surface
         .frame
         .cells
@@ -104,7 +108,7 @@ fn symbols(surface: &PaneSurfaceFrame) -> String {
         .collect()
 }
 
-fn scroll_message(base: &PaneSurfaceFrame) -> ServerMessage {
+pub(super) fn scroll_message(base: &PaneSurfaceFrame) -> ServerMessage {
     let mut last_row = base.frame.cells[..2].to_vec();
     last_row.iter_mut().for_each(|c| c.symbol = "d".into());
     let scroll = ScrollPatch {
@@ -129,7 +133,7 @@ fn scroll_message(base: &PaneSurfaceFrame) -> ServerMessage {
     control(surface_scroll::MESSAGE_KIND, scroll.encode().unwrap())
 }
 
-fn delta_message(base: &PaneSurfaceFrame, projection_revision: u64) -> ServerMessage {
+pub(super) fn delta_message(base: &PaneSurfaceFrame, projection_revision: u64) -> ServerMessage {
     let mut surface = base.clone();
     surface.frame.cells.clear();
     surface.projection_revision = projection_revision;
@@ -151,7 +155,7 @@ fn delta_message(base: &PaneSurfaceFrame, projection_revision: u64) -> ServerMes
     control(surface_delta::MESSAGE_KIND, delta.encode().unwrap())
 }
 
-fn reuse_message(base: &PaneSurfaceFrame, projection_revision: u64) -> ServerMessage {
+pub(super) fn reuse_message(base: &PaneSurfaceFrame, projection_revision: u64) -> ServerMessage {
     let mut surface = base.clone();
     surface.frame.cells.clear();
     surface.projection_revision = projection_revision;

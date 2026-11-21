@@ -1399,3 +1399,18 @@ Formatting and source inspection are allowed.
 Do not commit, push, publish, or perform external writes.
 Preserve other worktree edits, add two ABOUTME comments to new sources, and keep each source below 1,000 lines.
 Write the requested report with changed files, static checks, unrun validation, and concerns.
+
+### Counter wiring runtime RED
+
+Phase-one source `0c494dcf59c946c309db598132d0f29a8adfe84f` runs in `44856025618`.
+Windows protocol job `136698327935` and Mac job `136698327958` reach the expected failures in both build configurations.
+Each configuration passes identity, contention, and poison controls.
+The three ownership cases first verify frames, retained snapshots, weak relocation, identity, and worker exit.
+They then fail `ordinary patch attempts` at zero versus one.
+Default runs retain 25 passing Windows cases and 26 passing Mac cases, alongside those three expected failures.
+Each feature-only topic run has three passing controls and three expected counter failures.
+Both all-target/all-feature Clippy steps pass without warnings.
+This is deliberate TDD evidence; it does not qualify the zero counters for native measurement.
+
+Phase two first adds real framed-worker scroll, delta, reuse, rejected-patch, empty-grid, and saturation cases.
+Those tests must reach their own missing-counter assertions before Session instrumentation begins.
