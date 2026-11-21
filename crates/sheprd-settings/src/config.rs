@@ -369,8 +369,9 @@ impl Config {
         })
     }
 
-    /// `daemon` is the herdr config whose settings this GUI also honors. It is
-    /// read for those keys alone and never written; a missing one is normal.
+    /// `daemon` is Spaceport's own `view.toml`, the file whose `[keys]`,
+    /// `ui.toast.clipboard` and `ui.sidebar` this GUI also honors. The Settings
+    /// window writes its own keys there too; a missing file is normal.
     pub(crate) fn load_path(path: &Path, daemon: &Path) -> Result<Self> {
         let base = daemon_settings(daemon);
         let (_lock, local) = Self::prepare_files(path)?;

@@ -1,6 +1,7 @@
-// ABOUTME: Reads and edits shared Herdr preferences with guarded file replacement.
+// ABOUTME: Reads and edits the Herdr-schema view settings with guarded replacement.
 // ABOUTME: Preserves unknown settings and the snapshot used for conflict checks.
-//! Shared release-namespace Herdr settings. `load` and `save` do blocking I/O:
+//! Herdr's settings schema, in Spaceport's own `spaceport/view.toml`. `load` and
+//! `save` do blocking I/O:
 //! callers MUST run them on a background worker, never in render/input handlers.
 //!
 //! Schema/defaults and palette data adapted from https://github.com/herdrdev/herdr
