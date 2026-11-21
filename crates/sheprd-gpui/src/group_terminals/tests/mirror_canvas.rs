@@ -175,6 +175,7 @@ fn a_mirrored_group_paints_the_cells_that_changed(cx: &mut TestAppContext) {
 /// mirrored cells and metrics are unchanged — as the window's own regions
 /// already do. The stored picture's look must carry the new theme once the
 /// frame that saw the change has rendered.
+#[cfg(feature = "integration-test")]
 #[gpui::test]
 fn a_theme_change_repaints_the_mirror(cx: &mut TestAppContext) {
     let (view, cx) = split_window_mirroring_t0(cx);
