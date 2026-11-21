@@ -1,3 +1,5 @@
+// ABOUTME: Processes terminal bytes and resizes through the existing Alacritty and VTE engines.
+// ABOUTME: Keeps history, damage, modes, and events behind a deterministic API.
 //! The emulator: alacritty's `Term` and vte's parser behind a small, pure,
 //! deterministic API. It never writes to the PTY, opens links, or touches the
 //! clipboard; herdr-core answers terminal queries itself.
@@ -7,6 +9,7 @@ use crate::cells;
 use crate::{
     MAX_SCROLLBACK_CELLS, MAX_SCROLLBACK_LINES, Size,
     damage::{Damage, Tracker},
+    handler::Handler,
     listener::Listener,
     modes::Modes,
     scan::Scanner,
@@ -157,7 +160,8 @@ impl Emulator {
             term,
             ..
         } = self;
-        scanner.feed(bytes, |run| processor.advance(term, run));
+        let mut handler = Handler(term);
+        scanner.feed(bytes, |run| processor.advance(&mut handler, run));
         self.damage.fed = true;
         self.drain_events();
     }
@@ -173,7 +177,7 @@ impl Emulator {
         if !self.sync_pending() {
             return;
         }
-        self.processor.stop_sync(&mut self.term);
+        self.processor.stop_sync(&mut Handler(&mut self.term));
         self.damage.fed = true;
         self.drain_events();
     }

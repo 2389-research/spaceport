@@ -11,6 +11,10 @@ give the same frame however they are split across `Emulator::feed` calls.
 It never answers terminal queries (herdr-core does), writes to the
 clipboard, or opens hyperlinks.
 
+Full-screen clears keep Alacritty's normal history behavior.
+Clearing default cells with no history adds no synthetic row.
+Later height growth keeps the initial prompt in place.
+
 ## Use
 
 - `Emulator::new(Size, scrollback_lines)`, then `feed(bytes)` as output
