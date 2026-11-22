@@ -277,7 +277,7 @@ fn connect_or_start(
     command: impl FnOnce() -> Command,
     auto_start: bool,
 ) -> io::Result<Stream> {
-    match Stream::connect(socket) {
+    match dial(socket) {
         Ok(stream) => return Ok(stream),
         Err(error)
             if auto_start
@@ -319,7 +319,7 @@ fn connect_or_start(
         if stop.load(Ordering::Acquire) {
             return Err(io::Error::new(io::ErrorKind::Interrupted, Error::Cancelled));
         }
-        match Stream::connect(socket) {
+        match dial(socket) {
             Ok(stream) => return Ok(stream),
             Err(error)
                 if matches!(
@@ -341,7 +341,26 @@ fn connect_or_start(
     }
 }
 
+#[cfg(unix)]
+fn dial(socket: &Path) -> io::Result<Stream> {
+    Stream::connect(socket)
+}
+
+/// A pipe name is open to every local account, so another one could serve
+/// Herdr's name first and wait. Keep Herdr's `GenericNamespaced` mapping (the
+/// lossy socket path under `\\.\pipe\`) and refuse a pipe this user does not
+/// own before sending any bytes.
+#[cfg(windows)]
+fn dial(socket: &Path) -> io::Result<Stream> {
+    Stream::connect_owned(format!(r"\\.\pipe\{}", socket.to_string_lossy()))
+}
+
 // The fixtures bind real sockets and launch POSIX helper executables.
 #[cfg(all(test, unix))]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests;
+
+// Private named-pipe fixtures for the owner check; no other account needed.
+#[cfg(all(test, windows))]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod windows_tests;

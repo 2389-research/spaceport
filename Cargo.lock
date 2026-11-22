@@ -6632,6 +6632,7 @@ dependencies = [
  "gpui-pre",
  "gpui-pre-platform",
  "image",
+ "interprocess",
  "keepawake",
  "libc",
  "mermaid-rs-renderer",
