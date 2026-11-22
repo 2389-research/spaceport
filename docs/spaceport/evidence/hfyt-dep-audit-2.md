@@ -3,8 +3,13 @@
 Round two of the "hold fast, you're tethered" (hfyt) dependency work. Round one
 (#146) dropped seven direct edges from the app crate. This round re-reads the
 graph after the crate rename (#169), the icon-family rename (#187), the
-`render_sidebar` split (#188), the work-family removal (#152/#189), and the
-chat-core extraction (#191), and removes what those waves left behind.
+`render_sidebar` split (#188), and the work-family removal (#152/#189), and
+removes what those waves left behind.
+
+The chat-core extraction (#191) is **not** covered: there is no merge for it on
+`origin/main` at `1f6a8be64` and no `crates/spaceport-chat-core` in the tree.
+When it lands, its re-exports are the likeliest place for a fresh stale edge in
+the app crate, and this audit's scan is the check to repeat.
 
 ## Where round one left its record
 
