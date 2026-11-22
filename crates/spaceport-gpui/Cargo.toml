@@ -100,6 +100,10 @@ test-case.workspace = true
 [target.'cfg(unix)'.dev-dependencies]
 libc.workspace = true
 
+# `daemon/windows_tests.rs` serves private named pipes with chosen owners.
+[target.'cfg(windows)'.dev-dependencies]
+interprocess.workspace = true
+
 [features]
 default = []
 macos-updater = ["dep:sparkle-updater"]
