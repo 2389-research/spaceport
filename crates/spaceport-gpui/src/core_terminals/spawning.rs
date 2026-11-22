@@ -24,6 +24,9 @@ pub(super) enum Spawning {
     Idle,
     Queued(VecDeque<Request>),
     Running {
+        /// The Core that ran this request, so placement can tell whether the
+        /// window still shows that Core's terminals.
+        core: String,
         purpose: Purpose,
         started: Started,
         queued: VecDeque<Request>,
@@ -44,7 +47,7 @@ pub(super) enum Outcome {
     Full,
     Stale,
     Cleared,
-    Finished(Purpose, Box<Completion>, Option<super::Reporter>),
+    Finished(String, Purpose, Box<Completion>, Option<super::Reporter>),
 }
 
 impl Spawning {
@@ -114,6 +117,7 @@ impl Spawning {
                     _ => VecDeque::new(),
                 };
                 *self = Self::Running {
+                    core: actual.clone(),
                     purpose,
                     started,
                     queued,
@@ -134,6 +138,7 @@ impl Spawning {
                     }
                 };
                 let Self::Running {
+                    core,
                     purpose,
                     queued,
                     report,
@@ -145,7 +150,7 @@ impl Spawning {
                 if !queued.is_empty() {
                     *self = Self::Queued(queued);
                 }
-                Outcome::Finished(purpose, Box::new(outcome), report)
+                Outcome::Finished(core, purpose, Box::new(outcome), report)
             }
             Event::Unavailable => {
                 let cleared = match self {

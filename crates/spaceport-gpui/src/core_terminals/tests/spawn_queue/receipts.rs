@@ -86,6 +86,50 @@ fn creation_receipt_waits_for_acknowledgement_and_placement(cx: &mut TestAppCont
 }
 
 #[gpui::test]
+fn a_completion_from_a_core_the_window_left_places_nothing_and_names_nothing(
+    cx: &mut TestAppContext,
+) {
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
+    let (backend, mut peer) = super::super::scripted_core::connect("core-a");
+    let receipt = cx.update(|_, cx| {
+        view.update(cx, |view, cx| {
+            view.core_terminals.hub.set_backend_for_test(backend);
+            view.start_core_program(purpose("left"), Spawn::default(), cx)
+                .unwrap()
+        })
+    });
+    let called = request(&mut peer);
+    assert_eq!(called["method"], "terminal.run");
+    answer(
+        &mut peer,
+        &called,
+        json!({"address":"left-behind", "labels":{}, "argv":["sh"], "state":"live", "created_ms":1, "screen":"", "cols":80, "rows":24}),
+    );
+    // The window joins another Core before the answer is placed, so the
+    // terminal belongs to a Core it no longer shows.
+    let (other, _other_peer) = super::super::scripted_core::connect("core-b");
+    cx.update(|_, cx| {
+        view.update(cx, |view, _| {
+            view.core_terminals.hub.set_backend_for_test(other)
+        })
+    });
+    place_until(&view, cx, None);
+    // No receipt, so no caller can claim a tab or terminal this window lacks.
+    assert!(matches!(
+        receipt.try_recv(),
+        Err(TryRecvError::Disconnected)
+    ));
+    view.read_with(cx, |view, _| {
+        assert!(
+            view.core_terminals
+                .infos
+                .get(&spaceport_backend::TerminalId::new("left-behind").unwrap())
+                .is_none()
+        )
+    });
+}
+
+#[gpui::test]
 fn runtime_refusal_keeps_its_error_and_dropped_receivers_do_not_retry(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     let (backend, mut peer) = super::super::scripted_core::connect("hub-a");

@@ -71,7 +71,7 @@ fn connection_failure_discards_waiting_work_but_consumes_the_running_request_onc
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
     loop {
         match spawning.transition(Event::Poll) {
-            Outcome::Finished(_, outcome, _) if outcome.is_err() => break,
+            Outcome::Finished(_, _, outcome, _) if outcome.is_err() => break,
             Outcome::None => {}
             _ => panic!("lost connection must finish with an error"),
         }
@@ -100,7 +100,7 @@ fn a_worker_launch_error_preserves_its_typed_io_source_until_completion() {
     let mut spawning = Spawning::default();
     spawning.transition(Event::Queue(purpose(), Box::default(), None, None));
     spawning.transition(Event::Start(&backend, &Infos::default(), fail));
-    let Outcome::Finished(_, outcome, _) = spawning.transition(Event::Poll) else {
+    let Outcome::Finished(_, _, outcome, _) = spawning.transition(Event::Poll) else {
         panic!("failed launch must finish through the normal completion path");
     };
     let error = outcome.unwrap_err();

@@ -730,7 +730,7 @@ impl SpaceportWindow {
     }
 
     fn finish_started_core_terminal(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let spawning::Outcome::Finished(purpose, outcome, report) = self
+        let spawning::Outcome::Finished(core, purpose, outcome, report) = self
             .core_terminals
             .spawning
             .transition(spawning::Event::Poll)
@@ -738,9 +738,7 @@ impl SpaceportWindow {
             return;
         };
         let info = match *outcome {
-            // Known at once, so a chat it labels attaches without waiting
-            // for the next list.
-            Ok(info) => self.core_terminals.infos.insert(info),
+            Ok(info) => info,
             Err(error) => {
                 let reason = error.to_string();
                 self.show_flash(
@@ -753,6 +751,21 @@ impl SpaceportWindow {
                 return;
             }
         };
+        // Only the Core that ran the request can show its new terminal: once
+        // the window has joined another Core, or holds no Core connection,
+        // the terminal cannot be placed here, and a receipt naming it would
+        // claim a tab this window does not have. Dropping the report leaves
+        // the outcome unknown.
+        if matches!(
+            self.core_terminals.hub.backend_for(&core),
+            Err(Mismatch::Absent | Mismatch::Other)
+        ) {
+            self.show_flash(Flash::warning(fl!("core-workspace-stale")), cx);
+            return;
+        }
+        // Known at once, so a chat it labels attaches without waiting
+        // for the next list.
+        let info = self.core_terminals.infos.insert(info);
         let terminal = info.id.clone();
         let placed = match purpose {
             Purpose::Tab { scope, workspace } => {
