@@ -101,10 +101,6 @@ fn every_own_variant_has_a_message() {
             limit: 4096,
         }),
         Error::UnsupportedCommand,
-        Error::WorkspaceRepositoryChanged,
-        Error::WorktreeList,
-        Error::WorktreeListDecode(json()),
-        Error::WorktreeSelection,
     ];
     errors.extend(
         ["open", "inspect", "read"].map(|operation| Error::ImageFile {

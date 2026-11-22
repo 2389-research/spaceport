@@ -21,7 +21,6 @@ impl Label {
     pub(crate) const EXPAND_GROUP: Self = Self::new("worktree-popover-expand-group");
     pub(crate) const MUTE: Self = Self::new("worktree-popover-mute");
     pub(crate) const NOTE: Self = Self::new("worktree-popover-note");
-    pub(crate) const OPEN_WORKTREE: Self = Self::new("worktree-popover-open-worktree");
     pub(crate) const RENAME: Self = Self::new("worktree-popover-rename");
     pub(crate) const UNMUTE: Self = Self::new("worktree-popover-unmute");
     // keep-sorted end

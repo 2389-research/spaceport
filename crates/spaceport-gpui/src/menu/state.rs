@@ -84,13 +84,9 @@ pub(crate) struct MenuState {
     pub(super) target: Option<WorkspaceTarget>,
     pub input: Option<DialogInput>,
     pub(crate) error: Option<String>,
-    /// The correlated `worktree.open` request, so the dialog can report its
-    /// answer and follow the opened workspace.
-    pub(super) opening: Option<String>,
     /// The name a new tab or workspace dialog proposed. Submitting it
     /// unchanged, or nothing, leaves naming to the daemon, as Herdr does.
     pub(super) suggested_name: Option<String>,
-    pub(super) worktree_open: Option<super::worktree_open::Picker>,
     pub(super) keybinds_scroll: ScrollHandle,
     pub(crate) keybinds_search: Option<Entity<crate::search_input::SearchInput>>,
     pub(super) shortcut_editor: Option<super::shortcut_editor::Editor>,
@@ -111,21 +107,6 @@ pub(crate) struct MenuState {
     /// until it disappears; the confirmation closes as soon as it starts.
     pub(crate) removing_devices: std::collections::HashSet<String>,
     pub(crate) version_notice: Option<super::VersionNotice>,
-}
-
-/// What a submitted dialog did, which decides whether it stays open.
-pub(super) enum Submission {
-    /// The request is queued and the dialog has nothing left to wait for.
-    Queued { focus_changed: bool },
-    /// The dialog stays open for a daemon answer it still needs.
-    Awaiting { focus_changed: bool },
-}
-
-impl Submission {
-    pub(super) fn focus_changed(&self) -> bool {
-        let (Submission::Queued { focus_changed } | Submission::Awaiting { focus_changed }) = self;
-        *focus_changed
-    }
 }
 
 impl MenuState {
@@ -160,9 +141,7 @@ impl MenuState {
             target: None,
             input: None,
             error: None,
-            opening: None,
             suggested_name: None,
-            worktree_open: None,
             keybinds_scroll: ScrollHandle::new(),
             keybinds_search: None,
             shortcut_editor: None,
@@ -215,9 +194,7 @@ impl MenuState {
         self.input = None;
         self.error = None;
         self.version_notice = None;
-        self.opening = None;
         self.suggested_name = None;
-        self.worktree_open = None;
         self.close = None;
     }
 }

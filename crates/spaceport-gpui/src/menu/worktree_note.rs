@@ -51,24 +51,6 @@ impl SpaceportWindow {
         self.open_note_dialog(window, cx);
     }
 
-    /// Opens the focused workspace's note dialog.
-    pub(crate) fn edit_focused_worktree_note(
-        &mut self,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        let Some(id) = self
-            .live
-            .snapshot
-            .as_ref()
-            .and_then(|snapshot| snapshot.focused_workspace_id.clone())
-        else {
-            return;
-        };
-        self.open_workspace_menu(&id, Point::default(), window, cx);
-        self.open_note_dialog(window, cx);
-    }
-
     fn open_note_dialog(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.menu.page != Some(Page::Workspace) {
             return;
@@ -81,7 +63,7 @@ impl SpaceportWindow {
             );
             return;
         }
-        self.open_workspace_dialog(WorkspaceAction::Note, window, cx);
+        self.open_workspace_dialog(WorkspaceAction::Note, cx);
     }
 
     /// Saves the draft as the checkout's note, or removes the note when the

@@ -22,7 +22,7 @@ pub(super) fn check_workspace_menu_rows(
         assert_eq!(view.read(cx).live.snapshot.as_deref(), Some(before));
     });
     assert!(cx.debug_bounds("workspace-menu-Close group").is_none());
-    assert!(cx.debug_bounds("workspace-menu-Open worktree...").is_some());
+    assert!(cx.debug_bounds("workspace-menu-Note...").is_some());
     // The retained Rename tile stacks its icon over a centered caption.
     let rename = cx.debug_bounds("workspace-menu-Rename").unwrap();
     let rename_icon = cx.debug_bounds("workspace-menu-icon-Rename").unwrap();
@@ -31,15 +31,11 @@ pub(super) fn check_workspace_menu_rows(
     assert!(rename_icon.bottom() <= rename_text.top());
     assert!((rename_icon.center().x - rename.center().x).abs() <= px(1.));
     assert!(rename.contains(&rename_text.origin) && rename_text.right() <= rename.right());
-    // The worktree row leads with a smaller icon beneath the Rename tile.
-    let label = "workspace-menu-Open worktree...";
+    // The note row leads with a smaller icon beneath the Rename tile.
+    let label = "workspace-menu-Note...";
     let row = cx.debug_bounds(label).unwrap();
-    let icon = cx
-        .debug_bounds("workspace-menu-icon-Open worktree...")
-        .unwrap();
-    let text = cx
-        .debug_bounds("workspace-menu-label-Open worktree...")
-        .unwrap();
+    let icon = cx.debug_bounds("workspace-menu-icon-Note...").unwrap();
+    let text = cx.debug_bounds("workspace-menu-label-Note...").unwrap();
     assert_eq!(icon.size, size(px(16.), px(16.)), "{label}");
     assert_eq!(icon.left() - row.left(), px(10.), "{label}");
     assert!(

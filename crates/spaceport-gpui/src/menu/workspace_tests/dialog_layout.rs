@@ -24,7 +24,7 @@ fn workspace_dialog_centres_on_window(cx: &mut gpui::TestAppContext) {
         );
         cx.update(|window, cx| {
             view.update(cx, |view, cx| {
-                view.open_workspace_dialog(WorkspaceAction::Rename, window, cx)
+                view.open_workspace_dialog(WorkspaceAction::Rename, cx)
             });
             window.draw(cx).clear(cx);
         });

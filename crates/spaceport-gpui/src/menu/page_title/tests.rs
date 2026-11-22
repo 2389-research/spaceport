@@ -25,7 +25,6 @@ fn every_page_title_is_a_message_under_en_xa() {
     crate::i18n::leak_tests::under_en_xa("page titles en-XA", |_, _| {
         let dialogs = [
             WorkspaceAction::Rename,
-            WorkspaceAction::OpenWorktree,
             WorkspaceAction::NewTab,
             WorkspaceAction::NewWorkspace,
             WorkspaceAction::Note,

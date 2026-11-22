@@ -191,11 +191,7 @@ fn stale_boot_and_unsupported_commands_never_reach_socket() {
             reason: Error::CommandBoot,
         }
     ));
-    for method in [
-        Method::TabCreate,
-        Method::WorktreeList,
-        Method::WorktreeOpen,
-    ] {
+    for method in [Method::TabCreate, Method::WorkspaceCreate, Method::PaneClose] {
         let unsupported = client.handle.request("boot-v1", method, json!({})).unwrap();
         assert!(
             matches!(event(&client), ClientEvent::CommandRejected { request_id: Some(id), reason: Error::UnsupportedMethod } if id == unsupported)

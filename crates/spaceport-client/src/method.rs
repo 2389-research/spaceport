@@ -70,10 +70,6 @@ methods! {
     WorkspaceMove => "workspace.move",
     WorkspaceMoveBlock => "workspace.move_block",
     WorkspaceRename => "workspace.rename",
-    WorktreeCreate => "worktree.create",
-    WorktreeList => "worktree.list",
-    WorktreeOpen => "worktree.open",
-    WorktreeRemove => "worktree.remove",
     // keep-sorted end
 }
 

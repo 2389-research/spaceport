@@ -162,12 +162,6 @@ catalog! {
         mac: ["cmd-alt-shift-n"], linux: ["ctrl-shift-n"];
     Workspace, "new_workspace", "commands-new-workspace",
         mac: ["cmd-shift-n"], linux: ["ctrl-alt-shift-n"];
-    /// The focused repository's "Open worktree..." dialog.
-    OpenWorktree, "open_worktree", "commands-open-worktree", mac: [], linux: [];
-    /// Go To, listing only the checkouts that have a note.
-    WorktreeNotes, "worktree_notes", "commands-worktree-notes", mac: [], linux: [];
-    /// The focused checkout's note.
-    EditWorktreeNote, "edit_worktree_note", "commands-edit-worktree-note", mac: [], linux: [];
     PreviousWorkspace, "previous_workspace", "commands-previous-workspace", mac: [], linux: [];
     NextWorkspace, "next_workspace", "commands-next-workspace", mac: [], linux: [];
     WorkspaceNumber(1 2 3 4 5 6 7 8 9), "focus_workspace_", "commands-focus-workspace",

@@ -27,7 +27,7 @@ fn rows_follow_the_grid_in_order() {
     use WorkspaceMenuAction::*;
     let items = [
         (Dialog(WorkspaceAction::Rename), Label::RENAME),
-        (Dialog(WorkspaceAction::OpenWorktree), Label::OPEN_WORKTREE),
+        (Dialog(WorkspaceAction::Note), Label::NOTE),
         (Collapse, Label::COLLAPSE_GROUP),
     ];
     let (tiles, rest) = layout(&items);
@@ -35,7 +35,7 @@ fn rows_follow_the_grid_in_order() {
     assert_eq!(
         rest,
         [
-            (Dialog(WorkspaceAction::OpenWorktree), Label::OPEN_WORKTREE),
+            (Dialog(WorkspaceAction::Note), Label::NOTE),
             (Collapse, Label::COLLAPSE_GROUP),
         ]
     );
@@ -112,7 +112,7 @@ fn rows_share_icon_and_label_columns(cx: &mut gpui::TestAppContext) {
                 })
                 .collect()
         };
-    let measured = measure("w3", &["Open worktree...", "Collapse group"]);
+    let measured = measure("w3", &["Note...", "Collapse group"]);
     let (icon, text) = measured[0];
     for (other_icon, other_text) in &measured[1..] {
         assert!((other_icon.center().x - icon.center().x).abs() <= px(0.5));

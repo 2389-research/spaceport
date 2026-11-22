@@ -138,14 +138,4 @@ fn only_git_checkouts_on_a_branch_offer_a_note(cx: &mut gpui::TestAppContext) {
             })
         });
     }
-    // The shortcut says why a plain folder has none, rather than doing nothing.
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
-            let snapshot = Arc::make_mut(view.live.snapshot.as_mut().unwrap());
-            snapshot.focused_workspace_id = Some("w0".into());
-            view.edit_focused_worktree_note(window, cx);
-            assert!(view.menu.page.is_none());
-            assert!(view.flash.is_some());
-        })
-    });
 }

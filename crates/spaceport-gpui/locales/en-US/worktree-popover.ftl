@@ -10,18 +10,10 @@ worktree-popover-mute-button = Mute
 worktree-popover-unmute-button = Unmute
 worktree-popover-rename = Rename
 worktree-popover-note = Note...
-worktree-popover-open-worktree = Open worktree...
 worktree-popover-expand-group = Expand group
 worktree-popover-collapse-group = Collapse group
 
 # Tile captions, shorter where the tile's icon says the rest.
 worktree-popover-tile-rename = Rename
-
-worktree-popover-not-git = This workspace is not a Git repository
-
-# Why the open worktree shortcut has nothing to act on.
-worktree-popover-change-disconnected = Not connected, so no worktree can be changed
-worktree-popover-no-workspace = No workspace is focused
-worktree-popover-open-main-closed = Open this repository's main checkout to open a worktree
 
 worktree-popover-note-unavailable = Notes are kept on Git checkouts with a branch

@@ -145,25 +145,3 @@ fn window_readers_agree_on_each_envelope() {
         ],
     );
 }
-
-#[test]
-fn workspace_dialogs_agree_on_each_envelope() {
-    assert_outcomes(
-        "workspace dialog",
-        outcomes(json!({"type": "worktree_opened"}), |response| {
-            crate::menu::refusal(response).unwrap_or_else(|| "-".into())
-        }),
-        [
-            ("absent", "-"),
-            ("null", "-"),
-            ("object", "denied: no"),
-            ("no_message", "denied: denied"),
-            ("no_code", "endpoint_error: no"),
-            ("string", "endpoint_error: busy"),
-            ("no_result", "-"),
-            ("wrong_type", "-"),
-            ("control", "denied: bad[31mnews"),
-            ("long", "denied: xxxx..(1032)"),
-        ],
-    );
-}

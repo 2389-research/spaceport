@@ -7,7 +7,7 @@ use crate::{
     controls::{self, Command},
     i18n::fl,
     log_window,
-    menu::{WorkspaceAction, WorktreeShortcut},
+    menu::WorkspaceAction,
     navigation::NavigationTarget,
     open_additional_window,
 };
@@ -149,36 +149,6 @@ impl SpaceportWindow {
         cx: &mut Context<Self>,
     ) -> Run {
         self.resume_palette(window, cx);
-        Run::Done
-    }
-
-    pub(super) fn command_open_worktree(
-        &mut self,
-        _command: Command,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> Run {
-        self.open_worktree_shortcut(WorktreeShortcut::Open, window, cx);
-        Run::Done
-    }
-
-    pub(super) fn command_worktree_notes(
-        &mut self,
-        _command: Command,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> Run {
-        self.open_palette(crate::palette::Filter::Notes, window, cx);
-        Run::Done
-    }
-
-    pub(super) fn command_edit_worktree_note(
-        &mut self,
-        _command: Command,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> Run {
-        self.edit_focused_worktree_note(window, cx);
         Run::Done
     }
 

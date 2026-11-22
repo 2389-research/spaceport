@@ -151,10 +151,6 @@ impl Localize for Error {
             Self::Updates(error) => error.localize(),
             Self::Usage(error) => error.localize(),
             Self::WorkspaceDocument(error) => error.to_string(),
-            Self::WorkspaceRepositoryChanged => fl!("error-workspace-repository-changed"),
-            Self::WorktreeList => fl!("error-worktree-list"),
-            Self::WorktreeListDecode(_) => fl!("error-worktree-list-decode"),
-            Self::WorktreeSelection => fl!("error-worktree-selection"),
             Self::WslDrop(error) => error.localize(),
             // keep-sorted end
         }

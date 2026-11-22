@@ -23,8 +23,8 @@ fn connected_reporting(version: &str) -> (Client, Stream, thread::JoinHandle<Res
         "client_shell.surface.set",
         "pane.focus",
         "tab.focus",
-        "workspace.focus",
-        "worktree.create"
+        "workspace.create",
+        "workspace.focus"
     ]);
     welcome["capabilities"] = json!(["surface_interest", "presentation_effects_fence"]);
     send(
@@ -198,12 +198,12 @@ fn failed_focus_is_delivered_before_its_activation() {
 #[test]
 fn other_requests_keep_activation_behind_their_response() {
     let (client, mut server, worker) = connected();
-    // Deferred worktree navigation is fenced by the revision activation advances.
+    // Deferred workspace creation is fenced by the revision activation advances.
     let create = client
         .handle
         .request(
             "boot-v1",
-            Method::WorktreeCreate,
+            Method::WorkspaceCreate,
             json!({"name": "public", "focus": true}),
         )
         .unwrap();

@@ -175,9 +175,6 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
             (Method::TabFocus, json!({"tab_id": target.tab_id}))
         }
         Command::NewWindow
-        | Command::OpenWorktree
-        | Command::WorktreeNotes
-        | Command::EditWorktreeNote
         | Command::Find
         | Command::FindNext
         | Command::FindPrevious

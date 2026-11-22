@@ -40,9 +40,6 @@ devices_overview windows: -
 edit_scrollback linux: -
 edit_scrollback macos: -
 edit_scrollback windows: -
-edit_worktree_note linux: -
-edit_worktree_note macos: -
-edit_worktree_note windows: -
 equalize_splits linux: -
 equalize_splits macos: -
 equalize_splits windows: -
@@ -211,9 +208,6 @@ next_workspace windows: -
 open_notification_target linux: ctrl-alt-shift-u
 open_notification_target macos: cmd-alt-n
 open_notification_target windows: ctrl-alt-shift-u
-open_worktree linux: -
-open_worktree macos: -
-open_worktree windows: -
 previous_agent linux: -
 previous_agent macos: -
 previous_agent windows: -
@@ -316,6 +310,3 @@ toggle_zoom windows: ctrl-shift-enter
 workspace_picker linux: ctrl-alt-shift-p
 workspace_picker macos: cmd-p
 workspace_picker windows: ctrl-alt-shift-p
-worktree_notes linux: -
-worktree_notes macos: -
-worktree_notes windows: -

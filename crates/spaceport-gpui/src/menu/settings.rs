@@ -639,8 +639,6 @@ struct KeybindRow<'a> {
 fn keybind_section(command: Command) -> usize {
     match command {
         Command::Workspace
-        | Command::OpenWorktree
-        | Command::EditWorktreeNote
         | Command::Tab
         | Command::SplitRight
         | Command::SplitDown
@@ -681,7 +679,6 @@ fn keybind_section(command: Command) -> usize {
         | Command::PreviousPane
         | Command::TabNumber(_)
         | Command::WorkspacePicker
-        | Command::WorktreeNotes
         | Command::LastPane
         | Command::Back
         | Command::Forward

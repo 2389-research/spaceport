@@ -137,7 +137,6 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
         (Command::CloseTab, Method::TabClose),
         (Command::WorkspacePicker, Method::WorkspaceFocus),
         (Command::Palette, Method::CommandInvoke),
-        (Command::Workspace, Method::WorktreeOpen),
     ]
     .into_iter()
     .map(|(command, method)| (command, method, true, None))
@@ -168,8 +167,6 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
                     snapshot.tabs.push(tab);
                     assert_ne!(snapshot.focused_tab_id.as_deref(), Some(id));
                     view.open_tab_close(id, window, cx);
-                } else if matches!(method, Method::WorktreeOpen) {
-                    crate::menu::workspace_tests::submit_focus_change(view, method, window, cx);
                 } else {
                     view.command(command, window, cx);
                 }
@@ -235,13 +232,6 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
         };
         let request: serde_json::Value = serde_json::from_str(&request).unwrap();
         assert_eq!(request["method"], method.as_str());
-        if method == Method::WorktreeOpen {
-            assert_eq!(
-                request["params"],
-                serde_json::json!({"workspace_id": "w3",
-                "path": "/endpoint/existing checkout ", "focus": true, "trust_repository": false})
-            );
-        }
         if method == Method::TabCreate {
             assert_eq!(
                 request["params"],

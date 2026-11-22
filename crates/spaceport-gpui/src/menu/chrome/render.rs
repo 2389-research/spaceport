@@ -3,7 +3,7 @@
 
 #[cfg(any(windows, test, feature = "integration-test"))]
 use super::COVER_MARGIN;
-use super::{MENU_MARGIN, Page, WorkspaceAction, rail};
+use super::{MENU_MARGIN, Page, rail};
 use crate::direction::Logical;
 use crate::{SpaceportWindow, actions, fonts::StyledFont};
 use gpui::{prelude::*, *};
@@ -47,7 +47,6 @@ impl SpaceportWindow {
         let add_device = rail::Source::of(page).is_some();
         let compact_rail = viewport.width - px(32.) < px(rail::COMPACT_BELOW * (font.size / 12.));
         let footer_anchored = matches!(page, Page::Menu | Page::Devices) && !session_modal;
-        let settled = page == Page::Dialog(WorkspaceAction::OpenWorktree);
         // Context menus open where the pointer asked for them. A dialog is a
         // modal decision, not a continuation of the row it came from, so it
         // centres over a dimmed window the way the Herdr TUI's dialogs do.
@@ -72,7 +71,6 @@ impl SpaceportWindow {
             popover,
             rises,
             session_modal,
-            settled,
             shown,
             viewport,
         }
@@ -95,7 +93,6 @@ impl SpaceportWindow {
     /// Where the panel hangs and how much room it may take: a popover beside
     /// what opened it, a footer panel above the foot, or a dialog centred.
     fn menu_panel_anchored(&self, page: Page, layer: &Layer) -> Stateful<Div> {
-        let font = &self.config.ui;
         div()
             .id("menu-panel")
             .debug_selector(|| "menu-panel".into())
@@ -103,26 +100,11 @@ impl SpaceportWindow {
                 panel
                     .w(layer
                         .popover
-                        .unwrap_or(px(if layer.settled {
-                            // A listing needs room for a title and its branch.
-                            560.
-                        } else {
-                            420.
-                        }))
+                        .unwrap_or(px(420.))
                         .min((layer.viewport.width - px(24.)).max(px(0.))))
                     // Every dialog may use the window's height: a captioned form
                     // whose buttons need scrolling into view reads as clipped.
                     .max_h((layer.viewport.height - px(24.)).max(px(0.)))
-                    // A listing is a picker: it takes a settled height and
-                    // scrolls inside it, as the theme and command pickers do.
-                    .when(layer.settled, |panel| {
-                        panel
-                            .flex()
-                            .flex_col()
-                            .h(px(560. * (font.size / 12.))
-                                .min((layer.viewport.height - px(24.)).max(px(0.))))
-                            .overflow_hidden()
-                    })
                     // Lift the popup off the terminal behind it, as the pickers do.
                     .shadow_lg()
             })
@@ -281,7 +263,7 @@ impl SpaceportWindow {
                     // delete form has no inner scroller and keeps the panel's.
                     let lists = page == Page::Devices && !layer.session_modal;
                     panel
-                        .when(!layer.settled && !lists, |panel| panel.overflow_y_scroll())
+                        .when(!lists, |panel| panel.overflow_y_scroll())
                         .when(lists, |panel| panel.overflow_hidden())
                         .when(!matches!(page, Page::Dialog(_)), |panel| panel.p(px(6.)))
                 },
@@ -697,7 +679,6 @@ struct Layer {
     popover: Option<Pixels>,
     rises: bool,
     session_modal: bool,
-    settled: bool,
     shown: f32,
     viewport: Size<Pixels>,
 }
