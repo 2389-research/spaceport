@@ -1,0 +1,283 @@
+START=2026-11-22T04:54:29Z
+   Compiling gpui-pre-apple v0.3.10
+   Compiling gpui-pre-macos v0.3.10
+   Compiling gpui-pre-platform v0.3.10
+   Compiling sheprd-gpui v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-gpui)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sheprd-gpui` (bin "spaceport" test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 1m 05s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/main.rs (target/debug/deps/spaceport-0e0a5e7fad282fbb)
+
+running 10 tests
+test core_terminals::workspace_document::edit::tests::live::create_rename_archive_delete_only_the_grouping_document ... ignored, needs HERDR_CORE_TEST_BINARY
+test core_terminals::workspace_document::edit::tests::live::disjoint_conflict_rebases_and_same_target_conflict_refuses ... ignored, needs HERDR_CORE_TEST_BINARY
+test core_terminals::workspace_document::edit::tests::live::membership_edits_only_the_private_core_document ... ignored, needs HERDR_CORE_TEST_BINARY
+test core_terminals::workspace_document::edit::tests::membership_rebases_only_when_target_group_is_unchanged ... ok
+test core_terminals::workspace_document::edit::tests::same_workspace_creation_cannot_rebase ... ok
+test core_terminals::workspace_document::edit::tests::same_workspace_edit_cannot_rebase ... ok
+test core_terminals::workspace_document::edit::tests::timeout_is_not_a_conflict_to_retry ... ok
+test core_terminals::workspace_document::edit::tests::unrelated_workspace_edit_can_rebase ... ok
+test core_terminals::workspace_document::edit::tests::malformed_set_success_is_unknown_but_unsent_errors_are_definite ... ok
+test core_terminals::workspace_document::edit::tests::rebased_write_timeout_keeps_its_attempted_version ... ok
+
+test result: ok. 7 passed; 0 failed; 3 ignored; 0 measured; 3657 filtered out; finished in 0.01s
+
+H4_EXIT=0
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sheprd-gpui` (bin "spaceport" test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 1.32s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/main.rs (target/debug/deps/spaceport-0e0a5e7fad282fbb)
+
+running 1 test
+test control::targets::tests::control_target_refuses_unrelated_daemon ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3666 filtered out; finished in 0.06s
+
+H5_EXIT=0
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sheprd-gpui` (bin "spaceport" test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 0.27s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/main.rs (target/debug/deps/spaceport-0e0a5e7fad282fbb)
+
+running 172 tests
+test endpoint::lifecycle_tests::background_commands::a_full_queue_holds_the_reload_without_reporting_a_failure ... ok
+test endpoint::lifecycle_tests::atomic_projection::metadata_gaps_deliver_keys_wheel_and_click_without_waiting_for_surface ... ok
+test endpoint::lifecycle_tests::activation_backpressure::activation_retry_does_not_cross_a_selection_epoch ... ok
+test endpoint::lifecycle_tests::background_commands::switching_devices_holds_commands_until_the_new_surface_is_activated ... ok
+test endpoint::lifecycle_tests::close_pane::pane_menu_close_sends_at_once_when_confirmation_is_off ... ok
+test endpoint::lifecycle_tests::core_terminal_hosts::a_new_tab_on_an_ssh_host_is_created_by_its_herdr ... ok
+test endpoint::lifecycle_tests::close_sequence::close_sequence_waits_for_the_previous_closes_ack_and_surface ... ok
+test endpoint::lifecycle_tests::core_terminal_hosts::the_herdr_2_command_is_refused_on_an_ssh_host ... ok
+test endpoint::lifecycle_tests::dead_keys::a_dead_key_reaches_the_pane_only_as_the_composed_character ... ok
+test endpoint::lifecycle_tests::close_pane::do_not_ask_again_persists_only_with_a_sent_pane_close ... ok
+test endpoint::lifecycle_tests::dead_keys::navigating_away_drops_the_composition ... ok
+test endpoint::lifecycle_tests::endpoint_switch::saved_selection_waits_for_snapshot_without_overwriting_preference ... ok
+test endpoint::lifecycle_tests::endpoint_switch::another_endpoint_changing_keeps_the_selected_window_state ... ok
+test endpoint::lifecycle_tests::file_paste::copied_files_paste_their_escaped_paths_into_a_local_pane ... ok
+test endpoint::lifecycle_tests::file_paste::a_remote_pane_that_turns_unready_never_gets_local_paths ... ok
+test endpoint::lifecycle_tests::file_paste::one_copied_image_uses_the_image_bridge_on_a_remote_pane ... ok
+test endpoint::lifecycle_tests::endpoint_switch::deferred_release_is_generation_fenced_and_local_can_escape ... ok
+test endpoint::lifecycle_tests::focus_fences::startup_focus_waits_for_the_first_surface_without_flapping_on_later_updates ... ok
+test endpoint::lifecycle_tests::focus_fences::first_focus_claims_geometry_without_a_window_resize ... ok
+test endpoint::lifecycle_tests::file_paste::unpastable_file_paths_report_like_a_drop_and_paste_nothing ... ok
+test endpoint::lifecycle_tests::activation_backpressure::initial_activation_full_retries_on_the_selected_host ... ok
+test endpoint::lifecycle_tests::activation_backpressure::activation_full_keeps_the_selected_host_fenced ... ok
+test endpoint::lifecycle_tests::focus_follows_mouse::focus_follows_mouse_respects_input_ownership ... ok
+test endpoint::lifecycle_tests::endpoint_switch::retiring_release_source_unblocks_destination_without_waiting_for_timeout ... ok
+test endpoint::lifecycle_tests::focus_follows_mouse::focus_follows_mouse_uses_one_ordered_focus_fence ... ok
+test endpoint::lifecycle_tests::core_terminal_hosts::only_a_tab_on_this_computer_follows_the_herdr_2_setting ... ok
+test endpoint::lifecycle_tests::function_keys::an_unnamed_function_key_is_the_prefix_and_its_second_press_reaches_the_pane ... ok
+test endpoint::lifecycle_tests::group_navigation_choices::a_page_choice_cancels_the_deferred_page_move_target ... ok
+test endpoint::lifecycle_tests::group_navigation_choices::another_terminal_replaces_the_deferred_page_move_target ... ok
+test endpoint::lifecycle_tests::group_navigation_choices::the_already_focused_terminal_cancels_the_deferred_page_move_target ... ok
+test endpoint::lifecycle_tests::focus_pipeline::pipelined_activation_resumes_input_only_after_focus_ack_and_coherent_target ... ok
+test endpoint::lifecycle_tests::function_keys::an_unnamed_function_key_is_released_under_its_name ... ok
+test endpoint::lifecycle_tests::focus_pipeline::failed_focus_keeps_input_fenced_despite_an_early_activation ... ok
+test endpoint::lifecycle_tests::held_paste::a_drop_in_a_gap_reaches_the_pane_it_was_dropped_on ... ok
+test endpoint::lifecycle_tests::core_reconnect_overlay::core_group_does_not_show_the_legacy_reconnect_overlay ... ok
+test endpoint::lifecycle_tests::held_paste::a_fifth_held_paste_is_refused_and_the_first_four_arrive ... ok
+test endpoint::lifecycle_tests::held_paste::a_drop_whose_point_lands_on_nothing_is_reported ... ok
+test endpoint::lifecycle_tests::held_paste::a_drop_without_a_frame_reaches_the_pane_under_its_point ... ok
+test endpoint::lifecycle_tests::catalog_link::changing_a_saved_host_clears_a_real_transports_outage ... ok
+test endpoint::lifecycle_tests::held_paste::a_paste_held_in_a_gap_is_not_sent_when_focus_moves ... ok
+test endpoint::lifecycle_tests::held_paste::a_paste_held_in_a_gap_is_dropped_on_reset ... ok
+test endpoint::lifecycle_tests::held_paste::a_paste_in_a_gap_arrives_between_the_keys_typed_around_it ... ok
+test endpoint::lifecycle_tests::group_page_move::moving_a_native_tab_steers_its_source_terminal_without_taking_focus ... ok
+test endpoint::lifecycle_tests::herdr_missing::a_missing_herdr_outlives_retries_until_a_connection_succeeds ... ok
+test endpoint::lifecycle_tests::herdr_missing::a_missing_herdr_seen_after_its_stop_still_waits_the_longest_delay ... ok
+test endpoint::lifecycle_tests::held_paste::copied_files_pasted_in_a_gap_arrive_as_paths ... ok
+test endpoint::lifecycle_tests::herdr_missing::a_missing_herdr_waits_the_longest_retry_delay ... ok
+test endpoint::lifecycle_tests::herdr_missing::a_version_refusal_replaces_a_missing_herdr ... ok
+test endpoint::lifecycle_tests::herdr_shutdown::explicit_socket_shutdown_keeps_attach_only_retry ... ok
+test endpoint::lifecycle_tests::herdr_shutdown::explicit_reconnect_recovers_a_stopped_endpoint_through_a_new_handshake ... ok
+test endpoint::lifecycle_tests::herdr_shutdown::ordinary_local_transport_loss_keeps_retry ... ok
+test endpoint::lifecycle_tests::horizontal_wheel::connected_horizontal_wheel_reaches_only_mouse_reporting_panes_and_popups ... ok
+test endpoint::lifecycle_tests::image_paste::connected_image_paste_busy_guard_releases_after_completion ... ok
+test endpoint::lifecycle_tests::herdr_shutdown::local_shutdown_requires_explicit_recovery ... ok
+test endpoint::lifecycle_tests::herdr_shutdown::named_session_shutdown_requires_explicit_recovery ... ok
+test endpoint::lifecycle_tests::image_paste::connected_image_paste_captures_pane_before_immediate_text_and_enter ... ok
+test endpoint::lifecycle_tests::image_paste::connected_image_paste_missing_path_falls_back_in_reserved_order ... ok
+test endpoint::lifecycle_tests::herdr_shutdown::ssh_shutdown_requires_explicit_recovery ... ok
+test endpoint::lifecycle_tests::image_paste::connected_image_paste_local_bridges_clipboard_image_but_not_paths ... ok
+test endpoint::lifecycle_tests::image_paste::connected_image_paste_image_only_preserves_text ... ok
+test endpoint::lifecycle_tests::herdr_shutdown::wsl_shutdown_requires_explicit_recovery ... ok
+test endpoint::lifecycle_tests::image_paste::connected_image_paste_popup_never_reaches_underlying_pane ... ok
+test endpoint::lifecycle_tests::image_paste::text_paste_survives_a_settled_navigation ... ok
+test endpoint::lifecycle_tests::image_paste::connected_image_paste_reconnect_cancels_old_task_and_keeps_single_preparation ... ok
+test endpoint::lifecycle_tests::image_paste_native::connected_image_paste_native_text_during_blocked_image_and_second_image_busy ... ok
+test endpoint::lifecycle_tests::image_paste_native::connected_image_paste_native_preparations_stay_bounded_across_reset ... ok
+test endpoint::lifecycle_tests::image_paste_native::connected_image_paste_native_text_reservations_preserve_fifo ... ok
+test endpoint::lifecycle_tests::herdr_shutdown::a_stopped_herdr_offers_explicit_start_at_normal_and_narrow_widths ... ok
+test endpoint::lifecycle_tests::input_gap::input_during_metadata_gap_names_the_visible_pane_until_popup_frame_commits ... ok
+test endpoint::lifecycle_tests::input_gap::input_held_across_gap_is_discarded_when_focus_moves ... ok
+test endpoint::lifecycle_tests::input_gap::input_held_across_gap_is_bounded_and_dropped_on_reset ... ok
+test endpoint::lifecycle_tests::image_paste_native::connected_image_paste_snapshot_surface_gap_preserves_existing_target ... ok
+test endpoint::lifecycle_tests::input_gap::input_typed_during_snapshot_surface_gap_reaches_pane_once_in_order ... ok
+test endpoint::lifecycle_tests::image_paste_native::connected_image_paste_queued_upload_remains_cancellable_after_preparation ... ok
+test endpoint::lifecycle_tests::input_settings::connected_right_click_passthrough_modifier_reaches_the_application_stripped ... ok
+test endpoint::lifecycle_tests::input_settings::connected_wheel_notch_scrolls_the_shared_mouse_scroll_lines ... ok
+test endpoint::lifecycle_tests::input_settings::wheel_notch_slides_the_shared_mouse_scroll_lines_through_scrollback ... ok
+test endpoint::lifecycle_tests::image_paste_native::connected_image_paste_key_down_ctrl_v_and_cmd_v ... ok
+test endpoint::lifecycle_tests::input_settings::right_click_passthrough_wins_over_a_link_under_the_pointer ... ok
+test endpoint::lifecycle_tests::keyboard::keyboard_report_all_releases_sent_keys ... ok
+test endpoint::lifecycle_tests::link_stability::a_stopped_handle_cannot_finish_the_stability_period ... ok
+test endpoint::lifecycle_tests::keyboard::custom_command_and_resize_mode_keys_send_endpoint_requests ... ok
+test endpoint::lifecycle_tests::mouse_cell_motion::connected_mouse_drag_reports_each_cell_once ... ok
+test endpoint::lifecycle_tests::image_paste::connected_image_paste_cancels_stale_preparation_without_blocking_fifo ... ok
+test endpoint::lifecycle_tests::link_clicks::an_unchecked_path_leaves_the_click_to_the_application ... ok
+test endpoint::lifecycle_tests::mouse_frame_gap::connected_mouse_drag_waits_through_a_frame_gap ... ok
+test endpoint::lifecycle_tests::mouse_frame_gap::connected_mouse_release_during_a_frame_gap_ends_the_drag_once ... ok
+test endpoint::lifecycle_tests::mouse_gestures::connected_mouse_deactivation_releases_last_sent_position_once_without_focusing ... ok
+test endpoint::lifecycle_tests::mouse_gestures::connected_mouse_hover_is_separate_from_capture_and_obeys_input_guards ... ok
+test endpoint::lifecycle_tests::mouse_targets::connected_mouse_inactive_pane_receives_first_click_before_focus_fence ... ok
+test endpoint::lifecycle_tests::mouse_targets::connected_mouse_popup_uses_popup_relative_pixel_coordinates_and_blocks_covered_panes ... ok
+test endpoint::lifecycle_tests::mouse_targets::connected_mouse_focused_pane_preserves_drag_target_and_immediate_text ... ok
+test endpoint::lifecycle_tests::mouse_gestures::connected_mouse_external_drag_cleans_up_once_without_forwarding_synthetic_input ... ok
+test endpoint::lifecycle_tests::notice_fence::a_system_notification_click_reaches_nothing_once_its_inbox_is_dropped ... ok
+test endpoint::lifecycle_tests::popup_projection::external_popup_at_unchanged_revision_never_receives_earlier_pane_input ... ok
+test endpoint::lifecycle_tests::focus_fences::every_focus_changing_command_fences_immediate_input_until_ack_and_surface ... ok
+test endpoint::lifecycle_tests::popup_projection::local_popup_command_keeps_its_barrier_across_metadata_staging ... ok
+test endpoint::lifecycle_tests::prompts::unconfirmed_tab_close_rejects_invalid_targets_and_unready_input ... ok
+test endpoint::lifecycle_tests::reconnect_backoff::brief_success_preserves_backoff_and_disconnect_restarts_stability_window ... ok
+test endpoint::lifecycle_tests::mouse_gestures::connected_mouse_cancels_stale_gestures_before_drag_or_release ... ok
+test endpoint::lifecycle_tests::reconnect_backoff::retry_backoff_doubles_from_half_a_second_to_thirty_seconds ... ok
+test endpoint::lifecycle_tests::notice_fence::a_toast_click_reaches_its_own_connection_while_it_exists ... ok
+test endpoint::lifecycle_tests::reconnect_backoff::retry_backoff_resets_only_after_sixty_seconds_of_healthy_connection ... ok
+test endpoint::lifecycle_tests::notice_fence::a_system_notification_click_reaches_its_own_connection_while_it_exists ... ok
+test endpoint::lifecycle_tests::reconnect_backoff::changed_target_and_manual_reconnect_reset_retry_history ... ok
+test endpoint::lifecycle_tests::mouse_fence::a_held_gesture_follows_the_windows_record_of_its_selection ... ok
+test endpoint::lifecycle_tests::prompts::name_prompts_follow_shared_config_and_label_creations ... ok
+test endpoint::lifecycle_tests::focus_pipeline::an_unverified_daemon_keeps_activation_behind_the_focus_response ... ok
+test endpoint::lifecycle_tests::remote_drop::a_refusal_that_arrives_after_its_stop_still_waits_the_longest_delay ... ok
+test endpoint::lifecycle_tests::remote_drop::a_drop_is_an_outage_until_a_connection_has_a_snapshot ... ok
+test endpoint::lifecycle_tests::remote_drop::a_stopped_handle_reads_as_reconnecting_before_its_state_arrives ... ok
+test endpoint::lifecycle_tests::remote_drop::a_drop_seen_before_its_state_arrives_does_not_fall_back_to_local ... ok
+test endpoint::lifecycle_tests::release_backpressure::a_full_queue_keeps_a_background_release_deferred_until_it_drains ... ok
+test endpoint::lifecycle_tests::remote_drop::a_dropped_remote_stays_selected_with_its_last_picture_dimmed ... ok
+test endpoint::lifecycle_tests::resize_claim_fence::a_resize_during_a_focus_change_does_not_claim_the_tab_being_left ... ok
+test endpoint::lifecycle_tests::scrollbar_drag::scrollbar_drag_survives_a_snapshot_ahead_of_its_surface ... ok
+test endpoint::lifecycle_tests::remote_drop::the_card_stays_until_the_replacement_frame_lands ... ok
+test endpoint::lifecycle_tests::remote_drop::a_refusal_only_the_user_can_fix_waits_the_longest_retry_delay ... ok
+test endpoint::lifecycle_tests::resize_reassert::successful_resize_reassert_waits_for_the_next_retry_interval ... ok
+test endpoint::lifecycle_tests::shift_select_hint::a_local_selection_in_a_pane_without_mouse_reporting_never_hints ... ok
+test endpoint::lifecycle_tests::shift_select_hint::a_forwarded_drag_hints_shift_once_per_session ... ok
+test endpoint::lifecycle_tests::shift_select_hint::a_shift_selection_over_a_mouse_reporting_pane_retires_the_hint ... ok
+test endpoint::lifecycle_tests::selection_activation_budget::reselection_keeps_its_budget_across_an_old_inactive_receipt ... ok
+test endpoint::lifecycle_tests::shift_select_hint::clicks_and_other_buttons_leave_the_hint_unspent ... ok
+test endpoint::lifecycle_tests::shift_select_hint::pixel_motion_within_one_cell_leaves_the_hint_unspent ... ok
+test endpoint::lifecycle_tests::shifted_keys::a_custom_command_on_the_symbol_wins_over_a_shifted_chord ... ok
+test endpoint::lifecycle_tests::shifted_keys::a_custom_command_on_the_symbol_wins_over_a_restored_prefix ... ok
+test endpoint::lifecycle_tests::shifted_keys::a_shifted_key_invokes_a_custom_command_through_the_window ... ok
+test endpoint::lifecycle_tests::sounds::inactive_endpoint_semantic_sound_reaches_worker_once ... ok
+test endpoint::lifecycle_tests::shifted_keys::a_key_held_as_named_is_not_taken_by_a_restored_custom_command ... ok
+test endpoint::lifecycle_tests::split_drag::connected_split_drag_sends_coalesced_ratios_and_stops_on_layout_change ... ok
+test endpoint::lifecycle_tests::split_equalize::an_early_release_lets_the_double_click_finish ... ok
+test endpoint::lifecycle_tests::split_equalize::a_tab_switch_drops_the_rest_of_an_even_queue ... ok
+test endpoint::lifecycle_tests::split_equalize::a_triple_click_lets_the_double_click_finish ... ok
+test endpoint::lifecycle_tests::split_equalize::command::the_command_leaves_a_held_border_drag_alone ... ok
+test endpoint::lifecycle_tests::split_equalize::command::running_it_again_mid_way_does_not_restart_the_queue ... ok
+test endpoint::lifecycle_tests::split_equalize::command::the_command_evens_every_split_in_the_tab ... ok
+test endpoint::lifecycle_tests::split_equalize::command::the_command_leaves_a_zoomed_tab_alone ... ok
+test endpoint::lifecycle_tests::temporary_drop::a_pasted_thumbnail_reaches_the_pane_before_enter_typed_after_it ... ok
+test endpoint::lifecycle_tests::staged_release::releasing_a_surface_publishes_metadata_that_no_longer_needs_matching_cells ... ok
+test endpoint::lifecycle_tests::temporary_drop::a_screenshot_thumbnail_takes_the_image_bridge_on_a_local_pane ... ok
+test endpoint::lifecycle_tests::split_equalize::double_click_evens_every_split_and_a_drag_still_resizes ... ok
+test endpoint::lifecycle_tests::temporary_drop::a_thumbnail_that_cannot_be_read_still_pastes_its_path ... ok
+test endpoint::lifecycle_tests::toast_handoff::newer_same_endpoint_navigation_cannot_replay_a_pending_toast ... ok
+test endpoint::lifecycle_tests::toast_handoff::toast_handoff_defers_a_contended_source_without_activating_destination ... ok
+test endpoint::lifecycle_tests::toast_handoff::accepted_toast_survives_expiry_but_not_invalidation ... ok
+test endpoint::lifecycle_tests::prompts::dialog_response_survives_initial_surface_activation ... ok
+test endpoint::lifecycle_tests::toast_handoff::toast_handoff_retains_busy_validation_and_revalidates_before_queueing ... ok
+test endpoint::lifecycle_tests::toast_navigation::toast_queue_failure_retains_notice ... ok
+test endpoint::lifecycle_tests::toast_navigation::notification_command_rejects_ineligible_cards_without_selection_or_requests ... ok
+test endpoint::lifecycle_tests::wake_recovery::a_path_change_keeps_a_dial_and_its_backoff ... ok
+test endpoint::lifecycle_tests::wake_recovery::recovering_dials_a_dropped_endpoint_at_once ... ok
+test endpoint::lifecycle_tests::toast_navigation::toast_navigation_queues_typed_targets_and_fences_input ... ok
+test endpoint::lifecycle_tests::wake_recovery::recovering_leaves_a_host_that_needs_the_user_on_its_wait ... ok
+test endpoint::lifecycle_tests::toast_navigation::wire_completion_waits_for_evidence_then_command_uses_original_pane ... ok
+test endpoint::lifecycle_tests::wake_recovery::recovering_redials_a_remote_attempt_still_dialing_but_not_a_local_one ... ok
+test endpoint::lifecycle_tests::wake_recovery::recovering_waits_while_the_worker_report_cannot_be_read ... ok
+test endpoint::lifecycle_tests::wake_recovery::recovering_keeps_a_link_whose_connection_is_not_yet_polled ... ok
+test endpoint::lifecycle_tests::wake_recovery::recovering_starts_the_backoff_over_and_keeps_a_live_link ... ok
+test endpoint::lifecycle_tests::wheel_slides::the_uncovered_edge_of_a_resting_pane_resolves_no_link ... ok
+test endpoint::lifecycle_tests::retry_dialog_fencing::reconnect_and_background_retry_close_daemon_bound_dialogs ... ok
+test endpoint::lifecycle_tests::window_notices::bell_and_window_title_follow_the_selected_endpoint ... ok
+test endpoint::lifecycle_tests::smooth_scroll_off::turning_smooth_scrolling_off_snaps_a_resting_pane_to_its_row ... ok
+test endpoint::lifecycle_tests::wheel_slides::wheel_deltas_accumulate_into_lines_while_panes_cannot_slide ... ok
+test endpoint::lifecycle_tests::workspace_menu_navigation::workspace_menu_keeps_immediate_and_deferred_navigation ... ok
+test endpoint::lifecycle_tests::sounds::qa_play_sound_dispatches_without_daemon_or_pane ... ok
+test endpoint::lifecycle_tests::keyboard::a_custom_command_runs_from_a_catalog_default_keystroke ... ok
+test endpoint::lifecycle_tests::window_notices::endpoint_reset_clears_a_flash_that_was_already_fading ... ok
+test endpoint::lifecycle_tests::window_notices::system_notification_click_opens_its_origin_and_rejects_a_reconnect ... ok
+test endpoint::lifecycle_tests::toast_navigation::toast_rendered_clicks_reject_replaced_removed_and_disabled_origins ... ok
+test endpoint::lifecycle_tests::focus_follows_mouse_render::rendered_hover_resumes_typing_in_the_hovered_pane ... ok
+test endpoint::lifecycle_tests::toast_navigation::toast_click_uses_origin_and_close_never_navigates ... ok
+
+test result: ok. 172 passed; 0 failed; 0 ignored; 0 measured; 3495 filtered out; finished in 0.33s
+
+H6_EXIT=0
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sheprd-gpui` (bin "spaceport" test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 0.30s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/main.rs (target/debug/deps/spaceport-0e0a5e7fad282fbb)
+
+running 34 tests
+test daemon::tests::config_home::a_started_daemon_uses_the_resolved_config_home ... ok
+test daemon::tests::config_home::without_a_resolved_config_home_the_login_one_is_removed ... ok
+test daemon::tests::attach_only_and_cancelled_do_not_launch ... ok
+test daemon::tests::cancellation_during_command_preparation_does_not_spawn ... ok
+test daemon::tests::missing_executable_is_actionable ... ok
+test daemon::tests::existing_daemon_does_not_launch ... ok
+test daemon::tests::explicit_and_remote_targets_never_start_local_daemon ... ok
+test keymap::daemon::tests::an_unusable_server_profile_is_an_error ... ok
+test keymap::daemon::tests::a_prefix_list_keeps_every_key_in_order ... ok
+test keymap::daemon::tests::configured_actions_bind_and_indexed_actions_count_digits ... ok
+test keymap::daemon::tests::defaults_match_herdr ... ok
+test keymap::daemon::tests::a_server_profile_reads_like_the_local_table ... ok
+test daemon::tests::endpoint_classification::non_local_paths_are_classified_before_peer_credentials ... ok
+test keymap::daemon::tests::keystrokes_translate_herdr_spelling ... ok
+test keymap::daemon::tests::layout_and_navigation_actions_take_herdr_defaults ... ok
+test daemon::tests::config_home::a_stale_socket_is_replaced_by_a_daemon_at_the_polled_path ... ok
+test keymap::daemon::tests::detach::detach_uses_herdr_default_and_honors_custom_or_empty_bindings ... ok
+test keymap::daemon::tests::literal_plus::a_literal_plus_follows_the_final_separator ... ok
+test keymap::daemon::tests::literal_plus::a_literal_plus_rejects_missing_or_extra_key_tokens ... ok
+test daemon::tests::startup_wait_is_bounded ... ok
+test daemon::tests::starts_and_connects_to_socket ... ok
+test keymap::daemon::tests::literal_plus::a_server_profile_keeps_a_plus_prefix ... ok
+test keymap::daemon::tests::literal_plus::local_keys_bind_a_plus_prefix_and_plus_chords ... ok
+test keymap::daemon::tests::legacy_indexed_combos_bind_digits ... ok
+test keymap::daemon::tests::literal_plus::plus_prefix_lists_keep_each_key_once ... ok
+test keymap::daemon::tests::detach::detach_reads_the_remote_profile_and_does_not_override_configured_chords ... ok
+test keymap::daemon::tests::published_extra_prefixes_follow_the_primary ... ok
+test keymap::daemon::tests::unusable_entries_are_skipped_not_fatal ... ok
+test keymap::daemon::tests::the_issue_example_reads_as_written ... ok
+test daemon::tests::local_endpoint_survives_executable_removal_and_replacement ... ok
+test keymap::daemon::tests::user_bindings_precede_defaults ... ok
+test keymap::daemon::tests::prefix_lists_follow_herdr_validation ... ok
+test keymap::daemon::tests::worktree::gui_keybindings_take_precedence_over_daemon_worktree_keys ... ok
+test keymap::daemon::tests::worktree::worktree_open_is_unbound_by_default_and_binds_what_the_user_writes ... ok
+
+test result: ok. 34 passed; 0 failed; 0 ignored; 0 measured; 3633 filtered out; finished in 0.00s
+
+H7_EXIT=0
+END=2026-11-22T04:55:39Z
