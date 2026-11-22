@@ -2,6 +2,7 @@
 // ABOUTME: Keeps reader notifications scoped to their test and connection owners.
 use crate::{
     config::Theme,
+    daemon::Start,
     state::{Answer, ConnectionStatus, LiveState},
     terminal::InputTarget,
 };
@@ -239,10 +240,16 @@ impl ConnectionBridge {
         self.reset(ConnectionStatus::Detached, active);
     }
 
-    pub fn reconnect(&mut self, options: ConnectOptions, active: bool, surface_active: bool) {
+    pub fn reconnect(
+        &mut self,
+        options: ConnectOptions,
+        active: bool,
+        surface_active: bool,
+        start: Start,
+    ) {
         tracing::debug!("Connection bridge reconnecting");
         self.reset(ConnectionStatus::Connecting, active);
-        self.start(options, surface_active, |events| {
+        self.start(options, surface_active, start, |events| {
             std::thread::Builder::new()
                 .name("herdr-gui-events".into())
                 .spawn(events)
@@ -254,6 +261,7 @@ impl ConnectionBridge {
         &mut self,
         options: ConnectOptions,
         surface_active: bool,
+        start: Start,
         spawn: impl FnOnce(Box<dyn FnOnce() + Send>) -> std::io::Result<()>,
     ) {
         self.drained = Arc::new(AtomicBool::new(false));
@@ -266,7 +274,7 @@ impl ConnectionBridge {
         let startup_inbox = self.inbox.clone();
         let result =
             connect_with_connector(target, options, surface_active, move |target, stop| {
-                let result = crate::daemon::connect(target, stop, || {
+                let result = crate::daemon::connect(target, start, stop, || {
                     tracing::debug!("Connection bridge starting local daemon");
                     if let Ok(mut state) = startup_inbox.lock()
                         && state.status == ConnectionStatus::Connecting
@@ -386,6 +394,12 @@ impl ConnectionBridge {
     /// Cheap enough to call every display frame: never blocks the UI thread.
     pub fn has_update(&self) -> bool {
         self.inbox.try_lock().is_ok_and(|state| state.dirty)
+    }
+
+    /// Preserve final reader events until the UI has consumed their projection.
+    pub(crate) fn retry_ready(&self) -> bool {
+        self.drained.load(Ordering::Acquire)
+            && self.inbox.try_lock().is_ok_and(|state| !state.dirty)
     }
 
     /// Whether the worker has reported this link up, which the window learns

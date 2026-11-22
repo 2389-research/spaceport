@@ -1,3 +1,5 @@
+// ABOUTME: Exercises endpoint identity, projection, and retry ownership.
+// ABOUTME: Keeps transport-independent lifecycle boundaries covered across platforms.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use sheprd_client::{ClientEvent, SavedHost};
@@ -7,6 +9,7 @@ mod en_xa;
 mod follow_focus;
 mod live_of;
 mod phase;
+mod retry_readiness;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod local_peer_warning;

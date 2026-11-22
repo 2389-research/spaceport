@@ -1,3 +1,5 @@
+// ABOUTME: Checks one-shot local peer warnings across bridge updates.
+// ABOUTME: Keeps private attachment fixtures separate from runtime startup permission.
 use super::*;
 
 fn warning() -> crate::daemon::LocalPeerWarning {
@@ -40,7 +42,7 @@ fn local_peer_warning_is_fenced_on_detach_and_reconnect() {
         if reconnect {
             let mut options = ConnectOptions::default();
             options.surface_size.cols = 0;
-            bridge.reconnect(options, false, true);
+            bridge.reconnect(options, false, true, Start::WhenMissing);
         } else {
             bridge.detach(false);
         }

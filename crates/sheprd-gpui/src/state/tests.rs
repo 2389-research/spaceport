@@ -1,3 +1,5 @@
+// ABOUTME: Exercises live-state projection and ordered client event reduction.
+// ABOUTME: Shares snapshots and surfaces across focused state regression topics.
 use super::*;
 use sheprd_client::protocol::FrameData;
 
@@ -13,6 +15,7 @@ mod focus_acks;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod local_peer_warning;
 mod requests;
+mod shutdown;
 mod sounds;
 mod surfaces;
 mod version_mismatch;
