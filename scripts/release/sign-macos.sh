@@ -29,7 +29,7 @@ for field in CFBundleShortVersionString CFBundleVersion; do
 done
 [[ $(plutil -extract LSMinimumSystemVersion raw "$app/Contents/Info.plist") == 14.2 ]] || fail 'App minimum OS mismatch'
 [[ $(plutil -extract CFBundleExecutable raw "$app/Contents/Info.plist") == spaceport ]] || fail 'App executable mismatch'
-app_id=$(cat "$release_root/crates/sheprd-gpui/macos-preview-app-id")
+app_id=$(cat "$release_root/crates/spaceport-gpui/macos-preview-app-id")
 [[ $(plutil -extract CFBundleIdentifier raw "$app/Contents/Info.plist") == "$app_id" ]] || fail 'App signing identity mismatch'
 [[ $(plutil -extract CFBundleName raw "$app/Contents/Info.plist") == Spaceport ]] || fail 'App name mismatch'
 profile=$(plutil -extract SpaceportBuildProfile raw "$app/Contents/Info.plist")

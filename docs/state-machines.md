@@ -10,7 +10,7 @@ The [earlier SIFT progress](sift-audit-2026-11-13-progress.md) records preceding
 
 ## Core terminal spawning — 1w6g
 
-[`core_terminals/spawning.rs`](../crates/sheprd-gpui/src/core_terminals/spawning.rs) owns `Spawning`.
+[`core_terminals/spawning.rs`](../crates/spaceport-gpui/src/core_terminals/spawning.rs) owns `Spawning`.
 Its states are Idle, Queued(FIFO), and Running(purpose, receiver, FIFO).
 Only `Spawning::transition(Event)` mutates the state or queue.
 
@@ -34,8 +34,8 @@ Core terminals remain runtime-owned when a view disappears.
 
 ### Verification
 
-- [Queue integration tests](../crates/sheprd-gpui/src/core_terminals/tests/spawn_queue.rs) observe framed requests and post-placement draining.
-- [Owner tests](../crates/sheprd-gpui/src/core_terminals/spawning/tests.rs) cover bounds, Core mismatch, unavailable cleanup, and uncertain completion.
+- [Queue integration tests](../crates/spaceport-gpui/src/core_terminals/tests/spawn_queue.rs) observe framed requests and post-placement draining.
+- [Owner tests](../crates/spaceport-gpui/src/core_terminals/spawning/tests.rs) cover bounds, Core mismatch, unavailable cleanup, and uncertain completion.
 - Clean `cargo test --locked -p sheprd-gpui --bin spaceport core_terminals::`: 118 passed, eight opt-in tests ignored.
 - Clean chat checks passed 495 tests, including keyboard target-identity regressions.
 - Default and integration-feature Clippy, quick checks, and independent follow-up review passed.
@@ -44,7 +44,7 @@ Native GUI and isolated real-runtime spawning remain separate integration checks
 
 ## Chat file work — xtjm
 
-[`chat/files.rs`](../crates/sheprd-gpui/src/chat/files.rs) owns each pane's unfinished file operations.
+[`chat/files.rs`](../crates/spaceport-gpui/src/chat/files.rs) owns each pane's unfinished file operations.
 `FileWork` holds a private `State` enum with `Idle` and `Pending(operations)` variants.
 Only `FileWork::transition(Event)` writes that state, its operation list, or cancellation signals.
 
@@ -68,8 +68,8 @@ Cleanup remains best effort under the existing transfer API and application life
 
 ### Verification
 
-- [Pure owner tests](../crates/sheprd-gpui/src/chat/files/tests.rs) cover counts, exact completion, invalidation, and cancellation.
-- [Upload and dialog tests](../crates/sheprd-gpui/src/chat/tests/uploads.rs) exercise actual headless callbacks and completion handling.
+- [Pure owner tests](../crates/spaceport-gpui/src/chat/files/tests.rs) cover counts, exact completion, invalidation, and cancellation.
+- [Upload and dialog tests](../crates/spaceport-gpui/src/chat/tests/uploads.rs) exercise actual headless callbacks and completion handling.
 - `cargo test --locked -p sheprd-gpui --bin spaceport chat::` passed 492 tests.
 - Three regression tests failed before the conversion.
 
@@ -77,7 +77,7 @@ Live SSH cleanup and native window teardown remain separate integration checks.
 
 ## Herdr activity reporting — dre7
 
-[`herdr/activity.rs`](../crates/sheprd-acp/src/herdr/activity.rs) owns `ActivityReport`.
+[`herdr/activity.rs`](../crates/spaceport-acp/src/herdr/activity.rs) owns `ActivityReport`.
 Its states are Unreported, QueuedInitial, Queued, Reporting, Retry, and Acknowledged.
 Only `ActivityReport::transition(Event)` mutates that bounded mailbox lifecycle.
 
@@ -97,8 +97,8 @@ Closing wakes the worker, skips stale retries, and retains the prior handling of
 
 ### Verification
 
-- [Worker tests](../crates/sheprd-acp/src/herdr/tests/activity.rs) use an isolated socket peer for failed submission, authority checks, supersession, and shutdown.
-- [Portable owner tests](../crates/sheprd-acp/src/herdr/tests/activity_state.rs) cover acknowledgement and latest-value retention.
+- [Worker tests](../crates/spaceport-acp/src/herdr/tests/activity.rs) use an isolated socket peer for failed submission, authority checks, supersession, and shutdown.
+- [Portable owner tests](../crates/spaceport-acp/src/herdr/tests/activity_state.rs) cover acknowledgement and latest-value retention.
 - Two retry regressions failed before the conversion.
 - `cargo test --locked -p sheprd-acp`: 411 unit, one branding, and four process tests passed.
 - Scoped Clippy, formatting, size, sorting, and whitespace checks passed.
@@ -113,8 +113,8 @@ Turn ownership and setting-command state stay in their existing owners.
 
 | Provider | Owner | Stored states | Transition function |
 | --- | --- | --- | --- |
-| Codex | [`codex/bridge/opening.rs`](../crates/sheprd-acp/src/codex/bridge/opening.rs) | Handshake: Waiting, Ready, Failed. Models: NotAsked, Waiting, Ready. Opening: None, Asked, Thread, Open. | `opening::State::transition(Event)` |
-| Pi | [`pi/bridge/opening.rs`](../crates/sheprd-acp/src/pi/bridge/opening.rs) | Handshake: Waiting, Ready, Failed. Opening: None, Asked, Open. | `opening::State::transition(Event)` |
+| Codex | [`codex/bridge/opening.rs`](../crates/spaceport-acp/src/codex/bridge/opening.rs) | Handshake: Waiting, Ready, Failed. Models: NotAsked, Waiting, Ready. Opening: None, Asked, Thread, Open. | `opening::State::transition(Event)` |
+| Pi | [`pi/bridge/opening.rs`](../crates/spaceport-acp/src/pi/bridge/opening.rs) | Handshake: Waiting, Ready, Failed. Opening: None, Asked, Open. | `opening::State::transition(Event)` |
 
 ### Codex transitions
 
@@ -146,18 +146,18 @@ The tests exercise real bridge inputs and emitted harness/ACP messages with synt
 The existing helper checks also run isolated executable processes.
 Live provider sessions remain a separate integration check.
 
-- [Codex opening tests](../crates/sheprd-acp/src/codex/bridge/tests/opening.rs).
-- [Codex reopening tests](../crates/sheprd-acp/src/codex/bridge/tests/reopening.rs).
-- [Pi opening tests](../crates/sheprd-acp/src/pi/bridge/tests/opening.rs).
-- `cargo test --locked -p sheprd-acp bridge::tests::opening`.
-- `cargo test --locked -p sheprd-acp --all-features`.
+- [Codex opening tests](../crates/spaceport-acp/src/codex/bridge/tests/opening.rs).
+- [Codex reopening tests](../crates/spaceport-acp/src/codex/bridge/tests/reopening.rs).
+- [Pi opening tests](../crates/spaceport-acp/src/pi/bridge/tests/opening.rs).
+- `cargo test --locked -p spaceport-acp bridge::tests::opening`.
+- `cargo test --locked -p spaceport-acp --all-features`.
 
 The original regression run failed six cases before the conversion.
 Sequential opening and retained-setting regressions guard behavior preserved during the conversion.
 
 ## Settings persistence — y0p7
 
-[`persistence/lifecycle.rs`](../crates/sheprd-gpui/src/settings_window/persistence/lifecycle.rs) owns active writes, drain goals, and pending work.
+[`persistence/lifecycle.rs`](../crates/spaceport-gpui/src/settings_window/persistence/lifecycle.rs) owns active writes, drain goals, and pending work.
 `Lifecycle::transition(Event)` is the only writer of those fields.
 Active `Save` states are Idle, Loading, and Running(Kind).
 Running kinds capture Ordinary, Theme(revision), Layout(mode), or Sidebar(intent).
@@ -182,7 +182,7 @@ Queue saturation refuses the newest request with a localized error.
 A later queued success cannot erase that failure notice.
 The managed-skill action retains its existing refusal while busy.
 
-[`persistence/operation.rs`](../crates/sheprd-gpui/src/settings_window/persistence/operation.rs) retains typed shared edits until dispatch.
+[`persistence/operation.rs`](../crates/spaceport-gpui/src/settings_window/persistence/operation.rs) retains typed shared edits until dispatch.
 A successful guarded write carries its exact before and after snapshots.
 Reconciliation must match that after snapshot before promoting requests with the matching before snapshot.
 Normal and quit drains use the same promotion rule.
@@ -190,8 +190,8 @@ External writes remain conflicts, including changes after reconciliation reads.
 
 ### Verification
 
-- [Save intent tests](../crates/sheprd-gpui/src/settings_window/tests/save_intents.rs) cover theme, layout, sidebar, queue, and shutdown races.
-- [Real-file queue tests](../crates/sheprd-gpui/src/settings_window/tests/shared_save_queue.rs) cover owned write chains and external conflicts.
+- [Save intent tests](../crates/spaceport-gpui/src/settings_window/tests/save_intents.rs) cover theme, layout, sidebar, queue, and shutdown races.
+- [Real-file queue tests](../crates/spaceport-gpui/src/settings_window/tests/shared_save_queue.rs) cover owned write chains and external conflicts.
 - `cargo test --locked -p sheprd-gpui --bin spaceport settings_window::`: 241 passed.
 - `cargo test --locked -p sheprd-gpui --bin spaceport herdr_settings::`: 48 passed.
 - Default and integration-feature Clippy, formatting, size, sorting, i18n, and whitespace checks passed.
@@ -200,7 +200,7 @@ Native controls and cross-platform execution remain separate checks.
 
 ## Chat tool liveness — ed3g
 
-[`Transcript::tool_live`](../crates/sheprd-chat-protocol/src/model.rs) owns the shared liveness projection.
+[`Transcript::tool_live`](../crates/spaceport-chat-protocol/src/model.rs) owns the shared liveness projection.
 The stored enums remain Status, ToolStatus, and ActivityState.
 `Transcript::apply` remains their shared transition function; no wire state was added.
 The projection is pure and never rewrites a tool's reported result.
@@ -223,9 +223,9 @@ Completed children do not become live merely because their parent still runs.
 
 ### Verification
 
-- [Protocol tests](../crates/sheprd-chat-protocol/src/tests/tool_liveness.rs) cover session, turn, and parent-activity ownership.
-- [TUI tests](../crates/sheprd-acp/src/tui/view/tests/tool_liveness.rs) reduce actual attach messages through the line cache.
-- [Paint tests](../crates/sheprd-gpui/src/chat/tests/tool_liveness.rs) inspect the actual Timeline marker.
+- [Protocol tests](../crates/spaceport-chat-protocol/src/tests/tool_liveness.rs) cover session, turn, and parent-activity ownership.
+- [TUI tests](../crates/spaceport-acp/src/tui/view/tests/tool_liveness.rs) reduce actual attach messages through the line cache.
+- [Paint tests](../crates/spaceport-gpui/src/chat/tests/tool_liveness.rs) inspect the actual Timeline marker.
 - Two TUI regressions, a marker regression, and a parent-activity regression failed before their corrections.
 - Clean-member checks passed 71 protocol, 406 ACP unit, five process/branding, and 482 chat tests.
 - Scoped all-target Clippy and repository quick checks passed.
@@ -235,7 +235,7 @@ Live-provider event delivery remains a separate integration check.
 
 ## Endpoint links — 77dt
 
-[`endpoint/link.rs`](../crates/sheprd-gpui/src/endpoint/link.rs) stores Disabled, Detached, Waiting, Dialing, and Up.
+[`endpoint/link.rs`](../crates/spaceport-gpui/src/endpoint/link.rs) stores Disabled, Detached, Waiting, Dialing, and Up.
 Retry deadlines and connection stability time belong to those states.
 Failure distinguishes Transport, Missing, and Version advice.
 `Endpoint::enter(Transition)` owns all link, attempt, bridge, and handle lifecycle writes.
@@ -258,9 +258,9 @@ Fresh attempts without an outage reason do not inherit a reconnecting label.
 
 ### Verification
 
-- [Catalog tests](../crates/sheprd-gpui/src/endpoint/tests/catalog_link.rs) pin diagnostic reset on retargeting.
-- [Real-handle tests](../crates/sheprd-gpui/src/endpoint/lifecycle_tests/catalog_link.rs) fence retired inboxes.
-- [Stability tests](../crates/sheprd-gpui/src/endpoint/lifecycle_tests/link_stability.rs) reject stopped-handle success.
+- [Catalog tests](../crates/spaceport-gpui/src/endpoint/tests/catalog_link.rs) pin diagnostic reset on retargeting.
+- [Real-handle tests](../crates/spaceport-gpui/src/endpoint/lifecycle_tests/catalog_link.rs) fence retired inboxes.
+- [Stability tests](../crates/spaceport-gpui/src/endpoint/lifecycle_tests/link_stability.rs) reject stopped-handle success.
 - Clean default checks passed 4,007 tests; integration-feature endpoint checks passed 239.
 - Scoped Clippy, formatting, size, sorting, i18n, whitespace, and independent lifecycle review passed.
 
@@ -268,7 +268,7 @@ Native catalog interactions and other-platform execution remain separate checks.
 
 ## Core call and stream ownership — 674p
 
-[`connection.rs`](../crates/sheprd-core-client/src/connection.rs) stores each Call as Registered, Sent, Answered, or Abandoned.
+[`connection.rs`](../crates/spaceport-core-client/src/connection.rs) stores each Call as Registered, Sent, Answered, or Abandoned.
 `Shared::transition(CallEvent)` owns every production pending-call and loss-fence write.
 Narrow wrappers dispatch events and return typed outcomes.
 
@@ -288,16 +288,16 @@ The worker sends those CLOSE frames directly, independent of outbound queue satu
 The timeout/answer lock handoff claims an already delivered reply instead of leaking its route.
 No timed-out request is replayed.
 
-[`Stream::drop`](../crates/sheprd-core-client/src/stream.rs) owns ordinary attachment/subscription cleanup once.
+[`Stream::drop`](../crates/spaceport-core-client/src/stream.rs) owns ordinary attachment/subscription cleanup once.
 A stream exists before successful reply metadata is parsed, so typed parse errors also release ownership.
 Ordinary stream destruction retains the existing bounded best-effort queue policy.
 That policy is distinct from direct worker cleanup for abandoned or unheard replies.
 
 ### Verification
 
-- [Abandoned-call tests](../crates/sheprd-core-client/src/connection/tests/abandoned.rs) cover late answers and unclaimed routes.
-- [Owner tests](../crates/sheprd-core-client/src/connection/tests/lifecycle.rs) cover bounds, loss fencing, and handoff races.
-- [Isolated Core test](../crates/sheprd-core-client/src/connection/tests/live.rs) delays actual Core replies and observes CLOSE writes.
+- [Abandoned-call tests](../crates/spaceport-core-client/src/connection/tests/abandoned.rs) cover late answers and unclaimed routes.
+- [Owner tests](../crates/spaceport-core-client/src/connection/tests/lifecycle.rs) cover bounds, loss fencing, and handoff races.
+- [Isolated Core test](../crates/spaceport-core-client/src/connection/tests/live.rs) delays actual Core replies and observes CLOSE writes.
 - Clean-member default and all-feature suites each passed 77 tests; opt-in tests remained ignored.
 - The selected hc0.1.20 fixture passed and confirmed the terminal remained Live.
 - All-target/all-feature Clippy, repository quick checks, and independent re-reviews passed.
@@ -307,7 +307,7 @@ Other-platform execution remains a separate check.
 
 ## Click tunnel ownership — t9fk
 
-[`listening_ports/tunnel.rs`](../crates/sheprd-gpui/src/listening_ports/tunnel.rs) stores Idle, Opening, Open, and Reopening per key.
+[`listening_ports/tunnel.rs`](../crates/spaceport-gpui/src/listening_ports/tunnel.rs) stores Idle, Opening, Open, and Reopening per key.
 `Tunnels::transition` owns every entry, state, and remembered-port write.
 Begin starts one attempt; Finish and Fail accept only that exact Arc identity.
 Close cancels activity while retaining port history; Forget also removes that history.
@@ -318,7 +318,7 @@ Open tunnels and pending attempts share the existing capacity bound.
 
 ### Verification
 
-- [Attempt tests](../crates/sheprd-gpui/src/listening_ports/tests/tunnel_attempts.rs) cover all cancellation paths and both completion orders.
+- [Attempt tests](../crates/spaceport-gpui/src/listening_ports/tests/tunnel_attempts.rs) cover all cancellation paths and both completion orders.
 - Two stale-completion regressions failed before the correction.
 - Clean listening-port checks passed 45 tests; scoped Clippy and quick checks passed.
 - Independent review checked exact children, retained port preferences, bounds, and cleanup.
@@ -328,7 +328,7 @@ The host-menu duplicate-forward gap remains outside this conversion.
 
 ## Core connection start intent — fj07
 
-[`core_terminals/hub.rs`](../crates/sheprd-gpui/src/core_terminals/hub.rs) stores Idle, Connecting, Ready, or Unavailable.
+[`core_terminals/hub.rs`](../crates/spaceport-gpui/src/core_terminals/hub.rs) stores Idle, Connecting, Ready, or Unavailable.
 Connecting owns its receiver, start mode, and that attempt's explicit upgrade request.
 Unavailable owns its typed error and retry timestamp.
 `Hub::transition` owns state and exact-binding writes.
@@ -341,7 +341,7 @@ Known Core identity is checked again when the result arrives.
 
 ### Verification
 
-- [Intent tests](../crates/sheprd-gpui/src/core_terminals/hub/tests/start_intent.rs) cover stale start, worker failure, dropped workers, retry expiry, and latest binding.
+- [Intent tests](../crates/spaceport-gpui/src/core_terminals/hub/tests/start_intent.rs) cover stale start, worker failure, dropped workers, retry expiry, and latest binding.
 - Two original regressions failed before conversion.
 - Clean default Core checks passed 189 tests; integration-feature checks passed 192.
 - Clippy, quick checks, and independent lifecycle review passed.
@@ -350,8 +350,8 @@ Real installed-runtime startup, native GUI, and platform execution remain separa
 
 ## Completed transfer delivery — hmqh
 
-[`window/transfers.rs`](../crates/sheprd-gpui/src/window/transfers.rs) stores Idle, Uploading, Cancelling, Waiting, Accepted, or Cleaning.
-`SheprdWindow::transition_file_transfer` owns live phases, displayed progress, and explicit cancellation.
+[`window/transfers.rs`](../crates/spaceport-gpui/src/window/transfers.rs) stores Idle, Uploading, Cancelling, Waiting, Accepted, or Cleaning.
+`SpaceportWindow::transition_file_transfer` owns live phases, displayed progress, and explicit cancellation.
 Start captures the original host, target, and input fence.
 Uploaded retains successful quoted paths in Waiting while menus or activation block input.
 Poll sends only when that captured target is current and ready.
@@ -368,7 +368,7 @@ It does not introduce a second live phase writer.
 
 ### Verification
 
-- [Readiness tests](../crates/sheprd-gpui/src/window/transfers/tests/readiness.rs) cover menu/input waits, refusal, cancellation, and teardown.
+- [Readiness tests](../crates/spaceport-gpui/src/window/transfers/tests/readiness.rs) cover menu/input waits, refusal, cancellation, and teardown.
 - Clean default checks passed 4,016 tests, including all 15 transfer tests.
 - Clippy, quick checks, and independent lifecycle review passed.
 
@@ -376,7 +376,7 @@ Real SSH/native transfer execution and other-platform taskbar checks remain sepa
 
 ## Surface activation fence — 7dc6
 
-[`state/activation.rs`](../crates/sheprd-gpui/src/state/activation.rs) stores Open, Releasing, Retry, Sent, Acknowledged, Ready, or Failed.
+[`state/activation.rs`](../crates/spaceport-gpui/src/state/activation.rs) stores Open, Releasing, Retry, Sent, Acknowledged, Ready, or Failed.
 `Fence::transition` owns lifecycle writes for inbox state and its UI projection.
 The deadline belongs to the fence; no independent window deadline remains.
 Queued success enters Sent; a known unqueued Full enters Retry without an expiry.
@@ -389,9 +389,9 @@ Initial surface registration remains a separate Link-owned transport fact.
 
 ### Verification
 
-- [Backpressure tests](../crates/sheprd-gpui/src/endpoint/lifecycle_tests/activation_backpressure.rs) exercise real queue saturation, drain, and acknowledgement.
-- [Selection tests](../crates/sheprd-gpui/src/endpoint/lifecycle_tests/selection_activation_budget.rs) reproduce the stale deadline race.
-- [Reducer tests](../crates/sheprd-gpui/src/state/tests/activation_retry.rs) cover receipt preservation and newer active requests.
+- [Backpressure tests](../crates/spaceport-gpui/src/endpoint/lifecycle_tests/activation_backpressure.rs) exercise real queue saturation, drain, and acknowledgement.
+- [Selection tests](../crates/spaceport-gpui/src/endpoint/lifecycle_tests/selection_activation_budget.rs) reproduce the stale deadline race.
+- [Reducer tests](../crates/spaceport-gpui/src/state/tests/activation_retry.rs) cover receipt preservation and newer active requests.
 - Original Full fallback and stale selection regressions failed before correction.
 - Clean default and integration-feature suites passed 4,028 and 4,061 tests.
 - Both Clippy configurations, quick checks, and independent re-review passed.
@@ -400,7 +400,7 @@ Native host switching and platform execution remain separate checks.
 
 ## Chat command delivery — d84r
 
-[`chat/session.rs`](../crates/sheprd-gpui/src/chat/session.rs) stores Queued, Writing, or AwaitingAck for each pending command.
+[`chat/session.rs`](../crates/spaceport-gpui/src/chat/session.rs) stores Queued, Writing, or AwaitingAck for each pending command.
 `Session::transition` owns pending-delivery and local-refusal writes.
 Dispatch waits for a validated cursor-bearing snapshot or change.
 Welcome alone never makes the session live or replays pending commands.
@@ -409,7 +409,7 @@ The captured transcript epoch fences resumed delivery.
 Partial or unknown writes produce an honest local refusal and never replay automatically.
 DeliveryUnconfirmed and SessionChanged remain local types; wire Rejection is unchanged.
 
-[`chat/link.rs`](../crates/sheprd-gpui/src/chat/link.rs) stores Active or Draining.
+[`chat/link.rs`](../crates/spaceport-gpui/src/chat/link.rs) stores Active or Draining.
 Its WriterProgress transition serializes begin, receipt publication, and timeout without holding a lock during I/O.
 The dedicated reader waits at most 100 milliseconds for writer completion after stopping.
 On timeout, it marks only the actual in-progress command uncertain and fences later receipts or attempts.
@@ -428,8 +428,8 @@ Native Windows transport cancellation and live provider sessions remain separate
 ## Provider turn ownership — rd2q
 
 Each bridge stores its turn in one enum with a private `Turn::transition` writer.
-[Claude](../crates/sheprd-acp/src/claude/bridge/turn.rs) and [Pi](../crates/sheprd-acp/src/pi/bridge/turn.rs) use Idle, Running, and Interrupting.
-[Codex](../crates/sheprd-acp/src/codex/bridge/turn.rs) also uses Starting for a prompt awaiting its turn identity.
+[Claude](../crates/spaceport-acp/src/claude/bridge/turn.rs) and [Pi](../crates/spaceport-acp/src/pi/bridge/turn.rs) use Idle, Running, and Interrupting.
+[Codex](../crates/spaceport-acp/src/codex/bridge/turn.rs) also uses Starting for a prompt awaiting its turn identity.
 Start refuses overlapping prompts; Cancel emits one interruption.
 A completion or matching refusal releases the stored prompt.
 Codex defers cancellation during Starting and interrupts once its identity arrives.
@@ -450,7 +450,7 @@ Live provider and cross-platform execution remain separate checks.
 
 ## Status notice ownership — z1tp
 
-[`notice.rs`](../crates/sheprd-gpui/src/notice.rs) stores an optional Notice with text, cause, and deadline.
+[`notice.rs`](../crates/spaceport-gpui/src/notice.rs) stores an optional Notice with text, cause, and deadline.
 `Notices::transition` owns Show, Clear, Take, Restore, and Expire.
 Operation causes expire after ten seconds; Connection causes persist until recovery or clear.
 Connection reasons reject transient replacement and remain authoritative while disconnected.
@@ -458,14 +458,14 @@ The endpoint retry owner reads only connection-caused diagnostics.
 Held input keeps the original cause, deadline, and revision.
 Clear or a newer Show prevents an older held notice from returning.
 Reads hide expired mailbox copies; window ticks retire them and repaint.
-[`window/flash.rs`](../crates/sheprd-gpui/src/window/flash.rs) owns flash clearing and fade cleanup.
+[`window/flash.rs`](../crates/spaceport-gpui/src/window/flash.rs) owns flash clearing and fade cleanup.
 Endpoint reset clears active and already fading flashes through that owner.
 CLI text and schemas, wire formats, and saved files remain unchanged.
 
 ### Verification
 
-- [Owner tests](../crates/sheprd-gpui/src/notice/tests.rs) cover deadlines, persistent reasons, and held restoration.
-- [Window tests](../crates/sheprd-gpui/src/window/status_bar_tests/notices.rs) cover local and live expiry.
+- [Owner tests](../crates/spaceport-gpui/src/notice/tests.rs) cover deadlines, persistent reasons, and held restoration.
+- [Window tests](../crates/spaceport-gpui/src/window/status_bar_tests/notices.rs) cover local and live expiry.
 - Late-refusal and fading-flash regressions failed on the baseline and passed after conversion.
 - Clean default checks passed 4,090 unit/headless tests and 45 integration tests.
 - Integration-feature checks passed 4,123 unit/headless tests and 56 integration tests.

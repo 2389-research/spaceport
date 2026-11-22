@@ -12,7 +12,7 @@ Read `SPEC.md` and `SYSTEM.md` once. For each task, use `python tools/spec.py co
 - Never use a live personal daemon, actual agent transcript, real tailnet credentials or upstream production updater as a test fixture. Use isolated state directories and explicit fixture endpoints.
 - The selected Herdr runtime owns its processes and lifecycle. Core owns connections for Core routes; the existing Herdr 1 connector may serve Herdr 1 routes. Spaceport may start an installed local runtime but may not install/update it, migrate sessions between runtimes, or add another transport manager.
 - Keep GPUI, the current terminal engine and the existing desktop interaction design. No mobile/UniFFI/Ghostty work, framework migration, plugin engine or new service.
-- **Do not delete by name.** Herdr 2 currently calls its wire protocol generation 1. Shared `sheprd-protocol` types may still support the renderer. Extract needed pure types before deleting legacy behavior.
+- **Do not delete by name.** Herdr 2 currently calls its wire protocol generation 1. Shared `spaceport-protocol` types may still support the renderer. Extract needed pure types before deleting legacy behavior.
 - Use source-observed methods, their generated schemas and actual runtime capabilities. Do not invent endpoint names, workspace APIs, replay support, delivery receipts or idempotency guarantees.
 - A timeout after submission may mean the action happened. Never blindly retry terminal creation, input, approval, file writes or destructive operations.
 - A view is not a process. Closing windows, quitting, detaching and restoring views must not stop or restart agents.

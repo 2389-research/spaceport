@@ -72,15 +72,15 @@
           # The app starts chats with sheprd-acp beside its executable.
           cargoBuildFlags = [
             "-p"
-            "sheprd-gpui"
+            "spaceport-gpui"
             "-p"
-            "sheprd-acp"
+            "spaceport-acp"
           ];
           # The optimized CLI suite CI's main-branch build runs; the rest of
           # the workspace suite needs a desktop or a live daemon.
           cargoTestFlags = [
             "-p"
-            "sheprd-gpui"
+            "spaceport-gpui"
             "--test"
             "cli"
           ];

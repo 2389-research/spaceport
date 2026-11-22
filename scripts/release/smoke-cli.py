@@ -4,7 +4,7 @@
 The release jobs check the exact bytes they ship. `cargo test --release --test
 cli` cannot: it rebuilds the binary with dev-dependency features (gpui's
 test-support) and overwrites the one `cargo build` produced. CI's full CLI
-suite (crates/sheprd-gpui/tests/cli.rs) covers the rest on the same commit.
+suite (crates/spaceport-gpui/tests/cli.rs) covers the rest on the same commit.
 """
 import argparse
 import os

@@ -34,7 +34,7 @@ class InstallerLinkOwnership(unittest.TestCase):
                 INSTALLER.verify_link_handlers(before, {**before, scheme: value})
 
     def test_smoke_tracks_the_app_and_inherited_scheme_boundaries(self):
-        source = (ROOT / "crates/sheprd-gpui/src/link.rs").read_text()
+        source = (ROOT / "crates/spaceport-gpui/src/link.rs").read_text()
         scheme = re.search(r'const SCHEME: &str = "([^"]+)";', source)[1]
         self.assertIn(scheme, INSTALLER.LINK_SCHEMES)
         self.assertIn("sheprd", INSTALLER.LINK_SCHEMES)

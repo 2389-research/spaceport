@@ -51,15 +51,15 @@ code=$(changed \
 windows_package=$(changed \
   scripts/release/package-windows.py scripts/release/windows-installer.py \
   scripts/release/sheprd.iss scripts/release/installer site/install.ps1 \
-  crates/sheprd-launcher crates/sheprd-gpui/src/main.rs \
-  crates/sheprd-gpui/build.rs crates/sheprd-gpui/windows_resource.rs \
+  crates/spaceport-launcher crates/spaceport-gpui/src/main.rs \
+  crates/spaceport-gpui/build.rs crates/spaceport-gpui/windows_resource.rs \
   assets/icons/Sheprd.ico assets/icons/Sheprd-worktree.ico assets/icons/windows \
   .github/workflows/ci.yml)
 macos_release=$(changed \
   Cargo.toml Cargo.lock .cargo rust-toolchain.toml \
   ':(glob)crates/*/Cargo.toml' ':(glob)crates/*/build.rs' \
-  ':(glob)crates/sheprd-gpui/*.rs' \
-  crates/sheprd-gpui/src/main.rs crates/sheprd-gpui/src/cli.rs crates/sheprd-gpui/src/cli \
-  crates/sheprd-gpui/tests/cli.rs crates/sheprd-gpui/tests/cli crates/sheprd-gpui/tests/support \
+  ':(glob)crates/spaceport-gpui/*.rs' \
+  crates/spaceport-gpui/src/main.rs crates/spaceport-gpui/src/cli.rs crates/spaceport-gpui/src/cli \
+  crates/spaceport-gpui/tests/cli.rs crates/spaceport-gpui/tests/cli crates/spaceport-gpui/tests/support \
   .github/workflows/ci.yml)
 printf 'code=%s\nwindows_package=%s\nmacos_release=%s\n' "$code" "$windows_package" "$macos_release"

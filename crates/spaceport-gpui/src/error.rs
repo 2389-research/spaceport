@@ -1,0 +1,264 @@
+//! Internal failures retain their categories and sources until presentation.
+use std::{io, path::PathBuf};
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    // keep-sorted start
+    #[error("Could not {operation} the agent context note for the new checkout.")]
+    AgentContext {
+        operation: &'static str,
+        #[source]
+        source: io::Error,
+    },
+    #[error(transparent)]
+    Backdrop(#[from] crate::backdrop::Error),
+    #[error(transparent)]
+    Browser(#[from] spaceport_browser::Error),
+    #[error("{} already exists; choose a new file name", path.display())]
+    BundleExists { path: PathBuf },
+    #[error("Could not write {}: {source}", path.display())]
+    BundleWrite {
+        path: PathBuf,
+        #[source]
+        source: io::Error,
+    },
+    #[error(transparent)]
+    Caffeine(#[from] crate::caffeine::Error),
+    #[error(transparent)]
+    Chat(#[from] crate::chat::Error),
+    #[error("{source}; removing {}: {cleanup}", path.display())]
+    Cleanup {
+        #[source]
+        source: io::Error,
+        path: PathBuf,
+        cleanup: io::Error,
+    },
+    #[error("{0}")]
+    Client(#[from] spaceport_client::Error),
+    #[error(transparent)]
+    Clipboard(#[from] crate::window::clipboard::Error),
+    #[error("{source}")]
+    ConfigFile {
+        uri: Option<String>,
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+    #[error("{0}")]
+    ConfigLoad(#[source] config_loader::ConfigError),
+    #[error("Connection is busy. Try again.")]
+    ConnectionBusy,
+    #[error("The connection is not ready. Try again.")]
+    ConnectionNotReady,
+    #[error(transparent)]
+    Control(#[from] crate::control::Error),
+    #[error(transparent)]
+    Daemon(#[from] crate::daemon::Error),
+    #[error(transparent)]
+    Devices(#[from] crate::menu::devices::Error),
+    #[error("Enter a tab name.")]
+    EmptyTabName,
+    #[error("Workspace label must not be empty.")]
+    EmptyWorkspaceLabel,
+    #[error(transparent)]
+    Endpoint(#[from] crate::endpoint::Error),
+    #[error(transparent)]
+    FileDrop(#[from] crate::window::file_drop::Error),
+    #[error("Oversized GIF, WebP, and animated PNG images cannot be resized safely.")]
+    ImageAnimationResize,
+    #[error("Could not decode the oversized image.")]
+    ImageDecode(#[source] image::ImageError),
+    #[error("The image exceeds the resize pixel or decoded-memory limit.")]
+    ImageDecodeLimit,
+    #[error("Could not encode the resized image.")]
+    ImageEncode(#[source] image::ImageError),
+    #[error("Could not {operation} the local image file.")]
+    ImageFile {
+        operation: &'static str,
+        #[source]
+        source: io::Error,
+    },
+    #[error("The local image must be a regular file.")]
+    ImageFileType,
+    #[error("SVG clipboard images are not supported. Use PNG, JPEG, GIF, WebP, BMP, or TIFF.")]
+    ImageFormat,
+    #[error("The image exceeds the {limit}-byte resize input limit.")]
+    ImageInputTooLarge { limit: usize },
+    #[error("Reading the local image timed out (3 seconds).")]
+    ImageReadTimeout,
+    #[error("The image must not be empty.")]
+    ImageSize,
+    #[error("The image exceeds Herdr's {limit}-byte upload limit.")]
+    ImageTooLarge { limit: usize },
+    #[error("Not an address with a scheme other than http, https, and file, of at most 8 KiB.")]
+    InvalidExternalUrl,
+    #[error("invalid sidebar width")]
+    InvalidSidebarWidth,
+    #[error("sidebar_width_px must be finite and positive, or null")]
+    InvalidStoredWidth,
+    #[error("Invalid saved window geometry or too many saved windows")]
+    InvalidWindowState,
+    #[error("Invalid saved worktree notes")]
+    InvalidWorktreeNotes,
+    #[error("{0}")]
+    Io(#[from] io::Error),
+    #[error("{0}")]
+    Json(#[from] serde_json::Error),
+    #[error(transparent)]
+    Keymap(#[from] crate::keymap::Error),
+    #[cfg(windows)]
+    #[error(transparent)]
+    LaunchAtLogin(#[from] crate::launch_at_login::Error),
+    #[error("File not found: {}", path.display())]
+    LinkedFileMissing { path: PathBuf },
+    #[error("This link names a file on another computer, {host}. It is not opened from here.")]
+    LinkOnAnotherHost { host: String },
+    #[error(transparent)]
+    ListeningPorts(#[from] crate::listening_ports::Error),
+    #[error("Worktree notes stay in this app and are never sent to the daemon")]
+    LocalWorktreeNote,
+    #[error("Could not read the log {}: {source}", path.display())]
+    LogRead {
+        path: PathBuf,
+        #[source]
+        source: io::Error,
+    },
+    #[error("This link's address is not valid, so it opens nothing.")]
+    MalformedLink,
+    #[error("HOME is not set")]
+    MissingHome,
+    #[error("neither XDG_STATE_HOME nor HOME is set")]
+    MissingStateRoot,
+    #[error("The daemon's current session data is not loaded; reconnect.")]
+    NoSnapshot,
+    #[error("No tab selected.")]
+    NoTab,
+    #[error("Not connected to a daemon.")]
+    NotConnected,
+    #[error(transparent)]
+    NotificationMutes(#[from] crate::notification_mutes::Error),
+    #[error(transparent)]
+    Overview(#[from] crate::overview::Error),
+    #[cfg(target_os = "macos")]
+    #[error("The window has no view to place a page beneath")]
+    PageStack,
+    #[error(transparent)]
+    Palette(#[from] crate::palette::Error),
+    #[error("Could not decode an image a pane placed.")]
+    PaneImageDecode(#[source] image::ImageError),
+    #[error("An image a pane placed exceeds the decoded size limit.")]
+    PaneImageLimit,
+    #[error(transparent)]
+    PaneMove(#[from] crate::pane_move::Error),
+    #[error("{}: {source}", path.display())]
+    Path {
+        path: PathBuf,
+        #[source]
+        source: Box<Error>,
+    },
+    #[error(transparent)]
+    PortForward(#[from] crate::port_forward::Error),
+    #[error("preferences path has no parent")]
+    PreferencesPath,
+    #[error(transparent)]
+    Processes(#[from] crate::processes::Error),
+    #[error("XDG_CONFIG_HOME must be an absolute path")]
+    RelativeConfigRoot,
+    /// A remote host script failure.
+    #[error(transparent)]
+    Remote(#[from] spaceport_remote::Error),
+    #[error("Could not install the agent tools on the SSH host: {0}")]
+    RemoteAgentTools(#[source] spaceport_client::Error),
+    #[error("Could not send {method} to the daemon: {source}")]
+    Request {
+        method: spaceport_client::Method,
+        #[source]
+        source: spaceport_client::Error,
+    },
+    #[error("The page's picture could not be turned into a PNG")]
+    ScreenshotImage,
+    #[error("Could not write the screenshot to {}: {source}", path.display())]
+    ScreenshotWrite {
+        path: PathBuf,
+        #[source]
+        source: io::Error,
+    },
+    #[error("The selection reaches rows the pane no longer shows.")]
+    SelectionOffscreen,
+    #[error("Selection is too large to copy.")]
+    SelectionSize,
+    #[error("The selected pane is no longer on screen.")]
+    SelectionStale,
+    #[error(transparent)]
+    ServerKeybindings(#[from] crate::keymap::daemon::Error),
+    #[error(transparent)]
+    Settings(#[from] spaceport_settings::Error),
+    #[error("Could not finish saving Settings: {0}")]
+    SettingsSave(#[source] std::sync::Arc<Error>),
+    #[error("Could not install the agent skill at {}: {source}", path.display())]
+    SkillInstall {
+        path: PathBuf,
+        #[source]
+        source: io::Error,
+    },
+    #[error(transparent)]
+    Sound(#[from] spaceport_sound::Error),
+    #[error(transparent)]
+    SshHosts(#[from] spaceport_settings::ssh_hosts::Error),
+    #[error("The original target changed or no longer exists. Cancel and try again.")]
+    StaleCloseTarget,
+    #[error("The selected connection changed or is not ready. Cancel and try again.")]
+    StaleConnection,
+    #[error("The original pane changed or no longer exists. Cancel and try again.")]
+    StalePane,
+    #[error("The original tab changed or no longer exists. Cancel and try again.")]
+    StaleTab,
+    #[error("Workspace is no longer available. Dismiss and reopen the menu.")]
+    StaleWorkspace,
+    #[error(transparent)]
+    StateFile(#[from] spaceport_state_file::Error),
+    #[error(transparent)]
+    TabLayout(#[from] crate::config::tab_layout::Error),
+    #[error("{0}")]
+    Toml(#[from] toml::de::Error),
+    #[error("{0}")]
+    TomlEdit(#[from] toml_edit::TomlError),
+    #[error(transparent)]
+    Tunnel(#[from] crate::listening_ports::tunnel::Error),
+    #[error("This command action is not supported by this client.")]
+    UnsupportedCommand,
+    #[error(transparent)]
+    Updates(#[from] crate::updates::Error),
+    /// A usage read failed, or the host shell a port scan ran its steps through.
+    #[error(transparent)]
+    Usage(#[from] spaceport_usage::Error),
+    #[error(transparent)]
+    WorkspaceDocument(#[from] crate::core_terminals::workspace_document::Error),
+    #[error("Repository changed. Dismiss and reopen the menu.")]
+    WorkspaceRepositoryChanged,
+    #[error("Invalid or oversized worktree list. Dismiss and reopen the menu.")]
+    WorktreeList,
+    #[error("Malformed worktree list. Dismiss and reopen the menu.")]
+    WorktreeListDecode(#[source] serde_json::Error),
+    #[error("Select a checkout from the daemon's worktree list.")]
+    WorktreeSelection,
+    #[error(transparent)]
+    WslDrop(#[from] crate::window::wsl_drop::Error),
+    // keep-sorted end
+}
+
+/// A host shell's failure is kept as `spaceport-usage` wraps it, so it reaches
+/// a window by one path whichever feature ran the step.
+impl From<spaceport_usage::shell::Error> for Error {
+    fn from(error: spaceport_usage::shell::Error) -> Self {
+        Self::Usage(error.into())
+    }
+}
+
+mod config;
+mod path;
+mod remote;
+
+#[cfg(test)]
+mod tests;

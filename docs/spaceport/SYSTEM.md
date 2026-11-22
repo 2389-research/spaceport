@@ -47,7 +47,7 @@ Each selected runtime owns its processes and lifecycle. Core owns machine regist
 
 ### Layer B — Narrow Core adapter
 
-Reuse and extend `sheprd-core-client` to call the methods the selected Core actually advertises. Implement local socket/named-pipe and framed stream correctness once. Core itself carries remote machine traffic. The adapter exposes typed facts, stream subscriptions and effect results, not GPUI entities. No provider-specific cloud adapters or a generalized plugin transport.
+Reuse and extend `spaceport-core-client` to call the methods the selected Core actually advertises. Implement local socket/named-pipe and framed stream correctness once. Core itself carries remote machine traffic. The adapter exposes typed facts, stream subscriptions and effect results, not GPUI entities. No provider-specific cloud adapters or a generalized plugin transport.
 
 ### Layer C — Session and view projection
 

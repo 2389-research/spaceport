@@ -19,7 +19,7 @@ class OrchestratorCrateAbsence(unittest.TestCase):
 
     def test_retained_owners_stay_present(self):
         for relative in (
-            "crates/sheprd-gpui/src/core_terminals.rs",
+            "crates/spaceport-gpui/src/core_terminals.rs",
         ):
             with self.subTest(path=relative):
                 self.assertTrue((ROOT / relative).is_file())

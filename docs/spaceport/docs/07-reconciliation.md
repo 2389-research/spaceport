@@ -46,7 +46,7 @@ Read-only automation/usage visibility cannot depend on keeping the removed Shepr
 
 ## R7 — Delete behavior, not every shared type
 
-Herdr 2's current wire protocol is generation 1. `sheprd-protocol` types are also used by the Core renderer. Under D58, retain the Herdr 1 backend and shared rendering/input types; remove only independently excluded behavior. [D58; S02, S09, S11]
+Herdr 2's current wire protocol is generation 1. `spaceport-protocol` types are also used by the Core renderer. Under D58, retain the Herdr 1 backend and shared rendering/input types; remove only independently excluded behavior. [D58; S02, S09, S11]
 
 Deleting a mobile server does not delete the desktop CLI's private local control endpoint. Deleting Git UI does not prohibit using Git to build the fork or rendering a plain textual patch in chat.
 

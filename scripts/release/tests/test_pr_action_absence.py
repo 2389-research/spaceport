@@ -13,8 +13,8 @@ ROOT = Path(__file__).resolve().parents[3]
 class PullRequestActionAbsence(unittest.TestCase):
     def test_native_action_worker_and_pages_are_absent(self):
         self.assertFalse((ROOT / "crates/sheprd-github").exists())
-        self.assertFalse((ROOT / "crates/sheprd-gpui/src/menu/pr_actions.rs").exists())
-        for path in (ROOT / "crates/sheprd-gpui").rglob("*"):
+        self.assertFalse((ROOT / "crates/spaceport-gpui/src/menu/pr_actions.rs").exists())
+        for path in (ROOT / "crates/spaceport-gpui").rglob("*"):
             if path.suffix not in (".rs", ".ftl"):
                 continue
             text = path.read_text()
@@ -23,7 +23,7 @@ class PullRequestActionAbsence(unittest.TestCase):
                     self.assertNotIn(marker, text)
 
     def test_github_library_has_no_desktop_route(self):
-        app = ROOT / "crates/sheprd-gpui"
+        app = ROOT / "crates/spaceport-gpui"
         manifest = tomllib.loads((app / "Cargo.toml").read_text())
         for section in ("dependencies", "dev-dependencies"):
             with self.subTest(section=section):

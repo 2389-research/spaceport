@@ -19,7 +19,7 @@ class LinuxAliasTests(unittest.TestCase):
         text = (ROOT / "flake.nix").read_text()
         flags = re.search(r"cargoBuildFlags = \[([^]]+)\];", text)[1]
         packages = re.findall(r'"([^"]+)"', flags)
-        self.assertEqual(packages, ["-p", "sheprd-gpui", "-p", "sheprd-acp"])
+        self.assertEqual(packages, ["-p", "spaceport-gpui", "-p", "spaceport-acp"])
         hook = re.search(r"postFixup = ''\n(.*?)\n\s*'';", text, re.S)[1]
         hook = re.sub(r"\$\{lib\.[^}]+\}", "/fixture", hook)
         binaries = self.work / "bin"

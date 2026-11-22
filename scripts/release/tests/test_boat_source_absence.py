@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 class BoatSourceAbsence(unittest.TestCase):
     def test_provider_has_no_desktop_or_remote_source_route(self):
-        for crate in ("sheprd-client", "sheprd-remote", "sheprd-gpui"):
+        for crate in ("spaceport-client", "spaceport-remote", "spaceport-gpui"):
             root = ROOT / "crates" / crate
             source = (
                 path
@@ -27,10 +27,10 @@ class BoatSourceAbsence(unittest.TestCase):
 
     def test_provider_locale_and_site_claims_are_absent_but_shared_routes_remain(self):
         for name in ("settings-cloud-boat", "error-remote-boat"):
-            self.assertFalse((ROOT / f"crates/sheprd-gpui/locales/en-US/{name}.ftl").exists())
+            self.assertFalse((ROOT / f"crates/spaceport-gpui/locales/en-US/{name}.ftl").exists())
         for path in (ROOT / "website/site/index.html", ROOT / "website/site/assets/features.js"):
             self.assertNotIn("Boat", path.read_text())
-        self.assertTrue((ROOT / "crates/sheprd-gpui/src/menu/devices/add_device/core.rs").exists())
+        self.assertTrue((ROOT / "crates/spaceport-gpui/src/menu/devices/add_device/core.rs").exists())
 
 
 if __name__ == "__main__":

@@ -38,7 +38,7 @@ only to that existing daemon, discovering and starting no other.
 Every command accepts, after its command word:
 
 - `--json`: print one JSON document instead of text, the reply as the control
-  protocol defines it (`crates/sheprd-control-protocol/src/protocol` holds each
+  protocol defines it (`crates/spaceport-control-protocol/src/protocol` holds each
   family's types; an answer the app sends is bounded to the same 256 KiB as
   every response). Errors become
   `{"error": {"code", "message"}}` on standard output. `events --follow`
@@ -184,7 +184,7 @@ run `spaceport config set tab_labels.agent_title true`.
 ### Default shortcuts
 
 `keybinds list` prints each command's shortcuts as this build binds them, and
-the catalog in `crates/sheprd-commands` is their one declaration. macOS takes
+the catalog in `crates/spaceport-commands` is their one declaration. macOS takes
 Cmd; Linux and Windows take Ctrl, Ctrl+Shift for the primary actions and
 Ctrl+Alt+Shift for their partners, so plain Ctrl still reaches the terminal
 program. A few platform facts decide the rest:
@@ -318,7 +318,7 @@ Starting a chat there (`chat new`, or the workspace menu) runs the host's own
 then the remote `PATH`. Install it on the host with:
 
 ```sh
-cargo install --locked --git https://github.com/2389-research/spaceport sheprd-acp --root ~/.herdr
+cargo install --locked --git https://github.com/2389-research/spaceport spaceport-acp --bin sheprd-acp --root ~/.herdr
 ```
 
 The workspace menu offers only the agents whose own ACP command is installed

@@ -181,7 +181,7 @@ impl Sandbox {
     /// connection that the probe then closes.
     #[cfg(windows)]
     fn daemon_listening(&self) -> bool {
-        sheprd_client::Stream::connect(self.socket()).is_ok()
+        spaceport_client::Stream::connect(self.socket()).is_ok()
     }
 }
 

@@ -7,8 +7,8 @@ run *args:
     set -euo pipefail
     if [ "$(uname -s)" != Darwin ]; then
         # The app starts chats with sheprd-acp beside its executable.
-        cargo build --locked --release -p sheprd-acp
-        exec cargo run --locked --release -p sheprd-gpui -- {{args}}
+        cargo build --locked --release -p spaceport-acp
+        exec cargo run --locked --release -p spaceport-gpui -- {{args}}
     fi
     {{just_executable()}} bundle release
     # Open the bundle instead of executing its binary: macOS asks for Local
@@ -29,8 +29,8 @@ run-debug *args:
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "$(uname -s)" != Darwin ]; then
-        cargo build --locked -p sheprd-acp
-        exec cargo run --locked -p sheprd-gpui -- {{args}}
+        cargo build --locked -p spaceport-acp
+        exec cargo run --locked -p spaceport-gpui -- {{args}}
     fi
     {{just_executable()}} bundle debug
     exec target/debug/Spaceport.app/Contents/MacOS/spaceport {{args}}
@@ -58,16 +58,16 @@ nextest *args:
 
 # Explicit opt-in: launches and cleans up its own isolated daemon only.
 test-live binary:
-    HERDR_TEST_BINARY="{{binary}}" cargo test --locked -p sheprd-client --test live -- --ignored --nocapture
+    HERDR_TEST_BINARY="{{binary}}" cargo test --locked -p spaceport-client --test live -- --ignored --nocapture
 
 # Explicit opt-in: runs its own herdr-core (Herdr 2) in a private home and
 # socket, and stops only that core.
 test-core binary:
-    HERDR_CORE_TEST_BINARY="{{binary}}" cargo test --locked -p sheprd-core-client live -- --ignored --nocapture
+    HERDR_CORE_TEST_BINARY="{{binary}}" cargo test --locked -p spaceport-core-client live -- --ignored --nocapture
 
 # Opens a real native window; requires an active desktop. Uses an isolated daemon.
 test-gui binary:
-    HERDR_TEST_BINARY="{{binary}}" cargo test --locked -p sheprd-gpui --features integration-test --test live_gui -- --ignored --nocapture --test-threads=1
+    HERDR_TEST_BINARY="{{binary}}" cargo test --locked -p spaceport-gpui --features integration-test --test live_gui -- --ignored --nocapture --test-threads=1
 
 # Repeat the Linux suite under CPU pressure in a container, where scheduling
 # races reproduce that a fast machine hides. Needs Docker; nothing else.
@@ -76,11 +76,11 @@ stress-linux iterations="30" cpus="0.5" filter="":
 
 # Native font/glyph regression across repeated frames and sizes; no daemon needed.
 test-sidebar:
-    cargo test --locked -p sheprd-gpui --features integration-test --test live_gui native_sidebar -- --ignored --nocapture --test-threads=1
+    cargo test --locked -p spaceport-gpui --features integration-test --test live_gui native_sidebar -- --ignored --nocapture --test-threads=1
 
 # Real AppKit events and glyphs; requires macOS WindowServer, but no unlocked desktop.
 test-sidebar-routing:
-    cargo test --locked -p sheprd-gpui --features integration-test --test live_gui sidebar_routing::native_host_routing -- --ignored --exact --nocapture --test-threads=1
+    cargo test --locked -p spaceport-gpui --features integration-test --test live_gui sidebar_routing::native_host_routing -- --ignored --exact --nocapture --test-threads=1
 
 # Isolated macOS/Windows native benchmark; budget in calibrated milliseconds.
 test-perf budget="30":
@@ -92,25 +92,25 @@ test-perf budget="30":
     esac
     test_filter=dense_terminal_sidebar_performance
     if [[ ${HERDR_PERF_UNCACHED+x} ]]; then test_filter=reference_terminal_sidebar_performance; fi
-    HERDR_PERF_P95_MS="{{budget}}" cargo test --locked --release -p sheprd-gpui --features integration-test --test performance_gui "$test_filter" -- --ignored --nocapture --exact
+    HERDR_PERF_P95_MS="{{budget}}" cargo test --locked --release -p spaceport-gpui --features integration-test --test performance_gui "$test_filter" -- --ignored --nocapture --exact
 
 build-release:
-    cargo build --locked --release -p sheprd-gpui -p sheprd-acp
+    cargo build --locked --release -p spaceport-gpui -p spaceport-acp
 
 # Compile and install the release executable into Cargo's bin directory.
 [unix]
 install:
-    cargo install --locked --force --path crates/sheprd-gpui --bin spaceport
-    cargo install --locked --force --path crates/sheprd-acp
+    cargo install --locked --force --path crates/spaceport-gpui --bin spaceport
+    cargo install --locked --force --path crates/spaceport-acp
 
 # Only installation bypasses the POSIX shell used by the other recipes.
 [windows]
 [extension(".cmd")]
 install:
     #!cmd.exe /c
-    cargo install --locked --force --path crates/sheprd-gpui --bin spaceport || exit /b 1
-    cargo install --locked --force --path crates/sheprd-launcher || exit /b 1
-    cargo install --locked --force --path crates/sheprd-acp || exit /b 1
+    cargo install --locked --force --path crates/spaceport-gpui --bin spaceport || exit /b 1
+    cargo install --locked --force --path crates/spaceport-launcher || exit /b 1
+    cargo install --locked --force --path crates/spaceport-acp || exit /b 1
 
 # Regenerate circular Linux artwork on any platform (Python standard library).
 icons-linux:
@@ -142,8 +142,8 @@ bundle profile="release" features="":
         *) echo "Unknown profile: {{profile}} (release or debug)" >&2; exit 2 ;;
     esac
     app=target/{{profile}}/Spaceport.app
-    cargo build --locked $flags --target-dir target -p sheprd-gpui --features "{{features}}"
-    cargo build --locked $flags --target-dir target -p sheprd-acp
+    cargo build --locked $flags --target-dir target -p spaceport-gpui --features "{{features}}"
+    cargo build --locked $flags --target-dir target -p spaceport-acp
     mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
     # Replace the executables rather than rewrite them in place: macOS keeps
     # a signed file's old signature with its inode, so reading the rewritten
@@ -161,7 +161,7 @@ bundle profile="release" features="":
     done
     # LaunchServices and the Dock cache icons by bundle ID, so every worktree
     # build sharing the release ID competed with the installed app's icon.
-    plutil -insert CFBundleIdentifier -string "$(cat crates/sheprd-gpui/development-app-id)" "$app/Contents/Info.plist"
+    plutil -insert CFBundleIdentifier -string "$(cat crates/spaceport-gpui/development-app-id)" "$app/Contents/Info.plist"
     plutil -replace CFBundleName -string Spaceport "$app/Contents/Info.plist"
     plutil -replace CFBundleDisplayName -string Spaceport "$app/Contents/Info.plist"
     icons=$(python3 scripts/release/build-icon.py macos "$app/Contents/MacOS/spaceport")
@@ -176,7 +176,7 @@ bundle profile="release" features="":
 
 # Link the actual optimized application and exercise its CLI without a desktop.
 test-build: build-release
-    cargo test --locked --release -p sheprd-gpui --test cli
+    cargo test --locked --release -p spaceport-gpui --test cli
 
 # Fail on source files over 1,000 lines.
 check-file-size:
@@ -287,7 +287,7 @@ release-check:
 test-gpui filter="package = spaceport" repetitions="1":
     #!/usr/bin/env bash
     set -euo pipefail
-    bin="$(cargo test --locked -p sheprd-gpui --bin spaceport --no-run 2>/dev/null | grep -m1 -oE '/[^ ]*deps/spaceport-[0-9a-f]+' || true)"
+    bin="$(cargo test --locked -p spaceport-gpui --bin spaceport --no-run 2>/dev/null | grep -m1 -oE '/[^ ]*deps/spaceport-[0-9a-f]+' || true)"
     if [ -z "$bin" ]; then echo "no test binary; build failed" >&2; exit 1; fi
     for i in $(seq 1 {{repetitions}}); do
         if [ {{repetitions}} -gt 1 ]; then echo "--- run $i/{{repetitions}} ---"; fi
@@ -296,7 +296,7 @@ test-gpui filter="package = spaceport" repetitions="1":
 
 # The small-crate suites workers touch most, in one command.
 test-protocol:
-    cargo test --locked -p sheprd-protocol -p sheprd-chat-protocol -p sheprd-client -p sheprd-core-client -p sheprd-control-protocol
+    cargo test --locked -p spaceport-protocol -p spaceport-chat-protocol -p spaceport-client -p spaceport-core-client -p spaceport-control-protocol
 
 # The release-scripts suite the way CI runs it (cwd matters: repo root).
 test-release-scripts:

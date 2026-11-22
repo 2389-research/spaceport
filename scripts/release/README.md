@@ -144,7 +144,7 @@ inherited upstream feed, production release or daemon installation.
 
 Preview builds use `SPACEPORT_MACOS_PREVIEW_VERSION`, `ai.2389.spaceport`, and
 `Spaceport.app`. The compile-time selector rejects other target operating systems
-and malformed versions. The app ID files beside `crates/sheprd-gpui/build.rs` are
+and malformed versions. The app ID files beside `crates/spaceport-gpui/build.rs` are
 the source for compiled and bundle identities; a final newline is allowed.
 Ordinary `just bundle` builds retain `spaceport.development`. The general
 `HERDR_RELEASE_VERSION` refusal remains in force. The app reads its build

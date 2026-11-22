@@ -1,0 +1,818 @@
+// ABOUTME: Owns the framed Core connection and bounded call lifecycle.
+// ABOUTME: Routes answers and streams while fencing loss and abandoned calls.
+//! One framed connection to a core. A worker thread owns the socket: it
+//! writes queued frames in bounded batches, reads with a short timeout so a
+//! partial frame waits for its rest, and routes what it decodes. Calls on
+//! channel 0 run side by side, matched to their answers by ID.
+
+use crate::{
+    Endpoint, Error, Method, RefusalHint, Result, Violation,
+    frame::{Decoder, Frame, Kind},
+    hello::{GENERATION, Hello},
+    stream::{self, Attachment, End, Link, Route, Stream, Subscription},
+    wire::{
+        self, Doc, DocGet, DocSet, DocWrite, FileRead, FileReadResult, List, Subscribed, Terminal,
+    },
+};
+use base64::Engine as _;
+use crossbeam_channel::{Receiver, RecvTimeoutError, Sender, TryRecvError};
+use serde::{Serialize, de::DeserializeOwned};
+use serde_json::{Value, json};
+use std::{
+    collections::HashMap,
+    io::{self, Read, Write},
+    sync::{
+        Arc, Mutex, MutexGuard, PoisonError,
+        atomic::{AtomicBool, AtomicU64, Ordering},
+    },
+    time::{Duration, Instant},
+};
+
+/// How long a read waits before the worker writes what is queued.
+pub(crate) const POLL: Duration = Duration::from_millis(10);
+/// How long a write may take before the connection counts as lost.
+const WRITE_TIMEOUT: Duration = Duration::from_secs(5);
+/// How long the core has to answer the handshake.
+const HELLO_TIMEOUT: Duration = Duration::from_secs(5);
+/// The longest handshake reply accepted.
+const MAX_HELLO: usize = 64 << 10;
+/// How long a call waits for its answer.
+const CALL_TIMEOUT: Duration = Duration::from_secs(10);
+/// Calls waiting for answers at once.
+const MAX_IN_FLIGHT: usize = 64;
+/// Frames queued for the worker to write.
+const MAX_OUTBOUND: usize = 1024;
+/// Frames written before the worker reads again.
+const WRITE_BATCH: usize = 64;
+/// Core's raw byte ceiling for `terminal.put`; base64 stays within our frame limit.
+pub const MAX_PUT_BYTES: usize = 8 << 20;
+
+struct Reply {
+    result: std::result::Result<Value, Refusal>,
+    route: Option<(u32, Arc<Route>)>,
+}
+
+/// A call's result, and the stream channel it opened.
+struct Answer {
+    result: Value,
+    route: Option<(u32, Arc<Route>)>,
+}
+
+impl Refusal {
+    fn into_error(self, method: Method) -> Error {
+        let (kind, hint) = self.data.map_or((None, None), |data| {
+            (data.kind, data.hint.and_then(RefusalHint::from_wire))
+        });
+        Error::Refused {
+            method,
+            kind,
+            message: self.message,
+            hint,
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct Refusal {
+    #[serde(default)]
+    data: Option<RefusalData>,
+    #[serde(default)]
+    message: String,
+}
+
+#[derive(serde::Deserialize)]
+struct RefusalData {
+    #[serde(default)]
+    kind: Option<String>,
+    #[serde(default)]
+    hint: Option<String>,
+}
+
+struct WaitingCall {
+    method: Method,
+    resize_notifications: bool,
+    waiter: Sender<Reply>,
+}
+
+enum Call {
+    Registered(WaitingCall),
+    Sent(WaitingCall),
+    Answered,
+    Abandoned,
+}
+
+enum Delivery {
+    Answered,
+    Abandoned,
+    Unheard(Reply),
+}
+
+enum CallEvent<'a> {
+    Register {
+        id: u64,
+        waiting: WaitingCall,
+        outcome: &'a mut Result<()>,
+    },
+    Sent(u64),
+    CancelUnsent(u64),
+    Finish {
+        id: u64,
+        method: Method,
+        answer: &'a Receiver<Reply>,
+        received: std::result::Result<Reply, RecvTimeoutError>,
+        outcome: &'a mut Result<Reply>,
+    },
+    Deliver {
+        id: u64,
+        result: std::result::Result<Value, Refusal>,
+        channel: Option<u32>,
+        outcome: &'a mut Delivery,
+    },
+    Lost,
+}
+
+#[derive(Default)]
+struct Shared {
+    lost: AtomicBool,
+    pending: Mutex<HashMap<u64, Call>>,
+    routes: Mutex<HashMap<u32, Arc<Route>>>,
+}
+
+fn locked<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+impl Shared {
+    fn register(
+        &self,
+        id: u64,
+        method: Method,
+        resize_notifications: bool,
+    ) -> Result<Receiver<Reply>> {
+        let (waiter, answer) = crossbeam_channel::bounded(1);
+        let mut outcome = Err(Error::Lost);
+        self.transition(CallEvent::Register {
+            id,
+            waiting: WaitingCall {
+                method,
+                resize_notifications,
+                waiter,
+            },
+            outcome: &mut outcome,
+        });
+        outcome.map(|()| answer)
+    }
+
+    fn sent(&self, id: u64) {
+        self.transition(CallEvent::Sent(id));
+    }
+
+    fn cancel_unsent(&self, id: u64) {
+        self.transition(CallEvent::CancelUnsent(id));
+    }
+
+    fn wait(
+        &self,
+        id: u64,
+        method: Method,
+        answer: &Receiver<Reply>,
+        timeout: Duration,
+    ) -> Result<Reply> {
+        let received = answer.recv_timeout(timeout);
+        self.finish(id, method, answer, received)
+    }
+
+    fn finish(
+        &self,
+        id: u64,
+        method: Method,
+        answer: &Receiver<Reply>,
+        received: std::result::Result<Reply, RecvTimeoutError>,
+    ) -> Result<Reply> {
+        let mut outcome = Err(Error::Lost);
+        self.transition(CallEvent::Finish {
+            id,
+            method,
+            answer,
+            received,
+            outcome: &mut outcome,
+        });
+        outcome
+    }
+
+    fn deliver(
+        &self,
+        id: u64,
+        result: std::result::Result<Value, Refusal>,
+        channel: Option<u32>,
+    ) -> Delivery {
+        let mut outcome = Delivery::Abandoned;
+        self.transition(CallEvent::Deliver {
+            id,
+            result,
+            channel,
+            outcome: &mut outcome,
+        });
+        outcome
+    }
+
+    /// Fails every waiting call and ends every stream.
+    fn lose(&self) {
+        self.transition(CallEvent::Lost);
+    }
+
+    /// Owns every call-state write and the registration/loss fence.
+    fn transition(&self, event: CallEvent<'_>) {
+        let mut pending = locked(&self.pending);
+        match event {
+            CallEvent::Register {
+                id,
+                waiting,
+                outcome,
+            } => {
+                // Tombstones count too: late answers cannot grow memory without bound.
+                *outcome = if self.lost.load(Ordering::Acquire) {
+                    Err(Error::Lost)
+                } else if pending.len() >= MAX_IN_FLIGHT {
+                    Err(Error::Busy)
+                } else {
+                    pending.insert(id, Call::Registered(waiting));
+                    Ok(())
+                };
+            }
+            CallEvent::Sent(id) => {
+                if let Some(call) = pending.remove(&id) {
+                    pending.insert(
+                        id,
+                        match call {
+                            Call::Registered(waiting) => Call::Sent(waiting),
+                            call => call,
+                        },
+                    );
+                }
+            }
+            CallEvent::CancelUnsent(id) => {
+                pending.remove(&id);
+            }
+            CallEvent::Finish {
+                id,
+                method,
+                answer,
+                received,
+                outcome,
+            } => {
+                let call = pending.remove(&id);
+                *outcome = match received {
+                    Ok(reply) => Ok(reply),
+                    Err(RecvTimeoutError::Timeout) => match call {
+                        // Delivery won after recv_timeout expired. Claim it before
+                        // abandoning, so a successful send cannot leak a route.
+                        Some(Call::Answered) => answer.try_recv().map_err(|_| Error::Lost),
+                        Some(Call::Registered(_) | Call::Sent(_)) => {
+                            pending.insert(id, Call::Abandoned);
+                            Err(Error::Timeout(method))
+                        }
+                        _ if self.lost.load(Ordering::Acquire) => Err(Error::Lost),
+                        _ => Err(Error::Timeout(method)),
+                    },
+                    Err(RecvTimeoutError::Disconnected) => Err(Error::Lost),
+                };
+            }
+            CallEvent::Deliver {
+                id,
+                result,
+                channel,
+                outcome,
+            } => {
+                *outcome = match pending.remove(&id) {
+                    Some(Call::Registered(waiting) | Call::Sent(waiting)) => {
+                        // Install the route before notifying its reader. Stream
+                        // bytes following the answer then have an inbox already.
+                        let route = channel.map(|channel| {
+                            let notifications = waiting.method == Method::TerminalAttach
+                                && waiting.resize_notifications
+                                && result
+                                    .as_ref()
+                                    .ok()
+                                    .and_then(|value| value.get("resize_notifications"))
+                                    == Some(&Value::Bool(true));
+                            let route = Arc::new(Route::new(notifications));
+                            locked(&self.routes).insert(channel, Arc::clone(&route));
+                            (channel, route)
+                        });
+                        match waiting.waiter.try_send(Reply { result, route }) {
+                            Ok(()) => {
+                                pending.insert(id, Call::Answered);
+                                Delivery::Answered
+                            }
+                            Err(unheard) => Delivery::Unheard(unheard.into_inner()),
+                        }
+                    }
+                    Some(Call::Answered) => {
+                        pending.insert(id, Call::Answered);
+                        Delivery::Answered
+                    }
+                    Some(Call::Abandoned) | None => Delivery::Abandoned,
+                };
+            }
+            CallEvent::Lost => {
+                self.lost.store(true, Ordering::Release);
+                pending.clear();
+                drop(pending);
+                for (_, route) in locked(&self.routes).drain() {
+                    route.end(End::Lost);
+                }
+            }
+        }
+    }
+}
+
+/// A connection to one core. Dropping it (and every stream from it) ends
+/// the connection; the core and its terminals keep running.
+pub struct Core {
+    hello: Hello,
+    link: Link,
+    next_id: AtomicU64,
+    shared: Arc<Shared>,
+    stop: Arc<AtomicBool>,
+}
+
+impl Core {
+    /// Connects to a running core. Blocking: never call it on the UI thread.
+    /// A core that is not running is `Error::Connect`; this never starts one.
+    pub fn connect(endpoint: &Endpoint) -> Result<Self> {
+        let connect_error = |source| Error::Connect {
+            path: endpoint.socket.clone(),
+            source,
+        };
+        let stream = connect_stream(&endpoint.socket).map_err(connect_error)?;
+        Self::over(stream)
+    }
+
+    /// Runs the protocol over `stream`, whose reads must time out after
+    /// about `POLL` so the worker can write in between.
+    pub(crate) fn over(mut stream: impl Read + Write + Send + 'static) -> Result<Self> {
+        let hello = json!({"jsonrpc": "2.0", "id": 0, "method": Method::Hello.as_str(),
+            "params": {"features": ["resize_notifications"], "framed": true, "generation": GENERATION}});
+        let mut line = serde_json::to_vec(&hello)?;
+        line.push(b'\n');
+        stream.write_all(&line)?;
+        stream.flush()?;
+        let (reply, rest) = read_hello(&mut stream)?;
+        let hello = answer(Method::Hello, &reply)?;
+        let hello: Hello =
+            serde_json::from_value(hello).map_err(|error| Error::Invalid(Method::Hello, error))?;
+        if !hello.framed {
+            return Err(Violation::Unframed.into());
+        }
+        hello.check()?;
+
+        let (outbound, queue) = crossbeam_channel::bounded(MAX_OUTBOUND);
+        let shared = Arc::new(Shared::default());
+        let stop = Arc::new(AtomicBool::new(false));
+        let mut decoder = Decoder::default();
+        decoder.push(&rest);
+        let worker = Worker {
+            decoder,
+            queue,
+            shared: Arc::clone(&shared),
+            stop: Arc::clone(&stop),
+            stream,
+        };
+        std::thread::Builder::new()
+            .name("herdr-core".into())
+            .spawn(move || worker.run())?;
+        Ok(Self {
+            hello,
+            link: Link { outbound },
+            next_id: AtomicU64::new(1),
+            shared,
+            stop,
+        })
+    }
+
+    pub fn hello(&self) -> &Hello {
+        &self.hello
+    }
+
+    /// Whether the connection dropped; every later call is `Error::Lost`.
+    pub fn is_lost(&self) -> bool {
+        self.shared.lost.load(Ordering::Acquire)
+    }
+
+    pub fn list(&self, all: bool) -> Result<List> {
+        self.typed(Method::TerminalList, &json!({"all": all}))
+    }
+
+    /// Read one exact Core terminal, including a machine-qualified address.
+    pub fn terminal_get(&self, terminal: &str) -> Result<Terminal> {
+        self.typed(Method::TerminalGet, &json!({"terminal": terminal}))
+    }
+
+    /// Read Core's machine catalog and connection states without owning retries.
+    pub fn machine_list(&self) -> Result<wire::MachineList> {
+        self.typed(Method::MachineList, &json!({}))
+    }
+
+    /// Ask Core to dial one saved machine now and report its own line.
+    pub fn machine_connect(&self, machine: &str) -> Result<wire::MachineView> {
+        self.typed(Method::MachineConnect, &json!({"machine": machine}))
+    }
+
+    /// Ask Core to add an existing remote Core through SSH. No install option
+    /// or alternate command transport is exposed by this call.
+    pub fn machine_add(
+        &self,
+        target: &str,
+        name: Option<&str>,
+        session: Option<&str>,
+        temporary: bool,
+    ) -> Result<wire::Machine> {
+        self.typed(
+            Method::MachineAdd,
+            &wire::MachineAdd {
+                name,
+                session,
+                target,
+                temporary,
+            },
+        )
+    }
+
+    /// Rename one saved machine in Core; its permanent ID is unchanged.
+    /// Old qualified addresses stop working after Core accepts this call.
+    pub fn machine_rename(&self, machine: &str, new_name: &str) -> Result<wire::Machine> {
+        self.typed(
+            Method::MachineRename,
+            &wire::MachineRename { machine, new_name },
+        )
+    }
+
+    /// Forget one saved machine through Core. Remote terminals keep running.
+    /// A timed-out removal has an unknown outcome and must not be retried blindly.
+    pub fn machine_rm(&self, machine: &str) -> Result<String> {
+        let removed: wire::MachineRemoved =
+            self.typed(Method::MachineRm, &json!({"machine": machine}))?;
+        Ok(removed.removed)
+    }
+
+    /// Every terminal now, and the events after it.
+    pub fn subscribe(&self) -> Result<Subscription> {
+        let reply = self.call(Method::EventsSubscribe, &json!({}))?;
+        let stream = self.stream(Method::EventsSubscribe, reply.route);
+        let subscribed: Subscribed = parse(Method::EventsSubscribe, reply.result)?;
+        Ok(Subscription::new(
+            stream?,
+            subscribed.seq,
+            subscribed.terminals,
+        ))
+    }
+
+    pub fn attach(&self, attach: &wire::Attach<'_>) -> Result<Attachment> {
+        let requested = attach.observe
+            && attach.resize_notifications
+            && self
+                .hello
+                .features
+                .iter()
+                .any(|feature| feature == "resize_notifications");
+        let mut params = attach.clone();
+        params.resize_notifications = requested;
+        let reply = self.call_with_resize(Method::TerminalAttach, &params, requested)?;
+        let stream = self.stream(Method::TerminalAttach, reply.route);
+        let attached: wire::Attached = parse(Method::TerminalAttach, reply.result)?;
+        let confirmed = requested && attached.resize_notifications;
+        Ok(Attachment::new(stream?, attached.terminal, confirmed))
+    }
+
+    pub fn run(&self, run: &wire::Run<'_>) -> Result<Terminal> {
+        self.typed(Method::TerminalRun, run)
+    }
+
+    pub fn kill(&self, terminal: &str) -> Result<Terminal> {
+        self.typed(Method::TerminalKill, &json!({"terminal": terminal}))
+    }
+
+    /// Stage bytes for a live terminal on its exact Core-owned machine.
+    /// This does not submit the returned path to the terminal.
+    pub fn terminal_put(
+        &self,
+        terminal: &str,
+        name: &str,
+        bytes: &[u8],
+    ) -> Result<wire::PutResult> {
+        if name.trim().is_empty()
+            || name.len() > 255
+            || name.contains(['/', '\\'])
+            || name.chars().any(char::is_control)
+        {
+            return Err(Error::InvalidPutName);
+        }
+        if bytes.len() > MAX_PUT_BYTES {
+            return Err(Error::PutTooLarge {
+                size: bytes.len(),
+                limit: MAX_PUT_BYTES,
+            });
+        }
+        let data = base64::engine::general_purpose::STANDARD.encode(bytes);
+        self.typed(
+            Method::TerminalPut,
+            &wire::Put {
+                data: &data,
+                name,
+                terminal,
+            },
+        )
+    }
+
+    pub fn doc_get(&self, name: &str, on: Option<&str>) -> Result<Doc> {
+        self.typed(Method::DocGet, &DocGet { name, on })
+    }
+
+    /// Reads bounded UTF-8 lines from Core's target machine, without modifying the file.
+    pub fn file_read(&self, read: &FileRead<'_>) -> Result<FileReadResult> {
+        self.typed(Method::FileRead, read)
+    }
+
+    /// Writes `value` over `version` (from `doc_get`) and returns the new
+    /// version; a stale version is refused. `Value::Null` deletes it.
+    pub fn doc_set(
+        &self,
+        name: &str,
+        value: &Value,
+        version: u64,
+        on: Option<&str>,
+    ) -> Result<u64> {
+        let set: DocSet = self.typed(
+            Method::DocSet,
+            &DocWrite {
+                name,
+                on,
+                value,
+                version,
+            },
+        )?;
+        Ok(set.version)
+    }
+
+    fn typed<R: DeserializeOwned>(&self, method: Method, params: &impl Serialize) -> Result<R> {
+        parse(method, self.call(method, params)?.result)
+    }
+
+    fn stream(&self, method: Method, route: Option<(u32, Arc<Route>)>) -> Result<Stream> {
+        let (channel, route) = route.ok_or(Error::Invalid(
+            method,
+            serde::de::Error::missing_field("channel"),
+        ))?;
+        Ok(Stream {
+            channel,
+            link: self.link.clone(),
+            route,
+        })
+    }
+
+    fn call(&self, method: Method, params: &impl Serialize) -> Result<Answer> {
+        self.call_with_resize(method, params, false)
+    }
+
+    fn call_with_resize(
+        &self,
+        method: Method,
+        params: &impl Serialize,
+        resize_notifications: bool,
+    ) -> Result<Answer> {
+        self.call_with_timeout(method, params, resize_notifications, CALL_TIMEOUT)
+    }
+
+    fn call_with_timeout(
+        &self,
+        method: Method,
+        params: &impl Serialize,
+        resize_notifications: bool,
+        timeout: Duration,
+    ) -> Result<Answer> {
+        if self.is_lost() {
+            return Err(Error::Lost);
+        }
+        if !self.hello.supports(method) {
+            return Err(Error::Unsupported(method));
+        }
+        let id = self.next_id.fetch_add(1, Ordering::Relaxed);
+        let answer = self.shared.register(id, method, resize_notifications)?;
+        let message =
+            json!({"jsonrpc": "2.0", "id": id, "method": method.as_str(), "params": params});
+        let sent = serde_json::to_vec(&message)
+            .map_err(Error::from)
+            .and_then(|payload| self.link.send(0, Kind::Data, &payload));
+        if let Err(error) = sent {
+            self.shared.cancel_unsent(id);
+            return Err(error);
+        }
+        self.shared.sent(id);
+        self.shared
+            .wait(id, method, &answer, timeout)
+            .and_then(|reply| {
+                let result = reply.result.map_err(|refusal| refusal.into_error(method))?;
+                Ok(Answer {
+                    result,
+                    route: reply.route,
+                })
+            })
+    }
+}
+
+impl Drop for Core {
+    fn drop(&mut self) {
+        // Streams keep the worker's queue open; they end with the core's link.
+        self.stop.store(true, Ordering::Release);
+    }
+}
+
+fn parse<R: DeserializeOwned>(method: Method, value: Value) -> Result<R> {
+    serde_json::from_value(value).map_err(|error| Error::Invalid(method, error))
+}
+
+/// A JSON-RPC answer's result, or the core's refusal.
+fn answer(method: Method, message: &Value) -> Result<Value> {
+    if let Some(error) = message.get("error") {
+        let refusal: Refusal = parse(method, error.clone())?;
+        return Err(refusal.into_error(method));
+    }
+    Ok(message.get("result").cloned().unwrap_or(Value::Null))
+}
+
+/// The plain-mode reply line, and any framed bytes read past it.
+fn read_hello(stream: &mut impl Read) -> Result<(Value, Vec<u8>)> {
+    let deadline = Instant::now() + HELLO_TIMEOUT;
+    let mut buffer = Vec::new();
+    let mut chunk = [0; 4096];
+    loop {
+        if let Some(end) = buffer.iter().position(|byte| *byte == b'\n') {
+            let rest = buffer.split_off(end + 1);
+            return Ok((serde_json::from_slice(&buffer)?, rest));
+        }
+        if buffer.len() > MAX_HELLO {
+            return Err(Violation::LongHello(MAX_HELLO).into());
+        }
+        if Instant::now() >= deadline {
+            return Err(Error::Timeout(Method::Hello));
+        }
+        match stream.read(&mut chunk) {
+            Ok(0) => return Err(Error::Lost),
+            Ok(read) => buffer.extend_from_slice(&chunk[..read]),
+            Err(error) if waiting(&error) => {}
+            Err(error) => return Err(error.into()),
+        }
+    }
+}
+
+fn waiting(error: &io::Error) -> bool {
+    matches!(
+        error.kind(),
+        io::ErrorKind::WouldBlock | io::ErrorKind::TimedOut | io::ErrorKind::Interrupted
+    )
+}
+
+struct Worker<S> {
+    decoder: Decoder,
+    queue: Receiver<Vec<u8>>,
+    shared: Arc<Shared>,
+    stop: Arc<AtomicBool>,
+    stream: S,
+}
+
+impl<S: Read + Write> Worker<S> {
+    fn run(mut self) {
+        if let Err(error) = self.serve() {
+            tracing::info!(%error, "herdr-core connection ended");
+        }
+        self.shared.lose();
+    }
+
+    fn serve(&mut self) -> Result<()> {
+        let mut buffer = vec![0; 64 << 10];
+        while !self.stop.load(Ordering::Acquire) {
+            if !self.write_queued()? {
+                return Ok(());
+            }
+            match self.stream.read(&mut buffer) {
+                Ok(0) => return Err(Error::Lost),
+                Ok(read) => self.decoder.push(&buffer[..read]),
+                Err(error) if waiting(&error) => {}
+                Err(error) => return Err(error.into()),
+            }
+            while let Some(frame) = self.decoder.next_frame()? {
+                self.dispatch(frame)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Writes a bounded batch; false once nobody can queue more.
+    fn write_queued(&mut self) -> Result<bool> {
+        let mut wrote = false;
+        for _ in 0..WRITE_BATCH {
+            match self.queue.try_recv() {
+                Ok(frame) => {
+                    self.stream.write_all(&frame)?;
+                    wrote = true;
+                }
+                Err(TryRecvError::Empty) => break,
+                Err(TryRecvError::Disconnected) => return Ok(false),
+            }
+        }
+        if wrote {
+            self.stream.flush()?;
+        }
+        Ok(true)
+    }
+
+    fn dispatch(&mut self, frame: Frame) -> Result<()> {
+        match (frame.channel, frame.kind) {
+            (0, Kind::Data) => self.answer(&frame.payload),
+            (0, _) => Ok(()),
+            (channel, Kind::Data) => {
+                let route = locked(&self.shared.routes).get(&channel).cloned();
+                // Bytes for a stream already detached are dropped.
+                route.map_or(Ok(()), |route| {
+                    route.push(&frame.payload).map_err(Error::from)
+                })
+            }
+            (channel, Kind::Resize) => {
+                let route = locked(&self.shared.routes).get(&channel).cloned();
+                route.map_or(Ok(()), |route| {
+                    route.push_resize(&frame.payload).map_err(Error::from)
+                })
+            }
+            (channel, Kind::Close) => {
+                if let Some(route) = locked(&self.shared.routes).remove(&channel) {
+                    route.end(stream::closed(&frame.payload));
+                }
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
+
+    fn answer(&mut self, payload: &[u8]) -> Result<()> {
+        let message: Value = serde_json::from_slice(payload)?;
+        // Notifications arrive on subscription channels in framed mode.
+        let Some(id) = message.get("id").and_then(Value::as_u64) else {
+            return Ok(());
+        };
+        let result = match message.get("error") {
+            Some(error) => Err(serde_json::from_value(error.clone()).unwrap_or(Refusal {
+                data: None,
+                message: error.to_string(),
+            })),
+            None => Ok(message.get("result").cloned().unwrap_or(Value::Null)),
+        };
+        let channel = result
+            .as_ref()
+            .ok()
+            .and_then(|result| result.get("channel")?.as_u64())
+            .and_then(|channel| u32::try_from(channel).ok())
+            .filter(|channel| *channel != 0);
+        let delivery = self.shared.deliver(id, result, channel);
+        let close = match delivery {
+            Delivery::Answered => None,
+            Delivery::Unheard(reply) => reply.route.map(|(channel, _)| {
+                locked(&self.shared.routes).remove(&channel);
+                channel
+            }),
+            Delivery::Abandoned => {
+                channel.filter(|channel| !locked(&self.shared.routes).contains_key(channel))
+            }
+        };
+        if let Some(channel) = close {
+            // The worker owns this write. A full outbound queue cannot prevent
+            // cleanup, and a write failure loses the connection normally.
+            self.stream
+                .write_all(&crate::frame::encode(channel, Kind::Close, &[])?)?;
+            self.stream.flush()?;
+        }
+        Ok(())
+    }
+}
+
+#[cfg(unix)]
+fn connect_stream(path: &std::path::Path) -> io::Result<spaceport_client::Stream> {
+    let stream = spaceport_client::Stream::connect(path)?;
+    stream.set_read_timeout(Some(POLL))?;
+    stream.set_write_timeout(Some(WRITE_TIMEOUT))?;
+    Ok(stream)
+}
+
+/// The core's pipe name is open to every local account, so the pipe must be
+/// one this user owns before anything is sent.
+#[cfg(windows)]
+fn connect_stream(path: &std::path::Path) -> io::Result<spaceport_client::Stream> {
+    let mut stream = spaceport_client::Stream::connect_owned(path)?;
+    stream.set_read_timeout(Some(POLL))?;
+    stream.set_write_timeout(Some(WRITE_TIMEOUT))?;
+    Ok(stream)
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests;

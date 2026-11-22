@@ -36,41 +36,41 @@ for actual artifact qualification and remaining gates.
 
 ## Architecture
 
-Sheprd is a native client of Herdr 1 and herdr-core, not a TUI wrapper.
+Spaceport is a native client of Herdr 1 and herdr-core, not a TUI wrapper.
 Herdr 1 supplies terminal cells; herdr-core supplies raw output emulated by
-`sheprd-terminal`. The daemons own terminal processes and session state.
+`spaceport-terminal`. The daemons own terminal processes and session state.
 Closing or detaching the GUI must leave the daemons and their terminals running.
 
 | Location | Responsibility |
 | --- | --- |
-| `crates/sheprd-protocol` | Generation-1 wire types, framing, validation, and atomic surface patches |
-| `crates/sheprd-acp` | `sheprd-acp` binary run inside a Herdr pane: the only ACP client of an agent, its in-pane chat view, the attach socket Sheprd connects to, and Herdr status reports |
-| `crates/sheprd-chat-protocol` | Attach wire between `sheprd-acp` and its clients: transcript model, the shared change reducer, framing, and endpoint discovery; no ACP or GPUI types |
-| `crates/sheprd-client` | Discovery, socket worker, session transitions, ordered commands, and client-local activity projection |
-| `crates/sheprd-backend` | The terminal value types herdr-core terminals share with the app, and the `Backend` (attach) and `Terminal` traits `sheprd-core-client` implements, as `sheprd-protocol` cells and semantic input; no GPUI or transport |
-| `crates/sheprd-browser` | Native browser tabs and a window's groups of them: what a tab shows, its saved file, the split layouts, the strip's growth and scroll, and recently closed tabs; the first crate that depends on GPUI (`WindowId`, `ScrollHandle`, `Pixels`), the app owns every message and draws every strip |
-| `crates/sheprd-panes` | The panes one herdr-core tab splits into: a binary tree of terminals with each split's share and the rects and neighbours they lay out as, saved with the tab; no GPUI |
-| `crates/sheprd-core-client` | herdr-core (`hc`, Herdr 2): endpoint discovery, the framed JSON-RPC connection worker, credit-flowed terminal and event streams, starting a core, and `CoreBackend`, which lists, watches, starts, ends, and attaches terminals in `sheprd-backend` types; no GPUI |
-| `crates/sheprd-terminal` | The terminal emulator for herdr-core's raw byte streams (alacritty_terminal): bytes in, `sheprd-protocol` cells and damage out, and semantic input encoded for the program's modes; no GPUI or I/O |
-| `crates/sheprd-gpui` | Native UI, connection bridge, presentation state, semantic input, geometry, and painting |
-| `crates/sheprd-control-protocol` | The control socket between `spaceport <command>` and the running app: request and response types, bounds, and the Unix socket or named pipe; no GPUI |
-| `crates/sheprd-commands` | The command catalog: each command's name, default shortcuts per platform, and the daemon request it becomes against a snapshot; no GPUI (the app binds the keys and runs window commands) |
-| `crates/sheprd-usage` | Passive usage report models and display metadata, plus the bounded shell helper retained by port scanning; no provider probes, sign-in configuration, credential/cookie readers, fetch worker or GPUI |
-| `crates/sheprd-remote` | Existing bounded Herdr host scripts, agent-session validation/arguments and pane/process snapshot readers retained by chat and pane movement; no migration, provisioning, dispatch, credential store or GPUI |
-| `crates/sheprd-diagnostics` | The app's log file and crash reports: the bounded capture of the crates the app names, the writer thread and rotation, the reader the log window tails, the panic hook, and Windows minidumps; no GPUI |
-| `crates/sheprd-i18n` | The languages the app shows (`docs/i18n.md`): `Locale`, `Direction`, the `language` setting and its negotiation with an `en-US` fallback, the Fluent catalog, and the `en-XA`/`en-XB` pseudo-locales; no GPUI (the app embeds `crates/sheprd-gpui/locales`, keeps the current locale, and checks `fl!`) |
-| `crates/sheprd-ago` | How long ago something happened, in the largest whole unit ("3 min ago", "yesterday") from seconds elapsed; it names the unit and its count and the app writes the words; no GPUI or messages |
-| `crates/sheprd-motion` | The clock animations are measured by, and how long each takes: `now`, `duration`, `progress`, `ENTER`, `LEAVE`, and the process-wide QA > Slow Animations switch that runs every animation at a tenth speed; no GPUI |
-| `crates/sheprd-lenient` | Reads Herdr's `config.toml` leniently: a value this build cannot read (a variant added since, a key whose type changed) falls back to its own default instead of failing the whole file, while malformed TOML still fails; no GPUI |
-| `crates/sheprd-reorder` | Where a dropped row or tab lands, and how far the others slide to preview the drop: lift delays, `Beside`, `Slide`, `slot_for` and `preview`, shared by the sidebar's rows and the tab strips; no dependencies and no GPUI |
-| `crates/sheprd-truncate` | Cutting text the app shows to a length between grapheme clusters (`cut`, `cut_chars`, `cut_width`, `one_line`, `ellipsize`, `tab_title`); it drops the controls and direction overrides untrusted text carries through `sheprd-client`; no GPUI |
-| `crates/sheprd-launcher` | Windows-only windowed launcher that starts `spaceport.exe` without a console window; std plus `MessageBoxW` for start failures |
-| `crates/sheprd-osc52` | The daemon's forwarded OSC 52 clipboard payloads: bounded base64 text decoding, and the mailbox bound; no GPUI |
-| `crates/sheprd-sound` | The notification-sound policy and the worker that plays it: Herdr's `[ui.sound]` and toast delay read leniently, when a notification sounds, and rodio playback of a bounded custom or bundled MP3; the app owns the settings path, the volume setting and every message; no GPUI |
-| `crates/sheprd-state-file` | Small app-owned JSON state files: a bounded read, an atomic replace, and a worker that saves the latest value so a change made on the UI thread never waits for the disk; callers resolve their own paths, and the app owns every message; no GPUI |
-| `crates/sheprd-settings` | Reads and writes the settings files: the typed values they carry — sidebar, layout, status bar, terminal padding, tab and panel layouts, agents, fonts and weights — with their defaults, validation and the contrast rules the app draws with; the app owns every message and everything that acts on a value; no GPUI (callers run its blocking load/save on a worker) |
-| `crates/sheprd-words` | Word boundaries (UAX #29) for the single-line text fields, so Option-Left, Option-Right, Option-Backspace, and Option-Delete move and delete by word; no GPUI or messages |
-| `crates/embed-resource` | No-op stand-in for GPUI's `embed-resource` build dependency, patched in so GPUI embeds no Windows manifest beside `crates/sheprd-gpui/windows.manifest`; not a production crate |
+| `crates/spaceport-protocol` | Generation-1 wire types, framing, validation, and atomic surface patches |
+| `crates/spaceport-acp` | `sheprd-acp` binary run inside a Herdr pane: the only ACP client of an agent, its in-pane chat view, the attach socket Spaceport connects to, and Herdr status reports |
+| `crates/spaceport-chat-protocol` | Attach wire between `sheprd-acp` and its clients: transcript model, the shared change reducer, framing, and endpoint discovery; no ACP or GPUI types |
+| `crates/spaceport-client` | Discovery, socket worker, session transitions, ordered commands, and client-local activity projection |
+| `crates/spaceport-backend` | The terminal value types herdr-core terminals share with the app, and the `Backend` (attach) and `Terminal` traits `spaceport-core-client` implements, as `spaceport-protocol` cells and semantic input; no GPUI or transport |
+| `crates/spaceport-browser` | Native browser tabs and a window's groups of them: what a tab shows, its saved file, the split layouts, the strip's growth and scroll, and recently closed tabs; the first crate that depends on GPUI (`WindowId`, `ScrollHandle`, `Pixels`), the app owns every message and draws every strip |
+| `crates/spaceport-panes` | The panes one herdr-core tab splits into: a binary tree of terminals with each split's share and the rects and neighbours they lay out as, saved with the tab; no GPUI |
+| `crates/spaceport-core-client` | herdr-core (`hc`, Herdr 2): endpoint discovery, the framed JSON-RPC connection worker, credit-flowed terminal and event streams, starting a core, and `CoreBackend`, which lists, watches, starts, ends, and attaches terminals in `spaceport-backend` types; no GPUI |
+| `crates/spaceport-terminal` | The terminal emulator for herdr-core's raw byte streams (alacritty_terminal): bytes in, `spaceport-protocol` cells and damage out, and semantic input encoded for the program's modes; no GPUI or I/O |
+| `crates/spaceport-gpui` | Native UI, connection bridge, presentation state, semantic input, geometry, and painting |
+| `crates/spaceport-control-protocol` | The control socket between `spaceport <command>` and the running app: request and response types, bounds, and the Unix socket or named pipe; no GPUI |
+| `crates/spaceport-commands` | The command catalog: each command's name, default shortcuts per platform, and the daemon request it becomes against a snapshot; no GPUI (the app binds the keys and runs window commands) |
+| `crates/spaceport-usage` | Passive usage report models and display metadata, plus the bounded shell helper retained by port scanning; no provider probes, sign-in configuration, credential/cookie readers, fetch worker or GPUI |
+| `crates/spaceport-remote` | Existing bounded Herdr host scripts, agent-session validation/arguments and pane/process snapshot readers retained by chat and pane movement; no migration, provisioning, dispatch, credential store or GPUI |
+| `crates/spaceport-diagnostics` | The app's log file and crash reports: the bounded capture of the crates the app names, the writer thread and rotation, the reader the log window tails, the panic hook, and Windows minidumps; no GPUI |
+| `crates/spaceport-i18n` | The languages the app shows (`docs/i18n.md`): `Locale`, `Direction`, the `language` setting and its negotiation with an `en-US` fallback, the Fluent catalog, and the `en-XA`/`en-XB` pseudo-locales; no GPUI (the app embeds `crates/spaceport-gpui/locales`, keeps the current locale, and checks `fl!`) |
+| `crates/spaceport-ago` | How long ago something happened, in the largest whole unit ("3 min ago", "yesterday") from seconds elapsed; it names the unit and its count and the app writes the words; no GPUI or messages |
+| `crates/spaceport-motion` | The clock animations are measured by, and how long each takes: `now`, `duration`, `progress`, `ENTER`, `LEAVE`, and the process-wide QA > Slow Animations switch that runs every animation at a tenth speed; no GPUI |
+| `crates/spaceport-lenient` | Reads Herdr's `config.toml` leniently: a value this build cannot read (a variant added since, a key whose type changed) falls back to its own default instead of failing the whole file, while malformed TOML still fails; no GPUI |
+| `crates/spaceport-reorder` | Where a dropped row or tab lands, and how far the others slide to preview the drop: lift delays, `Beside`, `Slide`, `slot_for` and `preview`, shared by the sidebar's rows and the tab strips; no dependencies and no GPUI |
+| `crates/spaceport-truncate` | Cutting text the app shows to a length between grapheme clusters (`cut`, `cut_chars`, `cut_width`, `one_line`, `ellipsize`, `tab_title`); it drops the controls and direction overrides untrusted text carries through `spaceport-client`; no GPUI |
+| `crates/spaceport-launcher` | Windows-only windowed launcher that starts `spaceport.exe` without a console window; std plus `MessageBoxW` for start failures |
+| `crates/spaceport-osc52` | The daemon's forwarded OSC 52 clipboard payloads: bounded base64 text decoding, and the mailbox bound; no GPUI |
+| `crates/spaceport-sound` | The notification-sound policy and the worker that plays it: Herdr's `[ui.sound]` and toast delay read leniently, when a notification sounds, and rodio playback of a bounded custom or bundled MP3; the app owns the settings path, the volume setting and every message; no GPUI |
+| `crates/spaceport-state-file` | Small app-owned JSON state files: a bounded read, an atomic replace, and a worker that saves the latest value so a change made on the UI thread never waits for the disk; callers resolve their own paths, and the app owns every message; no GPUI |
+| `crates/spaceport-settings` | Reads and writes the settings files: the typed values they carry — sidebar, layout, status bar, terminal padding, tab and panel layouts, agents, fonts and weights — with their defaults, validation and the contrast rules the app draws with; the app owns every message and everything that acts on a value; no GPUI (callers run its blocking load/save on a worker) |
+| `crates/spaceport-words` | Word boundaries (UAX #29) for the single-line text fields, so Option-Left, Option-Right, Option-Backspace, and Option-Delete move and delete by word; no GPUI or messages |
+| `crates/embed-resource` | No-op stand-in for GPUI's `embed-resource` build dependency, patched in so GPUI embeds no Windows manifest beside `crates/spaceport-gpui/windows.manifest`; not a production crate |
 | `crates/test-support/sandbox.rs` | Shared isolated process setup for opt-in integration tests; not a production crate |
 | `crates/test-support/pe.rs` | Windows executable (PE) reader for tests that check subsystem and resources; not a production crate |
 
@@ -110,10 +110,10 @@ at the same spot, or both bumping one hard-coded count.
   the crate's root `Error`, as `pane_move` and `backdrop` do, rather than a
   run of variants in `error.rs`. The root enum stays sorted. Callers name it
   `feature::Error`, never through an `as FeatureError` alias.
-- Wrap another crate's error the same way (`Client(#[from] sheprd_client::Error)`).
+- Wrap another crate's error the same way (`Client(#[from] spaceport_client::Error)`).
   Do not mirror its variants in the app's root and convert one by one: each
   failure has one definition, and callers match the nested variant.
-- Shared state structs (`SheprdWindow`, `Config`, `herdr_settings::Settings`)
+- Shared state structs (`SpaceportWindow`, `Config`, `herdr_settings::Settings`)
   and their constructors keep their fields sorted. Run an initializer that has
   an effect or depends on another (registering a subscription, creating an
   entity, reading a value before it moves) in a `let` before the struct
@@ -143,7 +143,7 @@ agents in Herdr panes can use what only this client shows or keeps
 - When a feature adds something an agent or script could reasonably ask for
   (open or focus a view, read state the app holds, change a setting, wait for
   an event), add a command in the same change: the request in
-  `sheprd-control-protocol`'s `protocol`, its handler in `control/server`,
+  `spaceport-control-protocol`'s `protocol`, its handler in `control/server`,
   parsing and output in `control/client`, its `--help` text, and tests for
   each.
 - Do not add a command that repeats Herdr's own `herdr` CLI (workspaces,
@@ -185,7 +185,7 @@ agents in Herdr panes can use what only this client shows or keeps
 
 - Treat app, window, and entity contexts as UI-thread execution. A foreground `spawn` future does not make blocking work safe.
 - Never perform blocking socket/disk I/O, process waits, sleeps, or expensive background computation on the UI thread. Use the existing worker threads or GPUI background executor, then apply results through the appropriate context update.
-- Start child processes with `sheprd_client::new_command`, never `Command::new` (clippy rejects it outside tests). On Windows a console child built any other way can open a window of its own.
+- Start child processes with `spaceport_client::new_command`, never `Command::new` (clippy rejects it outside tests). On Windows a console child built any other way can open a window of its own.
 - Keep render and input paths thin. Render from prepared state and bounded caches; do not query the daemon, scan files, or launch processes while rendering.
 - Preserve continuously drained ordered events and the coalesced latest-state mailbox. Do not replace them with an unbounded UI event queue.
 - Route connection/startup failures through the authoritative inbox. Reconnect and detach must isolate old inboxes so delayed events and paint acknowledgements cannot affect the new connection.
@@ -200,7 +200,7 @@ agents in Herdr panes can use what only this client shows or keeps
 
 ## Protocol And Safety
 
-- Vendored bincode field and enum variant order is a compatibility contract. Do not reorder declarations as cleanup. Preserve attribution in `crates/sheprd-protocol/NOTICE.md`.
+- Vendored bincode field and enum variant order is a compatibility contract. Do not reorder declarations as cleanup. Preserve attribution in `crates/spaceport-protocol/NOTICE.md`.
 - Keep frame/response/geometry bounds, strict decoding, and atomic patch validation. Test malformed inputs and limits, not only valid fixtures.
 - Never mix snapshot metadata and surface cells across boot IDs or projection revisions. Preserve future-surface buffering and stale-boot rejection.
 - Preserve the single in-flight API request, bounded command/event queues, FIFO ordering, bounded write batches, and request correlation.

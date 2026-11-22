@@ -1,5 +1,5 @@
 [workspace]
-members  = ["crates/embed-resource", "crates/sheprd-acp", "crates/sheprd-ago", "crates/sheprd-backend", "crates/sheprd-browser", "crates/sheprd-chat-protocol", "crates/sheprd-client", "crates/sheprd-commands", "crates/sheprd-control-protocol", "crates/sheprd-core-client", "crates/sheprd-diagnostics", "crates/sheprd-gpui", "crates/sheprd-launcher", "crates/sheprd-i18n", "crates/sheprd-lenient", "crates/sheprd-motion", "crates/sheprd-osc52", "crates/sheprd-panes", "crates/sheprd-protocol", "crates/sheprd-remote", "crates/sheprd-reorder", "crates/sheprd-settings", "crates/sheprd-sound", "crates/sheprd-state-file", "crates/sheprd-terminal", "crates/sheprd-truncate", "crates/sheprd-usage", "crates/sheprd-words"]
+members  = ["crates/embed-resource", "crates/spaceport-acp", "crates/spaceport-ago", "crates/spaceport-backend", "crates/spaceport-browser", "crates/spaceport-chat-protocol", "crates/spaceport-client", "crates/spaceport-commands", "crates/spaceport-control-protocol", "crates/spaceport-core-client", "crates/spaceport-diagnostics", "crates/spaceport-gpui", "crates/spaceport-launcher", "crates/spaceport-i18n", "crates/spaceport-lenient", "crates/spaceport-motion", "crates/spaceport-osc52", "crates/spaceport-panes", "crates/spaceport-protocol", "crates/spaceport-remote", "crates/spaceport-reorder", "crates/spaceport-settings", "crates/spaceport-sound", "crates/spaceport-state-file", "crates/spaceport-terminal", "crates/spaceport-truncate", "crates/spaceport-usage", "crates/spaceport-words"]
 resolver = "2"
 
 [workspace.package]
@@ -24,7 +24,7 @@ unwrap_used = "deny"
 sparkle-updater = "=0.1.0"
 # The terminal emulator behind herdr-core terminals, which arrive as raw bytes;
 # Zed's fork, the revision Arbor runs. When upgrading, check that
-# crates/sheprd-terminal/src/handler.rs forwards every `vte::ansi::Handler`
+# crates/spaceport-terminal/src/handler.rs forwards every `vte::ansi::Handler`
 # method: a method it misses silently falls back to the trait's no-op default.
 alacritty_terminal   = "0.26.0"
 url = "2"
@@ -50,8 +50,8 @@ flate2               = "1"
 # Use the same strict macOS family lookup as GPUI, including legacy aliases.
 font-kit             = { package = "zed-font-kit", version = "=0.14.1-zed" }
 libc                 = "0.2"
-# Fluent messages (docs/i18n.md): `sheprd-i18n` loads them through
-# i18n-embed's loader and negotiates the locale; `sheprd-gpui`'s build script
+# Fluent messages (docs/i18n.md): `spaceport-i18n` loads them through
+# i18n-embed's loader and negotiates the locale; `spaceport-gpui`'s build script
 # parses them to check `fl!` calls. i18n-embed 0.16 does not build without
 # its default `rust-embed` feature, though the app embeds files itself.
 fluent               = "0.17"
@@ -67,30 +67,30 @@ foreign-types        = "0.5"
 futures-lite         = "2"
 gpui                 = { package = "gpui-pre", version = "=0.3.10" }
 gpui_platform        = { package = "gpui-pre-platform", version = "=0.3.10" }
-sheprd-ago            = { path = "crates/sheprd-ago" }
-sheprd-backend        = { path = "crates/sheprd-backend" }
-sheprd-browser        = { path = "crates/sheprd-browser" }
-sheprd-chat-protocol  = { path = "crates/sheprd-chat-protocol" }
-sheprd-client         = { path = "crates/sheprd-client" }
-sheprd-commands       = { path = "crates/sheprd-commands" }
-sheprd-control-protocol = { path = "crates/sheprd-control-protocol" }
-sheprd-core-client    = { path = "crates/sheprd-core-client" }
-sheprd-diagnostics    = { path = "crates/sheprd-diagnostics" }
-sheprd-i18n           = { path = "crates/sheprd-i18n" }
-sheprd-lenient        = { path = "crates/sheprd-lenient" }
-sheprd-motion         = { path = "crates/sheprd-motion" }
-sheprd-osc52          = { path = "crates/sheprd-osc52" }
-sheprd-panes          = { path = "crates/sheprd-panes" }
-sheprd-protocol       = { path = "crates/sheprd-protocol" }
-sheprd-remote         = { default-features = false, path = "crates/sheprd-remote" }
-sheprd-reorder        = { path = "crates/sheprd-reorder" }
-sheprd-settings       = { path = "crates/sheprd-settings" }
-sheprd-sound          = { path = "crates/sheprd-sound" }
-sheprd-state-file     = { path = "crates/sheprd-state-file" }
-sheprd-truncate       = { path = "crates/sheprd-truncate" }
-sheprd-terminal       = { path = "crates/sheprd-terminal" }
-sheprd-usage          = { path = "crates/sheprd-usage" }
-sheprd-words          = { path = "crates/sheprd-words" }
+spaceport-ago           = { path = "crates/spaceport-ago" }
+spaceport-backend       = { path = "crates/spaceport-backend" }
+spaceport-browser       = { path = "crates/spaceport-browser" }
+spaceport-chat-protocol = { path = "crates/spaceport-chat-protocol" }
+spaceport-client        = { path = "crates/spaceport-client" }
+spaceport-commands      = { path = "crates/spaceport-commands" }
+spaceport-control-protocol = { path = "crates/spaceport-control-protocol" }
+spaceport-core-client   = { path = "crates/spaceport-core-client" }
+spaceport-diagnostics   = { path = "crates/spaceport-diagnostics" }
+spaceport-i18n          = { path = "crates/spaceport-i18n" }
+spaceport-lenient       = { path = "crates/spaceport-lenient" }
+spaceport-motion        = { path = "crates/spaceport-motion" }
+spaceport-osc52         = { path = "crates/spaceport-osc52" }
+spaceport-panes         = { path = "crates/spaceport-panes" }
+spaceport-protocol      = { path = "crates/spaceport-protocol" }
+spaceport-remote        = { default-features = false, path = "crates/spaceport-remote" }
+spaceport-reorder       = { path = "crates/spaceport-reorder" }
+spaceport-settings      = { path = "crates/spaceport-settings" }
+spaceport-sound         = { path = "crates/spaceport-sound" }
+spaceport-state-file    = { path = "crates/spaceport-state-file" }
+spaceport-truncate      = { path = "crates/spaceport-truncate" }
+spaceport-terminal      = { path = "crates/spaceport-terminal" }
+spaceport-usage         = { path = "crates/spaceport-usage" }
+spaceport-words         = { path = "crates/spaceport-words" }
 interprocess         = "2.4.2"
 # Local interface addresses, so Bonjour discovery skips this machine; the
 # version mdns-sd already uses.
@@ -115,7 +115,7 @@ objc2-app-kit        = { default-features = false, features = ["NSAppearance", "
 objc2-foundation     = { default-features = false, features = ["NSArray", "NSBundle", "NSData", "NSError", "NSPathUtilities", "NSProcessInfo", "NSUserDefaults", "NSValue", "NSString", "NSURL", "std"], version = "0.3.2" }
 block2               = "0.6.2"
 dispatch2            = { default-features = false, features = ["objc2", "std"], version = "0.3.1" }
-objc2-core-foundation = { default-features = false, features = ["CFCGTypes", "std"], version = "0.3.2" }
+objc2-core-foundation   = { default-features = false, features = ["CFCGTypes", "std"], version = "0.3.2" }
 # Asks for Dock badge permission; the version GPUI's macOS platform already links.
 objc2-user-notifications ={ default-features = false, features = ["UNUserNotificationCenter", "block2", "std"], version = "0.3.2" }
 raw-window-handle    = "0.6"
@@ -164,13 +164,13 @@ winresource          = "0.1.34"
 zbus                 = { default-features = false, version = "5.19" }
 
 # Line tables keep file:line in backtraces and crash reports while cutting most
-# of the debug info a full build writes and links for sheprd-gpui. Use
+# of the debug info a full build writes and links for spaceport-gpui. Use
 # `CARGO_PROFILE_DEV_DEBUG=full` for a debugger session that needs locals.
 [profile.dev]
 debug = "line-tables-only"
 
 # GPUI's build script embeds its own Windows manifest through embed-resource,
-# which would clash with Herdr's (crates/sheprd-gpui/windows.manifest); this
+# which would clash with Herdr's (crates/spaceport-gpui/windows.manifest); this
 # no-op stands in for it. See crates/embed-resource.
 [patch.crates-io]
 embed-resource = { path = "crates/embed-resource" }

@@ -11,17 +11,17 @@ This product includes software developed as part of the Sheprd project (formerly
 licensed under the Apache License, Version 2.0. The full license text is in
 LICENSE at the root of this repository.
 
-Portions of crates/sheprd-protocol are adapted from Herdr
+Portions of crates/spaceport-protocol are adapted from Herdr
 (https://github.com/herdrdev/herdr), also licensed under Apache-2.0. The
 adapted files, the upstream revision they came from, and the modifications
-made to them are recorded in crates/sheprd-protocol/NOTICE.md. No upstream
+made to them are recorded in crates/spaceport-protocol/NOTICE.md. No upstream
 NOTICE file was present at the revision used.
 
 The native GitHub integration's Arbor references and attribution are recorded
-in crates/sheprd-gpui/GITHUB-NOTICE.md.
+in crates/spaceport-gpui/GITHUB-NOTICE.md.
 
 The shared settings schema, defaults, theme palettes, and status indicators in
-crates/sheprd-gpui/src/herdr_settings.rs, src/herdr_settings/, and src/sidebar/agents.rs
+crates/spaceport-gpui/src/herdr_settings.rs, src/herdr_settings/, and src/sidebar/agents.rs
 are adapted from Herdr (https://github.com/herdrdev/herdr), Apache-2.0,
 revision 8ac9542757292f7a8d42a2d532bc6a8a33c7ffce: src/config/{model,sound,theme}.rs,
 src/app/{state,mod}.rs, and src/client/shell.rs. Adaptations include native RGB
@@ -29,7 +29,7 @@ palette projection, bounded parsing, conflict-aware atomic persistence, and
 GPUI indicator rendering. No upstream NOTICE file was present at that revision.
 
 The notification policy and bundled audio assets adapted or copied from Herdr
-are attributed in crates/sheprd-sound/SOUND-NOTICE.md (Apache-2.0).
+are attributed in crates/spaceport-sound/SOUND-NOTICE.md (Apache-2.0).
 Specifically, assets/sounds/done.mp3 and assets/sounds/request.mp3 are unmodified
 copies from https://github.com/herdrdev/herdr at revision
 8ac9542757292f7a8d42a2d532bc6a8a33c7ffce. The sound configuration, notification
@@ -64,7 +64,7 @@ continues to apply to those historical depictions, not to the original paw.
 The built-in theme files in assets/themes/ are unmodified copies from
 iTerm2-Color-Schemes (https://github.com/mbadolato/iTerm2-Color-Schemes),
 Copyright (c) 2011 to Present Mark Badolato, MIT License; each theme's
-copyright belongs to its author. crates/sheprd-gpui/THEMES-NOTICE.md has the
+copyright belongs to its author. crates/spaceport-gpui/THEMES-NOTICE.md has the
 revision and the full license text.
 
 The icons assets/icons/error.svg and pass.svg are Codicons,

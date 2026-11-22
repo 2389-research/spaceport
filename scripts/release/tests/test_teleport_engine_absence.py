@@ -8,8 +8,8 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[3]
-REMOTE = ROOT / "crates/sheprd-remote"
-APP = ROOT / "crates/sheprd-gpui/src"
+REMOTE = ROOT / "crates/spaceport-remote"
+APP = ROOT / "crates/spaceport-gpui/src"
 
 
 class TeleportEngineAbsence(unittest.TestCase):
@@ -19,7 +19,7 @@ class TeleportEngineAbsence(unittest.TestCase):
         self.assertFalse((APP / "teleport.rs").exists())
         for source in (*REMOTE.rglob("*.rs"), *APP.rglob("*.rs")):
             with self.subTest(source=source.relative_to(ROOT)):
-                self.assertNotRegex(source.read_text(), r"\b(?:crate|sheprd_remote)::teleport\b")
+                self.assertNotRegex(source.read_text(), r"\b(?:crate|spaceport_remote)::teleport\b")
 
     def test_host_readers_do_not_retain_migration_or_provisioning_apis(self):
         excluded = (
@@ -42,7 +42,7 @@ class TeleportEngineAbsence(unittest.TestCase):
             self.assertIn("host_script::", text, relative)
         self.assertIn("agent::AgentKind", (APP / "overview/reopen.rs").read_text())
         processes = (APP / "processes.rs").read_text()
-        self.assertIn("sheprd_remote::snapshot::ProcessInfo", processes)
+        self.assertIn("spaceport_remote::snapshot::ProcessInfo", processes)
         self.assertIn("info.foreground_pids()", processes)
 
 

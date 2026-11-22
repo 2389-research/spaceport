@@ -12,7 +12,7 @@ profile=${2:-debug}
 architecture=${3:-arm64}
 mode=${4:-unsigned}
 [[ $(uname -s) == Darwin ]] || fail 'macOS required'
-flags=(build --locked --features sheprd-gpui/macos-updater)
+flags=(build --locked --features spaceport-gpui/macos-updater)
 case $profile in debug) ;; release) flags+=(--release) ;; *) fail 'Profile must be debug or release' ;; esac
 [[ $architecture == arm64 || $architecture == universal ]] || fail 'Architecture must be arm64 or universal'
 [[ $mode == unsigned || $mode == installed || $mode == import ]] || fail 'Mode must be unsigned, installed or import'
@@ -35,10 +35,10 @@ build_env=(env
     CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_STRIP=none)
 # Build the host arm64 target without --target so local debug caches are reusable.
 [[ $(uname -m) == arm64 ]] || fail 'Build on Apple Silicon; Intel-only hosting is not supported by this preview route'
-"${build_env[@]}" cargo "${flags[@]}" --target-dir target -p sheprd-gpui -p sheprd-acp
+"${build_env[@]}" cargo "${flags[@]}" --target-dir target -p spaceport-gpui -p spaceport-acp
 intel=-
 if [[ $architecture == universal ]]; then
-    "${build_env[@]}" cargo "${flags[@]}" --target-dir target -p sheprd-gpui -p sheprd-acp --target x86_64-apple-darwin
+    "${build_env[@]}" cargo "${flags[@]}" --target-dir target -p spaceport-gpui -p spaceport-acp --target x86_64-apple-darwin
     intel="target/x86_64-apple-darwin/$profile/spaceport"
 fi
 "${build_env[@]}" python3 scripts/release/smoke-cli.py "target/$profile/spaceport" >&2

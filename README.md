@@ -38,7 +38,7 @@ Use the pinned Rust toolchain in `rust-toolchain.toml`. From the repository
 root, the current development executable is named `spaceport`:
 
 ```sh
-cargo +1.99.0 check --locked -p sheprd-gpui --bin spaceport
+cargo +1.99.0 check --locked -p spaceport-gpui --bin spaceport
 ```
 
 Install the validator dependency as described in
@@ -72,6 +72,6 @@ gates; the inherited Sheprd publishing route remains disabled for Spaceport.
 
 Spaceport is not affiliated with or endorsed by Sheprd or Herdr. The fork
 retains the applicable Apache-2.0 notices in [LICENSE](LICENSE),
-[NOTICE](NOTICE), and the [protocol attribution](crates/sheprd-protocol/NOTICE.md).
+[NOTICE](NOTICE), and the [protocol attribution](crates/spaceport-protocol/NOTICE.md).
 Git history preserves the upstream documentation and implementation for
 reference.

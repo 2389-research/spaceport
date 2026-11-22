@@ -7,7 +7,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[3]
-CONTROL = ROOT / "crates/sheprd-gpui/src/control"
+CONTROL = ROOT / "crates/spaceport-gpui/src/control"
 OLD_LABEL = re.compile(r'"[^"\n]*Sheprd\b')
 
 

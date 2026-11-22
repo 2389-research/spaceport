@@ -18,11 +18,11 @@ class CredentialStoreAbsence(unittest.TestCase):
         self.assertNotIn('name = "sheprd-credentials"', (ROOT / "Cargo.lock").read_text())
 
     def test_store_has_no_error_logging_or_translation_route(self):
-        source = ROOT / "crates/sheprd-gpui/src"
+        source = ROOT / "crates/spaceport-gpui/src"
         for file in source.rglob("*.rs"):
             with self.subTest(source=file.relative_to(ROOT)):
                 self.assertNotIn("sheprd_credentials", file.read_text())
-        for file in (ROOT / "crates/sheprd-gpui/locales").rglob("*.ftl"):
+        for file in (ROOT / "crates/spaceport-gpui/locales").rglob("*.ftl"):
             with self.subTest(locale=file.relative_to(ROOT)):
                 self.assertNotIn("error-credentials-", file.read_text())
 

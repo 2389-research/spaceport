@@ -1,0 +1,658 @@
+// ABOUTME: Starts Spaceport and opens windows for exact runtime targets.
+// ABOUTME: Freezes Core opt-in before installing shared app state.
+//! Process bootstrap and window opening. CLI parsing and helper modes
+//! run before GPUI starts, so an invalid option or `--build-info` exits without
+//! ever creating a window.
+// i18n: migrated
+
+use crate::i18n::{Localize, fl};
+use crate::{
+    APP_VERSION, Hide, HideOthers, Quit, ShowAll, ShowLogs, SpaceportWindow, WINDOW_TITLE,
+    app_icon, bind_keys,
+    browser::CoreGroupKey,
+    cli,
+    config::{Config, Theme},
+    core_terminals::Start,
+    diagnostics, icons,
+    keymap::Keymap,
+    log_window, menus, titlebar,
+};
+#[cfg(feature = "integration-test")]
+use crate::{performance, smoke};
+use anyhow::Result;
+use gpui::{prelude::*, *};
+use spaceport_client::ConnectTarget;
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum WindowLaunch {
+    Legacy(ConnectTarget),
+    Core(CoreGroupKey),
+}
+
+impl From<ConnectTarget> for WindowLaunch {
+    fn from(target: ConnectTarget) -> Self {
+        Self::Legacy(target)
+    }
+}
+
+/// The first frame must not use default density while disk settings load.
+/// Load before the UI event loop; later windows reuse the last validated pair.
+#[derive(Clone, Default)]
+pub(crate) struct InitialAppearance {
+    pub config: Config,
+    /// The keymap `config` was resolved into when it loaded, so a window's
+    /// keys and its settings never disagree.
+    pub keymap: Keymap,
+    pub theme: Theme,
+    pub error: Option<String>,
+}
+
+impl Global for InitialAppearance {}
+
+/// First-frame settings and the keymap they resolve into.
+fn load_startup_settings() -> crate::Result<(Config, Keymap)> {
+    let config = Config::load_startup()?;
+    let keymap = crate::config::keymap(&config)?;
+    Ok((config, keymap))
+}
+
+impl InitialAppearance {
+    fn load(load: impl FnOnce() -> crate::Result<(Config, Keymap)>, light: bool) -> Self {
+        match load().and_then(|(config, keymap)| Ok((config.theme(light)?, config, keymap))) {
+            Ok((theme, config, keymap)) => Self {
+                config,
+                keymap,
+                theme,
+                error: None,
+            },
+            Err(error) => Self {
+                error: Some(fl!("app-load-config-failed", error = error.localize())),
+                ..Self::default()
+            },
+        }
+    }
+}
+
+/// Whether the system appearance is light, which picks the side of a
+/// `light:…,dark:…` theme and Herdr's light palette.
+pub(crate) fn light_appearance(cx: &App) -> bool {
+    matches!(
+        cx.window_appearance(),
+        WindowAppearance::Light | WindowAppearance::VibrantLight
+    )
+}
+
+/// Startup reads settings before the event loop, when the system appearance
+/// is not yet known, so a theme that follows it has both sides resolved and
+/// the first frame picks one without any disk work on the UI thread.
+struct StartupAppearance {
+    dark: InitialAppearance,
+    light: Option<Theme>,
+}
+
+impl StartupAppearance {
+    fn load(load: impl FnOnce() -> crate::Result<(Config, Keymap)>) -> Self {
+        let dark = InitialAppearance::load(load, false);
+        let light = (dark.error.is_none()
+            && crate::config::ThemeName::follows_system(&dark.config.theme))
+        .then(|| dark.config.theme(true))
+        .and_then(|theme| {
+            theme
+                .inspect_err(|error| tracing::warn!(%error, "Could not load the light theme"))
+                .ok()
+        });
+        Self { dark, light }
+    }
+
+    fn select(self, light: bool) -> InitialAppearance {
+        match self.light {
+            Some(theme) if light => InitialAppearance { theme, ..self.dark },
+            _ => self.dark,
+        }
+    }
+}
+
+/// Opens one main window onto `target`. Every window is an independent client
+/// of that daemon: its own connection, surface lease, and workspace focus.
+pub(crate) fn open_window(
+    target: ConnectTarget,
+    cx: &mut App,
+    #[cfg(feature = "integration-test")] fixture: bool,
+) -> Result<WindowHandle<SpaceportWindow>> {
+    open_window_placed(
+        WindowLaunch::Legacy(target),
+        None,
+        cx,
+        #[cfg(feature = "integration-test")]
+        fixture,
+    )
+}
+
+/// Where a window opens and the display its bounds refer to.
+pub(crate) type Placement = (Bounds<Pixels>, Option<DisplayId>);
+
+/// Opens a main window at `placement`, or where the next one goes.
+fn open_window_placed(
+    launch: WindowLaunch,
+    placement: Option<Placement>,
+    cx: &mut App,
+    #[cfg(feature = "integration-test")] fixture: bool,
+) -> Result<WindowHandle<SpaceportWindow>> {
+    let expected_group = match &launch {
+        WindowLaunch::Core(key) => Some(key.clone()),
+        WindowLaunch::Legacy(_) => None,
+    };
+    if expected_group.is_some() && !crate::core_feature::enabled(cx) {
+        anyhow::bail!("{}", crate::core_feature::disabled_message());
+    }
+    if let Some(key) = expected_group.as_ref()
+        && crate::core_terminals::core_group_workspace(key, cx).is_none()
+    {
+        anyhow::bail!("Selected Core group is no longer available");
+    }
+    let (bounds, display_id) = placement.unwrap_or_else(|| {
+        // Cascade rather than stack windows exactly, so a new one is visible at once.
+        let existing = cx
+            .windows()
+            .iter()
+            .filter(|handle| handle.downcast::<SpaceportWindow>().is_some())
+            .count();
+        let step = px(28. * existing.min(6) as f32);
+        let mut bounds = Bounds::centered(None, size(px(1200.), px(780.)), cx);
+        bounds.origin += point(step, step);
+        crate::window_state::WindowState::placement(bounds, cx)
+    });
+    let handle = cx.open_window(
+        main_window_options(
+            bounds,
+            display_id,
+            #[cfg(feature = "integration-test")]
+            fixture,
+        ),
+        |window, cx| {
+            crate::taskbar::mark(window, cx);
+            cx.new(|cx| {
+                let view = SpaceportWindow::new(
+                    launch,
+                    window,
+                    cx,
+                    #[cfg(feature = "integration-test")]
+                    fixture,
+                );
+                crate::window_state::WindowState::observe(window, cx);
+                view
+            })
+        },
+    )?;
+    if let Some(key) = expected_group
+        && !handle.read_with(cx, |view, _| view.selected_core_group() == Some(&key))?
+    {
+        let _ = handle.update(cx, |_, window, _| window.remove_window());
+        anyhow::bail!("Selected Core group is no longer available");
+    }
+    Ok(handle)
+}
+
+fn main_window_options(
+    bounds: Bounds<Pixels>,
+    display_id: Option<DisplayId>,
+    #[cfg(feature = "integration-test")] fixture: bool,
+) -> WindowOptions {
+    let window_min_size = Some(size(px(640.), px(400.)));
+    // Isolated fixtures exercise narrow layouts below the ordinary app minimum.
+    #[cfg(feature = "integration-test")]
+    let window_min_size = if fixture { None } else { window_min_size };
+    WindowOptions {
+        app_id: Some(crate::constants::LINUX_APP_ID.into()),
+        app_owns_titlebar_drag: cfg!(target_os = "macos"),
+        display_id,
+        titlebar: Some(titlebar::options(WINDOW_TITLE)),
+        window_bounds: Some(WindowBounds::Windowed(bounds)),
+        window_min_size,
+        ..Default::default()
+    }
+}
+
+/// The app's one sound worker. Each window holds its own connection and the
+/// daemon sends every notification to each of them, so a worker per window
+/// played one notification once per open window.
+struct SharedSound(std::rc::Rc<spaceport_sound::Service>);
+
+impl Global for SharedSound {}
+
+fn shared_sound(cx: &mut App) -> std::rc::Rc<spaceport_sound::Service> {
+    if let Some(shared) = cx.try_global::<SharedSound>() {
+        return shared.0.clone();
+    }
+    // Resolved once: a window must not change what the worker reads later.
+    let sound = std::rc::Rc::new(spaceport_sound::Service::new(
+        crate::config::view_settings_path(spaceport_client::local_var),
+        crate::config::SoundConfig::default().volume,
+    ));
+    cx.set_global(SharedSound(sound.clone()));
+    sound
+}
+
+/// Opens another window from inside the focused window's own update.
+pub(crate) fn open_additional_window(target: ConnectTarget, cx: &mut App) {
+    open_additional_window_then(target, None, |_, _, _| {}, |_| {}, cx);
+}
+
+/// Opens another window at `placement` from inside a window's own update,
+/// then runs `then` on it before it is shown in front, or `failed` when it
+/// cannot be opened.
+pub(crate) fn open_additional_window_then(
+    target: ConnectTarget,
+    placement: Option<Placement>,
+    then: impl FnOnce(&mut SpaceportWindow, &mut Window, &mut Context<SpaceportWindow>) + 'static,
+    failed: impl FnOnce(&mut App) + 'static,
+    cx: &mut App,
+) {
+    cx.defer(move |cx| {
+        let opened = open_window_placed(
+            WindowLaunch::Legacy(target),
+            placement,
+            cx,
+            #[cfg(feature = "integration-test")]
+            false,
+        );
+        let sound = shared_sound(cx);
+        match opened {
+            Ok(handle) => {
+                let _ = handle.update(cx, |view, window, cx| {
+                    view.use_sound(sound);
+                    then(view, window, cx);
+                    window.activate_window();
+                });
+            }
+            Err(_) => {
+                tracing::error!("Unable to open an additional Spaceport window");
+                failed(cx);
+            }
+        }
+    });
+}
+
+pub(crate) fn open_additional_core_window(key: CoreGroupKey, cx: &mut App) {
+    open_additional_core_window_then(
+        key,
+        None,
+        |_, _, _| true,
+        |_| {},
+        cx,
+        #[cfg(feature = "integration-test")]
+        false,
+    );
+}
+
+/// An arrival callback rejects a stale handoff by closing its window and
+/// returning false, so no Core join or window activation follows it.
+pub(crate) fn open_additional_core_window_then(
+    key: CoreGroupKey,
+    placement: Option<Placement>,
+    then: impl FnOnce(&mut SpaceportWindow, &mut Window, &mut Context<SpaceportWindow>) -> bool
+    + 'static,
+    failed: impl FnOnce(&mut App) + 'static,
+    cx: &mut App,
+    #[cfg(feature = "integration-test")] fixture: bool,
+) {
+    cx.defer(move |cx| {
+        let opened = open_window_placed(
+            WindowLaunch::Core(key),
+            placement,
+            cx,
+            #[cfg(feature = "integration-test")]
+            fixture,
+        );
+        match opened {
+            Ok(handle) => {
+                let sound = shared_sound(cx);
+                let _ = handle.update(cx, |view, window, cx| {
+                    view.use_sound(sound);
+                    if !then(view, window, cx) {
+                        return;
+                    }
+                    view.core_terminals.hub.connect(Start::Join);
+                    window.activate_window();
+                });
+            }
+            Err(error) => {
+                tracing::error!(%error, "Unable to open a Core group window");
+                failed(cx);
+            }
+        }
+    });
+}
+
+pub(crate) fn run() -> std::process::ExitCode {
+    use cli::{LaunchMode, LaunchOptions};
+    let mut args: Vec<_> = std::env::args_os().skip(1).collect();
+    #[cfg(target_os = "macos")]
+    if let Some(exit) = crate::window::run_clipboard_helper(&args) {
+        return exit;
+    }
+    // Restart Manager restarts this executable itself; see `restart_manager`.
+    if let Some(exit) = crate::restart_manager::hand_off(&mut args) {
+        return exit;
+    }
+    // A control command asked for JSON gets its usage errors as JSON too.
+    let json_errors = cli::control::wants_json(&args);
+    let LaunchOptions { target, mut mode } = match LaunchOptions::parse(&args) {
+        Ok(options) => options,
+        Err(error) if json_errors => {
+            println!(
+                "{}",
+                serde_json::json!({ "error": { "code": "usage", "message": error.to_string() } })
+            );
+            return std::process::ExitCode::from(2);
+        }
+        Err(error) => {
+            eprintln!(
+                // i18n: data
+                "{error}\nUsage: spaceport [--socket CLIENT_SOCKET]\n       spaceport COMMAND ... (see spaceport --help)"
+            );
+            return std::process::ExitCode::from(2);
+        }
+    };
+    if let LaunchMode::Control(invocation) = mode {
+        return crate::control::run(invocation);
+    }
+    // A link goes to the app already running, or starts the app with it.
+    let mut pending_link = None;
+    if let LaunchMode::Link(link) = mode {
+        match crate::control::send_link(&link) {
+            Ok(_) => return std::process::ExitCode::SUCCESS,
+            Err(crate::Error::Control(crate::control::Error::Unavailable { .. })) => {
+                pending_link = Some(link);
+                mode = LaunchMode::Normal;
+            }
+            Err(error) => {
+                tracing::warn!(%error, "The running app refused a link");
+                eprintln!("{error}");
+                return std::process::ExitCode::from(crate::control::exit_status(&error));
+            }
+        }
+    }
+    // On Windows a plain second launch, from the Start menu or the launcher,
+    // brings the running app forward rather than starting another beside it
+    // that could not take the control pipe. A link it could not hand over
+    // starts the app with that link instead.
+    #[cfg(windows)]
+    if pending_link.is_none()
+        && let Some(exit) = focus_running(&mode, &target, crate::control::send_focus)
+    {
+        return exit;
+    }
+    if mode == LaunchMode::BuildInfo {
+        print!("{}", cli::build_info());
+        return std::process::ExitCode::SUCCESS;
+    }
+    if mode == LaunchMode::Help {
+        println!(
+            // i18n: data
+            "spaceport [--socket CLIENT_SOCKET]\nConnects to Local and saved SSH hosts; never installs remote software.\nStarts the local Herdr daemon if needed; never stops it.\nExplicit --socket targets are attach-only and isolate the GUI to one existing daemon."
+        );
+        println!(
+            // i18n: data
+            "  --build-info        Print the executable's build identity without starting the GUI"
+        );
+        // i18n: data
+        println!("\nCommands for the running app (each with --help):");
+        for family in cli::control::FAMILIES {
+            println!("  {:<18}{}", family.name, family.summary);
+        }
+        #[cfg(feature = "integration-test")]
+        println!(
+            // i18n: data
+            "  --integration-test  Run native GUI checks (requires explicit --socket)\n  --sidebar-test      Run native sidebar fixtures without connecting to a daemon\n  --performance-test  Measure native dense-terminal hover/scroll without a daemon (macOS/Windows)"
+        );
+        return std::process::ExitCode::SUCCESS;
+    }
+    #[cfg(feature = "integration-test")]
+    let integration_test = mode == LaunchMode::Integration;
+    #[cfg(feature = "integration-test")]
+    let sidebar_test = mode == LaunchMode::Sidebar;
+    #[cfg(feature = "integration-test")]
+    let performance_test = mode == LaunchMode::Performance;
+    #[cfg(feature = "integration-test")]
+    if mode != LaunchMode::Normal {
+        smoke::EXIT_CODE.store(1, std::sync::atomic::Ordering::SeqCst);
+    }
+    let startup_failed = std::rc::Rc::new(std::cell::Cell::new(false));
+    if let Err(error) = diagnostics::init(crate::log_targets::LOG_TARGETS) {
+        // i18n: data
+        eprintln!("Unable to initialize diagnostics: {error}");
+        return std::process::ExitCode::FAILURE;
+    }
+    // After the log, which a panic's record goes to.
+    crate::crash::install(APP_VERSION);
+    // SSH children use the login shell's `ssh` and agent, as the daemon does:
+    // launchd's would miss keys such as a security key held by another agent.
+    spaceport_client::set_command_environment(crate::login_env::apply);
+    tracing::info!(
+        version = APP_VERSION,
+        os = std::env::consts::OS,
+        arch = std::env::consts::ARCH,
+        "GPUI client starting"
+    );
+    if mode == LaunchMode::Normal {
+        crate::restart_manager::register();
+    }
+    // Only read first-frame settings here. Migration, defaults refresh, and font
+    // discovery run after opening; CLI and fixtures skip personal settings.
+    let appearance = if mode == LaunchMode::Normal {
+        // Before anything resolves a config path or the daemon's socket.
+        crate::login_env::adopt_config_home();
+        let started = std::time::Instant::now();
+        let appearance = StartupAppearance::load(load_startup_settings);
+        tracing::debug!(
+            elapsed_us = started.elapsed().as_micros() as u64,
+            "Startup appearance loaded"
+        );
+        appearance
+    } else {
+        StartupAppearance {
+            dark: InitialAppearance::default(),
+            light: None,
+        }
+    };
+    let failed = startup_failed.clone();
+    let window_state = (mode == LaunchMode::Normal).then(crate::window_state::WindowState::load);
+    // Fixtures never ask about, or touch, agent configuration.
+    let agent_skill = if mode == LaunchMode::Normal {
+        crate::agent_skill::AgentSkill::load()
+    } else {
+        crate::agent_skill::AgentSkill::default()
+    };
+    // Fixtures start with no tabs and never write the file.
+    let browser_tabs = if mode == LaunchMode::Normal {
+        crate::browser::Store::load(crate::browser::tabs_path())
+    } else {
+        crate::browser::Store::default()
+    };
+    // Nor with saved editor groups, which they would overwrite.
+    let group_layouts = if mode == LaunchMode::Normal {
+        crate::browser::Layouts::load(crate::browser::layouts_path())
+    } else {
+        crate::browser::Layouts::default()
+    };
+    // Nor with the user's worktree notes, which they would overwrite.
+    let worktree_notes = if mode == LaunchMode::Normal {
+        crate::worktree_notes::Notes::load()
+    } else {
+        crate::worktree_notes::Notes::default()
+    };
+    // Nor with what the user snoozed, settled, or pinned in the Overview.
+    let overview_marks = if mode == LaunchMode::Normal {
+        crate::overview::Marks::load()
+    } else {
+        crate::overview::Marks::default()
+    };
+    // Nor with which workspaces and tabs the user muted.
+    let notification_mutes = if mode == LaunchMode::Normal {
+        crate::notification_mutes::Mutes::load()
+    } else {
+        crate::notification_mutes::Mutes::default()
+    };
+    // Windows jump list tasks are published only on a normal launch.
+    #[cfg(windows)]
+    let jump_list = (mode == LaunchMode::Normal).then(crate::jump_list::JumpList::default);
+    // Nor with which palette rows the user chooses.
+    let palette_frecency = if mode == LaunchMode::Normal {
+        crate::palette::Frecency::load()
+    } else {
+        crate::palette::Frecency::default()
+    };
+    // Whether the launcher is installed is read once here, never while a window opens.
+    let taskbar = crate::taskbar::Taskbar::load();
+    gpui_platform::application()
+        .with_assets(icons::Icons)
+        .run(move |cx| {
+            crate::core_feature::install(appearance.dark.config.herdr_core_enabled, cx);
+            let window_count = window_state.as_ref().map_or(1, |state| state.count());
+            if let Some(state) = window_state {
+                state.install(cx);
+            }
+            browser_tabs.install(cx);
+            crate::core_terminals::install_observation(cx);
+            group_layouts.install(cx);
+            worktree_notes.install(cx);
+            overview_marks.install(cx);
+            notification_mutes.install(cx);
+            palette_frecency.install(cx);
+            agent_skill.install_global(cx);
+            taskbar.install(cx);
+            #[cfg(windows)]
+            if let Some(jump_list) = jump_list {
+                jump_list.install(cx);
+            }
+            if let Some(link) = pending_link {
+                crate::link::follow::defer(link, cx);
+            }
+            // Only the user's own app answers agents; native test modes stay private.
+            if mode == LaunchMode::Normal {
+                crate::control::install(cx);
+                crate::window::system_notifications::install(cx);
+                crate::device_tags::DeviceTags::install(cx);
+            }
+            cx.set_global(appearance.select(light_appearance(cx)));
+            // Only the user's own app follows their saved SSH host choices.
+            if mode == LaunchMode::Normal {
+                let ssh = cx.global::<InitialAppearance>().config.ssh.clone();
+                crate::config::ssh_hosts::install(&ssh, cx);
+            }
+            let language = cx.global::<InitialAppearance>().config.language.clone();
+            crate::i18n::install(&language, cx);
+            if mode == LaunchMode::Normal {
+                crate::updates::install(cx);
+            }
+            app_icon::install();
+            crate::caffeine::install(cx);
+            crate::endpoint::watch_network();
+            #[cfg(any(target_os = "macos", windows))]
+            crate::app_badge::install(cx);
+            cx.on_action(|_: &Quit, cx| cx.quit());
+            cx.on_action(|_: &Hide, cx| cx.hide());
+            cx.on_action(|_: &HideOthers, cx| cx.hide_other_apps());
+            cx.on_action(|_: &ShowAll, cx| cx.unhide_other_apps());
+            cx.on_action(|_: &ShowLogs, cx| log_window::open(cx));
+            cx.on_action(|action: &crate::actions::TogglePseudoLocale, cx| {
+                crate::i18n::toggle_pseudo(action.pseudo, cx);
+            });
+            cx.on_action(|_: &crate::actions::ToggleSlowAnimations, cx| {
+                crate::motion::set_slow(!crate::motion::is_slow());
+                // The menu shows the switch checked while it is on.
+                menus::install(cx);
+                cx.refresh_windows();
+            });
+            bind_keys(cx);
+            menus::install(cx);
+            cx.on_window_closed(move |cx, _| {
+                if cx.windows().is_empty() {
+                    #[cfg(feature = "integration-test")]
+                    if performance_test {
+                        std::process::exit(1);
+                    }
+                    cx.quit();
+                }
+            })
+            .detach();
+            let opened = open_window(
+                target.clone(),
+                cx,
+                #[cfg(feature = "integration-test")]
+                {
+                    sidebar_test || performance_test
+                },
+            );
+            match opened {
+                Ok(_window) => {
+                    if mode == LaunchMode::Normal {
+                        let sound = shared_sound(cx);
+                        let _ = _window.update(cx, |view, _, _| {
+                            view.use_sound(sound);
+                        });
+                        for _ in 1..window_count {
+                            open_additional_window(target.clone(), cx);
+                        }
+                    }
+                    #[cfg(feature = "integration-test")]
+                    if performance_test {
+                        performance::start(_window, cx);
+                    }
+                    #[cfg(feature = "integration-test")]
+                    if integration_test {
+                        smoke::start_live(_window, cx);
+                    }
+                    #[cfg(feature = "integration-test")]
+                    if sidebar_test {
+                        smoke::start_sidebar(_window, cx);
+                    }
+                }
+                Err(error) => {
+                    tracing::error!("Unable to open main window");
+                    // i18n: data
+                    eprintln!("Unable to open Spaceport window: {error}");
+                    failed.set(true);
+                    #[cfg(feature = "integration-test")]
+                    if performance_test {
+                        std::process::exit(1);
+                    }
+                    cx.quit();
+                }
+            }
+            cx.activate(true);
+        });
+    if startup_failed.get() {
+        std::process::ExitCode::FAILURE
+    } else {
+        std::process::ExitCode::SUCCESS
+    }
+}
+
+/// For a plain launch, the Local target with nothing else asked, asks the
+/// running app to come forward with `send` and returns this process's exit
+/// status once it has. `None` starts the app: none answers, or the one that
+/// does could not come forward (another version, or a hung window), and a
+/// second app beats leaving the click with nothing to show.
+#[cfg(any(windows, test))]
+fn focus_running(
+    mode: &cli::LaunchMode,
+    target: &ConnectTarget,
+    send: impl FnOnce() -> crate::Result<String>,
+) -> Option<std::process::ExitCode> {
+    if *mode != cli::LaunchMode::Normal || *target != ConnectTarget::Local {
+        return None;
+    }
+    match send() {
+        Ok(_) => Some(std::process::ExitCode::SUCCESS),
+        Err(crate::Error::Control(crate::control::Error::Unavailable { .. })) => None,
+        Err(error) => {
+            tracing::warn!(%error, "The running app did not come forward");
+            None
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests;

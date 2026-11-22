@@ -2,7 +2,7 @@
 """Check how the app uses its Fluent messages (docs/i18n.md).
 
 Whether a `crates/*/locales/<tag>/<feature>.ftl` is a valid file is the
-build's to say, not this script's: `crates/sheprd-gpui/locales.rs` parses
+build's to say, not this script's: `crates/spaceport-gpui/locales.rs` parses
 each one with Fluent's own parser and fails the build when a file does not
 parse, an ID lacks its file's feature prefix or repeats within a language,
 or a translation has an ID English lacks, and the compiler rejects an `fl!`
@@ -324,7 +324,7 @@ def main() -> int:
     )
     errors.extend(
         platform(
-            [ftl for ftl in files if ftl.path.parts[:2] == ("crates", "sheprd-gpui")],
+            [ftl for ftl in files if ftl.path.parts[:2] == ("crates", "spaceport-gpui")],
             plistlib.loads(INFO_PLIST.read_bytes()),
             translations,
             DESKTOP_ENTRY.read_text(encoding="utf-8"),

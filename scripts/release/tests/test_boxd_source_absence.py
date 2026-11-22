@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 class BoxdSourceAbsence(unittest.TestCase):
     def test_provider_has_no_desktop_or_remote_source_route(self):
-        for crate in ("sheprd-client", "sheprd-remote", "sheprd-gpui"):
+        for crate in ("spaceport-client", "spaceport-remote", "spaceport-gpui"):
             root = ROOT / "crates" / crate
             source = (
                 path
@@ -28,10 +28,10 @@ class BoxdSourceAbsence(unittest.TestCase):
 
     def test_provider_ui_assets_are_absent_but_core_onboarding_remains(self):
         self.assertFalse((ROOT / "assets/icons/cloud/boxd.svg").exists())
-        self.assertFalse((ROOT / "crates/sheprd-gpui/locales/en-US/settings-cloud-boxd.ftl").exists())
-        self.assertFalse((ROOT / "crates/sheprd-gpui/locales/en-US/error-remote-boxd.ftl").exists())
-        self.assertTrue((ROOT / "crates/sheprd-gpui/src/menu/devices/add_device/core.rs").exists())
-        self.assertTrue((ROOT / "crates/sheprd-gpui/src/menu/devices/core_catalog.rs").exists())
+        self.assertFalse((ROOT / "crates/spaceport-gpui/locales/en-US/settings-cloud-boxd.ftl").exists())
+        self.assertFalse((ROOT / "crates/spaceport-gpui/locales/en-US/error-remote-boxd.ftl").exists())
+        self.assertTrue((ROOT / "crates/spaceport-gpui/src/menu/devices/add_device/core.rs").exists())
+        self.assertTrue((ROOT / "crates/spaceport-gpui/src/menu/devices/core_catalog.rs").exists())
 
 
 if __name__ == "__main__":

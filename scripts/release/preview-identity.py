@@ -10,7 +10,7 @@ PREFIX = b'\0SPACEPORT_PREVIEW_V1\n'
 
 
 def check(binary, version, profile):
-    app_id = (ROOT / 'crates/sheprd-gpui/macos-preview-app-id').read_text().strip()
+    app_id = (ROOT / 'crates/spaceport-gpui/macos-preview-app-id').read_text().strip()
     expected = f'id={app_id}\nversion={version}\nprofile={profile}\n'.encode()
     with open(binary, 'rb') as stream, mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ) as data:
         records = []

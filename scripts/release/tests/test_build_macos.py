@@ -120,8 +120,8 @@ class BuildMacosTests(unittest.TestCase):
         calls = (self.root / "calls").read_text().splitlines()
         # Each target's Rust build precedes packaging.
         self.assertEqual(calls[-4:], [
-            "build --locked --features sheprd-gpui/macos-updater --release --target-dir target -p sheprd-gpui -p sheprd-acp",
-            "build --locked --features sheprd-gpui/macos-updater --release --target-dir target -p sheprd-gpui -p sheprd-acp --target x86_64-apple-darwin",
+            "build --locked --features spaceport-gpui/macos-updater --release --target-dir target -p spaceport-gpui -p spaceport-acp",
+            "build --locked --features spaceport-gpui/macos-updater --release --target-dir target -p spaceport-gpui -p spaceport-acp --target x86_64-apple-darwin",
             "package", "sign",
         ])
         self.assertIn("Output already exists", self.run_build())

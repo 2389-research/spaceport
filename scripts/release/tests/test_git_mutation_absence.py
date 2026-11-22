@@ -8,7 +8,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[3]
 VCS = ROOT / "crates/sheprd-vcs"
-GUI = ROOT / "crates/sheprd-gpui/src"
+GUI = ROOT / "crates/spaceport-gpui/src"
 
 
 class GitRouteAbsence(unittest.TestCase):

@@ -11,18 +11,18 @@ ROOT = Path(__file__).resolve().parents[3]
 
 class PhoneAbsenceTests(unittest.TestCase):
     def test_local_tags_have_no_phone_exchange(self):
-        tags = (ROOT / "crates/sheprd-gpui/src/device_tags.rs").read_text()
-        sidebar = (ROOT / "crates/sheprd-gpui/src/sidebar/tag_groups.rs").read_text()
+        tags = (ROOT / "crates/spaceport-gpui/src/device_tags.rs").read_text()
+        sidebar = (ROOT / "crates/spaceport-gpui/src/sidebar/tag_groups.rs").read_text()
         self.assertFalse("sheprd_remote_control" in tags, "local tags import the phone crate")
         self.assertFalse("mod sync;" in tags, "local tags still load daemon sync")
         self.assertFalse("DeviceTags::reach" in sidebar, "sidebar still starts tag sync")
 
     def test_desktop_has_no_phone_start_or_control_route(self):
-        app = (ROOT / "crates/sheprd-gpui/src/app.rs").read_text()
-        main = (ROOT / "crates/sheprd-gpui/src/main.rs").read_text()
-        cli = (ROOT / "crates/sheprd-gpui/src/cli/control.rs").read_text()
-        protocol = (ROOT / "crates/sheprd-control-protocol/src/protocol.rs").read_text()
-        commands = (ROOT / "crates/sheprd-commands/src/lib.rs").read_text()
+        app = (ROOT / "crates/spaceport-gpui/src/app.rs").read_text()
+        main = (ROOT / "crates/spaceport-gpui/src/main.rs").read_text()
+        cli = (ROOT / "crates/spaceport-gpui/src/cli/control.rs").read_text()
+        protocol = (ROOT / "crates/spaceport-control-protocol/src/protocol.rs").read_text()
+        commands = (ROOT / "crates/spaceport-commands/src/lib.rs").read_text()
         self.assertFalse("remote::Supervisor::install" in app, "app starts phone supervisor")
         self.assertFalse("mod remote;" in main, "desktop links phone UI")
         self.assertFalse('"remote" => ControlCommand::Remote' in cli, "phone CLI remains")
@@ -45,11 +45,11 @@ class PhoneAbsenceTests(unittest.TestCase):
         workspace = (ROOT / "Cargo.toml").read_text()
         for name in ("rcgen", "x509-parser", "roxmltree", "aes-gcm", "hkdf", "p256", "time"):
             self.assertNotRegex(workspace, rf"(?m)^{name}\s*=", name)
-        desktop = (ROOT / "crates/sheprd-gpui/Cargo.toml").read_text()
+        desktop = (ROOT / "crates/spaceport-gpui/Cargo.toml").read_text()
         self.assertNotIn('features = ["system"]', desktop)
 
     def test_chat_wire_has_no_phone_client_kind(self):
-        wire = (ROOT / "crates/sheprd-chat-protocol/src/wire.rs").read_text()
+        wire = (ROOT / "crates/spaceport-chat-protocol/src/wire.rs").read_text()
         self.assertFalse(
             any(line.strip() == "Remote," for line in wire.splitlines()),
             "phone chat client kind remains",

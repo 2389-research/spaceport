@@ -6,13 +6,13 @@ Implements SP-001–SP-004 and SP-015–SP-016, SP-022–SP-026. Candidate roots
 
 Fork at an explicit Sheprd commit. Record the origin without promising routine merges. Build and exercise an isolated baseline. Capture retained views, command behavior, emulator fixtures, permissions, terminal lifetime and relevant platform packaging. Record any pre-existing failures instead of laundering them into successful tests.
 
-Separate behavioral deletion from mechanical renaming. Retain working Herdr 1 and Core paths under D58; remove excluded feature reachability independently. A directory named `sheprd-client` mixes retained Herdr 1 code with useful helpers. A directory named `sheprd-protocol` also supplies Core rendering/input types. Preserve both runtime contracts and Core protocol generation 1. [D58; S02, S09, S11]
+Separate behavioral deletion from mechanical renaming. Retain working Herdr 1 and Core paths under D58; remove excluded feature reachability independently. The `spaceport-client` crate mixes retained Herdr 1 code with useful helpers. The `spaceport-protocol` crate also supplies Core rendering/input types. Preserve both runtime contracts and Core protocol generation 1. [D58; S02, S09, S11]
 
 ## 2. Deletion units
 
 A deletion unit is a complete unwanted behavior: UI entry points, command catalog entries, settings/schema fields, background workers, source modules, assets/translations, dependencies, docs, fixtures and package/service integration. Do not count code as removed while it remains reachable from a hidden CLI, migration path or worker.
 
-| Family | Candidate code roots | Treatment |
+| Family | Candidate code roots in upstream Sheprd | Treatment |
 |---|---|---|
 | Git/diffs/IDE/indexing | `sheprd-vcs`, relevant GPUI review/code/editor modules | Delete specialized behavior, retain plain chat/terminal text |
 | GitHub and issue dispatch | `sheprd-github`, `sheprd-orchestrator` | Delete accounts/PR/issues/security/Beads dispatch; extract generic cache/file primitives only if independently necessary |
@@ -28,9 +28,9 @@ Negative requirements apply to **product code**, not to the engineering reposito
 
 ## 3. Retained code candidates
 
-Reuse GPUI, terminal emulator, Core adapter, pure session and chat reducers, control-protocol/command catalog, diagnostics, i18n, updater and Windows launcher. Rename their package identities deliberately after behavior is stable. Avoid a top-to-bottom architecture rewrite.
+Reuse GPUI, terminal emulator, Core adapter, pure session and chat reducers, control-protocol/command catalog, diagnostics, i18n, updater and Windows launcher. Spaceport-owned crates use `spaceport-*`. Older evidence uses `sheprd-*` for the same crate paths. Avoid a top-to-bottom architecture rewrite.
 
-`sheprd-acp` is a special case: retain the minimal verified host-side agent adapter contract necessary for native chat, not its desktop-owned resume/deployment or model/provider-management workflows. Its process belongs to Herdr. A compile-time dependency is not permission to keep excluded behavior.
+The `spaceport-acp` package builds the `sheprd-acp` command used on installed hosts. Retain the minimal verified host-side agent adapter contract necessary for native chat, not its desktop-owned resume/deployment or model/provider-management workflows. Its process belongs to Herdr. A compile-time dependency is not permission to keep excluded behavior.
 
 Credentials are another mixed case: delete provider/account uses; retain only generic OS/private-endpoint primitives that a kept feature demonstrably needs. Do not broadly migrate credential stores. Upstream “report-only” automation features are not automatically compatible with a Core-owned data source.
 

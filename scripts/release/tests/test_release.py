@@ -74,8 +74,8 @@ class ReleaseTests(unittest.TestCase):
             self.assertEqual(archive.read(base + "spaceport-launcher.exe"), launcher.read_bytes())
             self.assertEqual(archive.read(base + "sheprd-acp.exe"), acp.read_bytes())
             self.assertEqual(archive.read(base + "licenses/THIRD-PARTY-NOTICES.txt"), self.notices.read_bytes())
-            for source in ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons", "crates/sheprd-protocol/LICENSE-APACHE",
-                           "crates/sheprd-protocol/NOTICE.md", "crates/sheprd-sound/SOUND-NOTICE.md"):
+            for source in ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons", "crates/spaceport-protocol/LICENSE-APACHE",
+                           "crates/spaceport-protocol/NOTICE.md", "crates/spaceport-sound/SOUND-NOTICE.md"):
                 self.assertEqual(archive.read(base + "licenses/" + Path(source).name), (ROOT / source).read_bytes())
         before = output.read_bytes()
         result = self.run_windows("20260920.3", target, binary, launcher, self.work, self.notices, success=False)
@@ -187,7 +187,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertFalse((app / "Contents/MacOS/spaceport").is_symlink())
         self.assertEqual((app / "Contents/Resources/Sheprd.icns").read_bytes(), (ROOT / "assets/icons/Sheprd.icns").read_bytes())
         self.assertEqual((app / "Contents/Resources/Assets.car").read_bytes(), (ROOT / "assets/icons/Sheprd.car").read_bytes())
-        for source in ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons", "crates/sheprd-protocol/NOTICE.md", "crates/sheprd-sound/SOUND-NOTICE.md"):
+        for source in ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons", "crates/spaceport-protocol/NOTICE.md", "crates/spaceport-sound/SOUND-NOTICE.md"):
             self.assertEqual((app / "Contents/Resources" / Path(source).name).read_bytes(), (ROOT / source).read_bytes())
         self.run_script("package-macos.sh", "20260920.3", arm, intel, self.work, self.notices, success=False)
 
@@ -208,11 +208,11 @@ class ReleaseTests(unittest.TestCase):
         fixture = self.work / "packaging checkout"
         for path in ["scripts/release/common.sh", "scripts/release/package-macos.sh",
                      "scripts/release/build-icon.py",
-                     "scripts/release/preview-identity.py", "crates/sheprd-gpui/macos-preview-app-id",
+                     "scripts/release/preview-identity.py", "crates/spaceport-gpui/macos-preview-app-id",
                      "assets/macos/Info.plist",
                       "LICENSE", "NOTICE", "assets/icons/LICENSE-octicons",
-                      "crates/sheprd-sound/SOUND-NOTICE.md",
-                     "crates/sheprd-protocol/LICENSE-APACHE", "crates/sheprd-protocol/NOTICE.md"]:
+                      "crates/spaceport-sound/SOUND-NOTICE.md",
+                     "crates/spaceport-protocol/LICENSE-APACHE", "crates/spaceport-protocol/NOTICE.md"]:
             destination = fixture / path
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / path, destination)

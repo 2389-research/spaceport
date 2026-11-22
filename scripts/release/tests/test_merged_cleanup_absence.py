@@ -7,7 +7,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[3]
-GUI = ROOT / "crates/sheprd-gpui"
+GUI = ROOT / "crates/spaceport-gpui"
 
 
 class MergedCleanupAbsence(unittest.TestCase):

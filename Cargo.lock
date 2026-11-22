@@ -6303,410 +6303,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sheprd-acp"
-version = "0.1.0"
-dependencies = [
- "agent-client-protocol-schema",
- "anyhow",
- "base64 0.23.1",
- "chrono",
- "crossbeam-channel",
- "crossterm",
- "ratatui",
- "rustix",
- "serde",
- "serde_json",
- "sheprd-chat-protocol",
- "sheprd-client",
- "tempfile",
- "thiserror 2.0.21",
- "unicode-width",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "sheprd-ago"
-version = "0.1.0"
-
-[[package]]
-name = "sheprd-backend"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "sheprd-protocol",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "sheprd-browser"
-version = "0.1.0"
-dependencies = [
- "gpui-pre",
- "serde",
- "serde_json",
- "sheprd-backend",
- "sheprd-client",
- "sheprd-motion",
- "sheprd-panes",
- "sheprd-reorder",
- "sheprd-state-file",
- "sheprd-truncate",
- "tempfile",
- "thiserror 2.0.21",
- "tracing",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "sheprd-chat-protocol"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "uuid",
-]
-
-[[package]]
-name = "sheprd-client"
-version = "0.1.0"
-dependencies = [
- "base64 0.23.1",
- "crossbeam-channel",
- "interprocess",
- "libc",
- "nix",
- "rustix",
- "serde",
- "serde_json",
- "sheprd-protocol",
- "tempfile",
- "thiserror 2.0.21",
- "tracing",
- "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "sheprd-commands"
-version = "0.1.0"
-dependencies = [
- "gpui-pre",
- "serde",
- "serde_json",
- "sheprd-client",
-]
-
-[[package]]
-name = "sheprd-control-protocol"
-version = "0.1.0"
-dependencies = [
- "interprocess",
- "serde",
- "serde_json",
- "sheprd-client",
- "tempfile",
- "thiserror 2.0.21",
- "tracing",
-]
-
-[[package]]
-name = "sheprd-core-client"
-version = "0.1.0"
-dependencies = [
- "base64 0.23.1",
- "crossbeam-channel",
- "rustix",
- "serde",
- "serde_json",
- "sheprd-backend",
- "sheprd-chat-protocol",
- "sheprd-client",
- "sheprd-protocol",
- "sheprd-terminal",
- "tempfile",
- "thiserror 2.0.21",
- "toml 1.1.6+spec-1.1.0",
- "tracing",
-]
-
-[[package]]
-name = "sheprd-diagnostics"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "serde",
- "serde_json",
- "sheprd-client",
- "tempfile",
- "thiserror 2.0.21",
- "tracing",
- "tracing-subscriber",
- "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "sheprd-gpui"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "base64 0.23.1",
- "block2 0.6.2",
- "chrono",
- "clipboard-win",
- "cocoa 0.27.0",
- "config",
- "core-graphics 0.25.0",
- "dispatch2",
- "flate2",
- "fluent-syntax",
- "fontdb 0.24.0",
- "foreign-types",
- "futures-lite",
- "gpui-pre",
- "gpui-pre-platform",
- "image",
- "keepawake",
- "libc",
- "mermaid-rs-renderer",
- "nix",
- "nucleo-matcher",
- "objc",
- "objc2 0.6.5",
- "objc2-app-kit 0.3.2",
- "objc2-core-foundation",
- "objc2-foundation 0.3.2",
- "objc2-user-notifications",
- "oo7",
- "pulldown-cmark",
- "ratex-layout",
- "ratex-parser",
- "ratex-render",
- "ratex-types",
- "raw-window-handle",
- "rodio",
- "rustix",
- "serde",
- "serde_json",
- "sha2 0.11.1",
- "sheprd-ago",
- "sheprd-backend",
- "sheprd-browser",
- "sheprd-chat-protocol",
- "sheprd-client",
- "sheprd-commands",
- "sheprd-control-protocol",
- "sheprd-core-client",
- "sheprd-diagnostics",
- "sheprd-i18n",
- "sheprd-motion",
- "sheprd-osc52",
- "sheprd-panes",
- "sheprd-remote",
- "sheprd-reorder",
- "sheprd-settings",
- "sheprd-sound",
- "sheprd-state-file",
- "sheprd-truncate",
- "sheprd-usage",
- "sheprd-words",
- "socket2",
- "sparkle-updater",
- "syntect",
- "sysinfo 0.39.6",
- "tempfile",
- "test-case",
- "thiserror 2.0.21",
- "toml 1.1.6+spec-1.1.0",
- "toml_edit 0.25.15+spec-1.1.0",
- "tracing",
- "unicode-bidi",
- "unicode-properties",
- "unicode-segmentation",
- "unicode-width",
- "ureq",
- "url",
- "uuid",
- "windows 0.62.2",
- "windows-registry 0.100.0",
- "windows-result 0.100.0",
- "windows-sys 0.61.2",
- "winresource",
- "zed-font-kit",
-]
-
-[[package]]
-name = "sheprd-i18n"
-version = "0.1.0"
-dependencies = [
- "fluent",
- "fluent-langneg 0.14.2",
- "i18n-embed",
- "serde",
- "serde_json",
- "sys-locale",
- "thiserror 2.0.21",
- "unic-langid",
-]
-
-[[package]]
-name = "sheprd-launcher"
-version = "0.1.0"
-dependencies = [
- "tempfile",
- "thiserror 2.0.21",
- "windows-sys 0.61.2",
- "winresource",
-]
-
-[[package]]
-name = "sheprd-lenient"
-version = "0.1.0"
-dependencies = [
- "serde",
- "toml 1.1.6+spec-1.1.0",
-]
-
-[[package]]
-name = "sheprd-motion"
-version = "0.1.0"
-
-[[package]]
-name = "sheprd-osc52"
-version = "0.1.0"
-
-[[package]]
-name = "sheprd-panes"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "sheprd-backend",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "sheprd-protocol"
-version = "0.1.0"
-dependencies = [
- "base64 0.23.1",
- "bincode 2.0.1",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "sheprd-remote"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "sheprd-client",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "sheprd-reorder"
-version = "0.1.0"
-
-[[package]]
-name = "sheprd-settings"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "config",
- "fontdb 0.24.0",
- "rustix",
- "serde",
- "serde_ignored",
- "serde_json",
- "sheprd-chat-protocol",
- "sheprd-client",
- "sheprd-commands",
- "sheprd-i18n",
- "sheprd-lenient",
- "sheprd-usage",
- "skrifa 0.49.0",
- "tempfile",
- "thiserror 2.0.21",
- "toml 1.1.6+spec-1.1.0",
- "toml_edit 0.25.15+spec-1.1.0",
- "tracing",
- "windows-sys 0.61.2",
- "zed-font-kit",
-]
-
-[[package]]
-name = "sheprd-sound"
-version = "0.1.0"
-dependencies = [
- "rodio",
- "rustix",
- "serde",
- "serde_json",
- "sheprd-lenient",
- "sheprd-protocol",
- "sheprd-settings",
- "tempfile",
- "thiserror 2.0.21",
- "toml 1.1.6+spec-1.1.0",
- "tracing",
-]
-
-[[package]]
-name = "sheprd-state-file"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.21",
- "tracing",
-]
-
-[[package]]
-name = "sheprd-terminal"
-version = "0.1.0"
-dependencies = [
- "alacritty_terminal",
- "sheprd-backend",
- "sheprd-protocol",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "sheprd-truncate"
-version = "0.1.0"
-dependencies = [
- "sheprd-client",
- "unicode-segmentation",
- "unicode-width",
-]
-
-[[package]]
-name = "sheprd-usage"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "sheprd-client",
- "tempfile",
- "thiserror 2.0.21",
- "toml 1.1.6+spec-1.1.0",
- "uuid",
-]
-
-[[package]]
-name = "sheprd-words"
-version = "0.1.0"
-dependencies = [
- "unicode-segmentation",
-]
-
-[[package]]
 name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6867,6 +6463,410 @@ checksum = "c3d1e2c7f27f8d4cb10542a02c49005dbd6e93095799d6f3be745fae9f8fedd4"
 dependencies = [
  "libc",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "spaceport-acp"
+version = "0.1.0"
+dependencies = [
+ "agent-client-protocol-schema",
+ "anyhow",
+ "base64 0.23.1",
+ "chrono",
+ "crossbeam-channel",
+ "crossterm",
+ "ratatui",
+ "rustix",
+ "serde",
+ "serde_json",
+ "spaceport-chat-protocol",
+ "spaceport-client",
+ "tempfile",
+ "thiserror 2.0.21",
+ "unicode-width",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "spaceport-ago"
+version = "0.1.0"
+
+[[package]]
+name = "spaceport-backend"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "spaceport-protocol",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "spaceport-browser"
+version = "0.1.0"
+dependencies = [
+ "gpui-pre",
+ "serde",
+ "serde_json",
+ "spaceport-backend",
+ "spaceport-client",
+ "spaceport-motion",
+ "spaceport-panes",
+ "spaceport-reorder",
+ "spaceport-state-file",
+ "spaceport-truncate",
+ "tempfile",
+ "thiserror 2.0.21",
+ "tracing",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "spaceport-chat-protocol"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "uuid",
+]
+
+[[package]]
+name = "spaceport-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.23.1",
+ "crossbeam-channel",
+ "interprocess",
+ "libc",
+ "nix",
+ "rustix",
+ "serde",
+ "serde_json",
+ "spaceport-protocol",
+ "tempfile",
+ "thiserror 2.0.21",
+ "tracing",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "spaceport-commands"
+version = "0.1.0"
+dependencies = [
+ "gpui-pre",
+ "serde",
+ "serde_json",
+ "spaceport-client",
+]
+
+[[package]]
+name = "spaceport-control-protocol"
+version = "0.1.0"
+dependencies = [
+ "interprocess",
+ "serde",
+ "serde_json",
+ "spaceport-client",
+ "tempfile",
+ "thiserror 2.0.21",
+ "tracing",
+]
+
+[[package]]
+name = "spaceport-core-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.23.1",
+ "crossbeam-channel",
+ "rustix",
+ "serde",
+ "serde_json",
+ "spaceport-backend",
+ "spaceport-chat-protocol",
+ "spaceport-client",
+ "spaceport-protocol",
+ "spaceport-terminal",
+ "tempfile",
+ "thiserror 2.0.21",
+ "toml 1.1.6+spec-1.1.0",
+ "tracing",
+]
+
+[[package]]
+name = "spaceport-diagnostics"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "spaceport-client",
+ "tempfile",
+ "thiserror 2.0.21",
+ "tracing",
+ "tracing-subscriber",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "spaceport-gpui"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64 0.23.1",
+ "block2 0.6.2",
+ "chrono",
+ "clipboard-win",
+ "cocoa 0.27.0",
+ "config",
+ "core-graphics 0.25.0",
+ "dispatch2",
+ "flate2",
+ "fluent-syntax",
+ "fontdb 0.24.0",
+ "foreign-types",
+ "futures-lite",
+ "gpui-pre",
+ "gpui-pre-platform",
+ "image",
+ "keepawake",
+ "libc",
+ "mermaid-rs-renderer",
+ "nix",
+ "nucleo-matcher",
+ "objc",
+ "objc2 0.6.5",
+ "objc2-app-kit 0.3.2",
+ "objc2-core-foundation",
+ "objc2-foundation 0.3.2",
+ "objc2-user-notifications",
+ "oo7",
+ "pulldown-cmark",
+ "ratex-layout",
+ "ratex-parser",
+ "ratex-render",
+ "ratex-types",
+ "raw-window-handle",
+ "rodio",
+ "rustix",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "socket2",
+ "spaceport-ago",
+ "spaceport-backend",
+ "spaceport-browser",
+ "spaceport-chat-protocol",
+ "spaceport-client",
+ "spaceport-commands",
+ "spaceport-control-protocol",
+ "spaceport-core-client",
+ "spaceport-diagnostics",
+ "spaceport-i18n",
+ "spaceport-motion",
+ "spaceport-osc52",
+ "spaceport-panes",
+ "spaceport-remote",
+ "spaceport-reorder",
+ "spaceport-settings",
+ "spaceport-sound",
+ "spaceport-state-file",
+ "spaceport-truncate",
+ "spaceport-usage",
+ "spaceport-words",
+ "sparkle-updater",
+ "syntect",
+ "sysinfo 0.39.6",
+ "tempfile",
+ "test-case",
+ "thiserror 2.0.21",
+ "toml 1.1.6+spec-1.1.0",
+ "toml_edit 0.25.15+spec-1.1.0",
+ "tracing",
+ "unicode-bidi",
+ "unicode-properties",
+ "unicode-segmentation",
+ "unicode-width",
+ "ureq",
+ "url",
+ "uuid",
+ "windows 0.62.2",
+ "windows-registry 0.100.0",
+ "windows-result 0.100.0",
+ "windows-sys 0.61.2",
+ "winresource",
+ "zed-font-kit",
+]
+
+[[package]]
+name = "spaceport-i18n"
+version = "0.1.0"
+dependencies = [
+ "fluent",
+ "fluent-langneg 0.14.2",
+ "i18n-embed",
+ "serde",
+ "serde_json",
+ "sys-locale",
+ "thiserror 2.0.21",
+ "unic-langid",
+]
+
+[[package]]
+name = "spaceport-launcher"
+version = "0.1.0"
+dependencies = [
+ "tempfile",
+ "thiserror 2.0.21",
+ "windows-sys 0.61.2",
+ "winresource",
+]
+
+[[package]]
+name = "spaceport-lenient"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "toml 1.1.6+spec-1.1.0",
+]
+
+[[package]]
+name = "spaceport-motion"
+version = "0.1.0"
+
+[[package]]
+name = "spaceport-osc52"
+version = "0.1.0"
+
+[[package]]
+name = "spaceport-panes"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "spaceport-backend",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "spaceport-protocol"
+version = "0.1.0"
+dependencies = [
+ "base64 0.23.1",
+ "bincode 2.0.1",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "spaceport-remote"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "spaceport-client",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "spaceport-reorder"
+version = "0.1.0"
+
+[[package]]
+name = "spaceport-settings"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "config",
+ "fontdb 0.24.0",
+ "rustix",
+ "serde",
+ "serde_ignored",
+ "serde_json",
+ "skrifa 0.49.0",
+ "spaceport-chat-protocol",
+ "spaceport-client",
+ "spaceport-commands",
+ "spaceport-i18n",
+ "spaceport-lenient",
+ "spaceport-usage",
+ "tempfile",
+ "thiserror 2.0.21",
+ "toml 1.1.6+spec-1.1.0",
+ "toml_edit 0.25.15+spec-1.1.0",
+ "tracing",
+ "windows-sys 0.61.2",
+ "zed-font-kit",
+]
+
+[[package]]
+name = "spaceport-sound"
+version = "0.1.0"
+dependencies = [
+ "rodio",
+ "rustix",
+ "serde",
+ "serde_json",
+ "spaceport-lenient",
+ "spaceport-protocol",
+ "spaceport-settings",
+ "tempfile",
+ "thiserror 2.0.21",
+ "toml 1.1.6+spec-1.1.0",
+ "tracing",
+]
+
+[[package]]
+name = "spaceport-state-file"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
+ "tracing",
+]
+
+[[package]]
+name = "spaceport-terminal"
+version = "0.1.0"
+dependencies = [
+ "alacritty_terminal",
+ "spaceport-backend",
+ "spaceport-protocol",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "spaceport-truncate"
+version = "0.1.0"
+dependencies = [
+ "spaceport-client",
+ "unicode-segmentation",
+ "unicode-width",
+]
+
+[[package]]
+name = "spaceport-usage"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "spaceport-client",
+ "tempfile",
+ "thiserror 2.0.21",
+ "toml 1.1.6+spec-1.1.0",
+ "uuid",
+]
+
+[[package]]
+name = "spaceport-words"
+version = "0.1.0"
+dependencies = [
+ "unicode-segmentation",
 ]
 
 [[package]]
