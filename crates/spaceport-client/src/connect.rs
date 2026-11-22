@@ -147,7 +147,22 @@ fn spawn_connection<G>(
             let _entered = span.enter();
             tracing::info!(transport, "connection starting");
             let result = (|| {
-                let (stream, _guard) = open(&worker_stop)?;
+                let (stream, child) = match &target {
+                    ConnectTarget::Ssh { target, session } => {
+                        let connected = ssh::connect(target, session, &worker_stop)?;
+                        if connected.host_keys == ssh::HostKeys::Skip {
+                            // The connection is up, but anyone intercepting it
+                            // can impersonate the host the user exempted.
+                            tracing::warn!("connected without verifying the host key");
+                        }
+                        (connected.stream, Some(connected.child))
+                    }
+                    ConnectTarget::Wsl { distro, session } => {
+                        let (stream, child) = wsl::connect(distro, session, &worker_stop)?;
+                        (stream, Some(child))
+                    }
+                    _ => (connector(&target, &worker_stop)?, None),
+                };
                 run_connection(
                     stream,
                     options,

@@ -315,7 +315,14 @@ fn run_with_stderr(
 /// as a host without Herdr. There the policy sets `ControlPath=none`, so each
 /// connection authenticates on its own.
 pub(super) fn command(target: &str, remote_command: &str) -> Command {
-    let mut command = noninteractive(HostKeys::of(target));
+    command_with(HostKeys::of(target), target, remote_command)
+}
+
+/// [`command`] with the host-key choice already resolved. A caller that also
+/// reports that choice passes the same one here, so what it reports is what
+/// `ssh` was told.
+fn command_with(keys: HostKeys, target: &str, remote_command: &str) -> Command {
+    let mut command = noninteractive(keys);
     command.args(["-o", "ClearAllForwardings=yes", "--", target]);
     command.arg(remote_command);
     command
@@ -444,19 +451,29 @@ pub fn shared_script_command(
 /// before connecting directly.
 const SHARED_WAIT: Duration = Duration::from_secs(10);
 
-pub(crate) fn connect(
-    target: &str,
-    session: &str,
-    stop: &AtomicBool,
-) -> Result<(Stream, ChildGuard)> {
+/// A bridge that connected, and how its `ssh` treated the host's key.
+pub(crate) struct Connected {
+    pub(crate) child: ChildGuard,
+    /// The choice the bridge's `ssh` was started with. [`HostKeys::Skip`] means
+    /// the user exempted this host, so whoever intercepts this connection can
+    /// impersonate it; the connection's owner is told rather than asked again.
+    pub(crate) host_keys: HostKeys,
+    pub(crate) stream: Stream,
+}
+
+pub(crate) fn connect(target: &str, session: &str, stop: &AtomicBool) -> Result<Connected> {
     validate_target(target)?;
     session_socket(Path::new(""), session)?;
     mux::bridge_connecting(target, session);
-    match start_bridge(command(target, &bridge_command(session)), stop, handshake)? {
-        Ok(bridge) => Ok(bridge),
+    // Resolved once: one choice builds the child and describes the connection,
+    // so the report cannot say the key was checked when `ssh` was told not to.
+    let host_keys = HostKeys::of(target);
+    let bridge = command_with(host_keys, target, &bridge_command(session));
+    match start_bridge(host_keys, bridge, stop, handshake)? {
+        Ok(connected) => Ok(connected),
         Err(closed) if powershell::rejected_posix(closed.code) => {
             tracing::info!(code = ?closed.code, "host cannot run /bin/sh; trying PowerShell");
-            connect_powershell(target, session, stop, closed.failure)
+            connect_powershell(host_keys, target, session, stop, closed.failure)
         }
         Err(closed) => Err(Error::Refused(closed.failure).into()),
     }
@@ -467,12 +484,13 @@ pub(crate) fn connect(
 /// `posix` is why the POSIX bridge closed, kept for a host that turns out to
 /// have no PowerShell either.
 fn connect_powershell(
+    host_keys: HostKeys,
     target: &str,
     session: &str,
     stop: &AtomicBool,
     posix: SshFailure,
-) -> Result<(Stream, ChildGuard)> {
-    let mut probe = command(target, &powershell::probe_command(session));
+) -> Result<Connected> {
+    let mut probe = command_with(host_keys, target, &powershell::probe_command(session));
     probe.stderr(Stdio::piped());
     let (status, output, stderr) =
         run_with_stderr(&mut probe, PROBE_TIMEOUT, || stop.load(Ordering::Acquire))?;
@@ -491,11 +509,12 @@ fn connect_powershell(
             Some(candidate) => incompatible(&candidate.status),
         });
     };
-    let bridge = command(
+    let bridge = command_with(
+        host_keys,
         target,
         &powershell::bridge_command(path, session, idle_timeout),
     );
-    start_bridge(bridge, stop, |stream, stop| {
+    start_bridge(host_keys, bridge, stop, |stream, stop| {
         await_ready(stream, stop, Instant::now()).map(drop)
     })?
     .map_err(|closed| Error::Refused(closed.failure).into())
@@ -510,11 +529,14 @@ struct Closed {
 
 /// Spawn `command` as a bridge and let `answer` read its banner. The outer
 /// error is any failure but an early close, which is the inner one.
+/// `host_keys` is the choice `command` was built with; it is what the connected
+/// bridge reports.
 fn start_bridge(
+    host_keys: HostKeys,
     command: Command,
     stop: &AtomicBool,
     answer: impl FnOnce(&mut Stream, &AtomicBool) -> Result<()>,
-) -> Result<std::result::Result<(Stream, ChildGuard), Closed>> {
+) -> Result<std::result::Result<Connected, Closed>> {
     let (mut stream, mut child) = spawn_bridge(command)?;
     stream.set_read_timeout(Some(POLL))?;
     stream.set_write_timeout(Some(Duration::from_secs(1)))?;
@@ -529,7 +551,13 @@ fn start_bridge(
             let (code, failure) = failure::diagnose(&mut child.0, &stderr, stop);
             Ok(Err(Closed { code, failure }))
         }
-        result => result.map(|()| Ok((stream, child))),
+        result => result.map(|()| {
+            Ok(Connected {
+                child,
+                host_keys,
+                stream,
+            })
+        }),
     }
 }
 
