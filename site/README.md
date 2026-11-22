@@ -69,7 +69,7 @@ The Homebrew cask is `sheprd-labs/tap/sheprd`; `penso/tap/herdr-gpui` installs k
 `%LOCALAPPDATA%\Programs\Herdr UI`, `so.pen.herdr-gpui`, and legacy executable
 aliases. The installer no longer registers `sheprd://` or `herdr-gpui://`.
 These strings are compatibility identities, not current product branding. Keep
-installer contracts aligned with `scripts/release/sheprd.iss` and its tests.
+installer contracts aligned with `scripts/release/spaceport.iss` and its tests.
 
 ## Media and checks
 

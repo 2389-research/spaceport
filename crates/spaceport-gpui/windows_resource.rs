@@ -11,8 +11,8 @@ use std::{
 use crate::release_version;
 use winresource::{VersionInfo, WindowsResource};
 
-const ICON: &str = "assets/icons/Sheprd.ico";
-const WORKTREE_ICON: &str = "assets/icons/Sheprd-worktree.ico";
+const ICON: &str = "assets/icons/Spaceport.ico";
+const WORKTREE_ICON: &str = "assets/icons/Spaceport-worktree.ico";
 /// Windows shows FileDescription as the application name, as in Task Manager.
 const APP_NAME: &str = "Sheprd";
 /// The version shown for builds outside the release pipeline, as in the app.

@@ -8,8 +8,8 @@ see [`icons/README.md`](icons/README.md) for regeneration and sizing.
 
 | Source and PNG | Size / use |
 | --- | --- |
-| `branding/sheprd-social.{svg,png}` | 1200×630, Open Graph and X |
-| `branding/sheprd-repository.{svg,png}` | 1280×640, GitHub repository preview |
+| `branding/spaceport-social.{svg,png}` | 1200×630, Open Graph and X |
+| `branding/spaceport-repository.{svg,png}` | 1280×640, GitHub repository preview |
 | `social-preview-light.{svg,png}` | Light repository card |
 | `social-preview-dark.{svg,png}` | Dark repository card |
 | `social-preview-light-ui.{svg,png}` | Compatibility filename for the light card |

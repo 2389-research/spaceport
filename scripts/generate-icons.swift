@@ -51,7 +51,7 @@ func render(_ source: String, pixels: Int, macOS: Bool) throws -> Data {
 func compileAssetCatalog(name: String, worktree: Bool) throws {
   let document = temporary.appendingPathComponent("\(name)/Sheprd.icon")
   try FileManager.default.createDirectory(at: document.appendingPathComponent("Assets"), withIntermediateDirectories: true)
-  try render(artwork("sheprd-icon-square.svg", worktree: worktree), pixels: 1024, macOS: false)
+  try render(artwork("spaceport-icon-square.svg", worktree: worktree), pixels: 1024, macOS: false)
     .write(to: document.appendingPathComponent("Assets/spacecraft.png"))
   let manifest: [String: Any] = [
     "fill": ["solid": worktree ? "srgb:0.60000,0.12157,0.26275,1.00000" : "srgb:0.04314,0.07059,0.12549,1.00000"],
@@ -80,13 +80,13 @@ func compileAssetCatalog(name: String, worktree: Bool) throws {
 }
 
 for worktree in [false, true] {
-  let name = worktree ? "Sheprd-worktree" : "Sheprd"
-  let source = try artwork("sheprd-icon.svg", worktree: worktree)
-  let square = try artwork("sheprd-icon-square.svg", worktree: worktree)
+  let name = worktree ? "Spaceport-worktree" : "Spaceport"
+  let source = try artwork("spaceport-icon.svg", worktree: worktree)
+  let square = try artwork("spaceport-icon-square.svg", worktree: worktree)
   try render(source, pixels: 1024, macOS: true)
-    .write(to: assets.appendingPathComponent(worktree ? "sheprd-worktree-1024.png" : "sheprd-icon.png"))
+    .write(to: assets.appendingPathComponent(worktree ? "spaceport-worktree-1024.png" : "spaceport-icon.png"))
   try render(square, pixels: 1024, macOS: false)
-    .write(to: assets.appendingPathComponent(worktree ? "sheprd-square-worktree-1024.png" : "sheprd-icon-square.png"))
+    .write(to: assets.appendingPathComponent(worktree ? "spaceport-square-worktree-1024.png" : "spaceport-icon-square.png"))
   let iconset = temporary.appendingPathComponent("\(name).iconset")
   try FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
   for size in [16, 32, 128, 256, 512] {
@@ -101,7 +101,7 @@ for worktree in [false, true] {
   try compileAssetCatalog(name: name, worktree: worktree)
 }
 
-for name in ["sheprd-avatar", "sheprd-icon-badge"] {
+for name in ["spaceport-avatar", "spaceport-icon-badge"] {
   try render(artwork("\(name).svg", worktree: false), pixels: 1024, macOS: false)
     .write(to: assets.appendingPathComponent("\(name).png"))
 }

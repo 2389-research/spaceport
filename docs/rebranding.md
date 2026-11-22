@@ -58,8 +58,8 @@ a package download. Current clients accept either spelling at both steps.
 Keep these publication aliases until bridge installations have a tested upgrade
 path; updating this source cannot repair that check in an already installed binary.
 
-Use `sheprd-icon.png`, `sheprd-icon-badge.png`, the `sheprd-icon-square*` family
-and `Sheprd.icns` / `.ico` / `.car` for canonical paw artwork references. Retain
+Use `spaceport-icon.png`, `spaceport-icon-badge.png`, the `spaceport-icon-square*` family
+and `Spaceport.icns` / `.ico` / `.car` for canonical paw artwork references. Retain
 third-party code and service-mark attribution in [NOTICE](../NOTICE).
 
 The deployed bridge is legacy-first: a successful legacy response is authoritative;

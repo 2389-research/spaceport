@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
   <title id="title">Spaceport</title>
   <desc id="desc">🛸 flying saucer on a nebula with a berry development rim.</desc>
-  <metadata>Derived from sheprd-avatar.svg; Selected ufo-nebula.png; generated with OpenAI imagegen from the earlier nebula rocket artwork. Twemoji: Twitter, Inc. and contributors, CC BY 4.0; see NOTICE and LICENSE-twemoji.</metadata>
+  <metadata>Derived from spaceport-avatar.svg; Selected ufo-nebula.png; generated with OpenAI imagegen from the earlier nebula rocket artwork. Twemoji: Twitter, Inc. and contributors, CC BY 4.0; see NOTICE and LICENSE-twemoji.</metadata>
   <defs>
     <linearGradient id="background" x1="0" y1="0" x2="0.35" y2="1">
       <stop offset="0" stop-color="#df4b62" />

@@ -42,7 +42,7 @@ func check(_ url: URL, pixels: Int, inset: Int) throws {
   precondition(hull && canopy, "Missing saucer disc or canopy: \(url.path)")
 }
 
-for name in ["sheprd-icon.png", "sheprd-worktree-1024.png"] {
+for name in ["spaceport-icon.png", "spaceport-worktree-1024.png"] {
   try check(assets.appendingPathComponent(name), pixels: 1024, inset: 100)
 }
 
@@ -53,7 +53,7 @@ let representations = [
   (128, 1, 12), (128, 2, 25), (256, 1, 25), (256, 2, 50),
   (512, 1, 50), (512, 2, 100),
 ]
-for name in ["Sheprd", "Sheprd-worktree"] {
+for name in ["Spaceport", "Spaceport-worktree"] {
   let iconset = temporary.appendingPathComponent("\(name).iconset")
   let process = Process()
   process.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
@@ -69,7 +69,7 @@ for name in ["Sheprd", "Sheprd-worktree"] {
 }
 print("PASS: embedded PNG dimensions and transparent margins")
 
-for name in ["Sheprd", "Sheprd-worktree"] {
+for name in ["Spaceport", "Spaceport-worktree"] {
   let process = Process()
   let output = Pipe()
   process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")

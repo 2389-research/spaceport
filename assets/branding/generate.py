@@ -28,7 +28,7 @@ def card(width, height, dark=False):
         ET.SubElement(root, f"{SVG}text", x="64", y=str(y), fill=color, **{
             "font-family": "Arial, sans-serif", "font-size": str(size), "font-weight": weight,
         }).text = text
-    mark = ET.parse(ASSETS / "icons/sheprd-icon.svg").getroot()
+    mark = ET.parse(ASSETS / "icons/spaceport-icon.svg").getroot()
     mark.set("x", str(width - 430))
     mark.set("y", str((height - 340) // 2))
     mark.set("width", "340")
@@ -41,8 +41,8 @@ def card(width, height, dark=False):
 
 def main():
     outputs = {
-        "branding/sheprd-social": (1200, 630, False),
-        "branding/sheprd-repository": (1280, 640, False),
+        "branding/spaceport-social": (1200, 630, False),
+        "branding/spaceport-repository": (1280, 640, False),
         "social-preview-light": (1280, 640, False),
         "social-preview-light-ui": (1280, 640, False),
         "social-preview-dark": (1280, 640, True),

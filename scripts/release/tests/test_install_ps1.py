@@ -10,7 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[3]
 INSTALL = ROOT / "site/install.ps1"
-ISS = ROOT / "scripts/release/sheprd.iss"
+ISS = ROOT / "scripts/release/spaceport.iss"
 
 
 def app_id():

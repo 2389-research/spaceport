@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a built sheprd executable's windowless CLI paths, without Cargo.
+"""Run a built spaceport executable's windowless CLI paths, without Cargo.
 
 The release jobs check the exact bytes they ship. `cargo test --release --test
 cli` cannot: it rebuilds the binary with dev-dependency features (gpui's

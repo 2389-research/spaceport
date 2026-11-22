@@ -20,7 +20,7 @@ What to verify:
   a console window; the Start menu shortcut opens the launcher.
 - Every child process (git, ssh, wsl.exe…) is created with CREATE_NO_WINDOW via
   sheprd_client::new_command, so none flash a console.
-- scripts/release/sheprd.iss is a per-user Inno Setup installer; scripts/release/windows-installer.py
+- scripts/release/spaceport.iss is a per-user Inno Setup installer; scripts/release/windows-installer.py
   builds and smoke-tests it. It shows Sheprd's paw icon, and its shortcuts open the launcher and carry
   the app's AppUserModelID (so.pen.herdr-gpui).
 - sheprd.exe embeds Sheprd's paw icon and a version resource (FileDescription "Sheprd"), and each

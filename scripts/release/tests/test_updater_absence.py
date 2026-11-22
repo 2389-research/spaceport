@@ -30,7 +30,7 @@ class UpdaterAbsenceTests(unittest.TestCase):
                     self.assertNotIn(token, source)
 
     def test_windows_installer_retains_restart_manager_without_custom_relaunch(self):
-        source = (ROOT / "scripts/release/sheprd.iss").read_text()
+        source = (ROOT / "scripts/release/spaceport.iss").read_text()
         self.assertIn("CloseApplications=yes", source)
         self.assertIn("RestartApplications=no", source)
         self.assertNotIn("RELAUNCH", source)

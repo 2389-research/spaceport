@@ -53,8 +53,8 @@ class CiChanges(GitFixture):
     def test_documentation_and_setup_skip_native_jobs(self):
         for path in ("setup.sh", "README.md", "crates/spaceport-gpui/README.md",
                      "scripts/release/README.md", "assets/social-preview-dark.png",
-                     "assets/social-preview-light.svg", "assets/icons/sheprd-icon-badge.png",
-                     "assets/icons/sheprd-icon-badge.svg", "site/index.html",
+                     "assets/social-preview-light.svg", "assets/icons/spaceport-icon-badge.png",
+                     "assets/icons/spaceport-icon-badge.svg", "site/index.html",
                      "site/assets/site.js",
                      "landing/public/index.html", ".github/workflows/pages.yml"):
             self.commit_path(path)
@@ -62,7 +62,7 @@ class CiChanges(GitFixture):
 
     def test_build_inputs_trigger_native_jobs(self):
         for path in ("crates/spaceport-gpui/src/main.rs", "Cargo.lock", "Cargo.toml",
-                     "assets/icon.png", "assets/icons/sheprd-icon-clean.png",
+                     "assets/icon.png", "assets/icons/spaceport-icon-clean.png",
                      ".cargo/config.toml", "rust-toolchain.toml",
                      "scripts/release/build.sh", ".github/workflows/ci.yml"):
             self.base = self.git("rev-parse", "HEAD").strip()
@@ -100,10 +100,10 @@ class WindowsPackageChanges(GitFixture):
 
     def test_windows_packaging_inputs_run_the_installer_check(self):
         for path in ("scripts/release/package-windows.py", "scripts/release/windows-installer.py",
-                     "scripts/release/sheprd.iss", "scripts/release/installer/en-US.isl",
+                     "scripts/release/spaceport.iss", "scripts/release/installer/en-US.isl",
                      "site/install.ps1",
                      "crates/spaceport-launcher/src/main.rs", "crates/spaceport-gpui/windows_resource.rs",
-                     "assets/icons/Sheprd.ico", "assets/icons/windows/wizard-128.png",
+                     "assets/icons/Spaceport.ico", "assets/icons/windows/wizard-128.png",
                      ".github/workflows/ci.yml"):
             self.base = self.git("rev-parse", "HEAD").strip()
             self.commit_path(path)

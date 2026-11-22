@@ -68,7 +68,7 @@ WizardStyle=modern
 ; Sheprd's icon in place of Inno's stock box: the setup file's own icon, the
 ; corner image on every page, and, centered rather than stretched, the welcome
 ; and finish pages' panel. Each list runs from 100% to 250% DPI.
-SetupIconFile={#Icons}\Sheprd.ico
+SetupIconFile={#Icons}\Spaceport.ico
 WizardSmallImageFile={#Icons}\windows\wizard-small-55.png,{#Icons}\windows\wizard-small-69.png,{#Icons}\windows\wizard-small-83.png,{#Icons}\windows\wizard-small-110.png,{#Icons}\windows\wizard-small-138.png
 WizardImageFile={#Icons}\windows\wizard-128.png,{#Icons}\windows\wizard-160.png,{#Icons}\windows\wizard-192.png,{#Icons}\windows\wizard-256.png
 WizardImageStretch=no

@@ -185,8 +185,8 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(os.readlink(framework / 'Sparkle'), 'Versions/Current/Sparkle')
         self.assertTrue((framework / 'Versions/B/XPCServices/Installer.xpc').is_dir())
         self.assertFalse((app / "Contents/MacOS/spaceport").is_symlink())
-        self.assertEqual((app / "Contents/Resources/Sheprd.icns").read_bytes(), (ROOT / "assets/icons/Sheprd.icns").read_bytes())
-        self.assertEqual((app / "Contents/Resources/Assets.car").read_bytes(), (ROOT / "assets/icons/Sheprd.car").read_bytes())
+        self.assertEqual((app / "Contents/Resources/Sheprd.icns").read_bytes(), (ROOT / "assets/icons/Spaceport.icns").read_bytes())
+        self.assertEqual((app / "Contents/Resources/Assets.car").read_bytes(), (ROOT / "assets/icons/Spaceport.car").read_bytes())
         for source in ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons", "crates/spaceport-protocol/NOTICE.md", "crates/spaceport-sound/SOUND-NOTICE.md"):
             self.assertEqual((app / "Contents/Resources" / Path(source).name).read_bytes(), (ROOT / source).read_bytes())
         self.run_script("package-macos.sh", "20260920.3", arm, intel, self.work, self.notices, success=False)
@@ -218,7 +218,7 @@ class ReleaseTests(unittest.TestCase):
             shutil.copyfile(ROOT / path, destination)
         sdk_fixture(fixture / 'scripts/release', self.work / 'sdk')
         self.env['SPARKLE_FRAMEWORK_PATH'] = str(self.work / 'sdk')
-        for name in ["Sheprd-worktree.icns", "Sheprd-worktree.car"]:
+        for name in ["Spaceport-worktree.icns", "Spaceport-worktree.car"]:
             (fixture / "assets/icons" / name).write_bytes(b"red fixture " + name.encode())
         self.scripts = fixture / "scripts/release"
         arm, intel = self.macos_builds(arm_worktree=True)
@@ -226,8 +226,8 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn("different build identities", result.stderr)
         intel.write_bytes(build_identity(True))
         self.run_script("package-macos.sh", "20260920.3", arm, intel, self.work, self.notices)
-        self.assertEqual((self.work / "Spaceport.app/Contents/Resources/Sheprd.icns").read_bytes(), (fixture / "assets/icons/Sheprd-worktree.icns").read_bytes())
-        self.assertEqual((self.work / "Spaceport.app/Contents/Resources/Assets.car").read_bytes(), (fixture / "assets/icons/Sheprd-worktree.car").read_bytes())
+        self.assertEqual((self.work / "Spaceport.app/Contents/Resources/Sheprd.icns").read_bytes(), (fixture / "assets/icons/Spaceport-worktree.icns").read_bytes())
+        self.assertEqual((self.work / "Spaceport.app/Contents/Resources/Assets.car").read_bytes(), (fixture / "assets/icons/Spaceport-worktree.car").read_bytes())
 
     def test_missing_malformed_conflicting_identity_fails_closed(self):
         binary = self.work / "binary"

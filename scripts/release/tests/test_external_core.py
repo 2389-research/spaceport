@@ -52,7 +52,7 @@ class ExternalCorePackages(unittest.TestCase):
                      ".github/workflows/macos-preview.yml", "scripts/release/build-macos.sh"):
             self.assertNotIn("fetch-herdr-core.py", (ROOT / path).read_text(), path)
         self.assertFalse((RELEASE / "fetch-herdr-core.py").exists())
-        self.assertNotIn("herdr-core.exe", (RELEASE / "sheprd.iss").read_text())
+        self.assertNotIn("herdr-core.exe", (RELEASE / "spaceport.iss").read_text())
 
 
 if __name__ == "__main__":

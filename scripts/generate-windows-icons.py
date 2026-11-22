@@ -15,8 +15,8 @@ ASSETS = Path(__file__).resolve().parents[1] / "assets/icons"
 SIZES = (16, 20, 24, 32, 40, 48, 64, 256)
 # Each variant preserves the approved image; development adds a berry rim.
 VARIANTS = {
-    "Sheprd.ico": "sheprd-icon.svg",
-    "Sheprd-worktree.ico": "sheprd-icon-worktree.svg",
+    "Spaceport.ico": "spaceport-icon.svg",
+    "Spaceport-worktree.ico": "spaceport-icon-worktree.svg",
 }
 
 

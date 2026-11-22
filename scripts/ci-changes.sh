@@ -46,14 +46,14 @@ code=$(changed \
   clippy.toml .clippy.toml justfile mise.toml cliff.toml \
   ':(exclude)**/*.md' \
   ':(exclude)assets/social-preview-*' \
-  ':(exclude)assets/icons/sheprd-icon-badge.*' \
+  ':(exclude)assets/icons/spaceport-icon-badge.*' \
   ':(exclude).github/workflows/pages.yml')
 windows_package=$(changed \
   scripts/release/package-windows.py scripts/release/windows-installer.py \
-  scripts/release/sheprd.iss scripts/release/installer site/install.ps1 \
+  scripts/release/spaceport.iss scripts/release/installer site/install.ps1 \
   crates/spaceport-launcher crates/spaceport-gpui/src/main.rs \
   crates/spaceport-gpui/build.rs crates/spaceport-gpui/windows_resource.rs \
-  assets/icons/Sheprd.ico assets/icons/Sheprd-worktree.ico assets/icons/windows \
+  assets/icons/Spaceport.ico assets/icons/Spaceport-worktree.ico assets/icons/windows \
   .github/workflows/ci.yml)
 macos_release=$(changed \
   Cargo.toml Cargo.lock .cargo rust-toolchain.toml \
