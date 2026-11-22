@@ -1,0 +1,475 @@
++ date -u +START=%FT%TZ
+START=2026-11-22T04:22:33Z
++ /usr/bin/time -p cargo test --locked -p sheprd-terminal
+   Compiling proc-macro2 v1.0.107
+   Compiling serde_core v1.0.229
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.26
+   Compiling libc v0.2.189
+   Compiling serde v1.0.229
+   Compiling memchr v2.8.3
+   Compiling rustix v1.1.6
+   Compiling zmij v1.0.23
+   Compiling parking_lot_core v0.9.12
+   Compiling cfg-if v1.0.5
+   Compiling thiserror v2.0.21
+   Compiling serde_json v1.0.154
+   Compiling smallvec v1.16.1
+   Compiling scopeguard v1.2.0
+   Compiling syn v3.0.6
+   Compiling signal-hook v0.4.6
+   Compiling itoa v1.0.18
+   Compiling unty v0.0.4
+   Compiling lock_api v0.4.14
+   Compiling aho-corasick v1.1.5
+   Compiling regex-syntax v0.8.11
+   Compiling log v0.4.34
+   Compiling cursor-icon v1.2.0
+   Compiling arrayvec v0.7.8
+   Compiling base64 v0.23.1
+   Compiling home v0.5.12
+   Compiling unicode-width v0.2.2
+   Compiling base64 v0.22.1
+   Compiling bitflags v2.13.2
+   Compiling errno v0.3.14
+   Compiling signal-hook-registry v1.4.8
+   Compiling parking_lot v0.12.5
+   Compiling serde_derive v1.0.229
+   Compiling thiserror-impl v2.0.21
+   Compiling regex-automata v0.4.18
+   Compiling rustix-openpty v0.2.0
+   Compiling polling v3.11.0
+   Compiling bincode v2.0.1
+   Compiling vte v0.15.0
+   Compiling alacritty_terminal v0.26.0
+   Compiling sheprd-protocol v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-protocol)
+   Compiling sheprd-backend v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-backend)
+   Compiling sheprd-terminal v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-terminal)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.66s
+     Running unittests src/lib.rs (target/debug/deps/sheprd_terminal-e78091eb8dd2d30d)
+
+running 80 tests
+test input::tests::keys::tilde_keys ... ok
+test input::tests::keys::modifiers_use_xterm_parameters ... ok
+test input::tests::keys::releases_send_nothing_and_repeats_are_bounded ... ok
+test input::tests::keys::editing_keys ... ok
+test input::tests::kitty::all_keys_as_escapes_covers_text ... ok
+test input::tests::keys::control_letters_become_c0 ... ok
+test input::tests::keys::cursor_keys_follow_application_cursor_mode ... ok
+test input::tests::keys::win32_input_mode_sends_records ... ok
+test input::tests::keys::characters_with_alt_and_shift ... ok
+test input::tests::keys::function_keys ... ok
+test input::tests::kitty::disambiguate_reports_ambiguous_keys_as_csi_u ... ok
+test input::tests::kitty::event_types_report_repeats_and_releases ... ok
+test input::tests::mouse::nothing_is_reported_with_reporting_off ... ok
+test input::tests::mouse::reporting_level_filters_motion ... ok
+test input::tests::mouse::sgr_reports ... ok
+test input::tests::mouse::utf8_reports_reach_further ... ok
+test input::tests::mouse::wheel_lines_repeat_reports ... ok
+test input::tests::mouse::wheel_on_the_alternate_screen_sends_arrows ... ok
+test input::tests::mouse::x10_reports_and_their_bounds ... ok
+test input::tests::paste::bracketed_paste_wraps_and_cannot_be_ended_early ... ok
+test input::tests::paste::plain_paste_sends_returns_for_newlines ... ok
+test input::tests::text_commits_pass_through ... ok
+test input::tests::the_emulator_encodes_with_its_own_modes ... ok
+test tests::clear::clear_keeps_existing_blank_history ... ok
+test tests::clear::empty_clear_keeps_later_output_scrolled_in_the_same_feed ... ok
+test tests::clear::synchronized_empty_clear_waits_for_dispatch_and_keeps_later_output ... ok
+test tests::cursor::cursor_follows_output_and_moves ... ok
+test tests::clear::clear_keeps_visible_text_and_decorated_spaces_in_history ... ok
+test tests::clear_metadata::clear_keeps_metadata_only_spaces_in_history ... ok
+test tests::cursor::cursor_scrolled_out_of_view_is_none ... ok
+test tests::cursor::cursor_shapes_are_decscusr_parameters ... ok
+test tests::cursor::hidden_cursor_is_not_visible ... ok
+test tests::damage::a_cursor_move_lists_the_rows_it_left_and_entered ... ok
+test tests::damage::alternate_screen_switches_are_full_damage ... ok
+test tests::damage::clearing_the_screen_is_full_damage ... ok
+test tests::damage::nothing_fed_means_no_rows ... ok
+test tests::damage::only_changed_rows_are_listed ... ok
+test tests::damage::patched_rows_rebuild_the_frame ... ok
+test tests::damage::resize_is_full_damage ... ok
+test tests::damage::resizing_to_the_same_size_is_not_damage ... ok
+test tests::damage::scrolling_the_view_is_full_damage ... ok
+test tests::damage::the_first_take_is_full ... ok
+test tests::events::bells_are_counted ... ok
+test tests::events::modes_follow_the_program ... ok
+test tests::events::queries_and_clipboard_requests_are_ignored ... ok
+test tests::events::setting_the_same_title_again_is_no_change ... ok
+test tests::events::synchronized_updates_wait_for_their_end ... ok
+test tests::events::title_changes_coalesce_to_the_latest ... ok
+test tests::fragmentation::byte_at_a_time_matches_feeding_whole ... ok
+test tests::fragmentation::win32_input_mode_reads_parameter_lists_and_resets ... ok
+test tests::fragmentation::win32_input_mode_survives_a_split_sequence ... ok
+test tests::links::a_new_link_makes_the_damage_full ... ok
+test tests::core_snapshot::captured_core_stream_exposes_the_authored_output_at_its_runtime_size ... ok
+test tests::links::hyperlinks_are_listed_once_and_indexed ... ok
+test tests::links::rows_reuse_the_full_frames_links ... ok
+test tests::fragmentation::oversized_osc_strings_are_dropped_whole ... ok
+test tests::scroll::output_while_scrolled_keeps_the_view_on_its_lines ... ok
+test tests::scroll::history_is_bounded_by_the_scrollback_asked_for ... ok
+test tests::scroll::scrolling_moves_the_view_and_clamps ... ok
+test tests::size::resizing_reflows_and_keeps_bounds ... ok
+test tests::size::size_errors_wrap_the_backends ... ok
+test tests::style::attributes_combine_and_reset ... ok
+test tests::style::dim_named_colors_become_the_normal_color_drawn_dim ... ok
+test tests::style::each_attribute_sets_its_modifier_bit ... ok
+test tests::style::indexed_colors_keep_their_index ... ok
+test tests::style::named_colors_are_palette_indices_plus_one ... ok
+test tests::style::rgb_colors_are_tagged_rgb ... ok
+test tests::style::unstyled_cells_use_the_default_colors ... ok
+test tests::text::combining_characters_join_their_base ... ok
+test tests::text::a_wide_character_that_does_not_fit_wraps_leaving_a_blank ... ok
+test tests::text::long_lines_wrap ... ok
+test tests::text::tabs_show_as_blanks ... ok
+test tests::text::wide_characters_skip_their_second_cell ... ok
+test tests::text::plain_text_lands_in_rows ... ok
+test tests::core_startup::captured_core_startup_height_change_preserves_the_first_prompt ... ok
+test tests::clear::empty_clear_preserves_the_cursor_through_height_growth ... ok
+test tests::fragmentation::garbage_never_panics ... ok
+test tests::fragmentation::every_split_point_matches_feeding_whole ... ok
+test tests::scroll::scrollback_is_clamped ... ok
+test tests::core_snapshot::captured_core_stream_matches_at_every_fragment_boundary ... ok
+
+test result: ok. 80 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.21s
+
+   Doc-tests sheprd_terminal
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+real 15.28
+user 28.84
+sys 4.71
++ echo H3_EXIT=0
+H3_EXIT=0
++ /usr/bin/time -p cargo test --locked -p sheprd-osc52
+   Compiling sheprd-osc52 v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-osc52)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.41s
+     Running unittests src/lib.rs (target/debug/deps/sheprd_osc52-568372bd32e5334a)
+
+running 3 tests
+test tests::rejects_malformed_and_noncanonical_payloads ... ok
+test tests::decodes_padded_unpadded_and_multibyte_payloads ... ok
+test tests::rejects_non_utf8_and_oversized_payloads ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+   Doc-tests sheprd_osc52
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+real 0.89
+user 0.38
+sys 0.23
++ echo OSC52_EXIT=0
+OSC52_EXIT=0
++ /usr/bin/time -p cargo test --locked -p sheprd-commands
+   Compiling libm v0.2.16
+   Compiling memchr v2.8.3
+   Compiling autocfg v1.5.1
+   Compiling smallvec v1.16.1
+   Compiling stable_deref_trait v1.2.1
+   Compiling simd-adler32 v0.3.10
+   Compiling crossbeam-utils v0.8.23
+   Compiling syn v3.0.6
+   Compiling syn v2.0.119
+   Compiling hashbrown v0.17.1
+   Compiling equivalent v1.0.2
+   Compiling adler2 v2.0.1
+   Compiling pin-project-lite v0.2.17
+   Compiling version_check v0.9.5
+   Compiling bytemuck v1.25.2
+   Compiling arrayvec v0.7.8
+   Compiling bitflags v2.13.2
+   Compiling num-traits v0.2.19
+   Compiling zerocopy v0.8.57
+   Compiling crc32fast v1.5.2
+   Compiling log v0.4.34
+   Compiling miniz_oxide v0.8.9
+   Compiling miniz_oxide v0.9.1
+   Compiling indexmap v2.14.2
+   Compiling litemap v0.8.3
+   Compiling serde_json v1.0.154
+   Compiling writeable v0.6.4
+   Compiling crossbeam-epoch v0.9.21
+   Compiling futures-core v0.3.34
+   Compiling flate2 v1.1.10
+   Compiling utf8_iter v1.0.4
+   Compiling futures-sink v0.3.34
+   Compiling getrandom v0.4.3
+   Compiling crossbeam-deque v0.8.8
+   Compiling foldhash v0.2.0
+   Compiling once_cell v1.21.4
+   Compiling icu_normalizer_data v2.3.0
+   Compiling icu_properties_data v2.3.0
+   Compiling slotmap v1.1.1
+   Compiling getrandom v0.3.4
+   Compiling rayon-core v1.13.0
+   Compiling tracing-core v0.1.36
+   Compiling core_maths v0.1.1
+   Compiling futures-channel v0.3.34
+   Compiling fdeflate v0.3.7
+   Compiling anyhow v1.0.104
+   Compiling slab v0.4.12
+   Compiling futures-task v0.3.34
+   Compiling paste v1.0.15
+   Compiling float-cmp v0.9.0
+   Compiling futures-io v0.3.34
+   Compiling strict-num v0.1.1
+   Compiling ttf-parser v0.25.1
+   Compiling pulp v0.22.3
+   Compiling polycool v0.4.0
+   Compiling winnow v1.0.4
+   Compiling zune-core v0.5.3
+   Compiling either v1.18.0
+   Compiling euclid v0.22.14
+   Compiling object v0.37.3
+   Compiling arrayref v0.3.9
+   Compiling weezl v0.1.12
+   Compiling percent-encoding v2.3.2
+   Compiling rustix v1.1.6
+   Compiling ref-cast v1.0.27
+   Compiling quick-error v2.0.1
+   Compiling form_urlencoded v1.2.2
+   Compiling tiny-skia-path v0.11.4
+   Compiling zune-jpeg v0.5.15
+   Compiling num-complex v0.4.6
+   Compiling kurbo v0.13.1
+   Compiling rand_core v0.9.5
+   Compiling lyon_geom v1.0.19
+   Compiling parking_lot_core v0.9.12
+   Compiling memmap2 v0.9.11
+   Compiling errno v0.3.14
+   Compiling unicode-segmentation v1.13.3
+   Compiling unicode-ccc v0.4.0
+   Compiling byteorder-lite v0.1.0
+   Compiling lyon_path v1.0.19
+   Compiling toml_parser v1.1.3+spec-1.1.0
+   Compiling bytes v1.12.1
+   Compiling heapless v0.9.3
+   Compiling gimli v0.32.3
+   Compiling bitflags v1.3.2
+   Compiling unicode-bidi-mirroring v0.4.0
+   Compiling gpui-pre-ztracing v0.3.10
+   Compiling reborrow v0.5.5
+   Compiling unicode-script v0.5.8
+   Compiling toml_datetime v1.1.1+spec-1.1.0
+   Compiling heck v0.5.0
+   Compiling pulp-wasm-simd-flag v0.1.1
+   Compiling unicode-properties v0.1.4
+   Compiling color_quant v1.1.0
+   Compiling core-foundation-sys v0.8.7
+   Compiling tinyvec v1.13.3
+   Compiling synstructure v0.14.0
+   Compiling serde_derive_internals v0.30.0
+   Compiling byteorder v1.5.0
+   Compiling parking v2.2.1
+   Compiling siphasher v1.0.3
+   Compiling event-listener v5.4.2
+   Compiling svgtypes v0.16.1
+   Compiling hash32 v0.3.1
+   Compiling iana-time-zone v0.1.65
+   Compiling http v1.5.0
+   Compiling rustybuzz v0.20.1
+   Compiling fontdb v0.23.0
+   Compiling gif v0.14.2
+   Compiling zerocopy-derive v0.8.57
+   Compiling tracing-attributes v0.1.31
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling zerovec-derive v0.11.6
+   Compiling serde_derive v1.0.229
+   Compiling displaydoc v0.2.7
+   Compiling zerofrom v0.1.8
+   Compiling futures-macro v0.3.34
+   Compiling yoke v0.8.3
+   Compiling thiserror-impl v2.0.21
+   Compiling tracing v0.1.44
+   Compiling zerovec v0.11.8
+   Compiling zerotrie v0.2.5
+   Compiling futures-util v0.3.34
+   Compiling ref-cast-impl v1.0.27
+   Compiling schemars_derive v1.2.2
+   Compiling addr2line v0.25.1
+   Compiling thiserror v2.0.21
+   Compiling tinystr v0.8.4
+   Compiling potential_utf v0.1.6
+   Compiling toml_edit v0.25.15+spec-1.1.0
+   Compiling icu_collections v2.3.0
+   Compiling icu_locale_core v2.3.0
+   Compiling png v0.17.16
+   Compiling convert_case v0.10.0
+   Compiling image-webp v0.2.4
+   Compiling parking_lot v0.12.5
+   Compiling icu_provider v2.3.1
+   Compiling rayon v1.12.0
+   Compiling spin v0.9.9
+   Compiling serde v1.0.229
+   Compiling icu_properties v2.3.0
+   Compiling icu_normalizer v2.3.0
+   Compiling aho-corasick v1.1.5
+   Compiling bincode v2.0.1
+   Compiling roxmltree v0.21.2
+   Compiling simplecss v0.2.2
+   Compiling idna_adapter v1.2.2
+   Compiling idna v1.1.0
+   Compiling futures-executor v0.3.34
+   Compiling zune-inflate v0.2.54
+   Compiling futures v0.3.34
+   Compiling pico-args v0.5.0
+   Compiling ryu v1.0.23
+   Compiling lebe v0.5.3
+   Compiling fastrand v2.5.0
+   Compiling xmlwriter v0.1.0
+   Compiling dyn-clone v1.0.20
+   Compiling data-url v0.3.2
+   Compiling pxfm v0.1.30
+   Compiling fax v0.2.7
+   Compiling unicode-vo v0.1.0
+   Compiling imagesize v0.14.0
+   Compiling bit_field v0.10.3
+   Compiling rustc-demangle v0.1.28
+   Compiling float_next_after v1.0.0
+   Compiling gpui-pre-ztracing-macro v0.3.10
+   Compiling unicode-bidi v0.3.18
+   Compiling regex-syntax v0.8.11
+   Compiling embed-resource v3.0.11 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/embed-resource)
+   Compiling gpui-pre v0.3.10
+   Compiling sheprd-protocol v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-protocol)
+   Compiling lyon_tessellation v1.0.22
+   Compiling usvg v0.46.0
+   Compiling schemars v1.2.2
+   Compiling tempfile v3.27.0
+   Compiling url v2.5.8
+   Compiling serde_urlencoded v0.7.1
+   Compiling chrono v0.4.45
+   Compiling half v2.7.1
+   Compiling ppv-lite86 v0.2.21
+   Compiling flume v0.12.0
+   Compiling rand_chacha v0.9.0
+   Compiling tiny-skia v0.11.4
+   Compiling rand v0.9.5
+   Compiling tiff v0.11.3
+   Compiling backtrace v0.3.76
+   Compiling exr v1.74.2
+   Compiling derive_more-impl v2.1.1
+   Compiling moxcms v0.8.1
+   Compiling regex-automata v0.4.18
+   Compiling proc-macro-crate v3.5.0
+   Compiling http-body v1.1.0
+   Compiling enumn v0.1.14
+   Compiling gpui-pre-derive-refineable v0.3.10
+   Compiling strum_macros v0.28.0
+   Compiling profiling-procmacros v1.0.18
+   Compiling pin-project-internal v1.1.13
+   Compiling event-listener-strategy v0.5.4
+   Compiling lyon_algorithms v1.0.21
+   Compiling gpui-pre-util v0.3.10
+   Compiling png v0.18.1
+   Compiling uuid v1.29.0
+   Compiling concurrent-queue v2.5.0
+   Compiling crossbeam-channel v0.5.17
+   Compiling qoi v0.4.1
+   Compiling rgb v0.8.53
+   Compiling smol_str v0.3.6
+   Compiling svg_fmt v0.4.5
+   Compiling async-task v4.7.1
+   Compiling link-section v0.19.3
+   Compiling rustc-hash v2.1.3
+   Compiling objc2-core-foundation v0.3.2
+   Compiling web-time v1.1.0
+   Compiling linktime-proc-macro v0.2.3
+   Compiling gpui-pre-scheduler v0.3.10
+   Compiling pin-project v1.1.13
+   Compiling objc2-core-video v0.3.2
+   Compiling gpui-pre-collections v0.3.10
+   Compiling etagere v0.2.15
+   Compiling sheprd-client v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-client)
+   Compiling resvg v0.46.0
+   Compiling ctor v1.0.13
+   Compiling gpui-pre-shared-string v0.3.10
+   Compiling accesskit v0.24.1
+   Compiling async-channel v2.5.0
+   Compiling strum v0.28.0
+   Compiling lyon v1.0.19
+   Compiling profiling v1.0.18
+   Compiling gpui-pre-sum-tree v0.3.10
+   Compiling derive_more v2.1.1
+   Compiling gpui-pre-refineable v0.3.10
+   Compiling gpui-pre-http-client v0.3.10
+   Compiling gpui-pre-macros v0.3.10
+   Compiling regex v1.13.1
+   Compiling itertools v0.14.0
+   Compiling taffy v0.15.1
+   Compiling spin v0.10.1
+   Compiling num_cpus v1.17.0
+   Compiling inventory v0.3.24
+   Compiling waker-fn v1.2.0
+   Compiling raw-window-handle v0.6.2
+   Compiling pollster v0.4.0
+   Compiling seahash v4.1.0
+   Compiling image v0.25.10
+   Compiling sheprd-commands v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-commands)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 40.97s
+     Running unittests src/lib.rs (target/debug/deps/sheprd_commands-34e6bfc363f15fc4)
+
+running 40 tests
+test shortcuts::tests::collisions::ctrl_alt_shift_arrows_and_r_wait_for_a_real_keyboard ... ok
+test shortcuts::tests::collisions::a_shifted_bracket_arrives_as_its_brace_so_each_row_names_both_spellings ... ok
+test shortcuts::tests::collisions::pane_programs_keep_ctrl_pagedown_so_tab_cycling_takes_the_app_shift ... ok
+test shortcuts::tests::collisions::a_shifted_digit_arrives_as_its_symbol_so_tab_numbers_bind_both_spellings ... ok
+test shortcuts::tests::ctrl_shortcuts_cover_exactly_linux_and_windows ... ok
+test shortcuts::tests::collisions::pane_programs_keep_bare_function_keys_so_the_app_prefixes_its_own ... ok
+test shortcuts::tests::toggle_status_bar::toggle_status_bar_has_a_default_shortcut_on_every_platform ... ok
+test shortcuts::tests::collisions::windows_altgr_types_a_letter_so_no_default_is_ctrl_alt_and_a_letter ... ok
+test shortcuts::tests::linux_profile_is_complete_unique_and_free_of_super ... ok
+test shortcuts::tests::windows_profile_leaves_system_and_terminal_keys_alone ... ok
+test shortcuts::tests::windows_profile_is_complete_unique_and_free_of_win ... ok
+test tests::browser_page::direct_browser_page_command_and_shortcut_are_absent ... ok
+test tests::catalog::numbered_commands_end_their_name_and_shortcuts_with_their_number ... ok
+test tests::catalog::catalog_names_commands_and_base_shortcuts_are_unique ... ok
+test tests::catalog::every_catalog_command_deserializes_from_its_variant_name ... ok
+test tests::check_for_updates_is_a_window_command_without_a_shortcut ... ok
+test tests::catalog::gui_commands_never_send_daemon_requests ... ok
+test tests::every_catalog_shortcut_parses_as_a_keystroke ... ok
+test tests::excluded_worktree_creation_is_absent_from_the_command_catalog ... ok
+test tests::messages::numbered_commands_report_their_number ... ok
+test tests::empty_session_can_create_workspace_only ... ok
+test tests::creation_uses_daemon_cwd_and_explicit_targets ... ok
+test tests::directional_focus_zoom_and_close_use_explicit_ids ... ok
+test shortcuts::tests::default_snapshot::default_shortcuts_match_the_fixture ... ok
+test tests::messages::each_command_has_its_own_message_but_numbered_ones_share_theirs ... ok
+test tests::numbered_tabs_use_positions_not_numbers_and_stay_in_workspace ... ok
+test tests::removed_chat_lifecycle::removed_chat_lifecycle_command_is_absent ... ok
+test tests::removed_git::git_menu_is_absent_but_workspace_and_terminal_commands_remain ... ok
+test tests::removed_mods::client_mod_panel_command_is_absent ... ok
+test tests::removed_orchestrator::direct_orchestrator_command_is_absent ... ok
+test tests::pane_cycle_uses_snapshot_order_within_current_tab_and_workspace ... ok
+test tests::retired_ide::source_navigation_has_no_native_command ... ok
+test tests::retired_ide::vscode_has_no_native_command ... ok
+test tests::resize_and_swap_target_the_focused_pane_by_direction ... ok
+test tests::tab_cycle_ignores_missing_or_foreign_focus ... ok
+test tests::terminal_annotations::terminal_annotation_command_is_absent ... ok
+test tests::tab_cycle_wraps_and_stays_in_workspace ... ok
+test tests::visual_annotations::page_annotation_command_is_absent ... ok
+test tests::tab_moves_wrap_and_stay_in_workspace ... ok
+test tests::pane_actions_reject_missing_removed_and_foreign_focus ... ok
+
+test result: ok. 40 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests sheprd_commands
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+real 41.38
+user 122.53
+sys 18.58
++ echo COMMANDS_EXIT=0
+COMMANDS_EXIT=0
++ date -u +END=%FT%TZ
+END=2026-11-22T04:23:30Z

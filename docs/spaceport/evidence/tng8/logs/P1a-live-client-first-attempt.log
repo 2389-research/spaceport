@@ -1,0 +1,86 @@
+START=2026-11-22T05:07:59Z
+HERDR_TEST_BINARY="/Users/clint/.local/bin/herdr" cargo test --locked -p sheprd-client --test live -- --ignored --nocapture
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.26
+   Compiling libc v0.2.189
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling serde v1.0.229
+   Compiling once_cell v1.21.4
+   Compiling getrandom v0.4.3
+   Compiling crossbeam-utils v0.8.23
+   Compiling autocfg v1.5.1
+   Compiling cfg-if v1.0.5
+   Compiling thiserror v2.0.21
+   Compiling bitflags v2.13.2
+   Compiling serde_json v1.0.154
+   Compiling rustix v1.1.6
+   Compiling memoffset v0.9.1
+   Compiling cfg_aliases v0.2.2
+   Compiling unty v0.0.4
+   Compiling memchr v2.8.3
+   Compiling syn v3.0.6
+   Compiling syn v2.0.119
+   Compiling itoa v1.0.18
+   Compiling nix v0.31.3
+   Compiling tracing-core v0.1.36
+   Compiling pin-project-lite v0.2.17
+   Compiling fastrand v2.5.0
+   Compiling errno v0.3.14
+   Compiling base64 v0.23.1
+   Compiling crossbeam-channel v0.5.17
+   Compiling serde_derive v1.0.229
+   Compiling thiserror-impl v2.0.21
+   Compiling tracing-attributes v0.1.31
+   Compiling tempfile v3.27.0
+   Compiling tracing v0.1.44
+   Compiling bincode v2.0.1
+   Compiling sheprd-protocol v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-protocol)
+   Compiling sheprd-client v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-client)
+    Finished `test` profile [unoptimized] target(s) in 9.23s
+     Running tests/live.rs (target/debug/deps/live-d901f4ad9bf8b905)
+
+running 4 tests
+isolated daemon pid=38091 dir=/var/folders/9w/hsbtnxgs79l_ylbzl_0wgd4c0000gn/T/h94c8-27cfe118-3
+isolated daemon pid=38090 dir=/var/folders/9w/hsbtnxgs79l_ylbzl_0wgd4c0000gn/T/h94c8-27cfb620-2
+isolated daemon pid=38093 dir=/var/folders/9w/hsbtnxgs79l_ylbzl_0wgd4c0000gn/T/h94c8-27cf96e0-0
+
+thread 'named_session_create_and_delete_cli_contract' (26401144) panicked at crates/sheprd-client/tests/live.rs:58:9:
+assertion failed: daemon.child.as_mut().unwrap().try_wait().unwrap().is_none()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+isolated daemon output:
+Error: Custom { kind: InvalidInput, error: "local socket name length exceeds capacity of sun_path of sockaddr_un" }
+
+test named_session_create_and_delete_cli_contract ... FAILED
+stable endpoint welcome: EndpointServerWelcome { generation: 1, server_version: "0.9.5", snapshot_codec: "shell.snapshot.v1", surface_codec: "shell.surface.v1", input_codec: "shell.input.semantic.v1", blob_codec: "shell.blob.v1", methods: ["client_shell.surface.set", "command.invoke", "integration.install", "integration.list", "layout.set_split_ratio", "pane.clear", "pane.close", "pane.copy_motion", "pane.copy_search", "pane.edit_scrollback", "pane.focus", "pane.focus_direction", "pane.input.set", "pane.link.activate", "pane.link.resolve", "pane.rename", "pane.resize", "pane.scroll", "pane.selection.read", "pane.split", "pane.swap", "pane.zoom", "product_announcement.dismiss", "release_notes.dismiss", "server.reload_config", "tab.close", "tab.create", "tab.focus", "tab.move", "tab.rename", "workspace.close", "workspace.create", "workspace.focus", "workspace.move", "workspace.move_block", "workspace.rename", "worktree.create", "worktree.list", "worktree.open", "worktree.remove"], capabilities: ["surface_reuse", "surface_delta", "surface_scroll", "surface_interest", "presentation_effects_fence", "health_check", "agent_view_projection", "agent_completions"], error: None }
+stable endpoint welcome: EndpointServerWelcome { generation: 1, server_version: "0.9.5", snapshot_codec: "shell.snapshot.v1", surface_codec: "shell.surface.v1", input_codec: "shell.input.semantic.v1", blob_codec: "shell.blob.v1", methods: ["client_shell.surface.set", "command.invoke", "integration.install", "integration.list", "layout.set_split_ratio", "pane.clear", "pane.close", "pane.copy_motion", "pane.copy_search", "pane.edit_scrollback", "pane.focus", "pane.focus_direction", "pane.input.set", "pane.link.activate", "pane.link.resolve", "pane.rename", "pane.resize", "pane.scroll", "pane.selection.read", "pane.split", "pane.swap", "pane.zoom", "product_announcement.dismiss", "release_notes.dismiss", "server.reload_config", "tab.close", "tab.create", "tab.focus", "tab.move", "tab.rename", "workspace.close", "workspace.create", "workspace.focus", "workspace.move", "workspace.move_block", "workspace.rename", "worktree.create", "worktree.list", "worktree.open", "worktree.remove"], capabilities: ["surface_reuse", "surface_delta", "surface_scroll", "surface_interest", "presentation_effects_fence", "health_check", "agent_view_projection", "agent_completions"], error: None }
+stable endpoint welcome: EndpointServerWelcome { generation: 1, server_version: "0.9.5", snapshot_codec: "shell.snapshot.v1", surface_codec: "shell.surface.v1", input_codec: "shell.input.semantic.v1", blob_codec: "shell.blob.v1", methods: ["client_shell.surface.set", "command.invoke", "integration.install", "integration.list", "layout.set_split_ratio", "pane.clear", "pane.close", "pane.copy_motion", "pane.copy_search", "pane.edit_scrollback", "pane.focus", "pane.focus_direction", "pane.input.set", "pane.link.activate", "pane.link.resolve", "pane.rename", "pane.resize", "pane.scroll", "pane.selection.read", "pane.split", "pane.swap", "pane.zoom", "product_announcement.dismiss", "release_notes.dismiss", "server.reload_config", "tab.close", "tab.create", "tab.focus", "tab.move", "tab.rename", "workspace.close", "workspace.create", "workspace.focus", "workspace.move", "workspace.move_block", "workspace.rename", "worktree.create", "worktree.list", "worktree.open", "worktree.remove"], capabilities: ["surface_reuse", "surface_delta", "surface_scroll", "surface_interest", "presentation_effects_fence", "health_check", "agent_view_projection", "agent_completions"], error: None }
+semantic TextCommit + Enter produced shell output: HERDR_LIVE_38088_OK
+live status: wire=working status=Working seq=1
+focus verified: workspace=w1 tab=w1:t2
+plugin action received the selected text: SELECTED_38088_TEXT
+test plugins::plugin_actions_live ... ok
+live status: wire=blocked status=Blocked seq=2
+focus verified: workspace=w1 tab=w1:t1
+live status: wire=idle status=Idle seq=3
+test daemon_completion_status_live ... ok
+focus verified: workspace=w1 tab=w1:t2
+focus verified: workspace=w1 tab=w1:t2
+focus verified: workspace=w2 tab=w2:t1
+resize verified: 100x30 surface
+stable endpoint welcome: EndpointServerWelcome { generation: 1, server_version: "0.9.5", snapshot_codec: "shell.snapshot.v1", surface_codec: "shell.surface.v1", input_codec: "shell.input.semantic.v1", blob_codec: "shell.blob.v1", methods: ["client_shell.surface.set", "command.invoke", "integration.install", "integration.list", "layout.set_split_ratio", "pane.clear", "pane.close", "pane.copy_motion", "pane.copy_search", "pane.edit_scrollback", "pane.focus", "pane.focus_direction", "pane.input.set", "pane.link.activate", "pane.link.resolve", "pane.rename", "pane.resize", "pane.scroll", "pane.selection.read", "pane.split", "pane.swap", "pane.zoom", "product_announcement.dismiss", "release_notes.dismiss", "server.reload_config", "tab.close", "tab.create", "tab.focus", "tab.move", "tab.rename", "workspace.close", "workspace.create", "workspace.focus", "workspace.move", "workspace.move_block", "workspace.rename", "worktree.create", "worktree.list", "worktree.open", "worktree.remove"], capabilities: ["surface_reuse", "surface_delta", "surface_scroll", "surface_interest", "presentation_effects_fence", "health_check", "agent_view_projection", "agent_completions"], error: None }
+detach verified: daemon alive; reconnected to same boot 38090-1795324088703745000 with 2 workspaces / 3 tabs
+test stable_endpoint_live ... ok
+
+failures:
+
+failures:
+    named_session_create_and_delete_cli_contract
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.51s
+
+error: test failed, to rerun pass `-p sheprd-client --test live`
+error: Recipe `test-live` failed on line 61 with exit code 101
+P1a_EXIT=101
+END=2026-11-22T05:08:09Z

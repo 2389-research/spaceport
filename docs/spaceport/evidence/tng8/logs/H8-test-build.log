@@ -1,0 +1,621 @@
+START=2026-11-22T04:57:08Z
+cargo build --locked --release -p sheprd-gpui -p sheprd-acp
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.26
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling libc v0.2.189
+   Compiling cfg-if v1.0.5
+   Compiling memchr v2.8.3
+   Compiling serde v1.0.229
+   Compiling foldhash v0.2.0
+   Compiling thiserror v2.0.21
+   Compiling allocator-api2 v0.2.21
+   Compiling itoa v1.0.18
+   Compiling libm v0.2.16
+   Compiling equivalent v1.0.2
+   Compiling zmij v1.0.23
+   Compiling hashbrown v0.17.1
+   Compiling smallvec v1.16.1
+   Compiling stable_deref_trait v1.2.1
+   Compiling autocfg v1.5.1
+   Compiling serde_json v1.0.154
+   Compiling objc2-encode v4.1.0
+   Compiling getrandom v0.4.3
+   Compiling once_cell v1.21.4
+   Compiling syn v3.0.6
+   Compiling syn v2.0.119
+   Compiling pin-project-lite v0.2.17
+   Compiling objc2 v0.6.5
+   Compiling num-traits v0.2.19
+   Compiling crossbeam-utils v0.8.23
+   Compiling scopeguard v1.2.0
+   Compiling arrayvec v0.7.8
+   Compiling errno v0.3.14
+   Compiling version_check v0.9.5
+   Compiling bitflags v2.13.2
+   Compiling log v0.4.34
+   Compiling indexmap v2.14.2
+   Compiling simd-adler32 v0.3.10
+   Compiling rustix v1.1.6
+   Compiling lock_api v0.4.14
+   Compiling tracing-core v0.1.36
+   Compiling synstructure v0.14.0
+   Compiling block2 v0.6.2
+   Compiling parking_lot_core v0.9.12
+   Compiling rustversion v1.0.23
+   Compiling adler2 v2.0.1
+   Compiling dispatch2 v0.3.1
+   Compiling base64 v0.23.1
+   Compiling strsim v0.11.1
+   Compiling objc2-core-foundation v0.3.2
+   Compiling crc32fast v1.5.2
+   Compiling serde_derive v1.0.229
+   Compiling thiserror-impl v2.0.21
+   Compiling displaydoc v0.2.7
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling zerovec-derive v0.11.6
+   Compiling bytemuck_derive v1.12.1
+   Compiling tracing-attributes v0.1.31
+   Compiling zerofrom v0.1.8
+   Compiling ident_case v1.0.1
+   Compiling parking_lot v0.12.5
+   Compiling core-foundation-sys v0.8.7
+   Compiling core_maths v0.1.1
+   Compiling aho-corasick v1.1.5
+   Compiling bytemuck v1.25.2
+   Compiling yoke v0.8.3
+   Compiling unty v0.0.4
+   Compiling regex-syntax v0.8.11
+   Compiling ttf-parser v0.25.1
+   Compiling tracing v0.1.44
+   Compiling tinystr v0.8.4
+   Compiling zerovec v0.11.8
+   Compiling miniz_oxide v0.9.1
+   Compiling objc2-foundation v0.3.2
+   Compiling slotmap v1.1.1
+   Compiling tinyvec v1.13.3
+   Compiling flate2 v1.1.10
+   Compiling unic-langid-impl v0.9.6
+   Compiling bincode v2.0.1
+   Compiling zerocopy v0.8.57
+   Compiling typenum v1.20.1
+   Compiling either v1.18.0
+   Compiling siphasher v1.0.3
+   Compiling same-file v1.0.6
+   Compiling bitflags v1.3.2
+   Compiling walkdir v2.5.0
+   Compiling zerocopy-derive v0.8.57
+   Compiling regex-automata v0.4.18
+   Compiling sheprd-protocol v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-protocol)
+   Compiling hybrid-array v0.4.15
+   Compiling miniz_oxide v0.8.9
+   Compiling litemap v0.8.3
+   Compiling thiserror v1.0.69
+   Compiling fastrand v2.5.0
+   Compiling heck v0.5.0
+   Compiling proc-macro-hack v0.5.20+deprecated
+   Compiling lazy_static v1.5.0
+   Compiling rustc-hash v2.1.3
+   Compiling writeable v0.6.4
+   Compiling sha1_smol v1.0.1
+   Compiling uuid v1.29.0
+   Compiling icu_locale_core v2.3.0
+   Compiling tempfile v3.27.0
+   Compiling potential_utf v0.1.6
+   Compiling zerotrie v0.2.5
+   Compiling memmap2 v0.9.11
+   Compiling icu_properties_data v2.3.0
+   Compiling futures-core v0.3.34
+   Compiling anyhow v1.0.104
+   Compiling ryu v1.0.23
+   Compiling crossbeam-epoch v0.9.21
+   Compiling unicode-segmentation v1.13.3
+   Compiling utf8_iter v1.0.4
+   Compiling icu_normalizer_data v2.3.0
+   Compiling winnow v1.0.4
+   Compiling convert_case v0.10.0
+   Compiling icu_collections v2.3.0
+   Compiling icu_provider v2.3.1
+   Compiling fontdb v0.23.0
+   Compiling strum_macros v0.28.0
+   Compiling crypto-common v0.2.2
+   Compiling toml_parser v1.1.3+spec-1.1.0
+   Compiling block-buffer v0.12.1
+   Compiling thiserror-impl v1.0.69
+   Compiling crossbeam-channel v0.5.17
+   Compiling toml_datetime v1.1.1+spec-1.1.0
+   Compiling const-oid v0.10.2
+   Compiling unicase v2.10.0
+   Compiling crossbeam-deque v0.8.8
+   Compiling unicode-xid v0.2.6
+   Compiling futures-sink v0.3.34
+   Compiling derive_more-impl v2.1.1
+   Compiling sheprd-client v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-client)
+   Compiling mime_guess v2.0.5
+   Compiling digest v0.11.3
+   Compiling unic-langid-macros-impl v0.9.6
+   Compiling strum v0.28.0
+   Compiling itertools v0.14.0
+   Compiling cpufeatures v0.3.1
+   Compiling euclid v0.22.14
+   Compiling fdeflate v0.3.7
+   Compiling paste v1.0.15
+   Compiling percent-encoding v2.3.2
+   Compiling rayon-core v1.13.0
+   Compiling getrandom v0.3.4
+   Compiling float-cmp v0.9.0
+   Compiling unicode-width v0.2.2
+   Compiling byteorder v1.5.0
+   Compiling semver v1.0.28
+   Compiling strict-num v0.1.1
+   Compiling derive_more v2.1.1
+   Compiling rustc_version v0.4.1
+   Compiling sha2 v0.11.1
+   Compiling unic-langid-macros v0.9.6
+   Compiling icu_normalizer v2.3.0
+   Compiling icu_properties v2.3.0
+   Compiling futures-channel v0.3.34
+   Compiling core-foundation v0.10.0
+   Compiling foreign-types-macros v0.2.4
+   Compiling futures-macro v0.3.34
+   Compiling signal-hook-registry v1.4.8
+   Compiling foreign-types-shared v0.3.1
+   Compiling slab v0.4.12
+   Compiling base64 v0.22.1
+   Compiling mime v0.3.17
+   Compiling arrayref v0.3.9
+   Compiling bytes v1.12.1
+   Compiling futures-task v0.3.34
+   Compiling futures-io v0.3.34
+   Compiling futures-util v0.3.34
+   Compiling idna_adapter v1.2.2
+   Compiling tiny-skia-path v0.11.4
+   Compiling foreign-types v0.5.0
+   Compiling http v1.5.0
+   Compiling core-graphics-types v0.2.0
+   Compiling rust-embed-utils v8.13.0
+   Compiling unic-langid v0.9.6
+   Compiling pathfinder_simd v0.5.6
+   Compiling form_urlencoded v1.2.2
+   Compiling lyon_geom v1.0.19
+   Compiling regex v1.13.1
+   Compiling iana-time-zone v0.1.65
+   Compiling darling_core v0.24.1
+   Compiling pulp v0.22.3
+   Compiling polycool v0.4.0
+   Compiling ref-cast v1.0.27
+   Compiling quick-error v2.0.1
+   Compiling object v0.37.3
+   Compiling rand_core v0.6.4
+   Compiling zune-core v0.5.3
+   Compiling weezl v0.1.12
+   Compiling phf_shared v0.11.3
+   Compiling zune-jpeg v0.5.15
+   Compiling rand v0.8.8
+   Compiling kurbo v0.13.1
+   Compiling chrono v0.4.45
+   Compiling lyon_path v1.0.19
+   Compiling rand_core v0.9.5
+   Compiling rust-embed-impl v8.13.0
+   Compiling idna v1.1.0
+   Compiling png v0.17.16
+   Compiling darling_macro v0.24.1
+   Compiling futures-executor v0.3.34
+   Compiling half v2.7.1
+   Compiling ppv-lite86 v0.2.21
+   Compiling toml_datetime v0.6.11
+   Compiling serde_spanned v0.6.9
+   Compiling num-complex v0.4.6
+   Compiling enumn v0.1.14
+   Compiling ref-cast-impl v1.0.27
+   Compiling serde_derive_internals v0.30.0
+   Compiling shlex v2.0.1
+   Compiling unicode-script v0.5.8
+   Compiling heapless v0.9.3
+   Compiling reborrow v0.5.5
+   Compiling toml_write v0.1.2
+   Compiling gpui-pre-ztracing v0.3.10
+   Compiling gimli v0.32.3
+   Compiling find-msvc-tools v0.1.13
+   Compiling unicode-ccc v0.4.0
+   Compiling byteorder-lite v0.1.0
+   Compiling unicode-properties v0.1.4
+   Compiling pulp-wasm-simd-flag v0.1.1
+   Compiling color_quant v1.1.0
+   Compiling winnow v0.7.15
+   Compiling option-ext v0.2.0
+   Compiling objc-sys v0.3.5
+   Compiling unicode-bidi-mirroring v0.4.0
+   Compiling parking v2.2.1
+   Compiling event-listener v5.4.2
+   Compiling rustybuzz v0.20.1
+   Compiling dirs-sys v0.4.1
+   Compiling image-webp v0.2.4
+   Compiling gif v0.14.2
+   Compiling cc v1.4.7
+   Compiling toml_edit v0.22.27
+   Compiling addr2line v0.25.1
+   Compiling schemars_derive v1.2.2
+   Compiling tiny-skia v0.11.4
+   Compiling accesskit v0.24.1
+   Compiling rand_chacha v0.9.0
+   Compiling futures v0.3.34
+   Compiling darling v0.24.1
+   Compiling rust-embed v8.13.0
+   Compiling url v2.5.8
+   Compiling svgtypes v0.16.1
+   Compiling phf_generator v0.11.3
+   Compiling rayon v1.12.0
+   Compiling core-graphics v0.24.0
+   Compiling hash32 v0.3.1
+   Compiling toml_edit v0.25.15+spec-1.1.0
+   Compiling type-map v0.5.1
+   Compiling encoding_rs v0.8.41
+   Compiling spin v0.9.9
+   Compiling zune-inflate v0.2.54
+   Compiling simplecss v0.2.2
+   Compiling roxmltree v0.21.2
+   Compiling lebe v0.5.3
+   Compiling toml_writer v1.1.2+spec-1.1.0
+   Compiling unicode-bidi v0.3.18
+   Compiling pxfm v0.1.30
+   Compiling fax v0.2.7
+   Compiling gpui-pre-ztracing-macro v0.3.10
+   Compiling imagesize v0.14.0
+   Compiling bit_field v0.10.3
+   Compiling pico-args v0.5.0
+   Compiling unicode-vo v0.1.0
+   Compiling data-url v0.3.2
+   Compiling sys-locale v0.3.2
+   Compiling bit-vec v0.8.0
+   Compiling rustc-demangle v0.1.28
+   Compiling dyn-clone v1.0.20
+   Compiling zed-font-kit v0.14.1-zed
+   Compiling xmlwriter v0.1.0
+   Compiling cbindgen v0.28.0
+   Compiling float_next_after v1.0.0
+   Compiling fnv v1.0.7
+   Compiling embed-resource v3.0.11 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/embed-resource)
+   Compiling darling_core v0.20.11
+   Compiling gpui-pre v0.3.10
+   Compiling lyon_tessellation v1.0.22
+   Compiling backtrace v0.3.76
+   Compiling usvg v0.46.0
+   Compiling schemars v1.2.2
+   Compiling bit-set v0.8.0
+   Compiling exr v1.74.2
+   Compiling moxcms v0.8.1
+   Compiling tiff v0.11.3
+   Compiling flume v0.12.0
+   Compiling intl-memoizer v0.5.3
+   Compiling proc-macro-crate v3.5.0
+   Compiling core-text v21.0.0
+   Compiling phf_macros v0.11.3
+   Compiling pathfinder_geometry v0.5.1
+   Compiling toml v0.8.23
+   Compiling rand v0.9.5
+   Compiling ring v0.17.14
+   Compiling dirs v5.0.1
+   Compiling objc2-metal v0.3.2
+   Compiling event-listener-strategy v0.5.4
+   Compiling lyon_algorithms v1.0.21
+   Compiling serde_urlencoded v0.7.1
+   Compiling http-body v1.1.0
+   Compiling fluent-langneg v0.13.1
+   Compiling intl_pluralrules v7.0.2
+   Compiling png v0.18.1
+   Compiling gpui-pre-util v0.3.10
+   Compiling ratex-types v0.1.15
+   Compiling basic-toml v0.1.10
+   Compiling toml v0.5.11
+   Compiling rgb v0.8.53
+   Compiling qoi v0.4.1
+   Compiling fluent-syntax v0.12.0
+   Compiling gpui-pre-derive-refineable v0.3.10
+   Compiling pin-project-internal v1.1.13
+   Compiling profiling-procmacros v1.0.18
+   Compiling concurrent-queue v2.5.0
+   Compiling objc2-core-audio-types v0.3.2
+   Compiling smol_str v0.3.6
+   Compiling serde_spanned v1.1.1
+   Compiling self_cell v1.3.0
+   Compiling float-ord v0.3.2
+   Compiling linktime-proc-macro v0.2.3
+   Compiling svg_fmt v0.4.5
+   Compiling link-section v0.19.3
+   Compiling signal-hook v0.3.18
+   Compiling heck v0.4.1
+   Compiling multiversion_no_op v1.0.0
+   Compiling simdutf8 v0.1.5
+   Compiling async-task v4.7.1
+   Compiling web-time v1.1.0
+   Compiling pin-project v1.1.13
+   Compiling ctor v1.0.13
+   Compiling gpui-pre-scheduler v0.3.10
+   Compiling etagere v0.2.15
+   Compiling objc2-core-audio v0.3.2
+   Compiling fluent-bundle v0.16.0
+   Compiling gpui-pre-shared-string v0.3.10
+   Compiling toml v1.1.6+spec-1.1.0
+   Compiling async-channel v2.5.0
+   Compiling profiling v1.0.18
+   Compiling gpui-pre-refineable v0.3.10
+   Compiling find-crate v0.6.3
+   Compiling image v0.25.10
+   Compiling resvg v0.46.0
+   Compiling i18n-config v0.4.8
+   Compiling phf v0.11.3
+   Compiling gpui-pre-collections v0.3.10
+   Compiling objc2-core-video v0.3.2
+   Compiling gpui-pre-http-client v0.3.10
+   Compiling lyon v1.0.19
+   Compiling objc2 v0.5.2
+   Compiling gpui-pre-sum-tree v0.3.10
+   Compiling gpui-pre-macros v0.3.10
+   Compiling darling_macro v0.20.11
+   Compiling symphonia-core v0.5.5
+   Compiling taffy v0.15.1
+   Compiling castaway v0.2.4
+   Compiling tinystr v0.7.6
+   Compiling spin v0.10.1
+   Compiling num_cpus v1.17.0
+   Compiling malloc_buf v0.0.6
+   Compiling inventory v0.3.24
+   Compiling waker-fn v1.2.0
+   Compiling zeroize v1.9.1
+   Compiling litemap v0.7.5
+   Compiling raw-window-handle v0.6.2
+   Compiling signal-hook v0.4.6
+   Compiling writeable v0.5.5
+   Compiling pollster v0.4.0
+   Compiling seahash v4.1.0
+   Compiling static_assertions v1.1.0
+   Compiling compact_str v0.9.1
+   Compiling icu_locid v1.5.0
+   Compiling symphonia-metadata v0.5.5
+   Compiling rustls-pki-types v1.15.1
+   Compiling objc v0.2.7
+   Compiling darling v0.20.11
+   Compiling gpui-pre-apple v0.3.10
+   Compiling objc2-foundation v0.2.2
+   Compiling ratex-font v0.1.15
+   Compiling i18n-embed-impl v0.8.4
+   Compiling fluent v0.17.0
+   Compiling objc2-audio-toolbox v0.3.2
+   Compiling unicode-truncate v2.0.1
+   Compiling sheprd-backend v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-backend)
+   Compiling font-types v0.12.7
+   Compiling kasuari v0.4.13
+   Compiling arc-swap v1.9.3
+   Compiling num-integer v0.1.47
+   Compiling mio v1.2.4
+   Compiling getrandom v0.2.17
+   Compiling lru v0.18.5
+   Compiling hashbrown v0.16.1
+   Compiling untrusted v0.9.0
+   Compiling httparse v1.10.1
+   Compiling litrs v1.0.0
+   Compiling cpal v0.17.3
+   Compiling cursor-icon v1.2.0
+   Compiling indoc v2.0.8
+   Compiling block v0.1.6
+   Compiling metal v0.33.0
+   Compiling document-features v0.2.12
+   Compiling accesskit_consumer v0.38.0
+   Compiling vte v0.15.0
+   Compiling instability v0.3.14
+   Compiling signal-hook-mio v0.2.5
+   Compiling ratatui-core v0.1.2
+   Compiling num-bigint v0.4.8
+   Compiling coreaudio-rs v0.14.2
+   Compiling objc2-app-kit v0.2.2
+   Compiling read-fonts v0.46.0
+   Compiling i18n-embed v0.16.0
+   Compiling derive_builder_core v0.20.2
+   Compiling symphonia-bundle-mp3 v0.5.5
+   Compiling fluent-langneg v0.14.2
+   Compiling ratex-lexer v0.1.15
+   Compiling fancy-regex v0.14.0
+   Compiling system-fonts v0.1.2
+   Compiling objc2-quartz-core v0.3.2
+   Compiling sheprd-chat-protocol v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-chat-protocol)
+   Compiling owned_ttf_parser v0.25.1
+   Compiling polling v3.11.0
+   Compiling rustix-openpty v0.2.0
+   Compiling unicode-normalization v0.1.26
+   Compiling objc2-security v0.3.2
+   Compiling objc2-core-text v0.3.2
+   Compiling mach2 v0.5.0
+   Compiling memoffset v0.9.1
+   Compiling home v0.5.12
+   Compiling pathdiff v0.2.3
+   Compiling cfg_aliases v0.2.2
+   Compiling regex-lite v0.1.9
+   Compiling dasp_sample v0.11.0
+   Compiling rustls v0.23.46
+   Compiling mach2 v0.6.0
+   Compiling ab_glyph_rasterizer v0.1.10
+   Compiling ab_glyph v0.2.32
+   Compiling nix v0.31.3
+   Compiling config v0.15.25
+   Compiling ratex-parser v0.1.15
+   Compiling alacritty_terminal v0.26.0
+   Compiling symphonia v0.5.5
+   Compiling ratex-unicode-font v0.1.15
+   Compiling derive_builder_macro v0.20.2
+   Compiling sheprd-i18n v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-i18n)
+   Compiling accesskit_macos v0.26.3
+   Compiling winresource v0.1.34
+   Compiling rustls-webpki v0.103.16
+   Compiling num-rational v0.4.2
+   Compiling crossterm v0.29.0
+   Compiling sheprd-lenient v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-lenient)
+   Compiling ratex-katex-fonts v0.1.15
+   Compiling serde_with_macros v3.24.0
+   Compiling objc2-user-notifications v0.3.2
+   Compiling objc2-app-kit v0.3.2
+   Compiling sheprd-commands v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-commands)
+   Compiling sheprd-usage v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-usage)
+   Compiling sharded-slab v0.1.7
+   Compiling objc2-io-kit v0.3.2
+   Compiling objc2-core-graphics v0.3.2
+   Compiling line-clipping v0.3.8
+   Compiling serde_ignored v0.1.14
+   Compiling thread_local v1.1.10
+   Compiling subtle v2.6.1
+   Compiling ucd-trie v0.1.7
+   Compiling pulldown-cmark v0.13.6
+   Compiling keepawake v0.6.1
+   Compiling json5 v1.3.3
+   Compiling tracing-subscriber v0.3.23
+   Compiling ratatui-widgets v0.3.2
+   Compiling serde_with v3.24.0
+   Compiling ratatui-crossterm v0.1.2
+   Compiling ratex-layout v0.1.15
+   Compiling gpui-pre-macos v0.3.10
+   Compiling ratex-font-loader v0.1.15
+   Compiling ureq-proto v0.7.1
+   Compiling skrifa v0.49.0
+   Compiling sheprd-gpui v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-gpui)
+   Compiling sheprd-terminal v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-terminal)
+   Compiling rodio v0.22.2
+   Compiling derive_builder v0.20.2
+   Compiling sheprd-settings v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-settings)
+   Compiling sheprd-panes v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-panes)
+   Compiling webpki-roots v1.0.11
+   Compiling fancy-regex v0.16.2
+   Compiling sheprd-truncate v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-truncate)
+   Compiling sheprd-state-file v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-state-file)
+   Compiling bincode v1.3.3
+   Compiling sheprd-motion v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-motion)
+   Compiling pulldown-cmark-escape v0.11.0
+   Compiling utf8-zero v0.8.1
+   Compiling sheprd-reorder v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-reorder)
+   Compiling syntect v5.3.0
+   Compiling sheprd-browser v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-browser)
+   Compiling sheprd-sound v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-sound)
+   Compiling ureq v3.5.1
+   Compiling sheprd-core-client v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-core-client)
+   Compiling gpui-pre-platform v0.3.10
+   Compiling ratex-render v0.1.15
+   Compiling agent-client-protocol-schema v1.12.0
+   Compiling ratatui v0.30.2
+   Compiling sysinfo v0.39.6
+   Compiling sheprd-diagnostics v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-diagnostics)
+   Compiling mermaid-rs-renderer v0.3.1
+   Compiling nucleo-matcher v0.3.1
+   Compiling sheprd-words v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-words)
+   Compiling sheprd-remote v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-remote)
+   Compiling sheprd-control-protocol v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-control-protocol)
+   Compiling sheprd-ago v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-ago)
+   Compiling sheprd-osc52 v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-osc52)
+   Compiling sheprd-acp v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-acp)
+    Finished `release` profile [optimized] target(s) in 4m 01s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+cargo test --locked --release -p sheprd-gpui --test cli
+   Compiling hashbrown v0.17.1
+   Compiling rustix v1.1.6
+   Compiling bit-vec v0.8.0
+   Compiling futures-io v0.3.34
+   Compiling convert_case v0.11.0
+   Compiling wait-timeout v0.2.1
+   Compiling quick-error v1.2.3
+   Compiling gpui-pre v0.3.10
+   Compiling derive_more-impl v2.1.1
+   Compiling rand_xorshift v0.4.0
+   Compiling crossbeam-queue v0.3.14
+   Compiling futures-util v0.3.34
+   Compiling futures-lite v2.6.1
+   Compiling bit-set v0.8.0
+   Compiling proptest-macro v0.5.0
+   Compiling pollster v0.2.5
+   Compiling unarray v0.1.4
+   Compiling atomic v0.5.3
+   Compiling fixedbitset v0.5.7
+   Compiling postage v0.5.0
+   Compiling fancy-regex v0.14.0
+   Compiling indexmap v2.14.2
+   Compiling fancy-regex v0.16.2
+   Compiling test-case-core v3.4.0
+   Compiling sheprd-reorder v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-reorder)
+   Compiling socket2 v0.6.5
+   Compiling futures-concurrency v7.7.1
+   Compiling test-case-macros v3.4.0
+   Compiling derive_more v2.1.1
+   Compiling syntect v5.3.0
+   Compiling serde_json v1.0.154
+   Compiling gpui-pre-collections v0.3.10
+   Compiling toml_edit v0.25.15+spec-1.1.0
+   Compiling test-case v3.4.0
+   Compiling sheprd-protocol v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-protocol)
+   Compiling schemars v1.2.2
+   Compiling sheprd-chat-protocol v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-chat-protocol)
+   Compiling ratex-parser v0.1.15
+   Compiling tempfile v3.27.0
+   Compiling futures-executor v0.3.34
+   Compiling futures v0.3.34
+   Compiling rusty-fork v0.3.1
+   Compiling gpui-pre-http-client v0.3.10
+   Compiling gpui-pre-scheduler v0.3.10
+   Compiling proptest v1.11.0
+   Compiling sheprd-client v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-client)
+   Compiling gpui-pre-shared-string v0.3.10
+   Compiling sheprd-backend v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-backend)
+   Compiling rustix-openpty v0.2.0
+   Compiling polling v3.11.0
+   Compiling sheprd-panes v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-panes)
+   Compiling alacritty_terminal v0.26.0
+   Compiling ratex-layout v0.1.15
+   Compiling sheprd-state-file v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-state-file)
+   Compiling mermaid-rs-renderer v0.3.1
+   Compiling sheprd-terminal v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-terminal)
+   Compiling ratex-render v0.1.15
+   Compiling sheprd-commands v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-commands)
+   Compiling sheprd-usage v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-usage)
+   Compiling sheprd-truncate v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-truncate)
+   Compiling sheprd-settings v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-settings)
+   Compiling sheprd-diagnostics v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-diagnostics)
+   Compiling sheprd-remote v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-remote)
+   Compiling sheprd-core-client v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-core-client)
+   Compiling sheprd-control-protocol v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-control-protocol)
+   Compiling sheprd-sound v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-sound)
+   Compiling gpui-pre-apple v0.3.10
+   Compiling gpui-pre-macos v0.3.10
+   Compiling sheprd-browser v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-browser)
+   Compiling gpui-pre-platform v0.3.10
+   Compiling sheprd-gpui v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-gpui)
+    Finished `release` profile [optimized] target(s) in 1m 56s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running tests/cli.rs (target/release/deps/cli-8ecbb9a24d25be64)
+
+running 21 tests
+test build_info_is_pure_and_matches_compile_identity ... ok
+test duplicate_options_are_usage_errors ... ok
+test code_open_is_rejected_before_socket_lookup ... ok
+test code_edit_is_rejected_before_socket_lookup ... ok
+test control_commands_report_a_missing_app_by_status_and_in_json ... ok
+test missing_option_values_are_usage_errors ... ok
+test help_succeeds_and_documents_connection_options ... ok
+test native_test_flag_is_rejected_in_normal_builds ... ok
+test legacy_connection_flags_are_rejected_before_startup ... ok
+test clipboard::invalid_clipboard_helper_arguments_exit_before_gui_startup ... ok
+test skill_command_answers_without_a_window ... ok
+test phone::phone_refusal_keeps_local_cli_available_in_private_state ... ok
+test usage_errors_of_a_json_command_are_json ... ok
+test removed_project_open::removed_folder_open_exits_before_starting_the_app ... ok
+test removed_design_feedback_is_rejected_before_socket_lookup ... ok
+test browser_commands_are_rejected_before_socket_lookup ... ok
+test control_commands_list_and_explain_themselves_without_the_app ... ok
+test orchestrator::orchestrator_cli_refuses_before_contacting_the_private_app_socket ... ok
+test unknown_flags_and_positional_arguments_are_usage_errors ... ok
+test removed_scripts::removed_script_commands_exit_before_starting_the_app ... ok
+test removed_updater::updater_commands_and_helpers_exit_before_app_startup ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.33s
+
+H8c_EXIT=0
+END=2026-11-22T05:03:07Z

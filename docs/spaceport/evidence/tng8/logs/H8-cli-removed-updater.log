@@ -1,0 +1,45 @@
+   Compiling sheprd-gpui v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-gpui)
+    Finished `test` profile [unoptimized] target(s) in 28.49s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running tests/cli.rs (target/debug/deps/cli-8b90b4767922cba4)
+
+running 21 tests
+test code_open_is_rejected_before_socket_lookup ... ok
+test build_info_is_pure_and_matches_compile_identity ... ok
+test code_edit_is_rejected_before_socket_lookup ... ok
+test duplicate_options_are_usage_errors ... ok
+test control_commands_report_a_missing_app_by_status_and_in_json ... ok
+test help_succeeds_and_documents_connection_options ... ok
+test native_test_flag_is_rejected_in_normal_builds ... ok
+test clipboard::invalid_clipboard_helper_arguments_exit_before_gui_startup ... ok
+test missing_option_values_are_usage_errors ... ok
+test legacy_connection_flags_are_rejected_before_startup ... ok
+test skill_command_answers_without_a_window ... ok
+test phone::phone_refusal_keeps_local_cli_available_in_private_state ... ok
+test removed_project_open::removed_folder_open_exits_before_starting_the_app ... ok
+test usage_errors_of_a_json_command_are_json ... ok
+test removed_design_feedback_is_rejected_before_socket_lookup ... ok
+test browser_commands_are_rejected_before_socket_lookup ... ok
+test control_commands_list_and_explain_themselves_without_the_app ... ok
+test unknown_flags_and_positional_arguments_are_usage_errors ... ok
+test orchestrator::orchestrator_cli_refuses_before_contacting_the_private_app_socket ... ok
+test removed_scripts::removed_script_commands_exit_before_starting_the_app ... ok
+test removed_updater::updater_commands_and_helpers_exit_before_app_startup ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.42s
+
+H8a_EXIT=0
+   Compiling sheprd-gpui v0.1.0 (/Users/clint/code/worktrees/spaceport/pi-worktree-72451d17-df22-4a61-98f1-7ff33859b75a-s0-0/crates/sheprd-gpui)
+    Finished `test` profile [unoptimized] target(s) in 1.10s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running tests/removed_updater.rs (target/debug/deps/removed_updater-75d43a6cbf4a03bc)
+
+running 2 tests
+test custom_updater_has_no_source_or_dependency ... ok
+test app_constants_retain_development_identity_and_release_refusal ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.73s
+
+H8b_EXIT=0

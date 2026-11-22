@@ -53,7 +53,7 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": []
+          "evidence": ["evidence/tng8/A03-herdr1.md"]
         },
         "core": {
           "status": "not_run",
@@ -112,7 +112,7 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": []
+          "evidence": ["evidence/tng8/A06-herdr1.md"]
         },
         "core": {
           "status": "not_run",
@@ -234,7 +234,7 @@
         },
         "core": {
           "status": "not_run",
-          "evidence": []
+          "evidence": ["evidence/tng8/A12-core.md"]
         }
       }
     },
@@ -349,7 +349,7 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": []
+          "evidence": ["evidence/tng8/A18-herdr1.md"]
         },
         "core": {
           "status": "not_run",
@@ -447,7 +447,7 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": ["evidence/t05-explicit-termination.md"]
+          "evidence": ["evidence/t05-explicit-termination.md", "evidence/tng8/A23-herdr1.md"]
         },
         "core": {
           "status": "not_run",
@@ -545,7 +545,7 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": ["evidence/t04-visual-annotation-removal.md", "evidence/t04-mockup-feedback-removal.md", "evidence/t04-integrated-route-cuts.md", "evidence/t04-browser-control-family-removal.md", "evidence/t04-browser-tab-protocol-removal.md"]
+          "evidence": ["evidence/t04-visual-annotation-removal.md", "evidence/t04-mockup-feedback-removal.md", "evidence/t04-integrated-route-cuts.md", "evidence/t04-browser-control-family-removal.md", "evidence/t04-browser-tab-protocol-removal.md", "evidence/tng8/A28-herdr1.md"]
         },
         "core": {
           "status": "not_run",
@@ -681,7 +681,7 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": []
+          "evidence": ["evidence/tng8/A35-herdr1.md"]
         },
         "core": {
           "status": "not_run",
@@ -723,7 +723,7 @@
         },
         "core": {
           "status": "not_run",
-          "evidence": []
+          "evidence": ["evidence/tng8/A37-core.md"]
         }
       }
     },
@@ -738,7 +738,7 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": []
+          "evidence": ["evidence/tng8/A38-herdr1.md"]
         },
         "core": {
           "status": "not_run",
