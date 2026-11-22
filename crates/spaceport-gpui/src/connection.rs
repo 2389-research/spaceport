@@ -93,6 +93,9 @@ pub(crate) mod applied {
 
 pub(crate) struct ConnectionBridge {
     pub target: ConnectTarget,
+    // The last age evidence delivered to the UI survives a reset when the reader owns the old lock.
+    idle_target: ConnectTarget,
+    delivered_idle: std::cell::RefCell<spaceport_client::agent_idle::IdleTracker>,
     pub handle: Option<ClientHandle>,
     pub inbox: Arc<Mutex<LiveState>>,
     pub drained: Arc<AtomicBool>,
@@ -199,6 +202,8 @@ impl ConnectionBridge {
     pub fn new(target: ConnectTarget) -> Self {
         let state = LiveState::default();
         Self {
+            idle_target: target.clone(),
+            delivered_idle: Default::default(),
             target,
             handle: None,
             sound_cancel: state.sound_connection_cancel.clone(),
@@ -215,13 +220,26 @@ impl ConnectionBridge {
         // Retire audio even when the event reducer holds the inbox. Boot-scoped
         // cancellation alone cannot be reached without that lock.
         self.sound_cancel.store(true, Ordering::Release);
+        let same_target = self.idle_target == self.target;
         if let Ok(mut state) = self.inbox.try_lock() {
+            if same_target {
+                self.delivered_idle
+                    .get_mut()
+                    .clone_from(&state.idle_tracker);
+            }
             state.cancel_sounds();
         }
         if let Some(handle) = self.handle.take() {
             handle.disconnect();
         }
         let mut state = LiveState::default();
+        if same_target {
+            state.idle_tracker.clone_from(self.delivered_idle.get_mut());
+            state.idle_tracker.interrupt();
+        } else {
+            self.idle_target.clone_from(&self.target);
+            *self.delivered_idle.get_mut() = Default::default();
+        }
         state.status = status;
         state.set_outer_focus(active);
         self.sound_cancel = state.sound_connection_cancel.clone();
@@ -443,6 +461,9 @@ impl ConnectionBridge {
         } else {
             None
         };
+        self.delivered_idle
+            .borrow_mut()
+            .clone_from(&state.idle_tracker);
         let mut update = state.clone();
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         {

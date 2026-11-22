@@ -77,6 +77,8 @@ spaceport ui sidebar [on|off|toggle]
 spaceport ui statusbar [on|off|toggle]
 spaceport ui font-size +|-|reset|POINTS
 spaceport ui panel workspaces|overview|automations|usage
+spaceport ui agent-idle [--pane ID]
+    Read the agent idle time observed by this window.
     For this window and session; settings are changed with `config`.
 
 === tab ===

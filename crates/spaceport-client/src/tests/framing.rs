@@ -24,11 +24,12 @@ fn fragmented_frames_survive_timeout_between_every_byte() {
 fn geometry_and_frame_reader_limits() {
     for (cols, rows, cell_width_px) in [(0, 24, 0), (4097, 1, 0), (1001, 1000, 0), (80, 24, 4097)] {
         assert!(
-            validate_options(ConnectOptions {
+            ConnectOptions {
                 surface_size: ClientSurfaceSize { cols, rows },
                 cell_width_px,
                 cell_height_px: 0,
-            })
+            }
+            .validate()
             .is_err()
         );
     }

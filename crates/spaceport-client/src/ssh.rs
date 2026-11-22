@@ -74,7 +74,7 @@ pub(crate) const PROBE_TIMEOUT: Duration = Duration::from_secs(30);
 const RESOLVE_TIMEOUT: Duration = Duration::from_secs(15);
 const PROBE_OUTPUT_LIMIT: u64 = 64 * 1024;
 
-fn bridge_command(session: &str) -> String {
+pub(crate) fn bridge_command(session: &str) -> String {
     format!("/bin/sh -c {}", quote(&bridge_script(session)))
 }
 
@@ -86,7 +86,12 @@ pub(crate) fn bridge_script(session: &str) -> String {
     if [ -n "$path" ] && [ -x "$path" ]; then
         status=$("$path" status client --json </dev/null) || continue
         printf '%s\n' "$status"
-        printf '\n%s\n' 'herdr-remote-output-ready:1'
+        case "$path" in
+            /*[[:cntrl:]]*) resolved=;;
+            /*) resolved=$path;;
+            *) resolved=;;
+        esac
+        printf '\nherdr-bridge-path:%s\n%s\n' "$resolved" 'herdr-remote-output-ready:1'
         IFS= read -r choice || exit 1
         case "$choice" in
             accept) exec "$path" --session {session} remote-client-bridge;;
@@ -564,6 +569,13 @@ fn spawn_bridge(mut command: Command) -> Result<(Stream, ChildGuard)> {
 /// When every candidate was skipped, the script exits and the first refusal
 /// says why, instead of the closed bridge every other failure also ends in.
 pub(crate) fn handshake(stream: &mut (impl Read + Write), stop: &AtomicBool) -> Result<()> {
+    handshake_with_path(stream, stop).map(drop)
+}
+
+pub(crate) fn handshake_with_path(
+    stream: &mut (impl Read + Write),
+    stop: &AtomicBool,
+) -> Result<Option<String>> {
     let started = Instant::now();
     let mut refused = None;
     loop {
@@ -579,7 +591,17 @@ pub(crate) fn handshake(stream: &mut (impl Read + Write), stop: &AtomicBool) -> 
             } else {
                 b"accept\n"
             })?;
-            return Ok(());
+            let path = status
+                .strip_suffix(b"\n")
+                .and_then(|banner| banner.rsplit(|b| *b == b'\n').next())
+                .and_then(|line| line.strip_prefix(b"herdr-bridge-path:"))
+                .and_then(|bytes| std::str::from_utf8(bytes).ok())
+                .filter(|path| {
+                    path.starts_with('/')
+                        && path.len() <= 4096
+                        && !path.chars().any(char::is_control)
+                });
+            return Ok(path.map(str::to_owned));
         }
         refused = refused.or_else(|| incompatible_status(&status));
         stream.write_all(b"skip\n")?;

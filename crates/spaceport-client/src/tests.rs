@@ -9,7 +9,6 @@ use crate::{
         COMMAND_CAPACITY, COMMAND_TIMEOUT, EVENT_CAPACITY, MAX_RESPONSE_BYTES, POLL, TIMEOUT,
     },
     method::Method,
-    options::validate_options,
     protocol::{endpoint::*, *},
     session::{Health, Pace, Pending, Session, Signals, SurfaceEncodings, run_connection},
     transport::Stream,
@@ -27,6 +26,8 @@ use std::{
 };
 
 mod commands;
+#[cfg(unix)]
+mod embedded_bridge;
 mod error_kinds;
 mod errors;
 mod focus_barrier;
@@ -217,6 +218,7 @@ fn test_client_paced(
                     next_request: AtomicU64::new(1),
                     image_busy: Arc::new(AtomicBool::new(false)),
                     last_queued_theme: Default::default(),
+                    transport_lost: Default::default(),
                     liveness,
                 }),
             },

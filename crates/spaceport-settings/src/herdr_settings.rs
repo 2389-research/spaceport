@@ -37,9 +37,9 @@ use toml_edit::{DocumentMut, Item, Value};
 /// it, which deserializes upstream's spellings ("spaces", alias "workspaces").
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
 pub enum AgentSort {
-    #[default]
     #[serde(rename = "spaces", alias = "workspaces")]
     Grouped,
+    #[default]
     #[serde(rename = "priority")]
     Priority,
 }

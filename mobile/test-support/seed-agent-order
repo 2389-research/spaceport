@@ -1,0 +1,33 @@
+#!/bin/sh
+# ABOUTME: Seeds a disposable Herdr session for the live and saved agent ordering test.
+# ABOUTME: Confirms two idle reports have different daemon sequence numbers before returning.
+set -eu
+
+session=${1:?Usage: seed-agent-order NEW_DISPOSABLE_SESSION}
+script_dir=$(dirname "$0")
+"$script_dir/seed-attention" "$session" >/dev/null
+run() { herdr --session "$session" "$@"; }
+
+report() {
+    name=$1
+    state=$2
+    pane=$(run workspace create --label "$name" --no-focus | jq -er '.result.root_pane.pane_id')
+    run pane run "$pane" "sh -c 'herdr pane report-agent \"\$HERDR_PANE_ID\" --source mobile-qa --agent $name --state $state --seq 1 >/dev/null && read answer'" >/dev/null
+    for _ in 1 2 3 4 5; do
+        if run agent list | jq -e --arg name "$name" --arg state "$state" 'any(.result.agents[]; .agent == $name and .agent_status == $state)' >/dev/null; then
+            return
+        fi
+        sleep 1
+    done
+    echo "Herdr did not report $name as $state." >&2
+    exit 1
+}
+
+report Atlas idle
+report Zephyr idle
+report Scout working
+run agent list | jq -e '
+    .result.agents | map({key: .agent, value: .state_change_seq}) | from_entries |
+    .Atlas > 0 and .Zephyr > .Atlas
+' >/dev/null || { echo "Herdr did not report Zephyr as more recent than Atlas." >&2; exit 1; }
+printf 'Set SPACEPORT_TEST_ORDER_SESSION=%s in the UI test runner.\n' "$session"

@@ -70,3 +70,16 @@ sidebar-workspace-move-not-sent = Workspace move not sent: { $error }
 # the Orca layout.
 sidebar-primary = primary
 sidebar-spoken-muted = notifications muted
+
+# Activity groups and approximate idle ages in the priority Agents panel.
+sidebar-agents-waiting = Waiting for you
+sidebar-agents-working = Working
+sidebar-agents-idle-recent = Idle · under 1 hour
+sidebar-agents-idle-hours = Idle · 1–5 hours
+sidebar-agents-idle-long = Idle · 5+ hours
+sidebar-agents-idle = Idle
+sidebar-agents-other = Other
+sidebar-agents-offline = Offline
+sidebar-idle-age-minutes = { $count }m
+sidebar-idle-age-hours = { $count }h
+sidebar-idle-at-least = ≥{ $age }

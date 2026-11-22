@@ -1,6 +1,27 @@
 //! Checks for untrusted text shown in the app.
 
-use crate::protocol::{ClientShellSnapshot, ClientShellTab};
+use crate::protocol::{ClientShellAgent, ClientShellSnapshot, ClientShellTab};
+
+/// What an agent is called wherever it is listed. The fallback, for an
+/// agent that reports no name at all, is the daemon's identity word and
+/// stays English while other areas borrow the name as `&str`.
+pub fn agent_name(agent: &ClientShellAgent) -> &str {
+    agent_names(agent)
+        .into_iter()
+        .flatten()
+        .map(str::trim)
+        .find(|name| !name.is_empty())
+        .unwrap_or("agent")
+}
+
+pub fn agent_names(agent: &ClientShellAgent) -> [Option<&str>; 4] {
+    [
+        agent.display_agent.as_deref(),
+        agent.name.as_deref(),
+        agent.agent.as_deref(),
+        agent.title.as_deref().and_then(caption),
+    ]
+}
 
 /// Strip only a leading agent paste envelope, never ordinary markup inside a
 /// title. A wrapper-only/truncated transport marker is not a useful caption.

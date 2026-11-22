@@ -1,0 +1,13 @@
+Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+
+JetBrains Mono is a trademark of JetBrains s.r.o.
+
+JetBrains
+
+Philipp Nurullin, Konstantin Bulenkov
+
+https://www.jetbrains.com
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: https://scripts.sil.org/OFL
+
+https://scripts.sil.org/OFL

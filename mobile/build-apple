@@ -1,0 +1,45 @@
+#!/bin/bash
+# ABOUTME: Builds device and simulator libraries and generates their Swift bindings.
+# ABOUTME: Prepares the Xcode project used to run and test Spaceport Mobile.
+set -euo pipefail
+case "${1:-}" in
+    "") profile=debug ;;
+    --release) profile=release ;;
+    *) echo "usage: $0 [--release]" >&2; exit 2 ;;
+esac
+cd "$(dirname "$0")"
+mobile_root=$PWD
+build="$mobile_root/.build"
+generated="$mobile_root/apple/Generated"
+mkdir -p "$build" "$generated"
+cd rust
+# Keep all library artifacts under one known root, including when invoked from Xcode.
+export CARGO_TARGET_DIR="$PWD/target"
+version=$(awk '/^name = "uniffi"$/ {getline; gsub(/"/, "", $3); print $3; exit}' Cargo.lock)
+generator="$build/tools/bin/uniffi-bindgen"
+if [[ ! -x "$generator" || "$("$generator" --version)" != "uniffi-bindgen $version" ]]; then
+    cargo install --locked uniffi --version "$version" --features cli --bin uniffi-bindgen --root "$build/tools"
+fi
+rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+export IPHONEOS_DEPLOYMENT_TARGET=17.0
+for target in aarch64-apple-ios aarch64-apple-ios-sim; do
+    if [[ "$profile" == release ]]; then
+        cargo build --locked --release --target "$target"
+    else
+        cargo build --locked --target "$target"
+    fi
+done
+device="$CARGO_TARGET_DIR/aarch64-apple-ios/$profile/libspaceport_mobile.a"
+simulator="$CARGO_TARGET_DIR/aarch64-apple-ios-sim/$profile/libspaceport_mobile.a"
+"$generator" generate --language swift --no-format --metadata-no-deps --out-dir "$generated" "$device"
+staging=$(mktemp -d "$build/package.XXXXXX")
+trap 'rm -rf "$staging"' EXIT
+mkdir "$staging/Headers"
+cp "$generated/spaceport_mobileFFI.h" "$staging/Headers/"
+cp "$generated/spaceport_mobileFFI.modulemap" "$staging/Headers/module.modulemap"
+xcodebuild -create-xcframework -library "$device" -headers "$staging/Headers" \
+    -library "$simulator" -headers "$staging/Headers" -output "$staging/SpaceportMobileCore.xcframework"
+rm -rf "$build/SpaceportMobileCore.xcframework"
+mv "$staging/SpaceportMobileCore.xcframework" "$build/"
+cd "$mobile_root/apple"
+xcodegen generate

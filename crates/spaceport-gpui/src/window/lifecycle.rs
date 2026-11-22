@@ -16,23 +16,11 @@ use std::time::{Duration, Instant};
 /// transcripts. Only the size the window settles on is sent.
 pub(crate) const RESIZE_SETTLE: Duration = Duration::from_millis(150);
 
-/// A frame another client took is re-claimed more slowly than a settled
-/// window resize, so the request is not resent while the daemon answers it.
-pub(crate) const RESIZE_REASSERT: Duration = Duration::from_secs(1);
-
-/// How long after its last user input a window still re-claims a frame
-/// another client sized. Two windows of different sizes on one tab would
-/// otherwise take it from each other every `RESIZE_REASSERT`; the one in use
-/// keeps it, and an idle one leaves it alone.
-pub(crate) const REASSERT_AFTER_INPUT: Duration = Duration::from_secs(5);
+#[cfg(test)]
+pub(crate) use spaceport_client::projection::REASSERT_AFTER_INPUT;
+pub(crate) use spaceport_client::projection::{RESIZE_REASSERT, reasserts};
 
 const BELL_PREVIEW_DELAY: Duration = Duration::from_secs(3);
-
-/// Whether a window whose last user input was at `last_input` may re-claim,
-/// at `now`, a frame another client sized.
-pub(crate) fn reasserts(last_input: Option<Instant>, now: Instant) -> bool {
-    last_input.is_some_and(|last| now.saturating_duration_since(last) < REASSERT_AFTER_INPUT)
-}
 
 impl SpaceportWindow {
     /// Records that the window just forwarded user input.

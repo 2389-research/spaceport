@@ -2,9 +2,9 @@
 //! are labelled. Status comes from the daemon's snapshot, never from guessing
 //! at terminal output.
 
-use super::{
-    STATUS_DOT_UNKNOWN, STATUS_WIDTH, first_text, label_text, line_height, scaled, unknown_dot,
-};
+pub(super) mod sections;
+
+use super::{STATUS_DOT_UNKNOWN, STATUS_WIDTH, label_text, line_height, scaled, unknown_dot};
 use crate::direction::Logical;
 use crate::i18n::fl;
 use crate::preferences::AgentSort;
@@ -129,15 +129,14 @@ pub(super) fn sorted_agents(
 pub(super) fn panel_agents<'a>(
     hosts: impl IntoIterator<Item = (usize, &'a crate::state::LiveState)>,
     sort: AgentSort,
+    now: u64,
 ) -> Vec<(usize, &'a ClientShellAgent)> {
     let mut merge = sort == AgentSort::Priority;
-    let mut listed = 0;
     let mut rows = Vec::new();
     for (index, live) in hosts {
         let Some(snapshot) = live.snapshot.as_deref() else {
             continue;
         };
-        listed += 1;
         merge &= snapshot.agent_view_label.is_none();
         rows.extend(
             sorted_agents(snapshot, sort)
@@ -145,40 +144,15 @@ pub(super) fn panel_agents<'a>(
                 .map(|agent| (index, live, agent)),
         );
     }
-    // One host is already in order; the stable merge would only repeat it.
-    if merge && listed > 1 {
-        rows.sort_by_key(|(_, live, agent)| {
-            (
-                !live.status.is_connected(),
-                std::cmp::Reverse(status_priority(agent.agent_status)),
-                std::cmp::Reverse(live.agent_recency.of(&agent.pane_id)),
-            )
-        });
+    if merge {
+        rows.sort_by_cached_key(|(index, live, agent)| sections::order(*index, live, agent, now));
     }
     rows.into_iter()
         .map(|(index, _, agent)| (index, agent))
         .collect()
 }
 
-/// What an agent is called wherever it is listed. The fallback, for an
-/// agent that reports no name at all, is the daemon's identity word and
-/// stays English while other areas borrow the name as `&str`.
-pub(crate) fn agent_name(agent: &ClientShellAgent) -> &str {
-    // i18n: data
-    first_text(agent_names(agent), "agent")
-}
-
-pub(super) fn agent_names(agent: &ClientShellAgent) -> [Option<&str>; 4] {
-    [
-        agent.display_agent.as_deref(),
-        agent.name.as_deref(),
-        agent.agent.as_deref(),
-        agent
-            .title
-            .as_deref()
-            .and_then(spaceport_client::text::caption),
-    ]
-}
+pub(crate) use spaceport_client::text::{agent_name, agent_names};
 
 /// The name an agent's row shows for its pane: the label set with Rename,
 /// otherwise the title an unnamed pane already carries. Both are untrusted

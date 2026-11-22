@@ -9,7 +9,7 @@ use crate::{
     frame::ImageWriter,
     host_theme::HostTheme,
     method::Method,
-    options::{ConnectOptions, validate_options},
+    options::ConnectOptions,
     protocol::*,
     queue::CommandSender,
 };
@@ -38,6 +38,7 @@ pub(crate) struct HandleInner {
     pub(crate) last_queued_theme: Mutex<Option<HostTheme>>,
     /// Set to have the worker ping an SSH link now; see `check_liveness`.
     pub(crate) liveness: Arc<AtomicBool>,
+    pub(crate) transport_lost: Arc<AtomicBool>,
 }
 impl Drop for HandleInner {
     fn drop(&mut self) {
@@ -161,6 +162,12 @@ impl ClientHandle {
         self.inner.liveness.store(true, Ordering::Release);
         self.inner.commands.wake();
     }
+    /// The protocol worker lost its underlying stream or its health check.
+    /// Callers decide whether a previously established connection should be reopened.
+    pub fn transport_lost(&self) -> bool {
+        self.inner.transport_lost.load(Ordering::Acquire)
+    }
+
     pub fn is_disconnected(&self) -> bool {
         self.inner.stop.load(Ordering::Acquire)
     }
@@ -226,7 +233,7 @@ impl ClientHandle {
         )
     }
     pub fn resize(&self, boot_id: &str, options: ConnectOptions) -> Result<()> {
-        validate_options(options)?;
+        options.validate()?;
         self.enqueue(
             boot_id,
             ClientMessage::ClientShellResize {

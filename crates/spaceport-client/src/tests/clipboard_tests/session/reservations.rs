@@ -10,6 +10,7 @@ fn reservation_validation_busy_drop_and_queue_bounds() {
             next_request: AtomicU64::new(1),
             image_busy: Arc::new(AtomicBool::new(false)),
             last_queued_theme: Default::default(),
+            transport_lost: Default::default(),
             liveness: Default::default(),
         }),
     };
@@ -85,6 +86,7 @@ fn input_reservations_share_queue_bound_without_claiming_or_releasing_image_leas
             next_request: AtomicU64::new(1),
             image_busy: Arc::new(AtomicBool::new(false)),
             last_queued_theme: Default::default(),
+            transport_lost: Default::default(),
             liveness: Default::default(),
         }),
     };
@@ -236,6 +238,7 @@ fn finished_tracks_slot_drop_not_publication_or_cancellation() {
                 next_request: AtomicU64::new(1),
                 image_busy: Arc::new(AtomicBool::new(false)),
                 last_queued_theme: Default::default(),
+                transport_lost: Default::default(),
                 liveness: Default::default(),
             }),
         };

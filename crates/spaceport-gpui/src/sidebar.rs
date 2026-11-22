@@ -64,7 +64,7 @@ pub(crate) use view::element as view_element;
 
 use agents::agents_sort;
 use metrics::*;
-use row::{RowBadge, first_text};
+use row::RowBadge;
 use workspaces::visible_workspace_entries;
 
 pub(crate) const DEVICE_FOOTER_HEIGHT: f32 = 40.;

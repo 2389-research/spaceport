@@ -91,7 +91,11 @@ error InvalidValue("--window"): Invalid --window
 $ window list --window 1 --window 2
 error DuplicateOption("--window"): --window may only be specified once
 $ ui
-error MissingArgument { command: "ui", what: "sidebar|statusbar|font-size|panel" }: ui requires sidebar|statusbar|font-size|panel
+error MissingArgument { command: "ui", what: "sidebar|statusbar|font-size|panel|agent-idle" }: ui requires sidebar|statusbar|font-size|panel|agent-idle
+$ ui agent-idle
+json=false window=none {"method":"ui","op":{"op":"agent_idle","pane":null}}
+$ ui agent-idle --pane w1:p3 --json --window 5
+json=true window=5 {"method":"ui","op":{"op":"agent_idle","pane":"w1:p3"}}
 $ ui sidebar
 json=false window=none {"method":"ui","op":{"op":"sidebar","switch":"toggle"}}
 $ ui sidebar on

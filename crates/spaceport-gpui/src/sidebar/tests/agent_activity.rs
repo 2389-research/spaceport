@@ -23,10 +23,14 @@ fn listing(agents: &[(&str, AgentStatus)]) -> Arc<ClientShellSnapshot> {
 
 /// What the agents panel paints: each listed pane with the status it shows.
 fn painted(live: &LiveState) -> Vec<(&str, AgentStatus)> {
-    panel_agents(std::iter::once((0, live)), AgentSort::Grouped)
-        .into_iter()
-        .map(|(_, agent)| (agent.pane_id.as_str(), agent.agent_status))
-        .collect()
+    panel_agents(
+        std::iter::once((0, live)),
+        AgentSort::Grouped,
+        spaceport_client::agent_idle::now_ms(),
+    )
+    .into_iter()
+    .map(|(_, agent)| (agent.pane_id.as_str(), agent.agent_status))
+    .collect()
 }
 
 #[test]

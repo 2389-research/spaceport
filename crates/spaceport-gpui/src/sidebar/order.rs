@@ -57,15 +57,35 @@ impl SpaceportWindow {
             .collect()
     }
 
+    pub(crate) fn has_live_idle_rows(&self) -> bool {
+        self.config.show_agents
+            && self.agent_sort == crate::preferences::AgentSort::Priority
+            && self.listed_hosts().any(|(_, endpoint, live)| {
+                endpoint.enabled()
+                    && live.status.is_connected()
+                    && live.snapshot.as_deref().is_some_and(|s| {
+                        s.agent_view_label.is_none()
+                            && s.agents
+                                .iter()
+                                .any(|a| live.agent_idle(&a.pane_id).is_some())
+                    })
+            })
+    }
+
     /// Every listed host's agents in the panel's order, by host index. The
     /// expanded list and the rail each paint these less the rows their own
     /// rule leaves out.
     pub(super) fn panel_agents(&self) -> Vec<(usize, &ClientShellAgent)> {
+        self.panel_agents_at(spaceport_client::agent_idle::now_ms())
+    }
+
+    pub(super) fn panel_agents_at(&self, now: u64) -> Vec<(usize, &ClientShellAgent)> {
         panel_agents(
             self.listed_hosts()
                 .filter(|(_, endpoint, _)| endpoint.enabled())
                 .map(|(index, _, live)| (index, live)),
             self.agent_sort,
+            now,
         )
     }
 

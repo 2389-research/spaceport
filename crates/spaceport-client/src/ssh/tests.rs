@@ -41,6 +41,12 @@ printf '%s\n' "$hello"
     );
     let status = await_ready(&mut stream, &AtomicBool::new(false), Instant::now()).unwrap();
     assert_eq!(compatible_status(&status), Some(true));
+    assert!(
+        status
+            .split(|b| *b == b'\n')
+            .any(|line| line.strip_prefix(b"herdr-bridge-path:")
+                == Some(binary.as_os_str().as_encoded_bytes()))
+    );
     stream.write_all(b"accept-idle\nhello\n").unwrap();
     stream
         .set_read_timeout(Some(Duration::from_secs(3)))

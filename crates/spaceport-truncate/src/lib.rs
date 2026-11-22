@@ -7,6 +7,14 @@ use std::borrow::Cow;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+/// The bounded, single-line terminal title Herdr reports for this agent.
+pub fn agent_terminal_title(
+    agent: &spaceport_client::protocol::ClientShellAgent,
+) -> Option<String> {
+    let line = one_line(agent.terminal_title_stripped.as_deref()?, 64);
+    (!line.is_empty()).then_some(line)
+}
+
 pub const ELLIPSIS: char = '\u{2026}';
 
 /// The first `limit` grapheme clusters of `text`, or `None` when it has no

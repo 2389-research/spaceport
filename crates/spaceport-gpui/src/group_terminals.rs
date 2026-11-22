@@ -29,7 +29,7 @@ use crate::{
 use gpui::{prelude::*, *};
 use picture::PictureView;
 use serde_json::json;
-use spaceport_client::{ConnectOptions, Method};
+use spaceport_client::{ConnectOptions, Method, projection::RESIZE_REASSERT};
 use std::time::{Duration, Instant};
 
 mod picture;
@@ -42,9 +42,6 @@ const REFOCUS_AFTER: Duration = Duration::from_secs(1);
 const RETRY_AFTER: Duration = Duration::from_secs(2);
 /// Resizes settle for as long as the window's own do.
 const RESIZE_SETTLE: Duration = Duration::from_millis(150);
-/// A frame another client took is re-claimed more slowly than a settled
-/// resize, so the request is not resent while the daemon answers it.
-const RESIZE_REASSERT: Duration = Duration::from_secs(1);
 
 /// A terminal group's connection while another group has the keyboard.
 struct Parked {
