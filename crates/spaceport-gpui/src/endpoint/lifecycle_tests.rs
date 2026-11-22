@@ -245,17 +245,8 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
         std::process::id(),
         SERIAL.fetch_add(1, Ordering::Relaxed)
     ));
-    let listener = UnixListener::bind(&path).unwrap();
-    let mut endpoint = Endpoint::new(
-        id.into(),
-        id.into(),
-        ConnectTarget::Socket(path.clone()),
-        true,
-    );
-    endpoint.connect(ConnectOptions::default(), true);
-    // The worker dials this socket; a plain blocking accept is coordination,
-    // not a wait on time.
-    let mut server = Server::accepted(listener.accept().unwrap().0, path);
+    let mut endpoint = Endpoint::new(id.into(), id.into(), ConnectTarget::Socket(path), true);
+    let mut server = start_endpoint(&mut endpoint);
     welcome_peer(&mut server, &snapshot(), server_version);
     wait_until(|| {
         endpoint.poll(Instant::now());
@@ -271,6 +262,19 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
         .apply(ClientEvent::Surface(frame));
     endpoint.poll(Instant::now());
     (endpoint, server)
+}
+
+/// Listen on the endpoint's private socket and accept its next connection.
+fn start_endpoint(endpoint: &mut Endpoint) -> Server {
+    let ConnectTarget::Socket(path) = &endpoint.connection.target else {
+        panic!("a lifecycle fixture must use its private socket");
+    };
+    let path = path.clone();
+    let listener = UnixListener::bind(&path).unwrap();
+    endpoint.connect(ConnectOptions::default(), true);
+    // The worker dials this socket; a plain blocking accept is coordination,
+    // not a wait on time.
+    Server::accepted(listener.accept().unwrap().0, path)
 }
 
 fn welcome_peer(server: &mut Server, snapshot: &ClientShellSnapshot, server_version: Option<&str>) {
