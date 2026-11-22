@@ -1,3 +1,5 @@
+// ABOUTME: Paints the window from prepared state and bounded caches.
+// ABOUTME: Keeps accessibility subtrees present while preserving ordinary render reuse.
 //! Painting the window from prepared state. Render reads bounded caches and
 //! the latest projection only: it never queries the daemon, touches disk, or
 //! starts a process.
@@ -312,7 +314,11 @@ impl SheprdWindow {
             .sidebar_column_width(f32::from(window.viewport_size().width))
             .map(|width| {
                 (
-                    crate::sidebar::cached_view(&self.sidebar_view, width),
+                    crate::sidebar::view_element(
+                        &self.sidebar_view,
+                        width,
+                        window.is_a11y_active(),
+                    ),
                     width,
                 )
             });

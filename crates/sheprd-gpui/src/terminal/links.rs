@@ -32,6 +32,12 @@ fn web_url(value: &str) -> Option<String> {
 /// The longest hyperlink target read as a path, Linux's `PATH_MAX`.
 const MAX_PATH_BYTES: usize = 4096;
 
+#[cfg(windows)]
+fn native_drive_path(destination: &str) -> bool {
+    matches!(destination.as_bytes(), [drive, b':', b'/' | b'\\', ..] if drive.is_ascii_alphabetic())
+        && !destination[2..].starts_with("//")
+}
+
 /// What an explicit hyperlink points at when it is not a web address: the
 /// file a `file://` address or a target without a scheme names, or an
 /// address with another scheme. Nothing here asks whether the file exists.
@@ -41,6 +47,15 @@ fn explicit_target(destination: &str) -> RowTarget {
         line: None,
         explicit: true,
     };
+    #[cfg(windows)]
+    if native_drive_path(destination) {
+        return if destination.len() <= MAX_PATH_BYTES && !destination.chars().any(char::is_control)
+        {
+            named(destination.to_owned())
+        } else {
+            RowTarget::Malformed
+        };
+    }
     let url = match url::Url::parse(destination) {
         Ok(url) => url,
         // No scheme: a path as a program would print it, with `~/` and
@@ -83,18 +98,6 @@ pub(crate) fn file_target(destination: &str) -> Option<RowTarget> {
         || destination.chars().any(char::is_control)
     {
         return None;
-    }
-    #[cfg(windows)]
-    {
-        // A drive letter is a path prefix here, not a URL scheme.
-        if std::path::Path::new(destination).is_absolute() {
-            let (path, line) = path::without_location(destination);
-            return Some(RowTarget::Path {
-                path: path.to_owned(),
-                line,
-                explicit: true,
-            });
-        }
     }
     let RowTarget::Path { path, .. } = explicit_target(destination) else {
         return None;

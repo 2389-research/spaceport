@@ -13,15 +13,16 @@ REPO = "2389-research/spaceport"
 ACTOR = "harperreed"
 LOGIN = r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?"
 # Job names are the API contract with ci.yml. Missing/renamed jobs fail closed.
-# The Windows jobs are paused (ci.yml runs them only when the repository
-# variable WINDOWS_ENABLED is "true"), so they are not required here. Add
-# them back when that variable is set.
 # Windows packaging is path-selected; the macOS release builds run on pull
 # requests only, so main CI does not hold the account's macOS runners.
+# Windows performance remains a separate qualification gap under h8g5.
 REQUIRED_JOBS = frozenset({
     "Workflow Security", "Commit messages", "Format, lint, and test",
     *(f"Format, lint, and test ({runner}, {features})" for runner in
       ("macos-15", "ubuntu-24.04", "ubuntu-24.04-arm") for features in ("default", "all")),
+    *(f"Windows check ({runner}, {features})" for runner in
+      ("windows-2025", "windows-11-arm") for features in ("default", "all")),
+    *(f"Windows native GUI ({runner})" for runner in ("windows-2025", "windows-11-arm")),
     *(f"Release ({target})" for target in
       ("x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu")),
 })

@@ -157,8 +157,8 @@ class CheckCi(unittest.TestCase):
         definitions = dict(zip(sections[1::2], sections[2::2]))
         expected = set()
         # build-macos runs on pull requests only, so main's runs never have it.
-        # The Windows jobs are paused behind the WINDOWS_ENABLED variable.
-        for key in ("zizmor", "commits", "checks-passed", "checks", "build"):
+        # Packaging follows changed inputs and is enforced by checks-passed.
+        for key in ("zizmor", "commits", "checks-passed", "checks", "build", "windows", "windows-native"):
             definition = definitions[key]
             names = [re.search(r"^    name: (.+)$", definition, re.M)[1]]
             for dimension in ("runner", "features"):

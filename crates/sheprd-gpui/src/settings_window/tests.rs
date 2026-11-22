@@ -45,6 +45,7 @@ mod theme_hover;
 mod theme_mode;
 #[cfg(unix)]
 mod theme_recovery;
+mod theme_source_search;
 mod theme_sources;
 mod window_commands;
 mod window_lifecycle;

@@ -163,15 +163,12 @@ fn open_window_placed(
         crate::window_state::WindowState::placement(bounds, cx)
     });
     let handle = cx.open_window(
-        WindowOptions {
-            window_bounds: Some(WindowBounds::Windowed(bounds)),
+        main_window_options(
+            bounds,
             display_id,
-            window_min_size: Some(size(px(640.), px(400.))),
-            titlebar: Some(titlebar::options(WINDOW_TITLE)),
-            app_owns_titlebar_drag: cfg!(target_os = "macos"),
-            app_id: Some(crate::constants::LINUX_APP_ID.into()),
-            ..Default::default()
-        },
+            #[cfg(feature = "integration-test")]
+            fixture,
+        ),
         |window, cx| {
             crate::taskbar::mark(window, cx);
             cx.new(|cx| {
@@ -194,6 +191,26 @@ fn open_window_placed(
         anyhow::bail!("Selected Core group is no longer available");
     }
     Ok(handle)
+}
+
+fn main_window_options(
+    bounds: Bounds<Pixels>,
+    display_id: Option<DisplayId>,
+    #[cfg(feature = "integration-test")] fixture: bool,
+) -> WindowOptions {
+    let window_min_size = Some(size(px(640.), px(400.)));
+    // Isolated fixtures exercise narrow layouts below the ordinary app minimum.
+    #[cfg(feature = "integration-test")]
+    let window_min_size = if fixture { None } else { window_min_size };
+    WindowOptions {
+        app_id: Some(crate::constants::LINUX_APP_ID.into()),
+        app_owns_titlebar_drag: cfg!(target_os = "macos"),
+        display_id,
+        titlebar: Some(titlebar::options(WINDOW_TITLE)),
+        window_bounds: Some(WindowBounds::Windowed(bounds)),
+        window_min_size,
+        ..Default::default()
+    }
 }
 
 /// The app's one sound worker. Each window holds its own connection and the
