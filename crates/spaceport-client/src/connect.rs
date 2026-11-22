@@ -14,7 +14,7 @@ use crate::{
     transport::Stream,
     wsl,
 };
-use crossbeam_channel::bounded;
+use crossbeam_channel::{Sender, bounded};
 use std::{
     io,
     sync::{
@@ -83,13 +83,17 @@ pub fn connect_with_connector(
                         // impersonate the host the user exempted.
                         tracing::warn!("connected without verifying the host key");
                     }
-                    (connected.stream, Some(connected.child))
+                    (
+                        connected.stream,
+                        Some(connected.child),
+                        Some(connected.host_keys),
+                    )
                 }
                 ConnectTarget::Wsl { distro, session } => {
                     let (stream, child) = wsl::connect(distro, session, stop)?;
-                    (stream, Some(child))
+                    (stream, Some(child), None)
                 }
-                _ => (connector(&target, stop)?, None),
+                _ => (connector(&target, stop)?, None, None),
             })
         },
     )
@@ -126,8 +130,27 @@ pub fn connect_embedded_bridge_with_path<G>(
         if let Some(path) = ssh::handshake_with_path(&mut stream, stop)? {
             accepted_path(path);
         }
-        Ok((stream, guard))
+        Ok((stream, guard, None))
     })
+}
+
+/// A transport the worker opened, and the host-key choice its bridge was
+/// started with when that choice was this crate's to make. `None` is a
+/// transport that checks no host key here: a local socket, WSL, or a bridge an
+/// embedded client supplied.
+type Opened<G> = (Stream, G, Option<ssh::HostKeys>);
+
+/// Told ahead of the handshake it belongs to, so a window can show the
+/// connection as unverified only once that handshake is accepted.
+fn report_host_keys(
+    host_keys: Option<ssh::HostKeys>,
+    tx: &Sender<ClientEvent>,
+    stop: &AtomicBool,
+) -> Result<()> {
+    if host_keys != Some(ssh::HostKeys::Skip) {
+        return Ok(());
+    }
+    deliver(tx, ClientEvent::HostKeysUnverified, stop)
 }
 
 fn spawn_connection<G>(
@@ -135,7 +158,7 @@ fn spawn_connection<G>(
     surface_active: bool,
     transport: &'static str,
     remote: bool,
-    open: impl FnOnce(&AtomicBool) -> Result<(Stream, G)> + Send + 'static,
+    open: impl FnOnce(&AtomicBool) -> Result<Opened<G>> + Send + 'static,
 ) -> Result<Client> {
     let (commands, rx) = queue::channel(COMMAND_CAPACITY)?;
     let (tx, events) = bounded(EVENT_CAPACITY);
@@ -152,7 +175,8 @@ fn spawn_connection<G>(
             let _entered = span.enter();
             tracing::info!(transport, "connection starting");
             let result = (|| {
-                let (stream, _guard) = open(&worker_stop)?;
+                let (stream, _guard, host_keys) = open(&worker_stop)?;
+                report_host_keys(host_keys, &tx, &worker_stop)?;
                 run_connection(
                     stream,
                     options,
@@ -217,3 +241,7 @@ fn spawn_connection<G>(
         events,
     })
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)] // Test fixtures only.
+mod tests;

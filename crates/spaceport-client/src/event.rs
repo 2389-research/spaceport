@@ -17,6 +17,10 @@ use std::sync::{
 
 #[derive(Debug)]
 pub enum ClientEvent {
+    /// The bridge for this connection was started without checking the host's
+    /// key, so whoever intercepts it can impersonate the host. Sent ahead of
+    /// the handshake it describes: a handshake that is refused marks nothing.
+    HostKeysUnverified,
     Connected(EndpointServerWelcome),
     Snapshot(Arc<ClientShellSnapshot>),
     /// Complete text baseline, including after a cell patch. Its graphics

@@ -99,6 +99,11 @@ pub struct LiveState {
     pub(crate) notices: crate::notice::Notices,
     /// Why `ssh` refused the bridge, when that is how the connection ended.
     pub(crate) ssh_failure: Option<spaceport_client::SshFailure>,
+    /// This connection's SSH bridge was started without checking the host's
+    /// key, so whoever intercepts it can impersonate the host. Reported ahead
+    /// of the handshake, which is what shows the notice: a refused handshake
+    /// marks no connection.
+    pub(crate) host_keys_unverified: bool,
     pub missing_installation: bool,
     /// An intentional shutdown survives its following disconnect until a new handshake.
     pub(crate) server_stopped: bool,
@@ -218,6 +223,7 @@ impl Default for LiveState {
             status: ConnectionStatus::Connecting,
             notices: Default::default(),
             ssh_failure: None,
+            host_keys_unverified: false,
             missing_installation: false,
             server_stopped: false,
             daemon_version: None,
@@ -315,6 +321,7 @@ impl LiveState {
             status,
             notices,
             ssh_failure,
+            host_keys_unverified,
             missing_installation,
             server_stopped,
             daemon_version,
@@ -374,6 +381,7 @@ impl LiveState {
             && *status == self.status
             && *notices == self.notices
             && *ssh_failure == self.ssh_failure
+            && *host_keys_unverified == self.host_keys_unverified
             && *missing_installation == self.missing_installation
             && *server_stopped == self.server_stopped
             && *daemon_version == self.daemon_version
@@ -511,6 +519,9 @@ impl LiveState {
 
     pub fn apply(&mut self, event: ClientEvent) {
         match event {
+            // Ahead of the handshake it belongs to, which is what shows the
+            // notice; a connection refused before it marks nothing.
+            ClientEvent::HostKeysUnverified => self.host_keys_unverified = true,
             ClientEvent::Connected(welcome) => {
                 self.settings_reload = false;
                 self.daemon_version = sanitize_daemon_version(&welcome.server_version);
@@ -543,6 +554,10 @@ impl LiveState {
                 self.keyboard_report_all = false;
                 self.status = ConnectionStatus::AwaitingSnapshot;
                 self.notices.clear();
+                if self.host_keys_unverified {
+                    self.notices
+                        .show(crate::notice::Cause::HostKey, fl!("state-host-key-unverified"));
+                }
             }
             ClientEvent::Snapshot(snapshot) => self.receive_snapshot(snapshot),
             ClientEvent::Surface(surface) => self.receive_surface(surface),
