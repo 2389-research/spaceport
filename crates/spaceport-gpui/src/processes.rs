@@ -94,7 +94,7 @@ impl Daemon {
         pane: &str,
         cancelled: &AtomicBool,
     ) -> Result<spaceport_remote::snapshot::ProcessInfo> {
-        let script = self.script(&crate::daemon::executable(), pane)?;
+        let script = self.script(&crate::daemon::executable()?, pane)?;
         let mut output = Vec::new();
         run_script(
             ScriptHost::Local,
