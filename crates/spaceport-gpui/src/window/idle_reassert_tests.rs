@@ -2,8 +2,9 @@
 //! two windows of different sizes on one tab do not take it from each other.
 
 use super::SpaceportWindow;
-use super::lifecycle::{REASSERT_AFTER_INPUT, RESIZE_REASSERT, RESIZE_SETTLE};
+use super::lifecycle::{RESIZE_REASSERT, RESIZE_SETTLE};
 use spaceport_client::ConnectTarget;
+use spaceport_client::projection::REASSERT_AFTER_INPUT;
 use spaceport_client::protocol::{FrameData, PaneSurfaceFrame};
 use std::sync::Arc;
 use std::time::Instant;

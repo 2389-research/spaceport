@@ -16,8 +16,6 @@ use std::time::{Duration, Instant};
 /// transcripts. Only the size the window settles on is sent.
 pub(crate) const RESIZE_SETTLE: Duration = Duration::from_millis(150);
 
-#[cfg(test)]
-pub(crate) use spaceport_client::projection::REASSERT_AFTER_INPUT;
 pub(crate) use spaceport_client::projection::{RESIZE_REASSERT, reasserts};
 
 const BELL_PREVIEW_DELAY: Duration = Duration::from_secs(3);
