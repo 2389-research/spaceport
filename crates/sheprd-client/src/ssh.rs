@@ -11,7 +11,7 @@
 //! with WSL distributions, which run the same scripts through `wsl.exe`. A host
 //! that cannot run `/bin/sh`, such as Windows OpenSSH, is retried through
 //! PowerShell; see `powershell`.
-use crate::process_output::{Capture, PipeHandle, Retain, capture};
+use crate::process_output::{Capture, DRAIN_GRACE, PipeHandle, Retain, capture};
 use crate::{Result, catalog::validate_target, limits::POLL, session_socket, transport::Stream};
 #[cfg(unix)]
 use std::os::fd::OwnedFd;
@@ -281,9 +281,10 @@ fn run_with_stderr(
     if output.len() as u64 > PROBE_OUTPUT_LIMIT {
         return Err(Error::OutputLimit.into());
     }
-    // Another process can retain a writer after this child exits.
+    // Stderr only classifies a failure, and a process this child left behind
+    // (a ProxyCommand helper) can keep its writer open, so keep what arrived.
     let stderr = match stderr {
-        Some(stderr) => finish_output(stderr, deadline, &cancelled)?,
+        Some(stderr) => stderr.finish(DRAIN_GRACE)?,
         None => Vec::new(),
     };
     Ok((status, output, stderr))
@@ -298,6 +299,8 @@ fn finish_output(
     deadline: Instant,
     cancelled: impl Fn() -> bool,
 ) -> Result<Vec<u8>> {
+    // The child has exited by now; its last output may still be in flight.
+    let deadline = deadline.max(Instant::now() + DRAIN_GRACE);
     loop {
         if cancelled() {
             return Err(Error::Cancelled.into());

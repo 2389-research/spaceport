@@ -19,6 +19,10 @@ pub type PipeHandle = std::os::windows::io::OwnedHandle;
 
 const POLL: Duration = Duration::from_millis(25);
 
+/// How long output may still take to arrive once its child has exited: the
+/// reader parks between polls, so its last read and send can trail the exit.
+pub const DRAIN_GRACE: Duration = Duration::from_millis(250);
+
 /// Which bytes to keep while reading a pipe.
 #[derive(Clone, Copy, Debug)]
 pub enum Retain {
@@ -44,6 +48,33 @@ impl Capture {
         timeout: Duration,
     ) -> Result<io::Result<Vec<u8>>, mpsc::RecvTimeoutError> {
         self.output.recv_timeout(timeout)
+    }
+
+    /// Waits up to `grace` for the pipe to close, then stops the reader and
+    /// returns what it kept. For diagnostics read after the child has exited,
+    /// when a process it left behind may still hold a writer open.
+    pub fn finish(mut self, grace: Duration) -> io::Result<Vec<u8>> {
+        match self.output.recv_timeout(grace) {
+            Ok(output) => return output,
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                return Err(io::ErrorKind::BrokenPipe.into());
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {}
+        }
+        self.stop_reader();
+        self.output
+            .try_recv()
+            .unwrap_or_else(|_| Err(io::ErrorKind::BrokenPipe.into()))
+    }
+
+    fn stop_reader(&mut self) {
+        self.stop.store(true, Ordering::Release);
+        if let Some(worker) = self.worker.take() {
+            worker.thread().unpark();
+            if worker.join().is_err() {
+                tracing::warn!("Child output reader panicked");
+            }
+        }
     }
 }
 
@@ -74,13 +105,7 @@ pub fn capture(pipe: impl Into<PipeHandle>, retain: Retain) -> io::Result<Captur
 
 impl Drop for Capture {
     fn drop(&mut self) {
-        self.stop.store(true, Ordering::Release);
-        if let Some(worker) = self.worker.take() {
-            worker.thread().unpark();
-            if worker.join().is_err() {
-                tracing::warn!("Child output reader panicked");
-            }
-        }
+        self.stop_reader();
     }
 }
 
@@ -93,15 +118,19 @@ fn collect(
     let mut output = Vec::new();
     let mut buffer = [0; 8192];
     loop {
-        if stop.load(Ordering::Acquire) {
-            return Err(io::ErrorKind::Interrupted.into());
-        }
+        // A stopped reader takes one last read of what is already waiting, so
+        // bytes written before the stop are kept, and then returns; a writer
+        // that never pauses cannot keep it running.
+        let stopping = stop.load(Ordering::Acquire);
         if matches!(retain, Retain::Limited(_)) && output.len() == limit {
             return Ok(output);
         }
         let n = match read_pipe(pipe, &mut buffer) {
             Ok(0) => return Ok(output),
             Ok(n) => n,
+            Err(error) if error.kind() == io::ErrorKind::WouldBlock && stopping => {
+                return Ok(output);
+            }
             Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
                 thread::park_timeout(POLL);
                 continue;
@@ -122,6 +151,9 @@ fn collect(
                 output.drain(..discard);
                 output.extend_from_slice(&buffer[..n]);
             }
+        }
+        if stopping {
+            return Ok(output);
         }
     }
 }

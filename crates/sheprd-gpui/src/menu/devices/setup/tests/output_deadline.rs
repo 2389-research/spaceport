@@ -83,3 +83,12 @@ fn device_error_fixture() {
     assert_eq!(stdout, b"result\n");
     assert_eq!(last_line(&stderr), "final failure");
 }
+
+#[test]
+fn device_output_that_closes_at_the_deadline_still_arrives() {
+    let (pipe, mut writer) = std::io::pipe().unwrap();
+    let reader = capture(pipe, Retain::Prefix(16)).unwrap();
+    writer.write_all(b"done").unwrap();
+    drop(writer);
+    assert_eq!(finish_output(reader, Instant::now()).unwrap(), b"done");
+}

@@ -130,7 +130,10 @@ Its I/O boundary returns `io::Result` with concrete causes.
 Run it and drop its `Capture` on a background worker.
 Drop cancels and joins the reader without waiting for other processes to close inherited writers.
 Unix readers use nonblocking pipes; Windows readers peek before each bounded read.
-SSH probes and the app's device CLI share this capture and keep one deadline for all output.
+SSH probes and the app's device CLI share this capture and keep one deadline for stdout,
+plus `DRAIN_GRACE` after the child exits for its last bytes to arrive.
+Their stderr only explains a failure, so `Capture::finish` keeps whatever arrived
+rather than failing when a process the child left behind holds the pipe open.
 
 Client protocol and session operations return the crate-root `Error`, derived with `thiserror`.
 I/O, protocol, and JSON failures retain their concrete sources; callers can match

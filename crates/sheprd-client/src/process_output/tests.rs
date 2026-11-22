@@ -47,3 +47,5 @@ fn a_zero_limit_finishes_without_waiting_for_eof() {
     drop(capture);
     drop(writer);
 }
+
+mod finish;

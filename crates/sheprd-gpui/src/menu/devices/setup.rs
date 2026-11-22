@@ -5,7 +5,7 @@
 use super::Error;
 use crate::Result;
 use sheprd_client::Destination;
-use sheprd_client::process_output::{Capture, Retain, capture};
+use sheprd_client::process_output::{Capture, DRAIN_GRACE, Retain, capture};
 use std::{
     process::{Child, Command, ExitStatus, Stdio},
     sync::Mutex,
@@ -257,11 +257,15 @@ fn run_bounded_untraced(
         sheprd_client::wait::Exit::Stopped(_) => return Err(Error::SetupTimeout.into()),
     };
     let stdout = finish_output(stdout, deadline)?;
-    let stderr = finish_output(stderr, deadline)?;
+    // Stderr only explains a failure, and a process the CLI left behind can
+    // keep its writer open, so keep what arrived.
+    let stderr = stderr.finish(DRAIN_GRACE)?;
     Ok((status, stdout, stderr))
 }
 
 fn finish_output(reader: Capture, deadline: Instant) -> Result<Vec<u8>> {
+    // The child has exited by now; its last output may still be in flight.
+    let deadline = deadline.max(Instant::now() + DRAIN_GRACE);
     match reader.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
         Ok(output) => Ok(output?),
         Err(std::sync::mpsc::RecvTimeoutError::Timeout) => Err(Error::SetupTimeout.into()),

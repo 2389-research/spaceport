@@ -69,3 +69,13 @@ fn a_pipe_read_failure_retains_its_io_error() {
     };
     assert!(matches!(error, crate::Error::Io(_)), "{error:?}");
 }
+
+#[test]
+fn output_that_closes_at_the_deadline_still_arrives() {
+    let (pipe, mut writer) = io::pipe().unwrap();
+    let reader = start_output(pipe).unwrap();
+    writer.write_all(b"just in time\n").unwrap();
+    drop(writer);
+    let bytes = finish_output(reader, Instant::now(), || false).unwrap();
+    assert_eq!(bytes, b"just in time\n");
+}
