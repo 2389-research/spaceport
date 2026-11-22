@@ -4,6 +4,10 @@
 #[path = "../../test-support/sandbox.rs"]
 mod sandbox;
 
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+#[path = "../../test-support/executable.rs"]
+mod executable;
+
 #[cfg(target_os = "macos")]
 #[path = "support/clipboard_guard.rs"]
 mod clipboard_guard;

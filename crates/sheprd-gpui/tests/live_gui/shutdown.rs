@@ -12,8 +12,6 @@ use std::{
 
 #[path = "shutdown/display.rs"]
 mod display;
-#[path = "../../../test-support/executable.rs"]
-mod executable;
 #[path = "shutdown/start_button.rs"]
 mod start_button;
 #[path = "shutdown/witness.rs"]

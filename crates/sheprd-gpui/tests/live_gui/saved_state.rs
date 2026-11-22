@@ -12,8 +12,6 @@ use std::{
 
 #[path = "saved_state/display.rs"]
 mod display;
-#[path = "../../../test-support/executable.rs"]
-mod executable;
 #[path = "saved_state/recovery.rs"]
 mod recovery;
 #[path = "saved_state/witness.rs"]
