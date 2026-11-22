@@ -23,7 +23,9 @@ unwrap_used = "deny"
 [workspace.dependencies]
 sparkle-updater = "=0.1.0"
 # The terminal emulator behind herdr-core terminals, which arrive as raw bytes;
-# Zed's fork, the revision Arbor runs.
+# Zed's fork, the revision Arbor runs. When upgrading, check that
+# crates/sheprd-terminal/src/handler.rs forwards every `vte::ansi::Handler`
+# method: a method it misses silently falls back to the trait's no-op default.
 alacritty_terminal   = "0.26.0"
 url = "2"
 # ACP wire types for sheprd-acp; its own transport, so no async runtime.
