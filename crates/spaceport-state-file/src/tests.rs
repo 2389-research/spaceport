@@ -4,6 +4,7 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
 
+mod lifecycle;
 mod rejected;
 
 #[test]

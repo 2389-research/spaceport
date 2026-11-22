@@ -57,7 +57,6 @@ error-pane-image-decode = Could not decode an image a pane placed.
 error-pane-image-limit = An image a pane placed exceeds the decoded size limit.
 # A failure on a file or folder.
 error-path = { $path }: { $error }
-error-preferences-path = preferences path has no parent
 # XDG_CONFIG_HOME is an environment variable.
 error-relative-config-root = XDG_CONFIG_HOME must be an absolute path
 error-remote-agent-tools = Could not install the agent tools on the SSH host: { $error }

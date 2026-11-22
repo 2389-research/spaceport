@@ -6627,6 +6627,7 @@ dependencies = [
  "fluent-syntax",
  "fontdb 0.24.0",
  "foreign-types",
+ "futures-channel",
  "futures-lite",
  "gpui-pre",
  "gpui-pre-platform",
