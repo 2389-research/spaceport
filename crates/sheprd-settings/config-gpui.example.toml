@@ -309,6 +309,8 @@ project_roots = []
 # SSH hosts whose host keys are never verified, by the target saved with the
 # device. Anyone who can intercept the connection to one can impersonate it.
 # Only for hosts that keep no stable key (`UserKnownHostsFile=/dev/null`).
+# Agent and X11 forwarding are disabled for these hosts, even when enabled
+# in SSH config. Remote panes will not receive the forwarded local agent.
 # Add targets here by hand; Add Device has no host-key option. To verify a
 # host again, delete its target here.
 # [ssh]
