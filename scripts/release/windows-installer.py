@@ -7,7 +7,7 @@ Build the per-user Windows installer, Sheprd-VERSION-TARGET-setup.exe.
   install-iscc DESTINATION_DIR
       Install the pinned Inno Setup compiler into DESTINATION_DIR after checking its SHA-256, and print the path of ISCC.exe.
   build [--sign] VERSION TARGET ZIP OUTPUT_DIR ISCC
-      Compile sheprd.iss over the tree of the release ZIP that
+      Compile spaceport.iss over the tree of the release ZIP that
       package-windows.py wrote, so the installer holds exactly the zip's files,
       and print the installer's path. With --sign, ISCC Authenticode-signs the
       uninstaller it embeds and Setup.exe through windows-sign-file.ps1.
@@ -47,7 +47,7 @@ import urllib.request
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPT = ROOT / "scripts/release/sheprd.iss"
+SCRIPT = ROOT / "scripts/release/spaceport.iss"
 SIGN_SCRIPT = ROOT / "scripts/release/windows-sign-file.ps1"
 # ISCC replaces $q with a quote and $f with the quoted file to sign. Quotes
 # inside the argument itself would not survive Windows command-line parsing.

@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[3]
 class CliOpenAbsenceTests(unittest.TestCase):
     def test_installers_do_not_register_folder_open_verbs(self):
         for name in (
-            "scripts/release/sheprd.iss",
+            "scripts/release/spaceport.iss",
             "site/install.ps1",
             "website/site/install.ps1",
             "website/herdrui/public/install.ps1",

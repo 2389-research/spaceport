@@ -72,7 +72,7 @@ class PublishingTests(unittest.TestCase):
         data = image.read_bytes()
         self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n")
         self.assertEqual(struct.unpack(">II", data[16:24]), (1200, 630))
-        self.assertEqual(data, (ROOT / "assets/branding/sheprd-social.png").read_bytes())
+        self.assertEqual(data, (ROOT / "assets/branding/spaceport-social.png").read_bytes())
 
 
 MOCK = r'''

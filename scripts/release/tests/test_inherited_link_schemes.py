@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 class InheritedLinkSchemes(unittest.TestCase):
     def test_windows_installers_do_not_register_upstream_schemes(self):
-        setup = (ROOT / "scripts/release/sheprd.iss").read_text()
+        setup = (ROOT / "scripts/release/spaceport.iss").read_text()
         script = (ROOT / "site/install.ps1").read_text()
         for scheme in ("sheprd", "herdr-gpui"):
             with self.subTest(scheme=scheme):

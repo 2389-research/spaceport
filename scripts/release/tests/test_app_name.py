@@ -61,7 +61,7 @@ class AppNameTests(unittest.TestCase):
         # A catalog compiled under another name silently falls back to the
         # flattened .icns, which macOS 26 and later render soft in the Dock.
         name = plistlib.loads((ROOT / "assets/macos/Info.plist").read_bytes())["CFBundleIconName"]
-        for catalog in ("Sheprd.car", "Sheprd-worktree.car"):
+        for catalog in ("Spaceport.car", "Spaceport-worktree.car"):
             info = subprocess.run(
                 ["xcrun", "assetutil", "--info", ROOT / "assets/icons" / catalog],
                 check=True, capture_output=True,

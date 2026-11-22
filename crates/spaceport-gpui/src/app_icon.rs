@@ -4,18 +4,18 @@
 //! The same artwork identifies the build in the About box on every platform.
 // i18n: migrated
 pub(super) const PNG: &[u8] = if env!("HERDR_BUILD_WORKTREE").as_bytes()[0] == b'1' {
-    include_bytes!("../../../assets/icons/sheprd-worktree-1024.png")
+    include_bytes!("../../../assets/icons/spaceport-worktree-1024.png")
 } else {
-    include_bytes!("../../../assets/icons/sheprd-icon.png")
+    include_bytes!("../../../assets/icons/spaceport-icon.png")
 };
 
 // AppKit selects a directly rendered representation for the Dock's size and
 // backing scale, rather than downsampling the About box's single large PNG.
 #[cfg(target_os = "macos")]
 const ICNS: &[u8] = if env!("HERDR_BUILD_WORKTREE").as_bytes()[0] == b'1' {
-    include_bytes!("../../../assets/icons/Sheprd-worktree.icns") // i18n: data
+    include_bytes!("../../../assets/icons/Spaceport-worktree.icns") // i18n: data
 } else {
-    include_bytes!("../../../assets/icons/Sheprd.icns") // i18n: data
+    include_bytes!("../../../assets/icons/Spaceport.icns") // i18n: data
 };
 
 #[cfg(target_os = "macos")]
@@ -82,8 +82,8 @@ mod tests {
         use objc2_app_kit::NSImage;
         use objc2_foundation::NSData;
 
-        let stable = include_bytes!("../../../assets/icons/Sheprd.icns").as_slice(); // i18n: data
-        let worktree = include_bytes!("../../../assets/icons/Sheprd-worktree.icns").as_slice(); // i18n: data
+        let stable = include_bytes!("../../../assets/icons/Spaceport.icns").as_slice(); // i18n: data
+        let worktree = include_bytes!("../../../assets/icons/Spaceport-worktree.icns").as_slice(); // i18n: data
         assert_ne!(stable, worktree);
         assert_eq!(
             super::ICNS,
@@ -119,8 +119,8 @@ mod tests {
 
     #[test]
     fn embedded_icon_is_a_nonempty_1024_square_png() {
-        let stable = include_bytes!("../../../assets/icons/sheprd-icon.png").as_slice();
-        let worktree = include_bytes!("../../../assets/icons/sheprd-worktree-1024.png").as_slice();
+        let stable = include_bytes!("../../../assets/icons/spaceport-icon.png").as_slice();
+        let worktree = include_bytes!("../../../assets/icons/spaceport-worktree-1024.png").as_slice();
         assert_ne!(stable, worktree);
         for png in [stable, worktree] {
             assert!(png.len() > 33);

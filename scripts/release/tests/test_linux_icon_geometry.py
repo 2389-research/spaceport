@@ -97,12 +97,12 @@ class LinuxIconGeometryTests(unittest.TestCase):
 
     def test_shipped_platform_masks_and_raster_mapping(self):
         for name, shape, development in (
-            ("sheprd-linux.svg", "circle", False),
-            ("sheprd-linux-worktree.svg", "circle", True),
-            ("sheprd-icon.svg", "tile", False),
-            ("sheprd-icon-worktree.svg", "tile", True),
-            ("sheprd-icon-square.svg", "square", False),
-            ("sheprd-icon-square-worktree.svg", "square", True),
+            ("spaceport-linux.svg", "circle", False),
+            ("spaceport-linux-worktree.svg", "circle", True),
+            ("spaceport-icon.svg", "tile", False),
+            ("spaceport-icon-worktree.svg", "tile", True),
+            ("spaceport-icon-square.svg", "square", False),
+            ("spaceport-icon-square-worktree.svg", "square", True),
         ):
             with self.subTest(icon=name):
                 self.assertTrue((ASSETS / name).is_file(), f"Missing generated source {name}")
@@ -128,12 +128,12 @@ class LinuxIconGeometryTests(unittest.TestCase):
             self.assertGreaterEqual(clearance, 24, f"Saucer {landmark} reaches the circular mask: {clearance:.2f}px clearance")
 
     def test_circular_icons_preserve_the_saucer_silhouette(self):
-        for name in ("sheprd-linux.svg", "sheprd-linux-worktree.svg"):
+        for name in ("spaceport-linux.svg", "spaceport-linux-worktree.svg"):
             with self.subTest(icon=name):
                 self.check_circle_foreground_clearance(ET.parse(ASSETS / name).getroot())
 
     def test_foreground_check_rejects_the_clipping_circle_layout(self):
-        root = ET.parse(ASSETS / "sheprd-linux.svg").getroot()
+        root = ET.parse(ASSETS / "spaceport-linux.svg").getroot()
         root.find(f"{SVG}g/{SVG}g[@id='spacecraft']").set("transform", "translate(-128 -128) scale(12.8)")
         with self.assertRaisesRegex(AssertionError, "Saucer left disc reaches"):
             self.check_circle_foreground_clearance(root)
@@ -158,7 +158,7 @@ class LinuxIconGeometryTests(unittest.TestCase):
             (f".//{SVG}image", "href", "../../../design/spaceport-icon/ufo-nebula.png"),
             (f".//{SVG}image", "href", "data:image/png;base64,Y29ycnVwdA=="),
         ):
-            root = ET.parse(ASSETS / "sheprd-linux.svg").getroot()
+            root = ET.parse(ASSETS / "spaceport-linux.svg").getroot()
             node = root.find(selector)
             self.assertIsNotNone(node, f"Missing node required for corruption check: {selector}")
             node.set(attribute, value)
@@ -168,7 +168,7 @@ class LinuxIconGeometryTests(unittest.TestCase):
     def test_development_geometry_rejects_shifted_or_unpainted_ring(self):
         for attribute, value in (("r", "400"), ("cx", "540"), ("stroke-width", "0"),
                                  ("fill", "#df4b62"), ("transform", "translate(1 1)")):
-            root = ET.parse(ASSETS / "sheprd-linux-worktree.svg").getroot()
+            root = ET.parse(ASSETS / "spaceport-linux-worktree.svg").getroot()
             ring = root.find(f".//*[@id='development-ring']")
             self.assertIsNotNone(ring)
             ring.set(attribute, value)
@@ -176,7 +176,7 @@ class LinuxIconGeometryTests(unittest.TestCase):
                 self.check_geometry(root, development=True)
 
     def test_development_geometry_rejects_a_missing_ring(self):
-        root = ET.parse(ASSETS / "sheprd-linux-worktree.svg").getroot()
+        root = ET.parse(ASSETS / "spaceport-linux-worktree.svg").getroot()
         clipped = root.find(f"{SVG}g")
         ring = clipped.find(f".//*[@id='development-ring']")
         self.assertIsNotNone(ring)

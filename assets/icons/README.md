@@ -9,41 +9,42 @@ in [the design notes](../../design/spaceport-icon/README.md). Twemoji provenance
 and its CC BY 4.0 license remain in [NOTICE](../../NOTICE) and
 [LICENSE-twemoji](LICENSE-twemoji).
 
-`sheprd-avatar.svg` and every platform SVG are generated, self-contained
+`spaceport-avatar.svg` and every platform SVG are generated, self-contained
 envelopes embedding the exact approved PNG. The generator removes the master
 image's measured transparent padding before applying platform margins and masks.
 Do not edit these SVGs or derived raster exports by hand.
 
-Existing asset filenames and the internal catalog key `Sheprd` remain so
-packaging and embedded image references select the same files. Their artwork
-and visible titles use Spaceport.
+Asset filenames use Spaceport. The compiled catalog key `Sheprd` and the
+installed bundle filename `Contents/Resources/Sheprd.icns` stay frozen so
+`CFBundleIconFile`, `CFBundleIconName` and the installer select the same
+artwork.
 
-`sheprd-avatar.png` is the generated 1024×1024 avatar; it has not been uploaded.
+`spaceport-avatar.png` is the generated 1024×1024 avatar; it has not been uploaded.
 This is the full-bleed square export. For a circular profile image, use the inset
 Linux artwork below so the crop retains the saucer's full silhouette.
 To regenerate only this square export:
 
 ```sh
-rsvg-convert -w 1024 -h 1024 assets/icons/sheprd-avatar.svg \
-  -o assets/icons/sheprd-avatar.png
+rsvg-convert -w 1024 -h 1024 assets/icons/spaceport-avatar.svg \
+  -o assets/icons/spaceport-avatar.png
 ```
 
 ## Platform artwork
 
 | macOS / About | Linux |
 | --- | --- |
-| <img src="sheprd-icon.png" width="128" height="128" alt="Spaceport saucer on a nebula tile"> | <img src="sheprd-linux.svg" width="128" height="128" alt="Spaceport saucer on a nebula circle"> |
+| <img src="spaceport-icon.png" width="128" height="128" alt="Spaceport saucer on a nebula tile"> | <img src="spaceport-linux.svg" width="128" height="128" alt="Spaceport saucer on a nebula circle"> |
 
 | Output | Use |
 | --- | --- |
-| `sheprd-icon.{svg,png}` | Rounded desktop tile and About image |
-| `sheprd-icon-badge.{svg,png}` | README tile with a notification badge |
-| `sheprd-icon-square.{svg,png}` | Full-bleed square artwork |
-| `sheprd-linux{,-worktree}.svg` | Circular Linux desktop icons |
-| `Sheprd{,-worktree}.icns` | Multi-resolution macOS icons |
-| `Sheprd{,-worktree}.car` | macOS 26+ Icon Composer catalogs |
-| `Sheprd{,-worktree}.ico` | Windows executable / installer icons |
-| `sheprd-worktree-1024.png`, `sheprd-square-worktree-1024.png` | Development About / square exports |
+| `spaceport-icon.{svg,png}` | Rounded desktop tile and About image |
+| `spaceport-icon-badge.{svg,png}` | README tile with a notification badge |
+| `spaceport-icon-square.{svg,png}` | Full-bleed square artwork |
+| `spaceport-linux{,-worktree}.svg` | Circular Linux desktop icons |
+| `Spaceport{,-worktree}.icns` | Multi-resolution macOS icons |
+| `Spaceport{,-worktree}.car` | macOS 26+ Icon Composer catalogs |
+| `Spaceport{,-worktree}.ico` | Windows executable / installer icons |
+| `spaceport-worktree-1024.png`, `spaceport-square-worktree-1024.png` | Development About / square exports |
 | `windows/wizard{-small,}-*.png` | Inno Setup page artwork |
 
 Worktree builds add a berry rim (`#df4b62`) to distinguish development builds.

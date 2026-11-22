@@ -32,7 +32,7 @@ import pathlib, sys
 defines = dict(arg[2:].split("=", 1) for arg in sys.argv[1:] if arg.startswith("/D"))
 source = pathlib.Path(defines["SourceDir"])
 assert all((source / name).is_file() for name in ("spaceport.exe", "spaceport-launcher.exe", "sheprd-acp.exe"))
-assert sys.argv[-1].endswith("sheprd.iss")
+assert sys.argv[-1].endswith("spaceport.iss")
 name = f"Sheprd-{defines['Version']}-{defines['Target']}-setup.exe"
 (pathlib.Path(defines["OutputDir"]) / name).write_bytes(b"setup " + defines["Architecture"].encode())
 """

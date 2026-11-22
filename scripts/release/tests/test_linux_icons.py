@@ -14,15 +14,15 @@ SVG = "{http://www.w3.org/2000/svg}"
 
 class LinuxIconTests(unittest.TestCase):
     def test_committed_icons_are_reproducible_and_self_contained(self):
-        source = (ASSETS / "sheprd-avatar.svg").read_text()
+        source = (ASSETS / "spaceport-avatar.svg").read_text()
         approved = (ROOT / "design/spaceport-icon/ufo-nebula.png").read_bytes()
-        for name, worktree in (("sheprd-linux.svg", False), ("sheprd-linux-worktree.svg", True)):
+        for name, worktree in (("spaceport-linux.svg", False), ("spaceport-linux-worktree.svg", True)):
             with self.subTest(icon=name):
                 committed = (ASSETS / name).read_text()
                 self.assertTrue(committed == GENERATOR["artwork"](source, "circle", worktree),
                                 f"Regenerate {name} from the canonical source")
                 root = ET.fromstring(committed)
-                self.assertIn("sheprd-avatar.svg", root.find(f"{SVG}metadata").text)
+                self.assertIn("spaceport-avatar.svg", root.find(f"{SVG}metadata").text)
                 self.assertIn("ufo-nebula.png", root.find(f"{SVG}metadata").text)
                 images = list(root.iter(f"{SVG}image"))
                 self.assertEqual(len(images), 1)
@@ -34,7 +34,7 @@ class LinuxIconTests(unittest.TestCase):
                                  ["title", "desc", "metadata", "defs", "circle", "g"])
 
     def test_missing_image_mark_or_gradient_is_rejected(self):
-        source = (ASSETS / "sheprd-avatar.svg").read_text()
+        source = (ASSETS / "spaceport-avatar.svg").read_text()
         for tag in ("image", "linearGradient", "defs", "g"):
             root = ET.fromstring(source)
             self.assertIsNotNone(root.find(f".//{SVG}{tag}"))
@@ -47,4 +47,4 @@ class LinuxIconTests(unittest.TestCase):
 
     def test_unknown_shape_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "shape"):
-            GENERATOR["artwork"]((ASSETS / "sheprd-avatar.svg").read_text(), "triangle")
+            GENERATOR["artwork"]((ASSETS / "spaceport-avatar.svg").read_text(), "triangle")

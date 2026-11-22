@@ -53,7 +53,7 @@ class SmokeCliTests(unittest.TestCase):
     def setUp(self):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
-        self.executable = Path(temp.name) / "sheprd"
+        self.executable = Path(temp.name) / "spaceport"
         self.executable.write_text(f"#!{sys.executable}\n{MOCK}")
         self.executable.chmod(0o755)
         self.environ = dict(os.environ, HERDR_PANE_ID="1")

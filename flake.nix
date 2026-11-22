@@ -102,7 +102,7 @@
           postInstall = ''
             install -Dm644 scripts/release/org.sheprd.Sheprd.desktop \
               $out/share/applications/spaceport.development.desktop
-            install -Dm644 assets/icons/sheprd-linux.svg \
+            install -Dm644 assets/icons/spaceport-linux.svg \
               $out/share/icons/hicolor/scalable/apps/spaceport.svg
             desktop-file-validate $out/share/applications/spaceport.development.desktop
           '';

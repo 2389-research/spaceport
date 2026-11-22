@@ -72,7 +72,7 @@ def artwork(source, shape="circle", worktree=False, badge=False):
     ET.SubElement(icon, f"{SVG}desc", id="desc").text = (
         "🛸 flying saucer on a nebula" + (" with a berry development rim." if worktree else ".")
     )
-    ET.SubElement(icon, f"{SVG}metadata").text = "Derived from sheprd-avatar.svg; " + avatar.find(f"{SVG}metadata").text
+    ET.SubElement(icon, f"{SVG}metadata").text = "Derived from spaceport-avatar.svg; " + avatar.find(f"{SVG}metadata").text
     icon.append(defs)
     if shape == "circle":
         outline = ET.SubElement(icon, f"{SVG}circle", cx="512", cy="512", r="448", fill="url(#background)")
@@ -107,16 +107,16 @@ def artwork(source, shape="circle", worktree=False, badge=False):
 
 def main():
     source = canonical(SOURCE.read_bytes())
-    (ASSETS / "sheprd-avatar.svg").write_text(source)
+    (ASSETS / "spaceport-avatar.svg").write_text(source)
     variants = {
-        "sheprd-linux.svg": ("circle", False, False),
-        "sheprd-linux-worktree.svg": ("circle", True, False),
-        "sheprd-icon.svg": ("tile", False, False),
-        "sheprd-icon-worktree.svg": ("tile", True, False),
-        "sheprd-icon-square.svg": ("square", False, False),
-        "sheprd-icon-square-worktree.svg": ("square", True, False),
-        "sheprd-avatar-worktree.svg": ("square", True, False),
-        "sheprd-icon-badge.svg": ("tile", False, True),
+        "spaceport-linux.svg": ("circle", False, False),
+        "spaceport-linux-worktree.svg": ("circle", True, False),
+        "spaceport-icon.svg": ("tile", False, False),
+        "spaceport-icon-worktree.svg": ("tile", True, False),
+        "spaceport-icon-square.svg": ("square", False, False),
+        "spaceport-icon-square-worktree.svg": ("square", True, False),
+        "spaceport-avatar-worktree.svg": ("square", True, False),
+        "spaceport-icon-badge.svg": ("tile", False, True),
     }
     for name, options in variants.items():
         (ASSETS / name).write_text(artwork(source, *options))

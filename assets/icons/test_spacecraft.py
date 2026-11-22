@@ -25,7 +25,7 @@ class SpacecraftTests(unittest.TestCase):
                          "3d2d85e4fe2ff9520a53301181b9c4290a3ec3be9d20de38a5e8110131abce4c")
 
     def test_canonical_mark_embeds_the_selected_nebula_saucer(self):
-        source = ET.parse(ASSETS / "sheprd-avatar.svg").getroot()
+        source = ET.parse(ASSETS / "spaceport-avatar.svg").getroot()
         self.assertEqual(source.get("viewBox"), "0 0 100 100")
         self.assertEqual(source.find(f"{SVG}title").text, "Spaceport")
         self.assertIn("ufo-nebula.png", source.find(f"{SVG}metadata").text)
@@ -43,7 +43,7 @@ class SpacecraftTests(unittest.TestCase):
                         "Canonical artwork must preserve the exact approved PNG bytes")
 
     def test_canonical_svg_is_reproducible_from_the_approved_png(self):
-        self.assertTrue(self.canonical(APPROVED.read_bytes()) == (ASSETS / "sheprd-avatar.svg").read_text(),
+        self.assertTrue(self.canonical(APPROVED.read_bytes()) == (ASSETS / "spaceport-avatar.svg").read_text(),
                         "Regenerate the canonical SVG from the approved PNG")
 
     def test_canonical_rejects_non_png_truncated_and_wrong_size_sources(self):
@@ -61,7 +61,7 @@ class SpacecraftTests(unittest.TestCase):
                 self.canonical(bytes(data))
 
     def test_every_shape_preserves_the_approved_image_and_crop(self):
-        source = (ASSETS / "sheprd-avatar.svg").read_text()
+        source = (ASSETS / "spaceport-avatar.svg").read_text()
         canonical = ET.fromstring(source).find(f"{SVG}g[@id='spacecraft']")
         self.assertIsNotNone(canonical)
         expected = [(node.tag, node.attrib) for child in canonical for node in child.iter()]

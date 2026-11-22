@@ -16,7 +16,7 @@ MANIFESTS = (
     "scripts/release/build-macos.sh",
     "scripts/release/package-macos.sh",
     "scripts/release/package-windows.py",
-    "scripts/release/sheprd.iss",
+    "scripts/release/spaceport.iss",
     "scripts/release/sign-macos.sh",
     "scripts/release/windows-installer.py",
     "scripts/release/windows-signing.py",

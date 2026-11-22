@@ -155,16 +155,17 @@ The existing three-line `--build-info` output remains unchanged.
 
 Packaging and `just bundle` require Python 3 and read a versioned identity record
 embedded in the supplied executable, never the packaging checkout's Git state.
-On Linux, linked-worktree binaries select `assets/icons/sheprd-linux-worktree.svg`;
-other builds select `assets/icons/sheprd-linux.svg`. Both circular variants are
+On Linux, linked-worktree binaries select `assets/icons/spaceport-linux-worktree.svg`;
+other builds select `assets/icons/spaceport-linux.svg`. Both circular variants are
 meant to be installed as `share/icons/hicolor/scalable/apps/spaceport.svg`,
 without a pixmaps fallback.
 Regenerate both SVGs with `just icons-linux`; see the
 [icon guide](../../assets/icons/README.md#linux-and-windows) for the composition and
 desktop lookup behavior. No Linux package is built here now; the Nix flake
 installs the ordinary Linux icon. On macOS, linked-worktree binaries select
-`assets/icons/Sheprd-worktree.icns` and `Sheprd-worktree.car`; other builds use
-`Sheprd.icns` and `Sheprd.car`. The installed icons keep their standard filenames.
+`assets/icons/Spaceport-worktree.icns` and `Spaceport-worktree.car`; other builds use
+`Spaceport.icns` and `Spaceport.car`. The installed icons keep their frozen
+bundle filenames (`Contents/Resources/Sheprd.icns`, `Assets.car`).
 No binary is executed, so foreign
 Linux architectures and both macOS slices work on the packaging host. macOS
 inputs must have identical identities (branch and PR included). Missing, malformed,
@@ -277,7 +278,7 @@ and notice files. Entries carry a fixed timestamp.
 
 `scripts/release/windows-installer.py` then installs the pinned Inno Setup
 compiler (`install-iscc`, checked against its SHA-256), compiles
-`sheprd.iss` over the extracted zip tree into
+`spaceport.iss` over the extracted zip tree into
 `Sheprd-VERSION-TARGET-setup.exe` (`build`), and installs and uninstalls it on
 the runner (`smoke`), checking the files, their subsystems, `spaceport.exe`'s
 output, the Start menu shortcut's target (the launcher) and AppUserModelID,
@@ -298,7 +299,7 @@ it preserves a preexisting desktop shortcut even without a new desktop task.
 ## Windows Signing
 
 Every Windows zip and installer built here is unsigned: `windows-installer.py
-build` signs only when given `--sign`, and `sheprd.iss` only sets `SignTool`
+build` signs only when given `--sign`, and `spaceport.iss` only sets `SignTool`
 when ISCC receives one. The upstream release workflow's `windows-sign` job was
 the only caller of that mode and was removed with that workflow.
 `windows-signing.py` (`unpack`, `repack`, `verify`), `windows-sign-file.ps1`,
