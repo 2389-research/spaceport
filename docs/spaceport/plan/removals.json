@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "note": "Candidate source roots, not deletion commands or an exhaustive transitive dependency audit. T00 must map exact symbols/edges before editing.",
+  "note": "Candidate source roots in the pinned Sheprd baseline, not deletion commands or an exhaustive transitive dependency audit. T00 must map exact symbols/edges before editing.",
   "items": [
     {
       "id": "RM-IDE",

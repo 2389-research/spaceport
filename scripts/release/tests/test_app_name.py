@@ -18,7 +18,7 @@ class AppNameTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "name.rs"
             source.write_text(
-                (ROOT / "crates/sheprd-client/src/app_name.rs").read_text()
+                (ROOT / "crates/spaceport-client/src/app_name.rs").read_text()
                 + '\nfn main() { print!("{}", APP_NAME); }\n'
             )
             binary = Path(directory) / ("name.exe" if sys.platform == "win32" else "name")
@@ -32,20 +32,20 @@ class AppNameTests(unittest.TestCase):
 
     def test_development_process_name_uses_window_identity(self):
         self.assertEqual(self.app_name, "Spaceport")
-        icon = (ROOT / "crates/sheprd-gpui/src/app_icon.rs").read_text()
+        icon = (ROOT / "crates/spaceport-gpui/src/app_icon.rs").read_text()
         self.assertRegex(
             icon,
             r"setProcessName\s*\(\s*&NSString::from_str\s*\(\s*crate::constants::WINDOW_TITLE\s*\)\s*\)",
         )
 
     def test_development_bundle_uses_running_app_identity(self):
-        constants = (ROOT / "crates/sheprd-gpui/src/constants.rs").read_text()
-        app_id = (ROOT / "crates/sheprd-gpui/development-app-id").read_text().strip()
+        constants = (ROOT / "crates/spaceport-gpui/src/constants.rs").read_text()
+        app_id = (ROOT / "crates/spaceport-gpui/development-app-id").read_text().strip()
         self.assertEqual(app_id, "spaceport.development")
         self.assertIn('APP_ID: &str = env!("SPACEPORT_APP_ID")', constants)
         justfile = (ROOT / "justfile").read_text()
-        self.assertIn('plutil -insert CFBundleIdentifier -string "$(cat crates/sheprd-gpui/development-app-id)"', justfile)
-        selector = (ROOT / "crates/sheprd-gpui/preview_identity.rs").read_text()
+        self.assertIn('plutil -insert CFBundleIdentifier -string "$(cat crates/spaceport-gpui/development-app-id)"', justfile)
+        selector = (ROOT / "crates/spaceport-gpui/preview_identity.rs").read_text()
         self.assertIn('include_str!("development-app-id")', selector)
         self.assertIn('include_str!("macos-preview-app-id")', selector)
         for key in ("CFBundleName", "CFBundleDisplayName"):
@@ -87,7 +87,7 @@ class AppNameTests(unittest.TestCase):
                 self.assertIn('"$app" --args {{args}}', body.group(1))
                 self.assertRegex(body.group(1), r"\n\s*open -n -W ")
                 self.assertIn("{{just_executable()}} bundle release\n", body.group(1))
-                self.assertIn("--release -p sheprd-gpui -- {{args}}", body.group(1))
+                self.assertIn("--release -p spaceport-gpui -- {{args}}", body.group(1))
             else:
                 launch = f"exec target/{profile}/Spaceport.app/Contents/MacOS/spaceport {{{{args}}}}"
                 self.assertIn(launch, body.group(1))
@@ -98,7 +98,7 @@ class AppNameTests(unittest.TestCase):
         self.assertIsNotNone(body)
         for expected in (
             'app=target/{{profile}}/Spaceport.app',
-            'cargo build --locked $flags --target-dir target -p sheprd-gpui --features "{{features}}"',
+            'cargo build --locked $flags --target-dir target -p spaceport-gpui --features "{{features}}"',
             'cp target/{{profile}}/spaceport "$app/Contents/MacOS/spaceport"',
             'cp assets/macos/Info.plist "$app/Contents/Info.plist"',
             '"$app/Contents/Resources/Sheprd.icns"',

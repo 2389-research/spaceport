@@ -7,12 +7,12 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[3]
-GPUI = ROOT / "crates/sheprd-gpui/src"
+GPUI = ROOT / "crates/spaceport-gpui/src"
 
 
 class LinkActivationAbsence(unittest.TestCase):
     def test_the_client_cannot_send_link_activation(self):
-        method = (ROOT / "crates/sheprd-client/src/method.rs").read_text()
+        method = (ROOT / "crates/spaceport-client/src/method.rs").read_text()
         self.assertIn('PaneLinkResolve => "pane.link.resolve"', method)
         self.assertNotIn("pane.link.activate", method)
 

@@ -1,0 +1,175 @@
+// ABOUTME: Exercises chat targets owned by isolated herdr-core pane fixtures.
+// ABOUTME: Checks mirror visibility, pane focus, and CLI targeting.
+//! Chats in herdr-core panes, attached in a headless window: a mirror tab
+//! shows none, a click moves the pane in use without a Herdr connection,
+//! and the CLI's default pane is the herdr-core chat holding the keyboard.
+
+use super::{overlay::open, *};
+use crate::{
+    SpaceportWindow,
+    browser::{Location, Store, TabId},
+    chat::core_pane::key,
+    sidebar::layout_tests::full_draw,
+};
+use gpui::{App, Entity, TestAppContext, VisualTestContext};
+use spaceport_backend::{RunState, TerminalId, TerminalInfo};
+use spaceport_client::{ConnectTarget, protocol::AgentStatus};
+use spaceport_panes::Panes;
+use std::collections::BTreeMap;
+
+pub(super) fn id(name: &str) -> TerminalId {
+    TerminalId::new(name).unwrap()
+}
+
+fn info(name: &str, endpoint: Option<&str>) -> TerminalInfo {
+    TerminalInfo {
+        agent: AgentStatus::Unknown,
+        cwd: None,
+        id: id(name),
+        labels: endpoint
+            .map(|endpoint| {
+                BTreeMap::from([(
+                    spaceport_chat_protocol::TOKEN.to_owned(),
+                    endpoint.to_owned(),
+                )])
+            })
+            .unwrap_or_default(),
+        name: None,
+        state: RunState::Running,
+        title: None,
+    }
+}
+
+/// The fixture's tab that drives its terminals, or its mirror.
+pub(super) fn tab(mirror: bool, cx: &App) -> TabId {
+    let tab = cx.global::<Store>().tabs().find(|tab| {
+        matches!(&tab.location, Some(Location::CoreTerminal { observe, .. }) if *observe == mirror)
+    });
+    tab.unwrap().id
+}
+
+pub(super) const DRIVEN: bool = false;
+const MIRROR: bool = true;
+
+/// A window whose only chat runs in herdr-core terminal t1, split beside a
+/// shell in t2 that is in use, with a mirror tab of t1; the chat attached to
+/// `program`.
+pub(super) fn attached(
+    cx: &mut TestAppContext,
+) -> (
+    Entity<SpaceportWindow>,
+    Peer,
+    Program,
+    &mut VisualTestContext,
+) {
+    let (view, _peer, cx) = open(cx, ConnectTarget::Local);
+    let program = Program::new();
+    let endpoint = "fedcba9876543210fedcba9876543210";
+    view.update(cx, |view, cx| {
+        // The fixture's Herdr pane runs no chat here.
+        let snapshot = Arc::make_mut(view.live.snapshot.as_mut().unwrap());
+        snapshot.agents[0].tokens.clear();
+        let mut panes = Panes::single(id("t1"));
+        panes
+            .split(&id("t1"), spaceport_panes::Axis::Row, id("t2"))
+            .unwrap();
+        let infos = vec![info("t1", Some(endpoint)), info("t2", None)];
+        let driven = view.core_terminals.show_for_test(panes, false, infos, cx);
+        view.core_terminals.set_active(driven, id("t2"), cx);
+        view.core_terminals
+            .show_for_test(Panes::single(id("t1")), true, Vec::new(), cx);
+    });
+    let path = program.path.clone();
+    let poll = |cx: &mut VisualTestContext| {
+        cx.update(|window, cx| {
+            view.update(cx, |view, cx| {
+                view.poll_chats_with(
+                    &mut |_, since| crate::chat::link::Link::start(path.clone(), since),
+                    window,
+                    cx,
+                );
+            });
+            full_draw(window, cx).clear(cx);
+        });
+    };
+    poll(cx);
+    let (mut stream, _) = program.accept();
+    send(&mut stream, &welcome());
+    send(
+        &mut stream,
+        &snapshot(cursor(1, 0), vec![agent(1, "Ready.")]),
+    );
+    wait_until(|| {
+        poll(cx);
+        view.read_with(cx, |view, _| {
+            view.chats
+                .pane(&key(&id("t1")))
+                .is_some_and(|chat| chat.available() && chat.composer.is_some())
+        })
+    });
+    (view, stream, program, cx)
+}
+
+#[gpui::test]
+fn only_the_tab_that_drives_the_terminal_gives_its_chat_the_keyboard(cx: &mut TestAppContext) {
+    let (view, _stream, _program, cx) = attached(cx);
+    cx.update(|window, cx| {
+        let view = view.read(cx);
+        assert_eq!(
+            view.chats
+                .pane(&key(&id("t1")))
+                .map(|chat| &chat.target.surface),
+            Some(&Surface::Core(id("t1")))
+        );
+        assert!(
+            view.core_chat_focus(tab(DRIVEN, cx), &id("t1"), window, cx)
+                .is_some()
+        );
+        // A mirror only watches: no composer, no permission buttons.
+        assert!(
+            view.core_chat_focus(tab(MIRROR, cx), &id("t1"), window, cx)
+                .is_none()
+        );
+        assert!(view.core_terminals.drives(tab(DRIVEN, cx), cx));
+        assert!(!view.core_terminals.drives(tab(MIRROR, cx), cx));
+    });
+}
+
+#[gpui::test]
+fn a_click_on_a_core_chat_moves_the_pane_in_use_without_herdr(cx: &mut TestAppContext) {
+    let (view, _stream, _program, cx) = attached(cx);
+    cx.update(|window, cx| {
+        view.update(cx, |view, cx| {
+            // No Herdr frame is ready for input.
+            view.live.surface = None;
+            assert!(!view.input_ready());
+            assert_eq!(
+                view.core_terminals.chat_split_at(tab(DRIVEN, cx), cx),
+                Some(id("t2"))
+            );
+            // What a click on the chat runs.
+            view.focus_chat(&key(&id("t1")), window, cx);
+            assert_eq!(
+                view.core_terminals.chat_split_at(tab(DRIVEN, cx), cx),
+                Some(id("t1"))
+            );
+        });
+    });
+}
+
+#[gpui::test]
+fn the_default_pane_is_the_core_chat_holding_the_keyboard(cx: &mut TestAppContext) {
+    let (view, _stream, _program, cx) = attached(cx);
+    cx.update(|window, cx| {
+        assert_eq!(view.read(cx).focused_core_chat_key(window, cx), None);
+        let focus = view
+            .read(cx)
+            .core_chat_focus(tab(DRIVEN, cx), &id("t1"), window, cx)
+            .unwrap();
+        window.focus(&focus, cx);
+        assert_eq!(
+            view.read(cx).focused_core_chat_key(window, cx).as_deref(),
+            Some("core:t1")
+        );
+    });
+}

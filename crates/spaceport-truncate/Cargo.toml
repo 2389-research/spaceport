@@ -1,0 +1,15 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-truncate"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+spaceport-client.workspace = true
+unicode-segmentation.workspace = true
+unicode-width.workspace    = true

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rebuild the recorded `spaceport --help` text from the source it prints.
 
-`crates/sheprd-gpui/src/control/client/tests/family_help.rs` compares
+`crates/spaceport-gpui/src/control/client/tests/family_help.rs` compares
 `family_help.txt` byte for byte with what `help::usage` builds out of
 `cli::control::FAMILIES` (each family's usage) and `help::COMMON`. This script
 rebuilds that same text from those same sources, so a change to the help text
@@ -16,10 +16,10 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-CONTROL = ROOT / "crates/sheprd-gpui/src/cli/control.rs"
-HELP = ROOT / "crates/sheprd-gpui/src/control/client/help.rs"
-CLI_CONTROL_DIR = ROOT / "crates/sheprd-gpui/src/cli/control"
-SNAPSHOT = ROOT / "crates/sheprd-gpui/src/control/client/tests/family_help.txt"
+CONTROL = ROOT / "crates/spaceport-gpui/src/cli/control.rs"
+HELP = ROOT / "crates/spaceport-gpui/src/control/client/help.rs"
+CLI_CONTROL_DIR = ROOT / "crates/spaceport-gpui/src/cli/control"
+SNAPSHOT = ROOT / "crates/spaceport-gpui/src/control/client/tests/family_help.txt"
 
 # The overview's own first line, and the two fixed lines around the list.
 HEADER = "spaceport COMMAND ... [--json] [--window ID]\n\n"

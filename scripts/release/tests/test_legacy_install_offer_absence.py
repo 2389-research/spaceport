@@ -12,15 +12,15 @@ ROOT = Path(__file__).resolve().parents[3]
 class LegacyInstallOfferAbsenceTests(unittest.TestCase):
     def test_no_legacy_install_offer_route(self):
         sources = [
-            "crates/sheprd-gpui/src/actions.rs",
-            "crates/sheprd-gpui/src/core_terminals/fallback.rs",
-            "crates/sheprd-gpui/src/endpoint/polling.rs",
-            "crates/sheprd-gpui/src/menu/chrome.rs",
-            "crates/sheprd-gpui/src/menu/chrome/keys.rs",
-            "crates/sheprd-gpui/src/menu/page.rs",
-            "crates/sheprd-gpui/src/menus.rs",
-            "crates/sheprd-gpui/src/window.rs",
-            "crates/sheprd-gpui/src/window/render.rs",
+            "crates/spaceport-gpui/src/actions.rs",
+            "crates/spaceport-gpui/src/core_terminals/fallback.rs",
+            "crates/spaceport-gpui/src/endpoint/polling.rs",
+            "crates/spaceport-gpui/src/menu/chrome.rs",
+            "crates/spaceport-gpui/src/menu/chrome/keys.rs",
+            "crates/spaceport-gpui/src/menu/page.rs",
+            "crates/spaceport-gpui/src/menus.rs",
+            "crates/spaceport-gpui/src/window.rs",
+            "crates/spaceport-gpui/src/window/render.rs",
         ]
         text = "\n".join((ROOT / path).read_text() for path in sources)
         for route in (
@@ -32,7 +32,7 @@ class LegacyInstallOfferAbsenceTests(unittest.TestCase):
             'id("menu-install")',
         ):
             self.assertFalse(route in text, f"{route} remains")
-        locale = (ROOT / "crates/sheprd-gpui/locales/en-US/menu-chrome.ftl").read_text()
+        locale = (ROOT / "crates/spaceport-gpui/locales/en-US/menu-chrome.ftl").read_text()
         self.assertNotIn("Install Herdr", locale)
         self.assertNotIn("menu-chrome-install-", locale)
 

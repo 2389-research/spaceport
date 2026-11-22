@@ -188,12 +188,12 @@ dropped, and no date was changed.
 
 ## 2026-11-11 — `APP_NAME` owns the product name
 
-- **RULE**: Read Spaceport's product name from `sheprd_client::APP_NAME`; GPUI's
+- **RULE**: Read Spaceport's product name from `spaceport_client::APP_NAME`; GPUI's
   window-title constant reads it, and the dependency-free `app_name.rs` module
   supplies the real value to standalone identity and packaging probes.
 - **SYMPTOM**: Typed client diagnostics and the desktop diverge, or compiling
   constants alone or parsing a literal window title misses the dependency.
-- **CAUSE**: `sheprd_client::APP_NAME` owns Spaceport's product name.
+- **CAUSE**: `spaceport_client::APP_NAME` owns Spaceport's product name.
 - **REFERENCES**: Not recorded.
 
 ## 2026-11-11 — Pass the product name to Fluent as data
@@ -374,7 +374,7 @@ dropped, and no date was changed.
 ## 2026-11-09 — Where the Teleport helpers landed
 
 - **RULE**: Retained helpers now live in
-  `sheprd-remote::{host_script,agent,snapshot}`. Exact target/session refusal,
+  `spaceport-remote::{host_script,agent,snapshot}`. Exact target/session refusal,
   argument permission choices and output/cancellation limits must survive
   extraction.
 - **SYMPTOM**: Teleport module names concealed live chat, pane and process
@@ -695,14 +695,14 @@ dropped, and no date was changed.
 
 ## 2026-11-09 — The browser module keeps tab identity and navigation
 
-- **RULE**: Keep that container, `crates/sheprd-gpui/src/browser`, for Core and
+- **RULE**: Keep that container, `crates/spaceport-gpui/src/browser`, for Core and
   Herdr 1 terminal and Devices views; old web/local/blank payloads only decode
   so the store can discard them while reserving their IDs.
 - **SYMPTOM**: Not recorded.
 - **CAUSE**: After the embedded page engine is removed, that module owns shared
   native tab IDs, split groups, persisted view references, and Herdr terminal
   navigation.
-- **REFERENCES**: `crates/sheprd-gpui/src/browser`
+- **REFERENCES**: `crates/spaceport-gpui/src/browser`
 
 ## 2026-11-09 — One pseudo-locale leak surface per test
 

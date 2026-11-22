@@ -17,7 +17,7 @@ human and agent contributors alike.
   Spaceport may start an installed local runtime when needed. Explicit socket
   connections remain attach-only. It never bundles, installs, updates, stops,
   or migrates either runtime. Daemon process,
-  session or socket bugs belong upstream; `sheprd-terminal` emulation and
+  session or socket bugs belong upstream; `spaceport-terminal` emulation and
   native presentation bugs belong here.
 - **Open an issue first for anything large.** Agree on the scope and approach
   before starting a substantial implementation.

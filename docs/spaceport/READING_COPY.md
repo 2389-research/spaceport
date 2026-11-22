@@ -81,7 +81,7 @@ Read `SPEC.md` and `SYSTEM.md` once. For each task, use `python tools/spec.py co
 - Never use a live personal daemon, actual agent transcript, real tailnet credentials or upstream production updater as a test fixture. Use isolated state directories and explicit fixture endpoints.
 - The selected Herdr runtime owns its processes and lifecycle. Core owns connections for Core routes; the existing Herdr 1 connector may serve Herdr 1 routes. Spaceport may start an installed local runtime but may not install/update it, migrate sessions between runtimes, or add another transport manager.
 - Keep GPUI, the current terminal engine and the existing desktop interaction design. No mobile/UniFFI/Ghostty work, framework migration, plugin engine or new service.
-- **Do not delete by name.** Herdr 2 currently calls its wire protocol generation 1. Shared `sheprd-protocol` types may still support the renderer. Extract needed pure types before deleting legacy behavior.
+- **Do not delete by name.** Herdr 2 currently calls its wire protocol generation 1. Shared `spaceport-protocol` types may still support the renderer. Extract needed pure types before deleting legacy behavior.
 - Use source-observed methods, their generated schemas and actual runtime capabilities. Do not invent endpoint names, workspace APIs, replay support, delivery receipts or idempotency guarantees.
 - A timeout after submission may mean the action happened. Never blindly retry terminal creation, input, approval, file writes or destructive operations.
 - A view is not a process. Closing windows, quitting, detaching and restoring views must not stop or restart agents.
@@ -291,7 +291,7 @@ Each selected runtime owns its processes and lifecycle. Core owns machine regist
 
 ### Layer B — Narrow Core adapter
 
-Reuse and extend `sheprd-core-client` to call the methods the selected Core actually advertises. Implement local socket/named-pipe and framed stream correctness once. Core itself carries remote machine traffic. The adapter exposes typed facts, stream subscriptions and effect results, not GPUI entities. No provider-specific cloud adapters or a generalized plugin transport.
+Reuse and extend `spaceport-core-client` to call the methods the selected Core actually advertises. Implement local socket/named-pipe and framed stream correctness once. Core itself carries remote machine traffic. The adapter exposes typed facts, stream subscriptions and effect results, not GPUI entities. No provider-specific cloud adapters or a generalized plugin transport.
 
 ### Layer C — Session and view projection
 
@@ -573,13 +573,13 @@ Implements SP-001–SP-004 and SP-015–SP-016, SP-022–SP-026. Candidate roots
 
 Fork at an explicit Sheprd commit. Record the origin without promising routine merges. Build and exercise an isolated baseline. Capture retained views, command behavior, emulator fixtures, permissions, terminal lifetime and relevant platform packaging. Record any pre-existing failures instead of laundering them into successful tests.
 
-Separate behavioral deletion from mechanical renaming. Retain working Herdr 1 and Core paths under D58; remove excluded feature reachability independently. A directory named `sheprd-client` mixes retained Herdr 1 code with useful helpers. A directory named `sheprd-protocol` also supplies Core rendering/input types. Preserve both runtime contracts and Core protocol generation 1. [D58; S02, S09, S11]
+Separate behavioral deletion from mechanical renaming. Retain working Herdr 1 and Core paths under D58; remove excluded feature reachability independently. The `spaceport-client` crate mixes retained Herdr 1 code with useful helpers. The `spaceport-protocol` crate also supplies Core rendering/input types. Preserve both runtime contracts and Core protocol generation 1. [D58; S02, S09, S11]
 
 ## 2. Deletion units
 
 A deletion unit is a complete unwanted behavior: UI entry points, command catalog entries, settings/schema fields, background workers, source modules, assets/translations, dependencies, docs, fixtures and package/service integration. Do not count code as removed while it remains reachable from a hidden CLI, migration path or worker.
 
-| Family | Candidate code roots | Treatment |
+| Family | Candidate code roots in upstream Sheprd | Treatment |
 |---|---|---|
 | Git/diffs/IDE/indexing | `sheprd-vcs`, relevant GPUI review/code/editor modules | Delete specialized behavior, retain plain chat/terminal text |
 | GitHub and issue dispatch | `sheprd-github`, `sheprd-orchestrator` | Delete accounts/PR/issues/security/Beads dispatch; extract generic cache/file primitives only if independently necessary |
@@ -595,9 +595,9 @@ Negative requirements apply to **product code**, not to the engineering reposito
 
 ## 3. Retained code candidates
 
-Reuse GPUI, terminal emulator, Core adapter, pure session and chat reducers, control-protocol/command catalog, diagnostics, i18n, updater and Windows launcher. Rename their package identities deliberately after behavior is stable. Avoid a top-to-bottom architecture rewrite.
+Reuse GPUI, terminal emulator, Core adapter, pure session and chat reducers, control-protocol/command catalog, diagnostics, i18n, updater and Windows launcher. Spaceport-owned crates use `spaceport-*`. Older evidence uses `sheprd-*` for the same crate paths. Avoid a top-to-bottom architecture rewrite.
 
-`sheprd-acp` is a special case: retain the minimal verified host-side agent adapter contract necessary for native chat, not its desktop-owned resume/deployment or model/provider-management workflows. Its process belongs to Herdr. A compile-time dependency is not permission to keep excluded behavior.
+The `spaceport-acp` package builds the `sheprd-acp` command used on installed hosts. Retain the minimal verified host-side agent adapter contract necessary for native chat, not its desktop-owned resume/deployment or model/provider-management workflows. Its process belongs to Herdr. A compile-time dependency is not permission to keep excluded behavior.
 
 Credentials are another mixed case: delete provider/account uses; retain only generic OS/private-endpoint primitives that a kept feature demonstrably needs. Do not broadly migrate credential stores. Upstream “report-only” automation features are not automatically compatible with a Core-owned data source.
 
@@ -841,7 +841,7 @@ Read-only automation/usage visibility cannot depend on keeping the removed Shepr
 
 ## R7 — Delete behavior, not every shared type
 
-Herdr 2's current wire protocol is generation 1. `sheprd-protocol` types are also used by the Core renderer. Under D58, retain the Herdr 1 backend and shared rendering/input types; remove only independently excluded behavior. [D58; S02, S09, S11]
+Herdr 2's current wire protocol is generation 1. `spaceport-protocol` types are also used by the Core renderer. Under D58, retain the Herdr 1 backend and shared rendering/input types; remove only independently excluded behavior. [D58; S02, S09, S11]
 
 Deleting a mobile server does not delete the desktop CLI's private local control endpoint. Deleting Git UI does not prohibit using Git to build the fork or rendering a plain textual patch in chat.
 

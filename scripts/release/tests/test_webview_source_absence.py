@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 class WebviewSourceAbsence(unittest.TestCase):
     def test_engine_and_native_page_fixtures_are_absent(self):
-        browser = ROOT / "crates/sheprd-gpui/src/browser"
+        browser = ROOT / "crates/spaceport-gpui/src/browser"
         for module in (
             "native", "page", "building", "page_keys", "parking", "stacking",
             "preview", "kit", "markdown", "favicon", "underlay",
@@ -25,11 +25,11 @@ class WebviewSourceAbsence(unittest.TestCase):
             self.assertFalse((browser.parent / fixture).exists(), fixture)
 
     def test_no_engine_dependency_or_live_native_hook_remains(self):
-        for manifest in ("Cargo.toml", "crates/sheprd-gpui/Cargo.toml"):
+        for manifest in ("Cargo.toml", "crates/spaceport-gpui/Cargo.toml"):
             content = (ROOT / manifest).read_text()
             for package in ("lb-wry", "wry.workspace", "objc2-web-kit"):
                 self.assertNotIn(package, content, manifest)
-        for source in (ROOT / "crates/sheprd-gpui/src").rglob("*.rs"):
+        for source in (ROOT / "crates/spaceport-gpui/src").rglob("*.rs"):
             content = source.read_text()
             for hook in ("wry::", "browser.pages", "drawn_pages", "around_pages", "bind_page_keys"):
                 self.assertNotIn(hook, content, str(source.relative_to(ROOT)))
@@ -39,10 +39,10 @@ class WebviewSourceAbsence(unittest.TestCase):
         self.assertTrue({"lb-wry", "objc2-web-kit", "webview2-com", "webkit2gtk"}.isdisjoint(packages))
 
     def test_control_schema_has_no_browser_capability(self):
-        schema = (ROOT / "crates/sheprd-control-protocol/src/protocol/tabs.rs").read_text()
+        schema = (ROOT / "crates/spaceport-control-protocol/src/protocol/tabs.rs").read_text()
         for variant in ("    Blank,", "    Web,", "    File,"):
             self.assertNotIn(variant, schema)
-        status = (ROOT / "crates/sheprd-control-protocol/src/protocol/app.rs").read_text()
+        status = (ROOT / "crates/spaceport-control-protocol/src/protocol/app.rs").read_text()
         self.assertNotIn("pub browser_tabs:", status)
 
     def test_retained_content_owners_exist(self):
@@ -51,13 +51,13 @@ class WebviewSourceAbsence(unittest.TestCase):
             "group_terminals.rs", "chat/rich.rs", "chat/visual.rs",
             "window/file_links.rs", "listening_ports.rs", "links.rs",
         ):
-            self.assertTrue((ROOT / "crates/sheprd-gpui/src" / owner).exists(), owner)
+            self.assertTrue((ROOT / "crates/spaceport-gpui/src" / owner).exists(), owner)
         # The browser store and groups' home: the app before the browser-crate
         # extraction, the crate after it. Either must exist.
         for owner in ("store.rs", "groups.rs"):
             self.assertTrue(
-                (ROOT / "crates/sheprd-gpui/src/browser" / owner).exists()
-                or (ROOT / "crates/sheprd-browser/src" / owner).exists(),
+                (ROOT / "crates/spaceport-gpui/src/browser" / owner).exists()
+                or (ROOT / "crates/spaceport-browser/src" / owner).exists(),
                 owner,
             )
 

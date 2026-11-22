@@ -1,0 +1,23 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-remote"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+spaceport-client.workspace        = true
+serde.workspace                  = true
+thiserror.workspace              = true
+
+[dev-dependencies]
+spaceport-client = { features = ["test-support"], workspace = true }
+serde_json.workspace = true
+
+[features]
+# Shared fixtures for the app's own tests.
+test-support = []

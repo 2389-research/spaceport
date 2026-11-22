@@ -8,7 +8,7 @@ the access denial.
 
 ## What the current code requests
 
-`crates/sheprd-client/src/transport/windows.rs` connects through the locked
+`crates/spaceport-client/src/transport/windows.rs` connects through the locked
 `interprocess` 2.4.6 byte-mode local stream. Its Windows implementation calls
 `CreateFileW` with:
 
@@ -47,7 +47,7 @@ the GUI requests more access. `CanWrite` reports the stream's configured
 direction, not a completed protocol exchange.
 
 The config lock is a separate filesystem operation in
-`crates/sheprd-gpui/src/config/files.rs`. With the pinned Rust 1.99.0,
+`crates/spaceport-gpui/src/config/files.rs`. With the pinned Rust 1.99.0,
 `read(true).write(true).create(true).truncate(false)` maps to
 `GENERIC_READ | GENERIC_WRITE`, `OPEN_ALWAYS`, sharing read/write/delete, and
 no custom flags. `File::lock()` then calls `LockFileEx` for an exclusive lock.
@@ -67,8 +67,8 @@ the daemon's DACL, or bypassing the config lock is not a justified fix.
 The tests use their own temporary paths and pipes, without a desktop or daemon:
 
 ```powershell
-cargo test --locked -p sheprd-client transport::tests::access
-cargo test --locked -p sheprd-gpui config::tests::lock_access
+cargo test --locked -p spaceport-client transport::tests::access
+cargo test --locked -p spaceport-gpui config::tests::lock_access
 ```
 
 - A protected pipe DACL grants only the current user's generic read/write
@@ -93,7 +93,7 @@ token, daemon security descriptor, file attributes, or security software.
 1. Record the current GUI and daemon versions and reproduce once with normal
    discovery, then with the same explicit binary-client `--socket` path.
    Collect the nearby `operation`, `kind`, and `raw_os_error` log fields.
-   The [GUI logging documentation](../crates/sheprd-gpui/README.md#crash-reports)
+   The [GUI logging documentation](../crates/spaceport-gpui/README.md#crash-reports)
    describes the records; no debug build or `RUST_LOG` is required.
 2. For `pipe_connect`, capture the failing open/wait operation and the
    successful .NET open in Process Monitor, including desired access, sharing,

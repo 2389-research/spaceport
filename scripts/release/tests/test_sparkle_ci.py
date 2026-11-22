@@ -26,6 +26,6 @@ class SparkleCiTests(unittest.TestCase):
 
     def test_preview_build_explicitly_selects_optional_feature_and_excludes_key(self):
         source = (ROOT / "scripts/release/build-macos.sh").read_text()
-        self.assertIn("sheprd-gpui/macos-updater", source)
+        self.assertIn("spaceport-gpui/macos-updater", source)
         self.assertIn("-u SPARKLE_PRIVATE_KEY", source)
         self.assertIn("SPARKLE_FRAMEWORK_PATH", source)

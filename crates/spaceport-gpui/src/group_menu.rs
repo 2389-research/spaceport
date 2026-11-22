@@ -1,0 +1,394 @@
+//! The menu behind a group's "…" button: tabs other than a terminal to open
+//! in the group (chat and listening ports),
+//! a new chat through `herdr-acp`, closing tabs or the group, and splitting it.
+//! A terminal tab comes from the group's "+". Closing a group closes no tab:
+//! its tabs go to the group that takes its room.
+// i18n: migrated
+use crate::direction::Logical;
+use crate::i18n::fl;
+use crate::{
+    SpaceportWindow,
+    browser::{GroupId, Pick},
+    listening_ports::Link,
+    menu::Page,
+};
+use gpui::{prelude::*, *};
+use spaceport_chat_protocol::Agent;
+
+/// The most a port's process name takes in its row. Names run to 32
+/// characters, and the address beside it is what tells ports apart.
+const PROCESS_WIDTH: f32 = 64.;
+
+/// How large a row's icon draws, and the room a row without one keeps so
+/// labels line up.
+const ICON_SIZE: f32 = 14.;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum Action {
+    /// A new tab running a `herdr-acp` chat with the agent.
+    Chat(Agent),
+    /// One of the focused workspace's listening ports and where it opens.
+    Port {
+        number: u16,
+        process: String,
+        link: Link,
+    },
+    /// Closes the tab the group shows, as the tab's own close button does.
+    Close,
+    /// Closes every tab of the group but the one it shows, one after
+    /// another, each as its own close button does.
+    CloseOthers,
+    /// Closes the group; its tabs go to the group that takes its room.
+    CloseGroup,
+    Split,
+}
+
+impl Action {
+    /// The row's text, which for a port is where its page opens.
+    fn label(&self) -> SharedString {
+        match self {
+            Self::Chat(agent) => agent.display_name().into(),
+            Self::Port { link, .. } => link.label().into(),
+            Self::Close => fl!("group-menu-close-tab").into(),
+            Self::CloseOthers => fl!("group-menu-close-others").into(),
+            Self::CloseGroup => fl!("group-menu-close-group").into(),
+            Self::Split => fl!("group-menu-split-right").into(),
+        }
+    }
+
+    fn icon(&self) -> Option<&'static str> {
+        match self {
+            Self::Chat(agent) => {
+                Some(crate::icons::AgentIcon::from_identity(Some(agent.name())).path())
+            }
+            Self::Port { .. } => Some("icons/arrow-right.svg"),
+            Self::Split => Some("icons/split.svg"),
+            Self::Close | Self::CloseOthers | Self::CloseGroup => None,
+        }
+    }
+
+    /// Stable for tests: `Port5173` rather than the port's whole value.
+    fn selector(&self) -> String {
+        match self {
+            Self::Port { number, .. } => format!("group-menu-Port{number}"), // i18n: data
+            Self::Chat(agent) => format!("group-menu-Chat-{agent}"),         // i18n: data
+            action => format!("group-menu-{action:?}"),
+        }
+    }
+
+    /// Which run of rows this one belongs to; a rule separates runs.
+    fn section(&self) -> u8 {
+        match self {
+            Self::Chat(_) => 0,
+            Self::Port { .. } => 1,
+            Self::Close | Self::CloseOthers | Self::CloseGroup => 2,
+            Self::Split => 3,
+        }
+    }
+
+    /// The heading over the rows of this one's section, if it has one.
+    fn heading(&self) -> Option<String> {
+        match self {
+            Self::Chat(_) => Some(fl!("group-menu-new-chat")),
+            Self::Port { .. } => Some(fl!("group-menu-listening")),
+            _ => None,
+        }
+    }
+}
+
+pub(crate) struct GroupMenu {
+    group: GroupId,
+    selected: Option<usize>,
+    /// The panel's own scroll, so a row the keyboard selects past a long
+    /// list of ports scrolls into view.
+    scroll: ScrollHandle,
+}
+
+/// The panel child that draws `actions[index]`: the heading before the
+/// first row of a headed section, such as "Listening", is a child of its own.
+fn child_index(actions: &[Action], index: usize) -> usize {
+    let headings = actions
+        .iter()
+        .take(index + 1)
+        .enumerate()
+        .filter(|(at, action)| {
+            action.heading().is_some()
+                && (*at == 0 || actions[at - 1].section() != action.section())
+        })
+        .count();
+    index + headings
+}
+
+impl SpaceportWindow {
+    /// The rows worth offering for `group`. Ports come from the last scan,
+    /// so they follow the status bar's. Closing
+    /// belongs to a split: a lone group has nowhere else to keep its tabs.
+    fn group_actions(&self, group: GroupId, cx: &App) -> Vec<Action> {
+        let mut actions = Vec::new();
+        if self.selected_core_group().is_none()
+            || self.core_chat_group_tab(Some(group), cx).is_some()
+        {
+            actions.extend(self.chat_agents().into_iter().map(Action::Chat));
+        }
+        if let Some((_, _, listed)) = self
+            .selected_core_group()
+            .is_none()
+            .then(|| self.focused_listening_ports())
+            .flatten()
+        {
+            actions.extend(listed.ports.iter().filter_map(|port| {
+                Some(Action::Port {
+                    number: port.number,
+                    process: port.process.clone(),
+                    link: port.link(listed.origin)?,
+                })
+            }));
+        }
+        if self.is_split() {
+            let pick = self.group_pick(group);
+            if pick.is_some() {
+                actions.push(Action::Close);
+            }
+            if self
+                .group_tabs(group, cx)
+                .iter()
+                .any(|tab| Some(tab) != pick.as_ref())
+            {
+                actions.push(Action::CloseOthers);
+            }
+            actions.push(Action::CloseGroup);
+        }
+        actions.push(Action::Split);
+        actions
+    }
+
+    pub(crate) fn open_group_menu(
+        &mut self,
+        group: GroupId,
+        anchor: Point<Pixels>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if !self.open_menu(window, cx) {
+            return;
+        }
+        self.menu.anchor = anchor;
+        self.menu.page = Some(Page::Group);
+        self.menu.group = Some(GroupMenu {
+            group,
+            selected: None,
+            scroll: ScrollHandle::new(),
+        });
+    }
+
+    fn activate_group_menu(&mut self, action: Action, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(group) = self.menu.group.as_ref().map(|menu| menu.group) else {
+            return;
+        };
+        self.dismiss_menu(window, cx);
+        self.activate_group(group, window, cx);
+        match action {
+            Action::Chat(agent) => self.start_chat_or_flash(agent, cx),
+            Action::Port { link, .. } => {
+                let Some((endpoint, workspace)) = self
+                    .focused_listening_ports()
+                    .map(|(endpoint, workspace, _)| (endpoint.to_owned(), workspace.to_owned()))
+                else {
+                    return;
+                };
+                self.open_port_link(&endpoint, &workspace, &link, window, cx);
+            }
+            Action::Close => self.close_group_tab(group, window, cx),
+            Action::CloseOthers => {
+                let keep = self.group_pick(group);
+                let others: Vec<Pick> = self
+                    .group_tabs(group, cx)
+                    .into_iter()
+                    .filter(|tab| Some(tab) != keep.as_ref())
+                    .collect();
+                self.close_tabs(others, window, cx);
+            }
+            Action::CloseGroup => self.close_group(group, window, cx),
+            Action::Split => self.split_group(group, window, cx),
+        }
+    }
+
+    /// Closes the tab `group` shows, for Close Tab: a page at once, a Herdr
+    /// tab through its confirmation.
+    pub(crate) fn close_group_tab(
+        &mut self,
+        group: GroupId,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        match self.group_pick(group) {
+            Some(Pick::Herdr(tab)) => self.open_tab_close(&tab, window, cx),
+            Some(Pick::Page(id)) => self.close_browser_tab(id, window, cx),
+            None => {}
+        }
+    }
+
+    pub(crate) fn group_menu_key(
+        &mut self,
+        event: &KeyDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(group) = self.menu.group.as_ref().map(|menu| menu.group) else {
+            return;
+        };
+        let actions = self.group_actions(group, cx);
+        let Some(menu) = &mut self.menu.group else {
+            return;
+        };
+        let key = event.keystroke.key.as_str();
+        cx.stop_propagation();
+        window.prevent_default();
+        let count = actions.len();
+        match key {
+            "escape" => self.dismiss_menu(window, cx),
+            "up" | "down" => {
+                let selected = match (menu.selected, key) {
+                    (None, "up") => count - 1,
+                    (None, _) => 0,
+                    (Some(i), "up") => (i + count - 1) % count,
+                    (Some(i), _) => (i + 1) % count,
+                };
+                menu.selected = Some(selected);
+                menu.scroll.scroll_to_item(child_index(&actions, selected));
+                cx.notify();
+            }
+            "enter" => {
+                if let Some(action) = menu.selected.and_then(|index| actions.get(index)).cloned() {
+                    self.activate_group_menu(action, window, cx);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// Fills the menu's `panel` with its rows. They are the panel's own
+    /// children, which the panel's scroll handle addresses by index.
+    pub(crate) fn render_group_menu(
+        &self,
+        panel: Stateful<Div>,
+        cx: &mut Context<Self>,
+    ) -> Stateful<Div> {
+        let Some(menu) = &self.menu.group else {
+            return panel;
+        };
+        let theme = &self.theme;
+        let mut panel = panel.track_scroll(&menu.scroll).flex().flex_col();
+        let mut section = None;
+        for (index, action) in self.group_actions(menu.group, cx).into_iter().enumerate() {
+            let starts_section = section.is_some_and(|last| last != action.section());
+            let heading = action
+                .heading()
+                .filter(|_| section != Some(action.section()));
+            section = Some(action.section());
+            let headed = heading.is_some();
+            if let Some(heading) = heading {
+                panel = panel.child(
+                    div()
+                        .flex_none()
+                        .when(starts_section, |heading| {
+                            heading
+                                .mt(px(4.))
+                                .border_t_1()
+                                .border_color(rgb(theme.active))
+                        })
+                        .pt(px(6.))
+                        .pb(px(2.))
+                        .px(px(8.))
+                        .text_xs()
+                        .text_color(rgb(theme.muted))
+                        .child(heading),
+                );
+            }
+            let detail: SharedString = match &action {
+                Action::Port { process, .. } => process.clone().into(),
+                _ => "".into(),
+            };
+            let selector = action.selector();
+            let (label, process) = (format!("{selector}-label"), format!("{selector}-detail"));
+            let capped = matches!(action, Action::Port { .. });
+            // An open tunnel can be closed from its row, as from its chip.
+            let close = match &action {
+                Action::Port {
+                    number,
+                    link: Link::Tunnel(key),
+                    ..
+                } if self.tunnels.is_open(key) => Some(crate::listening_ports::close_button(
+                    format!("group-menu-close-Port{number}").into(), // i18n: data
+                    key,
+                    ICON_SIZE,
+                    theme,
+                    cx,
+                )),
+                _ => None,
+            };
+            panel = panel.child(
+                div()
+                    .id(("group-menu-action", index))
+                    .flex_none()
+                    .debug_selector(move || selector.clone())
+                    .when(starts_section && !headed, |row| {
+                        row.mt(px(4.)).border_t_1().border_color(rgb(theme.active))
+                    })
+                    .min_h(px(self.config.ui.line_height() + 12.))
+                    .px(px(8.))
+                    .row()
+                    .items_center()
+                    .gap(px(8.))
+                    .cursor_pointer()
+                    .when(menu.selected == Some(index), |row| {
+                        row.bg(rgb(theme.active))
+                    })
+                    .hover(|row| row.bg(rgb(theme.active)))
+                    .child(match action.icon() {
+                        Some(icon) => svg()
+                            .path(icon)
+                            .size(px(ICON_SIZE))
+                            .flex_none()
+                            .text_color(rgb(theme.muted))
+                            .into_any_element(),
+                        None => div().size(px(ICON_SIZE)).flex_none().into_any_element(),
+                    })
+                    .child(
+                        div()
+                            .debug_selector(move || label.clone())
+                            // Its own width counts, so the panel widens to
+                            // fit the longest label.
+                            .flex_grow(1.)
+                            .min_w_0()
+                            .truncate()
+                            .child(action.label()),
+                    )
+                    .when(!detail.is_empty(), |line| {
+                        line.child(
+                            div()
+                                .debug_selector(move || process.clone())
+                                .flex_none()
+                                .when(capped, |detail| detail.max_w(px(PROCESS_WIDTH)).truncate())
+                                .text_color(rgb(theme.muted))
+                                .child(detail),
+                        )
+                    })
+                    .children(close)
+                    .on_hover(cx.listener(move |this, hovered, _, cx| {
+                        if *hovered && let Some(menu) = &mut this.menu.group {
+                            menu.selected = Some(index);
+                            cx.notify();
+                        }
+                    }))
+                    .on_click(cx.listener(move |this, _, window, cx| {
+                        this.activate_group_menu(action.clone(), window, cx)
+                    })),
+            );
+        }
+        panel
+    }
+}
+
+#[cfg(test)]
+mod tests;

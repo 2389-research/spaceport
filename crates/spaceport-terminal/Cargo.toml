@@ -1,0 +1,16 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-terminal"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+alacritty_terminal.workspace = true
+spaceport-backend.workspace   = true
+spaceport-protocol.workspace  = true
+thiserror.workspace          = true

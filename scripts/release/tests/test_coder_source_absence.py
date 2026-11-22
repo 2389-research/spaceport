@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 class CoderSourceAbsence(unittest.TestCase):
     def test_provider_has_no_desktop_or_remote_source_route(self):
-        for crate in ("sheprd-client", "sheprd-remote", "sheprd-gpui"):
+        for crate in ("spaceport-client", "spaceport-remote", "spaceport-gpui"):
             root = ROOT / "crates" / crate
             source = (
                 path
@@ -32,8 +32,8 @@ class CoderSourceAbsence(unittest.TestCase):
     def test_provider_assets_are_absent_but_shared_routes_remain(self):
         self.assertFalse((ROOT / "assets/icons/cloud/coder.svg").exists())
         for name in ("devices-coder", "settings-cloud-coder", "error-remote-coder"):
-            self.assertFalse((ROOT / f"crates/sheprd-gpui/locales/en-US/{name}.ftl").exists())
-        self.assertTrue((ROOT / "crates/sheprd-gpui/src/menu/devices/add_device/core.rs").exists())
+            self.assertFalse((ROOT / f"crates/spaceport-gpui/locales/en-US/{name}.ftl").exists())
+        self.assertTrue((ROOT / "crates/spaceport-gpui/src/menu/devices/add_device/core.rs").exists())
 
 
 if __name__ == "__main__":

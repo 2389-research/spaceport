@@ -51,7 +51,7 @@ class GitFixture(unittest.TestCase):
 
 class CiChanges(GitFixture):
     def test_documentation_and_setup_skip_native_jobs(self):
-        for path in ("setup.sh", "README.md", "crates/sheprd-gpui/README.md",
+        for path in ("setup.sh", "README.md", "crates/spaceport-gpui/README.md",
                      "scripts/release/README.md", "assets/social-preview-dark.png",
                      "assets/social-preview-light.svg", "assets/icons/sheprd-icon-badge.png",
                      "assets/icons/sheprd-icon-badge.svg", "site/index.html",
@@ -61,7 +61,7 @@ class CiChanges(GitFixture):
             self.assertEqual(self.detect(), "code=false", path)
 
     def test_build_inputs_trigger_native_jobs(self):
-        for path in ("crates/sheprd-gpui/src/main.rs", "Cargo.lock", "Cargo.toml",
+        for path in ("crates/spaceport-gpui/src/main.rs", "Cargo.lock", "Cargo.toml",
                      "assets/icon.png", "assets/icons/sheprd-icon-clean.png",
                      ".cargo/config.toml", "rust-toolchain.toml",
                      "scripts/release/build.sh", ".github/workflows/ci.yml"):
@@ -102,7 +102,7 @@ class WindowsPackageChanges(GitFixture):
         for path in ("scripts/release/package-windows.py", "scripts/release/windows-installer.py",
                      "scripts/release/sheprd.iss", "scripts/release/installer/en-US.isl",
                      "site/install.ps1",
-                     "crates/sheprd-launcher/src/main.rs", "crates/sheprd-gpui/windows_resource.rs",
+                     "crates/spaceport-launcher/src/main.rs", "crates/spaceport-gpui/windows_resource.rs",
                      "assets/icons/Sheprd.ico", "assets/icons/windows/wizard-128.png",
                      ".github/workflows/ci.yml"):
             self.base = self.git("rev-parse", "HEAD").strip()
@@ -110,7 +110,7 @@ class WindowsPackageChanges(GitFixture):
             self.assertEqual(self.outputs()["windows_package"], "true", path)
 
     def test_other_changes_skip_the_installer_check(self):
-        for path in ("crates/sheprd-gpui/src/app.rs", "Cargo.lock", "README.md",
+        for path in ("crates/spaceport-gpui/src/app.rs", "Cargo.lock", "README.md",
                      "scripts/release/package-macos.sh"):
             self.base = self.git("rev-parse", "HEAD").strip()
             self.commit_path(path)
@@ -126,11 +126,11 @@ class MacosReleaseChanges(GitFixture):
 
     def test_release_build_inputs_run_the_macos_release_builds(self):
         for path in ("Cargo.toml", "Cargo.lock", ".cargo/config.toml", "rust-toolchain.toml",
-                     "crates/sheprd-client/Cargo.toml", "crates/sheprd-launcher/build.rs",
-                     "crates/sheprd-gpui/build.rs", "crates/sheprd-gpui/release_version.rs",
-                     "crates/sheprd-gpui/src/main.rs", "crates/sheprd-gpui/src/cli.rs",
-                     "crates/sheprd-gpui/src/cli/parse.rs", "crates/sheprd-gpui/tests/cli.rs",
-                     "crates/sheprd-gpui/tests/cli/help.rs", "crates/sheprd-gpui/tests/support/mod.rs",
+                     "crates/spaceport-client/Cargo.toml", "crates/spaceport-launcher/build.rs",
+                     "crates/spaceport-gpui/build.rs", "crates/spaceport-gpui/release_version.rs",
+                     "crates/spaceport-gpui/src/main.rs", "crates/spaceport-gpui/src/cli.rs",
+                     "crates/spaceport-gpui/src/cli/parse.rs", "crates/spaceport-gpui/tests/cli.rs",
+                     "crates/spaceport-gpui/tests/cli/help.rs", "crates/spaceport-gpui/tests/support/mod.rs",
                      ".github/workflows/ci.yml"):
             self.base = self.git("rev-parse", "HEAD").strip()
             self.commit_path(path)
@@ -140,8 +140,8 @@ class MacosReleaseChanges(GitFixture):
             self.assertEqual(outputs["code"], "true", path)
 
     def test_other_changes_skip_the_macos_release_builds(self):
-        for path in ("crates/sheprd-gpui/src/app.rs", "crates/sheprd-client/src/lib.rs",
-                     "crates/sheprd-gpui/tests/live_gui.rs", "crates/sheprd-gpui/locales/en-US/app.ftl",
+        for path in ("crates/spaceport-gpui/src/app.rs", "crates/spaceport-client/src/lib.rs",
+                     "crates/spaceport-gpui/tests/live_gui.rs", "crates/spaceport-gpui/locales/en-US/app.ftl",
                      "README.md", "scripts/release/package-windows.py"):
             self.base = self.git("rev-parse", "HEAD").strip()
             self.commit_path(path)

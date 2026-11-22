@@ -121,7 +121,7 @@ A sub-agent's call is marked **Sub-agent** in the conversation, with the number
 of steps it took; open it to list them. Its steps stay in its card rather than
 in the conversation. A call that started a background shell says `running`
 until the shell ends, even though the call itself is done. Which agents report
-this, and how, is in the [`sheprd-acp` README](../crates/sheprd-acp/README.md#behaviour).
+this, and how, is in the [`sheprd-acp` README](../crates/spaceport-acp/README.md#behaviour).
 
 ## Messages and controls
 
@@ -176,8 +176,8 @@ original terminal input; the historical question cards below are read-only.
 
 A closed `herdr-ui` fence can render native cards, metrics, choices, toggles,
 sliders, inputs, tables, bar charts and prompt actions. See the
-[catalog](../crates/sheprd-gpui/src/chat/widgets/README.md) and
-[example](../crates/sheprd-gpui/src/chat/widgets/example.json). Editing a control
+[catalog](../crates/spaceport-gpui/src/chat/widgets/README.md) and
+[example](../crates/spaceport-gpui/src/chat/widgets/example.json). Editing a control
 only changes local state. An explicit action with `mode: "draft"` adds the
 selected values to the composer for review; `mode: "send"` uses the normal
 prompt flow. Rendering or editing a native card cannot run code, submit a
@@ -248,8 +248,8 @@ readable without opening a same-named local file.
 
 ## Implementation and bounds
 
-Rich parsing lives in [`chat/rich`](../crates/sheprd-gpui/src/chat/rich.rs), with
-native layout in [`chat/view/rich.rs`](../crates/sheprd-gpui/src/chat/view/rich.rs).
+Rich parsing lives in [`chat/rich`](../crates/spaceport-gpui/src/chat/rich.rs), with
+native layout in [`chat/view/rich.rs`](../crates/spaceport-gpui/src/chat/view/rich.rs).
 Math rasterization and syntax highlighting use the bounded visual worker queue;
 discarded streamed revisions retain their worker slots until completion.
 
@@ -281,7 +281,7 @@ cache; system-wide packages remain visible.
 For native visual checks on Linux, install Xvfb and ImageMagick, then run:
 
 ```sh
-cargo build --locked -p sheprd-gpui --features integration-test
+cargo build --locked -p spaceport-gpui --features integration-test
 python3 scripts/check-rich-chat-native.py
 ```
 
@@ -308,7 +308,7 @@ checks user-message contrast and wrapping in a narrow light-theme bubble.
 To move a debug fixture binary to another machine, embed the RaTeX fonts:
 
 ```sh
-cargo build --locked -p sheprd-gpui --features integration-test \
+cargo build --locked -p spaceport-gpui --features integration-test \
   --config 'profile.dev.package."ratex-katex-fonts".debug-assertions=false' \
   --config 'profile.dev.package."rust-embed".debug-assertions=false'
 ```

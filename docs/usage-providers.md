@@ -5,7 +5,7 @@ and daily spending charts. The selected report leads the status bar, followed
 by reports closest to their limits. Missing observations remain unavailable,
 not zero usage. No authoritative runtime usage feed has been verified yet.
 
-`sheprd-usage` contains report models, static provider display metadata and the
+`spaceport-usage` contains report models, static provider display metadata and the
 existing bounded host shell used by listening-port inspection. It contains no
 provider polling, sign-in, cookie extraction, credential discovery or provider
 HTTP requests. Provider names, icons and external dashboard/status links remain
@@ -16,9 +16,9 @@ The `[usage]` settings `show`, `topbar`, `inline`, `show_providers` and
 `[usage.providers]` configuration are rejected. The app never imports the old
 provider credentials or reads provider environment variables.
 
-Native rendering lives in `crates/sheprd-gpui/src/usage/`; CLI report conversion
+Native rendering lives in `crates/spaceport-gpui/src/usage/`; CLI report conversion
 lives in `control/server/hosts.rs`. The report models and metadata are in
-`crates/sheprd-usage/src/model.rs`, `details.rs` and `registry.rs`. The shell in
-`crates/sheprd-usage/src/shell.rs` preserves bounded output, timeout fencing,
+`crates/spaceport-usage/src/model.rs`, `details.rs` and `registry.rs`. The shell in
+`crates/spaceport-usage/src/shell.rs` preserves bounded output, timeout fencing,
 SSH channel ownership, WSL platform checks and child cleanup. It runs only
 through its existing retained callers; it is not a usage feed.

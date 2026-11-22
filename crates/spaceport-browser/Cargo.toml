@@ -1,0 +1,36 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-browser"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[features]
+# The GPUI test harness settles motions and reads fixtures at once; a normal
+# build runs their real durations. A cargo feature, not `cfg!(test)`, because
+# a dependency's own `cfg(test)` is false inside its consumers' test builds.
+test-support = []
+
+[dependencies]
+gpui.workspace                 = true
+serde.workspace                = true
+serde_json.workspace           = true
+spaceport-client.workspace     = true
+spaceport-motion.workspace     = true
+spaceport-panes.workspace      = true
+spaceport-reorder.workspace    = true
+spaceport-state-file.workspace = true
+spaceport-truncate.workspace   = true
+thiserror.workspace            = true
+tracing.workspace              = true
+url.workspace                  = true
+uuid.workspace                 = true
+
+[dev-dependencies]
+gpui = { features = ["test-support"], workspace = true }
+spaceport-backend.workspace = true
+tempfile.workspace          = true

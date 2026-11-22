@@ -124,7 +124,7 @@ license, and trademark notice.
 
 Each `agent-<label>.svg` is named after the external Herdr daemon's canonical
 `agent_label` identifier, not an editable display label. The `agent_icons!`
-table in `crates/sheprd-gpui/src/icons.rs` maps them; unknown, empty, and missing
+table in `crates/spaceport-gpui/src/icons.rs` maps them; unknown, empty, and missing
 identities use `agent-generic.svg`.
 
 | Label | Source |

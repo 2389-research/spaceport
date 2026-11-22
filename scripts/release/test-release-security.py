@@ -61,13 +61,13 @@ class ReleaseTargets(unittest.TestCase):
         warmer = (ROOT / ".github/workflows/cache-macos.yml").read_text()
         self.assertRegex(warmer, r"\n  schedule:\n    - cron: '\d+ \d+ \* \* \*'\n")
         self.assertEqual(warmer.count("(github.event_name == 'schedule' ||"), 2)
-        for command in ('cargo build --locked --release -p sheprd-gpui --target "$TARGET"',
-                        'cargo test --locked --release -p sheprd-gpui --test cli --target "$TARGET"\n'):
+        for command in ('cargo build --locked --release -p spaceport-gpui --target "$TARGET"',
+                        'cargo test --locked --release -p spaceport-gpui --test cli --target "$TARGET"\n'):
             self.assertIn(command, warmer)
         self.assertNotIn("refs/heads/main", macos)
         self.assertIn("target: [aarch64-apple-darwin, x86_64-apple-darwin]\n", macos)
-        for command in ('cargo build --locked --release -p sheprd-gpui --target "$TARGET"',
-                        'cargo test --locked --release -p sheprd-gpui --test cli --target "$TARGET"'):
+        for command in ('cargo build --locked --release -p spaceport-gpui --target "$TARGET"',
+                        'cargo test --locked --release -p spaceport-gpui --test cli --target "$TARGET"'):
             self.assertIn(command, macos)
             self.assertIn(command, jobs["build"])
         self.assertIn("MACOS_RELEASE: ${{ needs.build-macos.result }}", jobs["checks-passed"])
@@ -108,7 +108,7 @@ class ReleaseTargets(unittest.TestCase):
         self.assertNotIn("secrets.", package)
         # Bash, so "$TARGET" and friends expand on the Windows runner.
         self.assertIn("    defaults:\n      run:\n        shell: bash\n", package)
-        for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp --target "$TARGET"',
+        for command in ('cargo build --locked --release -p spaceport-gpui -p spaceport-launcher -p spaceport-acp --target "$TARGET"',
                         'python scripts/release/package-windows.py "$VERSION" "$TARGET"',
                         'python scripts/release/windows-installer.py install-iscc',
                         'python scripts/release/windows-installer.py build "$VERSION" "$TARGET"',
@@ -123,8 +123,8 @@ class ReleaseTargets(unittest.TestCase):
         self.assertIn("        runner: [windows-2025, windows-11-arm]\n", native)
         self.assertNotIn("secrets.", native)
         for command in ('python scripts/install-herdr-windows.py "$RUNNER_TEMP/herdr"',
-                        "cargo test --locked -p sheprd-gpui --features integration-test --test live_gui -- --ignored",
-                        "cargo test --locked --release -p sheprd-gpui --features integration-test --test performance_gui dense_terminal_sidebar_performance -- --ignored --nocapture --exact"):
+                        "cargo test --locked -p spaceport-gpui --features integration-test --test live_gui -- --ignored",
+                        "cargo test --locked --release -p spaceport-gpui --features integration-test --test performance_gui dense_terminal_sidebar_performance -- --ignored --nocapture --exact"):
             self.assertIn(command, native)
         self.assertIn("          HERDR_PERF_P95_MS: '100'\n", native)
         self.assertIn("NATIVE: ${{ needs.windows-native.result }}", jobs["checks-passed"])

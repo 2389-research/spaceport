@@ -1,6 +1,6 @@
-# Splitting `crates/sheprd-gpui`
+# Splitting `crates/spaceport-gpui`
 
-`crates/sheprd-gpui` is ~313k lines over 1911 files and links the app's heaviest
+`crates/spaceport-gpui` is ~313k lines over 1911 files and links the app's heaviest
 dependencies (mermaid-rs-renderer, ratex-*, image, nucleo-matcher, syntect) for
 every change, whether or not it touches them. This note records the
 extractions so far, the pattern they proved, and the dependency analysis for the
@@ -9,34 +9,34 @@ next ones. Update it as each step lands.
 ## What moved
 
 Eleven modules have left the app. Ten are pure functions of their inputs with
-no `gpui` types; `sheprd-browser` is the first that has to carry them:
+no `gpui` types; `spaceport-browser` is the first that has to carry them:
 
 | Crate | From | Dependencies | Files importing it |
 | --- | --- | --- | --- |
-| `crates/sheprd-ago` | `crates/sheprd-gpui/src/ago.rs` | none | 1 (`palette/render.rs`) |
-| `crates/sheprd-lenient` | `crates/sheprd-gpui/src/lenient.rs` | `serde`, `toml` | 4 settings files |
-| `crates/sheprd-osc52` | `crates/sheprd-gpui/src/osc52.rs` | none | 2 (`state.rs` and its tests) |
-| `crates/sheprd-settings` | `crates/sheprd-gpui/src/config*`, `src/contrast.rs` | `sheprd-client`, `sheprd-commands`, `sheprd-i18n`, `sheprd-usage`, `sheprd-lenient`, `serde`, `toml`, `thiserror`, … | 307 (through the `crate::config` façade in `src/config.rs`) |
-| `crates/sheprd-sound` | `crates/sheprd-gpui/src/sound/` | `rodio`, `serde`, `sheprd-lenient`, `sheprd-protocol`, `thiserror`, `toml`, `tracing` | 17 |
-| `crates/sheprd-words` | `crates/sheprd-gpui/src/words.rs` | `unicode-segmentation` | 2 (`multiline_input.rs`, `text_editing/keys.rs`) |
-| `crates/sheprd-panes` | `crates/sheprd-gpui/src/core_terminals/panes*` | `serde`, `sheprd-backend`, `thiserror` | 16 (through `sheprd_panes::`) |
-| `crates/sheprd-state-file` | `crates/sheprd-gpui/src/state_file.rs` | `serde`, `serde_json`, `tempfile`, `thiserror`, `tracing` | 10 |
-| `crates/sheprd-motion` | `crates/sheprd-gpui/src/motion/slow*`, `motion.rs`'s clock | none | 49 (through the `crate::motion` façade) |
-| `crates/sheprd-browser` | `crates/sheprd-gpui/src/browser*` | `gpui`, `serde`, `serde_json`, `sheprd-client`, `sheprd-motion`, `sheprd-panes`, `sheprd-reorder`, `sheprd-state-file`, `sheprd-truncate`, `thiserror`, `tracing`, `url`, `uuid` | 51 (through the `crate::browser` façade) |
+| `crates/spaceport-ago` | `crates/sheprd-gpui/src/ago.rs` | none | 1 (`palette/render.rs`) |
+| `crates/spaceport-lenient` | `crates/sheprd-gpui/src/lenient.rs` | `serde`, `toml` | 4 settings files |
+| `crates/spaceport-osc52` | `crates/sheprd-gpui/src/osc52.rs` | none | 2 (`state.rs` and its tests) |
+| `crates/spaceport-settings` | `crates/sheprd-gpui/src/config*`, `src/contrast.rs` | `spaceport-client`, `spaceport-commands`, `spaceport-i18n`, `spaceport-usage`, `spaceport-lenient`, `serde`, `toml`, `thiserror`, … | 307 (through the `crate::config` façade in `src/config.rs`) |
+| `crates/spaceport-sound` | `crates/sheprd-gpui/src/sound/` | `rodio`, `serde`, `spaceport-lenient`, `spaceport-protocol`, `thiserror`, `toml`, `tracing` | 17 |
+| `crates/spaceport-words` | `crates/sheprd-gpui/src/words.rs` | `unicode-segmentation` | 2 (`multiline_input.rs`, `text_editing/keys.rs`) |
+| `crates/spaceport-panes` | `crates/sheprd-gpui/src/core_terminals/panes*` | `serde`, `spaceport-backend`, `thiserror` | 16 (through `spaceport_panes::`) |
+| `crates/spaceport-state-file` | `crates/sheprd-gpui/src/state_file.rs` | `serde`, `serde_json`, `tempfile`, `thiserror`, `tracing` | 10 |
+| `crates/spaceport-motion` | `crates/sheprd-gpui/src/motion/slow*`, `motion.rs`'s clock | none | 49 (through the `crate::motion` façade) |
+| `crates/spaceport-browser` | `crates/sheprd-gpui/src/browser*` | `gpui`, `serde`, `serde_json`, `spaceport-client`, `spaceport-motion`, `spaceport-panes`, `spaceport-reorder`, `spaceport-state-file`, `spaceport-truncate`, `thiserror`, `tracing`, `url`, `uuid` | 51 (through the `crate::browser` façade) |
 
 The browser's own record is
 [`notes-browser-extraction.md`](notes-browser-extraction.md): what moved, what
 stayed on the window, and the two seams the design had to change.
 
-### `sheprd-ago`
+### `spaceport-ago`
 
-`crates/sheprd-ago` is a new workspace member with **no dependencies at all**:
+`crates/spaceport-ago` is a new workspace member with **no dependencies at all**:
 
 | Before | After |
 | --- | --- |
-| `crates/sheprd-gpui/src/ago.rs`, 32 lines | `crates/sheprd-ago/src/lib.rs`: `Elapsed` and `elapsed(seconds)` |
-| its unit table in `src/ago/tests.rs` | `crates/sheprd-ago/src/tests.rs` |
-| its message table and `text()` | stay in `crates/sheprd-gpui/src/ago.rs`, 34 lines |
+| `crates/sheprd-gpui/src/ago.rs`, 32 lines | `crates/spaceport-ago/src/lib.rs`: `Elapsed` and `elapsed(seconds)` |
+| its unit table in `src/ago/tests.rs` | `crates/spaceport-ago/src/tests.rs` |
+| its message table and `text()` | stay in `crates/spaceport-gpui/src/ago.rs`, 34 lines |
 
 `ago` was picked over `sound`, `app_badge` and `about` because it is the only
 one of the four with no `gpui` types and a single importer:
@@ -48,65 +48,65 @@ one of the four with no `gpui` types and a single importer:
 | `about` | 258 | 4 | 3 |
 | `app_badge` | 302 | 25 | 3 |
 
-### `sheprd-osc52`
+### `spaceport-osc52`
 
-`crates/sheprd-osc52` is the second, also with **no dependencies at all**. The
+`crates/spaceport-osc52` is the second, also with **no dependencies at all**. The
 module file also held its tests; they moved out of the production file, and the
 app keeps only the call site:
 
 | Before | After |
 | --- | --- |
-| `crates/sheprd-gpui/src/osc52.rs`, 122 production lines and 3 inline tests | `crates/sheprd-osc52/src/lib.rs`: `MAX_TEXT_BYTES`, `MAX_PENDING`, `decode(data)` |
-| its three inline tests (20 lines) | `crates/sheprd-osc52/src/tests.rs` |
-| `src/state.rs` decoding a payload and bounding its mailbox | stays: `sheprd_osc52::decode`, `sheprd_osc52::MAX_PENDING` |
-| `src/state/tests/daemon_messages.rs` reading the mailbox bound | stays: `sheprd_osc52::MAX_PENDING` |
+| `crates/sheprd-gpui/src/osc52.rs`, 122 production lines and 3 inline tests | `crates/spaceport-osc52/src/lib.rs`: `MAX_TEXT_BYTES`, `MAX_PENDING`, `decode(data)` |
+| its three inline tests (20 lines) | `crates/spaceport-osc52/src/tests.rs` |
+| `src/state.rs` decoding a payload and bounding its mailbox | stays: `spaceport_osc52::decode`, `spaceport_osc52::MAX_PENDING` |
+| `src/state/tests/daemon_messages.rs` reading the mailbox bound | stays: `spaceport_osc52::MAX_PENDING` |
 
 It has no messages and no error type of its own: `decode` returns `None` for a
 payload it will not write, and the app logs the drop.
 
-### `sheprd-words`
+### `spaceport-words`
 
-`crates/sheprd-words` depends only on `unicode-segmentation`, and its tests were
+`crates/spaceport-words` depends only on `unicode-segmentation`, and its tests were
 already in `src/words/tests.rs`, so they moved as they were:
 
 | Before | After |
 | --- | --- |
-| `crates/sheprd-gpui/src/words.rs`, 35 lines | `crates/sheprd-words/src/lib.rs`: `previous_start(text, offset)` and `next_end(text, offset)` |
-| `crates/sheprd-gpui/src/words/tests.rs`, 41 lines | `crates/sheprd-words/src/tests.rs` |
-| `src/multiline_input.rs` (double-click selection) and `src/text_editing/keys.rs` (word movement) | both call `sheprd_words::` |
+| `crates/sheprd-gpui/src/words.rs`, 35 lines | `crates/spaceport-words/src/lib.rs`: `previous_start(text, offset)` and `next_end(text, offset)` |
+| `crates/sheprd-gpui/src/words/tests.rs`, 41 lines | `crates/spaceport-words/src/tests.rs` |
+| `src/multiline_input.rs` (double-click selection) and `src/text_editing/keys.rs` (word movement) | both call `spaceport_words::` |
 
 It carries no messages either: the fields that use it own their own text.
 
-### `sheprd-lenient`
+### `spaceport-lenient`
 
-`crates/sheprd-lenient` depends only on `serde` and `toml`. Herdr writes
+`crates/spaceport-lenient` depends only on `serde` and `toml`. Herdr writes
 `config.toml` and this app does not own it, so every value the build cannot read
 falls back to its own default: a property of a deserializer, not of the app.
 
 | Before | After |
 | --- | --- |
-| `crates/sheprd-gpui/src/lenient.rs`, 107 lines | `crates/sheprd-lenient/src/lib.rs`, 51 lines: `value`, `or_default`, `or_true`, `entries` |
-| its inline test | `crates/sheprd-lenient/src/tests.rs`, 56 lines |
-| 44 `crate::lenient::` paths in four settings files | the same paths naming `sheprd_lenient` |
+| `crates/sheprd-gpui/src/lenient.rs`, 107 lines | `crates/spaceport-lenient/src/lib.rs`, 51 lines: `value`, `or_default`, `or_true`, `entries` |
+| its inline test | `crates/spaceport-lenient/src/tests.rs`, 56 lines |
+| 44 `crate::lenient::` paths in four settings files | the same paths naming `spaceport_lenient` |
 
 It has no messages and no error type: a value it cannot read falls back, and
 malformed TOML fails with `toml`'s own error in the caller.
 
-### `sheprd-sound`
+### `spaceport-sound`
 
 The first extraction that moved a dependency out of the app crate's own
 direct dependencies: `rodio` (with `cpal`, CoreAudio, `symphonia` below it)
-is no longer in `sheprd-gpui`'s `[dependencies]`, `sheprd-sound` can be
+is no longer in `spaceport-gpui`'s `[dependencies]`, `spaceport-sound` can be
 tested without building GPUI, and the audio code has its own crate. The
-stack is still in the app's *transitive* graph — `sheprd-gpui` depends on
-`sheprd-sound`, which depends on `rodio` — so a built app binary links it
+stack is still in the app's *transitive* graph — `spaceport-gpui` depends on
+`spaceport-sound`, which depends on `rodio` — so a built app binary links it
 as before; the win is ownership and test isolation, not link size. A
 boundary that actually excludes those dependencies would need the sound
 feature to be optional, which is a product decision, not a refactor.
 
 | Before | After |
 | --- | --- |
-| `crates/sheprd-gpui/src/sound.rs`, 455 lines | `crates/sheprd-sound/src/service.rs` (the worker) and `src/policy.rs` (`Policy`, `Live`, `MAX_PENDING`) |
+| `crates/sheprd-gpui/src/sound.rs`, 455 lines | `crates/spaceport-sound/src/service.rs` (the worker) and `src/policy.rs` (`Policy`, `Live`, `MAX_PENDING`) |
 | `src/sound/config.rs`, 196 lines | `src/config.rs`: `Settings::load(path)`, no path policy of its own |
 | `src/sound/playback.rs`, 159 lines | `src/playback.rs`: `MAX_VOLUME`, `muted`, and rodio playback |
 | `src/sound/error.rs`, 47 lines | `src/error.rs`: the crate's own `thiserror` `Error`, with `Io`, `Path` and `Toml` added for settings |
@@ -115,7 +115,7 @@ feature to be optional, which is a product decision, not a refactor.
 Three couplings had to invert first, each one parameter or struct:
 
 - `Policy::poll` took `&mut LiveState`, which is the app's. It now takes
-  `sheprd_sound::Live`: the two cancellation tokens, whether the daemon is
+  `spaceport_sound::Live`: the two cancellation tokens, whether the daemon is
   connected, the reload flag, the queue it drains, and the newest snapshot. The
   app builds it in one place, `LiveState::sound_live`.
 - `Settings::load` resolved its own path through `config::view_settings_path`,
@@ -125,23 +125,23 @@ Three couplings had to invert first, each one parameter or struct:
   `ui_delay`, `path_for` and `allows` on it. Those became `pub(crate)`, and the
   app only calls the worker.
 
-`crates/sheprd-truncate` depends on `unicode-segmentation`, `unicode-width` and
-`sheprd-client`:
+`crates/spaceport-truncate` depends on `unicode-segmentation`, `unicode-width` and
+`spaceport-client`:
 
 | Before | After |
 | --- | --- |
-| `crates/sheprd-gpui/src/truncate.rs`, 105 lines | `crates/sheprd-truncate/src/lib.rs`, 105 lines: `cut`, `cut_chars`, `cut_width`, `one_line`, `ellipsize`, `tab_title`, `ELLIPSIS` |
-| `crates/sheprd-gpui/src/truncate/tests.rs`, 86 lines | `crates/sheprd-truncate/src/tests.rs`, moved unchanged |
-| 6 `crate::truncate::` paths in five files | the same paths naming `sheprd_truncate`; `one_line` calls `sheprd_client::text::safe_text`, which it had reached through `crate::notifications` |
+| `crates/sheprd-gpui/src/truncate.rs`, 105 lines | `crates/spaceport-truncate/src/lib.rs`, 105 lines: `cut`, `cut_chars`, `cut_width`, `one_line`, `ellipsize`, `tab_title`, `ELLIPSIS` |
+| `crates/sheprd-gpui/src/truncate/tests.rs`, 86 lines | `crates/spaceport-truncate/src/tests.rs`, moved unchanged |
+| 6 `crate::truncate::` paths in five files | the same paths naming `spaceport_truncate`; `one_line` calls `spaceport_client::text::safe_text`, which it had reached through `crate::notifications` |
 
 ## The pattern
 
 1. **Pick by footprint, not by size.** For each candidate module count what it
    imports (`crate::`, `gpui::`) and how many files import it back:
-   `rg -l 'crate::<module>\b' crates/sheprd-gpui/src`. Fewest reverse importers
+   `rg -l 'crate::<module>\b' crates/spaceport-gpui/src`. Fewest reverse importers
    first; a module that renders or holds a GPUI entity is not a candidate yet.
-2. **Take a crate with its own tests.** New `crates/sheprd-<module>/Cargo.toml`
-   copies `[package]`'s workspace fields from `crates/sheprd-i18n`, sets
+2. **Take a crate with its own tests.** New `crates/spaceport-<module>/Cargo.toml`
+   copies `[package]`'s workspace fields from `crates/spaceport-i18n`, sets
    `[lints] workspace = true`, and lists only the dependencies the module uses,
    inherited from `[workspace.dependencies]`. A crate with no error paths has no
    `error.rs`; one with them gets its own `thiserror` `Error`/`Result` and one
@@ -154,13 +154,13 @@ Three couplings had to invert first, each one parameter or struct:
    out of production files. A test that needs the app (the shown locale, a
    window) stays in the app next to the code that writes the words.
 5. **Messages are the app's** (`docs/i18n.md`): a crate below the app returns
-   typed values and the app writes them. `sheprd-ago` names the unit and its
-   count; `crates/sheprd-gpui/src/ago.rs` keeps `ago.ftl`'s IDs. A crate that
-   names message IDs as data instead follows `sheprd-commands`/`sheprd-usage`.
+   typed values and the app writes them. `spaceport-ago` names the unit and its
+   count; `crates/spaceport-gpui/src/ago.rs` keeps `ago.ftl`'s IDs. A crate that
+   names message IDs as data instead follows `spaceport-commands`/`spaceport-usage`.
 6. **Wire and record.** Workspace `members`, `[workspace.dependencies]`,
-   `sheprd-gpui`'s `[dependencies]`, the crate table in `AGENTS.md`, and the
+   `spaceport-gpui`'s `[dependencies]`, the crate table in `AGENTS.md`, and the
    layout in `docs/i18n.md` when the module carries text.
-7. **Verify before handoff:** `cargo check -p <crate> -p sheprd-gpui`,
+7. **Verify before handoff:** `cargo check -p <crate> -p spaceport-gpui`,
    `cargo test -p <crate>`, `cargo fmt --all -- --check`, `just check-file-size`,
    `just check-sorted`, `just check-i18n`. `cargo metadata` refreshes
    `Cargo.lock`, which the commit includes.
@@ -172,7 +172,7 @@ Cheap, dependency-free moves first; the blocked ones carry real work.
 The next extractions are the three large features; see the feature table below.
 The settings crate landed with the `crate::config` façade still in place in
 `src/config.rs`, so importers keep compiling unchanged; flattening those paths
-to `sheprd_settings::` is a separate, batched readability commit, not a
+to `spaceport_settings::` is a separate, batched readability commit, not a
 migration step.
 
 `chat`, `browser` and `sidebar` are the app's three large features and each is a
@@ -181,8 +181,8 @@ homes. Counted today, production lines first:
 
 | Feature | production / test lines | `gpui::`/entity uses | i18n messages | files importing it | what blocks it |
 | --- | --- | --- | --- | --- | --- |
-| `browser` | moved: `crates/sheprd-browser` holds 3,398 production and 1,904 test lines | — | 10 | 51 | done; 1,395 production lines stay in the app as the window's own (wrappers, element building, `group_shown`, the close driver) — see [`notes-browser-extraction.md`](notes-browser-extraction.md) |
-| `chat` | 20,440 / 16,011 | 128 | 174 | 12 | GPUI views all the way down; needs `browser` below it first, then the `sheprd-live` trigger named in the settings design |
+| `browser` | moved: `crates/spaceport-browser` holds 3,398 production and 1,904 test lines | — | 10 | 51 | done; 1,395 production lines stay in the app as the window's own (wrappers, element building, `group_shown`, the close driver) — see [`notes-browser-extraction.md`](notes-browser-extraction.md) |
+| `chat` | 20,440 / 16,011 | 128 | 174 | 12 | GPUI views all the way down; needs `browser` below it first, then the proposed live-state crate described in the settings design |
 | `sidebar` | 11,195 / 14,506 | 162 | 75 | 263 | the most-imported module in the crate; settings now below it, still needs `menu`, `keymap`, `endpoint`, `icons`, `worktree_notes`, `device_tags` |
 
 Order that falls out of the counts: `browser` before `sidebar` (53 against 263
@@ -194,6 +194,6 @@ for what the app owns.
 ## What this does not do
 
 No behaviour changes, no new dependencies, no file reshuffles beyond the module
-that moved, and no change to another crate. `sheprd-gpui` still links
+that moved, and no change to another crate. `spaceport-gpui` still links
 `mermaid-rs-renderer`, `ratex-*`, `image` and `syntect` until `chat` moves; that
 is the commit that shrinks the build next.
