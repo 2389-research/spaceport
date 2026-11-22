@@ -76,7 +76,7 @@ impl SpaceportWindow {
     /// the devices layout's agent rows in their place, and the agents panel.
     pub(super) fn sidebar_rows(
         &self,
-        m: &SidebarMeasure,
+        m: &SidebarMeasure<'_>,
         indicators: Indicators,
         cx: &mut Context<Self>,
     ) -> SidebarRows {

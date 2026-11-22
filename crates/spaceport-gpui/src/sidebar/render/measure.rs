@@ -16,7 +16,7 @@ use super::super::{
 /// What a sidebar frame's look and choices come to. Later stages read it
 /// instead of the config, so every row and heading in the frame agrees on the
 /// width, the density, and which sections exist at all.
-pub(super) struct SidebarMeasure {
+pub(super) struct SidebarMeasure<'a> {
     /// The panel's width: its setting, clamped to this viewport.
     pub(super) width: f32,
     /// The spaces section's share of the panel's height.
@@ -31,7 +31,7 @@ pub(super) struct SidebarMeasure {
     pub(super) row_layout: &'static dyn RowLayout,
     /// The workspace row a menu was opened for, which keeps looking hovered
     /// while the pointer is over the menu.
-    pub(super) menu_target: Option<String>,
+    pub(super) menu_target: Option<&'a str>,
     /// The spaces layout draws more than a label, with a gap between rows.
     pub(super) spaces_custom: bool,
     /// The Devices layout heads every device and lists its agents under it.
@@ -66,13 +66,13 @@ impl SpaceportWindow {
         &self,
         window: &Window,
         cx: &mut Context<Self>,
-    ) -> SidebarMeasure {
+    ) -> SidebarMeasure<'_> {
         let width = sidebar_width(self.sidebar_width, f32::from(window.viewport_size().width));
         let split = self.sidebar_split.unwrap_or(0.5).clamp(0.1, 0.9);
         let heading_look = layout::for_config(&self.config, self.fill());
         let font = &self.config.sidebar;
         let theme = &self.theme;
-        let menu_target = self.workspace_menu_target().map(str::to_owned);
+        let menu_target = self.workspace_menu_target();
         let spaces_custom = self.config.usage.inline
             && self.config.sidebar_layout.spaces != crate::config::SpaceLayout::default();
         // The field is the heading, so it takes the heading's face.

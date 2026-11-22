@@ -7,7 +7,7 @@ use super::{
         status_style,
     },
     layout_tests,
-    render::header,
+    render::header::header,
     workspace_label,
     workspaces::workspace_entries,
 };

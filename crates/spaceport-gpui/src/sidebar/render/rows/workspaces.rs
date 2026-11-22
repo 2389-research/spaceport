@@ -40,7 +40,7 @@ impl SpaceportWindow {
         mut spaces: SpacesRows,
         host: HostRows<'_>,
         row_cx: &RowContext<'_>,
-        m: &super::super::measure::SidebarMeasure,
+        m: &super::super::measure::SidebarMeasure<'_>,
         cx: &mut Context<Self>,
     ) -> (SpacesRows, Option<SharedString>) {
         let font = &self.config.sidebar;
@@ -48,7 +48,7 @@ impl SpaceportWindow {
         let layout = m.look.density;
         let content_x = m.content_x;
         let rows = m.row_layout;
-        let menu_target = m.menu_target.as_deref();
+        let menu_target = m.menu_target;
         let worktree_glyph = crate::worktree_identity::glyph(&self.config.worktrees, theme);
         let HostRows {
             endpoint,
