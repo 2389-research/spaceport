@@ -48,9 +48,9 @@ pub(crate) use session::Refusal;
 // The model below the views, at the paths the rest of the chat reads it at.
 pub(crate) use spaceport_chat_core::env::{check_env, env_text, parse_env};
 pub(crate) use spaceport_chat_core::{MAX_CHATS, env, existing, list};
-pub(crate) use start::{Error as StartError, Program, Receipt};
 #[cfg(feature = "integration-test")]
 pub(crate) use start::native as native_start;
+pub(crate) use start::{Error as StartError, Program, Receipt};
 
 /// The wall clock in milliseconds since the Unix epoch, which the program
 /// on this machine stamps a running turn with.
