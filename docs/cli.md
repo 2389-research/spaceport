@@ -65,12 +65,23 @@ unknown option, not `status` asked for JSON.
 | 0 | Done |
 | 1 | Refused or failed |
 | 2 | Invalid arguments, or an address or file that cannot be shown |
-| 3 | Spaceport is not running |
+| 3 | Spaceport is not running, or the control connection closed without an answer |
 | 4 | Nothing yet: no notes, no events, no chat panes, no ports, no usage, no log, a key not set, or the wait not met |
 | 5 | The window, workspace, tab, host, file, or `run` command name is not there |
 | 6 | A dialog is open in the window, or the app is busy |
 | 7 | The app did not answer in time |
 | 8 | Not available on this platform or in this version of the app |
+
+With `--json`, an error the app returns keeps the app's exact code, such as
+`workspace_not_found`, `no_window`, `not_found`, `invalid_request`, or
+`failed`; the exit status stays the coarser category above. Errors the
+command line finds itself use the category's name: `usage`, `not_running`,
+`timeout`, `unsupported`, or `refused`.
+
+An answer this command line cannot read, or a `status` from another control
+protocol version, exits 8. A read or write timeout on the control connection
+exits 7. A lost answer does not prove a change failed: check the app's state
+before you retry a change. Commands never retry on their own.
 
 ## Commands
 

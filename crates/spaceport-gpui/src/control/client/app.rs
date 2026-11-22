@@ -86,13 +86,6 @@ pub(super) fn status(context: &Context) -> crate::Result<Output> {
     } = &status;
     let mut text =
         format!("Spaceport {version} is running (pid {pid}, control protocol {protocol})\n");
-    if *protocol != crate::control::protocol::PROTOCOL_VERSION {
-        let _ = writeln!(
-            text,
-            "This command line speaks protocol {}; update the older of the two.",
-            crate::control::protocol::PROTOCOL_VERSION
-        );
-    }
     let _ = writeln!(text, "{}", describe_core_catalog(core_catalog));
     if windows.is_empty() {
         text.push_str("No window is open\n");

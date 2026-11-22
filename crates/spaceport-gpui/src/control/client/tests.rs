@@ -6,6 +6,7 @@ mod core_catalog;
 mod documented_commands;
 mod family_help;
 mod tab_help;
+mod transport;
 mod wire;
 
 #[test]

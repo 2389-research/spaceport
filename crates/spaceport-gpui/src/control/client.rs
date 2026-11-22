@@ -225,7 +225,13 @@ fn rejected(response: Response) -> crate::Error {
 /// An answer of another kind than asked for: an app of another version.
 pub(crate) fn unexpected(response: Response) -> crate::Error {
     tracing::debug!(?response, "Unexpected control response");
-    crate::control::Error::NoResponse.into()
+    crate::control::Error::Rejected {
+        code: ErrorCode::Unsupported,
+        message:
+            "Spaceport answered with an incompatible response; update the older app or command line"
+                .into(),
+    }
+    .into()
 }
 
 /// The exit status an error maps to.
@@ -235,7 +241,25 @@ pub(crate) fn status(error: &crate::Error) -> u8 {
             spaceport_browser::Error::InvalidBrowserUrl
             | spaceport_browser::Error::InvalidLocalPage,
         ) => exit::USAGE,
-        crate::Error::Control(crate::control::Error::Unavailable { .. }) => exit::NOT_RUNNING,
+        crate::Error::Control(
+            crate::control::Error::Unavailable { .. } | crate::control::Error::NoResponse,
+        ) => exit::NOT_RUNNING,
+        crate::Error::Control(crate::control::Error::Io(source)) => match source.kind() {
+            std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock => exit::TIMEOUT,
+            std::io::ErrorKind::BrokenPipe
+            | std::io::ErrorKind::ConnectionReset
+            | std::io::ErrorKind::ConnectionAborted
+            | std::io::ErrorKind::UnexpectedEof => exit::NOT_RUNNING,
+            _ => exit::REFUSED,
+        },
+        // A cut-off answer means the app went away; one that does not decode
+        // comes from an app of another version.
+        crate::Error::Control(crate::control::Error::Json(source)) if source.is_eof() => {
+            exit::NOT_RUNNING
+        }
+        crate::Error::Control(crate::control::Error::Json(source)) if source.is_data() => {
+            exit::UNSUPPORTED
+        }
         crate::Error::Control(crate::control::Error::Rejected { code, .. }) => match code {
             ErrorCode::InvalidUrl => exit::USAGE,
             ErrorCode::NotFound | ErrorCode::WorkspaceNotFound | ErrorCode::NoWindow => {
@@ -250,9 +274,13 @@ pub(crate) fn status(error: &crate::Error) -> u8 {
     }
 }
 
-/// The error's code as JSON names it.
-fn code(error: &crate::Error) -> &'static str {
-    match status(error) {
+/// The error's code as JSON names it: the app's own code for a refusal,
+/// otherwise the name of its exit status.
+fn code(error: &crate::Error) -> serde_json::Value {
+    if let crate::Error::Control(crate::control::Error::Rejected { code, .. }) = error {
+        return serde_json::json!(code);
+    }
+    serde_json::json!(match status(error) {
         exit::USAGE => "usage",
         exit::NOT_RUNNING => "not_running",
         exit::NOT_FOUND => "not_found",
@@ -260,7 +288,7 @@ fn code(error: &crate::Error) -> &'static str {
         exit::TIMEOUT => "timeout",
         exit::UNSUPPORTED => "unsupported",
         _ => "refused",
-    }
+    })
 }
 
 /// Text for the caller's terminal: lines and tabs stay, every other control
