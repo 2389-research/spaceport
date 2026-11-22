@@ -18,9 +18,10 @@ produce. The Herdr 1 leg stays `not_run`.
 
 `just test` ran both CI legs green: **5471 passed, 0 failed, 31 ignored** with
 default features (73 suite summaries) and **5522 passed, 0 failed, 47 ignored**
-with `--all-features` (75 suite summaries). 129 of those tests are
-`cli::tests::*` in the `spaceport` binary, covering argument parsing, the
-separator form, help and version precedence, and per-subcommand arity.
+with `--all-features` (75 suite summaries). 64 of those distinct tests are
+`cli::tests::*` in the `spaceport` binary (65 with `--all-features`), covering
+argument parsing, the separator form, help and version precedence, and
+per-subcommand arity.
 
 `cargo test --locked -p sheprd-commands` passed **40 passed, 0 failed**: the
 catalog's names, default shortcuts per platform, and the daemon request each

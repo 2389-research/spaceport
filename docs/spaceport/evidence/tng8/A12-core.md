@@ -35,8 +35,8 @@ test tests::resize::confirmed_observer_keeps_resize_before_later_data_and_credit
   run: no herdr-core binary is available in this lane, so
   `real_core_late_streams_close_without_ending_the_terminal` was not executed.
 - "No test reports an unbounded queue" — no failing or unbounded-queue report
-  appears in the log; 69 of the passing core-client tests name credit, queue,
-  bound or limit behaviour.
+  appears in the log; 69 of the log's test names contain credit, queue, bound or
+  limit, across the protocol, client and core-client suites.
 
 ## What this record does not prove
 

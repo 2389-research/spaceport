@@ -27,8 +27,8 @@ test tests::decodes_padded_unpadded_and_multibyte_payloads ... ok
 
 `just test` ran both CI legs green: **5471 passed, 0 failed, 31 ignored** with
 default features and **5522 passed, 0 failed, 47 ignored** with `--all-features`.
-Within that run, 222 `control::*` tests and the `window::clipboard::*` tests
-passed, including the macOS reader's bounds and helper handling:
+Within that run, 111 distinct `control::*` tests and 30 `window::clipboard::*`
+tests passed, including the macOS reader's bounds and helper handling:
 
 ```
 test window::clipboard::macos::tests::incomplete_unknown_and_oversized_responses_are_rejected ... ok
