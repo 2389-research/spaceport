@@ -26,7 +26,9 @@ Missing bare and absolute executables retain an I/O `NotFound` error.
 Shell execution failures after lookup still use the shell's exit status.
 The helper preserves argument boundaries and explicit environment changes.
 Callers build private foreground SSH commands without clearing the inherited environment.
-Both forwarding commands override configured `ForkAfterAuthentication`.
+Both forwarding commands override configured `ForkAfterAuthentication` when the client knows it.
+`ssh::foreground` checks once with `ssh -G`; OpenSSH before 8.7 lacks the option.
+Such a client's config cannot set it, so omitting it there keeps the child in the foreground.
 This prevents an SSH child from detaching beyond its watchdog.
 Existing unverified-host forwarding restrictions remain active.
 
