@@ -1,3 +1,5 @@
+// ABOUTME: Opens the Devices overview and keeps each tab's view state.
+// ABOUTME: Draws prepared device snapshots without querying runtimes during rendering.
 //! The Devices overview: a tab, beside the workspace's terminals and pages,
 //! that shows every device this window connects to, how many agents work on
 //! each, the agent activity of the last two hours, and each machine's CPU,
@@ -80,7 +82,10 @@ impl SheprdWindow {
             })
         });
         let Some(id) = opened else {
-            self.show_flash(Flash::warning(fl!("devices-overview-too-many-tabs")), cx);
+            self.show_flash(
+                crate::browser::tab_open_failure(cx, fl!("devices-overview-too-many-tabs")),
+                cx,
+            );
             return;
         };
         self.dismiss_menu(window, cx);

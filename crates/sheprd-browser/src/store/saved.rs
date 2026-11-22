@@ -3,7 +3,7 @@
 //! The schema of `browser-tabs.json` as any earlier build may have written
 //! it. Only this module can name a retired tab kind: it checks the whole
 //! file, reserves every ID in it, and hands the store the tabs that restore.
-use super::{Location, MAX_TABS, MAX_TITLE_CHARS, Saved, Scope, Tab, TabId};
+use super::{Location, MAX_TABS, MAX_TITLE_CHARS, Saved, SavedEntry, Scope, Tab, TabId};
 use crate::WebUrl;
 use crate::{Error, Result};
 use serde::Deserialize;
@@ -162,6 +162,27 @@ pub(super) fn parse(bytes: &[u8]) -> Result<Saved> {
             .collect(),
         next,
     })
+}
+
+/// Restores independent entries that still pass this build's schema checks.
+pub(super) fn recover(bytes: &[u8]) -> Saved {
+    #[derive(Default, Deserialize)]
+    struct Entries {
+        tabs: Vec<SavedEntry<SavedTab>>,
+    }
+    let Ok(file) = super::identities::rows::<Entries>(bytes) else {
+        return Saved::default();
+    };
+    let mut saved = Saved::default();
+    for (index, entry) in file.tabs.into_iter().enumerate() {
+        if let Some(tab) = entry.parsed() {
+            saved.next = saved.next.max(tab.id.0.saturating_add(1));
+            if index < MAX_TABS && tab.valid() {
+                saved.tabs.extend(tab.restore());
+            }
+        }
+    }
+    saved
 }
 
 fn bounded_path(text: &str) -> bool {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ABOUTME: Installs Ubuntu 24.04 build dependencies for native x86_64 and ARM64.
-# ABOUTME: Adds desktop tools only for the isolated Linux shutdown CI fixture.
+# ABOUTME: Adds capture and OCR tools for the private Linux native fixtures.
 set -euo pipefail
 # A developer and a CI runner need sudo; root in a container has none installed.
 if [[ $EUID -eq 0 ]]; then sudo=(); else sudo=(sudo); fi
@@ -43,9 +43,8 @@ if [[ ${SPACEPORT_CI_APT_MIRROR:-0} == 1 ]]; then
 else
   "${sudo[@]+"${sudo[@]}"}" apt-get update
 fi
-# The real Herdr shutdown case runs only on the x64 all-features desktop.
 desktop_packages=()
-if [[ ${SPACEPORT_CI_SHUTDOWN_DESKTOP:-false} == true ]]; then
+if [[ ${SPACEPORT_CI_SAVED_STATE_DESKTOP:-false} == true || ${SPACEPORT_CI_SHUTDOWN_DESKTOP:-false} == true ]]; then
   desktop_packages=(xvfb xdotool imagemagick mesa-vulkan-drivers tesseract-ocr tesseract-ocr-eng)
 fi
 # Installation is never retried: only a successful metadata refresh reaches it.

@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "verified_on": "2026-11-21",
+  "scope": "Linux x64 native saved-state recovery, restart, refusal, warning readability and exact-child cleanup",
+  "product_head": "244a7d5293e1bfee5fd11b6a490ed06c9a99b4c5",
+  "qualification_head": "7bb50dcc1bd8342a996f31f38db5688b462f02a6",
+  "checkout_merge": "b61b626f031b2b9574ed65de9eada7c8ea5b4b30",
+  "renderer_blob": "d0c1fe043020db4bc06eff37834c1bc80747e368",
+  "product_ci": {
+    "run_id": 44920108697,
+    "result": "success",
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44920108697"
+  },
+  "qualification_ci": {
+    "run_id": 44921341819,
+    "result": "success",
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44921341819"
+  },
+  "native_job": {
+    "job_id": 136898096754,
+    "result": "success",
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44921341819/job/136898096754"
+  },
+  "artifact": {
+    "id": 14714480546,
+    "sha256": "22e8cb6b4c9a04c92bdb628a64b0935d3233b39b8bda494fbde552feb1175bb0",
+    "source": "linux-saved-state-1"
+  },
+  "witness": {
+    "pid": 13641,
+    "generation": 1,
+    "server_version": "0.9.5",
+    "boot": "13641-1795276571139207528",
+    "focused_workspace": "w1"
+  },
+  "process_receipts": {
+    "backup": {
+      "name": "browser-tabs.json.rejected-85FfyV",
+      "permissions": "0600",
+      "sha256": "a26f48f7f84eb9cc748808d533caa68ec608a2b717908f3fef6e76f5413360a5"
+    },
+    "exits": [
+      {
+        "reaped_gui_pid": 13658,
+        "gui_exit": 0,
+        "surviving_server_pid": 13641
+      },
+      {
+        "reaped_gui_pid": 13772,
+        "gui_exit": 0,
+        "surviving_server_pid": 13641
+      },
+      {
+        "reaped_gui_pid": 13840,
+        "gui_exit": 0,
+        "surviving_server_pid": 13641
+      }
+    ],
+    "windows": [
+      {
+        "pid": 13658,
+        "control_window": 4294967297,
+        "xid": "0x200001"
+      },
+      {
+        "pid": 13772,
+        "control_window": 4294967297,
+        "xid": "0x200001"
+      },
+      {
+        "pid": 13840,
+        "control_window": 4294967297,
+        "xid": "0x200001"
+      }
+    ]
+  },
+  "verified_checks": [
+    "Retained valid tab 2 and omitted rejected sibling 70.",
+    "Allocated Devices tab 301 above hidden layout reference 300 and saved next 302.",
+    "Restarted GUI B against untouched app-produced files and matched the CLI tab projection.",
+    "Closed only created Devices tab 301 and retained tab 2.",
+    "Refused new Devices tabs with ambiguous layout identities in GUI C.",
+    "Preserved both exact primary files across refused creation and GUI C exit.",
+    "Verified all five hash manifests against downloaded state snapshots.",
+    "Compared the rejected backup byte for byte with its seed; the CI receipt records mode 0600.",
+    "Observed the same exact server survive all three successful GUI exits.",
+    "Observed typed ServerShutdown with the expected reason before frame-boundary EOF.",
+    "Verified cleanup of the exact server, GUI children, Xvfb, and sandbox; startup trap stayed empty.",
+    "Inspected both final native PNGs for complete repair text, both filenames, restart guidance and terminal containment."
+  ],
+  "unit_results": [
+    {
+      "test": "window::flash::tests::wrapping::saved_state_repair_guidance_wraps_inside_the_terminal",
+      "result": "ok"
+    },
+    {
+      "test": "saved_state::recovery::complete_native_repair_lines_are_readable_at_both_widths",
+      "result": "ok"
+    },
+    {
+      "test": "saved_state::recovery::clipped_or_missing_repair_guidance_is_unreadable",
+      "result": "ok"
+    }
+  ],
+  "observed_app_summary": "3686 passed; 0 failed; 9 ignored",
+  "frames": [
+    {
+      "width": 900,
+      "height": 600,
+      "file": "repair-after-900.png",
+      "artifact_source": "native/repair-900.png",
+      "sha256": "a459184f76f611842f356fa036295b2147b1450c109a6fe06a46a1859a6573c5",
+      "visually_inspected": true
+    },
+    {
+      "width": 640,
+      "height": 600,
+      "file": "repair-after-640.png",
+      "artifact_source": "native/repair-640.png",
+      "sha256": "ac8cbbdc2dbd7524bc8a9f1ab8fd3c551a6545b384dc2defcc9f1b9f1662b285",
+      "visually_inspected": true
+    }
+  ],
+  "limits": [
+    "The native scenario, listed Linux all-features tests, and complete configured qualification CI pass at the recorded source.",
+    "Numeric control/X11 window IDs can repeat across reaped GUI launches; retained process IDs establish ownership.",
+    "OCR accepts only the observed period/comma confusion within complete known filenames; raw images/transcripts remain available.",
+    "Manual image inspection complements OCR; the original clipped and missing-filename controls remain rejected.",
+    "The warning keeps its existing two-second lifetime.",
+    "GPUI quit hooks retain their existing 200 ms budget; this successful run does not establish unconditional writer joining.",
+    "No macOS or Windows native saved-state scenario, Core Cmd-W, actual speech, performance, SSH, WSL, main merge, or release qualification is claimed."
+  ]
+}

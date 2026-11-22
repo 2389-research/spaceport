@@ -5,9 +5,9 @@
 //! them in step with the daemon. The tabs and their groups are
 //! `sheprd_browser`'s.
 use super::Layout;
-use crate::SheprdWindow;
 #[cfg(test)]
-use crate::{i18n::fl, window::Flash};
+use crate::i18n::fl;
+use crate::{SheprdWindow, i18n::Localize, window::Flash};
 use gpui::{prelude::*, *};
 #[cfg(test)]
 use sheprd_browser::Location;
@@ -38,6 +38,14 @@ pub(crate) fn tab_label(title: &str) -> SharedString {
 
 pub(crate) fn store(cx: &App) -> Option<&Store> {
     cx.try_global::<Store>()
+}
+
+/// Explains a rejected opening through the store's shared admission check.
+pub(crate) fn tab_open_failure(cx: &App, capacity: impl Into<SharedString>) -> Flash {
+    match store(cx).and_then(|store| store.check_new_tab_id().err()) {
+        Some(error) => Flash::warning(error.localize()),
+        None => Flash::warning(capacity),
+    }
 }
 
 /// What [`SheprdWindow::open_workspace_page`] did.
@@ -85,7 +93,7 @@ impl SheprdWindow {
                 self.poll_devices_overview(cx);
                 self.show_browser_tab(id, window, cx);
             }
-            None => self.show_flash(Flash::warning(fl!("browser-too-many-tabs")), cx),
+            None => self.show_flash(tab_open_failure(cx, fl!("browser-too-many-tabs")), cx),
         }
     }
 

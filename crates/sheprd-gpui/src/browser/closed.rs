@@ -1,3 +1,5 @@
+// ABOUTME: Reopens native pages and Herdr tabs in their original workspace.
+// ABOUTME: Keeps closed entries available when the store refuses a new tab ID.
 //! The window's part of reopening recently closed tabs: remembering a Herdr
 //! tab's close, noticing the ones the daemon closed on its own, and reopening
 //! either kind in the workspace it came from. [`super::ClosedTabs`] is the
@@ -6,8 +8,8 @@ use super::{
     ClosedHerdrTab, ClosedTab, Pick, Store,
     view::{scope, store},
 };
+use crate::SheprdWindow;
 use crate::i18n::fl;
-use crate::{SheprdWindow, window::Flash};
 use gpui::{Context, Window};
 use sheprd_client::Method;
 use std::collections::HashSet;
@@ -108,7 +110,10 @@ impl SheprdWindow {
                 };
                 let Some(id) = Store::update(cx, |store| store.reopen_page(page.clone())) else {
                     Store::update(cx, |store| store.record_closed_page(page));
-                    self.show_flash(Flash::warning(fl!("browser-too-many-tabs")), cx);
+                    self.show_flash(
+                        super::tab_open_failure(cx, fl!("browser-too-many-tabs")),
+                        cx,
+                    );
                     return;
                 };
                 self.poll_devices_overview(cx);

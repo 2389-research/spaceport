@@ -5,7 +5,7 @@ use super::*;
 /// An absolute path on the platform running the test, as JSON text.
 fn absolute(tail: &str) -> String {
     let root = if cfg!(windows) { r"C:\srv" } else { "/srv" };
-    serde_json::to_string(&std::path::Path::new(root).join(tail)).unwrap()
+    serde_json::to_string(&Path::new(root).join(tail)).unwrap()
 }
 
 const CORE_SCOPE: &str =

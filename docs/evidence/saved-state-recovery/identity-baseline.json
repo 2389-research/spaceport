@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "verified_on": "2026-11-21",
+  "source_head": "38b80ff00a94f720db9e1a66028969268e9fe683",
+  "base_head": "234dfdd1b852b76d6bf2100ef8c8f820ba6e5248",
+  "checkout_merge": "55c44a5b1423506594fec49a1374ef305ad364c1",
+  "run_id": 44912316144,
+  "run_attempt": 1,
+  "job_id": 136870656024,
+  "url": "https://github.com/2389-research/spaceport/actions/runs/44912316144/job/136870656024",
+  "platform": "Linux x64",
+  "features": "all",
+  "additional_cases": [
+    {
+      "name": "layouts::tests::identity_ambiguity::duplicate_page_picks_never_erase_the_earlier_reservation",
+      "result": "failed"
+    },
+    {
+      "name": "layouts::tests::identity_ambiguity::duplicate_page_ids_never_erase_the_earlier_reservation",
+      "result": "failed"
+    },
+    {
+      "name": "layouts::tests::identity_ambiguity::duplicate_page_kinds_never_erase_either_reservation",
+      "result": "failed"
+    },
+    {
+      "name": "layouts::tests::identity_ambiguity::nonobject_rejected_layouts_and_groups_leave_valid_siblings_writable",
+      "result": "failed"
+    },
+    {
+      "name": "store::tests::identity_ambiguity::duplicate_saved_counters_never_erase_the_earlier_reservation",
+      "result": "failed"
+    },
+    {
+      "name": "store::tests::identity_ambiguity::duplicate_tab_ids_never_erase_the_earlier_reservation",
+      "result": "failed"
+    },
+    {
+      "name": "store::tests::identity_ambiguity::duplicate_tab_lists_never_erase_the_earlier_reservation",
+      "result": "failed"
+    },
+    {
+      "name": "store::tests::identity_ambiguity::nonobject_rejected_tabs_leave_valid_siblings_writable",
+      "result": "failed"
+    },
+    {
+      "name": "core_terminals::tests::saved_state::the_core_tab_command_refuses_exhausted_saved_ids_without_upgrading_a_join",
+      "result": "failed"
+    }
+  ],
+  "passing_controls": [
+    "layouts::tests::recovery::recovery_creates_a_layout_file_when_the_saved_file_is_missing",
+    "store::tests::recovery::recovery_creates_a_tab_file_when_both_saved_files_are_missing",
+    "devices_overview::tests::saved_state::the_overview_command_can_reopen_a_saved_tab_with_unreadable_layouts"
+  ],
+  "observed_test_summaries": [
+    "test result: FAILED. 70 passed; 27 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+    "test result: FAILED. 3680 passed; 4 failed; 9 ignored; 0 measured; 0 filtered out; finished in 122.08s"
+  ],
+  "observed_assertions": [
+    "Duplicate tab IDs, counters, and tab lists allocate TabId(0), below the earlier reserved floor301.",
+    "Duplicate layout IDs, picks, and kinds leave no persisted reservation floor.",
+    "Unrelated invalid scalar entries discard the valid Good tab or layout.",
+    "Core creation with exhausted IDs produces no repair warning."
+  ],
+  "limits": [
+    "This receipt proves only the listed additional Linux assertions and controls.",
+    "Other platform results remain separate evidence.",
+    "No product fix, GREEN result, native restart, screenshot, speech, or performance qualification is claimed.",
+    "No quit-timeout marker appeared in this log; unconditional worker joining is not claimed."
+  ]
+}

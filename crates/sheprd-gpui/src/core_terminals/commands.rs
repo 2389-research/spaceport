@@ -133,7 +133,10 @@ impl SheprdWindow {
         let Some(id) = Store::update(cx, |store| {
             store.open(scope, &workspace, Some(location), None)
         }) else {
-            self.show_flash(Flash::warning(fl!("core-terminals-too-many-tabs")), cx);
+            self.show_flash(
+                crate::browser::tab_open_failure(cx, fl!("core-terminals-too-many-tabs")),
+                cx,
+            );
             return;
         };
         self.sync_core_views(cx);
