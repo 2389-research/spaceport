@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "verified_on": "2026-11-21",
+  "source_head": "825ec45e491efe95705dea61e629d3305e52bf47",
+  "product_head": "8a8c332b28dea2d9b4adb541162134f6b177a024",
+  "checkout_merge": "a55b7844d32eeaa815b7e4bf829c54bd5ff71cc5",
+  "run_id": 44917715586,
+  "job_id": 136886927103,
+  "artifact_id": 14711539874,
+  "artifact_sha256": "b2fdda23c8b295a3851e5bd2d8f89ca79951f0ed81ee01877118f19c464e6b9f",
+  "platform": "Linux x64, private Xvfb",
+  "test_result": "failed",
+  "failure": "The client-backed witness did not forward the typed shutdown message before disconnect.",
+  "observed_before_failure": [
+    "GUI A retains tab 2, rejects sibling 70, opens Devices as 301, and saves next 302.",
+    "GUI B loads those exact app-produced files and closes only Devices tab 301.",
+    "GUI C retains tab 2, refuses new Devices tabs, and leaves both primary files unchanged.",
+    "All three exact GUI children exit successfully while their owned server survives.",
+    "The rejected tabs backup matches the seed bytes exactly and records mode 0600.",
+    "All five state hash manifests verify against the downloaded files.",
+    "The server log records the fixture's TERM and normal shutdown."
+  ],
+  "inspected_frames": [
+    {
+      "width": 900,
+      "height": 600,
+      "file": "repair-before-900.png",
+      "artifact_source": "native/repair-900-frame-2.png",
+      "finding": "The warning shows both filenames but truncates the restart instruction."
+    },
+    {
+      "width": 640,
+      "height": 600,
+      "file": "repair-before-640.png",
+      "artifact_source": "native/repair-640-frame-2.png",
+      "finding": "The warning truncates within the first filename and omits the restart instruction."
+    }
+  ],
+  "limits": [
+    "The failed test does not provide a complete native qualification or completion receipt.",
+    "Screenshots prove clipping even though the witness failed before the automated OCR assertion.",
+    "Fix the test observer without importing the separate PR160 product changes or weakening typed shutdown checks.",
+    "Keep native restart/readability acceptance pending until the corrected fixture passes and both images are inspected.",
+    "No Mac foreground, audible speech, performance, WSL, SSH, merge, or release qualification is claimed."
+  ]
+}

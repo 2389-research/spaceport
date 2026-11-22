@@ -508,6 +508,11 @@ impl SheprdWindow {
         if !self.core_enabled() {
             return Err(crate::Error::StaleWorkspace);
         }
+        if matches!(&purpose, Purpose::Tab { .. })
+            && let Some(store) = cx.try_global::<Store>()
+        {
+            store.check_new_tab_id()?;
+        }
         let mut core_id = self
             .core_terminals
             .hub
@@ -734,7 +739,10 @@ impl SheprdWindow {
                 let Some(id) = Store::update(cx, |store| {
                     store.open(scope, &workspace, Some(location), None)
                 }) else {
-                    self.show_flash(Flash::warning(fl!("core-terminals-too-many-tabs")), cx);
+                    self.show_flash(
+                        crate::browser::tab_open_failure(cx, fl!("core-terminals-too-many-tabs")),
+                        cx,
+                    );
                     return;
                 };
                 self.sync_core_views(cx);

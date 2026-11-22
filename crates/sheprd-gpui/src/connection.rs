@@ -1,5 +1,8 @@
+// ABOUTME: Bridges ordered connection events into bounded UI mailboxes.
+// ABOUTME: Keeps reader notifications scoped to their test and connection owners.
 use crate::{
     config::Theme,
+    daemon::Start,
     state::{Answer, ConnectionStatus, LiveState},
     terminal::InputTarget,
 };
@@ -21,12 +24,10 @@ use std::sync::{
 /// one count per test thread, so every connection a test starts wakes the same
 /// wait, and a wake a test did not need costs it one extra poll.
 ///
-/// Gated on `cfg(test)` rather than `any(test, feature = "integration-test")`:
-/// this crate is a bin, so its own unit tests compile every module with
-/// `cfg(test)`, and no integration target uses these waits. Gating on the
-/// feature would compile the module into the plain bin under `--all-features`,
-/// where `count`, `wait` and `wait_for` have no caller.
-#[cfg(test)]
+/// Only Unix socket lifecycle fixtures consume these wakes. Keep the module
+/// and its reader hooks restricted to Unix unit tests, rather than the
+/// integration feature, which also builds the plain application binary.
+#[cfg(all(test, unix))]
 pub(crate) mod applied {
     use std::{
         cell::RefCell,
@@ -239,10 +240,16 @@ impl ConnectionBridge {
         self.reset(ConnectionStatus::Detached, active);
     }
 
-    pub fn reconnect(&mut self, options: ConnectOptions, active: bool, surface_active: bool) {
+    pub fn reconnect(
+        &mut self,
+        options: ConnectOptions,
+        active: bool,
+        surface_active: bool,
+        start: Start,
+    ) {
         tracing::debug!("Connection bridge reconnecting");
         self.reset(ConnectionStatus::Connecting, active);
-        self.start(options, surface_active, |events| {
+        self.start(options, surface_active, start, |events| {
             std::thread::Builder::new()
                 .name("herdr-gui-events".into())
                 .spawn(events)
@@ -254,19 +261,20 @@ impl ConnectionBridge {
         &mut self,
         options: ConnectOptions,
         surface_active: bool,
+        start: Start,
         spawn: impl FnOnce(Box<dyn FnOnce() + Send>) -> std::io::Result<()>,
     ) {
         self.drained = Arc::new(AtomicBool::new(false));
         // Every update and the reader's own end wakes a waiting test.
-        #[cfg(test)]
+        #[cfg(all(test, unix))]
         let wake = applied::wake();
-        #[cfg(test)]
+        #[cfg(all(test, unix))]
         let reader_wake = applied::wake();
         let target = self.target.clone();
         let startup_inbox = self.inbox.clone();
         let result =
             connect_with_connector(target, options, surface_active, move |target, stop| {
-                let result = crate::daemon::connect(target, stop, || {
+                let result = crate::daemon::connect(target, start, stop, || {
                     tracing::debug!("Connection bridge starting local daemon");
                     if let Ok(mut state) = startup_inbox.lock()
                         && state.status == ConnectionStatus::Connecting
@@ -351,11 +359,11 @@ impl ConnectionBridge {
                         }
                         // After the guard is gone, so a woken waiter always
                         // finds the update in the inbox.
-                        #[cfg(test)]
+                        #[cfg(all(test, unix))]
                         reader_wake.notify();
                     }
                     drained.store(true, Ordering::Release);
-                    #[cfg(test)]
+                    #[cfg(all(test, unix))]
                     reader_wake.notify();
                     tracing::debug!("Connection bridge event reader drained");
                 }))
@@ -378,7 +386,7 @@ impl ConnectionBridge {
             }
             // A startup failure ends the wait too, once its state is in place:
             // no reader exists to wake anyone later.
-            #[cfg(test)]
+            #[cfg(all(test, unix))]
             wake.notify();
         }
     }
@@ -386,6 +394,12 @@ impl ConnectionBridge {
     /// Cheap enough to call every display frame: never blocks the UI thread.
     pub fn has_update(&self) -> bool {
         self.inbox.try_lock().is_ok_and(|state| state.dirty)
+    }
+
+    /// Preserve final reader events until the UI has consumed their projection.
+    pub(crate) fn retry_ready(&self) -> bool {
+        self.drained.load(Ordering::Acquire)
+            && self.inbox.try_lock().is_ok_and(|state| !state.dirty)
     }
 
     /// Whether the worker has reported this link up, which the window learns

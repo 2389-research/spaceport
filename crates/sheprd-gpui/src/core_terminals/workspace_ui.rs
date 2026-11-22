@@ -449,7 +449,10 @@ impl SheprdWindow {
             self.sync_core_views(cx);
             self.show_core_pane(tab, &terminal, window, cx);
         } else {
-            self.show_flash(Flash::warning(fl!("core-terminals-too-many-tabs")), cx);
+            self.show_flash(
+                crate::browser::tab_open_failure(cx, fl!("core-terminals-too-many-tabs")),
+                cx,
+            );
         }
     }
 

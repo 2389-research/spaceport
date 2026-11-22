@@ -1,3 +1,5 @@
+// ABOUTME: Checks command ordering and lifecycle events through isolated client transports.
+// ABOUTME: Preserves cancellation, shutdown, and request correlation at the public boundary.
 use super::*;
 
 #[test]
@@ -135,6 +137,11 @@ fn public_connect_delivers_shutdown_and_socket_failure() {
         ServerMessage::ServerShutdown {
             reason: Some("test shutdown".into()),
         },
+    );
+    let shutdown = event(&client);
+    assert!(
+        matches!(&shutdown, ClientEvent::Message(ServerMessage::ServerShutdown { reason: Some(reason) }) if reason == "test shutdown"),
+        "shutdown must arrive before disconnect, got {shutdown:?}"
     );
     assert!(
         matches!(event(&client), ClientEvent::Disconnected { reason, .. } if reason == "test shutdown")

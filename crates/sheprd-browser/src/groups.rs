@@ -1,3 +1,5 @@
+// ABOUTME: Tracks workspace editor groups, their tabs, and their widths.
+// ABOUTME: Restores group membership and exposes saved page references.
 //! Editor groups: a workspace's view split into side-by-side groups, each
 //! listing its own tabs and showing one of them.
 //!
@@ -128,6 +130,16 @@ fn valid_pick(pick: &Pick) -> bool {
 }
 
 impl SavedLayout {
+    pub(crate) fn pages(&self) -> impl Iterator<Item = TabId> + '_ {
+        self.groups
+            .iter()
+            .flat_map(|group| group.pick.iter().chain(&group.tabs).chain(&group.hidden))
+            .filter_map(|pick| match pick {
+                Pick::Page(id) => Some(*id),
+                Pick::Herdr(_) => None,
+            })
+    }
+
     pub fn pages_only(&self) -> bool {
         self.groups.iter().all(|group| {
             group

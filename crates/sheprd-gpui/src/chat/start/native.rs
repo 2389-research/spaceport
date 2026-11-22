@@ -74,8 +74,11 @@ async fn verify(
                         if !view.focus.is_focused(window) {
                             bail!("chat flash stole native input focus");
                         }
-                        if (f32::from(window.viewport_size().width) - width).abs() > 1. {
-                            bail!("native window did not reach requested width {width}");
+                        let actual_width = f32::from(window.viewport_size().width);
+                        if (actual_width - width).abs() > 1. {
+                            bail!(
+                                "native window did not reach requested width {width}; actual width {actual_width}"
+                            );
                         }
                         Ok(())
                     })??;

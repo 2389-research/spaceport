@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "verified_on": "2026-11-21",
+  "source_head": "0cef725631188ec430e9f3501a6a7a79bf2cbab5",
+  "base_head": "234dfdd1b852b76d6bf2100ef8c8f820ba6e5248",
+  "run_id": 44908322454,
+  "run_attempt": 2,
+  "scope": "Tests-only saved-state regression baseline on disposable GitHub CI",
+  "jobs": [
+    {
+      "job_id": 136860276395,
+      "url": "https://github.com/2389-research/spaceport/actions/runs/44908322454/job/136860276395",
+      "platform": "Linux x64",
+      "features": "all",
+      "checkout_merge": "627c3a82641805e3b1b4b5c25d66a65825e7e475",
+      "observed_test_summaries": [
+        "test result: FAILED. 70 passed; 19 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: FAILED. 3680 passed; 3 failed; 9 ignored; 0 measured; 0 filtered out; finished in 125.39s"
+      ],
+      "quit_timeout_markers": [],
+      "case_counts": {
+        "storage": {
+          "passed": 2,
+          "failed": 19
+        },
+        "ui": {
+          "passed": 1,
+          "failed": 3
+        }
+      },
+      "common_failures_not_present": [],
+      "passing_controls_verified": true
+    },
+    {
+      "job_id": 136860276365,
+      "url": "https://github.com/2389-research/spaceport/actions/runs/44908322454/job/136860276365",
+      "platform": "Windows x64",
+      "features": "all",
+      "checkout_merge": "627c3a82641805e3b1b4b5c25d66a65825e7e475",
+      "observed_test_summaries": [
+        "test result: FAILED. 68 passed; 16 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s",
+        "test result: FAILED. 3363 passed; 2 failed; 3 ignored; 0 measured; 0 filtered out; finished in 153.21s"
+      ],
+      "quit_timeout_markers": [],
+      "case_counts": {
+        "storage": {
+          "passed": 2,
+          "failed": 16
+        },
+        "ui": {
+          "passed": 1,
+          "failed": 2
+        }
+      },
+      "common_failures_not_present": [
+        "core_terminals::tests::saved_state::unreadable_layouts_refuse_a_new_core_tab_before_sending_a_request",
+        "layouts::tests::recovery::recovery_keeps_legacy_hidden_ids_after_a_failed_layout_write",
+        "layouts::tests::recovery::recovery_refuses_to_write_when_the_layout_backup_fails",
+        "store::tests::recovery::recovery_refuses_to_write_when_the_tab_backup_fails"
+      ],
+      "passing_controls_verified": true
+    },
+    {
+      "job_id": 136860276381,
+      "url": "https://github.com/2389-research/spaceport/actions/runs/44908322454/job/136860276381",
+      "platform": "Linux ARM64",
+      "features": "default",
+      "checkout_merge": "627c3a82641805e3b1b4b5c25d66a65825e7e475",
+      "observed_test_summaries": [
+        "test result: FAILED. 70 passed; 19 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: FAILED. 3642 passed; 3 failed; 9 ignored; 0 measured; 0 filtered out; finished in 131.59s"
+      ],
+      "quit_timeout_markers": [],
+      "case_counts": {
+        "storage": {
+          "passed": 2,
+          "failed": 19
+        },
+        "ui": {
+          "passed": 1,
+          "failed": 3
+        }
+      },
+      "common_failures_not_present": [],
+      "passing_controls_verified": true
+    },
+    {
+      "job_id": 136860276384,
+      "url": "https://github.com/2389-research/spaceport/actions/runs/44908322454/job/136860276384",
+      "platform": "macOS ARM64",
+      "features": "all",
+      "checkout_merge": "627c3a82641805e3b1b4b5c25d66a65825e7e475",
+      "observed_test_summaries": [
+        "test result: FAILED. 70 passed; 19 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s",
+        "test result: FAILED. 3676 passed; 3 failed; 10 ignored; 0 measured; 0 filtered out; finished in 165.80s"
+      ],
+      "quit_timeout_markers": [],
+      "case_counts": {
+        "storage": {
+          "passed": 2,
+          "failed": 19
+        },
+        "ui": {
+          "passed": 1,
+          "failed": 3
+        }
+      },
+      "common_failures_not_present": [],
+      "passing_controls_verified": true
+    },
+    {
+      "job_id": 136860276352,
+      "url": "https://github.com/2389-research/spaceport/actions/runs/44908322454/job/136860276352",
+      "platform": "Windows ARM64",
+      "features": "all",
+      "checkout_merge": "627c3a82641805e3b1b4b5c25d66a65825e7e475",
+      "observed_test_summaries": [
+        "test result: FAILED. 68 passed; 16 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+        "test result: FAILED. 3363 passed; 2 failed; 3 ignored; 0 measured; 0 filtered out; finished in 131.28s"
+      ],
+      "quit_timeout_markers": [],
+      "case_counts": {
+        "storage": {
+          "passed": 2,
+          "failed": 16
+        },
+        "ui": {
+          "passed": 1,
+          "failed": 2
+        }
+      },
+      "common_failures_not_present": [
+        "core_terminals::tests::saved_state::unreadable_layouts_refuse_a_new_core_tab_before_sending_a_request",
+        "layouts::tests::recovery::recovery_keeps_legacy_hidden_ids_after_a_failed_layout_write",
+        "layouts::tests::recovery::recovery_refuses_to_write_when_the_layout_backup_fails",
+        "store::tests::recovery::recovery_refuses_to_write_when_the_tab_backup_fails"
+      ],
+      "passing_controls_verified": true
+    }
+  ],
+  "interpretation": [
+    "The inspected failures belong to the new recovery and admission tests.",
+    "Missing tab/layout files and the existing Devices tab remain passing controls.",
+    "Inspected assertions show lost valid entries, overwritten oversized files, missing persisted floors, reused IDs, missing repair warnings, and accepted Core creation.",
+    "These are behavioral assertion failures, not compilation or prerequisite failures."
+  ],
+  "limits": [
+    "Only the listed completed jobs and logs support this receipt.",
+    "Headless UI results do not qualify native presentation or physical keyboard behavior.",
+    "No native saved-state restart or repair-guidance screenshot is claimed.",
+    "The new Core maximum-ID admission case requires a later RED checkpoint.",
+    "The Unix private peer does not qualify Windows wire behavior.",
+    "No quit-timeout markers occurred in the listed logs; this does not prove an unconditional writer join.",
+    "Mac foreground, speech, and performance holds remain."
+  ],
+  "failed_tests": [
+    "core_terminals::tests::saved_state::the_core_tab_command_warns_without_upgrading_a_join_when_layouts_are_unreadable",
+    "core_terminals::tests::saved_state::unreadable_layouts_refuse_a_new_core_tab_before_sending_a_request",
+    "devices_overview::tests::saved_state::the_overview_command_warns_before_creating_a_tab_with_unreadable_layouts",
+    "layouts::tests::recovery::recovery_keeps_an_unsafe_layout_envelope_blocked_on_reload",
+    "layouts::tests::recovery::recovery_keeps_legacy_hidden_ids_after_a_failed_layout_write",
+    "layouts::tests::recovery::recovery_keeps_the_id_floor_after_saving_and_removing_the_last_layout",
+    "layouts::tests::recovery::recovery_keeps_valid_layouts_and_preserves_rejected_layout_bytes",
+    "layouts::tests::recovery::recovery_records_new_layout_ids_before_forgetting_the_last_workspace",
+    "layouts::tests::recovery::recovery_refuses_to_write_after_a_layout_read_error",
+    "layouts::tests::recovery::recovery_refuses_to_write_after_an_oversized_layout_file",
+    "layouts::tests::recovery::recovery_refuses_to_write_when_the_layout_backup_fails",
+    "store::tests::recovery::recovery_backs_up_torn_tabs_before_writing_a_new_tab",
+    "store::tests::recovery::recovery_keeps_readable_tabs_when_the_layout_envelope_is_unsafe",
+    "store::tests::recovery::recovery_keeps_the_saved_layout_floor_and_tab_sequence_across_two_reloads",
+    "store::tests::recovery::recovery_keeps_unique_copies_of_rejected_files",
+    "store::tests::recovery::recovery_keeps_valid_tabs_and_reserves_rejected_ids_and_saved_next",
+    "store::tests::recovery::recovery_refuses_allocation_at_the_maximum_saved_page_id",
+    "store::tests::recovery::recovery_refuses_to_write_after_a_tab_read_error",
+    "store::tests::recovery::recovery_refuses_to_write_after_an_oversized_tab_file",
+    "store::tests::recovery::recovery_refuses_to_write_when_the_tab_backup_fails",
+    "store::tests::recovery::recovery_reserves_page_ids_from_invalid_layout_entries",
+    "store::tests::recovery::recovery_reserves_page_ids_in_every_layout_reference_slot"
+  ],
+  "passing_controls": [
+    "devices_overview::tests::saved_state::the_overview_command_can_reopen_a_saved_tab_with_unreadable_layouts",
+    "layouts::tests::recovery::recovery_creates_a_layout_file_when_the_saved_file_is_missing",
+    "store::tests::recovery::recovery_creates_a_tab_file_when_both_saved_files_are_missing"
+  ]
+}

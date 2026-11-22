@@ -1,3 +1,5 @@
+// ABOUTME: Localizes saved tab, layout, and reference failures at the UI boundary.
+// ABOUTME: Gives repair guidance while preserving parser and file diagnostics.
 //! Browser tab and saved-layout failures, from `error-browser.ftl`. The JSON
 //! parser's own text stays as it is.
 
@@ -15,7 +17,9 @@ impl Localize for Error {
             Self::InvalidLocalPage => fl!("error-browser-local-page"),
             Self::InvalidReviewCheckout => fl!("error-browser-review-checkout"),
             Self::Json(error) => error.to_string(),
+            Self::RestorationBlocked => fl!("error-browser-restoration-blocked"),
             Self::StateFile(error) => error.localize(),
+            Self::TabIdsExhausted => fl!("error-browser-tab-ids-exhausted"),
         }
     }
 }

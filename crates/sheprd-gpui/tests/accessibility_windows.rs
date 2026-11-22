@@ -92,7 +92,7 @@ fn ui_automation_names_the_chrome_and_ctrl_f6_reaches_it() {
         "Document 'Terminal'",
         "StatusBar 'Status bar'",
         "Button 'Theme' [Invoke]",
-        "Button 'Version ",
+        "Text 'Version ",
     ];
     let deadline = Instant::now() + Duration::from_secs(60);
     let tree = loop {
@@ -112,6 +112,14 @@ fn ui_automation_names_the_chrome_and_ctrl_f6_reaches_it() {
         thread::sleep(Duration::from_millis(500));
     };
     eprintln!("{tree}");
+    let version = tree
+        .lines()
+        .find(|line| line.trim_start().starts_with("Text 'Version "))
+        .unwrap();
+    assert!(
+        !version.contains("Invoke") && !version.contains("Value"),
+        "the version label has no action: {version}"
+    );
     // Back and Forward have no history to go to yet.
     assert!(tree.contains("Button 'Back' [disabled]"), "{tree}");
 

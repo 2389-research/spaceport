@@ -1,3 +1,5 @@
+// ABOUTME: Reads bounded state files and writes atomic snapshots on a worker.
+// ABOUTME: Preserves rejected source bytes in a private sibling file.
 //! Small app-owned JSON state files. Reads are bounded, writes replace the
 //! file atomically, and the latest value is saved on a worker so a change made
 //! on the UI thread never waits for the disk.
@@ -31,6 +33,33 @@ pub fn read(path: &Path, limit: u64) -> Result<Option<Vec<u8>>> {
         });
     }
     Ok(Some(bytes))
+}
+
+/// Keeps the bytes a caller rejected before it allows replacement writes to `path`.
+pub fn preserve_rejected(path: &Path, bytes: &[u8]) -> Result<PathBuf> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| Error::MissingRoot(path.to_owned()))?;
+    let parent = if parent.as_os_str().is_empty() {
+        Path::new(".")
+    } else {
+        parent
+    };
+    let mut prefix = path
+        .file_name()
+        .ok_or_else(|| Error::MissingRoot(path.to_owned()))?
+        .to_owned();
+    prefix.push(".rejected-");
+    let mut backup = tempfile::Builder::new()
+        .prefix(&prefix)
+        .tempfile_in(parent)?;
+    backup.write_all(bytes)?;
+    backup.as_file().sync_all()?;
+    #[cfg(unix)]
+    fs::File::open(parent)?.sync_all()?;
+    let (_, saved) = backup.keep().map_err(|error| error.error)?;
+    tracing::warn!(path = %saved.display(), "Preserved rejected state file");
+    Ok(saved)
 }
 
 pub fn write<T: Serialize + ?Sized>(path: &Path, value: &T) -> Result<()> {

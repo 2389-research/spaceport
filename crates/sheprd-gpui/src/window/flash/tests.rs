@@ -2,6 +2,8 @@ use super::*;
 use crate::sidebar::layout_tests::fixture_window;
 use gpui::TestAppContext;
 
+mod wrapping;
+
 #[gpui::test]
 fn a_flash_fades_in_takes_new_text_in_place_and_fades_out(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(fixture_window);

@@ -1,4 +1,5 @@
-//! Exercise GUI lifecycle transitions through real, isolated client transports.
+// ABOUTME: Exercises GUI lifecycle transitions through isolated client transports.
+// ABOUTME: Shares private peers and event-reader coordination across lifecycle tests.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::controls::Command;
@@ -36,6 +37,7 @@ mod group_navigation_choices;
 mod group_page_move;
 mod held_paste;
 mod herdr_missing;
+mod herdr_shutdown;
 mod horizontal_wheel;
 mod image_paste;
 mod image_paste_native;
@@ -90,6 +92,20 @@ impl gpui::Render for Fixture {
 }
 
 impl Server {
+    fn accepted(stream: UnixStream, path: PathBuf) -> Self {
+        let server = Self { stream, path };
+        server.stream.set_nonblocking(false).unwrap();
+        server
+            .stream
+            .set_read_timeout(Some(Duration::from_secs(3)))
+            .unwrap();
+        server
+            .stream
+            .set_write_timeout(Some(Duration::from_secs(3)))
+            .unwrap();
+        server
+    }
+
     /// The next lifecycle frame. Every connection reports the window's theme
     /// once it has a snapshot; `window::tests` covers that, so skip it here.
     fn receive(&mut self) -> ClientMessage {
@@ -239,22 +255,28 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
     endpoint.connect(ConnectOptions::default(), true);
     // The worker dials this socket; a plain blocking accept is coordination,
     // not a wait on time.
-    let mut server = Server {
-        stream: listener.accept().unwrap().0,
-        path,
-    };
-    server.stream.set_nonblocking(false).unwrap();
-    server
-        .stream
-        .set_read_timeout(Some(Duration::from_secs(3)))
-        .unwrap();
-    server
-        .stream
-        .set_write_timeout(Some(Duration::from_secs(3)))
-        .unwrap();
+    let mut server = Server::accepted(listener.accept().unwrap().0, path);
+    welcome_peer(&mut server, &snapshot(), server_version);
+    wait_until(|| {
+        endpoint.poll(Instant::now());
+        endpoint.connection.handle.is_some() && endpoint.live.snapshot.is_some()
+    });
+    assert!(endpoint.live.supports_surface);
+    let frame = surface(endpoint.live.snapshot.as_ref().unwrap());
+    endpoint
+        .connection
+        .inbox
+        .lock()
+        .unwrap()
+        .apply(ClientEvent::Surface(frame));
+    endpoint.poll(Instant::now());
+    (endpoint, server)
+}
+
+fn welcome_peer(server: &mut Server, snapshot: &ClientShellSnapshot, server_version: Option<&str>) {
     assert!(matches!(
         server.receive(),
-        ClientMessage::EndpointControl { .. }
+        ClientMessage::EndpointControl { kind, .. } if kind == ENDPOINT_HELLO_KIND
     ));
     let mut welcome: EndpointServerWelcome = serde_json::from_str(include_str!(
         "../../../sheprd-protocol/tests/fixtures/endpoint-welcome-v1.json"
@@ -299,7 +321,7 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
         ),
         (
             ENDPOINT_SNAPSHOT_KIND,
-            serde_json::to_string(&snapshot()).unwrap(),
+            serde_json::to_string(snapshot).unwrap(),
         ),
     ] {
         write_message(
@@ -312,20 +334,6 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
         )
         .unwrap();
     }
-    wait_until(|| {
-        endpoint.poll(Instant::now());
-        endpoint.connection.handle.is_some() && endpoint.live.snapshot.is_some()
-    });
-    assert!(endpoint.live.supports_surface);
-    let frame = surface(endpoint.live.snapshot.as_ref().unwrap());
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Surface(frame));
-    endpoint.poll(Instant::now());
-    (endpoint, server)
 }
 
 fn prepare_mouse(view: &mut SheprdWindow, endpoint: Endpoint, cx: &mut Context<SheprdWindow>) {

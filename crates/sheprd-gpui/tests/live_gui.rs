@@ -4,6 +4,10 @@
 #[path = "../../test-support/sandbox.rs"]
 mod sandbox;
 
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+#[path = "../../test-support/executable.rs"]
+mod executable;
+
 #[cfg(target_os = "macos")]
 #[path = "support/clipboard_guard.rs"]
 mod clipboard_guard;
@@ -29,8 +33,16 @@ mod chat_start;
 #[path = "live_gui/diagnostics.rs"]
 mod diagnostics;
 
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+#[path = "live_gui/shutdown.rs"]
+mod shutdown;
+
 #[path = "live_gui/preview_branding.rs"]
 mod preview_branding;
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+#[path = "live_gui/saved_state.rs"]
+mod saved_state;
 
 #[cfg(target_os = "macos")]
 #[path = "live_gui/sidebar_routing.rs"]

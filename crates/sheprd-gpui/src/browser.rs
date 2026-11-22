@@ -1,3 +1,5 @@
+// ABOUTME: Connects native tab presentation to shared browser state.
+// ABOUTME: Keeps saved paths and localized labels at the UI boundary.
 //! Client-owned native tabs and shared terminal/chat split layouts.
 //! The selected Herdr runtime owns terminal processes; views only arrange them.
 //! A tab, its saved files and the group algebra are `sheprd-browser`'s; what
@@ -35,7 +37,7 @@ pub(crate) fn tabs_path() -> Option<std::path::PathBuf> {
 pub(crate) fn layouts_path() -> Option<std::path::PathBuf> {
     crate::preferences::state_dir().map(|dir| dir.join("editor-groups.json"))
 }
-pub(crate) use view::{PageOpened, new_browser, scope};
+pub(crate) use view::{PageOpened, new_browser, scope, tab_open_failure};
 
 /// The title the window shows for `tab`: what its content names itself, or
 /// the words this window's language gives a tab that has not. A terminal tab

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "verified_on": "2026-11-21",
+  "source_head": "e9aa0abbfd724b2f9af7ffeab53a227c8cdc3cff",
+  "product_head": "8a8c332b28dea2d9b4adb541162134f6b177a024",
+  "checkout_merge": "f99e38e5aa398f06d2ed21d45a015a83f57b8c72",
+  "run_id": 44919201790,
+  "job_id": 136891435585,
+  "artifact_id": 14712888345,
+  "artifact_sha256": "cf86323819ff589d425729d120099a345239f2f7538f1b8aba637b3d0c8a772c",
+  "platform": "Linux x64, private Xvfb",
+  "test": "saved_state::recovery::native_saved_state_recovery",
+  "test_result": "failed",
+  "assertion": "repair warning, filenames or restart guidance unreadable at [900, 640]px",
+  "observer_receipt": [
+    "ServerShutdown Some(\"server is shutting down\")",
+    "Eof"
+  ],
+  "cleanup_receipt": "All three GUIs reaped. Herdr survived GUI C, received TERM, and exited. Startup trap empty. Xvfb reaped. Sandbox removed.",
+  "observed_warning_text": [
+    {
+      "width": 900,
+      "ocr": "Saved tabs or layouts need repair. Check browser-tabs.json and editor-groups.json, then r."
+    },
+    {
+      "width": 640,
+      "ocr": "Saved tabs or layouts need repair. Check brows..."
+    }
+  ],
+  "limits": [
+    "The revised observer and all file/restart/refusal/cleanup assertions complete before the intended readability failure.",
+    "This proves native regression RED without changing the renderer or weakening the acceptance predicate.",
+    "The new headless geometry regression has no separately observed assertion result in this receipt.",
+    "Readable native warning images and a complete successful run remain required after the renderer fix.",
+    "No other platform, audible speech, performance, merge, or release qualification is claimed."
+  ]
+}

@@ -1,12 +1,21 @@
+// ABOUTME: Restores and saves each workspace's editor group layout.
+// ABOUTME: Reserves tab IDs from every saved page reference across restarts.
 //! Saved editor group layouts: how each workspace's view was split, which
 //! tab each group showed, and the group in use, kept across restarts. The
 //! app keeps one per workspace of each daemon; a window restores it the
 //! first time it shows that workspace, and saves it whenever it changes.
-use super::{Scope, groups::SavedLayout};
+use super::{
+    Scope,
+    groups::SavedLayout,
+    store::{SavedEntry, identities},
+};
 use crate::{Error, Result};
 use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 const MAX_LAYOUTS: usize = 256;
 const MAX_FILE_BYTES: u64 = 1024 * 1024;
@@ -24,68 +33,127 @@ struct Entry {
 #[derive(Serialize, Deserialize)]
 struct Saved {
     layouts: Vec<Entry>,
+    #[serde(default)]
+    next_tab_id: u64,
+}
+
+#[derive(Default, Deserialize)]
+struct Entries {
+    layouts: Vec<SavedEntry<Entry>>,
+}
+
+impl Entries {
+    // Take the floor before validation or duplicate workspace keys discard entries.
+    fn next_tab_id(&self) -> u64 {
+        let ids = self
+            .layouts
+            .iter()
+            .filter_map(|entry| match entry {
+                SavedEntry::Parsed(entry) => Some(&entry.layout),
+                SavedEntry::Rejected(_) => None,
+            })
+            .flat_map(SavedLayout::pages)
+            .map(u64::from);
+        identities::reserve(0, ids)
+    }
+}
+
+impl Entry {
+    fn valid(&self) -> bool {
+        self.scope.valid_workspace(&self.workspace)
+            && self.layout.valid()
+            && (!matches!(self.scope, Scope::Core(_)) || self.layout.pages_only())
+    }
+
+    fn into_pair(self) -> (Key, SavedLayout) {
+        ((self.scope, self.workspace), self.layout)
+    }
 }
 
 #[derive(Default)]
 pub struct Layouts {
     layouts: HashMap<Key, SavedLayout>,
+    next_tab_id: u64,
     writer: Option<sheprd_state_file::Writer<Saved>>,
     quitting: bool,
 }
 
 impl Global for Layouts {}
 
-fn parse(bytes: &[u8]) -> Result<HashMap<Key, SavedLayout>> {
-    let saved: Saved = serde_json::from_slice(bytes)?;
-    if saved.layouts.len() > MAX_LAYOUTS
-        || !saved.layouts.iter().all(|entry| {
-            entry.scope.valid_workspace(&entry.workspace)
-                && entry.layout.valid()
-                && (!matches!(entry.scope, Scope::Core(_)) || entry.layout.pages_only())
-        })
-    {
-        return Err(Error::InvalidGroupLayouts);
+impl Saved {
+    fn parse(bytes: &[u8]) -> Result<Self> {
+        let saved: Self = serde_json::from_slice(bytes)?;
+        if saved.layouts.len() > MAX_LAYOUTS || !saved.layouts.iter().all(Entry::valid) {
+            return Err(Error::InvalidGroupLayouts);
+        }
+        Ok(saved)
     }
-    Ok(saved
-        .layouts
-        .into_iter()
-        .map(|entry| ((entry.scope, entry.workspace), entry.layout))
-        .collect())
+
+    fn into_layouts(self) -> HashMap<Key, SavedLayout> {
+        self.layouts.into_iter().map(Entry::into_pair).collect()
+    }
+}
+
+#[cfg(test)]
+fn parse(bytes: &[u8]) -> Result<HashMap<Key, SavedLayout>> {
+    Ok(Saved::parse(bytes)?.into_layouts())
+}
+
+/// The tab store checks layout references before handing out its first ID.
+pub(super) fn reserved_next(path: &Path) -> Result<u64> {
+    let bytes = sheprd_state_file::read(path, MAX_FILE_BYTES)?;
+    let Some(bytes) = bytes else { return Ok(0) };
+    let next = identities::layouts(&bytes)?;
+    let entries: Entries = identities::rows(&bytes)?;
+    Ok(next.max(entries.next_tab_id()))
 }
 
 impl Layouts {
-    /// Called before starting GPUI, like the browser tabs, with the file the
-    /// app keeps its layouts in. A missing or damaged file starts every
-    /// workspace unsplit.
+    /// Restores layouts before GPUI starts. A missing file starts workspaces unsplit.
     pub fn load(path: Option<PathBuf>) -> Self {
-        let layouts = path
-            .as_deref()
-            .map(|path| {
-                sheprd_state_file::read(path, MAX_FILE_BYTES)
-                    .map_err(Error::from)
-                    .and_then(|bytes| bytes.as_deref().map_or(Ok(HashMap::new()), parse))
-            })
-            .transpose()
-            .unwrap_or_else(|error| {
-                tracing::warn!(%error, "Cannot restore editor groups");
-                None
-            })
-            .unwrap_or_default();
-        let writer =
-            path.and_then(
-                |path| match sheprd_state_file::Writer::start("editor-groups", path) {
-                    Ok(writer) => Some(writer),
-                    Err(error) => {
-                        tracing::warn!(%error, "Cannot start editor group worker");
-                        None
-                    }
-                },
-            );
-        Self {
-            layouts,
-            writer,
-            quitting: false,
+        let mut layouts = Self::default();
+        let Some(path) = path else { return layouts };
+        if let Err(error) = layouts.restore(&path) {
+            tracing::warn!(%error, "Cannot restore editor groups; saving is blocked");
+            return layouts;
         }
+        match sheprd_state_file::Writer::start("editor-groups", path) {
+            Ok(writer) => layouts.writer = Some(writer),
+            Err(error) => tracing::warn!(%error, "Cannot start editor group worker"),
+        }
+        layouts
+    }
+
+    fn restore(&mut self, path: &Path) -> Result<()> {
+        let Some(bytes) = sheprd_state_file::read(path, MAX_FILE_BYTES)? else {
+            return Ok(());
+        };
+        self.layouts = match Saved::parse(&bytes) {
+            Ok(saved) => {
+                let ids = saved
+                    .layouts
+                    .iter()
+                    .flat_map(|entry| entry.layout.pages())
+                    .map(u64::from);
+                self.next_tab_id = identities::reserve(saved.next_tab_id, ids);
+                saved.into_layouts()
+            }
+            Err(error) => {
+                tracing::warn!(%error, "Cannot fully restore editor groups");
+                sheprd_state_file::preserve_rejected(path, &bytes)?;
+                let file: Entries = identities::rows(&bytes)?;
+                self.next_tab_id = file.next_tab_id();
+                file.layouts
+                    .into_iter()
+                    .take(MAX_LAYOUTS)
+                    .filter_map(SavedEntry::parsed)
+                    .filter(Entry::valid)
+                    .map(Entry::into_pair)
+                    .collect()
+            }
+        };
+        self.next_tab_id = self.next_tab_id.max(identities::layouts(&bytes)?);
+        Ok(())
     }
 
     pub fn install(self, cx: &mut App) {
@@ -128,6 +196,8 @@ impl Layouts {
             Some(layout)
                 if layouts.layouts.len() < MAX_LAYOUTS || layouts.layouts.contains_key(key) =>
             {
+                layouts.next_tab_id =
+                    identities::reserve(layouts.next_tab_id, layout.pages().map(u64::from));
                 layouts.layouts.insert(key.clone(), layout);
             }
             Some(_) => return,
@@ -163,6 +233,7 @@ impl Layouts {
         }
         if let Some(writer) = &self.writer {
             writer.save(Saved {
+                next_tab_id: self.next_tab_id,
                 layouts: self
                     .layouts
                     .iter()
