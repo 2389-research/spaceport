@@ -166,8 +166,9 @@ fn relative_mise_data_is_not_resolved_against_the_project() {
 }
 
 /// Starts `command` as a bridge and answers its discovery, as a connection does.
-fn bridge(command: Command, stop: &AtomicBool) -> Result<(Stream, ChildGuard)> {
-    start_bridge(command, stop, handshake)?.map_err(|closed| Error::Refused(closed.failure).into())
+fn bridge(command: Command, stop: &AtomicBool) -> Result<Connected> {
+    let connected = start_bridge(HostKeys::Verify, command, stop, handshake)?;
+    connected.map_err(|closed| Error::Refused(closed.failure).into())
 }
 
 #[test]
@@ -180,7 +181,9 @@ fn bridge_skips_incompatible_install_then_uses_mise_with_quoted_session() {
     host.install(&host.data(), "herdr", "bin/herdr");
     let mut command = host.command(&bridge_script("work's"));
     command.env("PATH", host.shim(&host.data()));
-    let (mut stream, child) = bridge(command, &AtomicBool::new(false)).unwrap();
+    let Connected {
+        mut stream, child, ..
+    } = bridge(command, &AtomicBool::new(false)).unwrap();
     stream.write_all(b"hello\n").unwrap();
     stream
         .set_read_timeout(Some(Duration::from_secs(5)))
@@ -200,7 +203,9 @@ fn path_install_keeps_precedence_over_mise() {
     fs::create_dir_all(mise.parent().unwrap()).unwrap();
     crate::test_executable::write(&mise, "#!/bin/sh\n: > \"$HOME/mise-ran\"\nexit 1\n", 0o700)
         .unwrap();
-    let (mut stream, child) = bridge(
+    let Connected {
+        mut stream, child, ..
+    } = bridge(
         host.command(&bridge_script("work's")),
         &AtomicBool::new(false),
     )
