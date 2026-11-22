@@ -157,7 +157,6 @@ windows-sys = { features = [
 ], workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-fontdb.workspace       = true
 futures-lite.workspace = true
 nix.workspace          = true
 oo7.workspace          = true

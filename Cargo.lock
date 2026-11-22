@@ -6625,7 +6625,6 @@ dependencies = [
  "dispatch2",
  "flate2",
  "fluent-syntax",
- "fontdb 0.24.0",
  "foreign-types",
  "futures-channel",
  "futures-lite",
