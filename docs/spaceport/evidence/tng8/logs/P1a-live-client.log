@@ -1,0 +1,34 @@
+START=2026-11-22T05:11:41Z
+HERDR_TEST_BINARY="/Users/clint/.local/bin/herdr" cargo test --locked -p sheprd-client --test live -- --ignored --nocapture
+    Finished `test` profile [unoptimized] target(s) in 0.30s
+     Running tests/live.rs (target/debug/deps/live-d901f4ad9bf8b905)
+
+running 4 tests
+isolated daemon pid=54825 dir=/tmp/hd627-276f3700-2
+isolated daemon pid=54824 dir=/tmp/hd627-276f2f30-0
+isolated daemon pid=54829 dir=/tmp/hd627-276f3318-1
+stable endpoint welcome: EndpointServerWelcome { generation: 1, server_version: "0.9.5", snapshot_codec: "shell.snapshot.v1", surface_codec: "shell.surface.v1", input_codec: "shell.input.semantic.v1", blob_codec: "shell.blob.v1", methods: ["client_shell.surface.set", "command.invoke", "integration.install", "integration.list", "layout.set_split_ratio", "pane.clear", "pane.close", "pane.copy_motion", "pane.copy_search", "pane.edit_scrollback", "pane.focus", "pane.focus_direction", "pane.input.set", "pane.link.activate", "pane.link.resolve", "pane.rename", "pane.resize", "pane.scroll", "pane.selection.read", "pane.split", "pane.swap", "pane.zoom", "product_announcement.dismiss", "release_notes.dismiss", "server.reload_config", "tab.close", "tab.create", "tab.focus", "tab.move", "tab.rename", "workspace.close", "workspace.create", "workspace.focus", "workspace.move", "workspace.move_block", "workspace.rename", "worktree.create", "worktree.list", "worktree.open", "worktree.remove"], capabilities: ["surface_reuse", "surface_delta", "surface_scroll", "surface_interest", "presentation_effects_fence", "health_check", "agent_view_projection", "agent_completions"], error: None }
+stable endpoint welcome: EndpointServerWelcome { generation: 1, server_version: "0.9.5", snapshot_codec: "shell.snapshot.v1", surface_codec: "shell.surface.v1", input_codec: "shell.input.semantic.v1", blob_codec: "shell.blob.v1", methods: ["client_shell.surface.set", "command.invoke", "integration.install", "integration.list", "layout.set_split_ratio", "pane.clear", "pane.close", "pane.copy_motion", "pane.copy_search", "pane.edit_scrollback", "pane.focus", "pane.focus_direction", "pane.input.set", "pane.link.activate", "pane.link.resolve", "pane.rename", "pane.resize", "pane.scroll", "pane.selection.read", "pane.split", "pane.swap", "pane.zoom", "product_announcement.dismiss", "release_notes.dismiss", "server.reload_config", "tab.close", "tab.create", "tab.focus", "tab.move", "tab.rename", "workspace.close", "workspace.create", "workspace.focus", "workspace.move", "workspace.move_block", "workspace.rename", "worktree.create", "worktree.list", "worktree.open", "worktree.remove"], capabilities: ["surface_reuse", "surface_delta", "surface_scroll", "surface_interest", "presentation_effects_fence", "health_check", "agent_view_projection", "agent_completions"], error: None }
+stable endpoint welcome: EndpointServerWelcome { generation: 1, server_version: "0.9.5", snapshot_codec: "shell.snapshot.v1", surface_codec: "shell.surface.v1", input_codec: "shell.input.semantic.v1", blob_codec: "shell.blob.v1", methods: ["client_shell.surface.set", "command.invoke", "integration.install", "integration.list", "layout.set_split_ratio", "pane.clear", "pane.close", "pane.copy_motion", "pane.copy_search", "pane.edit_scrollback", "pane.focus", "pane.focus_direction", "pane.input.set", "pane.link.activate", "pane.link.resolve", "pane.rename", "pane.resize", "pane.scroll", "pane.selection.read", "pane.split", "pane.swap", "pane.zoom", "product_announcement.dismiss", "release_notes.dismiss", "server.reload_config", "tab.close", "tab.create", "tab.focus", "tab.move", "tab.rename", "workspace.close", "workspace.create", "workspace.focus", "workspace.move", "workspace.move_block", "workspace.rename", "worktree.create", "worktree.list", "worktree.open", "worktree.remove"], capabilities: ["surface_reuse", "surface_delta", "surface_scroll", "surface_interest", "presentation_effects_fence", "health_check", "agent_view_projection", "agent_completions"], error: None }
+semantic TextCommit + Enter produced shell output: HERDR_LIVE_54823_OK
+live status: wire=working status=Working seq=1
+focus verified: workspace=w1 tab=w1:t2
+live status: wire=blocked status=Blocked seq=2
+focus verified: workspace=w1 tab=w1:t1
+plugin action received the selected text: SELECTED_54823_TEXT
+test plugins::plugin_actions_live ... ok
+live status: wire=idle status=Idle seq=3
+focus verified: workspace=w1 tab=w1:t2
+test daemon_completion_status_live ... ok
+focus verified: workspace=w1 tab=w1:t2
+test named_session_create_and_delete_cli_contract ... ok
+focus verified: workspace=w2 tab=w2:t1
+resize verified: 100x30 surface
+stable endpoint welcome: EndpointServerWelcome { generation: 1, server_version: "0.9.5", snapshot_codec: "shell.snapshot.v1", surface_codec: "shell.surface.v1", input_codec: "shell.input.semantic.v1", blob_codec: "shell.blob.v1", methods: ["client_shell.surface.set", "command.invoke", "integration.install", "integration.list", "layout.set_split_ratio", "pane.clear", "pane.close", "pane.copy_motion", "pane.copy_search", "pane.edit_scrollback", "pane.focus", "pane.focus_direction", "pane.input.set", "pane.link.activate", "pane.link.resolve", "pane.rename", "pane.resize", "pane.scroll", "pane.selection.read", "pane.split", "pane.swap", "pane.zoom", "product_announcement.dismiss", "release_notes.dismiss", "server.reload_config", "tab.close", "tab.create", "tab.focus", "tab.move", "tab.rename", "workspace.close", "workspace.create", "workspace.focus", "workspace.move", "workspace.move_block", "workspace.rename", "worktree.create", "worktree.list", "worktree.open", "worktree.remove"], capabilities: ["surface_reuse", "surface_delta", "surface_scroll", "surface_interest", "presentation_effects_fence", "health_check", "agent_view_projection", "agent_completions"], error: None }
+detach verified: daemon alive; reconnected to same boot 54824-1795324301697820000 with 2 workspaces / 3 tabs
+test stable_endpoint_live ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.45s
+
+P1a2_EXIT=0
+END=2026-11-22T05:11:42Z

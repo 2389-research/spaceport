@@ -53,7 +53,7 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": []
+          "evidence": ["evidence/tng8/A03-herdr1.md"]
         },
         "core": {
           "status": "not_run",
@@ -112,7 +112,7 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": []
+          "evidence": ["evidence/tng8/A06-herdr1.md"]
         },
         "core": {
           "status": "not_run",
@@ -349,7 +349,7 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": []
+          "evidence": ["evidence/tng8/A18-herdr1.md"]
         },
         "core": {
           "status": "not_run",
@@ -447,7 +447,7 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": ["evidence/t05-explicit-termination.md"]
+          "evidence": ["evidence/t05-explicit-termination.md", "evidence/tng8/A23-herdr1.md"]
         },
         "core": {
           "status": "not_run",
