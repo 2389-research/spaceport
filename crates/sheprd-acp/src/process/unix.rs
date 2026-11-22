@@ -69,13 +69,19 @@ impl Child {
     }
 
     pub(super) fn stop(&mut self) {
-        let _ = self.stop_with(kill_process_group, Self::try_wait, super::GRACE);
+        let _ = self.stop_with(
+            kill_process_group,
+            Self::try_wait,
+            others_remain,
+            super::GRACE,
+        );
     }
 
     fn stop_with(
         &mut self,
         mut signal: impl FnMut(Pid, Signal) -> rustix::io::Result<()>,
         mut observe: impl FnMut(&mut Self) -> io::Result<Option<ExitStatus>>,
+        mut others_remain: impl FnMut(Pid) -> bool,
         grace: Duration,
     ) -> io::Result<()> {
         let Some(group) = self.group else {
@@ -83,19 +89,25 @@ impl Child {
         };
         let _ = signal(group, Signal::TERM);
         // An exited leader does not prove its descendants stopped handling TERM.
-        // Give descendants the full grace while the leader reserves the group identity.
+        // Give descendants the grace while the leader reserves the group identity,
+        // and end it early once nothing but that reserved leader is left.
         let deadline = Instant::now() + grace;
         while Instant::now() < deadline {
-            if let Err(error) = observe(self) {
-                if self.group.is_none() {
-                    return Err(error);
+            match observe(self) {
+                Ok(Some(_)) if !others_remain(group) => break,
+                Ok(_) => {}
+                Err(error) => {
+                    if self.group.is_none() {
+                        return Err(error);
+                    }
+                    if error.kind() == io::ErrorKind::Interrupted {
+                        continue;
+                    }
+                    // Observation errors must not skip final cleanup of an owned child.
                 }
-                if error.kind() == io::ErrorKind::Interrupted {
-                    continue;
-                }
-                // Observation errors must not skip final cleanup of an owned child.
             }
-            // The reserved leader can keep the group probe positive even after exit.
+            // The reserved leader keeps a signal probe of the group positive
+            // after exit, so the group's members are listed instead.
             std::thread::sleep(super::POLL.min(deadline.saturating_duration_since(Instant::now())));
         }
         let _ = signal(group, Signal::KILL);
@@ -105,6 +117,27 @@ impl Child {
         let status = self.inner.wait()?;
         self.status = Some(status);
         Ok(())
+    }
+}
+
+/// Whether a process other than the reserved `leader` is still in its group,
+/// as `pgrep -g` lists it: macOS's leaves zombies out, Linux's lists the
+/// leader itself. True when the list cannot be read, so the caller keeps its
+/// full grace.
+fn others_remain(leader: Pid) -> bool {
+    let leader = leader.as_raw_nonzero().to_string();
+    let output = sheprd_client::new_command("pgrep")
+        .args(["-g", &leader])
+        .stdin(process::Stdio::null())
+        .stderr(process::Stdio::null())
+        .output();
+    match output {
+        // pgrep exits 1 when it matched nothing.
+        Ok(output) if output.status.code() == Some(1) => false,
+        Ok(output) if output.status.success() => String::from_utf8_lossy(&output.stdout)
+            .split_whitespace()
+            .any(|pid| pid != leader),
+        _ => true,
     }
 }
 
