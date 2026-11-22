@@ -357,10 +357,9 @@ fn master_command(target: &str, socket: &Path) -> Command {
             "ControlMaster=yes",
             "-o",
             "ControlPersist=no",
-            "-o",
-            "ForkAfterAuthentication=no",
-            "-o",
         ])
+        .args(ssh::foreground::options())
+        .arg("-o")
         .arg(control_path(socket))
         .args(["--", target]);
     command

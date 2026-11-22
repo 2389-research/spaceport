@@ -25,6 +25,7 @@ use std::{
 
 mod error;
 mod failure;
+pub(crate) mod foreground;
 pub(crate) mod mux;
 mod unverified;
 pub use error::Error;
@@ -393,7 +394,9 @@ pub const FORWARD_READY: &str = "herdr-forward-ready";
 /// holds the port. `ControlPath=none` keeps the forward in this child rather
 /// than in a shared master, so killing the child closes it; a host that needs
 /// an interactively authenticated master cannot be tunnelled. The caller owns
-/// the child: its streams, readiness, and reaping.
+/// the child: its streams, readiness, and reaping. The first call runs
+/// `ssh -G` once to learn which options this client knows, so build it off
+/// the UI thread.
 pub fn forward_command(
     target: &str,
     local: u16,
@@ -407,12 +410,9 @@ pub fn forward_command(
         Some(std::net::IpAddr::V6(address)) => format!("[{address}]"),
     };
     let mut command = noninteractive(HostKeys::of(target));
+    command.args(["-N", "-o", "ControlPath=none"]);
+    command.args(foreground::options());
     command.args([
-        "-N",
-        "-o",
-        "ControlPath=none",
-        "-o",
-        "ForkAfterAuthentication=no",
         "-o",
         "PermitLocalCommand=yes",
         "-o",
