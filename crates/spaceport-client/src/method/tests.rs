@@ -141,10 +141,6 @@ const OFFERED: &[&str] = &[
     "workspace.move",
     "workspace.move_block",
     "workspace.rename",
-    "worktree.create",
-    "worktree.list",
-    "worktree.open",
-    "worktree.remove",
     // keep-sorted end
 ];
 

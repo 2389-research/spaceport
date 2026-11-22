@@ -10,7 +10,6 @@ menu-page-close = Close
 menu-page-devices = Devices
 menu-page-device-theme = Device theme
 menu-page-rename-workspace = Rename workspace
-menu-page-open-worktree = Open worktree
 menu-page-new-tab = New tab
 menu-page-new-workspace = New workspace
 menu-page-worktree-note = Worktree note

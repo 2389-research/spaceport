@@ -91,18 +91,13 @@ fn the_workspace_popover_and_its_dialogs_show_only_messages_under_en_xa() {
         check_popover(&view, cx, recorder, "w3");
         for (workspace, action) in [
             ("w3", WorkspaceAction::Rename),
-            ("w3", WorkspaceAction::OpenWorktree),
             ("w3", WorkspaceAction::NewTab),
             ("w3", WorkspaceAction::NewWorkspace),
             ("w3", WorkspaceAction::Note),
         ] {
             popover(&view, cx, workspace);
             recorder.take();
-            cx.update(|window, cx| {
-                view.update(cx, |view, cx| {
-                    view.open_workspace_dialog(action, window, cx)
-                })
-            });
+            cx.update(|_, cx| view.update(cx, |view, cx| view.open_workspace_dialog(action, cx)));
             draw(cx);
             let data = names(&view, cx);
             assert_translated(&format!("{action:?} dialog"), &recorder.take(), &data);

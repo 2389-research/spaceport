@@ -8,7 +8,7 @@
 mod keys;
 mod render;
 
-use super::{MENU_MARGIN, Page, WorkspaceAction, devices::rail};
+use super::{MENU_MARGIN, Page, devices::rail};
 use crate::direction::Logical;
 use crate::i18n::fl;
 use crate::{SpaceportWindow, fonts::StyledFont};

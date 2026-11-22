@@ -44,52 +44,6 @@ pub(crate) fn target_id(view: &SpaceportWindow) -> Option<&str> {
     view.menu.target.as_ref().map(|target| target.id.as_str())
 }
 
-// Drives the workspace menu for `endpoint::lifecycle_tests`, which needs POSIX
-// sockets and processes and is therefore compiled there only.
-#[cfg(unix)]
-pub(crate) fn submit_focus_change(
-    view: &mut SpaceportWindow,
-    method: Method,
-    window: &mut gpui::Window,
-    cx: &mut gpui::Context<SpaceportWindow>,
-) {
-    assert_eq!(method, Method::WorktreeOpen);
-    let action = WorkspaceAction::OpenWorktree;
-    let snapshot = std::sync::Arc::make_mut(view.live.snapshot.as_mut().unwrap());
-    snapshot.workspaces = sidebar::layout_tests::snapshot(7).workspaces;
-    let target = WorkspaceTarget::new(snapshot, &snapshot.workspaces[3]);
-    view.open_menu(window, cx);
-    view.menu.target = Some(target);
-    view.menu.page = Some(super::Page::Dialog(action));
-    if action == WorkspaceAction::OpenWorktree {
-        use gpui::AppContext;
-        let mut picker =
-            super::worktree_open::Picker::new(cx.new(crate::search_input::SearchInput::new));
-        picker.pending = Some("list".into());
-        view.menu.worktree_open = Some(picker);
-        view.menu.apply_worktree_list_response("list", Ok(serde_json::json!({"result": {
-            "type": "worktree_list", "source": {"repo_key":"/fixture/agent-launcher/.git", "repo_name":"agent-launcher", "source_workspace_id":"w3"},
-            "worktrees": [{"path": "/endpoint/existing checkout ",
-                "label": "existing", "is_bare": false, "is_prunable": false, "is_detached": true}]
-        }})));
-    }
-    view.submit_workspace_dialog(window, cx);
-    assert!(view.menu.error.is_none() && view.notices.is_none());
-    let pending = view.menu.opening.clone();
-    if pending.is_some() {
-        let inbox = view.endpoints[view.selected_endpoint]
-            .connection
-            .inbox
-            .lock()
-            .unwrap();
-        assert_eq!(
-            inbox.dialog_response.as_ref().map(|(id, _)| id),
-            pending.as_ref()
-        );
-    }
-    view.dismiss_menu(window, cx);
-}
-
 pub(crate) fn check_menu_interactions(
     view: &gpui::Entity<SpaceportWindow>,
     cx: &mut gpui::VisualTestContext,

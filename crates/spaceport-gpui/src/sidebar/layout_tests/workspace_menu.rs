@@ -38,7 +38,6 @@ fn workspace_right_click_survives_redraw_release_and_pointer_movement(
         cx.simulate_mouse_move(point(px(700.), px(500.)), None, Modifiers::default());
         cx.update(|window, cx| {
             view.update(cx, |view, cx| {
-                view.update_workspace_dialog(window, cx);
                 view.poll_hover_menu(std::time::Instant::now(), window, cx);
                 view.poll_tab_rename(window, cx);
                 view.poll_pane_rename(window, cx);

@@ -308,8 +308,6 @@ fn welcome_peer(server: &mut Server, snapshot: &ClientShellSnapshot, server_vers
             Method::PaneClose,
             Method::TabClose,
             Method::CommandInvoke,
-            Method::WorktreeCreate,
-            Method::WorktreeOpen,
             Method::ServerReloadConfig,
         ]
         .map(|method| method.as_str().to_owned()),

@@ -22,7 +22,7 @@ fn legacy_new_workspace_stays_local_and_core_create_opens(cx: &mut gpui::TestApp
             view.endpoints.push(remote);
 
             view.open_workspace_menu("w3", Default::default(), window, cx);
-            view.open_workspace_dialog(WorkspaceAction::NewWorkspace, window, cx);
+            view.open_workspace_dialog(WorkspaceAction::NewWorkspace, cx);
             assert_eq!(
                 view.menu.target.as_ref().map(|target| target.id.as_str()),
                 Some("w3")

@@ -24,7 +24,6 @@ fn actions_target_clicked_workspace_and_match_daemon_schemas() {
     let mut snapshot = sidebar::layout_tests::snapshot(7);
     snapshot.workspaces[0].branch = None;
     let target = WorkspaceTarget::new(&snapshot, &snapshot.workspaces[3]);
-    assert!(target.can_create());
     assert_eq!(
         target
             .request(&snapshot, WorkspaceAction::Rename, "new label")
@@ -34,14 +33,20 @@ fn actions_target_clicked_workspace_and_match_daemon_schemas() {
             serde_json::json!({"workspace_id": "w3", "label": "new label"})
         )
     );
-    for index in [0, 4, 5] {
-        let target = WorkspaceTarget::new(&snapshot, &snapshot.workspaces[index]);
-        assert!(!target.can_create());
-    }
-    let mut standalone = snapshot.clone();
-    standalone
-        .workspaces
-        .retain(|w| w.workspace_id != "w4" && w.workspace_id != "w5");
-    let target = WorkspaceTarget::new(&standalone, &standalone.workspaces[3]);
-    assert!(target.can_create());
+    assert_eq!(
+        target
+            .request(&snapshot, WorkspaceAction::NewTab, "")
+            .unwrap(),
+        (
+            Method::TabCreate,
+            serde_json::json!({"workspace_id": "w3", "focus": true})
+        )
+    );
+    // A stale snapshot is refused before any request names its workspace.
+    let mut replaced = snapshot.clone();
+    replaced.boot_id = "replacement-boot".into();
+    assert!(matches!(
+        target.request(&replaced, WorkspaceAction::Rename, "new label"),
+        Err(crate::Error::StaleWorkspace)
+    ));
 }

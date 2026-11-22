@@ -18,11 +18,13 @@ class MergedCleanupAbsence(unittest.TestCase):
             ("src/connection.rs", "request_cleanup"),
             ("src/state.rs", "cleanup_response"),
             ("src/config.rs", "remove_merged_worktrees"),
-            ("src/menu/worktree_shortcut.rs", "ask_merged_removal"),
             ("src/settings_window/pages/general.rs", "general-merged-worktrees"),
         ):
             with self.subTest(relative=relative):
                 self.assertNotIn(marker, (GUI / relative).read_text())
+        # The worktree-shortcut module itself is gone with the worktree
+        # commands; its removal satisfies the guard for its marker.
+        self.assertFalse((GUI / "src/menu/worktree_shortcut.rs").exists())
 
     def test_group_deletion_keeps_the_dialog_without_checkout_removal(self):
         workspace = (GUI / "src/menu/workspace.rs").read_text()

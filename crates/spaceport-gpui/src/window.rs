@@ -547,7 +547,6 @@ impl SpaceportWindow {
         self.observe_agent_work(window, cx);
         self.cancel_stale_image();
         self.poll_file_transfer(cx);
-        self.update_workspace_dialog(window, cx);
         crate::link::follow::poll(self, window, cx);
         #[cfg(windows)]
         crate::jump_list::JumpList::observe(self, cx);

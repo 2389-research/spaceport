@@ -235,14 +235,6 @@ pub enum Error {
     Usage(#[from] spaceport_usage::Error),
     #[error(transparent)]
     WorkspaceDocument(#[from] crate::core_terminals::workspace_document::Error),
-    #[error("Repository changed. Dismiss and reopen the menu.")]
-    WorkspaceRepositoryChanged,
-    #[error("Invalid or oversized worktree list. Dismiss and reopen the menu.")]
-    WorktreeList,
-    #[error("Malformed worktree list. Dismiss and reopen the menu.")]
-    WorktreeListDecode(#[source] serde_json::Error),
-    #[error("Select a checkout from the daemon's worktree list.")]
-    WorktreeSelection,
     #[error(transparent)]
     WslDrop(#[from] crate::window::wsl_drop::Error),
     // keep-sorted end

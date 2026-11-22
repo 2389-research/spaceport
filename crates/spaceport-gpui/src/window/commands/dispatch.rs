@@ -70,18 +70,6 @@ const ROWS: &[Row] = &[
         takes: |command| matches!(command, Command::ResumePalette),
         run: SpaceportWindow::command_resume_palette,
     },
-    Row {
-        takes: |command| matches!(command, Command::OpenWorktree),
-        run: SpaceportWindow::command_open_worktree,
-    },
-    Row {
-        takes: |command| matches!(command, Command::WorktreeNotes),
-        run: SpaceportWindow::command_worktree_notes,
-    },
-    Row {
-        takes: |command| matches!(command, Command::EditWorktreeNote),
-        run: SpaceportWindow::command_edit_worktree_note,
-    },
     // Every interactive creation path ends here, so Herdr's name prompt
     // covers buttons, menus, shortcuts, and the palette alike.
     Row {

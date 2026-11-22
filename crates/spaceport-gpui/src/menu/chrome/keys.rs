@@ -4,10 +4,7 @@
 //! and the overlay's key handler, which routes each key to the page that owns
 //! it and leaves text editing and composition to the native input handler.
 
-use crate::{
-    SpaceportWindow, actions,
-    menu::{Page, WorkspaceAction},
-};
+use crate::{SpaceportWindow, actions, menu::Page};
 use gpui::*;
 
 impl SpaceportWindow {
@@ -19,9 +16,6 @@ impl SpaceportWindow {
     /// overlay leaves unhandled cannot run twice through the menu bar.
     pub(super) fn menu_edit(&mut self, key: &str, _window: &mut Window, cx: &mut Context<Self>) {
         let event = actions::edit_key(key);
-        if self.menu.page == Some(Page::Dialog(WorkspaceAction::OpenWorktree)) {
-            return;
-        }
         if let Some(input) = self.menu.input.as_mut()
             && input.key(&event.keystroke, cx)
         {
@@ -36,20 +30,6 @@ impl SpaceportWindow {
         cx: &mut Context<Self>,
     ) {
         if self.shortcut_editor_key(event, window, cx) {
-            return;
-        }
-        if self.menu.page == Some(Page::Dialog(WorkspaceAction::OpenWorktree))
-            && (self
-                .menu
-                .worktree_open
-                .as_ref()
-                .is_some_and(|picker| picker.search.read(cx).is_composing())
-                || !matches!(
-                    event.keystroke.key.as_str(),
-                    "escape" | "enter" | "up" | "down"
-                ))
-        {
-            // SearchInput and the platform own text editing and composition.
             return;
         }
         if let Some(input) = self.menu.input.as_mut() {
@@ -168,25 +148,6 @@ impl SpaceportWindow {
         window.prevent_default();
         match event.keystroke.key.as_str() {
             "escape" => self.dismiss_menu(window, cx),
-            "up" | "down"
-                if self.menu.page == Some(Page::Dialog(WorkspaceAction::OpenWorktree)) =>
-            {
-                if let Some(picker) = &mut self.menu.worktree_open
-                    && !picker.filtered.is_empty()
-                    && self.menu.opening.is_none()
-                {
-                    let count = picker.filtered.len();
-                    picker.selected = if event.keystroke.key == "up" {
-                        (picker.selected + count - 1) % count
-                    } else {
-                        (picker.selected + 1) % count
-                    };
-                    picker
-                        .scroll
-                        .scroll_to_item(picker.selected, ScrollStrategy::Top);
-                    cx.notify();
-                }
-            }
             // Destructive Core document consent requires a fresh press.
             "enter"
                 if event.is_held

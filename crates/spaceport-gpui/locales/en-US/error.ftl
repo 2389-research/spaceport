@@ -76,7 +76,3 @@ error-stale-pane = The original pane changed or no longer exists. Cancel and try
 error-stale-tab = The original tab changed or no longer exists. Cancel and try again.
 error-stale-workspace = Workspace is no longer available. Dismiss and reopen the menu.
 error-unsupported-command = This command action is not supported by this client.
-error-workspace-repository-changed = Repository changed. Dismiss and reopen the menu.
-error-worktree-list = Invalid or oversized worktree list. Dismiss and reopen the menu.
-error-worktree-list-decode = Malformed worktree list. Dismiss and reopen the menu.
-error-worktree-selection = Select a checkout from the daemon's worktree list.

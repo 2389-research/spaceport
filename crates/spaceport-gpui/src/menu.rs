@@ -21,8 +21,6 @@ mod version_mismatch;
 mod whats_new;
 mod workspace;
 mod worktree_note;
-mod worktree_open;
-mod worktree_shortcut;
 
 #[cfg(test)]
 mod account_route_tests;
@@ -44,8 +42,6 @@ mod sessions_tests;
 mod version_mismatch_tests;
 #[cfg(test)]
 pub(crate) mod workspace_tests;
-#[cfg(test)]
-mod worktree_open_tests;
 
 #[cfg(any(windows, test, feature = "integration-test"))]
 pub(crate) use state::Cover;
@@ -54,13 +50,11 @@ pub(crate) use {
     page::{Page, WorkspaceAction},
     state::MenuState,
     version_mismatch::Notice as VersionNotice,
-    worktree_shortcut::WorktreeShortcut,
 };
 
 use crate::direction::Logical;
 pub(crate) use devices::{DeviceScope, SettingsHint, enter as enter_key};
 use page::WorkspaceMenuAction;
-use state::Submission;
 use workspace::WorkspaceTarget;
 
 /// Shared trailing action geometry for pickers and workspace context menus.
@@ -94,13 +88,3 @@ fn action_icon(
 /// Breathing room between a popup and the window's edges, so a list that had
 /// to be clamped still shows that it stops short of the frame.
 const MENU_MARGIN: f32 = 8.;
-
-/// The text a workspace dialog shows when the daemon refused its request:
-/// the code, which names the refusal, then the daemon's message.
-pub(crate) fn refusal(response: &serde_json::Value) -> Option<String> {
-    let error = spaceport_client::response::result(response).err()?;
-    let spaceport_client::Error::Endpoint { code, .. } = &error else {
-        return None;
-    };
-    Some(format!("{}: {error}", code.as_str()))
-}

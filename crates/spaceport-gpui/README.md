@@ -1511,11 +1511,9 @@ uncommitted-work icon, and the note's first line reads under the row, cut off
 when it is too long; click that line to edit it. Card layouts (Superset, Orca)
 show the line only. Saving the note empty removes it.
 
-The Worktree Notes command opens the palette on its Notes filter, which lists every
-open checkout with a note on any connected host, most recently edited first;
-the whole palette also finds a workspace by its note's text. Edit Worktree
-Note opens the focused checkout's note. Neither has a default shortcut;
-`worktree_notes` and `edit_worktree_note` bind them under `[keybindings]`.
+Go To's Notes filter (Ctrl-Tab cycles its filters) lists every open checkout
+with a note on any connected host, most recently edited first; the whole palette
+also finds a workspace by its note's text.
 
 A note is one line of at most 500 characters. Notes stay in this client, in
 `worktree-notes.json` in its state directory: they never reach the daemon or the
@@ -1657,8 +1655,8 @@ The legacy New workspace dialog no longer offers another host. It keeps its
 current local target while the Core presentation workspace create page uses
 its separate document route. Pane carry still uses host scripts; that excluded route remains in the
 [dispatch removal evidence](../../docs/spaceport/evidence/t04-workspace-dispatch-removal.md).
-The desktop New worktree source and landing flow is gone; pane carry and Open
-worktree are separate remaining controls.
+The desktop New worktree source and landing flow is gone; pane carry is the
+remaining control.
 
 Spaceport does not load or write inherited `fan-outs.json`; its fan-out dialog,
 CLI command, host scripts and journal have been removed. Existing files remain
@@ -2417,14 +2415,10 @@ it), so the app's own F6, F11, and tab keys carry its Ctrl prefix.
   reloading the window, so the theme being previewed stays on screen. Each
   star is applied to the list the file holds when it is written, so stars
   made in another window's picker stay.
-- Right-click spaces for Rename, Close (Close group on a repository's only
-  non-linked parent while linked worktrees sharing its `worktree.key` are open;
-  a parent beside another parent closes alone), and New worktree /
-  Open worktree... on non-linked Git parents, including spaces with a known
-  Git branch but no worktree metadata yet.
-  Linked spaces offer New worktree too, while their main checkout is open: the
-  daemon creates it through the main checkout, but the new branch starts from
-  the linked space's branch rather than the main checkout's `HEAD`.
+- Right-click spaces for Rename, Note... on a Git checkout on a branch, and
+  Close (Close group on a repository's only non-linked parent while linked
+  worktrees sharing its `worktree.key` are open; a parent beside another parent
+  closes alone).
   Right-click also selects the space, switching the terminal and sidebar highlight
   when the daemon confirms the selection. A compact header repeats the target name
   and Git branch. Right-clicking another visible space while this menu is open
@@ -2473,33 +2467,6 @@ it), so the app's own F6, F11, and tab keys carry its Ctrl prefix.
   upstream repository: its own branches are fetched from `upstream`, pull
   requests from the fork behind `origin` check out their real branch from
   `origin`, and other forks use the PR head ref fetched from `upstream`.
-- Open worktree... asynchronously lists the clicked parent's existing checkouts
-  through `worktree.list`, including already-open and detached checkouts but
-  excluding bare/prunable entries. Use Up/Down and Enter, the Open button, or
-  click a row. A centered modal with the standard dimmed backdrop focuses a native
-  search field, like Color Scheme. Typing immediately filters branch, label, and
-  daemon path case-insensitively, including Unicode text. Selection resets to the
-  first match; no matches is distinct from an empty repository listing. The
-  bounded, scrollable list retains original paths for opening, and IME composition
-  cannot accidentally select or dismiss it. There is no manual-path entry.
-  Rows fill the list width with status labels aligned at the right edge. The
-  top-right ESC control dismisses the modal; Cancel and Open remain in the footer.
-  A bottom status area appears only for errors or an in-flight open, not idle hints.
-  It accepts at most 512 returned entries with 8 KiB per
-  string field, rejecting malformed, duplicate-path, or oversized lists rather
-  than presenting a partial list. Empty results and failures are shown inline;
-  dismiss and reopen to refresh. Both list and open use the clicked
-  `workspace_id` and `trust_repository: false`; open sends the exact returned
-  `path` and `focus: true`, never a locally resolved path or guessed branch.
-  Unadvertised methods are rejected by the client worker. Correlated responses
-  are fenced by endpoint selection/generation, boot, and parent workspace
-  identity. While an open is pending, a branch-only parent may acquire the exact
-  non-linked repository identity returned by its list response; this expected
-  daemon update does not discard the correlated open result. Other identity
-  changes still invalidate the picker. Success selects and reveals the daemon-returned workspace using the
-  same focus flow as creation. Escape/outside click dismisses even while waiting;
-  this does not cancel queued daemon work, but late replies cannot reopen the
-  picker or steal this client's focus. All Git/filesystem work stays in Herdr.
 - Signed-in workspace menus include a compact, divided PR summary. The number/title
   is the last selectable menu action: click it or use arrows and Enter to open the
    validated URL. Cache-only menu opening shows prefetched results immediately,
@@ -2700,10 +2667,6 @@ it), so the app's own F6, F11, and tab keys carry its Ctrl prefix.
   Reconnect clears dialogs. Queue
   errors remain in the dialog; daemon errors appear in the connection status bar.
   Queue acceptance dismisses the dialog, not an optimistic state mutation.
-- Worktree creation sends the clicked `workspace_id`, optional `branch`,
-  `base: "HEAD"`, `focus: true`, and `trust_repository: false`. Blank branches use
-  daemon policy. The daemon's deferred endpoint navigation focuses the result;
-  no follow-up focus request or local Git subprocess is used.
 - Title-only tabs, without an added tab number. Externally created workspaces
   arrive through pushed snapshots without manual refresh.
 - Right-click any tab without focusing it to open Rename.
@@ -2908,11 +2871,8 @@ it), so the app's own F6, F11, and tab keys carry its Ctrl prefix.
   that types text, such as `@` or `-`, works the same way everywhere, so a
   text field gets it by typing it twice. Every
   daemon action has a GUI command except the `navigate_pane_*` keys (Go To
-  has no pane cursor). `open_worktree` opens the focused workspace's Open worktree...
-  dialog (a linked checkout's through its repository's main checkout).
-  When it cannot apply (a workspace outside Git, nothing focused, or no
-  connection), nothing opens and a flash says why. Herdr leaves it unbound,
-  as does the GUI's `open_worktree` command. `workspace_picker` and
+  has no pane cursor) and `open_worktree`, whose dialog this app does not offer.
+  `workspace_picker` and
   `goto` open Go To, where `navigate_workspace_up`/`_down` move the selection
   when the key cannot be typed into its search. `split_vertical` and
   `split_horizontal` are Split Right and Split Down. As in the TUI,
