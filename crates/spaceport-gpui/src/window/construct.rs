@@ -325,12 +325,12 @@ impl SpaceportWindow {
     ) {
         Self::poll_on_frame(cx.entity().downgrade(), window);
         self.sidebar_preferences = if let Some(key) = core_key.as_ref() {
-            Some(preferences::Preferences::for_core(key.hub_core_id()))
+            Some(preferences::Preferences::for_core(key.hub_core_id(), cx))
         } else {
             self.endpoints
                 .first()
                 .and_then(|endpoint| endpoint.connection.target.socket_path().ok())
-                .map(|path| preferences::Preferences::new(&path))
+                .map(|path| preferences::Preferences::new(&path, cx))
         };
         if core_key.is_none() {
             self.reconnect(cx);

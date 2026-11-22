@@ -96,20 +96,27 @@ fn visits_stored_before_a_save_that_raced_the_load_are_saved_again(cx: &mut Test
         chrome
     });
     view.update(cx, |view, _| view.apply_stored_chrome(chrome));
-    let deadline = Instant::now() + Duration::from_secs(5);
-    loop {
-        let read = read_chrome(&path).ok();
-        let last_opened = read.as_ref().map(|chrome| &chrome.activity_last_opened);
-        if last_opened.is_some_and(|last_opened| {
-            last_opened.get(&ActivityPanel::Usage) == Some(&stored)
-                && last_opened.contains_key(&ActivityPanel::Workspaces)
-        }) {
-            assert_eq!(read.unwrap().sidebar_width, Some(250.));
-            break;
-        }
-        assert!(Instant::now() < deadline, "merged visits were not saved");
-        thread::sleep(Duration::from_millis(5));
-    }
+    let worker = view.update(cx, |view, _| {
+        view.sidebar_preferences
+            .as_ref()
+            .unwrap()
+            .worker
+            .as_ref()
+            .unwrap()
+            .clone()
+    });
+    // The worker owns the save. Drain it outside the view update before reading.
+    worker.finish();
+    let read = read_chrome(&path).unwrap();
+    assert_eq!(
+        read.activity_last_opened.get(&ActivityPanel::Usage),
+        Some(&stored)
+    );
+    assert!(
+        read.activity_last_opened
+            .contains_key(&ActivityPanel::Workspaces)
+    );
+    assert_eq!(read.sidebar_width, Some(250.));
     // A load with nothing new to merge asks for no save.
     view.update(cx, |view, _| {
         let last_opened = view.activity.last_opened().clone();

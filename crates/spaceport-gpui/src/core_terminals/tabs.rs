@@ -172,7 +172,8 @@ impl SpaceportWindow {
     }
 
     /// Puts a started terminal beside `at` in `tab`, and gives it the
-    /// keyboard. One that cannot be placed is ended rather than left behind.
+    /// keyboard. One that cannot be placed is ended rather than left
+    /// behind, and the answer is false.
     pub(super) fn place_split(
         &mut self,
         tab: TabId,
@@ -181,7 +182,7 @@ impl SpaceportWindow {
         new: TerminalId,
         window: &mut Window,
         cx: &mut Context<Self>,
-    ) {
+    ) -> bool {
         let placed = match self.core_terminals.tabs.contains_key(&tab) {
             true => Store::update(cx, |store| {
                 store.edit_panes(tab, |panes| panes.split(at, axis, new.clone()))
@@ -198,10 +199,11 @@ impl SpaceportWindow {
         if let Err(error) = placed {
             self.show_flash(Flash::warning(error.to_string()), cx);
             self.end_core_terminal(new);
-            return;
+            return false;
         }
         self.sync_core_views(cx);
         self.focus_core_terminal(tab, window, cx);
+        true
     }
 
     /// Takes `terminal` out of `tab`'s panes. The pane beside it, or else

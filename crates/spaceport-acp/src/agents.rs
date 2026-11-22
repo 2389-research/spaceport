@@ -1,8 +1,11 @@
+// ABOUTME: Finds built-in agents only in absolute executable search roots.
+// ABOUTME: Reports missing programs without falling back to another PATH search.
 //! How `herdr-acp` finds the command that starts an agent; the agents
 //! themselves are `spaceport_chat_protocol::Agent`, shared with its clients.
 
 use std::{
     ffi::{OsStr, OsString},
+    io,
     path::{Path, PathBuf},
 };
 
@@ -34,9 +37,11 @@ pub(crate) fn search_path(path: Option<&OsStr>, home: Option<&Path>) -> OsString
         .map(std::env::split_paths)
         .into_iter()
         .flatten()
+        .filter(|dir| dir.is_absolute())
         .collect();
     dirs.extend(
         home.into_iter()
+            .filter(|home| home.is_absolute())
             .flat_map(|home| USER_DIRS.iter().map(|dir| home.join(dir))),
     );
     dirs.extend(SYSTEM_DIRS.iter().map(PathBuf::from));
@@ -56,15 +61,15 @@ pub(crate) enum Launch {
 /// How to start `agent`: the agent itself where `herdr-acp` speaks its own
 /// protocol and it is on `path`, unless `adapter` asks for ACP; otherwise
 /// [`command`].
-pub(crate) fn launch(agent: Agent, path: Option<&OsStr>, adapter: bool) -> Launch {
+pub(crate) fn launch(agent: Agent, path: Option<&OsStr>, adapter: bool) -> io::Result<Launch> {
     if !adapter
         && let Some(program) = native(agent)
         && let Some(found) = find_program(program, path)
     {
-        return Launch::Native(found);
+        return Ok(Launch::Native(found));
     }
-    let (program, args) = command(agent, path);
-    Launch::Acp(program, args)
+    let (program, args) = command(agent, path)?;
+    Ok(Launch::Acp(program, args))
 }
 
 /// The agent's own program, for an agent `herdr-acp` can talk to without an
@@ -96,31 +101,51 @@ pub(crate) fn installed(path: Option<&OsStr>) -> Vec<Agent> {
         .collect()
 }
 
-/// The first of `agent`'s commands found on `path`, or the last one by name
-/// so that starting it fails with a message naming what to install.
-pub(crate) fn command(agent: Agent, path: Option<&OsStr>) -> (OsString, Vec<OsString>) {
+/// The first of `agent`'s commands found in absolute directories on `path`.
+pub(crate) fn command(agent: Agent, path: Option<&OsStr>) -> io::Result<(OsString, Vec<OsString>)> {
     let candidates = agent.candidates();
     let found = candidates
         .iter()
         .find_map(|(program, args)| find_program(program, path).map(|found| (found, *args)));
-    let (program, args) = match found {
-        Some((found, args)) => (found.into_os_string(), args),
-        None => {
-            let (program, args) = candidates[candidates.len() - 1];
-            (OsString::from(program), args)
-        }
-    };
-    (program, args.iter().map(OsString::from).collect())
+    let (program, args) =
+        found.ok_or_else(|| not_found(OsStr::new(candidates[candidates.len() - 1].0)))?;
+    Ok((
+        program.into_os_string(),
+        args.iter().map(OsString::from).collect(),
+    ))
+}
+
+/// Preserve explicit custom paths; resolve bare names before handing them to a process.
+pub(crate) fn custom_program(program: &OsStr, path: Option<&OsStr>) -> io::Result<OsString> {
+    let explicit = Path::new(program);
+    if explicit.is_absolute() || explicit.components().count() > 1 {
+        return Ok(program.to_owned());
+    }
+    find_program(program, path)
+        .map(PathBuf::into_os_string)
+        .ok_or_else(|| not_found(program))
+}
+
+fn not_found(program: &OsStr) -> io::Error {
+    io::Error::new(
+        io::ErrorKind::NotFound,
+        format!(
+            "{} was not found in absolute PATH directories",
+            program.to_string_lossy()
+        ),
+    )
 }
 
 /// Looks `program` up in a `PATH`-style list of directories.
-pub(crate) fn find_program(program: &str, path: Option<&OsStr>) -> Option<PathBuf> {
+pub(crate) fn find_program(program: impl AsRef<OsStr>, path: Option<&OsStr>) -> Option<PathBuf> {
     let path = path?;
-    std::env::split_paths(path).find_map(|dir| executable(&dir, program))
+    std::env::split_paths(path)
+        .filter(|dir| dir.is_absolute())
+        .find_map(|dir| executable(&dir, program.as_ref()))
 }
 
 #[cfg(unix)]
-fn executable(dir: &Path, program: &str) -> Option<PathBuf> {
+fn executable(dir: &Path, program: &OsStr) -> Option<PathBuf> {
     use std::os::unix::fs::PermissionsExt;
     let candidate = dir.join(program);
     let metadata = candidate.metadata().ok()?;
@@ -128,7 +153,11 @@ fn executable(dir: &Path, program: &str) -> Option<PathBuf> {
 }
 
 #[cfg(windows)]
-fn executable(dir: &Path, program: &str) -> Option<PathBuf> {
+fn executable(dir: &Path, program: &OsStr) -> Option<PathBuf> {
+    if Path::new(program).extension().is_some() {
+        let candidate = dir.join(program);
+        return candidate.is_file().then_some(candidate);
+    }
     ["exe", "cmd", "bat"]
         .iter()
         .map(|extension| dir.join(program).with_extension(extension))

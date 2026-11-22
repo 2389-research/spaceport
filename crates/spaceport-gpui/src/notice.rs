@@ -12,6 +12,9 @@ pub(crate) enum Cause {
     Configuration,
     Connection,
     Daemon,
+    /// A connection no one verified. `Connection` would pin the status bar for
+    /// the whole session and hide every later notice, so this one expires.
+    HostKey,
     Input,
     Transfer,
 }

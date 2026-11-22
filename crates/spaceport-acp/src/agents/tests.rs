@@ -1,3 +1,5 @@
+// ABOUTME: Exercises executable discovery and built-in agent launch choices.
+// ABOUTME: Shares private executable fixtures across agent lookup tests.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::*;
@@ -5,6 +7,7 @@ use super::*;
 mod installed;
 #[cfg(unix)]
 mod launch;
+mod path_lookup;
 
 #[cfg(unix)]
 fn install(dir: &Path, name: &str) {
@@ -20,11 +23,11 @@ fn the_direct_adapter_wins_over_npx() {
     let dir = tempfile::tempdir().unwrap();
     install(dir.path(), "npx");
     let path = dir.path().as_os_str();
-    let (program, args) = command(Agent::Claude, Some(path));
+    let (program, args) = command(Agent::Claude, Some(path)).unwrap();
     assert_eq!(program, dir.path().join("npx").into_os_string());
     assert_eq!(args, ["-y", "@agentclientprotocol/claude-agent-acp"]);
     install(dir.path(), "claude-agent-acp");
-    let (program, args) = command(Agent::Claude, Some(path));
+    let (program, args) = command(Agent::Claude, Some(path)).unwrap();
     assert_eq!(
         program,
         dir.path().join("claude-agent-acp").into_os_string()
@@ -42,7 +45,7 @@ fn non_executable_files_are_not_programs() {
 
 #[test]
 fn a_missing_agent_is_named_by_its_last_candidate() {
-    let (program, args) = command(Agent::Opencode, None);
-    assert_eq!(program, "opencode");
-    assert_eq!(args, ["acp"]);
+    let error = command(Agent::Opencode, None).unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::NotFound);
+    assert!(error.to_string().contains("opencode"));
 }

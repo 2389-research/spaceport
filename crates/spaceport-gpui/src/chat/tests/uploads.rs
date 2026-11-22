@@ -7,6 +7,8 @@ use super::{
 use gpui::TestAppContext;
 use spaceport_client::ConnectTarget;
 
+mod bounds;
+
 fn replace(view: &gpui::Entity<crate::SpaceportWindow>, cx: &mut gpui::VisualTestContext) {
     view.update(cx, |view, _| {
         let mut target = view.chats.panes().next().unwrap().target.clone();

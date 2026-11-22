@@ -282,7 +282,7 @@ fn native_saved_state_recovery() {
         );
         desktop.await_size(&test.isolated, &xid, width);
         let refused = test.reply(&["devices", "open"], &format!("refused-{width}"), 1);
-        assert_eq!(refused["error"]["code"], "refused");
+        assert_eq!(refused["error"]["code"], "failed");
         assert!(
             refused["error"]["message"]
                 .as_str()

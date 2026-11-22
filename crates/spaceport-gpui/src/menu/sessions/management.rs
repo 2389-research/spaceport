@@ -266,7 +266,7 @@ impl SpaceportWindow {
                 let background = cx.background_executor().spawn(async move {
                     match target {
                         Target::Local => spaceport_client::delete_local_session(
-                            &crate::daemon::executable(),
+                            &crate::daemon::executable()?,
                             &name,
                         ),
                         Target::Device { host, .. } => host.delete_session(&name),

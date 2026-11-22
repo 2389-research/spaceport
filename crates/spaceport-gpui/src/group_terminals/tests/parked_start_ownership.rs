@@ -87,7 +87,7 @@ fn parked_groups_never_start_the_local_daemon(cx: &mut TestAppContext) {
     let marker = root.join("started");
     assert!(root.is_absolute() && root.is_dir());
     assert!(fake.is_file() && fs::metadata(&fake).unwrap().permissions().mode() & 0o111 != 0);
-    assert_eq!(crate::daemon::executable(), fake);
+    assert_eq!(crate::daemon::executable().unwrap(), fake);
     assert_eq!(ConnectTarget::Local.socket_path().unwrap(), socket);
     assert!(!socket.exists());
     let stopped = AtomicBool::new(false);

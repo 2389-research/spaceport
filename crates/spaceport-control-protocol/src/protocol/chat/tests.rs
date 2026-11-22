@@ -59,6 +59,15 @@ fn chat_replies_round_trip() {
             pane_id: "w1:p1".into(),
             shown: false,
         },
+        Reply::Created {
+            agent: "claude".into(),
+            window_id: 7,
+            tab: Tab::Core {
+                tab_id: 9,
+                terminal_id: "terminal-9".into(),
+            },
+            pane_id: "core:terminal-9".into(),
+        },
     ] {
         let response = Response::Chat { reply };
         let text = serde_json::to_string(&response).unwrap();
@@ -81,13 +90,39 @@ fn chat_new_has_a_stable_wire_form() {
         "{text}"
     );
     assert_eq!(serde_json::from_str::<Request>(&text).unwrap(), request);
-    let started = Response::Chat {
-        reply: Reply::Started {
+    let created = Response::Chat {
+        reply: Reply::Created {
             agent: "claude".into(),
+            window_id: 7,
+            tab: Tab::Herdr {
+                tab_id: "w1:t9".into(),
+            },
+            pane_id: "w1:p9".into(),
         },
     };
-    let text = serde_json::to_string(&started).unwrap();
-    assert_eq!(serde_json::from_str::<Response>(&text).unwrap(), started);
+    let text = serde_json::to_string(&created).unwrap();
+    assert!(
+        text.contains(r#""tab":{"runtime":"herdr","tab_id":"w1:t9"}"#),
+        "{text}"
+    );
+    assert_eq!(serde_json::from_str::<Response>(&text).unwrap(), created);
+}
+
+#[test]
+fn chat_creation_has_a_bounded_acknowledgement_wait() {
+    let request = Request::Chat(Call {
+        caller: Caller::default(),
+        op: ChatOp::New {
+            agent: "claude".into(),
+            pane: None,
+        },
+    });
+    assert_eq!(request.wait_seconds(), CREATION_WAIT_SECONDS);
+    let status = Request::Chat(Call {
+        caller: Caller::default(),
+        op: ChatOp::Status,
+    });
+    assert_eq!(status.wait_seconds(), 0);
 }
 
 mod removed_lifecycle;
