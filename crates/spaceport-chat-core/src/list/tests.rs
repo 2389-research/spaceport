@@ -1,5 +1,4 @@
 use super::*;
-use crate::chat::list::{Splice, splices};
 
 fn keys(pairs: &[(u64, u64)]) -> Vec<(EntryId, u64)> {
     pairs

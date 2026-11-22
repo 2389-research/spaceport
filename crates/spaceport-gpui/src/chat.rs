@@ -20,14 +20,11 @@
 mod chats;
 mod core_pane;
 mod discovery;
-pub(crate) mod env;
-mod existing;
 mod files;
 mod glide;
 mod harnesses;
 mod highlight;
 mod link;
-mod list;
 pub(crate) mod page;
 pub(crate) mod pasted;
 mod prepared;
@@ -48,6 +45,12 @@ mod window;
 
 pub(crate) use chats::{ChatInput, Chats, LauncherDeck, Toward};
 pub(crate) use session::Refusal;
+// The model below the views, at the paths the rest of the chat reads it at.
+pub(crate) use spaceport_chat_core::env::{check_env, env_text, parse_env};
+pub(crate) use spaceport_chat_core::{MAX_CHATS, env, existing, list};
+#[cfg(feature = "integration-test")]
+pub(crate) use start::native as native_start;
+pub(crate) use start::{Error as StartError, Program};
 
 /// The wall clock in milliseconds since the Unix epoch, which the program
 /// on this machine stamps a running turn with.
@@ -58,16 +61,10 @@ pub(super) fn now_ms() -> u64 {
             u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)
         })
 }
-pub(crate) use env::{MAX_ENV, MAX_ENV_BYTES, check_env, env_text, parse_env};
-#[cfg(feature = "integration-test")]
-pub(crate) use start::native as native_start;
-pub(crate) use start::{Error as StartError, PROGRAM_ENV, Program};
 
 use spaceport_chat_protocol::{ByeReason, EndpointId};
 use std::io;
 
-/// Chat panes attached at once; more are left to their terminal views.
-const MAX_CHATS: usize = 16;
 /// Commands waiting for their acknowledgement, per pane.
 const MAX_PENDING: usize = 32;
 /// Messages a worker holds for the window before it gives the connection up

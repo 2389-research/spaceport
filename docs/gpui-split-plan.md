@@ -8,8 +8,8 @@ next ones. Update it as each step lands.
 
 ## What moved
 
-Eleven modules have left the app. Ten are pure functions of their inputs with
-no `gpui` types; `spaceport-browser` is the first that has to carry them:
+Twelve modules have left the app. Eleven are pure functions of their inputs
+with no `gpui` types; `spaceport-browser` is the first that has to carry them:
 
 | Crate | From | Dependencies | Files importing it |
 | --- | --- | --- | --- |
@@ -23,6 +23,7 @@ no `gpui` types; `spaceport-browser` is the first that has to carry them:
 | `crates/spaceport-state-file` | `crates/sheprd-gpui/src/state_file.rs` | `serde`, `serde_json`, `tempfile`, `thiserror`, `tracing` | 10 |
 | `crates/spaceport-motion` | `crates/sheprd-gpui/src/motion/slow*`, `motion.rs`'s clock | none | 49 (through the `crate::motion` façade) |
 | `crates/spaceport-browser` | `crates/sheprd-gpui/src/browser*` | `gpui`, `serde`, `serde_json`, `spaceport-client`, `spaceport-motion`, `spaceport-panes`, `spaceport-reorder`, `spaceport-state-file`, `spaceport-truncate`, `thiserror`, `tracing`, `url`, `uuid` | 51 (through the `crate::browser` façade) |
+| `crates/spaceport-chat-core` | `crates/spaceport-gpui/src/chat/{env,list,existing}*` | `serde_json`, `spaceport-chat-protocol`, `spaceport-client`, `spaceport-remote`, `thiserror`, `uuid` | 3 (`chat.rs`'s façade, `chat/discovery.rs`, `chat/start.rs`) |
 
 The browser's own record is
 [`notes-browser-extraction.md`](notes-browser-extraction.md): what moved, what
@@ -134,6 +135,41 @@ Three couplings had to invert first, each one parameter or struct:
 | `crates/sheprd-gpui/src/truncate/tests.rs`, 86 lines | `crates/spaceport-truncate/src/tests.rs`, moved unchanged |
 | 6 `crate::truncate::` paths in five files | the same paths naming `spaceport_truncate`; `one_line` calls `spaceport_client::text::safe_text`, which it had reached through `crate::notifications` |
 
+### `spaceport-chat-core`
+
+The first step of the `chat` extraction, and a model-only one. Of the 203 files
+in `crates/spaceport-gpui/src/chat`, 111 import `gpui`; of the rest, only three
+modules were both `gpui`-free and independent of the app (no `crate::i18n::fl`,
+no window state, no `crate::chat::prepared`):
+
+| Before | After |
+| --- | --- |
+| `crates/spaceport-gpui/src/chat/env.rs`, 106 lines: `MAX_ENV`, `MAX_ENV_BYTES`, `check_env`, `env_text`, `parse_env`, its `Error` | `crates/spaceport-chat-core/src/env.rs`; `PROGRAM_ENV` moved here from `chat/start.rs`, which re-exports it, because the reserved name and the table that may not replace it are one fact |
+| `chat/tests/env.rs`, 2 tests | `src/env/tests.rs`, moved unchanged apart from its import paths |
+| `crates/spaceport-gpui/src/chat/list.rs`, 54 lines: `Splice`, `splices` | `src/list.rs` |
+| `chat/tests/list.rs`, 4 tests | `src/list/tests.rs` |
+| `crates/spaceport-gpui/src/chat/existing.rs` and `existing/error.rs`, 505 lines: `Existing`, `Binding`, `Scope`, `candidates`, the probe worker | `src/existing.rs` and `src/existing/error.rs`; the one app call it made, `super::discovery::endpoint`, became `crate::endpoint`, and `discovery.rs` re-exports that name so its own callers keep their paths |
+| `chat/existing/tests.rs` and `existing/tests/scripts.rs`, 16 tests (4 of them `cfg(target_os = "linux")`) | `src/existing/tests.rs` and `src/existing/tests/scripts.rs`, moved unchanged; the crate takes `spaceport-remote`'s `test-support` feature for `Host::env` as the app does |
+| `chat.rs`'s `const MAX_CHATS` and `discovery.rs`'s `endpoint` | `spaceport_chat_core::{MAX_CHATS, endpoint}`; `chat.rs` re-exports both, so no file outside the moved modules changed |
+
+`crates/spaceport-gpui/src/chat.rs` keeps every path the app uses: it replaces
+`mod env`, `mod existing` and `mod list` with `pub(crate) use
+spaceport_chat_core::{env, existing, list}`, so `crate::chat::env::MAX_ENV`,
+`crate::chat::existing::Binding` and `crate::chat::list::splices` resolve as
+before. The only other edits in the app are where a definition moved and its
+old path is now a re-export (`chat/discovery.rs` for `endpoint`,
+`chat/start.rs` for `PROGRAM_ENV`) and the two dropped `mod` lines in
+`chat/tests.rs`. No call site changed, which is the `#143` discipline this
+crate is meant to prove, and the app's chat error, session and link are
+untouched.
+
+`session.rs` (384 lines) and `link.rs` (475) are the same kind of `gpui`-free
+code and were deliberately left behind for stage 2: both take `super::{Error,
+MAX_PENDING, MAX_EVENTS, Result}`, and that `Error` is the app's, carrying
+`Environment(env::Error)`, `Pasted(pasted::Error)` and `Start(start::Error)`
+beside the attach-side variants. Moving the type is a rewrite of the app's chat
+error vocabulary, not a move; see "Next extractions" for its exact shape.
+
 ## The pattern
 
 1. **Pick by footprint, not by size.** For each candidate module count what it
@@ -182,7 +218,7 @@ homes. Counted today, production lines first:
 | Feature | production / test lines | `gpui::`/entity uses | i18n messages | files importing it | what blocks it |
 | --- | --- | --- | --- | --- | --- |
 | `browser` | moved: `crates/spaceport-browser` holds 3,398 production and 1,904 test lines | — | 10 | 51 | done; 1,395 production lines stay in the app as the window's own (wrappers, element building, `group_shown`, the close driver) — see [`notes-browser-extraction.md`](notes-browser-extraction.md) |
-| `chat` | 20,440 / 16,011 | 128 | 174 | 12 | GPUI views all the way down; needs `browser` below it first, then the proposed live-state crate described in the settings design |
+| `chat` | 20,440 / 16,011, of which `crates/spaceport-chat-core` holds 680 production and 553 test lines | 128 | 174 | 12 | GPUI views all the way down; stage 1 landed the model-only core (`spaceport-chat-core`), stages 2-4 below; needs `browser` below it for the URL and page parts, then the proposed live-state crate described in the settings design |
 | `sidebar` | 11,195 / 14,506 | 162 | 75 | 263 | the most-imported module in the crate; settings now below it, still needs `menu`, `keymap`, `endpoint`, `icons`, `worktree_notes`, `device_tags` |
 
 Order that falls out of the counts: `browser` before `sidebar` (53 against 263
@@ -190,6 +226,52 @@ importers), and `chat` only after `browser` and the shared paint/settings types
 (`terminal_painter`, `config`, `notifications`) are below it. `sound` proved the
 pattern a feature needs: a value type for what the crate reads, and a parameter
 for what the app owns.
+
+### `chat`, in four stages
+
+Counted on the commit that landed stage 1: of the 203 files under
+`crates/spaceport-gpui/src/chat`, 111 import `gpui`, 92 do not, and of those 92
+only three modules were free of the app itself (stage 1, above). The other 89
+are `gpui`-free but reach the app, and split into the stages below.
+
+- **Stage 2, the rest of the attach model: `session.rs` and `link.rs`.** Both
+  are `gpui`-free and already tested without a window (`tests/session.rs`,
+  `tests/session_stream.rs`, `tests/delivery.rs`, `link/tests.rs`); 859
+  production and 921 test lines in all. Their blocker is one type: they take
+  `super::{Error, MAX_PENDING, MAX_EVENTS, Result}` and `Error` is the app's
+  chat error, which also carries `Environment(env::Error)`,
+  `Pasted(pasted::Error)` and `Start(start::Error)`. The precondition, and the
+  reason they are not in stage 1:
+  - Move `MAX_PENDING`, `MAX_EVENTS` and the attach-side `Error` variants —
+    `Apply`, `Busy`, `Bye`, `Closed`, `Connect`, `Handshake`, `NoEndpointDir`,
+    `NotAttached`, `Overflow`, `Read`, `ReadOnly`, `Remote`, `Spawn`, `Stream`,
+    `Version`, with `permanent()` and `desynced()` — into the core crate.
+  - The app's `chat::Error` then keeps only its wrappers (`Environment`,
+    `Pasted`, `Start`) and gains one transparent `Attach(#[from]
+    spaceport_chat_core::Error)`, per the "wrap another crate's error" rule.
+  - That rewrites the app's chat error vocabulary, not just its paths: 3 sites
+    in `chat/chats.rs`, 6 in `chat/tests/chats/phase.rs`, one each in
+    `chat/tests/{uploads,source,overlay,feature}.rs`, the 17 match arms of
+    `i18n/errors/chat.rs`, and the 16 construction sites in its
+    `i18n/errors/tests/chat.rs` — about 46 edits. Do it as its own commit, with
+    the message table as the proof that no variant was dropped.
+- **Stage 3, parsing and measurement: `prepared.rs`, `rich/`, `selection/`,
+  `text.rs`, `summary.rs`, `highlight.rs`.** `gpui`-free today but read the
+  app's words and neighbours: `crate::i18n::fl` (messages are the app's, per
+  `docs/i18n.md`, so these have to return the values the app writes, as
+  `spaceport-ago` does), `crate::release_notes`, `crate::browser::WebUrl`,
+  `crate::terminal::file_target`, `crate::chat::visual` (whose `Visuals` holds
+  `gpui::RenderImage`) and `crate::config::Theme`/`crate::contrast`. Each of
+  those has to be below the crate first.
+- **Stage 4, everything that paints or holds an entity:** `view/` (the largest
+  group), `widgets/state.rs`, `visual/`, `files.rs`, `pasted.rs`, `page.rs`,
+  `harnesses.rs`, `start.rs`, `preview/`, `window.rs`, `chats.rs`, `reader.rs`,
+  `discovery.rs`'s `LiveState` reads, `core_pane.rs`, `glide.rs`, `terminal.rs`.
+  These need `SpaceportWindow`, `Entity`, `ListState` or `LiveState` and stay
+  until the live-state crate described in the settings design exists.
+
+Do not start stage 3 before stage 2's error split: stage 3's messages are what
+the attach error is displayed through.
 
 ## What this does not do
 

@@ -24,6 +24,7 @@ gpui.workspace                 = true
 # font-kit (macOS) or a Linux backend, text silently goes to a no-op system.
 gpui_platform                  = { features = ["font-kit", "runtime_shaders", "wayland", "x11"], workspace = true }
 spaceport-ago.workspace           = true
+spaceport-chat-core.workspace     = true
 spaceport-chat-protocol.workspace = true
 spaceport-backend.workspace       = true
 spaceport-browser.workspace       = true
