@@ -30,6 +30,31 @@ fn an_explicit_herdr_refusal_keeps_its_known_failure() {
     assert_eq!(creation_error(&error), expected);
 }
 
+#[test]
+fn a_lost_answer_to_a_submitted_start_reports_an_unknown_outcome() {
+    for transport in [
+        spaceport_client::Error::RequestTimeout,
+        spaceport_client::Error::SocketClosed,
+    ] {
+        let error: crate::Error = crate::chat::Error::from(crate::chat::StartError::Request(
+            Arc::new(crate::Error::Client(transport)),
+        ))
+        .into();
+        assert_eq!(creation_error(&error), unknown(ErrorCode::Failed));
+    }
+}
+
+#[test]
+fn a_transport_failure_after_the_tab_was_made_reports_an_unknown_outcome() {
+    for transport in [
+        spaceport_client::Error::RequestTimeout,
+        spaceport_client::Error::Full,
+    ] {
+        let error: crate::Error = crate::Error::Client(transport);
+        assert_eq!(creation_error(&error), unknown(ErrorCode::Failed));
+    }
+}
+
 #[gpui::test]
 fn malformed_success_on_the_daemon_wire_returns_unknown_over_the_control_socket(
     cx: &mut gpui::TestAppContext,

@@ -67,16 +67,29 @@ fn unknown(code: ErrorCode) -> Response {
     )
 }
 
-/// A Herdr start that failed after it was submitted. Losing the answer, or
-/// an answer without the tab and pane, leaves the outcome unknown.
+/// A Herdr start that failed after it was submitted. Losing the answer, an
+/// answer without the tab and pane, or a transport failure leaves the
+/// outcome unknown; only Herdr's own refusal proves no chat exists.
 fn creation_error(error: &crate::Error) -> Response {
     use crate::chat::{Error, StartError};
+    // A refusal names the request the daemon did not run; anything else that
+    // follows a submitted start may still have made the tab.
+    let refused = |client: &spaceport_client::Error| {
+        matches!(client, spaceport_client::Error::Endpoint { .. })
+    };
+    let known = || Response::error(ErrorCode::Failed, error.to_string());
     match error {
         crate::Error::Chat(Error::Start(StartError::Timeout)) => unknown(ErrorCode::Timeout),
         crate::Error::Chat(Error::Start(StartError::Response))
         | crate::Error::StaleConnection
         | crate::Error::NotConnected => unknown(ErrorCode::Failed),
-        _ => Response::error(ErrorCode::Failed, error.to_string()),
+        crate::Error::Chat(Error::Start(StartError::Request(inner))) => match &**inner {
+            crate::Error::Client(client) if refused(client) => known(),
+            _ => unknown(ErrorCode::Failed),
+        },
+        crate::Error::Client(client) if refused(client) => known(),
+        crate::Error::Client(_) => unknown(ErrorCode::Failed),
+        _ => known(),
     }
 }
 
