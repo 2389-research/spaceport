@@ -9,6 +9,9 @@ use crate::{
     sidebar::layout_tests::fixture_window,
 };
 
+mod creation;
+mod uncertain_creation;
+
 #[gpui::test]
 fn core_group_without_terminal_refuses_untargeted_legacy_chat(cx: &mut gpui::TestAppContext) {
     cx.update(|cx| crate::core_feature::install(true, cx));
@@ -31,6 +34,25 @@ fn call(op: ChatOp) -> Call<ChatOp> {
         caller: Caller::default(),
         op,
     }
+}
+
+/// Sends `call` through a real control socket and answers it at once; a
+/// request the server parks instead fails the test.
+fn serve(call: Call<ChatOp>, cx: &mut App) -> Response {
+    let address = crate::control::socket::test_address();
+    let server = crate::control::socket::Server::bind(&address.path).unwrap();
+    let path = address.path.clone();
+    let result = std::thread::spawn(move || {
+        crate::control::socket::call(&path, &crate::control::protocol::Request::Chat(call))
+    });
+    let incoming = server.next().unwrap();
+    let mut state = crate::control::server::State::default();
+    crate::control::server::serve(incoming, &mut state, cx);
+    assert!(
+        state.watches.0.is_empty(),
+        "fixture expects an immediate refusal or observation"
+    );
+    result.join().unwrap().unwrap()
 }
 
 fn code(response: &Response) -> Option<ErrorCode> {

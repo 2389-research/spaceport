@@ -14,6 +14,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+mod receipts;
+
 fn purpose(name: &str) -> Purpose {
     Purpose::Tab {
         scope: Scope::endpoint("test"),

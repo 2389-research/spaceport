@@ -61,6 +61,17 @@ pub(crate) use error::Error;
 pub(crate) use hub::{Hub, Mismatch, Start, State};
 pub(crate) use view::{CoreTerminalView, Look};
 
+/// A terminal Core acknowledged and the app placed in its native tab.
+#[derive(Debug)]
+pub(crate) struct Created {
+    pub(crate) tab: TabId,
+    pub(crate) terminal: TerminalId,
+}
+/// Where a start's outcome arrives, once Core answers and the terminal is
+/// placed. A dropped sender means the outcome is unknown.
+pub(crate) type Receipt = std::sync::mpsc::Receiver<Result<Created, Error>>;
+type Reporter = std::sync::mpsc::SyncSender<Result<Created, Error>>;
+
 pub(crate) fn core_group_workspace<'a>(
     key: &CoreGroupKey,
     cx: &'a App,
@@ -507,7 +518,7 @@ impl SpaceportWindow {
         purpose: Purpose,
         spawn: Spawn,
         cx: &App,
-    ) -> crate::Result<()> {
+    ) -> crate::Result<Receipt> {
         if !self.core_enabled() {
             return Err(crate::Error::StaleWorkspace);
         }
@@ -560,16 +571,22 @@ impl SpaceportWindow {
                 }
             }
         }
+        let (report, receipt) = std::sync::mpsc::sync_channel(1);
         let queued = self
             .core_terminals
             .spawning
-            .transition(spawning::Event::Queue(purpose, Box::new(spawn), core_id));
+            .transition(spawning::Event::Queue(
+                purpose,
+                Box::new(spawn),
+                core_id,
+                Some(report),
+            ));
         if !matches!(queued, spawning::Outcome::Accepted) {
             return Err(crate::Error::ConnectionBusy);
         }
         self.core_terminals.hub.connect(Start::IfMissing);
         self.start_core_shell();
-        Ok(())
+        Ok(receipt)
     }
 
     /// Submits the oldest queued request once the hub is ready.
@@ -713,7 +730,7 @@ impl SpaceportWindow {
     }
 
     fn finish_started_core_terminal(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let spawning::Outcome::Finished(purpose, outcome) = self
+        let spawning::Outcome::Finished(purpose, outcome, report) = self
             .core_terminals
             .spawning
             .transition(spawning::Event::Poll)
@@ -730,30 +747,46 @@ impl SpaceportWindow {
                     Flash::warning(fl!("core-terminals-start-failed", reason = reason)),
                     cx,
                 );
+                if let Some(report) = report {
+                    let _ = report.try_send(Err(error));
+                }
                 return;
             }
         };
-        match purpose {
+        let terminal = info.id.clone();
+        let placed = match purpose {
             Purpose::Tab { scope, workspace } => {
                 let location = Location::CoreTerminal {
                     panes: Panes::single(info.id),
                     observe: false,
                 };
-                let Some(id) = Store::update(cx, |store| {
+                let opened = Store::update(cx, |store| {
                     store.open(scope, &workspace, Some(location), None)
-                }) else {
-                    self.show_flash(
+                });
+                match opened {
+                    Some(id) => {
+                        self.sync_core_views(cx);
+                        self.show_browser_tab(id, window, cx);
+                    }
+                    None => self.show_flash(
                         crate::browser::tab_open_failure(cx, fl!("core-terminals-too-many-tabs")),
                         cx,
-                    );
-                    return;
-                };
-                self.sync_core_views(cx);
-                self.show_browser_tab(id, window, cx);
+                    ),
+                }
+                opened
             }
-            Purpose::Split { tab, at, axis } => {
-                self.place_split(tab, &at, axis, info.id, window, cx)
-            }
+            Purpose::Split { tab, at, axis } => self
+                .place_split(tab, &at, axis, info.id, window, cx)
+                .then_some(tab),
+        };
+        if let Some(report) = report {
+            let outcome = placed
+                .map(|tab| Created {
+                    tab,
+                    terminal: terminal.clone(),
+                })
+                .ok_or(Error::ViewMissing(terminal));
+            let _ = report.try_send(outcome);
         }
         cx.notify();
     }

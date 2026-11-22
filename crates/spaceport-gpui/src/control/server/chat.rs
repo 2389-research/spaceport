@@ -1,10 +1,175 @@
-//! `chat status`, `chat show`, `chat hide`, and `chat toggle`.
-use crate::control::protocol::{Call, ErrorCode, Response, chat::ChatOp};
+//! `chat status`, `chat show`, `chat hide`, and `chat toggle`, answered at
+//! once, and `chat new`, which waits for its runtime to acknowledge the new
+//! tab and pane. When that outcome is uncertain the caller is told so and the
+//! request is never sent again: the chat may exist.
+use crate::control::protocol::{
+    Call, Caller, ErrorCode, Response,
+    chat::{CREATION_WAIT_SECONDS, ChatOp, Reply, Tab},
+};
 use gpui::App;
+use std::{sync::mpsc::TryRecvError, time::Duration};
 
-pub(super) fn serve(call: Call<ChatOp>, cx: &mut App) -> Response {
+/// A start submitted to a runtime, waiting for its outcome.
+enum Pending {
+    Herdr(crate::chat::Receipt),
+    Core(crate::core_terminals::Receipt),
+}
+
+impl Pending {
+    /// The reply once the outcome is in; `None` keeps waiting.
+    fn poll(&self, agent: &str, window_id: u64) -> Option<Response> {
+        let result = match self {
+            Self::Herdr(receipt) => match receipt.try_recv() {
+                Ok(Ok(created)) => Ok((
+                    Tab::Herdr {
+                        tab_id: created.tab_id,
+                    },
+                    created.pane_id,
+                )),
+                Ok(Err(error)) => return Some(creation_error(&error)),
+                Err(error) => Err(error),
+            },
+            Self::Core(receipt) => match receipt.try_recv() {
+                Ok(Ok(created)) => {
+                    let pane = crate::chat::core_pane_key(&created.terminal);
+                    Ok((
+                        Tab::Core {
+                            tab_id: created.tab.into(),
+                            terminal_id: created.terminal.to_string(),
+                        },
+                        pane,
+                    ))
+                }
+                Ok(Err(error)) => return Some(core_creation_error(&error)),
+                Err(error) => Err(error),
+            },
+        };
+        match result {
+            Ok((tab, pane_id)) => Some(Response::Chat {
+                reply: Reply::Created {
+                    agent: agent.into(),
+                    window_id,
+                    tab,
+                    pane_id,
+                },
+            }),
+            Err(TryRecvError::Empty) => None,
+            Err(TryRecvError::Disconnected) => Some(unknown(ErrorCode::Failed)),
+        }
+    }
+}
+
+/// The reply when the chat may or may not exist.
+fn unknown(code: ErrorCode) -> Response {
+    Response::error(
+        code,
+        "Chat creation outcome is unknown; inspect the window before retrying",
+    )
+}
+
+/// A Herdr start that failed after it was submitted. Losing the answer, or
+/// an answer without the tab and pane, leaves the outcome unknown.
+fn creation_error(error: &crate::Error) -> Response {
+    use crate::chat::{Error, StartError};
+    match error {
+        crate::Error::Chat(Error::Start(StartError::Timeout)) => unknown(ErrorCode::Timeout),
+        crate::Error::Chat(Error::Start(StartError::Response))
+        | crate::Error::StaleConnection
+        | crate::Error::NotConnected => unknown(ErrorCode::Failed),
+        _ => Response::error(ErrorCode::Failed, error.to_string()),
+    }
+}
+
+/// A Core start that failed after it was submitted.
+fn core_creation_error(error: &crate::core_terminals::Error) -> Response {
+    use spaceport_core_client::Error;
+    match error {
+        crate::core_terminals::Error::Core(Error::Timeout(_)) => unknown(ErrorCode::Timeout),
+        // An invalid run reply or terminal ID follows submission, just like a lost answer.
+        crate::core_terminals::Error::Core(
+            Error::Lost | Error::Invalid(..) | Error::Backend(_),
+        ) => unknown(ErrorCode::Failed),
+        _ => Response::error(ErrorCode::Failed, error.to_string()),
+    }
+}
+
+pub(super) fn serve(
+    call: Call<ChatOp>,
+    incoming: super::socket::Incoming,
+    watches: &mut super::Watches,
+    cx: &mut App,
+) {
+    let ChatOp::New { agent, pane } = call.op else {
+        return incoming.respond(immediate(call, cx));
+    };
+    let handle = match super::window_for(&call.caller, cx) {
+        Ok(handle) => handle,
+        Err(response) => return incoming.respond(response),
+    };
+    let pending = match start(&call.caller, &agent, pane, handle, cx) {
+        Ok(pending) => pending,
+        Err(response) => return incoming.respond(response),
+    };
+    watches.add(
+        incoming,
+        Duration::from_secs(CREATION_WAIT_SECONDS),
+        move |cx| {
+            if handle.read_with(cx, |_, _| ()).is_err() {
+                return Some(unknown(ErrorCode::NoWindow));
+            }
+            pending.poll(&agent, handle.window_id().as_u64())
+        },
+        unknown(ErrorCode::Timeout),
+        cx,
+    );
+}
+
+/// Submits the chat's start in `handle`'s window.
+fn start(
+    caller: &Caller,
+    agent: &str,
+    pane: Option<String>,
+    handle: gpui::WindowHandle<crate::SpaceportWindow>,
+    cx: &mut App,
+) -> Result<Pending, Response> {
+    let agent = agent
+        .parse::<spaceport_chat_protocol::Agent>()
+        .map_err(|_| {
+            Response::error(
+                ErrorCode::InvalidRequest,
+                format!(
+                    "Unknown agent {agent}; known agents are {}",
+                    spaceport_chat_protocol::Agent::names()
+                ),
+            )
+        })?;
+    let beside = pane.or_else(|| caller.pane_id.clone());
+    handle
+        .update(cx, |view, _, cx| {
+            // With no Herdr pane named, as from an agent in a herdr-core
+            // pane, a herdr-core tab in the active group splits instead.
+            let core = beside
+                .is_none()
+                .then(|| view.core_chat_group_tab(None, cx))
+                .flatten();
+            let started = match core {
+                Some(tab) => view.start_core_chat(agent, tab, cx).map(Pending::Core),
+                None if beside.is_none() && view.selected_core_group().is_some() => {
+                    Err(crate::chat::StartError::CoreTerminalRequired)
+                }
+                None => view
+                    .start_chat(agent, beside.as_deref())
+                    .map(Pending::Herdr),
+            };
+            cx.notify();
+            started.map_err(|error| Response::error(start_code(&error), error.to_string()))
+        })
+        .unwrap_or_else(|_| Err(Response::error(ErrorCode::NoWindow, "The window closed")))
+}
+
+/// Answers the chat requests that do not wait.
+pub(super) fn immediate(call: Call<ChatOp>, cx: &mut App) -> Response {
     use super::{in_window, not_found};
-    use crate::control::protocol::chat::Reply;
 
     let Call { caller, op } = call;
     match op {
@@ -13,44 +178,10 @@ pub(super) fn serve(call: Call<ChatOp>, cx: &mut App) -> Response {
                 chats: info::infos(view),
             },
         }),
-        ChatOp::New { agent, pane } => {
-            let Ok(agent) = agent.parse::<spaceport_chat_protocol::Agent>() else {
-                return Response::error(
-                    ErrorCode::InvalidRequest,
-                    format!(
-                        "Unknown agent {agent}; known agents are {}",
-                        spaceport_chat_protocol::Agent::names()
-                    ),
-                );
-            };
-            let beside = pane.or_else(|| caller.pane_id.clone());
-            in_window(&caller, cx, move |view, _, cx| {
-                // With no Herdr pane named, as from an agent in a herdr-core
-                // pane, a herdr-core tab in the active group splits instead.
-                let core = beside
-                    .is_none()
-                    .then(|| view.core_chat_group_tab(None, cx))
-                    .flatten();
-                let started = match core {
-                    Some(tab) => view.start_core_chat(agent, tab, cx),
-                    None if beside.is_none() && view.selected_core_group().is_some() => {
-                        Err(crate::chat::StartError::CoreTerminalRequired)
-                    }
-                    None => view.start_chat(agent, beside.as_deref()),
-                };
-                match started {
-                    Ok(()) => {
-                        cx.notify();
-                        Response::Chat {
-                            reply: Reply::Started {
-                                agent: agent.name().into(),
-                            },
-                        }
-                    }
-                    Err(error) => Response::error(start_code(&error), error.to_string()),
-                }
-            })
-        }
+        ChatOp::New { .. } => Response::error(
+            ErrorCode::InvalidRequest,
+            "Chat creation requires an acknowledgement wait",
+        ),
         ChatOp::View { switch, pane } => in_window(&caller, cx, |view, window, cx| {
             // A herdr-core pane is nobody's Herdr pane: the one holding the
             // keyboard comes before Herdr's focused pane.
