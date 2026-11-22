@@ -77,8 +77,13 @@ pub fn connect_with_connector(
         move |stop| {
             Ok(match &target {
                 ConnectTarget::Ssh { target, session } => {
-                    let (stream, child) = ssh::connect(target, session, stop)?;
-                    (stream, Some(child))
+                    let connected = ssh::connect(target, session, stop)?;
+                    if connected.host_keys == ssh::HostKeys::Skip {
+                        // The connection is up, but anyone intercepting it can
+                        // impersonate the host the user exempted.
+                        tracing::warn!("connected without verifying the host key");
+                    }
+                    (connected.stream, Some(connected.child))
                 }
                 ConnectTarget::Wsl { distro, session } => {
                     let (stream, child) = wsl::connect(distro, session, stop)?;
@@ -147,22 +152,7 @@ fn spawn_connection<G>(
             let _entered = span.enter();
             tracing::info!(transport, "connection starting");
             let result = (|| {
-                let (stream, child) = match &target {
-                    ConnectTarget::Ssh { target, session } => {
-                        let connected = ssh::connect(target, session, &worker_stop)?;
-                        if connected.host_keys == ssh::HostKeys::Skip {
-                            // The connection is up, but anyone intercepting it
-                            // can impersonate the host the user exempted.
-                            tracing::warn!("connected without verifying the host key");
-                        }
-                        (connected.stream, Some(connected.child))
-                    }
-                    ConnectTarget::Wsl { distro, session } => {
-                        let (stream, child) = wsl::connect(distro, session, &worker_stop)?;
-                        (stream, Some(child))
-                    }
-                    _ => (connector(&target, &worker_stop)?, None),
-                };
+                let (stream, _guard) = open(&worker_stop)?;
                 run_connection(
                     stream,
                     options,
