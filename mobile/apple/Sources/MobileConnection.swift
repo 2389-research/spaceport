@@ -1,0 +1,642 @@
+// ABOUTME: Owns a foreground SSH connection and its current Herdr projection.
+// ABOUTME: Retires old connections before accepting their asynchronous results.
+import Foundation
+import SwiftUI
+
+struct Viewport: Equatable {
+    var columns: UInt16
+    var rows: UInt16
+    var cellWidth: UInt32
+    var cellHeight: UInt32
+    static let initial = Viewport(columns: 80, rows: 24, cellWidth: 8, cellHeight: 16)
+}
+
+@MainActor
+final class MobileConnection: ObservableObject {
+    enum Phase { case credentials, connecting, trust, locatingAgent, ready, closed }
+    private(set) var profile: HostProfile
+    @Published var authorizeThisPhone = SecurePhoneKey.isAvailable
+    @Published var enrollmentNotice: String?
+    @Published var method: LoginMethod
+    @Published var draft = TerminalDraft()
+    @Published var password = ""
+    @Published private(set) var phase: Phase = .credentials
+    @Published private(set) var view: MobileView?
+    @Published private(set) var challenge: HostChallenge?
+    @Published var message: String?
+    @Published private(set) var inputStatus: String?
+    private(set) var reconnectFrame: MobileTerminal?
+    private(set) var editorTarget: InputTarget?
+    private(set) var panePreviews = PanePreviewCache()
+    private var lastObservation: Date?
+    @Published private(set) var directPane: DirectPaneAttachment?
+    private var session: MobileSession?
+    private var opening: Task<Void, Never>?
+    private var polling: Task<Void, Never>?
+    private(set) var generation = UUID()
+    private var viewport = Viewport.initial
+    private var appliedViewport: Viewport?
+    private var resumeRequested = false
+    private var recovery = TransportRecovery()
+    private var parkedBoot: String?
+    private var verification: Task<Void, Never>?
+
+    var hasParkedSession: Bool { parkedBoot != nil }
+
+    private enum AgentArrival {
+        case requested(SeenAgent)
+        case moving(SeenAgent, revision: UInt64)
+    }
+    private var arrival: AgentArrival?
+    private(set) var presentationID: UUID?
+
+    var openingAgent: SeenAgent? {
+        switch arrival {
+        case let .requested(agent), let .moving(agent, _): agent
+        case nil: nil
+        }
+    }
+
+    func present(_ id: UUID, agent: SeenAgent?, alreadyOpen: Bool) {
+        if alreadyOpen, presentationID == id, agent == nil || agent == openingAgent { return }
+        if presentationID != id || agent != nil { reconnectFrame = nil }
+        recovery = TransportRecovery()
+        presentationID = id
+        arrival = agent.map(AgentArrival.requested)
+        if hasParkedSession {
+            foreground()
+        } else if phase == .ready {
+            if let arrival, let view { _ = locate(arrival, in: view) }
+        } else if !alreadyOpen {
+            firstOpen()
+        }
+    }
+
+    func keepOnHome() -> Bool {
+        if method == profile.login, phase == .ready || hasParkedSession {
+            presentationID = nil
+            arrival = nil
+            session?.cancelGoTo()
+            background()
+            password = ""
+            return true
+        }
+        guard !draft.isEmpty else { return false }
+        closePresentation()
+        method = profile.login
+        return true
+    }
+
+    func acceptsInput(from id: UUID) -> Bool {
+        presentationID == id && phase == .ready
+    }
+
+    init(profile: HostProfile) {
+        self.profile = profile
+        method = profile.login
+    }
+
+    var draftDestination: DraftDestination? {
+        guard let view, let target = view.inputTarget else { return nil }
+        return DraftDestination(target: target, workspaces: view.workspaces, tabs: view.tabs, panes: view.panes)
+    }
+
+    func chooseMethod(_ next: LoginMethod, from id: UUID) {
+        guard presentationID == id, method != next, phase == .credentials || phase == .closed else { return }
+        retire()
+        password = ""
+        method = next
+        phase = .credentials
+        if next == .password { firstOpen() }
+    }
+
+    func firstOpen(checkHost: @escaping @Sendable (SSHAddress) throws -> Void = { address in
+        try checkSshHost(host: DeviceVault().host(for: address))
+    }) {
+        guard method == .password else { startConnection(); return }
+        phase = .connecting
+        let token = generation
+        let profile = profile
+        opening = Task {
+            guard !Task.isCancelled else { return }
+            do {
+                try await Task.detached {
+                    try checkHost(profile.address)
+                }.value
+                guard token == generation else { return }
+                phase = .credentials
+            } catch {
+                guard token == generation else { return }
+                if let issue = HostChallenge(sshError: error) {
+                    challenge = issue
+                    phase = .trust
+                } else {
+                    phase = .closed
+                    message = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    func connect() {
+        recovery.allowRetry()
+        startConnection(authorizePhone: method == .password && authorizeThisPhone)
+    }
+
+    private func startConnection(authorizePhone: Bool = false) {
+        retire()
+        guard method == .phoneKey || !password.isEmpty else { phase = .credentials; return }
+        phase = .connecting
+        message = nil
+        let token = generation
+        let profile = profile
+        let size = viewport
+        let method = method
+        let password = password
+        opening = Task {
+            guard !Task.isCancelled else { return }
+            do {
+                let handle = try await Task.detached(priority: .userInitiated) {
+                    let vault = DeviceVault()
+                    let host = try vault.host(for: profile.address)
+                    let auth: SshAuth = try method == .phoneKey ? vault.securePhoneKey().auth : .password(password: password)
+                    return try MobileSession.open(host: host, auth: auth, session: profile.session, cols: size.columns,
+                                                  rows: size.rows, cellWidth: size.cellWidth, cellHeight: size.cellHeight)
+                }.value
+                guard token == generation else { handle.disconnect(); return }
+                session = handle
+                appliedViewport = size
+                pollUpdates(handle, token: token)
+                if authorizePhone { enroll(on: handle) }
+            } catch {
+                guard token == generation else { return }
+                phase = .closed
+                message = error.localizedDescription
+            }
+        }
+    }
+
+    private func enroll(on handle: MobileSession) {
+        Task {
+            do {
+                try await Task.detached {
+                    let key = try DeviceVault().securePhoneKey()
+                    try handle.authorizePhone(publicKey: key.publicPoint, signer: key)
+                }.value
+                guard session === handle else { return }
+                do { try saveVerifiedPhoneKey(using: ProfileStore()) }
+                catch { enrollmentNotice = "Phone Key verified. Spaceport could not save this host’s sign-in preference." }
+            } catch {
+                guard session === handle else { return }
+                switch error {
+                case SshError.Cancelled:
+                    return
+                case SshError.ChangedHost, SshError.UnknownHost:
+                    enrollmentNotice = "The verification connection presented an unexpected host key. Check the host fingerprint before using Phone Key."
+                case SshError.Channel, SshError.Enrollment:
+                    enrollmentNotice = "The host refused to install Phone Key. Your password session is still open."
+                default:
+                    enrollmentNotice = "Spaceport couldn’t verify Phone Key for this account. You can keep using this session and retry from Settings → Phone Key."
+                }
+            }
+        }
+    }
+
+    func saveVerifiedPhoneKey(using store: ProfileStore) throws {
+        let catalog = try store.catalog()
+        guard let entry = catalog.sessions.first(where: { $0.id == profile.id }),
+              let host = catalog.hosts.first(where: { $0.id == entry.hostID }),
+              host.address == profile.address, entry.name == profile.session else { throw ProfileError.missingHost }
+        guard try store.usePhoneKey(for: host) else {
+            enrollmentNotice = "Phone Key verified. Another saved host already uses this account with Phone Key. Both sign-in settings were kept."
+            return
+        }
+        adoptVerifiedPhoneKey()
+    }
+
+    func adoptVerifiedPhoneKey() {
+        profile.login = .phoneKey
+        method = .phoneKey
+        password = ""
+    }
+
+    private func pollUpdates(_ handle: MobileSession, token: UUID, after initialVersion: UInt64 = 0) {
+        polling = Task.detached(priority: .userInitiated) { [weak self] in
+            var version = initialVersion
+            while !Task.isCancelled {
+                let direct = UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty)
+                if let update = direct ? handle.pollForAttach(after: version) : handle.poll(after: version) {
+                    version = update.version
+                    await self?.receive(update, token: token)
+                    if update.disconnected { break }
+                }
+                do { try await Task.sleep(for: .milliseconds(35)) } catch { break }
+            }
+        }
+    }
+
+    private func receive(_ update: MobileView, token: UUID) {
+        guard generation == token else { return }
+        if update.disconnected {
+            let established = phase == .ready || phase == .locatingAgent
+            recordLastSeen(at: lastObservation)
+            if let issue = update.hostChallenge {
+                retire()
+                challenge = issue
+                phase = .trust
+            } else {
+                finishLoss(eligible: established && session?.transportLost() == true,
+                           message: update.error ?? "Connection closed.")
+            }
+            return
+        }
+        let previousError = view?.error
+        if let target = update.inputTarget { editorTarget = target }
+        let changedPane = view?.previewTarget?.paneId != update.previewTarget?.paneId
+        if changedPane, let outgoing = view, let target = outgoing.previewTarget,
+           let terminal = outgoing.terminal, outgoing.bootId == update.bootId {
+            panePreviews.record(terminal.visibleText, pane: target.paneId, boot: target.bootId)
+        }
+        if view?.bootId != update.bootId { panePreviews = PanePreviewCache() }
+        view = update
+        if !update.bootId.isEmpty {
+            lastObservation = Date()
+            reconnectFrame = nil
+            if let arrival, !locate(arrival, in: update) { return }
+            phase = .ready
+            syncDirectPane()
+            if changedPane, let target = update.previewTarget { panePreviews.visit(target.paneId, boot: target.bootId) }
+            if appliedViewport != viewport { resize(viewport) }
+        }
+        if update.error != previousError, let failure = update.error { message = failure }
+    }
+
+    // Keep the keyboard and terminal hidden until Herdr confirms the selected agent's pane.
+    private func locate(_ request: AgentArrival, in update: MobileView) -> Bool {
+        phase = .locatingAgent
+        switch request {
+        case let .requested(agent):
+            if update.bootId == agent.bootId, let session,
+               let revision = try? session.goToPane(bootId: agent.bootId, workspaceId: agent.workspaceId,
+                                                    tabId: agent.tabId, paneId: agent.paneId, expectedAgent: agent.name) {
+                arrival = .moving(agent, revision: revision)
+                return false
+            }
+        case let .moving(agent, revision):
+            guard update.version >= revision, !update.goToPending else { return false }
+            if update.goToArrival == revision, update.bootId == agent.bootId, update.focusedWorkspace == agent.workspaceId,
+               update.focusedTab == agent.tabId, update.inputTarget?.paneId == agent.paneId,
+               update.panes.contains(where: { $0.id == agent.paneId && $0.tabId == agent.tabId && $0.agentName == agent.name }) {
+                arrival = nil
+                return true
+            }
+        }
+        arrival = nil
+        retire()
+        phase = .closed
+        message = "Spaceport couldn’t open the last-seen agent. Connect to the session to choose a live agent."
+        return false
+    }
+
+    func trust() { _ = trust(using: DeviceVault()) }
+
+    func trust(using vault: DeviceVault) -> Task<Void, Never>? {
+        guard phase == .trust, let challenge, !challenge.changed else { return nil }
+        phase = .connecting
+        let token = generation
+        let account = profile.pinAccount
+        return Task {
+            do {
+                try await Task.detached { try vault.trust(challenge.fingerprint, account: account) }.value
+                if generation == token { connect() }
+            } catch {
+                guard generation == token else { return }
+                phase = .trust
+                message = error.localizedDescription
+            }
+        }
+    }
+
+    func resize(_ size: Viewport) {
+        viewport = size
+        guard let session, let view, !view.bootId.isEmpty, appliedViewport != size else { return }
+        perform {
+            try session.resize(bootId: view.bootId, cols: size.columns, rows: size.rows,
+                               cellWidth: size.cellWidth, cellHeight: size.cellHeight)
+            appliedViewport = size
+        }
+    }
+
+    func syncDirectPane() {
+        guard UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty),
+              phase == .ready, presentationID != nil, let view, let session,
+              !view.goToPending, view.terminal == nil else { endDirectPane(); return }
+        if let attached = directPane,
+           attached.target.bootId != view.bootId || attached.target.paneId != view.focusedPane {
+            endDirectPane()
+        }
+        // A partial projection can briefly lack a target. Rust checks the latest
+        // focus before every write, so a short gap needn't tear down the renderer.
+        guard let target = view.inputTarget else { return }
+        guard target.popupId == nil else { endDirectPane(); return }
+        guard directPane?.target != target else { return }
+        endDirectPane()
+        directPane = DirectPaneAttachment(session: session, target: target, size: viewport)
+    }
+
+    func retryDirectPane() {
+        endDirectPane()
+        syncDirectPane()
+    }
+
+    private func endDirectPane() {
+        guard let directPane else { return }
+        if view?.bootId == directPane.target.bootId, let text = directPane.surface?.visibleText {
+            panePreviews.record(text, pane: directPane.target.paneId, boot: directPane.target.bootId)
+        }
+        directPane.close()
+        self.directPane = nil
+    }
+
+    func claimSize() {
+        guard let session, let view, !view.bootId.isEmpty else { return }
+        perform { try session.claimSize(bootId: view.bootId) }
+    }
+
+    enum Focus { case workspace, tab, pane }
+    func focus(_ kind: Focus, id: String, boot: String) {
+        guard let session else { return }
+        perform {
+            switch kind {
+            case .workspace: try session.focusWorkspace(bootId: boot, id: id)
+            case .tab: try session.focusTab(bootId: boot, id: id)
+            case .pane: try session.focusPane(bootId: boot, id: id)
+            }
+        }
+    }
+
+    func goTo(_ pane: GoToPane, boot: String, generation token: UUID, expectedAgent: String? = nil) -> UInt64? {
+        guard token == generation, phase == .ready, let session else { return nil }
+        do {
+            let revision = try session.goToPane(bootId: boot, workspaceId: pane.workspace.id, tabId: pane.tab.id, paneId: pane.id, expectedAgent: expectedAgent)
+            endDirectPane()
+            return revision
+        } catch {
+            message = error.localizedDescription
+            return nil
+        }
+    }
+
+    func cancelGoTo(generation token: UUID) {
+        if token == generation { session?.cancelGoTo() }
+    }
+
+    func inputUnavailable() {
+        claimSize()
+        inputStatus = "Input paused — the pane changed. Check it and type again."
+    }
+
+    func findHistory(_ query: String, newer: Bool, previous: HistoryCursor?, target: InputTarget,
+                     from presentation: UUID) async throws -> HistoryMatch? {
+        guard acceptsInput(from: presentation), let session, view?.inputTarget == target else { throw MobileError.StaleView }
+        let search = try session.historySearch(target: target)
+        let result = try await withTaskCancellationHandler {
+            try await Task.detached(priority: .userInitiated) {
+                try search.find(query: query, newer: newer, previous: previous)
+            }.value
+        } onCancel: {
+            search.cancel()
+        }
+        try Task.checkCancellation()
+        guard acceptsInput(from: presentation), self.session === session, view?.inputTarget == target else { throw MobileError.StaleView }
+        return result
+    }
+
+    func scroll(target: InputTarget?, lines: Int16, column: UInt16 = 0, row: UInt16 = 0) {
+        guard let session, let target, view?.inputTarget == target else { inputUnavailable(); return }
+        perform { try session.scroll(target: target, lines: lines, column: column, row: row) }
+    }
+
+    func sendDraftImage(from presentation: UUID, pressReturn: Bool) async throws {
+        guard let image = draft.image, let target = draft.destination?.target,
+              let session, acceptsInput(from: presentation), view?.inputTarget == target else { throw MobileError.StaleView }
+        let direct = directPane
+        let useDirect = UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty) && target.popupId == nil
+        if useDirect && (direct?.target != target || direct?.failure != nil) { throw MobileError.TerminalUnavailable }
+        let note = draft.text
+        let staged = try await Task.detached(priority: .userInitiated) {
+            try session.stageDraftImage(target: target, png: image.png)
+        }.value
+        try Task.checkCancellation()
+        guard self.session === session, directPane === direct,
+              useDirect == (UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty) && target.popupId == nil),
+              draft.image?.id == image.id, draft.text == note, draft.destination?.target == target,
+              UIApplication.shared.applicationState == .active else { throw MobileError.StaleView }
+        let path = staged.path()
+        let paste = note.isEmpty ? path : "\(path) \(note)"
+        guard send(.paste(paste, pressReturn: pressReturn), to: target, from: presentation) else {
+            throw MobileError.TerminalUnavailable
+        }
+        staged.keep()
+        draft = TerminalDraft()
+    }
+
+    enum Input { case text(String), key(String, UInt8), paste(String, pressReturn: Bool = false) }
+    @discardableResult
+    func send(_ input: Input, to target: InputTarget, from presentation: UUID) -> Bool {
+        guard acceptsInput(from: presentation) else { return false }
+        guard let session, target == view?.inputTarget else { inputUnavailable(); return false }
+        inputStatus = nil
+        if UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty), target.popupId == nil {
+            guard let directPane, directPane.target == target,
+                  directPane.send(input) else { return false }
+            recovery.allowRetry()
+            return true
+        }
+        let sent = perform {
+            switch input {
+            case let .text(text): try session.sendText(target: target, text: text)
+            case let .key(key, modifiers): try session.sendKey(target: target, key: key, modifiers: modifiers)
+            case let .paste(text, pressReturn):
+                try session.sendPaste(target: target, text: text, pressReturn: pressReturn)
+            }
+        }
+        if sent { recovery.allowRetry() }
+        return sent
+    }
+
+    @discardableResult
+    private func perform(_ body: () throws -> Void) -> Bool {
+        do {
+            try body()
+            return true
+        } catch {
+            message = error.localizedDescription
+            return false
+        }
+    }
+
+    private func recordLastSeen(at date: Date? = Date()) {
+        guard phase == .ready, let view, !view.bootId.isEmpty, let date else { return }
+        do { try ProfileStore().recordSeen(profile: profile, snapshot: SessionStatusSnapshot(view: view, seenAt: date)) }
+        catch { message = error.localizedDescription }
+    }
+
+    func sceneInactive() {
+        recovery.sceneInactive(established: phase == .ready || phase == .locatingAgent || hasParkedSession)
+    }
+
+    func background() {
+        endDirectPane()
+        sceneInactive()
+        // An unanswered fingerprint remains available for comparison in another app.
+        if phase == .trust || phase == .credentials || phase == .closed { return }
+        if verification == nil && hasParkedSession { return }
+        recordLastSeen()
+        if let session, phase == .ready || phase == .locatingAgent || hasParkedSession {
+            if case let .moving(agent, _) = arrival { arrival = .requested(agent) }
+            resumeRequested = false
+            if let view { parkedBoot = view.bootId }
+            generation = UUID()
+            polling?.cancel()
+            polling = nil
+            verification?.cancel()
+            verification = nil
+            session.park()
+            let lastFrame = presentationID != nil && arrival == nil ? view?.terminal : nil
+            clearView()
+            reconnectFrame = lastFrame
+            phase = .connecting
+            return
+        }
+        resumeRequested = phase == .connecting
+        retire()
+        phase = .closed
+    }
+
+    func foreground() {
+        if recovery.sceneActive() {
+            resumeRequested = false
+            if presentationID != nil { reopen() }
+            return
+        }
+        if let session, let parkedBoot {
+            guard verification == nil else { return }
+            let token = generation
+            do {
+                let request = try session.beginResume(bootId: parkedBoot)
+                verification = Task.detached(priority: .userInitiated) { [weak self] in
+                    do {
+                        while !Task.isCancelled {
+                            if try session.checkResume(bootId: parkedBoot, request: request) {
+                                let direct = UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty)
+                                let update = direct ? session.pollForAttach(after: 0) : session.poll(after: 0)
+                                if let latest = update, !latest.disconnected, latest.bootId == parkedBoot {
+                                    await self?.resumeVerified(session, latest: latest, token: token)
+                                } else {
+                                    await self?.failedResume(session, error: MobileError.Disconnected, token: token)
+                                }
+                                return
+                            }
+                            try await Task.sleep(for: .milliseconds(35))
+                        }
+                    } catch {
+                        if !Task.isCancelled { await self?.failedResume(session, error: error, token: token) }
+                    }
+                }
+            } catch { failedResume(session, error: error, token: token) }
+            return
+        }
+        guard resumeRequested else { return }
+        resumeRequested = false
+        reopen()
+    }
+
+    private func resumeVerified(_ session: MobileSession, latest: MobileView, token: UUID) {
+        guard generation == token, hasParkedSession else { return }
+        verification = nil
+        receive(latest, token: token)
+        parkedBoot = nil
+        if generation == token { pollUpdates(session, token: token, after: latest.version) }
+    }
+
+    private func failedResume(_ session: MobileSession, error: Error, token: UUID) {
+        guard generation == token, hasParkedSession else { return }
+        let eligible = session.transportLost() || (error as? MobileError) == .ResumeTimeout
+        finishLoss(eligible: eligible, message: error.localizedDescription)
+    }
+
+    private func finishLoss(eligible: Bool, message diagnostic: String) {
+        let established = phase == .ready || phase == .locatingAgent || hasParkedSession
+        let interrupted = (established && arrival != nil) || session?.focusInterrupted() == true
+        let action = recovery.loss(eligible: eligible, presented: presentationID != nil, focusPending: interrupted)
+        let lastFrame = view?.terminal ?? reconnectFrame
+        if established { arrival = nil }
+        retire()
+        switch action {
+        case .reconnect:
+            reopen()
+            if phase == .connecting { reconnectFrame = lastFrame }
+        case .deferUntilActive:
+            phase = .closed
+            message = nil
+        case .stop:
+            phase = .closed
+            message = interrupted ? "The connection closed while switching panes. Select the agent or pane again." : diagnostic
+        }
+    }
+
+    private func reopen() {
+        if method == .password && password.isEmpty {
+            retire()
+            firstOpen()
+        } else { startConnection() }
+    }
+
+    func leave() {
+        closePresentation()
+        draft = TerminalDraft()
+    }
+
+    private func closePresentation() {
+        recordLastSeen()
+        resumeRequested = false
+        presentationID = nil
+        arrival = nil
+        password = ""
+        message = nil
+        retire()
+        phase = .closed
+    }
+
+    private func retire() {
+        closeResources()
+        clearView()
+    }
+
+    private func closeResources() {
+        endDirectPane()
+        enrollmentNotice = nil
+        generation = UUID()
+        verification?.cancel()
+        verification = nil
+        parkedBoot = nil
+        opening?.cancel()
+        opening = nil
+        polling?.cancel()
+        polling = nil
+        session?.disconnect()
+        session = nil
+        appliedViewport = nil
+    }
+
+    private func clearView() {
+        panePreviews = PanePreviewCache()
+        lastObservation = nil
+        view = nil
+        reconnectFrame = nil
+        challenge = nil
+        inputStatus = nil
+        editorTarget = nil
+    }
+}

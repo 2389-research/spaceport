@@ -1,0 +1,57 @@
+#!/bin/sh
+# ABOUTME: Starts a new Herdr session in a disposable SSH account for the Go To UI test.
+# ABOUTME: Reports a blocked reviewer through Herdr and acknowledges exactly one reply.
+set -eu
+
+session=${1:?Usage: seed-attention NEW_DISPOSABLE_SESSION}
+command -v jq >/dev/null || { echo "Install jq in the test account first." >&2; exit 1; }
+if ! herdr session list --json | jq -e --arg name "$session" 'all(.sessions[]; .name != $name)' >/dev/null; then
+    echo "Choose an unused session name. The fixture preserves existing sessions." >&2
+    exit 1
+fi
+
+run() { herdr --session "$session" "$@"; }
+nohup herdr --session "$session" server </dev/null >/dev/null 2>&1 &
+for _ in 1 2 3 4 5; do
+    if run status server --json | jq -e '.running' >/dev/null; then break; fi
+    sleep 1
+done
+run status server --json | jq -e '.running' >/dev/null || { echo "The fixture server did not start." >&2; exit 1; }
+
+origin=$(run workspace create --label Mission --focus | jq -er '.result.root_pane.pane_id')
+run pane rename "$origin" Console >/dev/null
+flight=$(run workspace create --label Flight --no-focus)
+review=$(printf '%s' "$flight" | jq -er '.result.root_pane.pane_id')
+tab=$(printf '%s' "$flight" | jq -er '.result.tab.tab_id')
+run tab rename "$tab" Checklist >/dev/null
+run pane rename "$review" Review >/dev/null
+run pane split "$review" --direction down --no-focus >/dev/null
+sibling=$(run pane list | jq -er --arg tab "$tab" --arg review "$review" '.result.panes[] | select(.tab_id == $tab and .pane_id != $review).pane_id')
+run pane rename "$sibling" Logs >/dev/null
+run pane run "$sibling" "clear && echo 'Log stream connected.'" >/dev/null
+
+# Keep a foreground process in the pane while the reviewer waits for input.
+scratch=$(mktemp -d /tmp/spaceport-review.XXXXXXXX)
+trap 'rm -f "$scratch/reviewer"; rmdir "$scratch"' EXIT
+cat > "$scratch/reviewer" <<'REVIEW'
+set -eu
+clear
+herdr pane report-agent "$HERDR_PANE_ID" --source mobile-qa --agent Reviewer --state blocked --seq 1 >/dev/null
+printf '\033]2;Review the launch checklist\007'
+echo "Review is ready. Reply with your approval."
+IFS= read -r answer
+printf 'accepted-%s\n' "$answer"
+herdr pane report-agent "$HERDR_PANE_ID" --source mobile-qa --agent Reviewer --state idle --seq 2 >/dev/null
+# Keep the reported agent in its pane so Home can observe its new idle state.
+IFS= read -r next_turn
+REVIEW
+run pane run "$review" "sh $scratch/reviewer" >/dev/null
+for _ in 1 2 3 4 5; do
+    if run pane get "$review" | jq -e '.result.pane.agent_status == "blocked"' >/dev/null; then
+        printf 'Set SPACEPORT_TEST_ATTENTION_SESSION=%s in the UI test runner.\n' "$session"
+        exit 0
+    fi
+    sleep 1
+done
+echo "Herdr did not report the reviewer as blocked." >&2
+exit 1

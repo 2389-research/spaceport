@@ -110,6 +110,9 @@ pub enum FontSize {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub enum UiOp {
+    AgentIdle {
+        pane: Option<String>,
+    },
     Sidebar {
         switch: Switch,
     },
@@ -209,9 +212,27 @@ pub struct HostInfo {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Reply {
-    Windows { windows: Vec<WindowInfo> },
-    Size { width: f32, height: f32 },
-    FontSize { points: f32 },
+    AgentIdle {
+        pane: String,
+        age: Option<AgentIdleAge>,
+    },
+    Windows {
+        windows: Vec<WindowInfo>,
+    },
+    Size {
+        width: f32,
+        height: f32,
+    },
+    FontSize {
+        points: f32,
+    },
+}
+
+/// The time this client can account for in the current idle spell.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AgentIdleAge {
+    pub seconds: u64,
+    pub lower_bound: bool,
 }
 
 #[cfg(test)]

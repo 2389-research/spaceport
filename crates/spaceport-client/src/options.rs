@@ -19,18 +19,21 @@ impl Default for ConnectOptions {
     }
 }
 
-pub(crate) fn validate_options(options: ConnectOptions) -> Result<()> {
-    let size = options.surface_size;
-    if size.cols == 0 || size.rows == 0 {
-        return Err(Error::EmptySurface);
+impl ConnectOptions {
+    /// Check the terminal and pixel geometry against the wire limits.
+    pub fn validate(self) -> Result<()> {
+        let size = self.surface_size;
+        if size.cols == 0 || size.rows == 0 {
+            return Err(Error::EmptySurface);
+        }
+        if size.cols > 4096
+            || size.rows > 4096
+            || u32::from(size.cols) * u32::from(size.rows) > 1_000_000
+            || self.cell_width_px > 4096
+            || self.cell_height_px > 4096
+        {
+            return Err(Error::GeometryLimit);
+        }
+        Ok(())
     }
-    if size.cols > 4096
-        || size.rows > 4096
-        || u32::from(size.cols) * u32::from(size.rows) > 1_000_000
-        || options.cell_width_px > 4096
-        || options.cell_height_px > 4096
-    {
-        return Err(Error::GeometryLimit);
-    }
-    Ok(())
 }

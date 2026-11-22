@@ -245,10 +245,20 @@ impl SpaceportWindow {
     fn window_effects(window: &mut Window, cx: &mut Context<Self>, focus: &FocusHandle) -> Effects {
         let timer = cx.background_executor().clone();
         let poll = cx.spawn_in(window, async move |this, cx| {
+            let mut next_idle_refresh = std::time::Instant::now() + Duration::from_secs(60);
             loop {
                 timer.timer(Duration::from_millis(16)).await;
                 if this
-                    .update_in(cx, |this, window, cx| this.tick(window, cx))
+                    .update_in(cx, |this, window, cx| {
+                        this.tick(window, cx);
+                        let now = std::time::Instant::now();
+                        if now >= next_idle_refresh {
+                            next_idle_refresh = now + Duration::from_secs(60);
+                            if this.has_live_idle_rows() {
+                                this.sidebar_view.update(cx, |_, cx| cx.notify());
+                            }
+                        }
+                    })
                     .is_err()
                 {
                     break;

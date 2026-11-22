@@ -6,10 +6,6 @@ use crate::SpaceportWindow;
 use gpui::SharedString;
 use spaceport_client::protocol::{ClientShellAgent, ClientShellSnapshot, ClientShellTab};
 
-/// Grapheme clusters kept of a title before it is cut to a tab's width. It
-/// only bounds the work on untrusted text, so it sits well past that width.
-const TITLE_BOUND: usize = 64;
-
 impl SpaceportWindow {
     /// The label the strip, its drag ghost, and its stand-in show for `tab`.
     pub(in crate::window) fn strip_label(
@@ -34,11 +30,8 @@ pub(super) fn title(snapshot: &ClientShellSnapshot, tab: &ClientShellTab) -> Opt
     if tab.custom_label {
         return None;
     }
-    let title = first_agent(snapshot, tab)?
-        .terminal_title_stripped
-        .as_deref()?;
-    let line = spaceport_truncate::one_line(title, TITLE_BOUND);
-    (!line.is_empty()).then(|| spaceport_truncate::tab_title(&line))
+    let line = spaceport_truncate::agent_terminal_title(first_agent(snapshot, tab)?)?;
+    Some(spaceport_truncate::tab_title(&line))
 }
 
 /// The first of `tab`'s agents in `agent_order`, the daemon's layout order.

@@ -25,6 +25,8 @@ mod agent_menu;
 #[cfg(test)]
 mod agent_rows;
 #[cfg(test)]
+mod agent_sections;
+#[cfg(test)]
 mod agents_header;
 #[cfg(test)]
 mod configured_rows;

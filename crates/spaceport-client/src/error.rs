@@ -332,6 +332,15 @@ impl Error {
         }
     }
 
+    /// Only a lost stream or failed heartbeat qualifies for transport recovery.
+    pub(crate) fn is_transport_loss(&self) -> bool {
+        use io::ErrorKind::*;
+        matches!(self, Self::SocketClosed | Self::HealthTimeout)
+            || matches!(self, Self::Io(source) if matches!(source.kind(),
+                BrokenPipe | ConnectionAborted | ConnectionReset | NotConnected | UnexpectedEof |
+                NetworkDown | NetworkUnreachable | HostUnreachable | TimedOut))
+    }
+
     /// Preserve transport retry/cancellation categories, including the historical
     /// InvalidData category for session deadlines and validation failures.
     pub fn kind(&self) -> io::ErrorKind {

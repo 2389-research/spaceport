@@ -5,6 +5,7 @@
 // Tests start real processes; production code builds them with `new_command`.
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
 
+pub mod agent_idle;
 mod app_name;
 mod catalog;
 pub mod clipboard;
@@ -28,6 +29,7 @@ mod method;
 mod options;
 pub mod private_endpoint;
 mod process;
+pub mod projection;
 mod queue;
 mod remote_host;
 pub mod response;
@@ -67,6 +69,8 @@ pub use catalog::{
 pub use clipboard::{ClipboardImageCancellation, ClipboardImageUpload};
 pub use compat::{MIN_HERDR_VERSION, VersionMismatch};
 pub use connect::{connect, connect_with_connector, connect_with_surface_active};
+#[cfg(unix)]
+pub use connect::{connect_embedded_bridge, connect_embedded_bridge_with_path};
 pub use discovery::{ConnectTarget, local_var, session_socket, set_login_config_home};
 pub use environment::set_command_environment;
 /// Error returned when queueing commands; also available as the crate's `Error`.

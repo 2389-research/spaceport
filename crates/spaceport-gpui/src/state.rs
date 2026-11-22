@@ -86,6 +86,8 @@ pub struct LiveState {
     /// When each of `snapshot`'s agents last changed, on a clock shared with
     /// every other connection, so the agents panel can merge hosts by recency.
     pub(crate) agent_recency: AgentRecency,
+    pub(crate) idle_tracker: spaceport_client::agent_idle::IdleTracker,
+    last_agent_snapshot_ms: u64,
     /// The pane focused before the current one, in any workspace or tab of
     /// this daemon boot, for Herdr's `last_pane`.
     pub(crate) previous_pane: Option<String>,
@@ -207,6 +209,8 @@ impl Default for LiveState {
             snapshot: None,
             pending_snapshot: None,
             agent_recency: AgentRecency::default(),
+            idle_tracker: Default::default(),
+            last_agent_snapshot_ms: 0,
             previous_pane: None,
             surface: None,
             surface_images: Default::default(),
@@ -302,6 +306,8 @@ impl LiveState {
             pending_snapshot: _,
             // Changes only with `snapshot`, which is compared below.
             agent_recency: _,
+            idle_tracker: _,
+            last_agent_snapshot_ms: _,
             previous_pane,
             surface: _,
             surface_images: _,
@@ -562,6 +568,7 @@ impl LiveState {
                 self.pending_snapshot = None;
                 self.pending_surface_images = None;
                 self.agent_recency = AgentRecency::default();
+                self.idle_tracker.interrupt();
                 self.surface = None;
                 self.announcement_dismissal = None;
                 self.surface_images = Default::default();

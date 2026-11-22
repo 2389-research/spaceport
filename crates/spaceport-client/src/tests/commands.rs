@@ -64,6 +64,7 @@ fn bounded_command_queue_and_outbound_limit_are_explicit() {
             next_request: AtomicU64::new(1),
             image_busy: Arc::new(AtomicBool::new(false)),
             last_queued_theme: Default::default(),
+            transport_lost: Default::default(),
             liveness: Default::default(),
         }),
     };

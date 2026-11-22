@@ -1,0 +1,80 @@
+// ABOUTME: Exercises saved agent groups against observations from multiple Herdr sessions.
+// ABOUTME: Checks that cache writes and relaunches preserve idle age evidence.
+import Foundation
+import XCTest
+@testable import SpaceportMobile
+
+@MainActor
+final class AgentSectionsTests: XCTestCase {
+    private func row(_ name: String, _ status: String, seq: UInt64) -> SeenAgent {
+        SeenAgent(bootId: "boot", workspaceId: "w", tabId: "t", paneId: name,
+                  name: name, status: status, location: "Build › Review", stateChangeSeq: seq)
+    }
+
+    private func catalog(_ rows: [SeenAgent], seenAt: TimeInterval) throws -> HostCatalog {
+        let profile = try HostProfile.make(hostname: "host", port: "22", username: "biz", session: "main")
+        var catalog = HostCatalog()
+        catalog.append(profile)
+        catalog.sessions[0].lastStatus = SessionStatusSnapshot(
+            seenAt: Date(timeIntervalSince1970: seenAt), blocked: 1, working: 1, hasIdle: true,
+            location: [], agents: rows)
+        return catalog
+    }
+
+    func testHomePlacesWaitingFirstAndUsesDaemonOrderForUntimedIdle() throws {
+        let rows = [row("Work", "working", seq: 3), row("Old", "idle", seq: 1),
+                    row("Wait", "blocked", seq: 4), row("New", "done", seq: 6)]
+        XCTAssertEqual(try catalog(rows, seenAt: 2_000).observedAgents.map(\.agent.name),
+                       ["Wait", "Work", "New", "Old"])
+    }
+
+    func testAgeBandsFreezeAtTheSnapshotAndPlaceFirstSightingsLast() throws {
+        let now: TimeInterval = 90_000
+        func idle(_ name: String, seconds: TimeInterval, witnessed: Bool) -> SeenAgent {
+            var agent = row(name, "idle", seq: 5)
+            agent.changeObservedAt = Date(timeIntervalSince1970: now - seconds)
+            agent.idleOnsetObserved = witnessed
+            return agent
+        }
+        let input = [
+            idle("Five", seconds: 18_000, witnessed: false),
+            idle("New", seconds: 59, witnessed: true),
+            idle("Hour", seconds: 3_600, witnessed: true),
+            idle("Unplaced", seconds: 3_599, witnessed: false),
+            idle("Recent", seconds: 3_599, witnessed: true),
+            row("Unknown", "unknown", seq: 2)
+        ]
+        let rows = try catalog(input, seenAt: now).observedAgents
+        XCTAssertEqual(rows.map(\.agent.name), ["New", "Recent", "Hour", "Five", "Unplaced", "Unknown"])
+        XCTAssertEqual(rows.map(\.section), [.recentIdle, .recentIdle, .idleHours, .oldIdle, .idle, .other])
+        XCTAssertEqual(rows.map(\.ageLabel), ["<1m", "59m", "1h", "5h+", nil, nil])
+    }
+
+    func testReconnectConfirmsLowerBoundOnlyForTheSameIdleStreak() throws {
+        let suite = "spaceport.mobile.idle.\(UUID())"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let profile = try HostProfile.make(hostname: "host", port: "22", username: "biz", session: "main")
+        let store = ProfileStore(defaults: defaults)
+        try store.save(profile)
+        func observe(_ status: String, seq: UInt64, at time: TimeInterval, legacy: Bool = false) throws {
+            var agent = row("Scout", status, seq: seq)
+            let date = Date(timeIntervalSince1970: time)
+            agent.changeObservedAt = legacy ? .distantPast : date
+            agent.idleOnsetObserved = legacy ? nil : false
+            try store.recordSeen(profile: profile, snapshot: SessionStatusSnapshot(
+                seenAt: date, blocked: 0, working: 0, hasIdle: true, location: [], agents: [agent]))
+        }
+        func saved() throws -> HomeAgent {
+            try XCTUnwrap(ProfileStore(defaults: defaults).catalog().observedAgents.first)
+        }
+        try observe("done", seq: 7, at: 1_000, legacy: true)
+        XCTAssertEqual(try saved().section, .idle)
+        try observe("idle", seq: 7, at: 8_200)
+        XCTAssertEqual(try saved().section, .idleHours)
+        XCTAssertEqual(try saved().ageLabel, "2h+")
+        try observe("idle", seq: 8, at: 8_300)
+        XCTAssertEqual(try saved().section, .idle)
+        XCTAssertNil(try saved().ageLabel)
+    }
+}

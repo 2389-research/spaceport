@@ -1,0 +1,80 @@
+src/glyphs/Unicode_IEC_symbol_font.otf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/Unicode_IEC_symbol_font.otf
+IEC symbols Unicode
+
+src/glyphs/codicons/codicon.ttf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/codicons/codicon.ttf
+codicon
+http://fontello.com
+
+src/glyphs/devicons/devicons.otf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/devicons/devicons.otf
+See https://github.com/devicons/devicon
+Devicons Nerd Font
+https://github.com/ryanoasis/nerd-fonts
+
+src/glyphs/font-awesome-extension.ttf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/font-awesome-extension.ttf
+font-awesome-extension
+
+src/glyphs/font-awesome/FontAwesome.otf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/font-awesome/FontAwesome.otf
+Fonticons, Inc
+FA Nerd Font
+https://github.com/ryanoasis/nerd-fonts
+
+src/glyphs/font-logos.ttf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/font-logos.ttf
+Copyright (c) 2014-2024, Lukas W
+font-logos
+https://github.com/Lukas-W/font-logos
+
+src/glyphs/materialdesign/MaterialDesignIconsDesktop.ttf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/materialdesign/MaterialDesignIconsDesktop.ttf
+Material Design Icons Desktop
+http://fontello.com
+
+src/glyphs/materialdesign/materialdesignicons-webfont.ttf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/materialdesign/materialdesignicons-webfont.ttf
+Material Design Icons
+http://fontello.com
+
+src/glyphs/octicons/octicons.otf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/octicons/octicons.otf
+GitHub Inc.
+Octicons Nerd Font
+https://github.com/ryanoasis/nerd-fonts
+
+src/glyphs/original-source.otf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/original-source.otf
+Nerd Fonts
+Nerd Font File Types
+https://github.com/ryanoasis/nerd-fonts
+
+src/glyphs/pomicons/Pomicons.otf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/pomicons/Pomicons.otf
+Copyright (c) 2014 by Davide Bignotti. All rights reserved.
+Pomicons
+Pomicons is a trademark of Davide Bignotti.
+Davide Bignotti
+Davide Bignotti
+Free
+
+src/glyphs/powerline-extra/PowerlineExtraSymbols.otf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/powerline-extra/PowerlineExtraSymbols.otf
+MIT © Ryan L McIntyre
+PowerlineExtraSymbols
+https://github.com/ryanoasis/powerline-extra-symbols
+MIT
+https://opensource.org/licenses/MIT
+
+src/glyphs/powerline-symbols/PowerlineSymbols.otf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/powerline-symbols/PowerlineSymbols.otf
+Created with FontForge 2.0 (http://fontforge.sf.net)
+PowerlineSymbols
+
+src/glyphs/weather-icons/weathericons-regular-webfont.ttf
+https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.4.0/src/glyphs/weather-icons/weathericons-regular-webfont.ttf
+Weather Icons licensed under SIL OFL 1.1 — Code licensed under MIT License — Documentation licensed under CC BY 3.0
+Weather Icons
+Erik Flowers, Lukas Bischoff (v1 Art)

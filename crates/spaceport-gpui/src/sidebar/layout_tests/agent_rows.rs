@@ -230,6 +230,7 @@ fn the_agents_header_toggles_between_grouped_and_priority(cx: &mut gpui::TestApp
     // The second agent wants attention; only priority floats it to the top.
     cx.update(|_, cx| {
         view.update(cx, |view, _| {
+            view.live.status = crate::state::ConnectionStatus::Connected;
             let snapshot = Arc::make_mut(view.live.snapshot.as_mut().unwrap());
             snapshot.agents[0].state_change_seq = 9;
             snapshot.agents[1].agent_status = AgentStatus::Blocked;
@@ -244,7 +245,7 @@ fn the_agents_header_toggles_between_grouped_and_priority(cx: &mut gpui::TestApp
     let header = cx.debug_bounds("sidebar").unwrap();
     // The label ends at the sidebar's inner edge, opposite the "agents" title.
     assert_eq!(sort.right(), header.right() - px(13.));
-    for (expected, top) in [(AgentSort::Grouped, first), (AgentSort::Priority, second)] {
+    for (expected, top) in [(AgentSort::Priority, second), (AgentSort::Grouped, first)] {
         cx.update(|_, cx| {
             assert_eq!(view.read(cx).agent_sort, expected);
             let probes = &cx.global::<TextProbes>().0;
@@ -274,7 +275,7 @@ fn the_agents_header_toggles_between_grouped_and_priority(cx: &mut gpui::TestApp
     // Toggling twice returns to the stored default without a daemon request.
     cx.update(|_, cx| {
         let view = view.read(cx);
-        assert_eq!(view.agent_sort, AgentSort::Grouped);
+        assert_eq!(view.agent_sort, AgentSort::Priority);
         assert!(view.agent_sort_modified);
     });
 }
@@ -325,7 +326,7 @@ fn a_plugin_agent_view_orders_and_filters_the_agents(cx: &mut gpui::TestAppConte
     cx.simulate_click(sort.center(), Default::default());
     cx.update(|_, cx| {
         let view = view.read(cx);
-        assert_eq!(view.agent_sort, AgentSort::Grouped);
+        assert_eq!(view.agent_sort, AgentSort::Priority);
         assert!(!view.agent_sort_modified);
     });
 

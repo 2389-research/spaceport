@@ -31,6 +31,7 @@ fn device_footer_filters_both_lists_and_keeps_settings_visible(cx: &mut gpui::Te
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
     assert!(cx.debug_bounds("host-ssh:fixture").is_some());
     assert!(cx.debug_bounds("core-workspaces").is_some());
+    let all_agents = cx.update(|_, cx| view.read(cx).sidebar_agents().len());
     let all_counts = cx.update(|_, cx| {
         view.read(cx)
             .sidebar_scroll
@@ -100,7 +101,8 @@ fn device_footer_filters_both_lists_and_keeps_settings_visible(cx: &mut gpui::Te
             .map(|scroll| scroll.children_count());
         // The Core workspace section follows the device rows once per sidebar.
         assert_eq!((local_counts[0] - 1) * 2 + 1, all_counts[0]);
-        assert_eq!(local_counts[1] * 2, all_counts[1]);
+        // Both devices share one set of section headers. Compare the selectable rows.
+        assert_eq!(view.read(cx).sidebar_agents().len() * 2, all_agents);
     });
     cx.simulate_click(picker, Modifiers::default());
     cx.update(|window, cx| full_draw(window, cx).clear(cx));

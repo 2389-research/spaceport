@@ -138,6 +138,24 @@ pub(super) fn window(op: WindowOp, context: &Context) -> crate::Result<Output> {
 
 pub(super) fn ui(op: UiOp, context: &Context) -> crate::Result<Output> {
     match context.call(Request::Ui, op)? {
+        Response::App {
+            reply: Reply::AgentIdle { pane, age },
+        } => {
+            let json = serde_json::json!({ "pane": pane, "age": age });
+            if let Some(age) = age {
+                let qualifier = if age.lower_bound {
+                    "at least "
+                } else {
+                    "about "
+                };
+                Output::data(
+                    format!("{pane} idle for {qualifier}{}s", age.seconds),
+                    &json,
+                )
+            } else {
+                Ok(Output::data(format!("No measured idle age for {pane}"), &json)?.nothing())
+            }
+        }
         Response::Done { message } => Ok(Output::message(message)),
         Response::App {
             reply: Reply::FontSize { points },

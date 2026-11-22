@@ -79,7 +79,7 @@ impl SpaceportWindow {
                 continue;
             };
             let gap = self.agent_row_gap(rows.len());
-            let row = self.agent_cell(index, agent, snapshot, &row_cx, lines, gap, true, cx);
+            let row = self.agent_cell(index, agent, snapshot, &row_cx, lines, gap, true, None, cx);
             if !(selected && agent.focused) {
                 rows.push(row.into_any_element());
                 continue;

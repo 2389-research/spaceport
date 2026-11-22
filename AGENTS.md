@@ -12,6 +12,10 @@ Keep the upstream engineering rules below where they apply to retained code.
 Where they describe excluded Sheprd behavior, the Spaceport specification
 governs the fork.
 
+The standalone iOS client is a separate workstream under [mobile/](mobile/README.md).
+It connects directly to an installed Herdr TUI over SSH. Keep its build outside the desktop release pipeline.
+The desktop fork specification's mobile deferral still applies to the retired phone-control service.
+
 Decision D60 removes the inherited custom updater. App version reporting and
 the unconfigured-production-release refusal live in the app's constants;
 verified platform/package update replacements remain a T12 release gate.

@@ -1,0 +1,57 @@
+#!/bin/sh
+# ABOUTME: Supplies the simulator's opt-in SSH continuity test with real OpenSSH login counts and worker PIDs.
+# ABOUTME: Interrupts only a dedicated loopback ncat relay's single active nc child when the test requests a drop.
+set -eu
+
+if [ "$#" -ne 5 ]; then
+    echo "Usage: watch-ssh-continuity SIMULATOR_ID DISPOSABLE_CONTAINER SSH_USER OPENSSH_LOG LOOPBACK_NCAT_PID" >&2
+    exit 2
+fi
+simulator=$1
+host=$2
+account=$3
+log=$4
+relay=$5
+case "$account" in ''|*[!a-zA-Z0-9_-]*) echo "Pass the disposable SSH username." >&2; exit 2 ;; esac
+case "$relay" in ''|*[!0-9]*) echo "Pass the PID of the dedicated ncat listener." >&2; exit 2 ;; esac
+if ! lsof -nP -a -p "$relay" -iTCP -sTCP:LISTEN | awk '$1 == "ncat" && $9 ~ /^127[.]0[.]0[.]1:/ {found=1} END {exit !found}'; then
+    echo "The nominated process must be a loopback ncat listener." >&2
+    exit 2
+fi
+relay_started=$(ps -p "$relay" -o lstart=)
+container exec "$host" test -r "$log"
+bundle=ai.2389.spaceport.mobile.uitests.xctrunner
+while :; do
+    data=$(xcrun simctl get_app_container "$simulator" "$bundle" data 2>/dev/null) || { sleep 1; continue; }
+    for request in "$data"/tmp/spaceport-ssh-witness/*.request; do
+        [ -f "$request" ] || continue
+        response=${request%.request}.json
+        [ ! -f "$response" ] || continue
+        accepted=$(container exec "$host" awk -v user="$account" '$1=="Accepted" && $3=="for" && $4==user {n++} END {print n+0}' "$log")
+        workers=$(container exec "$host" ps -u "$account" -o pid=,args= |
+            awk -v title="$account@notty" '$2=="sshd:" && $3==title {print $1}' | jq -sc 'sort')
+        action=$(cat "$request")
+        case "$action" in
+            sample) ;;
+            drop)
+                [ "$(ps -p "$relay" -o lstart=)" = "$relay_started" ] ||
+                    { echo "The dedicated relay has exited." >&2; exit 1; }
+                worker=$(pgrep -P "$relay" -x ncat || true)
+                [ "$(printf '%s\n' "$worker" | awk 'NF {n++} END {print n+0}')" -eq 1 ] ||
+                    { echo "Expected one live connection on the dedicated relay." >&2; exit 1; }
+                upstream=$(pgrep -P "$worker" -x nc || true)
+                if [ "$(printf '%s\n' "$upstream" | awk 'NF {n++} END {print n+0}')" -ne 1 ] ||
+                   [ "$(ps -p "$upstream" -o comm=)" != /usr/bin/nc ] || [ "$(echo "$workers" | jq length)" -ne 1 ]; then
+                    echo "The fixture could not identify one SSH transport to interrupt." >&2
+                    exit 1
+                fi
+                kill "$upstream"
+                ;;
+            *) echo "The simulator requested an unknown witness action." >&2; exit 1 ;;
+        esac
+        jq -n --argjson accepted "$accepted" --argjson workers "$workers" '{accepted:$accepted, workers:$workers}' > "$response.tmp"
+        jq -c --arg action "$action" '. + {action:$action, time:now}' "$response.tmp"
+        mv "$response.tmp" "$response"
+    done
+    sleep 0.2
+done

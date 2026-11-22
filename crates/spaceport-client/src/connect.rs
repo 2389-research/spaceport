@@ -7,7 +7,7 @@ use crate::{
     event::{ClientEvent, deliver},
     handle::{Client, ClientHandle, HandleInner},
     limits::{COMMAND_CAPACITY, EVENT_CAPACITY},
-    options::{ConnectOptions, validate_options},
+    options::ConnectOptions,
     queue,
     session::{Pace, Signals, run_connection},
     ssh,
@@ -55,7 +55,7 @@ pub fn connect_with_connector(
     surface_active: bool,
     connector: impl FnOnce(&ConnectTarget, &AtomicBool) -> io::Result<Stream> + Send + 'static,
 ) -> Result<Client> {
-    validate_options(options)?;
+    options.validate()?;
     match &target {
         ConnectTarget::Ssh { target, session } => {
             catalog::validate_target(target)?;
@@ -64,40 +64,95 @@ pub fn connect_with_connector(
         ConnectTarget::Wsl { distro, session } => wsl::validate(distro, session)?,
         _ => {}
     }
+    let transport = match &target {
+        ConnectTarget::Ssh { .. } => "ssh",
+        ConnectTarget::Wsl { .. } => "wsl",
+        _ => "local",
+    };
+    spawn_connection(
+        options,
+        surface_active,
+        transport,
+        target.is_remote(),
+        move |stop| {
+            Ok(match &target {
+                ConnectTarget::Ssh { target, session } => {
+                    let (stream, child) = ssh::connect(target, session, stop)?;
+                    (stream, Some(child))
+                }
+                ConnectTarget::Wsl { distro, session } => {
+                    let (stream, child) = wsl::connect(distro, session, stop)?;
+                    (stream, Some(child))
+                }
+                _ => (connector(&target, stop)?, None),
+            })
+        },
+    )
+}
+
+/// Attach over an authenticated SSH exec channel supplied by an embedded client.
+/// The connector runs on the worker and returns the socket carrying the command's
+/// standard streams and a guard whose drop cancels the SSH transport.
+/// Discovery, bridge negotiation, health checks and protocol framing match desktop.
+#[cfg(unix)]
+pub fn connect_embedded_bridge<G>(
+    session: &str,
+    options: ConnectOptions,
+    connector: impl FnOnce(&str, &AtomicBool) -> Result<(Stream, G)> + Send + 'static,
+) -> Result<Client> {
+    connect_embedded_bridge_with_path(session, options, connector, |_| {})
+}
+
+/// Reports the accepted POSIX executable for follow-up channels on the same connection.
+#[cfg(unix)]
+pub fn connect_embedded_bridge_with_path<G>(
+    session: &str,
+    options: ConnectOptions,
+    connector: impl FnOnce(&str, &AtomicBool) -> Result<(Stream, G)> + Send + 'static,
+    accepted_path: impl FnOnce(String) + Send + 'static,
+) -> Result<Client> {
+    options.validate()?;
+    session_socket(std::path::Path::new(""), session)?;
+    let command = ssh::bridge_command(session);
+    spawn_connection(options, true, "ssh", true, move |stop| {
+        let (mut stream, guard) = connector(&command, stop)?;
+        stream.set_read_timeout(Some(crate::limits::POLL))?;
+        stream.set_write_timeout(Some(std::time::Duration::from_secs(1)))?;
+        if let Some(path) = ssh::handshake_with_path(&mut stream, stop)? {
+            accepted_path(path);
+        }
+        Ok((stream, guard))
+    })
+}
+
+fn spawn_connection<G>(
+    options: ConnectOptions,
+    surface_active: bool,
+    transport: &'static str,
+    remote: bool,
+    open: impl FnOnce(&AtomicBool) -> Result<(Stream, G)> + Send + 'static,
+) -> Result<Client> {
     let (commands, rx) = queue::channel(COMMAND_CAPACITY)?;
     let (tx, events) = bounded(EVENT_CAPACITY);
     let stop = Arc::new(AtomicBool::new(false));
     let worker_stop = stop.clone();
     let liveness = Arc::new(AtomicBool::new(false));
     let worker_liveness = liveness.clone();
+    let transport_lost = Arc::new(AtomicBool::new(false));
+    let worker_transport_lost = transport_lost.clone();
     thread::Builder::new()
         .name("herdr-client-io".into())
         .spawn(move || {
-            let transport = match target {
-                ConnectTarget::Ssh { .. } => "ssh",
-                ConnectTarget::Wsl { .. } => "wsl",
-                _ => "local",
-            };
             let span = tracing::info_span!("connection", transport);
             let _entered = span.enter();
             tracing::info!(transport, "connection starting");
             let result = (|| {
-                let (stream, child) = match &target {
-                    ConnectTarget::Ssh { target, session } => {
-                        let (stream, child) = ssh::connect(target, session, &worker_stop)?;
-                        (stream, Some(child))
-                    }
-                    ConnectTarget::Wsl { distro, session } => {
-                        let (stream, child) = wsl::connect(distro, session, &worker_stop)?;
-                        (stream, Some(child))
-                    }
-                    _ => (connector(&target, &worker_stop)?, None),
-                };
+                let (stream, _guard) = open(&worker_stop)?;
                 run_connection(
                     stream,
                     options,
                     surface_active,
-                    child.is_some(),
+                    remote,
                     rx,
                     &tx,
                     Signals {
@@ -106,6 +161,11 @@ pub fn connect_with_connector(
                         pace: Pace::default(),
                     },
                 )
+                .inspect_err(|error| {
+                    if error.is_transport_loss() && !worker_stop.load(Ordering::Acquire) {
+                        worker_transport_lost.store(true, Ordering::Release);
+                    }
+                })
                 // The child guard is dropped before delivering a disconnect event.
             })();
             if worker_stop.load(Ordering::Acquire) {
@@ -146,6 +206,7 @@ pub fn connect_with_connector(
                 image_busy: Arc::new(AtomicBool::new(false)),
                 last_queued_theme: Default::default(),
                 liveness,
+                transport_lost,
             }),
         },
         events,

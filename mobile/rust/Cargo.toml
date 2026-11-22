@@ -1,0 +1,31 @@
+# ABOUTME: Builds the mobile controller as a native library with Swift bindings.
+# ABOUTME: Keeps the desktop workspace independent of mobile SSH and packaging.
+[workspace]
+
+[package]
+name = "spaceport-mobile"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+spaceport-client = { path = "../../crates/spaceport-client" }
+spaceport-truncate = { path = "../../crates/spaceport-truncate" }
+p256 = { version = "0.14", default-features = false, features = ["ecdsa"] }
+russh = { version = "=0.65.3", default-features = false, features = ["ring"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["rt", "net", "time", "io-util", "sync", "macros"] }
+uniffi = "=0.32.2"
+
+[dev-dependencies]
+rand = "0.10"
+
+[profile.dev]
+debug = 0
+incremental = false

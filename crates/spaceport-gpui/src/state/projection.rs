@@ -2,75 +2,26 @@
 use super::{ConnectionStatus, LiveState, coherent};
 use spaceport_client::{
     SurfaceImages,
+    projection::same_input_projection,
     protocol::{ClientShellSnapshot, PaneSurfaceFrame},
 };
 use std::sync::Arc;
 
-fn same_input_projection(old: &ClientShellSnapshot, new: &ClientShellSnapshot) -> bool {
-    // New protocol fields must make an explicit choice about input invalidation.
-    let ClientShellSnapshot {
-        boot_id,
-        revision: _,
-        config_diagnostic: _,
-        product_announcement: _,
-        update_available: _,
-        update_install_command: _,
-        server_keybindings_toml,
-        latest_release_notes_available: _,
-        integration_updates_available: _,
-        worktree_directory: _,
-        release_notes: _,
-        focused_workspace_id,
-        focused_tab_id,
-        focused_pane_id,
-        tab_bar_right: _,
-        tab_bar_right_separator: _,
-        agent_view_label: _,
-        agent_order: _,
-        workspaces: _,
-        tabs: _,
-        panes: _,
-        agents: _,
-        commands,
-    } = new;
-    if &old.boot_id != boot_id
-        || &old.focused_workspace_id != focused_workspace_id
-        || &old.focused_tab_id != focused_tab_id
-        || &old.focused_pane_id != focused_pane_id
-        || &old.server_keybindings_toml != server_keybindings_toml
-        || &old.commands != commands
-    {
-        return false;
-    }
-    let zoomed = |snapshot: &ClientShellSnapshot| {
-        snapshot
-            .tabs
-            .iter()
-            .find(|tab| Some(&tab.tab_id) == snapshot.focused_tab_id.as_ref())
-            .map(|tab| tab.zoomed)
-    };
-    zoomed(old) == zoomed(new) && input_panes(old).eq(input_panes(new))
-}
-
-fn input_panes(
-    snapshot: &ClientShellSnapshot,
-) -> impl Iterator<Item = (&str, &str, &str, bool, bool)> {
-    snapshot
-        .panes
-        .iter()
-        .filter(move |pane| Some(&pane.tab_id) == snapshot.focused_tab_id.as_ref())
-        .map(|pane| {
-            (
-                pane.pane_id.as_str(),
-                pane.workspace_id.as_str(),
-                pane.tab_id.as_str(),
-                pane.focused,
-                pane.right_click_passthrough,
-            )
-        })
-}
-
 impl LiveState {
+    pub(crate) fn agent_idle(
+        &self,
+        pane: &str,
+    ) -> Option<spaceport_client::agent_idle::IdleObservation> {
+        self.idle_tracker.get(pane)
+    }
+
+    pub(crate) fn agent_confirmed_at(&self, now_ms: u64) -> u64 {
+        if self.status.is_connected() {
+            now_ms
+        } else {
+            self.last_agent_snapshot_ms
+        }
+    }
     /// The newest received metadata, which may be ahead of the displayed pair.
     /// Notices, sounds, and notice clicks read it; terminal
     /// rendering, hit testing, and input stay on `snapshot`.
@@ -212,6 +163,9 @@ impl LiveState {
             .as_deref()
             .filter(|old| old.boot_id == snapshot.boot_id);
         self.agent_recency.observe(previous, &snapshot);
+        self.last_agent_snapshot_ms = spaceport_client::agent_idle::now_ms();
+        self.idle_tracker
+            .observe(&snapshot, self.last_agent_snapshot_ms);
         self.snapshot = Some(snapshot);
     }
 }

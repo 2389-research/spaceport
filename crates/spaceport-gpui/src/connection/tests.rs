@@ -2,6 +2,7 @@
 // ABOUTME: Uses explicit private targets while checking reader and reset boundaries.
 use super::*;
 
+mod idle_history;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod local_peer_warning;
 mod retired_answers;

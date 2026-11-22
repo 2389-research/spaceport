@@ -221,7 +221,7 @@ fn malformed_toml_keeps_typed_sources() -> anyhow::Result<()> {
 fn agent_panel_sort_reads_upstream_spellings() -> anyhow::Result<()> {
     use crate::AgentSort;
     for (text, expected) in [
-        ("", AgentSort::Grouped),
+        ("", AgentSort::Priority),
         ("[ui]\nagent_panel_sort = 'spaces'", AgentSort::Grouped),
         ("[ui]\nagent_panel_sort = 'workspaces'", AgentSort::Grouped),
         ("[ui]\nagent_panel_sort = 'priority'", AgentSort::Priority),

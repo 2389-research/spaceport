@@ -1,6 +1,6 @@
 ---
 name: spaceport
-description: "Use Spaceport client commands for native chat, notes, settings, and window state inside Herdr. The browser commands have been removed; share a URL or file path for the user to open."
+description: "Use Spaceport client commands for native chat, notes, settings, observed agent idle time, and window state inside Herdr. The browser commands have been removed; share a URL or file path for the user to open."
 ---
 <!-- spaceport-managed-skill v1: Spaceport keeps this file up to date. Edit a copy under another name to keep your changes. -->
 
@@ -19,6 +19,7 @@ for what only Spaceport shows or keeps.
 
 | To | Run |
 | --- | --- |
+| Read the idle age Spaceport observed for this pane | `spaceport ui agent-idle --json` |
 | Keep a note on this worktree (repository and branch) | `spaceport notes set waiting on CI` |
 | Silence this worktree's notifications | `spaceport worktree mute` |
 | Silence a whole host's notifications | `spaceport host mute studio` |

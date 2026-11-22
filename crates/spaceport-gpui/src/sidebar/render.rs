@@ -634,8 +634,14 @@ impl SpaceportWindow {
             spaces = spaces.child(self.core_workspace_rows(cx));
         }
         if agents_panel {
-            (agents, agent_count, highlighted[1]) =
-                self.append_agent_rows(agents, indicators, look, width, cx);
+            (agents, agent_count, highlighted[1]) = self.append_agent_rows(
+                agents,
+                indicators,
+                look,
+                width,
+                self.agent_sort == crate::preferences::AgentSort::Priority && !filtered,
+                cx,
+            );
         }
         if sliding {
             window.request_animation_frame();

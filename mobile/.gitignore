@@ -1,0 +1,8 @@
+/rust/target/
+/.build/
+/apple/Generated/
+/apple/SpaceportMobile.xcodeproj/**
+!/apple/SpaceportMobile.xcodeproj/project.xcworkspace/
+!/apple/SpaceportMobile.xcodeproj/project.xcworkspace/xcshareddata/
+!/apple/SpaceportMobile.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+!/apple/SpaceportMobile.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved

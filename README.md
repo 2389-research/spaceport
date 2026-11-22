@@ -32,6 +32,21 @@ Native rich chat needs a verified host-side adapter
 route; remote parity, forwarding, file transfer, native platform behavior, and
 production release identity still have [open gates](docs/spaceport/plan/gaps.json).
 
+## Desktop Agents sidebar
+
+Priority lists agents waiting for you first, followed by working agents and idle agents
+grouped by approximate time (under an hour, one to five hours, and five hours or more).
+An agent already idle when Spaceport connects starts at the end in Herdr sequence order.
+The app can show a lower bound once it has observed an hour of the same idle spell.
+Click **priority** in the Agents header to return to workspace order.
+A host's custom Herdr agent view keeps its chosen order.
+
+## iPhone and iPad
+
+
+[Spaceport Mobile](mobile/README.md) connects directly over SSH to an installed Herdr TUI runtime.
+It has its own Xcode build and uses the desktop Rust client's terminal protocol.
+
 ## Work on the fork
 
 Use the pinned Rust toolchain in `rust-toolchain.toml`. From the repository

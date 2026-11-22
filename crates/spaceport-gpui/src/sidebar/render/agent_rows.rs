@@ -25,13 +25,16 @@ impl SpaceportWindow {
         indicators: Indicators,
         look: SidebarLook,
         width: f32,
+        show_sections: bool,
         cx: &mut Context<Self>,
     ) -> (Stateful<Div>, usize, Option<usize>) {
         let font = &self.config.sidebar;
         let theme = &self.theme;
         let mut count = 0;
         let mut focused = None;
-        for (index, agent) in self.panel_agents() {
+        let now = spaceport_client::agent_idle::now_ms();
+        let mut previous = None;
+        for (index, agent) in self.panel_agents_at(now) {
             let Some(endpoint) = self.endpoints.get(index) else {
                 continue;
             };
@@ -60,13 +63,29 @@ impl SpaceportWindow {
             let Some(lines) = self.panel_agent_lines(index, agent) else {
                 continue;
             };
+            if show_sections {
+                let section = crate::sidebar::agents::sections::Section::of(live, agent, now);
+                if previous != Some(section) {
+                    let (key, title) = section.heading();
+                    list = list.child(super::header::header(key, &title, font, theme, look));
+                    count += 1;
+                    previous = Some(section);
+                }
+            }
             if selected && agent.focused {
                 focused = Some(count);
             }
+            let idle_age = show_sections
+                .then(|| live.agent_idle(&agent.pane_id))
+                .flatten()
+                .and_then(|idle| {
+                    crate::sidebar::agents::sections::age_label(idle, live.agent_confirmed_at(now))
+                });
             let gap = self.agent_row_gap(count);
             count += 1;
-            list =
-                list.child(self.agent_cell(index, agent, snapshot, &row_cx, lines, gap, false, cx));
+            list = list.child(self.agent_cell(
+                index, agent, snapshot, &row_cx, lines, gap, false, idle_age, cx,
+            ));
         }
         (list, count, focused)
     }
@@ -134,6 +153,7 @@ impl SpaceportWindow {
         lines: Vec<Vec<tokens::ResolvedToken>>,
         gap: f32,
         nested: bool,
+        idle_age: Option<String>,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
         let rows = layout_for(self.config.layout.mode);
@@ -154,6 +174,10 @@ impl SpaceportWindow {
         let place = (!nested).then(|| agent_place(agent, snapshot)).flatten();
         let status = status_text(agent.agent_status);
         let state = state_label(agent, &status);
+        let state = match idle_age.as_ref() {
+            Some(age) => std::borrow::Cow::Owned(format!("{state} · {age}")),
+            None => state,
+        };
         let spoken = crate::sidebar::accessibility::agent_name(
             name,
             pane.as_deref(),
@@ -170,12 +194,13 @@ impl SpaceportWindow {
                 status: agent.agent_status,
                 place,
                 pane,
-                status_text: self
-                    .config
-                    .sidebar_layout
-                    .agents
-                    .shows_status_text(agent.agent.as_deref())
-                    .then_some(state),
+                status_text: (idle_age.is_some()
+                    || self
+                        .config
+                        .sidebar_layout
+                        .agents
+                        .shows_status_text(agent.agent.as_deref()))
+                .then_some(state),
                 lines,
             }),
             row_cx,

@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+# ABOUTME: Serves two disposable OpenSSH host keys on one loopback port for the simulator trust test.
+# ABOUTME: The first connection gets the original identity; all later handshakes present its replacement.
+require "socket"
+require "tmpdir"
+
+abort "Usage: serve-rotating-host (requires macOS OpenSSH and a local iOS simulator)" unless ARGV.empty?
+File.umask(0o077)
+$stdout.sync = true
+Dir.mktmpdir("spaceport-ssh-rotation-") do |dir|
+  identities = %w[trusted presented].map do |name|
+    key = File.join(dir, name)
+    abort "Generating SSH test key failed" unless system("ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", key)
+    fingerprint = IO.popen(["ssh-keygen", "-lf", "#{key}.pub"], &:read).split.fetch(1)
+    puts "export TEST_RUNNER_SPACEPORT_TEST_ROTATING_SSH_#{name.upcase}=#{fingerprint}"
+    config = "#{key}.conf"
+    File.write(config, "HostKey #{key}\nPasswordAuthentication no\nPubkeyAuthentication no\nKbdInteractiveAuthentication no\n")
+    config
+  end
+  TCPServer.open("127.0.0.1", 0) do |server|
+    puts "export TEST_RUNNER_SPACEPORT_TEST_ROTATING_SSH_PORT=#{server.local_address.ip_port}"
+    current = identities.first
+    loop do
+      socket = server.accept
+      begin
+        pid = Process.spawn("/usr/sbin/sshd", "-i", "-e", "-f", current, in: socket, out: socket)
+        Process.detach(pid)
+        current = identities.last
+      ensure
+        socket.close
+      end
+    end
+  end
+end

@@ -4,6 +4,7 @@
 use super::*;
 use crate::control::protocol::app::Switch;
 
+mod agent_idle;
 mod core_catalog;
 mod core_flag;
 mod core_window;
