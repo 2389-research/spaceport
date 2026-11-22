@@ -23,7 +23,8 @@ fn quit_reaches_the_app_with_a_popup_and_consumes_its_held_tail(cx: &mut gpui::T
             view.sidebar_visible,
         )
     });
-    assert!(press(cx, &toggle, false));
+    // Other shortcuts go on to the popup's field and run nothing behind it.
+    press(cx, &toggle, false);
     assert_eq!(view.read_with(cx, |view, _| view.sidebar_visible), visible);
     assert!(press(cx, &quit, false));
     assert_eq!(

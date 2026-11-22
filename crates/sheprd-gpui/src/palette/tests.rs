@@ -9,6 +9,7 @@ use sheprd_client::protocol::ClientShellCommand;
 mod agent_filter;
 mod background_ranking;
 mod core_only;
+mod direct_shortcuts;
 mod en_xa;
 mod frecency_ranking;
 mod go_to_search;

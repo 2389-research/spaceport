@@ -326,8 +326,9 @@ impl SheprdWindow {
     }
 
     /// What `keystroke` is bound to: the prefix, then, after the prefix, the
-    /// keymap's chord, then a custom command. Without the prefix, a custom
-    /// command runs only while no menu page holds input.
+    /// keymap's chord, then a custom command. Without the prefix, an open
+    /// menu page, the palette among them, holds input: commands wait while
+    /// it is open, so its keys go on to the page and only Quit still runs.
     fn bound(
         &self,
         keystroke: &Keystroke,
@@ -351,20 +352,24 @@ impl SheprdWindow {
             }
             return Some(Bound::Command(command));
         }
+        if !armed && self.menu.page.is_some() {
+            return match keymap.direct(keystroke, map) {
+                Some(
+                    crate::keymap::Direct::Catalog(Command::Quit)
+                    | crate::keymap::Direct::Configured(Command::Quit),
+                ) => Some(Bound::Command(Command::Quit)),
+                _ => None,
+            };
+        }
         if !armed && let Some(direct) = keymap.direct(keystroke, map) {
             let command = match direct {
                 crate::keymap::Direct::Configured(command) => return Some(Bound::Command(command)),
                 crate::keymap::Direct::Catalog(command) => command,
             };
-            if self.menu.page.is_none()
-                && let Some((id, action)) = self.custom_command(keystroke, false)
-            {
+            if let Some((id, action)) = self.custom_command(keystroke, false) {
                 return Some(Bound::Custom(id, action));
             }
             return Some(Bound::Command(command));
-        }
-        if !armed && self.menu.page.is_some() {
-            return None;
         }
         self.custom_command(keystroke, armed)
             .map(|(id, action)| Bound::Custom(id, action))
@@ -447,6 +452,7 @@ impl SheprdWindow {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
+    mod menu_input;
     mod platform_mapping;
     use crate::{
         keymap::{DaemonKeys, Keymap},
