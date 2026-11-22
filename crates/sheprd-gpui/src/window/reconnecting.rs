@@ -1,7 +1,10 @@
+// ABOUTME: Renders outage, missing-runtime, and intentional-shutdown cards.
+// ABOUTME: Offers explicit recovery while keeping daemon startup under endpoint ownership.
 //! What the terminal area shows while the selected endpoint reconnects after a
 //! drop: the last picture dimmed, and a card naming the host, why it dropped,
-//! and a way to retry now. The endpoint keeps retrying on its own backoff and
-//! the window stays on it; nothing typed meanwhile is sent. When this
+//! and a way to retry now. Ordinary outages keep retrying on their backoff.
+//! Intentional shutdown waits for explicit recovery. The window stays on its
+//! endpoint; nothing typed meanwhile is sent. When this
 //! computer has no Herdr to start, the card says so instead and links
 //! Herdr's TUI page.
 // i18n: migrated
@@ -39,6 +42,8 @@ impl SheprdWindow {
             Card::Removing
         } else if endpoint.herdr_missing() {
             Card::HerdrMissing
+        } else if endpoint.herdr_stopped() {
+            Card::HerdrStopped
         } else {
             Card::Reconnecting
         };
@@ -62,6 +67,11 @@ impl SheprdWindow {
                 fl!("window-herdr-missing"),
                 Some(("herdr-missing-note", fl!("window-herdr-missing-note"))),
             ),
+            Card::HerdrStopped => (
+                "herdr-stopped",
+                fl!("window-herdr-stopped"),
+                Some(("herdr-stopped-note", fl!("window-herdr-stopped-note"))),
+            ),
         };
         let theme = &self.theme;
         let retry = |id, label| {
@@ -78,6 +88,11 @@ impl SheprdWindow {
                     .child(retry("reconnect-now", fl!("window-reconnect-now"))),
             ),
             Card::Removing => None,
+            Card::HerdrStopped => Some(
+                div()
+                    .flex()
+                    .child(retry("start-herdr", fl!("window-start-herdr"))),
+            ),
             // Opens the website only: Spaceport never downloads or runs Herdr's installer.
             Card::HerdrMissing => Some(
                 div()
@@ -146,11 +161,15 @@ impl SheprdWindow {
 /// Which card shows over the endpoint's terminal area.
 #[derive(Clone, Copy)]
 enum Card {
+    // keep-sorted start
+    /// This computer has no Herdr to start: offer its website and a retry.
+    HerdrMissing,
+    /// An intentional stop requires an explicit request to start Herdr again.
+    HerdrStopped,
     Reconnecting,
     /// The device is going away on purpose; nothing to retry.
     Removing,
-    /// This computer has no Herdr to start: offer its website and a retry.
-    HerdrMissing,
+    // keep-sorted end
 }
 
 /// A button on the card, named for screen readers by its visible label.

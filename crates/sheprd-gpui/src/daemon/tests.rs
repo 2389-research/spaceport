@@ -1,3 +1,5 @@
+// ABOUTME: Verifies bounded local runtime attachment, startup, and cancellation.
+// ABOUTME: Uses owned sockets and helper executables instead of personal daemons.
 use super::*;
 use std::os::unix::net::UnixListener;
 use std::sync::atomic::AtomicUsize;
@@ -146,7 +148,7 @@ fn explicit_and_remote_targets_never_start_local_daemon() {
             session: "default".into(),
         },
     ] {
-        let _ = connect(&target, &AtomicBool::new(false), || {
+        let _ = connect(&target, Start::WhenMissing, &AtomicBool::new(false), || {
             panic!("attach-only targets must not launch a local daemon")
         });
     }

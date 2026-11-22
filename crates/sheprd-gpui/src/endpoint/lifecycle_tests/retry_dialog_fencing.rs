@@ -1,3 +1,5 @@
+// ABOUTME: Keeps daemon-bound dialogs fenced across explicit and automatic reconnect.
+// ABOUTME: Waits for real retry readiness before testing generation changes.
 use super::*;
 use crate::menu::Page;
 
@@ -6,7 +8,7 @@ use crate::menu::Page;
 fn retry(view: &mut SheprdWindow, cx: &mut Context<SheprdWindow>) {
     wait_until(|| {
         view.endpoints[0].poll(Instant::now());
-        view.endpoints[0].connection.handle.is_none()
+        view.endpoints[0].connection.handle.is_none() && view.endpoints[0].may_dial()
     });
     let generation = view.endpoints[0].generation;
     view.endpoints[0].set_retry_at_for_test(Instant::now());

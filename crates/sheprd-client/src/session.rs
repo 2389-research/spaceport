@@ -1,3 +1,5 @@
+// ABOUTME: Drives one connection's handshake, ordered events, and bounded commands.
+// ABOUTME: Preserves daemon intent and boot fences without reconnecting the transport.
 //! Connection-lifetime state and the worker loop that drives it: handshake and
 //! codec negotiation, boot-fenced snapshot/surface projection, the API request
 //! lease with its pipelined focus activation, and health checks. Nothing here
@@ -768,6 +770,9 @@ impl Session {
                 }
             }
             ServerMessage::ServerShutdown { reason } => {
+                emit(ClientEvent::Message(ServerMessage::ServerShutdown {
+                    reason: reason.clone(),
+                }))?;
                 return Err(Error::ServerShutdown(
                     reason.unwrap_or_else(|| "server shutdown".into()),
                 ));

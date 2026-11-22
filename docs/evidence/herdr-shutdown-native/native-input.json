@@ -1,0 +1,135 @@
+{
+  "schema": 1,
+  "qualification": "Linux x64 native Start Herdr pointer activation",
+  "run_id": 44903916187,
+  "job_id": 136845463720,
+  "native_test_result": "ok. 1 passed; 0 failed; 0 ignored; 0 measured; 20 filtered out; finished in 44.91s",
+  "parser_tests": "All three target-selection/refusal cases pass in the actual workspace log.",
+  "workspace_app_result": "3694 passed; 0 failed; 9 ignored",
+  "configured_ci": "success",
+  "artifact": {
+    "id": 14707580952,
+    "sha256": "81e557f3b2960abdaf9eb689b26a8df90abcf2ab27e5e19008fbcdcabf82886b",
+    "expires_at": "2026-11-28T12:32:03Z"
+  },
+  "test_head": "45bb1695cb7437b1745faf809d536c66dd26a397",
+  "checkout_sha": "9b07b05176906d4a06292ad9b4fc12d556203aac",
+  "source_comparison": "The fetched CI checkout tree equals the published test head.",
+  "runtime_sha256": "14d9e8bc8b4a9e0118d77c32266f76d461f09b40342eb23752960bd89f59929d",
+  "first_server": {
+    "pid": 13651,
+    "generation": 1,
+    "server_version": "0.9.5",
+    "boot": "13651-1795264279086180338",
+    "focused_workspace": "w1"
+  },
+  "second_server": {
+    "pid": 13971,
+    "generation": 1,
+    "server_version": "0.9.5",
+    "boot": "13971-1795264319364903340",
+    "focused_workspace": "w1"
+  },
+  "first_events": [
+    "ServerShutdown Some(\"server is shutting down\")",
+    "Disconnected server is shutting down"
+  ],
+  "second_events": [
+    "ServerShutdown Some(\"server is shutting down\")",
+    "Disconnected server is shutting down"
+  ],
+  "retry_hold_ms": 32448,
+  "gui_pid": 13682,
+  "focused_before": {
+    "id": 4294967297,
+    "title": "Spaceport",
+    "active": true,
+    "fullscreen": false,
+    "width": 640,
+    "height": 600,
+    "workspace": null,
+    "hosts": [
+      {
+        "id": "local",
+        "label": "Local",
+        "status": "Herdr stopped",
+        "selected": true,
+        "muted": false
+      }
+    ]
+  },
+  "native_window": "0x200001",
+  "target_words": [
+    {
+      "text": "Start",
+      "box": [
+        316,
+        355,
+        29,
+        9
+      ]
+    },
+    {
+      "text": "Herdr",
+      "box": [
+        350,
+        354,
+        33,
+        10
+      ]
+    }
+  ],
+  "pointer": {
+    "button": 1,
+    "window_point": [
+      330,
+      359
+    ],
+    "root_point": [
+      372,
+      419
+    ],
+    "window_origin": [
+      42,
+      60
+    ],
+    "window_size": [
+      640,
+      600
+    ],
+    "screen": 0,
+    "window": 2097153
+  },
+  "input_route": "one guarded XTest left click; no CLI reconnect fallback",
+  "ocr_tsv": {"sha256":"9d8826fdbd66b0d081ddb3c800522e8e4d5cfc2f1b3f2d36f083a2ea213984e2","content":"level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n1\t1\t0\t0\t0\t0\t0\t0\t640\t600\t-1\t\n2\t1\t1\t0\t0\t0\t17\t12\t31\t9\t-1\t\n3\t1\t1\t1\t0\t0\t17\t12\t31\t9\t-1\t\n4\t1\t1\t1\t1\t0\t17\t12\t31\t9\t-1\t\n5\t1\t1\t1\t1\t1\t17\t12\t31\t9\t96.476311\tMenu\n2\t1\t2\t0\t0\t0\t577\t11\t42\t10\t-1\t\n3\t1\t2\t1\t0\t0\t577\t11\t42\t10\t-1\t\n4\t1\t2\t1\t1\t0\t577\t11\t42\t10\t-1\t\n5\t1\t2\t1\t1\t1\t577\t11\t10\t10\t69.727859\to\n5\t1\t2\t1\t1\t2\t609\t11\t10\t10\t89.119614\tx\n2\t1\t3\t0\t0\t0\t286\t45\t12\t12\t-1\t\n3\t1\t3\t1\t0\t0\t286\t45\t12\t12\t-1\t\n4\t1\t3\t1\t1\t0\t286\t45\t12\t12\t-1\t\n5\t1\t3\t1\t1\t1\t286\t45\t12\t12\t96.710358\t+\n2\t1\t4\t0\t0\t0\t248\t73\t145\t18\t-1\t\n3\t1\t4\t1\t0\t0\t248\t73\t145\t18\t-1\t\n4\t1\t4\t1\t1\t0\t248\t73\t145\t18\t-1\t\n5\t1\t4\t1\t1\t1\t248\t77\t18\t14\t20.440819\t[by\n5\t1\t4\t1\t1\t2\t277\t73\t57\t10\t79.705009\tINITIAL\n5\t1\t4\t1\t1\t3\t345\t73\t48\t10\t71.396034\tSHELL>\n2\t1\t5\t0\t0\t0\t0\t80\t122\t20\t-1\t\n3\t1\t5\t1\t0\t0\t0\t80\t122\t20\t-1\t\n4\t1\t5\t1\t1\t0\t0\t80\t122\t20\t-1\t\n5\t1\t5\t1\t1\t1\t0\t80\t122\t20\t0.000000\t_wormspaces\n2\t1\t6\t0\t0\t0\t245\t110\t8\t8\t-1\t\n3\t1\t6\t1\t0\t0\t245\t110\t8\t8\t-1\t\n4\t1\t6\t1\t1\t0\t245\t110\t8\t8\t-1\t\n5\t1\t6\t1\t1\t1\t245\t110\t8\t8\t36.646099\ta\n2\t1\t7\t0\t0\t0\t14\t121\t15\t9\t-1\t\n3\t1\t7\t1\t0\t0\t14\t121\t15\t9\t-1\t\n4\t1\t7\t1\t1\t0\t14\t121\t15\t9\t-1\t\n5\t1\t7\t1\t1\t1\t14\t121\t15\t9\t6.289383\tn\n2\t1\t8\t0\t0\t0\t64\t109\t42\t12\t-1\t\n3\t1\t8\t1\t0\t0\t64\t109\t42\t12\t-1\t\n4\t1\t8\t1\t1\t0\t64\t109\t42\t12\t-1\t\n5\t1\t8\t1\t1\t1\t64\t109\t42\t12\t93.973160\tSpaces\n2\t1\t9\t0\t0\t0\t15\t155\t13\t13\t-1\t\n3\t1\t9\t1\t0\t0\t15\t155\t13\t13\t-1\t\n4\t1\t9\t1\t1\t0\t15\t155\t13\t13\t-1\t\n5\t1\t9\t1\t1\t1\t15\t155\t13\t13\t39.696396\tkK\n2\t1\t10\t0\t0\t0\t306\t276\t96\t13\t-1\t\n3\t1\t10\t1\t0\t0\t306\t276\t96\t13\t-1\t\n4\t1\t10\t1\t1\t0\t306\t276\t96\t13\t-1\t\n5\t1\t10\t1\t1\t1\t306\t276\t38\t10\t92.883560\tHerdr\n5\t1\t10\t1\t1\t2\t348\t276\t54\t13\t93.659370\tstopped\n2\t1\t11\t0\t0\t0\t65\t311\t21\t7\t-1\t\n3\t1\t11\t1\t0\t0\t65\t311\t21\t7\t-1\t\n4\t1\t11\t1\t1\t0\t65\t311\t21\t7\t-1\t\n5\t1\t11\t1\t1\t1\t65\t311\t21\t7\t91.580246\tnew\n2\t1\t12\t0\t0\t0\t226\t311\t28\t7\t-1\t\n3\t1\t12\t1\t0\t0\t226\t311\t28\t7\t-1\t\n4\t1\t12\t1\t1\t0\t226\t311\t28\t7\t-1\t\n5\t1\t12\t1\t1\t1\t226\t311\t28\t7\t90.453651\tmenu\n2\t1\t13\t0\t0\t0\t306\t303\t275\t13\t-1\t\n3\t1\t13\t1\t0\t0\t306\t303\t275\t13\t-1\t\n4\t1\t13\t1\t1\t0\t306\t303\t275\t13\t-1\t\n5\t1\t13\t1\t1\t1\t306\t303\t33\t10\t92.950951\tHerdr\n5\t1\t13\t1\t1\t2\t343\t306\t23\t7\t96.951057\twas\n5\t1\t13\t1\t1\t3\t370\t303\t51\t13\t93.490967\tstopped.\n5\t1\t13\t1\t1\t4\t426\t304\t29\t9\t96.149994\tStart\n5\t1\t13\t1\t1\t5\t460\t304\t7\t9\t95.744522\tit\n5\t1\t13\t1\t1\t6\t471\t306\t32\t10\t94.445549\tagain\n5\t1\t13\t1\t1\t7\t508\t303\t32\t10\t93.553085\twhen\n5\t1\t13\t1\t1\t8\t544\t304\t37\t12\t88.423904\tyou're\n2\t1\t14\t0\t0\t0\t306\t322\t34\t13\t-1\t\n3\t1\t14\t1\t0\t0\t306\t322\t34\t13\t-1\t\n4\t1\t14\t1\t1\t0\t306\t322\t34\t13\t-1\t\n5\t1\t14\t1\t1\t1\t306\t322\t34\t13\t93.132202\tready.\n2\t1\t15\t0\t0\t0\t64\t342\t42\t12\t-1\t\n3\t1\t15\t1\t0\t0\t64\t342\t42\t12\t-1\t\n4\t1\t15\t1\t1\t0\t64\t342\t42\t12\t-1\t\n5\t1\t15\t1\t1\t1\t64\t342\t42\t12\t91.437408\tAgents\n2\t1\t16\t0\t0\t0\t204\t341\t50\t13\t-1\t\n3\t1\t16\t1\t0\t0\t204\t341\t50\t13\t-1\t\n4\t1\t16\t1\t1\t0\t204\t341\t50\t13\t-1\t\n5\t1\t16\t1\t1\t1\t204\t341\t50\t13\t90.977745\tgrouped\n2\t1\t17\t0\t0\t0\t316\t354\t67\t10\t-1\t\n3\t1\t17\t1\t0\t0\t316\t354\t67\t10\t-1\t\n4\t1\t17\t1\t1\t0\t316\t354\t67\t10\t-1\t\n5\t1\t17\t1\t1\t1\t316\t355\t29\t9\t91.904198\tStart\n5\t1\t17\t1\t1\t2\t350\t354\t33\t10\t87.858429\tHerdr\n2\t1\t18\t0\t0\t0\t65\t364\t63\t12\t-1\t\n3\t1\t18\t1\t0\t0\t65\t364\t63\t12\t-1\t\n4\t1\t18\t1\t1\t0\t65\t364\t63\t12\t-1\t\n5\t1\t18\t1\t1\t1\t65\t366\t13\t7\t75.091446\tno\n5\t1\t18\t1\t1\t2\t86\t364\t42\t12\t91.428558\tagents\n2\t1\t19\t0\t0\t0\t15\t570\t13\t15\t-1\t\n3\t1\t19\t1\t0\t0\t15\t570\t13\t15\t-1\t\n4\t1\t19\t1\t1\t0\t15\t570\t13\t15\t-1\t\n5\t1\t19\t1\t1\t1\t15\t570\t13\t15\t79.302849\t8\n2\t1\t20\t0\t0\t0\t62\t574\t103\t10\t-1\t\n3\t1\t20\t1\t0\t0\t62\t574\t103\t10\t-1\t\n4\t1\t20\t1\t1\t0\t62\t574\t103\t10\t-1\t\n5\t1\t20\t1\t1\t1\t62\t576\t12\t7\t33.377365\ta>\n5\t1\t20\t1\t1\t2\t86\t574\t21\t10\t91.077919\tALL\n5\t1\t20\t1\t1\t3\t115\t575\t50\t9\t96.220810\tDevices\n2\t1\t21\t0\t0\t0\t237\t577\t22\t6\t-1\t\n3\t1\t21\t1\t0\t0\t237\t577\t22\t6\t-1\t\n4\t1\t21\t1\t1\t0\t237\t577\t22\t6\t-1\t\n5\t1\t21\t1\t1\t1\t237\t577\t22\t6\t51.254745\ton\n2\t1\t22\t0\t0\t0\t294\t586\t6\t6\t-1\t\n3\t1\t22\t1\t0\t0\t294\t586\t6\t6\t-1\t\n4\t1\t22\t1\t1\t0\t294\t586\t6\t6\t-1\t\n5\t1\t22\t1\t1\t1\t294\t586\t6\t6\t35.751968\t.\n2\t1\t23\t0\t0\t0\t321\t582\t84\t14\t-1\t\n3\t1\t23\t1\t0\t0\t321\t582\t84\t14\t-1\t\n4\t1\t23\t1\t1\t0\t321\t582\t84\t14\t-1\t\n5\t1\t23\t1\t1\t1\t321\t585\t14\t11\t56.635704\toO\n5\t1\t23\t1\t1\t2\t359\t582\t46\t14\t29.835320\tOm...\n2\t1\t24\t0\t0\t0\t432\t583\t48\t11\t-1\t\n3\t1\t24\t1\t0\t0\t432\t583\t48\t11\t-1\t\n4\t1\t24\t1\t1\t0\t432\t583\t48\t11\t-1\t\n5\t1\t24\t1\t1\t1\t432\t584\t14\t10\t36.059841\t®\n5\t1\t24\t1\t1\t2\t452\t583\t28\t10\t96.345512\tShor.\n2\t1\t25\t0\t0\t0\t517\t583\t57\t13\t-1\t\n3\t1\t25\t1\t0\t0\t517\t583\t57\t13\t-1\t\n4\t1\t25\t1\t1\t0\t517\t583\t57\t13\t-1\t\n5\t1\t25\t1\t1\t1\t517\t583\t12\t12\t96.224403\t©\n5\t1\t25\t1\t1\t2\t535\t584\t39\t12\t91.879456\tReport.\n2\t1\t26\t0\t0\t0\t605\t583\t22\t10\t-1\t\n3\t1\t26\t1\t0\t0\t605\t583\t22\t10\t-1\t\n4\t1\t26\t1\t1\t0\t605\t583\t22\t10\t-1\t\n5\t1\t26\t1\t1\t1\t605\t583\t22\t10\t94.641479\tdev\n"},
+  "shared_images": [
+    {
+      "file": "after-cli-900.png",
+      "artifact_file": "native/stopped-900.png",
+      "sha256": "d484749e2a5cbadf97d6e52c6cc0de3fa216be89cd8b9966fd253801a29335ca"
+    },
+    {
+      "file": "after-cli-640.png",
+      "artifact_file": "native/stopped-640.png and native/start-button.png",
+      "sha256": "2fe901d80621d584c079413d0b507e738ff689cfc9b99155b16b9d87eb80e7e6"
+    },
+    {
+      "file": "recovered-cli-640.png",
+      "artifact_file": "native/recovered.png",
+      "sha256": "6d6d35677b5dc6814408d23076c1852609b33643f0ca9ca18cf43fe540f0ce2c"
+    }
+  ],
+  "visual_review": "Fresh target and recovered PNGs were viewed. Every captured PNG is byte-identical to its existing CLI image, so no duplicate image file is stored.",
+  "recovered": {
+    "active": true,
+    "status": "online",
+    "workspace": "w1",
+    "prompt": "RECOVERY READY",
+    "card_absent": true
+  },
+  "completion_receipt": "Private GUI exited. Replacement survived GUI exit, then exited on its own TERM.",
+  "limits": [
+    "Both real server launches remain harness-owned; app-owned startup from absence is unqualified.",
+    "macOS/Windows presentation, Windows typed shutdown, SSH/WSL, speech, and performance are unqualified."
+  ]
+}

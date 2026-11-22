@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "qualification": "Linux x64 native presentation and private CLI recovery",
+  "run_id": 44902091234,
+  "job_id": 136840193907,
+  "native_step_conclusion": "success",
+  "native_test_result": "1 passed; 0 failed; 0 ignored; 17 filtered out",
+  "workspace_app_result": "3694 passed; 0 failed; 9 ignored",
+  "configured_ci": "success",
+  "artifact": {
+    "id": 14706740655,
+    "sha256": "6b93fabdadf2415adf16cad30267b3e96236c8796f3d9739566d1fa56142ef30",
+    "expires_at": "2026-11-28T12:10:31Z"
+  },
+  "test_head": "ab8cbf3df1967f36a19fca5c755edc2c9cf33c87",
+  "checkout_sha": "6bea77ab1b47b9eb81e5280fea51a2513ad6751d",
+  "product_base": "43f722feb0eb45961f2d1a36b20365a92787feef",
+  "source_comparison": "The fetched CI checkout tree equals the published test head.",
+  "runtime_sha256": "14d9e8bc8b4a9e0118d77c32266f76d461f09b40342eb23752960bd89f59929d",
+  "first_server": {
+    "pid": 13757,
+    "generation": 1,
+    "server_version": "0.9.5",
+    "boot": "13757-1795262991107154664",
+    "focused_workspace": "w1"
+  },
+  "second_server": {
+    "pid": 14056,
+    "generation": 1,
+    "server_version": "0.9.5",
+    "boot": "14056-1795263029288784255",
+    "focused_workspace": "w1"
+  },
+  "first_events": [
+    "ServerShutdown Some(\"server is shutting down\")",
+    "Disconnected server is shutting down"
+  ],
+  "second_events": [
+    "ServerShutdown Some(\"server is shutting down\")",
+    "Disconnected server is shutting down"
+  ],
+  "retry_hold_ms": 32454,
+  "gui_pid": 13788,
+  "window_id": 4294967297,
+  "native_window": "0x200001",
+  "input_route": "private CLI window reconnect",
+  "native_pointer_qualified": false,
+  "captures": [
+    {
+      "file": "after-cli-900.png",
+      "width": 900,
+      "height": 600,
+      "state": "Herdr stopped",
+      "visual_review": "Title, full shutdown note, and Start Herdr button are readable and unclipped.",
+      "sha256": "d484749e2a5cbadf97d6e52c6cc0de3fa216be89cd8b9966fd253801a29335ca"
+    },
+    {
+      "file": "after-cli-640.png",
+      "width": 640,
+      "height": 600,
+      "state": "Herdr stopped",
+      "visual_review": "Title and Start Herdr button are readable; the full shutdown note wraps without clipping.",
+      "sha256": "2fe901d80621d584c079413d0b507e738ff689cfc9b99155b16b9d87eb80e7e6"
+    },
+    {
+      "file": "recovered-cli-640.png",
+      "width": 640,
+      "height": 600,
+      "state": "online",
+      "visual_review": "The replacement RECOVERY READY prompt is visible and the outage card is absent.",
+      "sha256": "6d6d35677b5dc6814408d23076c1852609b33643f0ca9ca18cf43fe540f0ce2c"
+    }
+  ],
+  "completion_receipt": "Private GUI exited. Replacement survived GUI exit, then exited on its own TERM.",
+  "limits": [
+    "Native pointer activation is not covered by CLI recovery.",
+    "App-owned real startup, macOS/Windows presentation, Windows typed shutdown, SSH/WSL, speech, and performance remain unqualified."
+  ]
+}

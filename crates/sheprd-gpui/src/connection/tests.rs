@@ -1,3 +1,5 @@
+// ABOUTME: Exercises bridge mailbox ownership and transport startup failures.
+// ABOUTME: Uses explicit private targets while checking reader and reset boundaries.
 use super::*;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -375,7 +377,7 @@ fn synchronous_startup_failure_survives_mailbox_and_focus_updates() {
     let mut bridge = bridge();
     let mut options = ConnectOptions::default();
     options.surface_size.cols = 0;
-    bridge.reconnect(options, true, true);
+    bridge.reconnect(options, true, true, Start::WhenMissing);
     let failed = bridge.take_update().unwrap();
     assert_eq!(failed.status, ConnectionStatus::Disconnected);
     assert!(failed.notices.is_some());
@@ -390,7 +392,7 @@ fn synchronous_startup_failure_survives_mailbox_and_focus_updates() {
 #[test]
 fn event_reader_startup_failure_is_authoritative() {
     let mut bridge = bridge();
-    bridge.start(ConnectOptions::default(), true, |_| {
+    bridge.start(ConnectOptions::default(), true, Start::WhenMissing, |_| {
         Err(std::io::Error::other("reader startup failed"))
     });
     let state = bridge.take_update().unwrap();
@@ -431,7 +433,7 @@ fn detach_and_reconnect_fence_old_inboxes() {
     old.lock().unwrap().local_daemon_peer = true;
     let mut options = ConnectOptions::default();
     options.surface_size.cols = 0;
-    bridge.reconnect(options, false, true);
+    bridge.reconnect(options, false, true, Start::WhenMissing);
     old.lock().unwrap().apply(ClientEvent::Disconnected {
         reason: "detached connection".into(),
         ssh: None,

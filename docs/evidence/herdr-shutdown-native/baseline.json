@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "qualification": "Pre-card Linux native baseline only",
+  "run_id": 44900991331,
+  "job_id": 136836836772,
+  "artifact": {
+    "id": 14705698208,
+    "sha256": "1177756bd02abf5f84f62a040426534ec148a82686e3ec13335f981fb546848c",
+    "expires_at": "2026-11-28T11:57:39Z"
+  },
+  "test_head": "b4df5b0ea0041a2bc56a825e4e47c65bde7babbe",
+  "checkout_sha": "62d0e615daa7bda6bd2ca3719ebeaa393e99f616",
+  "product_base": "583b83f13cc2611e990e8054e1c2cf98821a89f7",
+  "source_comparison": "Checkout tree equals test head. Only the seven reviewed test, CI, and documentation paths differ from the product base.",
+  "herdr": {
+    "sha256": "14d9e8bc8b4a9e0118d77c32266f76d461f09b40342eb23752960bd89f59929d",
+    "pid": 13800,
+    "generation": 1,
+    "server_version": "0.9.5",
+    "boot": "13800-1795262162595213039",
+    "focused_workspace": "w1"
+  },
+  "events": [
+    "ServerShutdown Some(\"server is shutting down\")",
+    "Disconnected server is shutting down"
+  ],
+  "retry_hold_ms": 32543,
+  "gui_pid": 13827,
+  "window_id": 4294967297,
+  "native_window": "0x200001",
+  "captures": [
+    {
+      "file": "before-900.png",
+      "width": 900,
+      "height": 600,
+      "phase": "Herdr stopped",
+      "workspace": null,
+      "observed_title": "Reconnecting to Local",
+      "observed_action": "Reconnect now",
+      "visual_review": "Both old card labels and the shutdown note are legible and unclipped.",
+      "sha256": "c63938c87a11a14d189a8292b1560f1d5df869c62ec5359a2ac31ecfc51baf09"
+    },
+    {
+      "file": "before-640.png",
+      "width": 640,
+      "height": 600,
+      "phase": "Herdr stopped",
+      "workspace": null,
+      "observed_title": "Reconnecting to Local",
+      "observed_action": "Reconnect now",
+      "visual_review": "Both old card labels and the shutdown note are legible and unclipped.",
+      "sha256": "c3d0125917e6f9252040babc9caea06977a1e84f0ce54ea4953f304e79abce14"
+    }
+  ],
+  "expected_failure": {
+    "path": "crates/sheprd-gpui/tests/live_gui/shutdown.rs",
+    "line": 329,
+    "message": "stopped card lacks its painted title or start action at widths [900, 640]",
+    "test_result": "0 passed; 1 failed; 0 ignored; 17 filtered out"
+  },
+  "limits": [
+    "Fixed-source native recovery has not run.",
+    "This baseline does not qualify native pointer activation, app-owned real startup, macOS, Windows, SSH/WSL, speech, or performance."
+  ]
+}
