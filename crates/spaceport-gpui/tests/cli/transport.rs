@@ -17,8 +17,8 @@ enum Answer {
     Silent,
 }
 
-/// An accepted stream may inherit the listener's nonblocking mode; the peer
-/// reads with a deadline instead.
+/// The peer reads its request on a blocking stream with a failure-only
+/// deadline, so a CLI that connects and says nothing fails the test.
 fn prepare_peer(stream: &UnixStream) {
     stream.set_nonblocking(false).unwrap();
     stream
@@ -37,20 +37,9 @@ fn scripted(answer: Answer) -> Output {
     let app_state = state.path().join("spaceport");
     std::fs::create_dir(&app_state).unwrap();
     let listener = UnixListener::bind(app_state.join("control.sock")).unwrap();
-    listener.set_nonblocking(true).unwrap();
     let (finished, done) = mpsc::channel();
     let peer = thread::spawn(move || {
-        let until = Instant::now() + Duration::from_secs(10);
-        let mut stream = loop {
-            match listener.accept() {
-                Ok((stream, _)) => break stream,
-                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                    assert!(Instant::now() < until, "CLI never connected");
-                    thread::sleep(Duration::from_millis(5));
-                }
-                Err(error) => panic!("accept failed: {error}"),
-            }
-        };
+        let (mut stream, _) = listener.accept().unwrap();
         prepare_peer(&stream);
         let mut request = String::new();
         BufReader::new(&stream).read_line(&mut request).unwrap();
@@ -69,6 +58,7 @@ fn scripted(answer: Answer) -> Output {
             done.recv_timeout(Duration::from_secs(20)).unwrap();
         }
         // Keep listening through command exit to detect automatic retries.
+        listener.set_nonblocking(true).unwrap();
         assert!(
             matches!(listener.accept(), Err(error) if error.kind() == std::io::ErrorKind::WouldBlock)
         );
@@ -109,6 +99,11 @@ fn line(response: &Response) -> Vec<u8> {
 #[test]
 fn eof_reports_that_the_app_is_gone() {
     error(Answer::Eof, 3, "not_running");
+}
+
+#[test]
+fn an_answer_that_is_not_json_reports_an_unsupported_protocol() {
+    error(Answer::Bytes(b"not json\n".to_vec()), 8, "unsupported");
 }
 
 #[test]

@@ -253,11 +253,14 @@ pub(crate) fn status(error: &crate::Error) -> u8 {
             _ => exit::REFUSED,
         },
         // A cut-off answer means the app went away; one that does not decode
-        // comes from an app of another version.
+        // at all comes from an app of another version. Neither proves the app
+        // refused the change, so neither may report a refusal.
         crate::Error::Control(crate::control::Error::Json(source)) if source.is_eof() => {
             exit::NOT_RUNNING
         }
-        crate::Error::Control(crate::control::Error::Json(source)) if source.is_data() => {
+        crate::Error::Control(crate::control::Error::Json(source))
+            if source.is_syntax() || source.is_data() || source.is_io() =>
+        {
             exit::UNSUPPORTED
         }
         crate::Error::Control(crate::control::Error::Rejected { code, .. }) => match code {
