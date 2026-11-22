@@ -86,17 +86,28 @@ pub fn write<T: Serialize + ?Sized>(path: &Path, value: &T) -> Result<()> {
 /// worker reads them are never written.
 pub struct Writer<T> {
     pending: Arc<Mutex<Option<T>>>,
-    wake: mpsc::SyncSender<()>,
+    wake: Option<mpsc::SyncSender<()>>,
     worker: JoinHandle<()>,
 }
 
 impl<T: Serialize + Send + 'static> Writer<T> {
     pub fn start(name: &str, path: PathBuf) -> io::Result<Self> {
+        Self::start_with_initialization(name, path, |_| ())
+    }
+
+    /// Runs `initialize` on the worker before any write, and keeps what it
+    /// returns until the worker exits, so a guard outlives the last write.
+    pub fn start_with_initialization<G: Send + 'static>(
+        name: &str,
+        path: PathBuf,
+        initialize: impl FnOnce(&Path) -> G + Send + 'static,
+    ) -> io::Result<Self> {
         let pending = Arc::new(Mutex::new(None::<T>));
         let mailbox = pending.clone();
         let (wake, receiver) = mpsc::sync_channel(1);
         let label = name.to_owned();
         let worker = thread::Builder::new().name(name.into()).spawn(move || {
+            let _lifetime = initialize(&path);
             for () in receiver {
                 let snapshot = mailbox.lock().ok().and_then(|mut pending| pending.take());
                 if let Some(snapshot) = snapshot
@@ -108,23 +119,33 @@ impl<T: Serialize + Send + 'static> Writer<T> {
         })?;
         Ok(Self {
             pending,
-            wake,
+            wake: Some(wake),
             worker,
         })
     }
 
+    /// Replaces the pending value. Does nothing once the writer is stopped.
     pub fn save(&self, value: T) {
+        let Some(wake) = &self.wake else {
+            return;
+        };
         if let Ok(mut pending) = self.pending.lock() {
             *pending = Some(value);
         }
         // A full wake queue already guarantees that the latest value is read.
-        let _ = self.wake.try_send(());
+        let _ = wake.try_send(());
+    }
+
+    /// Closes the wake sender without waiting. The worker still writes the
+    /// value already pending, then exits.
+    pub fn stop(&mut self) {
+        drop(self.wake.take());
     }
 
     /// Writes whatever is still pending, then stops the worker. Blocks, so
     /// callers run it off the UI thread.
-    pub fn finish(self) {
-        drop(self.wake);
+    pub fn finish(mut self) {
+        self.stop();
         if self.worker.join().is_err() {
             tracing::warn!("State writer panicked");
         }

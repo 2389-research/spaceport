@@ -76,7 +76,6 @@ fn every_own_variant_has_a_message() {
             path: path.clone(),
             source: Box::new(Error::NoTab),
         },
-        Error::PreferencesPath,
         Error::RelativeConfigRoot,
         Error::ScreenshotImage,
         Error::ScreenshotWrite {

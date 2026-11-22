@@ -159,8 +159,6 @@ pub enum Error {
     },
     #[error(transparent)]
     PortForward(#[from] crate::port_forward::Error),
-    #[error("preferences path has no parent")]
-    PreferencesPath,
     #[error(transparent)]
     Processes(#[from] crate::processes::Error),
     #[error("XDG_CONFIG_HOME must be an absolute path")]

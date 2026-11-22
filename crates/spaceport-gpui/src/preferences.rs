@@ -4,13 +4,18 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use gpui::*;
+use serde::{Serialize, Serializer};
 use std::collections::HashMap;
-use std::fs::{self, OpenOptions};
-use std::io::{self, Write};
+use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::mpsc::{self, Receiver, Sender, TryRecvError};
-use std::thread::{self, JoinHandle};
+use std::sync::{
+    Arc,
+    mpsc::{self, Receiver, TryRecvError},
+};
+
+mod worker;
+use worker::Worker;
 
 impl SpaceportWindow {
     /// Write one setting off the UI thread, then reload so the window shows
@@ -73,10 +78,6 @@ impl SpaceportWindow {
     }
 }
 
-static TEMP_SEQUENCE: AtomicU64 = AtomicU64::new(0);
-
-/// Asynchronous, endpoint-local preferences. Dropping lets the worker drain queued
-/// saves without waiting; process exit may interrupt pending writes.
 pub use spaceport_settings::AgentSort;
 
 /// The window chrome this endpoint remembers between runs.
@@ -96,75 +97,78 @@ pub struct Chrome {
     pub device_order: Vec<String>,
 }
 
+/// Endpoint-local preferences, saved on one coalescing worker. Dropping
+/// never waits for the disk, and app quit writes the latest pending value.
 pub struct Preferences {
-    saves: Option<Sender<Chrome>>,
     loaded: Option<Receiver<Chrome>>,
-    worker: Option<JoinHandle<()>>,
+    worker: Option<Arc<Worker>>,
 }
 
 impl Preferences {
-    pub fn new(socket: &Path) -> Self {
-        Self::start(
+    pub fn new(socket: &Path, cx: &App) -> Self {
+        Self::start_for_app(
             state_dir()
                 .map(|dir| endpoint_path(&dir, socket))
                 .ok_or(crate::Error::MissingStateRoot),
+            cx,
         )
     }
 
-    pub(crate) fn for_core(core_id: &str) -> Self {
-        Self::start(
+    pub(crate) fn for_core(core_id: &str, cx: &App) -> Self {
+        Self::start_for_app(
             state_dir()
                 .map(|dir| core_path(&dir, core_id))
                 .ok_or(crate::Error::MissingStateRoot),
+            cx,
         )
     }
 
-    fn start(path: crate::Result<PathBuf>) -> Self {
-        let (saves, requests) = mpsc::channel();
-        let (loaded_tx, loaded) = mpsc::channel();
-        let worker = thread::Builder::new()
-            .name("gpui-preferences".into())
-            .spawn(move || {
-                let path = match path {
-                    Ok(path) => path,
-                    Err(_) => {
-                        tracing::warn!(
-                            category = "preferences_location",
-                            "Cannot locate GPUI preferences"
-                        );
-                        let _ = loaded_tx.send(Chrome::default());
-                        return;
+    fn start_for_app(path: crate::Result<PathBuf>, cx: &App) -> Self {
+        let preferences = Self::start(path);
+        if let Some(worker) = &preferences.worker {
+            let completed = worker.take_completion();
+            let worker = Arc::downgrade(worker);
+            // App-owned: the final window can close before quit observers run.
+            let subscription = cx.on_app_quit(move |cx| {
+                let worker = worker.upgrade();
+                cx.background_executor().spawn(async move {
+                    if let Some(worker) = worker {
+                        worker.finish();
                     }
-                };
-                let chrome = match read_chrome(&path) {
-                    Ok(chrome) => chrome,
-                    Err(_) => {
-                        tracing::warn!(
-                            category = "preferences_read",
-                            "Cannot read GPUI preferences"
-                        );
-                        Chrome::default()
-                    }
-                };
-                let _ = loaded_tx.send(chrome);
-                for chrome in requests {
-                    if write_chrome(&path, chrome).is_err() {
-                        tracing::warn!(
-                            category = "preferences_write",
-                            "Cannot save GPUI preferences"
-                        );
-                    }
-                }
+                })
             });
-        let worker = match worker {
-            Ok(worker) => Some(worker),
-            Err(error) => {
-                tracing::warn!(category = "preferences_worker_start", error_kind = ?error.kind(), "Cannot start GPUI preferences worker");
+            // Subscriptions are UI-owned. Remove this one as soon as its worker drains.
+            cx.spawn(async move |_| {
+                if let Some(completed) = completed {
+                    let _ = completed.await;
+                }
+                drop(subscription);
+            })
+            .detach();
+        }
+        preferences
+    }
+
+    fn start(path: crate::Result<PathBuf>) -> Self {
+        let (loaded_tx, loaded) = mpsc::sync_channel(1);
+        let worker = match path {
+            Ok(path) => match Worker::start(path, loaded_tx) {
+                Ok(worker) => Some(worker),
+                Err(error) => {
+                    tracing::warn!(category = "preferences_worker_start", error_kind = ?error.kind(), "Cannot start GPUI preferences worker");
+                    None
+                }
+            },
+            Err(_) => {
+                tracing::warn!(
+                    category = "preferences_location",
+                    "Cannot locate GPUI preferences"
+                );
+                let _ = loaded_tx.send(Chrome::default());
                 None
             }
         };
         Self {
-            saves: Some(saves),
             loaded: Some(loaded),
             worker,
         }
@@ -183,24 +187,21 @@ impl Preferences {
     }
 
     /// Queues the whole chrome, so saving one field never drops the others.
+    /// A later save replaces one the worker has not written yet.
     pub fn save(&self, chrome: Chrome) {
-        if let Some(saves) = &self.saves
-            && saves.send(chrome).is_err()
-        {
-            tracing::warn!(
-                category = "preferences_worker_disconnected",
-                "Cannot queue GPUI preferences save"
-            );
+        if let Some(worker) = &self.worker {
+            worker.save(chrome);
         }
     }
 }
 
 impl Drop for Preferences {
     fn drop(&mut self) {
-        // Disconnect and detach: the worker drains queued saves while the process
-        // remains alive, without making the UI wait for disk I/O.
-        self.saves.take();
-        drop(self.worker.take());
+        // Close without joining: the worker writes what is pending while the
+        // app runs, and the quit observer finishes it if the app quits first.
+        if let Some(worker) = &self.worker {
+            worker.stop();
+        }
     }
 }
 
@@ -326,59 +327,30 @@ fn device_order(value: Option<&serde_json::Value>) -> Vec<String> {
 const MAX_DEVICES: usize = 1024;
 const MAX_DEVICE_ID: usize = 1024;
 
-fn write_chrome(path: &Path, chrome: Chrome) -> crate::Result<()> {
-    let width = chrome.sidebar_width;
-    if width.is_some_and(|width| !width.is_finite() || width <= 0.0) {
-        return Err(crate::Error::InvalidSidebarWidth);
-    }
-    let parent = path.parent().ok_or(crate::Error::PreferencesPath)?;
-    fs::create_dir_all(parent)?;
-    let (temporary, mut file) = loop {
-        let sequence = TEMP_SEQUENCE.fetch_add(1, Ordering::Relaxed);
-        let temporary = parent.join(format!(
-            ".preferences-{}-{sequence}.tmp",
-            std::process::id()
-        ));
-        match OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&temporary)
-        {
-            Ok(file) => break (temporary, file),
-            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
-            Err(error) => return Err(error.into()),
+impl Serialize for Chrome {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::Error as _;
+        let width = self.sidebar_width;
+        if width.is_some_and(|width| !width.is_finite() || width <= 0.0) {
+            return Err(S::Error::custom(crate::Error::InvalidSidebarWidth));
         }
-    };
-    let result = (|| -> crate::Result<()> {
-        let last_opened: serde_json::Map<String, serde_json::Value> = chrome
+        let last_opened: serde_json::Map<String, serde_json::Value> = self
             .activity_last_opened
             .iter()
             .map(|(panel, at)| (panel.name().to_owned(), at.to_rfc3339().into()))
             .collect();
-        serde_json::to_writer(
-            &mut file,
-            &serde_json::json!({
-                "activity_panel": chrome.activity_panel.map(crate::sidebar::ActivityPanel::name),
-                "activity_last_opened_at": last_opened,
-                "sidebar_width_px": width,
-                "sidebar_split": chrome.sidebar_split.filter(|split| {
-                    split.is_finite() && (0.1..=0.9).contains(split)
-                }),
-                "agent_sort_manual": chrome.agent_sort.map(|sort| sort.to_string()),
-                "device_order": chrome.device_order,
+        serde_json::json!({
+            "activity_panel": self.activity_panel.map(crate::sidebar::ActivityPanel::name),
+            "activity_last_opened_at": last_opened,
+            "sidebar_width_px": width,
+            "sidebar_split": self.sidebar_split.filter(|split| {
+                split.is_finite() && (0.1..=0.9).contains(split)
             }),
-        )?;
-        file.write_all(b"\n")?;
-        Ok(file.sync_all()?)
-    })();
-    drop(file);
-    let result = result.and_then(|()| fs::rename(&temporary, path).map_err(crate::Error::from));
-    if result.is_err()
-        && let Err(error) = fs::remove_file(&temporary)
-    {
-        tracing::warn!(category = "preferences_cleanup", error_kind = ?error.kind(), "Cannot clean up GPUI preferences");
+            "agent_sort_manual": self.agent_sort.map(|sort| sort.to_string()),
+            "device_order": self.device_order,
+        })
+        .serialize(serializer)
     }
-    result
 }
 
 #[cfg(test)]
