@@ -5,23 +5,21 @@
 //! caches only.
 
 use super::{
-    DEVICE_FOOTER_HEIGHT, HOST_ARROW_WIDTH, STATUS_WIDTH, SidebarDrag,
+    DEVICE_FOOTER_HEIGHT, STATUS_WIDTH, SidebarDrag,
     agents::Indicators,
     agents_sort,
-    cell::{Cell, Fold, RowContext, RowData, WorkspaceRow, layout_for},
-    label_text, layout, line_height,
+    cell::{Cell, Fold, RowContext, RowData, WorkspaceRow},
+    label_text, line_height,
     reorder::{self, Plan},
     row::{RowIcon, RowLift, RowTree},
-    scaled, sidebar_width, sticky,
+    sidebar_width, sticky,
     tokens::{self, SpaceContext},
     visible_workspace_entries, wash,
     workspaces::{displayed_workspace_status, workspace_badge, workspace_label, workspace_note},
 };
 use crate::direction::Logical;
 use crate::i18n::fl;
-use crate::{
-    Command, NavigationTarget, SpaceportWindow, config::AgentsPlacement, fonts::StyledFont,
-};
+use crate::{Command, NavigationTarget, SpaceportWindow, fonts::StyledFont};
 use gpui::{prelude::*, *};
 use spaceport_reorder::preview;
 
@@ -29,10 +27,13 @@ mod agent_rows;
 mod device_tree;
 mod edges;
 mod header;
+mod measure;
 mod nested_agents;
 
 pub(super) use header::header;
 pub(crate) use nested_agents::NestedReveal;
+
+use measure::SidebarMeasure;
 
 impl SpaceportWindow {
     pub(crate) fn render_sidebar(
@@ -41,32 +42,32 @@ impl SpaceportWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
-        let width = sidebar_width(self.sidebar_width, f32::from(window.viewport_size().width));
-        let split = self.sidebar_split.unwrap_or(0.5).clamp(0.1, 0.9);
-        let look = layout::for_config(&self.config, self.fill());
-        let rows = layout_for(self.config.layout.mode);
-        // The row a workspace menu was opened for keeps looking hovered while
-        // the pointer is over the menu.
-        let menu_target = self.workspace_menu_target();
+        let SidebarMeasure {
+            width,
+            split,
+            look,
+            heading_look,
+            content_x,
+            row_layout: rows,
+            menu_target,
+            spaces_custom,
+            devices,
+            searchable,
+            tree_search,
+            multi,
+            headed,
+            agents_panel,
+            nested_agents,
+            query,
+            grouped,
+            device_plan,
+            now,
+        } = self.sidebar_measure(window, cx);
+        let menu_target = menu_target.as_deref();
         let layout = look.density;
-        let content_x = look.content_x();
         let view = cx.entity().downgrade();
         let font = &self.config.sidebar;
-        let spaces_custom = self.config.usage.inline
-            && self.config.sidebar_layout.spaces != crate::config::SpaceLayout::default();
         let theme = &self.theme;
-        // The field is the heading, so it takes the heading's face.
-        self.sidebar_search.input.update(cx, |input, cx| {
-            input.set_appearance(font.clone(), theme.clone(), cx);
-        });
-        // The Devices layout heads every device, even a lone one, and lists
-        // its agents under it in place of its workspaces. Its own field
-        // narrows that tree in place, so the sidebar's search, whose results
-        // replace the list, gives way to it; one setting hides either.
-        let devices = !self.config.layout.mode.lists_workspaces();
-        // A hidden field keeps whatever it held, but never filters the list.
-        let searchable = self.config.show_sidebar_search && !devices;
-        let tree_search = self.config.show_sidebar_search && devices;
         let search = (searchable && self.sidebar_search.query().is_some()).then(|| {
             self.sidebar_search_results(self.sidebar_search_hits(cx), indicators, look, cx)
         });
@@ -94,22 +95,8 @@ impl SpaceportWindow {
             .flex_1()
             .min_h_0()
             .overflow_y_scroll();
-        self.sidebar_scroll.iter().for_each(sticky::settle);
         spaces = spaces.track_scroll(&self.sidebar_scroll[0]);
         agents = agents.track_scroll(&self.sidebar_scroll[1]);
-        let multi = self.endpoints.len() > 1;
-        let headed = multi || devices;
-        let placement = self
-            .config
-            .show_agents
-            .then_some(self.config.agents_placement);
-        let agents_panel = placement == Some(AgentsPlacement::Panel) && !devices;
-        let nested_agents = placement == Some(AgentsPlacement::Nested) && !devices;
-        let query = if tree_search {
-            self.device_tree_query(cx)
-        } else {
-            String::new()
-        };
         let mut agent_count = 0;
         // The focused agent's row when agents nest under their workspaces.
         let mut nested_focus = None;
@@ -127,27 +114,10 @@ impl SpaceportWindow {
         let mut drop_rows = Vec::new();
         let mut drop_requests = Vec::new();
         let mut drop_dragged = 0;
-        let now = crate::motion::now();
-        // A lifted device folds the list to its headers.
-        let device_plan = headed.then(|| self.device_plan(devices, &query)).flatten();
         let mut sliding = device_plan.as_ref().is_some_and(|plan| plan.sliding);
         let worktree_glyph = crate::worktree_identity::glyph(&self.config.worktrees, theme);
-        // A lifted device folds the list to headers alone, and search results
-        // are not arranged by group.
-        let grouped = device_plan.is_none() && self.lists_tag_sections(headed, &query);
         let tag_filter = self.device_tag_filter.as_deref();
         let mut section = None;
-        // Sections are headings, so what lists under them steps in, with
-        // each host's arrow below its section's dot.
-        let heading_look = look;
-        let look = layout::SidebarLook {
-            group_indent: if grouped {
-                scaled(font, HOST_ARROW_WIDTH) + look.density.host_gap()
-            } else {
-                0.
-            },
-            ..look
-        };
         for (endpoint_index, endpoint, live) in self.listed_hosts() {
             if devices && !self.device_listed(endpoint_index, &query) {
                 continue;
