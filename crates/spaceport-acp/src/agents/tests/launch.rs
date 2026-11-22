@@ -1,3 +1,5 @@
+// ABOUTME: Tests native agent selection and explicit ACP adapter choices.
+// ABOUTME: Resolves every selected program from private executable fixtures.
 use super::*;
 
 #[test]
@@ -10,16 +12,16 @@ fn claude_itself_is_used_unless_the_adapter_is_asked_for() {
         Vec::new(),
     );
     assert_eq!(
-        launch(Agent::Claude, Some(path), false),
+        launch(Agent::Claude, Some(path), false).unwrap(),
         adapter,
         "no claude yet"
     );
     install(dir.path(), "claude");
     assert_eq!(
-        launch(Agent::Claude, Some(path), false),
+        launch(Agent::Claude, Some(path), false).unwrap(),
         Launch::Native(dir.path().join("claude"))
     );
-    assert_eq!(launch(Agent::Claude, Some(path), true), adapter);
+    assert_eq!(launch(Agent::Claude, Some(path), true).unwrap(), adapter);
 }
 
 #[test]
@@ -29,16 +31,17 @@ fn codex_and_pi_are_reached_directly_too() {
     install(dir.path(), "pi");
     let path = dir.path().as_os_str();
     assert_eq!(
-        launch(Agent::Codex, Some(path), false),
+        launch(Agent::Codex, Some(path), false).unwrap(),
         Launch::Native(dir.path().join("codex"))
     );
     assert_eq!(
-        launch(Agent::Pi, Some(path), false),
+        launch(Agent::Pi, Some(path), false).unwrap(),
         Launch::Native(dir.path().join("pi"))
     );
     assert_eq!(installed(Some(path)), [Agent::Codex, Agent::Pi]);
+    install(dir.path(), "pi-acp");
     assert!(matches!(
-        launch(Agent::Pi, Some(path), true),
+        launch(Agent::Pi, Some(path), true).unwrap(),
         Launch::Acp(..)
     ));
 }
@@ -50,7 +53,7 @@ fn other_agents_keep_their_acp_command() {
     install(dir.path(), "opencode");
     let path = dir.path().as_os_str();
     assert_eq!(
-        launch(Agent::Opencode, Some(path), false),
+        launch(Agent::Opencode, Some(path), false).unwrap(),
         Launch::Acp(
             dir.path().join("opencode").into_os_string(),
             vec!["acp".into()]

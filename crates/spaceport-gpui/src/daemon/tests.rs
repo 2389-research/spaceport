@@ -7,6 +7,7 @@ use std::sync::atomic::AtomicUsize;
 mod config_home;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod endpoint_classification;
+mod path_lookup;
 
 static NEXT: AtomicUsize = AtomicUsize::new(0);
 
@@ -163,7 +164,7 @@ fn cancellation_during_command_preparation_does_not_spawn() {
         Duration::from_secs(1),
         || {
             stop.store(true, Ordering::Release);
-            Command::new("/nonexistent/must-not-spawn")
+            Ok(Command::new("/nonexistent/must-not-spawn"))
         },
         true,
     )
@@ -177,7 +178,7 @@ fn missing_executable_is_actionable() {
         &socket(),
         &AtomicBool::new(false),
         Duration::ZERO,
-        || Command::new("/nonexistent/herdr-gpui-test"),
+        || Ok(Command::new("/nonexistent/herdr-gpui-test")),
         true,
     )
     .unwrap_err();
@@ -203,7 +204,7 @@ fn starts_and_connects_to_socket() {
         Duration::from_secs(1),
         || {
             listener = Some(UnixListener::bind(&path).unwrap());
-            Command::new("/usr/bin/true")
+            Ok(Command::new("/usr/bin/true"))
         },
         true,
     )
@@ -219,7 +220,7 @@ fn startup_wait_is_bounded() {
         &socket(),
         &AtomicBool::new(false),
         Duration::ZERO,
-        || Command::new("/usr/bin/true"),
+        || Ok(Command::new("/usr/bin/true")),
         true,
     )
     .unwrap_err();

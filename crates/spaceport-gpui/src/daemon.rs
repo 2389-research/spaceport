@@ -74,14 +74,14 @@ pub fn connect(
         Duration::from_secs(20),
         || {
             on_start();
-            let mut command = spaceport_client::new_command(executable());
+            let mut command = spaceport_client::new_command(executable()?);
             if let ConnectTarget::Session { name, .. } = target {
                 command.args(["--session", name]);
             }
             command.arg("server");
             crate::login_env::apply(&mut command);
             pin_config_home(&mut command, spaceport_client::local_var("XDG_CONFIG_HOME"));
-            command
+            Ok(command)
         },
         start == Start::WhenMissing && may_start(target),
     )?;
@@ -104,7 +104,7 @@ fn pin_config_home(command: &mut Command, root: Option<std::ffi::OsString>) {
 /// name the extension itself.
 const NAME: &str = if cfg!(windows) { "herdr.exe" } else { "herdr" };
 
-pub(crate) fn executable() -> PathBuf {
+pub(crate) fn executable() -> io::Result<PathBuf> {
     // Finder launches have a minimal PATH, which often omits Homebrew and Cargo.
     let path = env::var_os("PATH").unwrap_or_default();
     let candidates = env::split_paths(&path)
@@ -126,10 +126,22 @@ pub(crate) fn executable() -> PathBuf {
                 .iter()
                 .map(|dir| Path::new(dir).join(NAME)),
         );
+    installed_executable(candidates)
+}
+
+/// The first absolute candidate that is a file. A relative `PATH` entry would
+/// resolve against the current directory, so it never names Herdr.
+fn installed_executable(candidates: impl IntoIterator<Item = PathBuf>) -> io::Result<PathBuf> {
     candidates
         .into_iter()
+        .filter(|path| path.is_absolute())
         .find(|path| path.is_file())
-        .unwrap_or_else(|| NAME.into())
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                MissingInstallation(io::Error::from(io::ErrorKind::NotFound)),
+            )
+        })
 }
 
 /// Trust the user's standard local endpoint, not an upgrade-sensitive executable.
@@ -274,7 +286,7 @@ fn connect_or_start(
     socket: &Path,
     stop: &AtomicBool,
     timeout: Duration,
-    command: impl FnOnce() -> Command,
+    command: impl FnOnce() -> io::Result<Command>,
     auto_start: bool,
 ) -> io::Result<Stream> {
     match dial(socket) {
@@ -290,7 +302,7 @@ fn connect_or_start(
     if stop.load(Ordering::Acquire) {
         return Err(io::Error::new(io::ErrorKind::Interrupted, Error::Cancelled));
     }
-    let mut command = command();
+    let mut command = command()?;
     // Login-shell initialization can outlast a detach or reconnect.
     if stop.load(Ordering::Acquire) {
         return Err(io::Error::new(io::ErrorKind::Interrupted, Error::Cancelled));

@@ -74,7 +74,7 @@ pub(super) fn claim_saved(target: &str, session: &str) -> Result<Claim> {
 /// local catalog; it never connects, so the host's own Herdr keeps running.
 /// Blocks on a process: call it from the background executor.
 pub(super) fn remove(id: &str) -> Result<()> {
-    remove_with(crate::daemon::executable().as_os_str(), id)
+    remove_with(crate::daemon::executable()?.as_os_str(), id)
 }
 
 fn remove_with(executable: &std::ffi::OsStr, id: &str) -> Result<()> {
@@ -96,7 +96,7 @@ fn remove_with(executable: &std::ffi::OsStr, id: &str) -> Result<()> {
 /// Rename a saved device with `herdr machine rename`, which edits only the
 /// local catalog. Blocks on a process: call it from the background executor.
 pub(super) fn rename(id: &str, label: &str) -> Result<()> {
-    rename_with(crate::daemon::executable().as_os_str(), id, label)
+    rename_with(crate::daemon::executable()?.as_os_str(), id, label)
 }
 
 fn rename_with(executable: &std::ffi::OsStr, id: &str, label: &str) -> Result<()> {
