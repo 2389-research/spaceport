@@ -120,7 +120,8 @@ mod tests {
     #[test]
     fn embedded_icon_is_a_nonempty_1024_square_png() {
         let stable = include_bytes!("../../../assets/icons/spaceport-icon.png").as_slice();
-        let worktree = include_bytes!("../../../assets/icons/spaceport-worktree-1024.png").as_slice();
+        let worktree =
+            include_bytes!("../../../assets/icons/spaceport-worktree-1024.png").as_slice();
         assert_ne!(stable, worktree);
         for png in [stable, worktree] {
             assert!(png.len() > 33);
