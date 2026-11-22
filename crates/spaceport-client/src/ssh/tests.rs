@@ -1,6 +1,8 @@
 use super::*;
 
 mod forward;
+#[cfg(unix)]
+mod host_key_outcome;
 mod incompatible;
 #[cfg(unix)]
 mod mise;

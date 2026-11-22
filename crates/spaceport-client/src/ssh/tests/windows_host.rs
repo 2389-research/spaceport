@@ -43,10 +43,15 @@ fn only_a_remote_shell_failure_retries_through_powershell() {
 fn a_shell_that_cannot_run_the_bridge_reports_its_exit_code() {
     let mut command = Command::new("/bin/sh");
     command.args(["-c", "printf '%s\\n' 'not recognized' >&2; exit 1"]);
-    let closed = start_bridge(command, &AtomicBool::new(false), handshake)
-        .unwrap()
-        .err()
-        .unwrap();
+    let closed = start_bridge(
+        HostKeys::Verify,
+        command,
+        &AtomicBool::new(false),
+        handshake,
+    )
+    .unwrap()
+    .err()
+    .unwrap();
     assert_eq!(closed.code, Some(1));
     assert_eq!(closed.failure, SshFailure::Other);
     assert!(powershell::rejected_posix(closed.code));
