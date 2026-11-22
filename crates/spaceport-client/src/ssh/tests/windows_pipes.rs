@@ -145,12 +145,22 @@ fn read_expected(stream: &mut Stream, expected: &[u8]) -> Vec<u8> {
 #[test]
 fn the_handshake_and_the_bridged_stream_run_over_the_childs_pipes() {
     let stop = AtomicBool::new(false);
-    let Ok((mut stream, _child)) = start_bridge(fixture(Case::Handshake), &stop, |stream, stop| {
-        fixture_ready(stream);
-        read_expected(stream, b"m");
-        handshake(stream, stop)
-    })
-    .unwrap() else {
+    let Ok(Connected {
+        mut stream,
+        child: _kept_child,
+        ..
+    }) = start_bridge(
+        HostKeys::Verify,
+        fixture(Case::Handshake),
+        &stop,
+        |stream, stop| {
+            fixture_ready(stream);
+            read_expected(stream, b"m");
+            handshake(stream, stop)
+        },
+    )
+    .unwrap()
+    else {
         panic!("the bridge closed before it was ready");
     };
     stream.write_all(b"hello\n").unwrap();
@@ -179,7 +189,13 @@ fn an_ssh_failure_before_the_banner_is_classified_from_its_stderr() {
         "echo Host key verification failed.1>&2& exit 255",
     ]);
     let started = Instant::now();
-    let Err(closed) = start_bridge(command, &AtomicBool::new(false), handshake).unwrap() else {
+    let Err(closed) = start_bridge(
+        HostKeys::Verify,
+        command,
+        &AtomicBool::new(false),
+        handshake,
+    )
+    .unwrap() else {
         panic!("a failed ssh was accepted");
     };
     assert_eq!(closed.code, Some(255));
