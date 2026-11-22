@@ -21,7 +21,8 @@ fn daemon_lookup_ignores_relative_path_entries() {
         std::fs::set_permissions(program, std::fs::Permissions::from_mode(0o755)).unwrap();
     }
     for relative in [".", "", "untrusted"] {
-        let output = Command::new(env::current_exe().unwrap())
+        let mut command = Command::new(env::current_exe().unwrap());
+        command
             .args([
                 "--exact",
                 "daemon::tests::path_lookup::daemon_lookup_ignores_relative_path_entries",
@@ -35,9 +36,13 @@ fn daemon_lookup_ignores_relative_path_entries() {
                 "PATH",
                 env::join_paths([Path::new(relative), &trusted]).unwrap(),
             )
-            .current_dir(root.path())
-            .output()
-            .unwrap();
+            .current_dir(root.path());
+        // The all-feature macOS test binary links the pinned CI framework.
+        #[cfg(target_os = "macos")]
+        if let Some(framework) = env::var_os("DYLD_FRAMEWORK_PATH") {
+            command.env("DYLD_FRAMEWORK_PATH", framework);
+        }
+        let output = command.output().unwrap();
         assert!(
             output.status.success(),
             "{relative:?}: {} {}",
