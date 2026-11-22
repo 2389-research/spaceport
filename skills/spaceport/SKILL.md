@@ -42,9 +42,11 @@ the window that shows your workspace; it exits 5 rather than act in another
 session's window.
 
 Exit statuses: 0 done, 1 refused or failed, 2 invalid arguments, 3 Spaceport
-is not running, 4 nothing yet, 5 not found, 6 busy, 7 timed out, 8 unavailable
-on this platform or in this version of the app. `spaceport COMMAND --help`
-spells each one out.
+is not running or the control connection closed without an answer, 4 nothing
+yet, 5 not found, 6 busy, 7 timed out, 8 unavailable on this platform or in
+this version of the app, which is also what an answer this command line cannot
+read exits. `spaceport COMMAND --help` spells each one out, and `docs/cli.md`
+has the full table and what is safe to retry.
 
 Run `spaceport --help` to list every command, and `spaceport COMMAND --help`
 for one.
