@@ -145,7 +145,9 @@ fn read_expected(stream: &mut Stream, expected: &[u8]) -> Vec<u8> {
 #[test]
 fn the_handshake_and_the_bridged_stream_run_over_the_childs_pipes() {
     let stop = AtomicBool::new(false);
-    let Ok(Connected { mut stream, .. }) = start_bridge(
+    let Ok(Connected {
+        mut stream, child, ..
+    }) = start_bridge(
         HostKeys::Verify,
         fixture(Case::Handshake),
         &stop,
@@ -155,7 +157,8 @@ fn the_handshake_and_the_bridged_stream_run_over_the_childs_pipes() {
             handshake(stream, stop)
         },
     )
-    .unwrap() else {
+    .unwrap()
+    else {
         panic!("the bridge closed before it was ready");
     };
     stream.write_all(b"hello\n").unwrap();
