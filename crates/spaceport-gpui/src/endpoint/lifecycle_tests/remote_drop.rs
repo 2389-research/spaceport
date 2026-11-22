@@ -151,10 +151,12 @@ fn a_drop_seen_before_its_state_arrives_does_not_fall_back_to_local(cx: &mut gpu
                 "type": "client_shell_surface_set", "active": true, "projection_revision": snapshot.revision,
             })),
         });
-        view.endpoints[1].connection.inbox.lock().unwrap().activation = activation.clone();
+        let inbox = view.endpoints[1].connection.inbox.clone();
+        let mut pending = inbox.lock().unwrap();
+        pending.activation = activation.clone();
         view.endpoints[1].live.activation = activation.clone();
         view.live.activation = activation;
-        // A stopped handle delivers no disconnect state at all.
+        // Hold the reader's disconnect back to establish the gap before it lands.
         view.endpoints[1]
             .connection
             .handle
@@ -175,18 +177,22 @@ fn a_drop_seen_before_its_state_arrives_does_not_fall_back_to_local(cx: &mut gpu
         assert!(view.presentation.picture(&view.live).is_some());
         assert!(view.presentation.stale());
         assert!(view.reconnecting());
+        drop(pending);
     });
 }
 
 #[test]
 fn a_stopped_handle_reads_as_reconnecting_before_its_state_arrives() {
     let (mut endpoint, _server) = connected_endpoint("ssh:remote");
-    // A stopped handle delivers no disconnect state at all.
+    let inbox = endpoint.connection.inbox.clone();
+    let pending = inbox.lock().unwrap();
+    // Hold the reader's disconnect back while the stopped handle is visible.
     endpoint.connection.handle.as_ref().unwrap().disconnect();
     endpoint.poll(Instant::now());
     assert!(endpoint.live.status.is_connected(), "the gap under test");
     assert_eq!(endpoint.outage(), Some("connection lost"));
     assert_eq!(endpoint.status(), "reconnecting");
+    drop(pending);
 }
 
 /// The refusal can reach the inbox a poll after the stop it explains. It must
@@ -226,37 +232,60 @@ fn the_card_stays_until_the_replacement_frame_lands(cx: &mut gpui::TestAppContex
         Fixture(cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx)))
     });
     let view = fixture.update(cx, |fixture, _| fixture.0.clone());
-    let (endpoint, _server) = connected_endpoint("ssh:remote");
-    view.update(cx, |view, cx| {
+    let (endpoint, server) = connected_endpoint("ssh:remote");
+    let first = view.update(cx, |view, cx| {
         prepare_mouse(view, endpoint, cx);
-        let first = view.presentation.picture(&view.live).unwrap().frame;
+        view.presentation.picture(&view.live).unwrap().frame
+    });
+    // Close the real peer before rebinding this endpoint's private address.
+    drop(server);
+    view.update(cx, |view, cx| {
+        wait_until(|| {
+            let endpoint = &mut view.endpoints[1];
+            endpoint.poll(Instant::now());
+            endpoint.connection.handle.is_none() && endpoint.connection.retry_ready()
+        });
         view.endpoints[1].set_retry_at_for_test(Instant::now() + Duration::from_secs(120));
-        view.endpoints[1]
-            .connection
-            .handle
-            .as_ref()
-            .unwrap()
-            .disconnect();
         view.poll_endpoints(cx);
         assert!(view.presentation.stale());
 
-        // Stand in for the replacement: a connection with a snapshot ends the
-        // outage, and its surface is not ready yet.
-        view.endpoints[1].clear_outage_for_test();
+        let mut replacement = start_endpoint(&mut view.endpoints[1]);
+        // Project the new generation while its welcome is still withheld.
         view.poll_endpoints(cx);
-        let mut waiting = view.live.clone();
-        waiting.surface = None;
-        let shown = view.presentation.picture(&waiting).unwrap().frame;
+        welcome_peer(&mut replacement, &snapshot(), None);
+        project_until(view, cx, "the replacement snapshot", |view| {
+            view.live.snapshot.is_some()
+        });
+        assert!(view.endpoints[1].outage().is_none());
+        assert!(view.live.surface.is_none());
+        let shown = view.presentation.picture(&view.live).unwrap().frame;
         assert!(Arc::ptr_eq(&shown, &first));
         assert!(view.presentation.stale());
         assert!(view.reconnecting(), "the card outlives the outage");
 
-        let mut replacement = view.live.clone();
-        let mut frame = (*first).clone();
-        frame.surface_revision += 1;
-        replacement.surface = Some(Arc::new(frame));
-        assert!(replacement.surface_ready());
-        view.presentation.picture(&replacement);
+        let mut frame = (*surface(view.live.snapshot.as_ref().unwrap())).clone();
+        frame.surface_revision = first.surface_revision + 1;
+        frame.frame.cells.resize_with(
+            usize::from(frame.frame.width) * usize::from(frame.frame.height),
+            || CellData {
+                symbol: " ".into(),
+                fg: 0,
+                bg: 0,
+                modifier: 0,
+                skip: false,
+                hyperlink: None,
+            },
+        );
+        write_message(
+            &mut replacement.stream,
+            &ServerMessage::PaneSurface(frame),
+            MAX_GRAPHICS_FRAME_SIZE,
+        )
+        .unwrap();
+        project_until(view, cx, "the replacement frame", |view| {
+            view.live.surface_ready()
+        });
+        view.presentation.picture(&view.live);
         assert!(!view.presentation.stale());
         assert!(!view.reconnecting());
     });
