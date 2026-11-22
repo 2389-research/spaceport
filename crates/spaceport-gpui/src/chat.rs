@@ -58,10 +58,11 @@ pub(super) fn now_ms() -> u64 {
             u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)
         })
 }
+pub(crate) use core_pane::key as core_pane_key;
 pub(crate) use env::{MAX_ENV, MAX_ENV_BYTES, check_env, env_text, parse_env};
 #[cfg(feature = "integration-test")]
 pub(crate) use start::native as native_start;
-pub(crate) use start::{Error as StartError, PROGRAM_ENV, Program};
+pub(crate) use start::{Error as StartError, PROGRAM_ENV, Program, Receipt};
 
 use spaceport_chat_protocol::{ByeReason, EndpointId};
 use std::io;

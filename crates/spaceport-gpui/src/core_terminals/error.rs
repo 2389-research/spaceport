@@ -7,6 +7,8 @@ pub enum Error {
     NotInstalled,
     #[error("Cannot bind this view while a Core start is still in progress")]
     StartPending,
+    #[error("Core terminal {0} was created but could not be placed in the window")]
+    ViewMissing(spaceport_backend::TerminalId),
     #[error("Could not start a worker for the terminal: {0}")]
     Worker(#[source] std::io::Error),
     #[error("Joined Core {actual}, expected {expected}")]

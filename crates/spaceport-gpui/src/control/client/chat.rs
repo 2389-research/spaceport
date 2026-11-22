@@ -58,10 +58,24 @@ pub(super) fn chat(op: ChatOp, context: &Context) -> crate::Result<Output> {
             &serde_json::json!({ "pane_id": pane_id, "shown": shown }),
         ),
         Response::Chat {
-            reply: Reply::Started { agent },
+            reply:
+                Reply::Created {
+                    agent,
+                    window_id,
+                    tab,
+                    pane_id,
+                },
         } => Output::data(
-            format!("Starting a {agent} chat"),
-            &serde_json::json!({ "agent": agent, "started": true }),
+            format!(
+                "Created a {agent} chat in pane {pane_id} of window {window_id}; it attaches once the agent starts"
+            ),
+            &serde_json::json!({
+                "agent": agent,
+                "created": true,
+                "window_id": window_id,
+                "tab": tab,
+                "pane_id": pane_id,
+            }),
         ),
         response => Err(unexpected(response)),
     }
