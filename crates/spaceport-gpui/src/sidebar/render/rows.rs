@@ -5,7 +5,7 @@ use super::measure::SidebarMeasure;
 use crate::{
     SpaceportWindow,
     i18n::fl,
-    sidebar::{agents::Indicators, cell::RowContext, reorder::MoveBlock, wash},
+    sidebar::{agents::Indicators, cell::RowContext, label_text, reorder::MoveBlock, wash},
 };
 use gpui::{prelude::*, *};
 
@@ -25,8 +25,6 @@ pub(super) struct SidebarRows {
     /// Child positions of the highlighted workspace row and agent row, for the
     /// one-time reveal.
     pub(super) highlighted: [Option<usize>; 2],
-    /// How many agent rows the panel painted.
-    pub(super) agent_count: usize,
     /// A plugin view hid every agent, rather than there being none.
     pub(super) filtered: bool,
     /// The focused agent's row when agents nest under their workspaces.
@@ -228,12 +226,24 @@ impl SpaceportWindow {
                 cx,
             );
         }
+        if agent_count == 0 {
+            agents = agents.child(
+                div()
+                    .px(px(m.content_x))
+                    .text_color(rgb(theme.muted))
+                    .truncate()
+                    .child(label_text(&if filtered {
+                        fl!("sidebar-no-matching-agents")
+                    } else {
+                        fl!("sidebar-no-agents")
+                    })),
+            );
+        }
         SidebarRows {
             spaces: spaces.list,
             agents,
             search,
             highlighted: [spaces.highlighted, agent_highlighted],
-            agent_count,
             filtered,
             nested_focus,
             host_rows: spaces.host_rows,
