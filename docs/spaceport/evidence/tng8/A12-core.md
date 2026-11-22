@@ -41,7 +41,7 @@ test tests::resize::confirmed_observer_keeps_resize_before_later_data_and_credit
 ## What this record does not prove
 
 `Violation::PastCredit` has no dedicated test: the refusal is a code path at
-`crates/sheprd-core-client/src/stream.rs:112` and no test in this repository
+`crates/sheprd-core-client/src/stream.rs:112` (that path is pre-#169 naming; the file is `crates/spaceport-core-client/src/stream.rs` after the rename) and no test in this repository
 names it, so this session cannot attest it beyond the suite passing. Nothing
 here proves the live credit flow against a real herdr-core, so the Core leg
 remains `not_run` until `P2·P2-a` runs. The Herdr 1 leg stays `not_run` for the
