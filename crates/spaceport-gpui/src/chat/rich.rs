@@ -14,8 +14,8 @@ mod math_input;
 mod parse;
 mod remote;
 
-// The rich model below the app's views, at the paths the rest of the chat
-// reads it at.
+// What this module keeps, and the crate's rich model at the paths the rest of
+// the chat reads it at.
 pub(super) use math::draw as draw_math;
 pub(super) use parse::parse;
 pub(super) use remote::remote_content;
