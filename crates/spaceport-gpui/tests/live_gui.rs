@@ -154,6 +154,12 @@ fn native_notifications() {
     native_fixture(Fixture::Notifications);
 }
 
+#[test]
+#[ignore = "requires active native desktop; a seeded shared settings file, no daemon"]
+fn native_shared_settings_fallback() {
+    native_fixture(Fixture::SharedSettings);
+}
+
 #[cfg(target_os = "linux")]
 #[test]
 #[ignore = "requires active Wayland desktop; input shutdown fixtures, no daemon"]
@@ -199,6 +205,7 @@ enum Fixture {
     #[cfg(target_os = "linux")]
     ApplicationMenus,
     Notifications,
+    SharedSettings,
     InvalidChildWidth,
     #[cfg(target_os = "macos")]
     InvalidSettings,
@@ -263,6 +270,7 @@ fn native_fixture(fixture: Fixture) {
         #[cfg(target_os = "linux")]
         Fixture::ApplicationMenus => "APPLICATION MENUS native PASS",
         Fixture::Notifications => "NOTIFICATIONS native PASS:",
+        Fixture::SharedSettings => "SHARED SETTINGS native PASS:",
         #[cfg(target_os = "linux")]
         Fixture::InputShutdown(_) => "INPUT shutdown ready:",
         _ => "SIDEBAR native PASS:",
@@ -336,6 +344,9 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
         }
         Fixture::Notifications => {
             command.env("HERDR_TEST_NOTIFICATIONS_ONLY", "1");
+        }
+        Fixture::SharedSettings => {
+            command.env("HERDR_TEST_SHARED_SETTINGS_ONLY", "1");
         }
         Fixture::InvalidChildWidth => {
             command.env("HERDR_TEST_SIDEBAR_PROBE_FAILURE", "1");

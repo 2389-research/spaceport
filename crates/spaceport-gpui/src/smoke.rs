@@ -75,6 +75,7 @@ fixtures! {
     input: "smoke_input.rs", Some("HERDR_TEST_INPUT_SHUTDOWN");
     local_controls: "smoke_local_controls.rs", Some("HERDR_TEST_LOCAL_CONTROLS_ONLY");
     notifications: "smoke_notifications.rs", Some("HERDR_TEST_NOTIFICATIONS_ONLY");
+    shared_settings: "smoke_shared_settings.rs", Some("HERDR_TEST_SHARED_SETTINGS_ONLY");
     sidebar: "smoke_sidebar.rs", None;
     // keep-sorted end
 }
