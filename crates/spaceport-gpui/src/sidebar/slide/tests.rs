@@ -29,9 +29,7 @@ fn hiding_keeps_the_expanded_layout_until_the_sidebar_has_slid_off(cx: &mut Test
     });
 
     // Once it has slid off, the window takes the collapsed layout.
-    view.update(cx, |view, _| {
-        view.sidebar_slide.toggle.set(false, motion::now(), true);
-    });
+    view.update(cx, |view, _| view.sidebar_slide.settle());
     tick(cx, motion::now());
     view.read_with(cx, |view, _| {
         assert!(!view.sidebar_slide.closing());

@@ -37,7 +37,7 @@ fn a_lone_workspace_moves_singly_to_the_same_place() {
     let list = list();
     for pressed in ["b", "c", "a1", "a2"] {
         let plan = Plan::new(&list, pressed).unwrap();
-        for slot in 0..=plan.len() {
+        for slot in 0..=plan.unit_count() {
             let Some(request) = plan.request(&list, slot) else {
                 continue;
             };

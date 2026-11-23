@@ -5,11 +5,10 @@ use crate::{
     NavigationTarget, SpaceportWindow,
     direction::Logical,
     sidebar::{
-        STATUS_WIDTH,
+        Plan, STATUS_WIDTH,
         agents::status_text,
         cell::{Cell, Fold, RowContext, RowData, WorkspaceRow},
         line_height,
-        reorder::Plan,
         row::{RowIcon, RowLift, RowTree},
         tokens::{self, SpaceContext},
         visible_workspace_entries,
@@ -72,11 +71,11 @@ impl SpaceportWindow {
         // frame laid out: shifting moves rows, never resizes them.
         let base = spaces.rows;
         let shifts = plan.as_ref().map_or_else(Vec::new, |plan| {
-            spaces.drop_requests = (0..=plan.len())
+            spaces.drop_requests = (0..=plan.unit_count())
                 .map(|slot| plan.request(&snapshot.workspaces, slot))
                 .collect();
             spaces.drop_dragged = plan.dragged();
-            let mut heights = vec![0.; plan.len()];
+            let mut heights = vec![0.; plan.unit_count()];
             for (position, entry) in entries.iter().enumerate() {
                 if let (Some(unit), Some(bounds)) = (
                     plan.unit_of(entry.0),

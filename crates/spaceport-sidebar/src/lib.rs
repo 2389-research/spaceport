@@ -7,12 +7,15 @@
 //! trunk, tick and icons a row's leading edge draws, the rows the daemon's
 //! configured tokens resolve to, the props its status marks are drawn with, the
 //! status sets drawn rather than loaded from assets, the note and mute marks at
-//! a row's trailing edge, the colour wash a host lays over its rows, and the
-//! local state it draws from — the notes on checkouts and the tags on devices.
+//! a row's trailing edge, the colour wash a host lays over its rows, the local
+//! state it draws from — the notes on checkouts and the tags on devices — and
+//! the interaction it answers: the two drags that reorder workspaces and
+//! devices, what a resting pointer is claiming, the colour and the grouping a
+//! tag brings, and how far the sidebar slides.
 //! No window: the app owns every message, the copy every window reads, and the
 //! file it saves them in, decides which side a row's leading edge is on, paints
 //! every row, and words every status; it reads these for the numbers, the order,
-//! the kinds, the marks, and the users' own words to draw.
+//! the kinds, the marks, the drags, and the users' own words to draw.
 
 mod error;
 
@@ -20,14 +23,19 @@ pub use error::{Error, Result};
 
 pub mod agents;
 pub mod animated;
+pub mod device_drag;
 pub mod device_scope;
 pub mod device_tags;
+pub mod hover;
 pub mod layout;
 pub mod metrics;
 pub mod order;
 pub mod origin;
+pub mod reorder;
 pub mod row;
+pub mod slide;
 pub mod sticky;
+pub mod tag_groups;
 pub mod tokens;
 pub mod wash;
 pub mod workspaces;

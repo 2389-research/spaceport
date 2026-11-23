@@ -5,7 +5,7 @@ use super::measure::SidebarMeasure;
 use crate::{
     SpaceportWindow,
     i18n::fl,
-    sidebar::{agents::Indicators, cell::RowContext, label_text, reorder::MoveBlock, wash},
+    sidebar::{MoveBlock, agents::Indicators, cell::RowContext, label_text, wash},
 };
 use gpui::{prelude::*, *};
 

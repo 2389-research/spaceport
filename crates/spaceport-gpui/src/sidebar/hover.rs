@@ -1,38 +1,13 @@
 //! Resting the pointer on a row to open its menu, and leaving it to close it
-//! again. The rest and the menu it opened are tracked separately so a small
-//! pointer jitter inside the slop does not cancel a pending open. The whole
-//! behavior is behind the `features.sidebar_hover_menu` config flag, off by
-//! default: without it, only a right click opens a row's menu.
+//! again. The claims themselves are `spaceport-sidebar`'s; this reads and
+//! settles them against the window's config, its pointer, and its menus. The
+//! whole behavior is behind the `features.sidebar_hover_menu` config flag, off
+//! by default: without it, only a right click opens a row's menu.
 
-use super::{HOVER_MENU_DELAY, HOVER_MENU_SLOP};
+use super::{HOVER_MENU_DELAY, HOVER_MENU_SLOP, HoverMenu, HoverRest};
 use crate::SpaceportWindow;
 use gpui::{Context, Pixels, Point, Window, px};
 use std::time::Instant;
-
-pub(crate) struct HoverRest {
-    pub(crate) workspace: String,
-    pub(crate) position: Point<Pixels>,
-    /// Where the list stood when the row was entered. Scrolling slides other
-    /// rows under a still pointer, so a changed offset voids this dwell.
-    pub(crate) scroll: Point<Pixels>,
-    pub(crate) since: Instant,
-    /// The pointer has moved since it entered the row. Dismissing a menu leaves
-    /// the pointer where it was, so without this the menu would reopen under it.
-    pub(crate) moved: bool,
-    /// The row was clicked while the pointer was on it. A click already chose
-    /// what to do with the row, so its menu waits until the pointer leaves.
-    pub(crate) pressed: bool,
-}
-
-/// A menu the pointer opened by resting. It closes again as soon as the pointer
-/// moves anywhere but into it, so a menu nobody asked for needs no click to go.
-pub(crate) struct HoverMenu {
-    /// Where the pointer stood when the menu opened.
-    pub(crate) position: Point<Pixels>,
-    /// The pointer is over the popup. Only its own hover reports this: the popup
-    /// may be snapped away from the pointer that opened it.
-    pub(crate) inside: bool,
-}
 
 impl SpaceportWindow {
     pub(super) fn save_sidebar_width(&mut self) {
