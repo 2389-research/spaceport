@@ -157,13 +157,13 @@ pub(super) async fn frames(handle: WindowHandle<SpaceportWindow>, cx: &mut Async
                     (Style::Rounded, Density::Compact) => 8.,
                 };
                 let icon_reserve = if title_icon {
-                    sidebar::ICON_RESERVE
+                    spaceport_sidebar::metrics::ICON_RESERVE
                 } else if matches!(input, "Claude Code" | "agent") {
                     16. // 12px agent mark and 4px gap before its name.
                 } else {
                     0.
                 };
-                let expected_width = px(sidebar::LABEL_WIDTH + extra_width - icon_reserve);
+                let expected_width = px(spaceport_sidebar::metrics::LABEL_WIDTH + extra_width - icon_reserve);
                 if p.glyph_text != p.cached
                     || (expected_short && p.glyph_text != input)
                     || (!expected_short
