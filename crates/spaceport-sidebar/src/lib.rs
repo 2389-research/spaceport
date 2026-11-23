@@ -2,11 +2,12 @@
 //! workspaces and agents list and step in, the host headers that stay pinned
 //! while the list scrolls, which workspace rows a folded group shows, what a
 //! row is and how the two lines of it are weighted, the props its status marks
-//! are drawn with, and the local state it draws from — the notes on checkouts
-//! and the tags on devices. No window: the app owns every message, the copy
-//! every window reads, and the file it saves them in, draws every row, and
-//! words every status; it reads these for the numbers, the order, the kinds,
-//! and the users' own words to draw.
+//! are drawn with, the status sets drawn rather than loaded from assets, the
+//! note and mute marks at a row's trailing edge, and the local state it draws
+//! from — the notes on checkouts and the tags on devices. No window: the app
+//! owns every message, the copy every window reads, and the file it saves them
+//! in, paints every row, and words every status; it reads these for the
+//! numbers, the order, the kinds, the marks, and the users' own words to draw.
 
 mod error;
 

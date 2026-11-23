@@ -1,7 +1,8 @@
 //! What a sidebar row is before it is painted: which of the two kinds it is,
 //! where it sits in its worktree group, what a drag is doing to it, and the
-//! name weight and colors its two lines take. The app draws every row, so the
-//! decisions a layout and the painter must agree on live here.
+//! name weight and colors its two lines take. The app paints every row, so the
+//! decisions a layout and the painter must agree on live here, together with
+//! the badge a row's trailing edge shows, which needs only a font and a theme.
 
 mod badge;
 
