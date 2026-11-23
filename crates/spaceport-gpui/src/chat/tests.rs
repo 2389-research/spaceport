@@ -39,6 +39,7 @@ mod glide;
 mod ia;
 mod imessage;
 mod jump;
+mod labels;
 mod layouts;
 mod link;
 mod menus;

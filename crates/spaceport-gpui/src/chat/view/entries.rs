@@ -229,14 +229,9 @@ impl SpaceportWindow {
                 }
                 _ => div(),
             },
-            EntryKind::Tool(tool) => self.render_chat_tool(
-                pane_id,
-                entry.id,
-                tool,
-                body.as_deref(),
-                &chat.prepared.visuals,
-                cx,
-            ),
+            EntryKind::Tool(tool) => {
+                self.render_chat_tool(pane_id, entry.id, tool, body.as_deref(), chat, cx)
+            }
             EntryKind::Notice { .. } => self.render_chat_notice(pane_id, entry, cx),
         };
         self.render_chat_entry_row(chat, index, content)
@@ -325,39 +320,31 @@ impl SpaceportWindow {
         entry: spaceport_chat_protocol::EntryId,
         tool: &Tool,
         body: Option<&Body>,
-        visuals: &Visuals,
+        chat: &ChatPane,
         cx: &mut Context<Self>,
     ) -> Div {
         let theme = &self.theme;
         let hues = Hues::of(theme);
-        let chat = self.chats.pane(pane_id);
+        let visuals = &chat.prepared.visuals;
         // What a call started outlives it: a background shell runs on after
         // its call is done, and its card says so until it ends.
-        let status = chat.map_or(ToolState::Stopped, |chat| {
-            tool_state(chat.session.transcript(), tool)
-        });
+        let status = tool_state(chat.session.transcript(), tool);
         let color = status.color(theme);
-        let steps = chat.map_or(&[][..], |chat| chat.prepared.steps(&tool.call_id));
+        let steps = chat.prepared.steps(&tool.call_id);
         // An open call lists the locations and output the selection document
         // holds, each by its own cell, rather than deriving them again.
         let cells = |region| {
-            chat.map(|chat| {
-                chat.prepared
-                    .text()
-                    .cells(entry, region)
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default()
+            chat.prepared
+                .text()
+                .cells(entry, region)
+                .collect::<Vec<_>>()
         };
         let small = self.chat_small_text();
         let summary = match body {
             Some(Body::Tool(summary)) => Some(summary),
             _ => None,
         };
-        let expanded = self
-            .chats
-            .pane(pane_id)
-            .is_some_and(|chat| chat.expanded.contains(&entry));
+        let expanded = chat.expanded.contains(&entry);
         let fold = layout_for(self.config.chat.layout).tool_fold(status);
         // On one line, the files' changes join the title as totals.
         let totals = summary
@@ -408,7 +395,7 @@ impl SpaceportWindow {
                         entry,
                         Region::Label,
                         Cell::default(),
-                        || tool_header(&tool.title),
+                        || tool_header(&tool.title, &chat.labels),
                         cx,
                     )),
             )
@@ -438,7 +425,7 @@ impl SpaceportWindow {
         }
         body = body
             .when(expanded && !steps.is_empty(), |card| {
-                card.children(chat.map(|chat| self.render_chat_steps(chat, entry, steps)))
+                card.child(self.render_chat_steps(chat, entry, steps))
             })
             .children(
                 page_written(tool).map(|path| self.render_chat_file_page(pane_id, entry, path, cx)),

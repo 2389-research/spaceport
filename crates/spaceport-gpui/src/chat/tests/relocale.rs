@@ -2,6 +2,7 @@
 //! and the selectable text drawn from it follow the locale now shown.
 
 use super::*;
+use crate::chat::labels::Labels;
 use crate::chat::prepared::{Body, Prepared};
 use spaceport_chat_protocol::{NoticeLevel, QuestionAnswer};
 use spaceport_i18n::{Locale, Pseudo};
@@ -36,15 +37,15 @@ fn forgetting_the_text_writes_its_labels_in_the_locale_now_shown() {
     let transcript = answered();
     let keys = [(EntryId(1), 1)];
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, &Labels::now());
     let english = answers(&prepared);
     assert!(english.contains("**Question "), "{english}");
 
     crate::i18n::show(&Pseudo::Accented.locale());
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, &Labels::now());
     assert_eq!(answers(&prepared), english, "same revision, same body");
     prepared.forget_text();
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, &Labels::now());
     let accented = answers(&prepared);
     assert_ne!(accented, english);
     assert!(!accented.contains("**Question "), "{accented}");
