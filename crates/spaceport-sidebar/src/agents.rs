@@ -1,8 +1,9 @@
 //! The agents list's model: the colors and sizes its status marks are drawn
-//! with, the daemon's name and word for a status, and how each agent's place,
-//! pane and labels are read from a snapshot. Status comes from the daemon's
-//! snapshot, never from guessing at terminal output. The app draws the marks
-//! and words the statuses, so the words and every `Div` stay there.
+//! with, the palette they default to, the daemon's name for a status, and how
+//! each agent's place, pane and labels are read from a snapshot. Status comes
+//! from the daemon's snapshot, never from guessing at terminal output. The app
+//! words every status and paints every mark, so the words, the moving marks
+//! and their window layer stay there.
 
 use crate::metrics::{STATUS_DOT_UNKNOWN, STATUS_WIDTH, line_height, scaled};
 use crate::order::status_priority;
