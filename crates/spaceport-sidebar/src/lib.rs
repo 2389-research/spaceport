@@ -27,6 +27,7 @@ pub mod device_scope;
 pub mod device_tags;
 pub mod direction;
 pub mod layout;
+pub mod layouts;
 pub mod metrics;
 pub mod order;
 pub mod origin;

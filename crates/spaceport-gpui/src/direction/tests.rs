@@ -29,7 +29,7 @@ fn english_lays_out_left_to_right() {
 fn the_bidi_pseudo_locale_mirrors_every_side() {
     rtl();
     assert_eq!(current(), Direction::Rtl);
-    let pairs: [(StyleRefinement, StyleRefinement); 9] = [
+    let pairs: [(StyleRefinement, StyleRefinement); 8] = [
         (style(|s| s.ps(px(4.))), style(|s| s.pr(px(4.)))),
         (style(|s| s.pe(px(4.))), style(|s| s.pl(px(4.)))),
         (style(|s| s.ms(px(4.))), style(|s| s.mr(px(4.)))),
@@ -38,10 +38,6 @@ fn the_bidi_pseudo_locale_mirrors_every_side() {
         (style(|s| s.inset_e(px(4.))), style(|s| s.left(px(4.)))),
         (style(|s| s.border_s(px(1.))), style(|s| s.border_r(px(1.)))),
         (style(|s| s.border_e(px(1.))), style(|s| s.border_l(px(1.)))),
-        (
-            style(|s| s.rounded_e(px(3.))),
-            style(|s| s.rounded_l(px(3.))),
-        ),
     ];
     for (logical, physical) in pairs {
         assert_eq!(logical, physical);

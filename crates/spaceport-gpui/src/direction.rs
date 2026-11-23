@@ -81,11 +81,6 @@ pub(crate) trait Logical: Styled + Sized {
         mirror::Logical::border_e(self, is_rtl(), width)
     }
 
-    /// Rounds the two corners on the end side.
-    fn rounded_e(self, radius: impl Clone + Into<AbsoluteLength>) -> Self {
-        mirror::Logical::rounded_e(self, is_rtl(), radius)
-    }
-
     /// Text set against the side it starts from.
     fn text_start(self) -> Self {
         self.text_align(text_start())

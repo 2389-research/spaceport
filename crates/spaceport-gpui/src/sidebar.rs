@@ -12,7 +12,6 @@ mod device_drag;
 mod host_row;
 mod hover;
 mod layout;
-mod layouts;
 mod metrics;
 mod note_line;
 mod order;
@@ -44,7 +43,7 @@ pub(crate) use {
     agents::{Indicators, agent_name, pane_name, state_label, status_indicator, status_text},
     device_drag::DeviceDrag,
     hover::{HoverMenu, HoverRest},
-    metrics::{ARROW_RESERVE, HOST_ARROW_WIDTH, STATUS_WIDTH},
+    metrics::{HOST_ARROW_WIDTH, STATUS_WIDTH},
     rail::SidebarMode,
     render::NestedReveal,
     reorder::WorkspaceDrag,

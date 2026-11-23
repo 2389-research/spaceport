@@ -25,7 +25,7 @@ fn label_element(text: SharedString) -> layout_tests::ProbeText {
 }
 
 pub(super) use spaceport_sidebar::row::{
-    Elbow, RowBadge, RowIcon, RowKind, RowLift, RowTree, TokenLook, configured_status,
-    configured_status_style, first_text, guide, leading_status, removing_dot, row, row_text,
-    token_column, tree_gutter, trunk_below,
+    RowBadge, RowIcon, RowLift, RowTree, first_text, removing_dot,
 };
+#[cfg(any(test, feature = "integration-test"))]
+pub(super) use spaceport_sidebar::row::{RowKind, row, row_text};

@@ -5,20 +5,21 @@
 
 use super::{
     super::{
-        ARROW_RESERVE,
-        cell::{AgentRow, RowContext, RowLayout, RowState, WorkspaceRow},
-        line_height,
-        row::{Elbow, RowKind, RowTree, TokenLook, guide, row_text, token_column, tree_gutter},
-        scaled,
+        cell::{AgentRow, RowLayout, WorkspaceRow},
+        metrics::{ARROW_RESERVE, STATUS_WIDTH, line_height, scaled},
+        row::{
+            Elbow, RowContext, RowKind, RowState, RowTree, TokenLook, guide, row_text,
+            token_column, tree_gutter,
+        },
         tokens::ResolvedToken,
     },
     parts::{self, Line},
 };
-use crate::config::Theme;
 use crate::direction::Logical;
 use gpui::{prelude::*, *};
+use spaceport_settings::Theme;
 
-pub(in super::super) struct Minimal;
+pub struct Minimal;
 
 /// A row laid out by the density and style like Herdr's own: one centered
 /// line, or `Some` count of configured lines whose pieces align to the first.
@@ -38,13 +39,13 @@ fn shell(
         .h(px(look.row_height(
             line_height(cx.font) * lines.unwrap_or(1) as f32,
         )))
-        .ps(px(look.content_x() + indent))
-        .row()
+        .ps(cx.right_to_left, px(look.content_x() + indent))
+        .row(cx.right_to_left)
         .items_center()
         .cursor_pointer()
         .map(|row| look.mark(row, key, (state, cx.mark), cx.theme))
         .child(
-            line.into_div()
+            line.into_div(cx)
                 .when(lines.is_some(), |line| line.items_start()),
         )
 }
@@ -84,7 +85,7 @@ impl RowLayout for Minimal {
             + if row.tree == RowTree::None {
                 0.
             } else {
-                density.child_indent() + cx.indicators.width(cx.font) - super::super::STATUS_WIDTH
+                density.child_indent() + cx.indicators.width(cx.font) - STATUS_WIDTH
             };
         // Pull requests and uncommitted work stay off these rows.
         let muted = row.badge.as_ref().is_some_and(|badge| badge.muted);

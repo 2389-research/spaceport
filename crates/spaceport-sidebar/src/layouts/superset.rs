@@ -7,23 +7,22 @@
 use super::{
     super::{
         agents::{icon_mark, status_style},
-        cell::{AgentRow, RowContext, RowLayout, RowState, WorkspaceRow},
-        line_height,
+        cell::{AgentRow, RowLayout, WorkspaceRow},
+        metrics::{line_height, scaled},
         row::{
-            Elbow, RowIcon, RowKind, RowLift, RowTree, TokenLook, configured_status_style, guide,
-            leading_status, removing_dot, token_column,
+            Elbow, RowContext, RowIcon, RowKind, RowLift, RowState, RowTree, TokenLook,
+            configured_status_style, guide, leading_status, removing_dot, token_column,
         },
-        scaled,
         tokens::ResolvedToken,
     },
     parts::{self, Line, glyph_at, wash},
 };
-use crate::config::{StatusIcons, Theme};
 use crate::direction::Logical;
 use gpui::{prelude::*, *};
 use spaceport_client::protocol::AgentStatus;
+use spaceport_settings::{StatusIcons, Theme};
 
-pub(in super::super) struct Superset;
+pub struct Superset;
 
 /// Width of the leading edge stripe on the focused row.
 const STRIPE: f32 = 2.;
@@ -79,10 +78,10 @@ fn shell(key: &str, state: RowState, indent: f32, line: Line<'_>, cx: &RowContex
         .relative()
         .w_full()
         .flex_none()
-        .row()
+        .row(cx.right_to_left)
         .items_center()
         .py(px(gap))
-        .ps(px(cx.look.content_x() + indent))
+        .ps(cx.right_to_left, px(cx.look.content_x() + indent))
         .cursor_pointer();
     let row = cx.mark.apply(row, key, &cx.look);
     parts::mark(
@@ -98,15 +97,15 @@ fn shell(key: &str, state: RowState, indent: f32, line: Line<'_>, cx: &RowContex
             div()
                 .debug_selector(|| format!("highlight-{key}"))
                 .absolute()
-                .inset_s(px(0.))
+                .inset_s(cx.right_to_left, px(0.))
                 .top_0()
                 .bottom_0()
                 .w(px(STRIPE))
-                .rounded_e(px(STRIPE))
+                .rounded_e(cx.right_to_left, px(STRIPE))
                 .bg(rgb(theme.foreground)),
         )
     })
-    .child(line.into_div())
+    .child(line.into_div(cx))
 }
 
 /// The icon slot, with the status as a dot pinned to its top right corner in
@@ -135,7 +134,7 @@ fn slot(
                 .debug_selector(|| format!("dot-{key}"))
                 .absolute()
                 .top_0()
-                .inset_e(px(0.))
+                .inset_e(cx.right_to_left, px(0.))
                 .size(px(diameter + 2.))
                 .flex()
                 .items_center()
@@ -160,7 +159,7 @@ fn slot(
                 .debug_selector(|| format!("dot-{key}"))
                 .absolute()
                 .top_0()
-                .inset_e(px(0.))
+                .inset_e(cx.right_to_left, px(0.))
                 .size(px(diameter))
                 .rounded_full()
                 .bg(rgb(theme.sidebar_background()))
@@ -177,7 +176,7 @@ fn slot(
             .debug_selector(|| format!("dot-{key}"))
             .absolute()
             .top_0()
-            .inset_e(px(0.))
+            .inset_e(cx.right_to_left, px(0.))
             .size(px(diameter))
             .rounded_full()
             .border_1()
@@ -196,7 +195,7 @@ fn slot(
         .items_center()
         .justify_center()
         .when_some(tile, |slot, color| {
-            slot.rounded(px(crate::config::corners::SMALL))
+            slot.rounded(px(spaceport_settings::corners::SMALL))
                 .bg(rgba((color << 8) | 0x30))
                 .border_1()
                 .border_color(rgba((color << 8) | 0x70))
