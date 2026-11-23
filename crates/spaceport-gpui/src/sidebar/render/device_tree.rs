@@ -77,6 +77,7 @@ impl SpaceportWindow {
             ),
             // The header above already names the host.
             host: None,
+            right_to_left: crate::direction::is_rtl(),
         };
         let mut count = 0;
         let mut focused = None;

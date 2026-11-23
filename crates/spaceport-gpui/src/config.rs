@@ -35,7 +35,7 @@ pub use spaceport_settings::{
 pub use spaceport_settings::{Density, Style};
 // The token kind only the pane-name layout tests name; the rows themselves are
 // read in `spaceport-sidebar`.
-#[cfg(any(test, feature = "integration-test"))]
+#[cfg(test)]
 pub use spaceport_settings::AgentToken;
 pub use spaceport_settings::{
     FOLLOW_HERDR, Layer, SshConfig, Theme, Worktrees, backdrop, chat, corners, favorite_themes,

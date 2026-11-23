@@ -12,7 +12,7 @@ pub use badge::RowBadge;
 use crate::{
     agents::Indicators,
     layout::SidebarLook,
-    metrics::{STATUS_WIDTH, scaled},
+    metrics::{STATUS_WIDTH, line_height, scaled},
     wash::HostMark,
 };
 use gpui::{prelude::*, *};
@@ -75,7 +75,7 @@ pub struct RowState {
 
 /// Where a row sits in its worktree group, which decides whether the gutter
 /// carries a trunk through the row or ends in an elbow.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RowTree {
     None,
     Child,
@@ -103,6 +103,114 @@ pub fn first_text<'a>(
         .find(|s| !s.is_empty())
         .unwrap_or(fallback)
 }
+
+/// What a row shows in its leading icon slot: a neutral repository icon, an
+/// empty slot for a folder outside a checkout, or no slot for a child row or
+/// a disabled icon setting. A linked worktree standing alone shows its branch
+/// glyph so it never relies on colour alone.
+pub enum RowIcon {
+    None,
+    Blank,
+    Repository,
+    Worktree(u32),
+}
+
+impl RowIcon {
+    /// Whether the slot shows something; a blank one only keeps the room.
+    pub fn draws(&self) -> bool {
+        matches!(self, Self::Repository | Self::Worktree(_))
+    }
+
+    /// The icon's place on the leading edge of the line it opens, or nothing
+    /// for a row without one.
+    pub fn slot(self, key: &str, cx: &RowContext<'_>) -> Div {
+        let probe = match self {
+            Self::Worktree(_) => "worktree-icon",
+            _ => "workspace-icon",
+        };
+        let size = scaled(cx.font, 12.);
+        let slot = div()
+            .debug_selector(|| format!("{probe}-{key}"))
+            .absolute()
+            .top(px((line_height(cx.font) - size) / 2.))
+            .size(px(size))
+            .flex_none()
+            .overflow_hidden();
+        let slot = match cx.right_to_left {
+            true => slot.right(px(0.)),
+            false => slot.left(px(0.)),
+        };
+        slot.child(self.element(cx.theme.muted))
+    }
+
+    /// The icon filling its parent, or nothing for rows without one.
+    pub fn element(self, color: u32) -> AnyElement {
+        match self {
+            Self::None | Self::Blank => Empty.into_any_element(),
+            Self::Repository => repository_icon(color).size_full().into_any_element(),
+            Self::Worktree(hue) => svg()
+                .path("icons/git-branch.svg")
+                .size_full()
+                .text_color(rgb(hue))
+                .into_any_element(),
+        }
+    }
+}
+
+/// A vector folder remains legible at the small sidebar size.
+fn repository_icon(color: u32) -> Svg {
+    svg()
+        .path("icons/folder.svg")
+        .flex_none()
+        .text_color(rgb(color))
+}
+
+/// Trunk and tick for a child row, given the gutter the row reserves between
+/// the parent's label column and the child's leading mark, with the tick at
+/// `middle`, the middle of the row's first line. Snapped to whole device
+/// pixels and painted as quads rather than borders: a bordered box rounds
+/// each edge on its own, which left the trunk thinner than its tick.
+/// `right_to_left` puts the leading edge on the gutter's right.
+pub fn tree_lines(
+    gutter: Bounds<Pixels>,
+    tree: RowTree,
+    middle: Pixels,
+    scale: f32,
+    right_to_left: bool,
+) -> [Bounds<Pixels>; 2] {
+    let device = |value: Pixels| f32::from(value) * scale;
+    let logical = |value: f32| px(value / scale);
+    let weight = scale.round().max(1.);
+    let snap = |value: Pixels| logical(device(value).round());
+    // The trunk runs down the gutter's leading edge; the tick crosses it at the
+    // row's first line and stops where the row's leading mark begins.
+    let x = snap(gutter.origin.x);
+    let middle = logical((device(middle) - weight / 2.).round());
+    let end = if tree == RowTree::LastChild {
+        middle + logical(weight)
+    } else {
+        snap(gutter.bottom())
+    };
+    let lines = [
+        Bounds::from_corners(
+            point(x, snap(gutter.origin.y)),
+            point(x + logical(weight), end),
+        ),
+        Bounds::from_corners(
+            point(x, middle),
+            point(snap(gutter.right()), middle + logical(weight)),
+        ),
+    ];
+    // Right to left, the leading edge is the gutter's right one.
+    if !right_to_left {
+        return lines;
+    }
+    lines.map(|line| {
+        let left = snap(gutter.origin.x + gutter.right() - line.right());
+        Bounds::new(point(left, line.origin.y), line.size)
+    })
+}
+
 /// Read-only inputs every row of one render shares.
 pub struct RowContext<'a> {
     pub indicators: Indicators,
@@ -120,6 +228,10 @@ pub struct RowContext<'a> {
     /// The host these rows live on, named only while several hosts are
     /// listed and this one is remote, so a single-host sidebar stays quiet.
     pub host: Option<&'a str>,
+    /// Whether the chrome lays out right to left, which mirrors the side a
+    /// row's leading edge is on. The app reads the shown locale's direction;
+    /// a crate cannot, so it is an input like the rest.
+    pub right_to_left: bool,
 }
 
 impl RowContext<'_> {
@@ -146,6 +258,109 @@ pub fn tree_gutter(cx: &RowContext<'_>) -> (f32, f32) {
         layout.padding() + layout.child_indent() - layout.tree_gutter(),
     )
 }
+/// A worktree child's guide: a trunk down the leading edge of `gutter`
+/// (`x` and width, in the row's own coordinates) and a tick across it at
+/// `elbow`, ending where the row's leading mark begins. A last child's
+/// trunk stops at its tick. Every layout draws its guides with this, in the
+/// tree's muted colour and one device pixel's weight, so they read as one
+/// family. None for a parent, while the look draws no guides, or when the
+/// gutter has no room. Absolute: the row must be relative.
+pub fn guide(
+    key: &str,
+    tree: RowTree,
+    (x, width): (f32, f32),
+    elbow: Elbow,
+    cx: &RowContext<'_>,
+) -> Option<Div> {
+    if tree == RowTree::None || !cx.look.density.tree_lines || width <= 0. {
+        return None;
+    }
+    let color = cx.theme.muted;
+    let right_to_left = cx.right_to_left;
+    let key = key.to_owned();
+    let gutter = div()
+        .debug_selector(move || format!("tree-{key}"))
+        .absolute()
+        .w(px(width))
+        .top_0()
+        .bottom_0();
+    let gutter = match right_to_left {
+        true => gutter.right(px(x)),
+        false => gutter.left(px(x)),
+    };
+    Some(
+        gutter.child(
+            canvas(
+                |_, _, _| (),
+                move |bounds, _, window, _| {
+                    let middle = match elbow {
+                        Elbow::At(depth) => bounds.origin.y + px(depth),
+                        Elbow::Middle => bounds.center().y,
+                    };
+                    for line in
+                        tree_lines(bounds, tree, middle, window.scale_factor(), right_to_left)
+                    {
+                        window.paint_quad(fill(line, rgb(color)));
+                    }
+                },
+            )
+            .size_full(),
+        ),
+    )
+}
+
+/// The trunk a child row's guide carries on through the lines that ride
+/// under it (its note, its ports), so the next sibling stays tied to the same
+/// tree. `gutter` is the row's guide gutter, from the sidebar's leading edge.
+/// A last child's elbow has already ended, so it has none, and neither does
+/// a row whose look draws no guides. Absolute: the caller places it in a
+/// relative box spanning those lines.
+pub fn trunk_below(
+    key: &str,
+    tree: RowTree,
+    (x, width): (f32, f32),
+    cx: &RowContext<'_>,
+) -> Option<Div> {
+    if tree != RowTree::Child || !cx.look.density.tree_lines || width <= 0. {
+        return None;
+    }
+    let color = cx.theme.muted;
+    let right_to_left = cx.right_to_left;
+    let key = key.to_owned();
+    let trunk = div()
+        .debug_selector(move || format!("trunk-{key}"))
+        .absolute()
+        .w(px(width))
+        .top_0()
+        .bottom_0();
+    let trunk = match right_to_left {
+        true => trunk.right(px(x)),
+        false => trunk.left(px(x)),
+    };
+    Some(
+        trunk.child(
+            canvas(
+                |_, _, _| (),
+                move |bounds, _, window, _| {
+                    let scale = window.scale_factor();
+                    let snap = |value: Pixels| px((f32::from(value) * scale).round() / scale);
+                    let weight = px(scale.round().max(1.) / scale);
+                    let x = match right_to_left {
+                        false => snap(bounds.origin.x),
+                        true => snap(bounds.right()) - weight,
+                    };
+                    let trunk = Bounds::from_corners(
+                        point(x, snap(bounds.origin.y)),
+                        point(x + weight, snap(bounds.bottom())),
+                    );
+                    window.paint_quad(fill(trunk, rgb(color)));
+                },
+            )
+            .size_full(),
+        ),
+    )
+}
+
 /// The pulse a status dot gives way to while its checkout or device is
 /// removed, as large as the dot at `font`.
 pub fn removing_dot(selector: &'static str, font: &FontConfig, theme: &Theme) -> Div {
@@ -168,3 +383,29 @@ pub fn removing_dot(selector: &'static str, font: &FontConfig, theme: &Theme) ->
                 ),
         )
 }
+
+/// The room an agent's own mark takes before the name or place beside it.
+const AGENT_ICON_RESERVE: f32 = 16.;
+
+/// An agent's icon and the room it takes before the name beside it.
+pub fn agent_icon_size(font: &FontConfig) -> (f32, f32) {
+    (scaled(font, 12.), scaled(font, AGENT_ICON_RESERVE))
+}
+
+/// The agent's icon on the leading edge of the line that names it, or beside
+/// its place in a detail line.
+pub fn agent_mark(key: &str, icon: AgentIcon, size: f32, color: u32, cx: &RowContext<'_>) -> Div {
+    let mark = div()
+        .debug_selector(|| format!("agent-icon-{key}"))
+        .absolute()
+        .top(px((line_height(cx.font) - size) / 2.))
+        .size(px(size));
+    let mark = match cx.right_to_left {
+        true => mark.right(px(0.)),
+        false => mark.left(px(0.)),
+    };
+    mark.child(icon.element(size, color))
+}
+
+#[cfg(test)]
+mod tests;

@@ -250,14 +250,10 @@ pub(super) fn configured_lines(
             .unwrap_or(theme.muted);
         let mut text = div().relative().w(px(label_width)).h(px(line_height(font)));
         if agent_here && let Some(icon) = agent_icon {
-            text = text.child(agent_mark(key, icon, agent_size, icon_color, font));
+            text = text.child(agent_mark(key, icon, agent_size, icon_color, cx));
         }
         if index == 0 && workspace_icon.draws() {
-            text = text.child(std::mem::replace(&mut workspace_icon, RowIcon::None).slot(
-                key,
-                font,
-                theme.muted,
-            ));
+            text = text.child(std::mem::replace(&mut workspace_icon, RowIcon::None).slot(key, cx));
         }
         text = text.child(
             token_line(line_tokens(index, line), look, text_width, cx)

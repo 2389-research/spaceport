@@ -187,6 +187,7 @@ impl SpaceportWindow {
                 mark,
                 host: (m.multi && endpoint.id != crate::endpoint::LOCAL)
                     .then_some(endpoint.label.as_str()),
+                right_to_left: crate::direction::is_rtl(),
             };
             let Some(snapshot) = &live.snapshot else {
                 continue;

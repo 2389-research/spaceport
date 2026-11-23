@@ -24,201 +24,9 @@ pub(super) use configured::{
     TokenLook, configured_status, configured_status_style, leading_status, token_column,
 };
 pub(super) use spaceport_sidebar::row::{
-    Elbow, RowBadge, RowContext, RowKind, RowLift, RowTree, first_text, removing_dot, row_text,
-    tree_gutter,
+    Elbow, RowBadge, RowContext, RowIcon, RowKind, RowLift, RowTree, agent_icon_size, agent_mark,
+    first_text, guide, removing_dot, row_text, tree_gutter, trunk_below,
 };
-
-/// What a row shows in its leading icon slot: a neutral repository icon, an
-/// empty slot for a folder outside a checkout, or no slot for a child row or
-/// a disabled icon setting. A linked worktree standing alone shows its branch
-/// glyph so it never relies on colour alone.
-pub(super) enum RowIcon {
-    None,
-    Blank,
-    Repository,
-    Worktree(u32),
-}
-
-impl RowIcon {
-    /// Whether the slot shows something; a blank one only keeps the room.
-    pub(super) fn draws(&self) -> bool {
-        matches!(self, Self::Repository | Self::Worktree(_))
-    }
-
-    fn slot(self, key: &str, font: &FontConfig, color: u32) -> Div {
-        let probe = match self {
-            Self::Worktree(_) => "worktree-icon",
-            _ => "workspace-icon",
-        };
-        let size = scaled(font, 12.);
-        div()
-            .debug_selector(|| format!("{probe}-{key}"))
-            .absolute()
-            .inset_s(px(0.))
-            .top(px((line_height(font) - size) / 2.))
-            .size(px(size))
-            .flex_none()
-            .overflow_hidden()
-            .child(self.element(color))
-    }
-
-    /// The icon filling its parent, or nothing for rows without one.
-    pub(super) fn element(self, color: u32) -> AnyElement {
-        match self {
-            Self::None | Self::Blank => Empty.into_any_element(),
-            Self::Repository => repository_icon(color).size_full().into_any_element(),
-            Self::Worktree(hue) => svg()
-                .path("icons/git-branch.svg")
-                .size_full()
-                .text_color(rgb(hue))
-                .into_any_element(),
-        }
-    }
-}
-
-/// A vector folder remains legible at the small sidebar size.
-fn repository_icon(color: u32) -> Svg {
-    svg()
-        .path("icons/folder.svg")
-        .flex_none()
-        .text_color(rgb(color))
-}
-/// Trunk and tick for a child row, given the gutter the row reserves between
-/// the parent's label column and the child's leading mark, with the tick at
-/// `middle`, the middle of the row's first line. Snapped to whole device
-/// pixels and painted as quads rather than borders: a bordered box rounds
-/// each edge on its own, which left the trunk thinner than its tick.
-pub(super) fn tree_lines(
-    gutter: Bounds<Pixels>,
-    tree: RowTree,
-    middle: Pixels,
-    scale: f32,
-) -> [Bounds<Pixels>; 2] {
-    let device = |value: Pixels| f32::from(value) * scale;
-    let logical = |value: f32| px(value / scale);
-    let weight = scale.round().max(1.);
-    let snap = |value: Pixels| logical(device(value).round());
-    // The trunk runs down the gutter's leading edge; the tick crosses it at the
-    // row's first line and stops where the row's leading mark begins.
-    let x = snap(gutter.origin.x);
-    let middle = logical((device(middle) - weight / 2.).round());
-    let end = if tree == RowTree::LastChild {
-        middle + logical(weight)
-    } else {
-        snap(gutter.bottom())
-    };
-    let lines = [
-        Bounds::from_corners(
-            point(x, snap(gutter.origin.y)),
-            point(x + logical(weight), end),
-        ),
-        Bounds::from_corners(
-            point(x, middle),
-            point(snap(gutter.right()), middle + logical(weight)),
-        ),
-    ];
-    // Right to left, the leading edge is the gutter's right one.
-    if !crate::direction::is_rtl() {
-        return lines;
-    }
-    lines.map(|line| {
-        let left = snap(gutter.origin.x + gutter.right() - line.right());
-        Bounds::new(point(left, line.origin.y), line.size)
-    })
-}
-
-/// A worktree child's guide: a trunk down the leading edge of `gutter`
-/// (`x` and width, in the row's own coordinates) and a tick across it at
-/// `elbow`, ending where the row's leading mark begins. A last child's
-/// trunk stops at its tick. Every layout draws its guides with this, in the
-/// tree's muted colour and one device pixel's weight, so they read as one
-/// family. None for a parent, while the look draws no guides, or when the
-/// gutter has no room. Absolute: the row must be relative.
-pub(super) fn guide(
-    key: &str,
-    tree: RowTree,
-    (x, width): (f32, f32),
-    elbow: Elbow,
-    cx: &RowContext<'_>,
-) -> Option<Div> {
-    if tree == RowTree::None || !cx.look.density.tree_lines || width <= 0. {
-        return None;
-    }
-    let color = cx.theme.muted;
-    let key = key.to_owned();
-    Some(
-        div()
-            .debug_selector(move || format!("tree-{key}"))
-            .absolute()
-            .inset_s(px(x))
-            .w(px(width))
-            .top_0()
-            .bottom_0()
-            .child(
-                canvas(
-                    |_, _, _| (),
-                    move |bounds, _, window, _| {
-                        let middle = match elbow {
-                            Elbow::At(depth) => bounds.origin.y + px(depth),
-                            Elbow::Middle => bounds.center().y,
-                        };
-                        for line in tree_lines(bounds, tree, middle, window.scale_factor()) {
-                            window.paint_quad(fill(line, rgb(color)));
-                        }
-                    },
-                )
-                .size_full(),
-            ),
-    )
-}
-
-/// The trunk a child row's guide carries on through the lines that ride
-/// under it (its note, its ports), so the next sibling stays tied to the same
-/// tree. `gutter` is the row's guide gutter, from the sidebar's leading edge.
-/// A last child's elbow has already ended, so it has none, and neither does
-/// a row whose look draws no guides. Absolute: the caller places it in a
-/// relative box spanning those lines.
-pub(super) fn trunk_below(
-    key: &str,
-    tree: RowTree,
-    (x, width): (f32, f32),
-    cx: &RowContext<'_>,
-) -> Option<Div> {
-    if tree != RowTree::Child || !cx.look.density.tree_lines || width <= 0. {
-        return None;
-    }
-    let color = cx.theme.muted;
-    let key = key.to_owned();
-    Some(
-        div()
-            .debug_selector(move || format!("trunk-{key}"))
-            .absolute()
-            .inset_s(px(x))
-            .w(px(width))
-            .top_0()
-            .bottom_0()
-            .child(
-                canvas(
-                    |_, _, _| (),
-                    move |bounds, _, window, _| {
-                        let scale = window.scale_factor();
-                        let snap = |value: Pixels| px((f32::from(value) * scale).round() / scale);
-                        let weight = px(scale.round().max(1.) / scale);
-                        let x = match crate::direction::is_rtl() {
-                            false => snap(bounds.origin.x),
-                            true => snap(bounds.right()) - weight,
-                        };
-                        let trunk = Bounds::from_corners(
-                            point(x, snap(bounds.origin.y)),
-                            point(x + weight, snap(bounds.bottom())),
-                        );
-                        window.paint_quad(fill(trunk, rgb(color)));
-                    },
-                )
-                .size_full(),
-            ),
-    )
-}
 
 /// A row's first line: segments joined by upstream's separator, the primary one
 /// carrying the row's weight and color while the rest stay muted. Segments are
@@ -352,7 +160,6 @@ pub(super) fn row(
         RowIcon::None => 0.,
         _ => scaled(font, ICON_RESERVE),
     };
-    let muted = theme.muted;
     let status_width = indicators.width(font);
     let extra_status_width = status_width - STATUS_WIDTH;
     let indent = cx.nest
@@ -492,10 +299,10 @@ pub(super) fn row(
                                 .w(px(label_width))
                                 .h(px(line_height(font)))
                                 .when_some(agent_first, |line, icon| {
-                                    line.child(agent_mark(key, icon, agent_size, name_color, font))
+                                    line.child(agent_mark(key, icon, agent_size, name_color, cx))
                                 })
                                 .when(workspace_icon.draws(), |title| {
-                                    title.child(workspace_icon.slot(key, font, muted))
+                                    title.child(workspace_icon.slot(key, cx))
                                 })
                                 .child(
                                     name_line(
@@ -523,7 +330,7 @@ pub(super) fn row(
                                             icon,
                                             agent_size,
                                             detail_color,
-                                            font,
+                                            cx,
                                         ))
                                     })
                                     .child(
@@ -558,27 +365,6 @@ pub(super) fn row(
         .when_some(badge, |row, badge| {
             row.child(badge.element(key, badge_width, font, theme))
         })
-}
-
-/// An agent's icon and the room it takes before the name beside it.
-fn agent_icon_size(font: &FontConfig) -> (f32, f32) {
-    (scaled(font, 12.), scaled(font, 16.))
-}
-
-fn agent_mark(
-    key: &str,
-    icon: crate::icons::AgentIcon,
-    size: f32,
-    color: u32,
-    font: &FontConfig,
-) -> Div {
-    div()
-        .debug_selector(|| format!("agent-icon-{key}"))
-        .absolute()
-        .inset_s(px(0.))
-        .top(px((line_height(font) - size) / 2.))
-        .size(px(size))
-        .child(icon.element(size, color))
 }
 
 pub(crate) fn label_text(text: &str) -> impl IntoElement {

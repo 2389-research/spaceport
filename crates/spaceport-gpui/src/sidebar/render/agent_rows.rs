@@ -59,6 +59,7 @@ impl SpaceportWindow {
                     theme,
                 ),
                 host: self.agent_host(endpoint),
+                right_to_left: crate::direction::is_rtl(),
             };
             let Some(lines) = self.panel_agent_lines(index, agent) else {
                 continue;
