@@ -1,0 +1,9 @@
+# ABOUTME: Selects Android's native object cleaner on supported API levels.
+# ABOUTME: Uses UniFFI's JNA cleaner on earlier Android releases.
+[bindings.kotlin]
+android = true
+
+# Kotlin reserves close for releasing the UniFFI object, and Throwable owns message.
+[bindings.kotlin.rename]
+"MobilePty.close" = "close_channel"
+"MobileError.Client.message" = "reason"

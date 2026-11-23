@@ -1,0 +1,7 @@
+# ABOUTME: Keeps local Gradle output and SDK locations outside Git.
+# ABOUTME: Tracks the Gradle wrapper and Android project sources.
+.gradle/
+.kotlin/
+.idea/
+build/
+local.properties
