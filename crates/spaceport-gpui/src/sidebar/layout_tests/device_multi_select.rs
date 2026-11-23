@@ -1,5 +1,5 @@
 use super::*;
-use crate::menu::DeviceScope;
+use spaceport_sidebar::device_scope::DeviceScope;
 
 /// Rows in the picker: All Devices, then each endpoint in catalog order.
 const LOCAL_ROW: &str = "device-row-1";

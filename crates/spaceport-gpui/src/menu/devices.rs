@@ -2,8 +2,9 @@
 // ABOUTME: Keeps Core-only setup unavailable until the running app has opted in.
 // i18n: migrated
 //! The sidebar's device footer and the device picker that scopes the sidebar
-//! to one device, several, or all of them, or opens the Add Device dialog. Device scope is presentation
-//! state; connection ownership stays in `endpoint`.
+//! to one device, several, or all of them, or opens the Add Device dialog.
+//! Device scope is presentation state, so it lives in
+//! `spaceport_sidebar::device_scope`; connection ownership stays in `endpoint`.
 mod activity_card;
 mod add_device;
 mod core_catalog;
@@ -12,14 +13,12 @@ mod error;
 mod host_menu;
 pub(super) mod picker;
 pub(super) mod rail;
-mod scope;
 mod setup;
 mod wsl;
 
 pub(super) use add_device::Setup;
 pub(crate) use error::Error;
 pub(crate) use host_menu::HostMenu;
-pub(crate) use scope::DeviceScope;
 pub(super) use wsl::WslSetup;
 
 use super::{Page, colors};
@@ -27,6 +26,7 @@ use crate::i18n::fl;
 use crate::{Command, SpaceportWindow};
 use gpui::{prelude::*, *};
 use spaceport_client::ConnectTarget;
+use spaceport_sidebar::device_scope::DeviceScope;
 
 pub(super) const MENU_GAP: f32 = 12.;
 

@@ -1,4 +1,4 @@
-use crate::menu::DeviceScope;
+use super::*;
 
 const ENABLED: [&str; 3] = ["local", "ssh:a", "ssh:b"];
 

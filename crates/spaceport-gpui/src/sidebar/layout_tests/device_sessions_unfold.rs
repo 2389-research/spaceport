@@ -1,6 +1,7 @@
 // ABOUTME: Checks device session expansion and picker keyboard navigation.
 // ABOUTME: Opts into Core so the retained Add Device row participates in selection.
 use super::*;
+use spaceport_sidebar::device_scope::DeviceScope;
 
 fn open_picker(
     cx: &mut gpui::TestAppContext,
@@ -93,7 +94,7 @@ fn right_unfolds_the_selected_device_and_left_folds_it(cx: &mut gpui::TestAppCon
     view.read_with(cx, |view, _| {
         assert_eq!(
             view.device_filter,
-            crate::menu::DeviceScope::only(view.endpoints[0].id.clone())
+            DeviceScope::only(view.endpoints[0].id.clone())
         );
     });
 }

@@ -4,7 +4,7 @@
 use std::collections::BTreeSet;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) enum DeviceScope {
+pub enum DeviceScope {
     #[default]
     All,
     /// A non-empty set of device IDs.
@@ -12,11 +12,11 @@ pub(crate) enum DeviceScope {
 }
 
 impl DeviceScope {
-    pub(crate) fn only(id: impl Into<String>) -> Self {
+    pub fn only(id: impl Into<String>) -> Self {
         Self::Only(BTreeSet::from([id.into()]))
     }
 
-    pub(crate) fn shows(&self, id: &str) -> bool {
+    pub fn shows(&self, id: &str) -> bool {
         match self {
             Self::All => true,
             Self::Only(ids) => ids.contains(id),
@@ -24,12 +24,12 @@ impl DeviceScope {
     }
 
     /// Whether `id` is picked by name, which All Devices picks none of.
-    pub(crate) fn picks(&self, id: &str) -> bool {
+    pub fn picks(&self, id: &str) -> bool {
         matches!(self, Self::Only(ids) if ids.contains(id))
     }
 
     /// The IDs picked by name; empty for All Devices.
-    pub(crate) fn picked(&self) -> impl Iterator<Item = &str> {
+    pub fn picked(&self) -> impl Iterator<Item = &str> {
         match self {
             Self::All => None,
             Self::Only(ids) => Some(ids.iter().map(String::as_str)),
@@ -40,7 +40,7 @@ impl DeviceScope {
 
     /// Keeps the newly selected device listed. A scope that already shows it
     /// stays as it is; otherwise the sidebar follows to that device alone.
-    pub(crate) fn follow(&mut self, id: &str) {
+    pub fn follow(&mut self, id: &str) {
         if !self.shows(id) {
             *self = Self::only(id);
         }
@@ -49,7 +49,7 @@ impl DeviceScope {
     /// The scope with `id` added or taken away. All Devices starts from the
     /// `selected` device, so picking another lists the two of them. `None` when
     /// taking it away would list nothing.
-    pub(crate) fn toggled<'a>(
+    pub fn toggled<'a>(
         &self,
         id: &str,
         selected: &str,
@@ -82,7 +82,7 @@ impl DeviceScope {
     /// Drops devices that are no longer `enabled`, such as ones that left the
     /// catalog. Navigation has already followed a retired selected device, so
     /// the scope only falls back to All Devices if nothing it named is left.
-    pub(crate) fn reconcile<'a>(&mut self, enabled: impl IntoIterator<Item = &'a str>) {
+    pub fn reconcile<'a>(&mut self, enabled: impl IntoIterator<Item = &'a str>) {
         let Self::Only(ids) = self else {
             return;
         };
@@ -93,3 +93,6 @@ impl DeviceScope {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

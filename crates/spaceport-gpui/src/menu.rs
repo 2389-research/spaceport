@@ -53,7 +53,7 @@ pub(crate) use {
 };
 
 use crate::direction::Logical;
-pub(crate) use devices::{DeviceScope, SettingsHint, enter as enter_key};
+pub(crate) use devices::{SettingsHint, enter as enter_key};
 use page::WorkspaceMenuAction;
 use workspace::WorkspaceTarget;
 
