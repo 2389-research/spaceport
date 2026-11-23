@@ -32,7 +32,6 @@ mod reader;
 mod rich;
 mod selection;
 mod start;
-mod summary;
 mod terminal;
 mod text;
 mod view;
@@ -45,7 +44,9 @@ pub(crate) use chats::{ChatInput, Chats, LauncherDeck, Toward};
 // chat reads them at.
 pub(crate) use spaceport_chat_core::env::{check_env, env_text, parse_env};
 pub(crate) use spaceport_chat_core::session::Refusal;
-pub(crate) use spaceport_chat_core::{MAX_CHATS, env, existing, highlight, link, list, session};
+pub(crate) use spaceport_chat_core::{
+    MAX_CHATS, env, existing, highlight, link, list, session, summary,
+};
 #[cfg(feature = "integration-test")]
 pub(crate) use start::native as native_start;
 pub(crate) use start::{Error as StartError, Program, Receipt};

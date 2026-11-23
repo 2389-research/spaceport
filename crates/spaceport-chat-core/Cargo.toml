@@ -13,6 +13,7 @@ workspace = true
 serde_json.workspace              = true
 spaceport-chat-protocol.workspace = true
 spaceport-client.workspace        = true
+spaceport-release-notes.workspace = true
 spaceport-remote.workspace        = true
 # The theme a code block's tokens are coloured in, and the contrast rule that
 # makes them readable there.

@@ -4,7 +4,7 @@
 //! time they compact. The view folds such an answer into one card; this
 //! recognizes it and keeps only the sections that say something.
 
-use crate::release_notes::{Kind, Line};
+use spaceport_release_notes::{Kind, Line};
 
 // They match what an agent writes, in English.
 /// Section titles compaction summaries use; an answer with
@@ -26,9 +26,9 @@ const NONE: &str = "(none)";
 
 /// A folded summary: its gist, and its lines without empty sections.
 #[derive(Debug, PartialEq)]
-pub(crate) struct Summary {
-    pub(crate) gist: String,
-    pub(crate) lines: Vec<Line>,
+pub struct Summary {
+    pub gist: String,
+    pub lines: Vec<Line>,
 }
 
 fn is_section(line: &Line) -> bool {
@@ -42,7 +42,7 @@ fn is_section(line: &Line) -> bool {
 }
 
 /// `lines` as a summary, when they read like one.
-pub(crate) fn summary(lines: &[Line]) -> Option<Summary> {
+pub fn summary(lines: &[Line]) -> Option<Summary> {
     if lines.iter().filter(|line| is_section(line)).count() < MIN_SECTIONS {
         return None;
     }
