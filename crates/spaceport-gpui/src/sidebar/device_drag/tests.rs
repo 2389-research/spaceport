@@ -1,6 +1,5 @@
 #![allow(clippy::unwrap_used)]
 // Named rather than globbed: the parent's GPUI glob would shadow `#[test]`.
-use super::landing;
 use crate::{
     SpaceportWindow,
     sidebar::layout_tests::{fixture_window, full_draw, snapshot},
@@ -9,17 +8,6 @@ use gpui::{Entity, Modifiers, MouseButton, VisualTestContext, point, px, size};
 use spaceport_client::ConnectTarget;
 use spaceport_reorder::{Beside, LIFT_DELAY};
 use std::sync::Arc;
-
-#[test]
-fn a_drop_lands_before_the_device_holding_the_gap_or_after_the_last() {
-    let ids: Vec<String> = ["a", "b", "c"].map(String::from).into();
-    // The gaps around the carried device move nothing.
-    assert_eq!(landing(&ids, 1, 1), None);
-    assert_eq!(landing(&ids, 1, 2), None);
-    assert_eq!(landing(&ids, 1, 0), Some(Beside::Before("a".into())));
-    assert_eq!(landing(&ids, 0, 2), Some(Beside::Before("c".into())));
-    assert_eq!(landing(&ids, 0, 3), Some(Beside::After("c".into())));
-}
 
 fn remote(id: &str) -> crate::endpoint::Endpoint {
     let mut endpoint = crate::endpoint::Endpoint::new(

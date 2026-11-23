@@ -1,105 +1,13 @@
-//! Reordering devices by dragging their headers. A press lifts a header as it
-//! lifts a workspace row; while it is lifted the list folds to its headers,
-//! so a device with many rows moves as one line among the others, and the
-//! headers it passes slide aside to open the gap it lands in. Releasing
-//! there moves the device for this client (`endpoint::order`), Local
-//! included.
+//! Dragging a device's header to reorder the list: the press that arms it, the
+//! list folding to its headers, and the release that moves the device. The
+//! drag, its slides and the gap a drop lands in are `spaceport-sidebar`'s;
+//! this lists the headers the window shows and moves the device it drops.
 
 use crate::SpaceportWindow;
 use gpui::{prelude::*, *};
-use spaceport_reorder::{Beside, LIFT_DELAY, LIFT_DISTANCE, SLIDE, Slide, preview, slot_for};
-use std::{
-    cell::{Cell, RefCell},
-    collections::HashMap,
-};
-
-/// A press on a device's header that may become a reorder.
-pub(crate) struct DeviceDrag {
-    endpoint: String,
-    origin: Point<Pixels>,
-    pointer: Point<Pixels>,
-    /// How far below the header's top the press landed. The list folds when
-    /// the header lifts, moving it, so the header follows the pointer from
-    /// that spot rather than from where it was pressed.
-    grab: Pixels,
-    lifted: bool,
-    /// The gap under the pointer and the move it makes, `None` over the
-    /// carried header's own place.
-    target: Option<(usize, Beside<String>)>,
-    /// Whether a folded frame has been laid out: until then the list's
-    /// geometry is the unfolded one and cannot place the headers.
-    measured: Cell<bool>,
-    /// Each header's slide, by endpoint ID. Render reads and advances them.
-    slides: RefCell<HashMap<String, Slide>>,
-    _timer: Task<()>,
-}
-
-impl DeviceDrag {
-    pub(super) fn carries(&self, endpoint: &str) -> bool {
-        self.lifted && self.endpoint == endpoint
-    }
-}
-
-/// What the pointer handler needs from the folded list render laid out:
-/// each movable header's unit, row, and shift, and the devices in order.
-#[derive(Clone, Debug, Default)]
-pub(super) struct DeviceDrop {
-    rows: Vec<(usize, usize, Pixels)>,
-    ids: Vec<String>,
-    dragged: usize,
-}
-
-/// The folded list's headers while a device is lifted.
-pub(super) struct DevicePlan {
-    /// Each listed header's shift by endpoint index, and whether it is the
-    /// carried one.
-    shifts: HashMap<usize, (Pixels, bool)>,
-    pub(super) drop: DeviceDrop,
-    /// Whether a header is still sliding, or the fold still needs measuring.
-    pub(super) sliding: bool,
-}
-
-impl DevicePlan {
-    pub(super) fn shift(&self, endpoint: usize) -> (Pixels, bool) {
-        self.shifts.get(&endpoint).copied().unwrap_or_default()
-    }
-}
-
-/// Where row `row` of the spaces list sits in the window. The handle reports
-/// where layout put it, before the list's scroll offset moves it.
-fn window_top(scroll: &ScrollHandle, row: usize) -> Option<Pixels> {
-    Some(scroll.bounds_for_item(row)?.top() + scroll.offset().y)
-}
-
-/// The gap a header carried with its top at `card_top`, in window
-/// coordinates, points to against the geometry the folded list last laid out.
-fn slot(drop: &DeviceDrop, scroll: &ScrollHandle, card_top: Pixels) -> Option<usize> {
-    let mut spans = vec![None; drop.ids.len()];
-    // Headers are measured where they rest, not where the preview slid them.
-    for &(unit, row, shift) in &drop.rows {
-        let (Some(top), Some(bounds)) = (window_top(scroll, row), scroll.bounds_for_item(row))
-        else {
-            continue;
-        };
-        let top = f32::from(top - shift);
-        spans[unit] = Some((top, top + f32::from(bounds.size.height)));
-    }
-    let (top, bottom) = (*spans.get(drop.dragged)?)?;
-    let card = f32::from(card_top);
-    Some(slot_for(&spans, drop.dragged, (card, card + bottom - top)))
-}
-
-/// The move dropping into `slot` makes: before the device that holds it, or
-/// after the last one. `None` for the gaps around the carried device.
-fn landing(ids: &[String], dragged: usize, slot: usize) -> Option<Beside<String>> {
-    if slot == dragged || slot == dragged + 1 {
-        return None;
-    }
-    match ids.get(slot) {
-        Some(id) => Some(Beside::Before(id.clone())),
-        None => ids.last().cloned().map(Beside::After),
-    }
-}
+use spaceport_reorder::{Beside, LIFT_DELAY, LIFT_DISTANCE, preview};
+use spaceport_sidebar::device_drag::{DeviceDrag, DeviceDrop, DevicePlan, gap, window_top};
+use std::collections::HashMap;
 
 impl SpaceportWindow {
     /// Arms a reorder for a left press on device `index`'s header. `row` is
@@ -128,22 +36,14 @@ impl SpaceportWindow {
         let Some(endpoint) = self.endpoints.get(index) else {
             return;
         };
+        let endpoint = endpoint.id.clone();
         let top = window_top(&self.sidebar_scroll[0], row).unwrap_or(position.y);
         let lift = cx.spawn(async move |this, cx| {
             cx.background_executor().timer(LIFT_DELAY).await;
             let _ = this.update(cx, |this, cx| this.lift_device(cx));
         });
-        self.device_drag = Some(DeviceDrag {
-            endpoint: endpoint.id.clone(),
-            origin: position,
-            pointer: position,
-            grab: position.y - top,
-            lifted: false,
-            target: None,
-            measured: Cell::new(false),
-            slides: RefCell::default(),
-            _timer: lift,
-        });
+        let drag = DeviceDrag::press(endpoint, position, position.y - top, lift);
+        self.device_drag = Some(drag);
     }
 
     fn lift_device(&mut self, cx: &mut Context<Self>) {
@@ -180,7 +80,7 @@ impl SpaceportWindow {
             return None;
         }
         let scroll = &self.sidebar_scroll[0];
-        let measured = drag.measured.replace(true);
+        let measured = drag.mark_measured();
         let heights: Vec<f32> = units
             .iter()
             .map(|&(_, row)| {
@@ -193,7 +93,6 @@ impl SpaceportWindow {
         let slot = drag.target.as_ref().map_or(dragged, |(slot, _)| *slot);
         let previewed = preview(&heights, dragged, slot);
         let now = crate::motion::now();
-        let mut slides = drag.slides.borrow_mut();
         let mut plan = DevicePlan {
             shifts: HashMap::new(),
             drop: DeviceDrop {
@@ -208,30 +107,18 @@ impl SpaceportWindow {
             let shift = if unit == dragged {
                 // The header rests where the folded list put it; it paints
                 // where the pointer holds it.
-                let previous = slides.get(id).map_or(0., |slide| slide.to);
+                let previous = drag.pinned(id);
                 let at = window_top(scroll, row)
                     .filter(|_| measured)
                     .map_or(0., |top| {
                         f32::from(drag.pointer.y - drag.grab - top) + previous
                     });
-                slides.insert(
-                    id.clone(),
-                    Slide {
-                        from: at,
-                        to: at,
-                        start: now,
-                    },
-                );
+                drag.pin(id, at, now);
                 at
             } else {
-                let slide = slides.entry(id.clone()).or_insert(Slide {
-                    from: 0.,
-                    to: 0.,
-                    start: now,
-                });
-                *slide = slide.toward(previewed[unit], now, SLIDE);
-                plan.sliding |= slide.progress(now, SLIDE) < 1.;
-                slide.at(now, SLIDE)
+                let (at, moving) = drag.slide(id, previewed[unit], now);
+                plan.sliding |= moving;
+                at
             };
             plan.shifts.insert(index, (px(shift), unit == dragged));
             plan.drop.rows.push((unit, row, px(shift)));
@@ -298,10 +185,7 @@ impl SpaceportWindow {
         let Some(drag) = self.device_drag.as_mut().filter(|drag| drag.lifted) else {
             return false;
         };
-        drag.target = drop.and_then(|drop| {
-            let slot = slot(drop, &scroll, position.y - drag.grab)?;
-            Some((slot, landing(&drop.ids, drop.dragged, slot)?))
-        });
+        drag.target = drop.and_then(|drop| gap(drop, &scroll, position.y - drag.grab));
         cx.notify();
         true
     }

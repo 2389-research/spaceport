@@ -20,6 +20,7 @@ pub use error::{Error, Result};
 
 pub mod agents;
 pub mod animated;
+pub mod device_drag;
 pub mod device_scope;
 pub mod device_tags;
 pub mod hover;
