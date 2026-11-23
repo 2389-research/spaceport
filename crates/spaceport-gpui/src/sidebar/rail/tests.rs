@@ -286,7 +286,9 @@ fn center_x(bounds: Bounds<Pixels>) -> Pixels {
 #[gpui::test]
 fn the_selected_workspaces_host_stands_apart(cx: &mut TestAppContext) {
     let (view, cx) = rail_window(cx, 2);
-    let look = view.read_with(cx, |view, _| layout::for_config(&view.config, view.fill()));
+    let look = view.read_with(cx, |view, _| {
+        layout::for_config(&view.config, view.fill().mark())
+    });
     for name in Theme::BUILTIN_NAMES {
         let theme = Theme::builtin(name).unwrap_or_else(|| panic!("missing theme {name}"));
         view.update(cx, |view, cx| {
@@ -353,7 +355,7 @@ fn host_box_wears_the_workspace_badge(cx: &mut TestAppContext) {
         cx.update(|window, cx| full_draw(window, cx).clear(cx));
         let (look, theme) = view.read_with(cx, |view, _| {
             (
-                layout::for_config(&view.config, view.fill()),
+                layout::for_config(&view.config, view.fill().mark()),
                 view.theme.clone(),
             )
         });
@@ -564,7 +566,7 @@ fn inside_rounded(
 /// is drawn with in the view's current layout.
 fn host_radius(view: &Entity<SpaceportWindow>, active: bool, cx: &mut VisualTestContext) -> f32 {
     view.read_with(cx, |view, _| {
-        layout::for_config(&view.config, view.fill())
+        layout::for_config(&view.config, view.fill().mark())
             .badge_chrome(active, &view.theme)
             .radius
     })
