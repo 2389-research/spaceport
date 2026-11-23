@@ -3,9 +3,11 @@
 //! bubble when the agent asks for you, a ringed check when done, and quiet
 //! dots otherwise. Nothing but the working ring moves, as in Orca.
 
-use super::{disc, dot_size, unknown_dot};
+use super::{disc, dot_size};
+use crate::metrics::unknown_dot;
 use gpui::{prelude::*, *};
 use spaceport_client::protocol::AgentStatus;
+use spaceport_motion::duration;
 use std::time::Duration;
 
 /// Orca's spinner turns in twelve 30° steps a second.
@@ -26,7 +28,7 @@ pub(super) fn mark(status: AgentStatus, size: f32, color: u32) -> AnyElement {
         AgentStatus::Working => icon("status-orca-ring", "icons/status-orca-working.svg")
             .with_animation(
                 "status-orca-ring",
-                Animation::new(crate::motion::duration(Duration::from_secs(1)))
+                Animation::new(duration(Duration::from_secs(1)))
                     .repeat_synced()
                     .with_max_fps(STEPS),
                 |ring, delta| {

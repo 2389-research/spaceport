@@ -23,6 +23,8 @@ use gpui::{App, ClickEvent, Div, ElementId, ParentElement, Styled, Window};
 use spaceport_client::protocol::{AgentStatus, ClientShellWorkspace};
 use std::borrow::Cow;
 
+pub(super) use spaceport_sidebar::row::RowState;
+
 /// Read-only inputs every row of one render shares.
 pub(super) struct RowContext<'a> {
     pub(super) indicators: super::agents::Indicators,
@@ -125,21 +127,6 @@ pub(super) enum RowData<'a> {
     Agent(AgentRow<'a>),
 }
 
-/// How a row is marked. Hovering needs no state: layouts style it through
-/// the row's hover group, so it costs nothing per frame.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(super) struct RowState {
-    /// The focused workspace or agent.
-    pub(super) selected: bool,
-    /// Marked as if hovered while the pointer is elsewhere, such as the row a
-    /// menu was opened for.
-    pub(super) highlighted: bool,
-    /// Whether a workspace is being dragged, and whether this is the row it
-    /// carries. Rows the carried one passes stop answering hover; the carried
-    /// row floats over them, so it must paint an opaque, lifted surface.
-    pub(super) lift: RowLift,
-}
-
 /// Arranges a row's content and marks its state. Implementations are
 /// stateless and read only what they are given, so render stays free of I/O
 /// and allocation beyond the elements themselves. How a dragged row looks is
@@ -200,12 +187,12 @@ impl<'a> Cell<'a> {
         let (row, rail) = match self.data {
             RowData::Workspace(row) => {
                 let rail = (!row.removing)
-                    .then(|| self.cx.indicators.rail(row.status, row.label))
+                    .then(|| super::agents::rail(self.cx.indicators, row.status, row.label))
                     .flatten();
                 (self.layout.workspace(row, self.state, self.cx), rail)
             }
             RowData::Agent(row) => {
-                let rail = self.cx.indicators.rail(row.status, &row.key);
+                let rail = super::agents::rail(self.cx.indicators, row.status, &row.key);
                 (self.layout.agent(row, self.state, self.cx), rail)
             }
         };
