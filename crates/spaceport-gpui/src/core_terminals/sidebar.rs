@@ -63,7 +63,16 @@ impl SpaceportWindow {
                 .rounded(px(crate::config::corners::CONTROL))
                 .cursor_pointer()
                 .hover(move |row| row.bg(rgb(hover)))
-                .child(status_indicator(status, font, indicators).flex_none())
+                .child(
+                    status_indicator(
+                        status,
+                        font,
+                        indicators,
+                        crate::sidebar::paint::PAINTERS,
+                        crate::direction::is_rtl(),
+                    )
+                    .flex_none(),
+                )
                 .child(
                     div()
                         .flex_1()

@@ -143,6 +143,7 @@ fn slot(
                 .rounded_full()
                 .bg(rgb(theme.sidebar_background()))
                 .child(icon_mark(
+                    cx.painters,
                     icons,
                     status,
                     diameter,
@@ -164,6 +165,7 @@ fn slot(
                 .rounded_full()
                 .bg(rgb(theme.sidebar_background()))
                 .child(icon_mark(
+                    cx.painters,
                     StatusIcons::Dots,
                     status,
                     diameter,

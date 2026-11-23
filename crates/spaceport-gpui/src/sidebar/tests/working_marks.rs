@@ -28,7 +28,13 @@ impl Render for Slot {
             line_height_multiple: None,
             weight: crate::config::Weight::NORMAL,
         };
-        div().child(status_indicator(self.status, &font, self.indicators))
+        div().child(status_indicator(
+            self.status,
+            &font,
+            self.indicators,
+            crate::sidebar::paint::PAINTERS,
+            crate::direction::is_rtl(),
+        ))
     }
 }
 

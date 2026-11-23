@@ -1,12 +1,16 @@
 //! The agents list's model: the colors and sizes its status marks are drawn
-//! with, the palette they default to, the daemon's name for a status, and how
-//! each agent's place, pane and labels are read from a snapshot. Status comes
-//! from the daemon's snapshot, never from guessing at terminal output. The app
-//! words every status and paints every mark, so the words, the moving marks
-//! and their window layer stay there.
+//! with, the palette they default to, the daemon's name for a status, how each
+//! agent's place, pane and labels are read from a snapshot, and the marks
+//! themselves. Status comes from the daemon's snapshot, never from guessing at
+//! terminal output. The app words every status, and supplies the one thing a
+//! moving mark needs from a window, so the words and the window's own mark
+//! layer stay there.
 
-use crate::metrics::{STATUS_DOT_UNKNOWN, STATUS_WIDTH, line_height, scaled};
+use crate::direction::Logical;
+use crate::metrics::{STATUS_DOT_UNKNOWN, STATUS_WIDTH, line_height, scaled, unknown_dot};
 use crate::order::status_priority;
+use crate::paint::Painters;
+use gpui::{prelude::*, *};
 use spaceport_client::protocol::{AgentStatus, ClientShellAgent, ClientShellSnapshot};
 use spaceport_client::text::{caption, safe_text};
 use spaceport_settings::herdr_settings::Settings;
@@ -274,6 +278,222 @@ pub fn status_style(status: AgentStatus, theme: &Theme) -> (f32, bool, u32) {
         AgentStatus::Unknown => (STATUS_DOT_UNKNOWN, true, 0x6c7086),
     };
     (diameter, filled, theme.ink(color))
+}
+
+const RAIL_WIDTH: f32 = 3.;
+/// The bar's inset from the row's top and bottom, as a share of its height,
+/// so even a one-line Compact row at the smallest font keeps a visible bar.
+const RAIL_INSET: f32 = 0.2;
+
+/// The edge rail's bar on a row's leading edge, for the statuses worth
+/// noticing. Absolutely placed, so the row must be `relative`, and mirrored
+/// when the chrome runs right to left.
+pub fn rail(
+    indicators: Indicators,
+    status: AgentStatus,
+    key: &str,
+    right_to_left: bool,
+) -> Option<Div> {
+    if !indicators.edge_rail
+        || !matches!(
+            status,
+            AgentStatus::Working | AgentStatus::Done | AgentStatus::Blocked
+        )
+    {
+        return None;
+    }
+    Some(
+        div()
+            .debug_selector(|| format!("rail-{key}"))
+            .absolute()
+            .inset_s(right_to_left, px(0.))
+            .top(relative(RAIL_INSET))
+            .bottom(relative(RAIL_INSET))
+            .w(px(RAIL_WIDTH))
+            .rounded_e(right_to_left, px(RAIL_WIDTH))
+            .bg(rgb(indicators.color(status))),
+    )
+}
+
+pub fn status_indicator(
+    status: AgentStatus,
+    font: &FontConfig,
+    indicators: Indicators,
+    painters: Painters,
+    right_to_left: bool,
+) -> Div {
+    status_mark(
+        status,
+        font,
+        indicators,
+        indicators.color(status),
+        false,
+        painters,
+        right_to_left,
+    )
+}
+
+/// Configured tokens can override color and weight without changing the set;
+/// only dots have a weight to change.
+pub fn status_mark(
+    status: AgentStatus,
+    font: &FontConfig,
+    indicators: Indicators,
+    color: u32,
+    bold: bool,
+    painters: Painters,
+    right_to_left: bool,
+) -> Div {
+    if indicators.icons != StatusIcons::Dots {
+        return status_icon(status, font, indicators, color, painters, right_to_left);
+    }
+    // Upstream dots: blocked/done filled, idle hollow, unknown a small dot.
+    // Working spins instead, so busy agents read apart from settled ones.
+    // They grow with the font, as upstream's dot glyphs do.
+    let dot = indicators.width(font);
+    let (diameter, filled) = match status {
+        AgentStatus::Unknown => (unknown_dot(dot), true),
+        AgentStatus::Idle => (dot, false),
+        _ => (dot, true),
+    };
+    div()
+        .w(px(dot))
+        .h(px(dot))
+        .mt(px((line_height(font) - dot) / 2.))
+        .flex_none()
+        .row(right_to_left)
+        .items_center()
+        .justify_center()
+        .when(status == AgentStatus::Working, |slot| {
+            slot.child(icon_mark(
+                painters,
+                StatusIcons::Dots,
+                status,
+                dot,
+                color,
+                indicators.fade(),
+            ))
+        })
+        .when(status != AgentStatus::Working, |slot| {
+            slot.child(
+                div()
+                    .size(px(if bold { dot } else { diameter }))
+                    .rounded_full()
+                    .border_1()
+                    .when(bold, |dot| dot.border_2())
+                    .border_color(rgb(color))
+                    .when(filled, |dot| dot.bg(rgb(color))),
+            )
+        })
+}
+
+/// A working dot: a faint ring with a spinning arc, `size` across. Rows draw
+/// it at the dot's size, so they keep their geometry.
+fn working_orbit(size: f32, color: u32) -> impl IntoElement {
+    spin(
+        svg()
+            .debug_selector(|| "status-orbit".into())
+            .path("icons/status-orbit.svg")
+            .size(px(size))
+            .flex_none()
+            .text_color(rgb(color)),
+        "status-orbit",
+        900,
+    )
+}
+
+/// Turns `mark` once every `period_ms`. Every spinner of one kind shares an
+/// id and the app's synced clock, so all working agents turn in step, and
+/// repaints are capped because a sidebar can show many at once. GPUI holds
+/// it still under reduced motion.
+fn spin(mark: Svg, id: &'static str, period_ms: u64) -> impl IntoElement {
+    mark.with_animation(
+        id,
+        Animation::new(spaceport_motion::duration(
+            std::time::Duration::from_millis(period_ms),
+        ))
+        .repeat_synced()
+        .with_max_fps(spaceport_motion::MARK_MAX_FPS),
+        |mark, delta| mark.with_transformation(Transformation::rotate(percentage(delta))),
+    )
+}
+
+/// A drawn status icon, centered in its slot. Configured weights do not
+/// apply: the icon's strokes are fixed by its asset.
+fn status_icon(
+    status: AgentStatus,
+    font: &FontConfig,
+    indicators: Indicators,
+    color: u32,
+    painters: Painters,
+    right_to_left: bool,
+) -> Div {
+    let (icons, fade) = (indicators.icons, indicators.fade());
+    let size = icon_size(font);
+    let slot = div()
+        .flex_none()
+        .row(right_to_left)
+        .items_center()
+        .justify_center();
+    if icons != StatusIcons::Tiles {
+        return slot
+            .size(px(size))
+            .child(icon_mark(painters, icons, status, size, color, fade));
+    }
+    slot.size(px(tile_size(font)))
+        .rounded(px(spaceport_settings::corners::SMALL))
+        .bg(rgba((color << 8) | 0x30))
+        .border_1()
+        .border_color(rgba((color << 8) | 0x70))
+        .child(icon_mark(painters, icons, status, size - 4., color, fade))
+}
+
+/// One set's mark for `status` at `size`: its asset, turning while working,
+/// or the mark drawn for the sets without assets. The working assets are
+/// rings around a turnable center, so spinning the whole icon keeps its
+/// outline still. A mark that moves is drawn where the window can compose it
+/// through `painters`, so its frames never rebuild the sidebar; `fade` is the
+/// opacity of its row, which that layer cannot inherit.
+pub fn icon_mark(
+    painters: Painters,
+    icons: StatusIcons,
+    status: AgentStatus,
+    size: f32,
+    color: u32,
+    fade: f32,
+) -> AnyElement {
+    // Working always moves; of the settled statuses only a drawn blocked
+    // mark can.
+    let moves = status == AgentStatus::Working
+        || (status == AgentStatus::Blocked
+            && spaceport_icons::status_icon(icons, status).is_none());
+    if !moves {
+        return drawn_mark(icons, status, size, color);
+    }
+    painters.layered(size, fade, move || drawn_mark(icons, status, size, color))
+}
+
+fn drawn_mark(icons: StatusIcons, status: AgentStatus, size: f32, color: u32) -> AnyElement {
+    if icons == StatusIcons::Dots && status == AgentStatus::Working {
+        return working_orbit(size, color).into_any_element();
+    }
+    let Some(path) = spaceport_icons::status_icon(icons, status) else {
+        return crate::animated::mark(icons, status, size, color);
+    };
+    let mark = svg()
+        .path(path)
+        .size(px(size))
+        .flex_none()
+        .text_color(rgb(color));
+    if status != AgentStatus::Working {
+        return mark.into_any_element();
+    }
+    spin(
+        mark.debug_selector(|| "status-spin".into()),
+        "status-spin",
+        1400,
+    )
+    .into_any_element()
 }
 
 #[cfg(test)]

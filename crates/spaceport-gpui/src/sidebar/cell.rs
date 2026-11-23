@@ -152,12 +152,24 @@ impl<'a> Cell<'a> {
         let (row, rail) = match self.data {
             RowData::Workspace(row) => {
                 let rail = (!row.removing)
-                    .then(|| super::agents::rail(self.cx.indicators, row.status, row.label))
+                    .then(|| {
+                        super::agents::rail(
+                            self.cx.indicators,
+                            row.status,
+                            row.label,
+                            self.cx.right_to_left,
+                        )
+                    })
                     .flatten();
                 (self.layout.workspace(row, self.state, self.cx), rail)
             }
             RowData::Agent(row) => {
-                let rail = super::agents::rail(self.cx.indicators, row.status, &row.key);
+                let rail = super::agents::rail(
+                    self.cx.indicators,
+                    row.status,
+                    &row.key,
+                    self.cx.right_to_left,
+                );
                 (self.layout.agent(row, self.state, self.cx), rail)
             }
         };

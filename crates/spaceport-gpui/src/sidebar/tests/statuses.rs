@@ -52,7 +52,13 @@ fn status_slots_are_fixed_for_each_set_and_font_size() {
                 assert_eq!(width, drawn, "{icons:?} at {size}");
             }
             for status in STATUSES {
-                let mut slot = status_indicator(status, &font, indicators);
+                let mut slot = status_indicator(
+                    status,
+                    &font,
+                    indicators,
+                    crate::sidebar::paint::PAINTERS,
+                    crate::direction::is_rtl(),
+                );
                 assert_eq!(
                     slot.style().size.width,
                     Some(px(width).into()),

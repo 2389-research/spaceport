@@ -7,7 +7,6 @@
 mod accessibility;
 mod activity;
 mod agents;
-mod animated;
 mod cell;
 mod device_drag;
 mod host_row;
@@ -17,7 +16,7 @@ mod layouts;
 mod metrics;
 mod note_line;
 mod order;
-mod paint;
+pub(crate) mod paint;
 mod rail;
 mod render;
 mod reorder;

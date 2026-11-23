@@ -115,6 +115,8 @@ fn token_line(row: &[ResolvedToken], look: TokenLook, width: f32, cx: &RowContex
                         cx.status_indicators(),
                         color,
                         weight == FontWeight::BOLD,
+                        cx.painters,
+                        cx.right_to_left,
                     )
                     .debug_selector(|| "inline-status-mark".into()),
                 ),
@@ -167,7 +169,15 @@ pub(in crate::sidebar) fn configured_status(
     cx: &RowContext<'_>,
 ) -> Div {
     let (color, bold) = configured_status_style(token, status, cx);
-    status_mark(status, cx.font, cx.status_indicators(), color, bold)
+    status_mark(
+        status,
+        cx.font,
+        cx.status_indicators(),
+        color,
+        bold,
+        cx.painters,
+        cx.right_to_left,
+    )
 }
 
 /// A line's tokens, less the leading `state_icon` the status slot draws.

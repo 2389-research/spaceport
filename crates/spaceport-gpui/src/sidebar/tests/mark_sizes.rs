@@ -52,7 +52,13 @@ fn status_dots_grow_with_the_sidebar_font() {
         assert_eq!(dot, STATUS_WIDTH * factor);
         assert_eq!(unknown_dot(dot), STATUS_DOT_UNKNOWN * factor);
         for status in STATUSES {
-            let mut slot = status_indicator(status, &font, indicators);
+            let mut slot = status_indicator(
+                status,
+                &font,
+                indicators,
+                crate::sidebar::paint::PAINTERS,
+                crate::direction::is_rtl(),
+            );
             let style = slot.style();
             assert_eq!(style.size.width, Some(px(dot).into()), "{status:?}");
             assert_eq!(style.size.height, Some(px(dot).into()), "{status:?}");

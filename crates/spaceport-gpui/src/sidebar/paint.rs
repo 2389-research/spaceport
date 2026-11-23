@@ -12,7 +12,7 @@ use std::rc::Rc;
 
 /// The crate's seams, as this window fills them. A `const` of `fn` items, so a
 /// row's context can take it with no construction and no allocation.
-pub(super) const PAINTERS: Painters = Painters {
+pub(crate) const PAINTERS: Painters = Painters {
     text: label_element,
     mark_layer: window_mark,
     words: word,

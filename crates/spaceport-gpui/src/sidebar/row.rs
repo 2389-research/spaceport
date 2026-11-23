@@ -260,7 +260,7 @@ pub(super) fn row(
                 } else if let Some(token) = leading_icon {
                     configured_status(token, status, cx)
                 } else {
-                    status_indicator(status, font, indicators)
+                    status_indicator(status, font, indicators, cx.painters, cx.right_to_left)
                 }
                 .debug_selector(|| format!("mark-{key}"))
                 .when(centered, |slot| slot.mt_0().self_center()),

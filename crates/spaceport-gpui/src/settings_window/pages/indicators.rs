@@ -130,7 +130,13 @@ impl SettingsWindow {
                             .flex_col()
                             .items_center()
                             .gap(px(3.))
-                            .child(status_indicator(status, font, indicators))
+                            .child(status_indicator(
+                                status,
+                                font,
+                                indicators,
+                                crate::sidebar::paint::PAINTERS,
+                                crate::direction::is_rtl(),
+                            ))
                             .child(
                                 div()
                                     .text_size(px(9.5))
