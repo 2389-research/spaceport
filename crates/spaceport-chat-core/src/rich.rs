@@ -7,7 +7,8 @@
 //! bounds: [`parse`] admits the code blocks and formulas a message may draw
 //! and reports each as a [`Want`], so the app can ask for the visuals it
 //! keeps without knowing which were admitted. Which destinations are links
-//! is not this crate's to decide: the app hands `parse` its classification.
+//! is not this crate's to decide: the app hands `parse` its classification
+//! and [`remote_content`] its test for a local path.
 //!
 //! The code, fence and quote rules that read the same text live beside it: a
 //! code line's drawn and source offsets, whether a fence is closed, and which
@@ -18,10 +19,12 @@ mod fence;
 mod math_input;
 mod parse;
 pub mod quote;
+mod remote;
 
 pub use code::{CodeText, MAX_CODE_LINE_CHARS, MAX_CODE_LINES, TAB_WIDTH};
 pub use fence::Fence;
 pub use parse::parse;
+pub use remote::remote_content;
 
 use crate::visual::{MathMode, Source, VisualId};
 use pulldown_cmark::{Alignment, HeadingLevel};

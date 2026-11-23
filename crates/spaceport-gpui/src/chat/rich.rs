@@ -11,12 +11,10 @@
 //! may act on, and keeps what builds a visual's texture.
 
 mod math;
-mod remote;
 
 // What this module keeps, and the crate's rich model at the paths the rest of
 // the chat reads it at.
 pub(super) use math::draw as draw_math;
-pub(super) use remote::remote_content;
 pub(crate) use spaceport_chat_core::rich::{Block, Inline, Kind, Style};
 pub(super) use spaceport_chat_core::rich::{
     CodeText, Fence, MAX_CODE_LINE_CHARS, MAX_CODE_LINES, MAX_MATH_BYTES,
@@ -25,6 +23,7 @@ pub(crate) use spaceport_chat_core::visual::MathMode;
 
 use super::visual::Visuals;
 use crate::{browser::WebUrl, terminal::file_target};
+use std::borrow::Cow;
 
 /// The destination this client may act on: a web address, or a path its
 /// terminal's link rules read. Anything else stays visible source.
@@ -33,6 +32,11 @@ fn destination(url: &str) -> Option<String> {
         .ok()
         .map(|url| url.as_str().to_owned())
         .or_else(|| file_target(url).map(|_| url.to_owned()))
+}
+
+/// Whether a destination names a file on the machine this client runs on.
+fn is_local_path(url: &str) -> bool {
+    file_target(url).is_some()
 }
 
 /// Markdown as rich blocks, asking `visuals` for the visuals it draws.
@@ -46,6 +50,12 @@ pub(super) fn parse(text: &str, visuals: &mut Visuals) -> Option<Vec<Block>> {
         visuals.want(want.id(), want.into_source());
     }
     blocks
+}
+
+/// `content` with the links that name files elsewhere made inert, each with
+/// its destination written out after the label.
+pub(super) fn remote_content(content: &[Inline]) -> Cow<'_, [Inline]> {
+    spaceport_chat_core::rich::remote_content(content, is_local_path)
 }
 
 /// Classify bounded code text with the shared chat grammar cache.
