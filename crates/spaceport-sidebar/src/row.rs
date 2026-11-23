@@ -1,16 +1,23 @@
 //! What a sidebar row is before it is painted: which of the two kinds it is,
-//! where it sits in its worktree group, what a drag is doing to it, and the
-//! name weight and colors its two lines take. The app paints every row, so the
-//! decisions a layout and the painter must agree on live here, together with
-//! the badge a row's trailing edge shows, which needs only a font and a theme.
+//! where it sits in its worktree group, what a drag is doing to it, the inputs
+//! every row of one render shares, and the name weight and colors its two
+//! lines take. The app paints every row, so the decisions a layout and the
+//! painter must agree on live here, together with the badge a row's trailing
+//! edge shows, which needs only a font and a theme.
 
 mod badge;
 
 pub use badge::RowBadge;
 
-use gpui::FontWeight;
+use crate::{
+    agents::Indicators,
+    layout::SidebarLook,
+    metrics::{STATUS_WIDTH, scaled},
+    wash::HostMark,
+};
+use gpui::{prelude::*, *};
 use spaceport_icons::AgentIcon;
-use spaceport_settings::Theme;
+use spaceport_settings::{FontConfig, Theme};
 
 /// What a row lists, which decides how its two lines are weighted: upstream
 /// keeps agent names bold throughout and reserves bold workspaces for the
@@ -95,4 +102,69 @@ pub fn first_text<'a>(
         .map(str::trim)
         .find(|s| !s.is_empty())
         .unwrap_or(fallback)
+}
+/// Read-only inputs every row of one render shares.
+pub struct RowContext<'a> {
+    pub indicators: Indicators,
+    pub font: &'a FontConfig,
+    pub theme: &'a Theme,
+    /// Density and style: spacing, highlight shape, and which details show.
+    pub look: SidebarLook,
+    /// Full sidebar width, divider included.
+    pub width: f32,
+    /// How far workspace rows step in under their host's header: zero while
+    /// a single host shows no header to nest under.
+    pub nest: f32,
+    /// The host's colour wash and dimming, shared by every row it owns.
+    pub mark: HostMark,
+    /// The host these rows live on, named only while several hosts are
+    /// listed and this one is remote, so a single-host sidebar stays quiet.
+    pub host: Option<&'a str>,
+}
+
+impl RowContext<'_> {
+    /// The indicators for a status mark in one of these rows: faded with the
+    /// row's own fade and the host's dimming, which a mark drawn in the
+    /// window's mark layer does not inherit.
+    pub fn status_indicators(&self) -> Indicators {
+        self.indicators
+            .faded(self.indicators.fade() * self.mark.opacity())
+    }
+}
+
+/// The gutter a child of Herdr's rows reserves for its guide, as `(x,
+/// width)` from the sidebar's leading edge: from the parent's label column
+/// to the child's status dot. A child steps in past a status slot wider than
+/// the default dot, as the parent's label does, so the width does not depend
+/// on the font or the indicator set; Minimal's rows nest the same way. A
+/// configured indent or gap can leave none.
+pub fn tree_gutter(cx: &RowContext<'_>) -> (f32, f32) {
+    let layout = cx.look.density;
+    let extra_status_width = cx.indicators.width(cx.font) - STATUS_WIDTH;
+    (
+        cx.nest + cx.look.tree_gutter() + extra_status_width,
+        layout.padding() + layout.child_indent() - layout.tree_gutter(),
+    )
+}
+/// The pulse a status dot gives way to while its checkout or device is
+/// removed, as large as the dot at `font`.
+pub fn removing_dot(selector: &'static str, font: &FontConfig, theme: &Theme) -> Div {
+    div()
+        .debug_selector(move || selector.into())
+        .size(px(scaled(font, STATUS_WIDTH)))
+        .flex_none()
+        .child(
+            div()
+                .size_full()
+                .rounded_full()
+                .bg(rgb(theme.primary()))
+                .with_animation(
+                    SharedString::from(format!("{selector}-pulse")),
+                    Animation::new(spaceport_motion::duration(std::time::Duration::from_secs(
+                        1,
+                    )))
+                    .repeat(),
+                    |dot, delta| dot.opacity(0.3 + 0.7 * (delta * std::f32::consts::PI).sin()),
+                ),
+        )
 }

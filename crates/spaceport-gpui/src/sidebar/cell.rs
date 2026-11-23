@@ -11,48 +11,13 @@
 //! everything here borrows from the window rather than copying into owned
 //! state: a layout costs one virtual call per row.
 
-use super::{
-    layout::SidebarLook,
-    row::{RowBadge, RowIcon, RowLift, RowTree},
-};
-use crate::{
-    config::{FontConfig, LayoutMode, Theme},
-    icons::AgentIcon,
-};
+use super::row::{RowBadge, RowIcon, RowLift, RowTree};
+use crate::{config::LayoutMode, icons::AgentIcon};
 use gpui::{App, ClickEvent, Div, ElementId, ParentElement, Styled, Window};
 use spaceport_client::protocol::{AgentStatus, ClientShellWorkspace};
 use std::borrow::Cow;
 
-pub(super) use spaceport_sidebar::row::RowState;
-
-/// Read-only inputs every row of one render shares.
-pub(super) struct RowContext<'a> {
-    pub(super) indicators: super::agents::Indicators,
-    pub(super) font: &'a FontConfig,
-    pub(super) theme: &'a Theme,
-    /// Density and style: spacing, highlight shape, and which details show.
-    pub(super) look: SidebarLook,
-    /// Full sidebar width, divider included.
-    pub(super) width: f32,
-    /// How far workspace rows step in under their host's header: zero while
-    /// a single host shows no header to nest under.
-    pub(super) nest: f32,
-    /// The host's colour wash and dimming, shared by every row it owns.
-    pub(super) mark: super::wash::HostMark,
-    /// The host these rows live on, named only while several hosts are
-    /// listed and this one is remote, so a single-host sidebar stays quiet.
-    pub(super) host: Option<&'a str>,
-}
-
-impl RowContext<'_> {
-    /// The indicators for a status mark in one of these rows: faded with
-    /// the row's own fade and the host's dimming, which a mark drawn in the
-    /// window's mark layer does not inherit.
-    pub(super) fn status_indicators(&self) -> super::agents::Indicators {
-        self.indicators
-            .faded(self.indicators.fade() * self.mark.opacity())
-    }
-}
+pub(super) use spaceport_sidebar::row::{RowContext, RowState};
 
 /// A click listener, erased so rows of every group share one type.
 pub(super) type ClickHandler = dyn Fn(&ClickEvent, &mut Window, &mut App);

@@ -7,11 +7,11 @@ use super::layout_tests;
 use super::{
     ARROW_RESERVE, ICON_RESERVE, STATUS_WIDTH,
     agents::{Indicators, status_indicator},
-    cell::{RowContext, RowState},
+    cell::RowState,
     glyph_width, line_height, scaled, segment_budgets,
     tokens::ResolvedToken,
 };
-use crate::config::{FontConfig, Theme};
+use crate::config::FontConfig;
 use crate::direction::Logical;
 use gpui::{prelude::*, *};
 use spaceport_client::protocol::AgentStatus;
@@ -24,7 +24,8 @@ pub(super) use configured::{
     TokenLook, configured_status, configured_status_style, leading_status, token_column,
 };
 pub(super) use spaceport_sidebar::row::{
-    Elbow, RowBadge, RowKind, RowLift, RowTree, first_text, row_text,
+    Elbow, RowBadge, RowContext, RowKind, RowLift, RowTree, first_text, removing_dot, row_text,
+    tree_gutter,
 };
 
 /// What a row shows in its leading icon slot: a neutral repository icon, an
@@ -124,21 +125,6 @@ pub(super) fn tree_lines(
         let left = snap(gutter.origin.x + gutter.right() - line.right());
         Bounds::new(point(left, line.origin.y), line.size)
     })
-}
-
-/// The gutter a child of Herdr's rows reserves for its guide, as `(x,
-/// width)` from the sidebar's leading edge: from the parent's label column
-/// to the child's status dot. A child steps in past a status slot wider than
-/// the default dot, as the parent's label does, so the width does not depend
-/// on the font or the indicator set; Minimal's rows nest the same way. A
-/// configured indent or gap can leave none.
-pub(super) fn tree_gutter(cx: &RowContext<'_>) -> (f32, f32) {
-    let layout = cx.look.density;
-    let extra_status_width = cx.indicators.width(cx.font) - STATUS_WIDTH;
-    (
-        cx.nest + cx.look.tree_gutter() + extra_status_width,
-        layout.padding() + layout.child_indent() - layout.tree_gutter(),
-    )
 }
 
 /// A worktree child's guide: a trunk down the leading edge of `gutter`
@@ -309,27 +295,6 @@ fn place_line(
         x += advance;
     }
     line
-}
-
-/// The pulse a status dot gives way to while its checkout or device is
-/// removed, as large as the dot at `font`.
-pub(super) fn removing_dot(selector: &'static str, font: &FontConfig, theme: &Theme) -> Div {
-    div()
-        .debug_selector(move || selector.into())
-        .size(px(scaled(font, STATUS_WIDTH)))
-        .flex_none()
-        .child(
-            div()
-                .size_full()
-                .rounded_full()
-                .bg(rgb(theme.primary()))
-                .with_animation(
-                    SharedString::from(format!("{selector}-pulse")),
-                    Animation::new(crate::motion::duration(std::time::Duration::from_secs(1)))
-                        .repeat(),
-                    |dot, delta| dot.opacity(0.3 + 0.7 * (delta * std::f32::consts::PI).sin()),
-                ),
-        )
 }
 
 #[allow(clippy::too_many_arguments)]
