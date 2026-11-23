@@ -1,4 +1,5 @@
 use super::*;
+use pulldown_cmark::HeadingLevel;
 
 #[test]
 fn ordinary_markdown_keeps_hierarchy_lists_and_inline_semantics_without_visual_jobs() {

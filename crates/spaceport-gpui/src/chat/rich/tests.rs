@@ -1,6 +1,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 use super::*;
 use crate::chat::visual::{Error, Visuals};
+use pulldown_cmark::Alignment;
 
 mod code;
 mod display_math;

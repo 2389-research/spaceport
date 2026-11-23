@@ -9,12 +9,12 @@ fn strip_marker(line: &str) -> Option<&str> {
 }
 
 /// `line` after `depth` markers, or `None` when it has fewer.
-pub(super) fn strip(line: &str, depth: usize) -> Option<&str> {
+pub fn strip(line: &str, depth: usize) -> Option<&str> {
     (0..depth).try_fold(line, |line, _| strip_marker(line))
 }
 
 /// How many markers open `line`.
-pub(super) fn depth(line: &str) -> usize {
+pub fn depth(line: &str) -> usize {
     std::iter::successors(Some(line), |line| strip_marker(line)).count() - 1
 }
 

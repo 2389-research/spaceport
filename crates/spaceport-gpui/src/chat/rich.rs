@@ -1,97 +1,36 @@
-//! Structured Markdown kept separately from layout. Parsing is bounded by
-//! the message limit; math rasterization and grammar parsing use Visuals' workers.
+//! Structured Markdown kept separately from layout: the app parses a message
+//! into the block model [`spaceport_chat_core::rich`] defines, asking for the
+//! visuals its formulas and code blocks need, and splits a message into its
+//! diagrams and pages by the fences that model reads. Math rasterization and
+//! grammar parsing use Visuals' workers.
+//!
+//! The values parsed here — a paragraph's inline style, a heading, a list item,
+//! a table, a code block, a display formula, a code line's drawn offsets, a
+//! fence, a block quote marker — are the crate's; this module re-exports them
+//! and keeps what builds them.
 
-mod code;
-mod fence;
 mod math;
 mod math_input;
 mod parse;
-mod quote;
 mod remote;
 
-pub(super) use code::{CodeText, MAX_CODE_LINE_CHARS, MAX_CODE_LINES, TAB_WIDTH};
-pub(super) use fence::Fence;
+// What this module keeps, and the crate's rich model at the paths the rest of
+// the chat reads it at.
 pub(super) use math::draw as draw_math;
 pub(super) use parse::parse;
 pub(super) use remote::remote_content;
+pub(crate) use spaceport_chat_core::rich::{Block, Inline, Kind, Style};
+pub(super) use spaceport_chat_core::rich::{
+    CodeText, Fence, MAX_CODE_LINE_CHARS, MAX_CODE_LINES, TAB_WIDTH, quote,
+};
 pub(crate) use spaceport_chat_core::visual::MathMode;
 
 use super::visual::{Source, VisualId, Visuals};
-use pulldown_cmark::{Alignment, HeadingLevel};
 use std::sync::Arc;
 
 pub(super) const MAX_MATH_BYTES: usize = 4_096;
 pub(super) const MAX_MATH: usize = 64;
 pub(super) const MAX_CODE_BYTES: usize = 32 * 1024;
-
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct Style {
-    pub bold: bool,
-    pub italic: bool,
-    pub code: bool,
-    pub strike: bool,
-    pub link: Option<String>,
-}
-
-#[derive(Clone, Debug)]
-pub(crate) enum Inline {
-    Text(String, Style),
-    Math { id: VisualId, source: Arc<str> },
-    Break,
-}
-
-/// What a paragraph block is, which sets its typography and marker.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Kind {
-    Paragraph,
-    Heading(HeadingLevel),
-    Bullet,
-    /// An ordered list item, with the number it was written with.
-    Numbered(u32),
-    Quote,
-    /// A thematic break, which has no content.
-    Rule,
-}
-
-#[derive(Debug)]
-pub(crate) enum Block {
-    Paragraph {
-        kind: Kind,
-        /// Nested list depth; bounded in the view so deep input stays readable.
-        indent: usize,
-        content: Vec<Inline>,
-    },
-    Math {
-        id: VisualId,
-        source: Arc<str>,
-    },
-    Code {
-        id: VisualId,
-        language: String,
-        source: Arc<str>,
-    },
-    Table {
-        align: Vec<Alignment>,
-        rows: Vec<Vec<Vec<Inline>>>,
-    },
-}
-
-impl Block {
-    /// The visuals this block draws: its own code or display formula, or the
-    /// inline formulas in its text.
-    pub(super) fn visuals(&self) -> impl Iterator<Item = VisualId> + '_ {
-        let (own, prose, rows): (_, &[Inline], &[Vec<Vec<Inline>>]) = match self {
-            Self::Code { id, .. } | Self::Math { id, .. } => (Some(*id), &[], &[]),
-            Self::Paragraph { content, .. } => (None, content, &[]),
-            Self::Table { rows, .. } => (None, &[], rows),
-        };
-        let inline = prose.iter().chain(rows.iter().flatten().flatten());
-        own.into_iter().chain(inline.filter_map(|part| match part {
-            Inline::Math { id, .. } => Some(*id),
-            _ => None,
-        }))
-    }
-}
 
 fn formula(
     source: &str,
