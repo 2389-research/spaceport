@@ -1,6 +1,10 @@
 use super::*;
-use crate::sidebar::layout_tests;
-use spaceport_settings::SidebarLayout;
+use crate::{
+    config::{AgentLayout, SpaceLayout},
+    sidebar::{agents::status_text, layout_tests},
+};
+use spaceport_client::protocol::AgentStatus;
+use spaceport_settings::{SidebarLayout, TokenStyle};
 
 mod plugin_rows;
 mod translated_rules;
@@ -39,7 +43,7 @@ fn agent_tokens_resolve_state_pane_titles_and_custom_values() {
     let layout = agent_layout(
         r#"rows = [["state_text", "pane"], ["terminal_title", "terminal_title_stripped"], ["$usage_ctx_ok", "$missing"], ["$missing"]]"#,
     );
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None, status_text).unwrap();
     assert_eq!(
         texts(&rows),
         [
@@ -51,20 +55,20 @@ fn agent_tokens_resolve_state_pane_titles_and_custom_values() {
     // Labels are untrusted display text: controls and bidi overrides go.
     snapshot.agents[0].state_labels =
         vec![("blocked".into(), "\u{1b}[31mneeds\u{202e} you\n".into())];
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None, status_text).unwrap();
     assert_eq!(
         rows[0][0].kind,
         TokenKind::Text("[31mneeds you".into(), TextRole::Status)
     );
     // Without a label the wire status names the state; idle covers unknown.
     snapshot.agents[0].state_labels.clear();
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None, status_text).unwrap();
     assert_eq!(
         rows[0][0].kind,
         TokenKind::Text("blocked".into(), TextRole::Status)
     );
     snapshot.agents[0].agent_status = AgentStatus::Unknown;
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None, status_text).unwrap();
     assert_eq!(
         rows[0][0].kind,
         TokenKind::Text("idle".into(), TextRole::Status)
@@ -76,7 +80,7 @@ fn agent_tokens_resolve_state_pane_titles_and_custom_values() {
         "focused": false, "right_click_passthrough": false
     }]))
     .unwrap();
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None, status_text).unwrap();
     assert_eq!(
         rows[0][1].kind,
         TokenKind::Text("shell".into(), TextRole::Secondary)
@@ -92,7 +96,7 @@ fn rules_style_hide_and_replace_rows_per_agent() {
 [rows_by_agent]
 claude = [[{ token = "$pct", rules = [{ gt = 90, hide = true }, { gt = 80, fg = "#ff0000" }] }, { token = "workspace", rules = [{ contains = "herdr", hide = true }] }]]"##,
     );
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None, status_text).unwrap();
     assert_eq!(
         rows,
         [vec![ResolvedToken {
@@ -106,11 +110,11 @@ claude = [[{ token = "$pct", rules = [{ gt = 90, hide = true }, { gt = 80, fg = 
     );
     snapshot.agents[0].tokens[0].1 = "95".into();
     assert_eq!(
-        texts(&agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap()),
+        texts(&agent_rows(&layout, &snapshot.agents[0], &snapshot, None, status_text).unwrap()),
         [vec!["<icon>"]]
     );
     snapshot.agents[0].agent = Some("codex".into());
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None, status_text).unwrap();
     assert_eq!(
         rows[0][0].style,
         TokenStyle {
@@ -132,14 +136,14 @@ fn space_rows_keep_branch_text_and_custom_tokens() {
         indented,
     };
     assert_eq!(
-        texts(&space_rows(&layout, context(false, &[]))),
+        texts(&space_rows(&layout, context(false, &[]), status_text)),
         [
             vec!["<icon>", "fix-sidebar"],
             vec!["git/diff-looks-like-code"]
         ]
     );
     assert_eq!(
-        texts(&space_rows(&layout, context(true, &[]))),
+        texts(&space_rows(&layout, context(true, &[]), status_text)),
         [vec!["<icon>", "fix-sidebar"]]
     );
     let tokens = [
@@ -148,38 +152,7 @@ fn space_rows_keep_branch_text_and_custom_tokens() {
     ];
     let custom = space_layout(r#"rows = [["state_text", "$jj", "$none"]]"#);
     assert_eq!(
-        texts(&space_rows(&custom, context(true, &tokens))),
+        texts(&space_rows(&custom, context(true, &tokens), status_text)),
         [vec!["working", "clean"]]
     );
-}
-
-#[test]
-fn budgets_drop_leftmost_text_first_then_share_the_rest() {
-    let fixed = |kind: &TokenKind| match kind {
-        TokenKind::StateIcon => 1,
-        _ => 0,
-    };
-    let row = [
-        ResolvedToken::unstyled(TokenKind::StateIcon),
-        ResolvedToken::unstyled(TokenKind::Text("remote".into(), TextRole::Secondary)),
-        ResolvedToken::unstyled(TokenKind::Text("herdr-gpui".into(), TextRole::Workspace)),
-    ];
-    // The icon stays fixed while the two text tokens share remaining room.
-    assert_eq!(budgets(&row, fixed, 30), [Some(1), Some(6), Some(10)]);
-    assert_eq!(budgets(&row, fixed, 20), [Some(1), Some(6), Some(9)]);
-    assert_eq!(budgets(&row, fixed, 8), [Some(1), Some(2), Some(1)]);
-    assert_eq!(budgets(&row, fixed, 6), [Some(1), None, Some(4)]);
-    assert_eq!(budgets(&row, fixed, 4), [Some(1), None, Some(2)]);
-    assert_eq!(budgets(&row, fixed, 0), [Some(1), None, None]);
-    assert_eq!(budgets(&[], fixed, 5), Vec::<Option<usize>>::new());
-}
-
-#[test]
-fn budgets_give_wide_state_labels_their_display_width() {
-    // An emoji state label occupies two cells; a one-cell budget clips it to "…".
-    let row = [
-        ResolvedToken::unstyled(TokenKind::Text("🟡".into(), TextRole::Status)),
-        ResolvedToken::unstyled(TokenKind::Text("~".into(), TextRole::Workspace)),
-    ];
-    assert_eq!(budgets(&row, |_| 0, 30), [Some(2), Some(1)]);
 }

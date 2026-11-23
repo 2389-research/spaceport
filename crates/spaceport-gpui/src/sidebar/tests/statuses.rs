@@ -116,6 +116,7 @@ fn wide_mark_rows_keep_layout_density_and_expand_child_indent() {
                         nest: 0.,
                         mark: Default::default(),
                         host: None,
+                        right_to_left: false,
                     },
                 );
                 assert_eq!(
@@ -210,56 +211,5 @@ fn status_shapes_match_upstream_dots_and_wire_casing() {
                 STATUS_WIDTH
             }
         );
-    }
-}
-
-#[test]
-fn child_gutter_lines_land_on_whole_device_pixels() {
-    use crate::sidebar::row::{RowTree, tree_lines};
-    use gpui::{Bounds, Pixels, point, px, size};
-    let font = FontConfig {
-        family: "Menlo".into(),
-        size: 12.,
-        fallbacks: None,
-        line_height_multiple: None,
-        weight: crate::config::Weight::NORMAL,
-    };
-    for scale in [1., 2., 3.] {
-        let row = Bounds::new(point(px(0.), px(244.)), size(px(231.), px(40.)));
-        let device = |value: Pixels| f32::from(value) * scale;
-        let whole = |value: Pixels| (device(value) - device(value).round()).abs() < 0.001;
-        for tree in [RowTree::Child, RowTree::LastChild] {
-            let middle = row.top() + px(4. + super::super::line_height(&font) / 2.);
-            let [trunk, tick] = tree_lines(row, tree, middle, scale);
-            // Both lines carry the same weight and start on the device grid, so
-            // neither is drawn thinner or blurrier than the other.
-            assert!(
-                (trunk.size.width - tick.size.height).abs() < px(0.01),
-                "{scale}"
-            );
-            assert!(
-                (device(trunk.size.width) - scale.round().max(1.)).abs() < 0.01,
-                "{scale}"
-            );
-            for edge in [trunk.left(), trunk.top(), tick.left(), tick.top()] {
-                assert!(whole(edge), "{scale}: {edge:?}");
-            }
-            // The trunk hugs the gutter's leading edge, the tick crosses to the
-            // dot at its far edge; neither strays into the label beyond.
-            assert_eq!(trunk.left(), tick.left(), "{scale}");
-            assert_eq!(trunk.left(), row.left(), "{scale}");
-            assert_eq!(tick.right(), row.right(), "{scale}");
-            // The tick meets the status dot's middle row.
-            assert!(
-                (tick.center().y - middle).abs() <= px(1. / scale),
-                "{scale}"
-            );
-            // Only a row with a sibling below carries the trunk to the bottom.
-            match tree {
-                RowTree::Child => assert_eq!(trunk.bottom(), row.bottom(), "{scale}"),
-                _ => assert_eq!(trunk.bottom(), tick.bottom(), "{scale}"),
-            }
-            assert_eq!(trunk.top(), row.top(), "{scale}");
-        }
     }
 }

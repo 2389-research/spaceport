@@ -59,6 +59,7 @@ impl SpaceportWindow {
                     theme,
                 ),
                 host: self.agent_host(endpoint),
+                right_to_left: crate::direction::is_rtl(),
             };
             let Some(lines) = self.panel_agent_lines(index, agent) else {
                 continue;
@@ -126,7 +127,13 @@ impl SpaceportWindow {
         if !self.custom_agent_rows() {
             return Some(Vec::new());
         }
-        tokens::agent_rows(&self.config.sidebar_layout.agents, agent, snapshot, host)
+        tokens::agent_rows(
+            &self.config.sidebar_layout.agents,
+            agent,
+            snapshot,
+            host,
+            status_text,
+        )
     }
 
     /// Space above the agent row painted `count`-th in its list: a

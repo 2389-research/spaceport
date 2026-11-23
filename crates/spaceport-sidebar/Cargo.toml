@@ -19,6 +19,7 @@ spaceport-icons.workspace    = true
 spaceport-motion.workspace   = true
 spaceport-settings.workspace = true
 thiserror.workspace          = true
+unicode-width.workspace      = true
 
 [dev-dependencies]
 anyhow.workspace   = true

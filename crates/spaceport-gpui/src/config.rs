@@ -23,17 +23,20 @@ pub(crate) mod watch;
 // than `pub(crate)` so a name only the app's tests read is not reported
 // unused in a plain build.
 pub use spaceport_settings::{
-    AgentLayout, AgentToken, AgentsPlacement, Axis, Backdrop, BellConfig, ChatLauncher,
-    ChatLayoutMode, ClipboardToast, ClipboardToastPosition, Config, DeviceFooter, Error,
-    FONT_SIZE_RANGE, FONT_SIZE_STEP, Feature, FontConfig, FontFace, KeybindingSource, LayoutMode,
-    MAX_PADDING, Material, NotificationConfig, NotificationDelivery, OptionAsAlt, OptionKeys,
-    Padding, Rows, SelectMode, Side, SidebarOverrides, SidebarStyle, SkillInstall, SoundConfig,
-    SpaceLayout, SpaceToken, StatusIcons, TabLayoutMode, ThemeName, ThemeParseError, TokenStyle,
-    Weight, ZenWidth,
+    AgentLayout, AgentsPlacement, Axis, Backdrop, BellConfig, ChatLauncher, ChatLayoutMode,
+    ClipboardToast, ClipboardToastPosition, Config, DeviceFooter, Error, FONT_SIZE_RANGE,
+    FONT_SIZE_STEP, Feature, FontConfig, FontFace, KeybindingSource, LayoutMode, MAX_PADDING,
+    Material, NotificationConfig, NotificationDelivery, OptionAsAlt, OptionKeys, Padding,
+    SelectMode, Side, SidebarOverrides, SidebarStyle, SkillInstall, SoundConfig, SpaceLayout,
+    StatusIcons, TabLayoutMode, ThemeName, ThemeParseError, TokenStyle, Weight, ZenWidth,
 };
 // A density or style only the layout tests name.
 #[cfg(any(test, feature = "integration-test"))]
 pub use spaceport_settings::{Density, Style};
+// The token kind only the pane-name layout tests name; the rows themselves are
+// read in `spaceport-sidebar`.
+#[cfg(test)]
+pub use spaceport_settings::AgentToken;
 pub use spaceport_settings::{
     FOLLOW_HERDR, Layer, SshConfig, Theme, Worktrees, backdrop, chat, corners, favorite_themes,
     font_weight, home, mix, parse_hex, parse_value, preferences, status_bar, tab_layout,
