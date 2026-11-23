@@ -11,7 +11,8 @@
 //! connection up rather than buffering more, and the window reconnects from
 //! its cursor.
 
-use super::{Error, MAX_EVENTS, MAX_PENDING, Result};
+use super::{MAX_EVENTS, MAX_PENDING};
+use spaceport_chat_core::{Error, Result};
 use spaceport_chat_protocol::{
     ClientKind, ClientMessage, CommandId, Cursor, REVISION, ServerMessage, VERSION, read_frame,
     write_frame,

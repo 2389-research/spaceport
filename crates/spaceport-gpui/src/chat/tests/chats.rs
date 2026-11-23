@@ -74,7 +74,7 @@ impl Harness {
         let sinces = &mut self.sinces;
         self.chats.reconcile(targets, self.now, &mut |_, since| {
             sinces.push(since);
-            Link::start(path.clone(), since)
+            Link::start(path.clone(), since).map_err(Error::from)
         });
     }
 

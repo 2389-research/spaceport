@@ -63,8 +63,7 @@ pub(super) fn now_ms() -> u64 {
 }
 pub(crate) use core_pane::key as core_pane_key;
 
-use spaceport_chat_protocol::{ByeReason, EndpointId};
-use std::io;
+use spaceport_chat_protocol::EndpointId;
 
 /// Commands waiting for their acknowledgement, per pane.
 const MAX_PENDING: usize = 32;
@@ -76,66 +75,40 @@ const MAX_FAILURES: u32 = 3;
 
 pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
+/// The failures a chat has: the attach side's own, which the model below the
+/// views reports, and the ones only the app can have.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     // keep-sorted start
-    /// A change that does not fit the transcript this client holds.
-    #[error("a chat change does not fit the transcript")]
-    Apply(#[source] spaceport_chat_protocol::Error),
-    #[error("too many chat commands are waiting for an answer")]
-    Busy,
-    #[error("the chat program left: {0:?}")]
-    Bye(ByeReason),
-    #[error("the chat program closed the connection")]
-    Closed,
-    #[error("could not reach the chat program")]
-    Connect(#[source] io::Error),
+    /// Connecting to the program, and the transcript it carries.
+    #[error(transparent)]
+    Attach(#[from] spaceport_chat_core::Error),
     #[error(transparent)]
     Environment(#[from] env::Error),
-    #[error("the chat program did not greet first")]
-    Handshake,
-
-    #[error("no private directory holds chat sockets")]
-    NoEndpointDir,
-    #[error("the chat view is not attached")]
-    NotAttached,
-    #[error("the chat view fell behind the program")]
-    Overflow,
     #[error(transparent)]
     Pasted(#[from] pasted::Error),
-    #[error("could not read from the chat program")]
-    Read(#[source] spaceport_chat_protocol::Error),
-    #[error("This is a read-only transcript; use the agent's terminal to reply")]
-    ReadOnly,
-    #[error("could not reach the chat program over SSH")]
-    Remote(#[source] spaceport_client::Error),
-    #[error("could not start the chat worker")]
-    Spawn(#[source] io::Error),
     #[error(transparent)]
     Start(#[from] start::Error),
-    #[error("chat change {got:?} does not follow {after:?}")]
-    Stream {
-        after: Option<spaceport_chat_protocol::Cursor>,
-        got: spaceport_chat_protocol::Cursor,
-    },
-    #[error("the chat program speaks protocol version {0}")]
-    Version(u32),
     // keep-sorted end
 }
 
 impl Error {
-    /// Whether trying again cannot help, so the pane keeps its terminal.
+    /// Whether trying again cannot help, so the pane keeps its terminal. Only
+    /// a failure to attach can be permanent; the app's own are retried.
     fn permanent(&self) -> bool {
-        matches!(
-            self,
-            Self::Version(_) | Self::Bye(ByeReason::Version { .. }) | Self::NoEndpointDir
-        )
+        match self {
+            Self::Attach(error) => error.permanent(),
+            Self::Environment(_) | Self::Pasted(_) | Self::Start(_) => false,
+        }
     }
 
     /// Whether the client's copy no longer fits the program's stream, so the
     /// next connection asks for a whole snapshot.
     fn desynced(&self) -> bool {
-        matches!(self, Self::Stream { .. } | Self::Apply(_))
+        match self {
+            Self::Attach(error) => error.desynced(),
+            Self::Environment(_) | Self::Pasted(_) | Self::Start(_) => false,
+        }
     }
 }
 

@@ -2,11 +2,12 @@
 // ABOUTME: Shares isolated protocol fixtures across focused chat regression modules.
 use super::*;
 use spaceport_chat_protocol::{
-    Change, ClientMessage, Cursor, Entry, EntryId, EntryKind, ServerMessage, Status, Transcript,
-    VERSION, read_frame, write_frame,
+    ByeReason, Change, ClientMessage, Cursor, Entry, EntryId, EntryKind, ServerMessage, Status,
+    Transcript, VERSION, read_frame, write_frame,
 };
 use spaceport_client::private_endpoint::{Closer, Connection, Listener, Reader, Writer};
 use std::{
+    io,
     io::{Read, Write},
     path::PathBuf,
     sync::{

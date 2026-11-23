@@ -2,6 +2,7 @@
 // ABOUTME: Verifies frame order, delivery receipts, and connection cleanup.
 use super::*;
 use crate::chat::link::{Link, Polled};
+use spaceport_chat_core::Error;
 use spaceport_chat_protocol::{ByeReason, Command, CommandId};
 
 /// Polls `link` until it has `count` messages or ends, at most [`WAIT`].

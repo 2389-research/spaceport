@@ -25,7 +25,7 @@ fn off_no_chat_attaches_and_none_starts(cx: &mut TestAppContext) {
             view.poll_chats_with(
                 &mut |_, _| {
                     dialled += 1;
-                    Err(Error::Closed)
+                    Err(Error::Attach(spaceport_chat_core::Error::Closed))
                 },
                 window,
                 cx,

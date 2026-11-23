@@ -16,43 +16,47 @@ fn cursor(seq: u64) -> Cursor {
 
 #[test]
 fn every_chat_variant_has_a_message() {
-    let mut errors = vec![
-        Error::Apply(protocol()),
-        Error::Busy,
-        Error::Closed,
-        Error::Connect(io::Error::other("refused")),
-        Error::Environment(env::Error::Name {
+    let mut attach = vec![
+        spaceport_chat_core::Error::Apply(protocol()),
+        spaceport_chat_core::Error::Busy,
+        spaceport_chat_core::Error::Closed,
+        spaceport_chat_core::Error::Connect(io::Error::other("refused")),
+        spaceport_chat_core::Error::Environment(env::Error::Name {
             name: "HERDR=1".into(),
         }),
-        Error::Environment(env::Error::Size),
-        Error::Handshake,
-        Error::NoEndpointDir,
-        Error::NotAttached,
-        Error::Overflow,
-        Error::Pasted(pasted::Error::Folder),
-        Error::Read(protocol()),
-        Error::ReadOnly,
-        Error::Remote(spaceport_client::Error::Disconnected),
-        Error::Spawn(io::Error::other("no threads")),
-        Error::Start(StartError::Disabled),
-        Error::Stream {
+        spaceport_chat_core::Error::Environment(env::Error::Size),
+        spaceport_chat_core::Error::Handshake,
+        spaceport_chat_core::Error::NoEndpointDir,
+        spaceport_chat_core::Error::NotAttached,
+        spaceport_chat_core::Error::Overflow,
+        spaceport_chat_core::Error::Read(protocol()),
+        spaceport_chat_core::Error::ReadOnly,
+        spaceport_chat_core::Error::Remote(spaceport_client::Error::Disconnected),
+        spaceport_chat_core::Error::Spawn(io::Error::other("no threads")),
+        spaceport_chat_core::Error::Stream {
             after: Some(cursor(4)),
             got: cursor(6),
         },
-        Error::Stream {
+        spaceport_chat_core::Error::Stream {
             after: None,
             got: cursor(2),
         },
-        Error::Version(7),
+        spaceport_chat_core::Error::Version(7),
     ];
-    errors.extend(
+    attach.extend(
         [
             ByeReason::Exiting,
             ByeReason::Handshake,
             ByeReason::Version { supported: 2 },
         ]
-        .map(Error::Bye),
+        .map(spaceport_chat_core::Error::Bye),
     );
+    let mut errors: Vec<Error> = attach.into_iter().map(Error::Attach).collect();
+    errors.extend([
+        Error::Environment(env::Error::Size),
+        Error::Pasted(pasted::Error::Folder),
+        Error::Start(StartError::Disabled),
+    ]);
     assert_localized(&errors);
 }
 

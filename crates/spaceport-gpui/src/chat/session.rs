@@ -5,7 +5,8 @@
 //! from a link's messages, so ordering and fencing are tested without a
 //! socket.
 
-use super::{Error, MAX_PENDING, Result};
+use super::MAX_PENDING;
+use spaceport_chat_core::{Error, Result};
 use spaceport_chat_protocol::{
     ClientMessage, Command, CommandId, Cursor, EntryId, Rejection, Replica, ServerMessage, Touched,
     Transcript, VERSION,

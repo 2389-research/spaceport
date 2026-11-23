@@ -3,6 +3,7 @@
 use super::*;
 use crate::chat::session::Session;
 use crate::chat::{Refusal, link::WriteOutcome};
+use spaceport_chat_core::Error;
 use spaceport_chat_protocol::{Command, CommandId, Rejection};
 
 fn current(session: &mut Session, at: Cursor) {

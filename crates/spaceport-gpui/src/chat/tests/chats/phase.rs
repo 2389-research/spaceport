@@ -57,7 +57,7 @@ fn a_lost_connection_is_retried_once_at_its_retry_time() {
 fn each_refused_connection_waits_longer_and_counts_once() {
     let mut chats = Chats::default();
     let start = Instant::now();
-    let closed = || Error::Closed;
+    let closed = || Error::Attach(spaceport_chat_core::Error::Closed);
     assert_eq!(refused(&mut chats, target("p1", A), start, closed), 1);
     assert_eq!(generation(&chats), 1);
     assert!(!chats.pane("p1").unwrap().has_link());
@@ -79,7 +79,7 @@ fn each_refused_connection_waits_longer_and_counts_once() {
 fn a_pane_past_the_failure_limit_keeps_trying_in_the_background() {
     let mut chats = Chats::default();
     let mut now = Instant::now();
-    let closed = || Error::Closed;
+    let closed = || Error::Attach(spaceport_chat_core::Error::Closed);
     for _ in 0..MAX_FAILURES {
         assert_eq!(refused(&mut chats, target("p1", A), now, closed), 1);
         now += Duration::from_secs(60);
@@ -94,7 +94,7 @@ fn a_pane_past_the_failure_limit_keeps_trying_in_the_background() {
 fn a_missing_socket_directory_is_never_retried() {
     let mut chats = Chats::default();
     let start = Instant::now();
-    let missing = || Error::NoEndpointDir;
+    let missing = || Error::Attach(spaceport_chat_core::Error::NoEndpointDir);
     assert_eq!(refused(&mut chats, target("p1", A), start, missing), 1);
     assert_eq!(refused(&mut chats, target("p1", A), start, missing), 0);
     let later = start + Duration::from_secs(3600);
@@ -105,7 +105,7 @@ fn a_missing_socket_directory_is_never_retried() {
 
 #[test]
 fn only_an_observed_agent_that_exits_is_never_retried() {
-    let exiting = || Error::Bye(ByeReason::Exiting);
+    let exiting = || Error::Attach(spaceport_chat_core::Error::Bye(ByeReason::Exiting));
     let start = Instant::now();
     let later = start + Duration::from_secs(3600);
 
@@ -122,9 +122,11 @@ fn only_an_observed_agent_that_exits_is_never_retried() {
 fn a_stream_that_stopped_fitting_is_retried_on_the_next_tick() {
     let mut chats = Chats::default();
     let now = Instant::now();
-    let gap = || Error::Stream {
-        after: None,
-        got: cursor(1, 2),
+    let gap = || {
+        Error::Attach(spaceport_chat_core::Error::Stream {
+            after: None,
+            got: cursor(1, 2),
+        })
     };
     // One connection per reconcile: never a second within the same one.
     for attempt in 1..=u64::from(MAX_FAILURES) + 2 {
@@ -134,7 +136,9 @@ fn a_stream_that_stopped_fitting_is_retried_on_the_next_tick() {
     // It did not count toward backing off: an ordinary failure next waits
     // only the first delay.
     assert_eq!(
-        refused(&mut chats, target("p1", A), now, || Error::Closed),
+        refused(&mut chats, target("p1", A), now, || Error::Attach(
+            spaceport_chat_core::Error::Closed
+        )),
         1
     );
     let early = now + Duration::from_millis(499);

@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::chat::session::Session;
+use spaceport_chat_core::Error;
 
 fn live(at: Cursor, entries: Vec<Entry>) -> Session {
     let mut session = Session::default();
