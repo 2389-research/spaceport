@@ -1,8 +1,10 @@
 #![allow(clippy::unwrap_used)]
 
+use spaceport_sidebar::agents::agent_labels;
+
 use super::{
     STATUS_DOT_UNKNOWN, STATUS_WIDTH, agent_name,
-    agents::{Indicators, agent_labels, agent_place, pane_name, status_indicator},
+    agents::{Indicators, agent_place, pane_name, status_indicator},
     layout_tests,
     render::header::header,
     workspace_label,

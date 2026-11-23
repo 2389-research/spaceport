@@ -71,9 +71,10 @@ fn status_slots_are_fixed_for_each_set_and_font_size() {
 
 #[test]
 fn wide_mark_rows_keep_layout_density_and_expand_child_indent() {
-    use super::super::row::{RowIcon, RowKind, RowTree, row};
+    use super::super::row::{RowIcon, RowTree};
     use crate::config::LayoutMode;
     use gpui::{Styled, px};
+    use spaceport_sidebar::row::{RowKind, row};
 
     let font = FontConfig {
         family: "Menlo".into(),

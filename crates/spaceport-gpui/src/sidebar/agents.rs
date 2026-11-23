@@ -15,8 +15,6 @@ use crate::preferences::AgentSort;
 use gpui::{prelude::*, *};
 use spaceport_client::protocol::{AgentStatus, ClientShellAgent};
 
-#[cfg(any(test, feature = "integration-test"))]
-pub(crate) use spaceport_sidebar::agents::agent_labels;
 pub(crate) use spaceport_sidebar::agents::{
     Indicators, agent_place, pane_name, sorted_agents, state_label, status_indicator,
 };

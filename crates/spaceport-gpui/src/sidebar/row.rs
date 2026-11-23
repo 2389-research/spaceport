@@ -7,5 +7,3 @@
 pub(super) use spaceport_sidebar::row::{
     RowBadge, RowIcon, RowLift, RowTree, first_text, removing_dot,
 };
-#[cfg(any(test, feature = "integration-test"))]
-pub(super) use spaceport_sidebar::row::{RowKind, row, row_text};
