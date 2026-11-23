@@ -6835,10 +6835,13 @@ dependencies = [
 name = "spaceport-sidebar"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "gpui-pre",
  "serde",
  "serde_json",
  "spaceport-client",
  "spaceport-commands",
+ "spaceport-icons",
  "spaceport-settings",
  "tempfile",
  "thiserror 2.0.21",

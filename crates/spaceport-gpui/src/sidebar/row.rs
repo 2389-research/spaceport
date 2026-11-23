@@ -25,6 +25,7 @@ use configured::configured_lines;
 pub(super) use configured::{
     TokenLook, configured_status, configured_status_style, leading_status, token_column,
 };
+pub(super) use spaceport_sidebar::row::{Elbow, RowKind, RowLift, RowTree, first_text, row_text};
 
 /// What a row shows in its leading icon slot: a neutral repository icon, an
 /// empty slot for a folder outside a checkout, or no slot for a child row or
@@ -81,54 +82,6 @@ fn repository_icon(color: u32) -> Svg {
         .flex_none()
         .text_color(rgb(color))
 }
-/// What a row lists, which decides how its two lines are weighted: upstream
-/// keeps agent names bold throughout and reserves bold workspaces for the
-/// current one, with the branch picking up the accent while it is focused.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum RowKind {
-    Workspace,
-    Agent(crate::icons::AgentIcon),
-}
-
-/// Name color, name weight, and detail color for a row.
-pub(super) fn row_text(kind: RowKind, focused: bool, theme: &Theme) -> (u32, FontWeight, u32) {
-    let weight = if focused || matches!(kind, RowKind::Agent(_)) {
-        FontWeight::BOLD
-    } else {
-        FontWeight::NORMAL
-    };
-    let name = if focused {
-        theme.foreground
-    } else {
-        theme.subtext()
-    };
-    let detail = if focused && kind == RowKind::Workspace {
-        theme.primary()
-    } else {
-        theme.muted
-    };
-    (name, weight, detail)
-}
-
-/// Where a row stands while a workspace is dragged: rows the lifted card
-/// passes over stop answering hover, so only the drop line marks a place.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(super) enum RowLift {
-    #[default]
-    Resting,
-    Passed,
-    Lifted,
-}
-
-/// Where a row sits in its worktree group, which decides whether the gutter
-/// carries a trunk through the row or ends in an elbow.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum RowTree {
-    None,
-    Child,
-    LastChild,
-}
-
 /// Trunk and tick for a child row, given the gutter the row reserves between
 /// the parent's label column and the child's leading mark, with the tick at
 /// `middle`, the middle of the row's first line. Snapped to whole device
@@ -171,15 +124,6 @@ pub(super) fn tree_lines(
         let left = snap(gutter.origin.x + gutter.right() - line.right());
         Bounds::new(point(left, line.origin.y), line.size)
     })
-}
-
-/// Where a guide's tick meets its row.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(super) enum Elbow {
-    /// This far below the row's top: the middle of its first line.
-    At(f32),
-    /// Halfway down the row, for a row that centres its one line.
-    Middle,
 }
 
 /// The gutter a child of Herdr's rows reserves for its guide, as `(x,
@@ -684,16 +628,4 @@ fn shared_label_text(text: SharedString) -> SharedString {
 #[cfg(any(test, feature = "integration-test"))]
 fn shared_label_text(text: SharedString) -> layout_tests::ProbeText {
     layout_tests::ProbeText(text)
-}
-
-pub(super) fn first_text<'a>(
-    values: impl IntoIterator<Item = Option<&'a str>>,
-    fallback: &'a str,
-) -> &'a str {
-    values
-        .into_iter()
-        .flatten()
-        .map(str::trim)
-        .find(|s| !s.is_empty())
-        .unwrap_or(fallback)
 }
