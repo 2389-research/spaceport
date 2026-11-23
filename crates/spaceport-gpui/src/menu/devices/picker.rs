@@ -8,11 +8,12 @@
 
 use super::super::sessions::{Entry, Row, target_session};
 use super::super::{Page, colors};
-use super::{DeviceScope, SetupUnavailable, device_list_height, multi_select_hint};
+use super::{SetupUnavailable, device_list_height, multi_select_hint};
 use crate::SpaceportWindow;
 use crate::i18n::fl;
 use gpui::{prelude::*, *};
 use spaceport_client::ConnectTarget;
+use spaceport_sidebar::device_scope::DeviceScope;
 
 use super::rail::add_device_offer;
 

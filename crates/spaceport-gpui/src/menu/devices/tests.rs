@@ -14,7 +14,6 @@ mod en_xa;
 mod fold;
 mod manual_entry;
 mod rail;
-mod scope;
 mod selection;
 
 fn open_form(view: &mut SpaceportWindow, step: Step, cx: &mut Context<SpaceportWindow>) {

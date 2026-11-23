@@ -95,6 +95,7 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 use spaceport_client::ConnectOptions;
+use spaceport_sidebar::device_scope::DeviceScope;
 
 pub(crate) use server_keys::ActiveServerKeymap;
 
@@ -156,7 +157,7 @@ pub(crate) struct SpaceportWindow {
     /// A press on a device's header that may lift it for reordering.
     pub(crate) device_drag: Option<sidebar::DeviceDrag>,
     /// The devices the sidebar lists.
-    pub(crate) device_filter: menu::DeviceScope,
+    pub(crate) device_filter: DeviceScope,
     /// The device IDs in the order the user dragged them into; see
     /// `endpoint::order`.
     pub(crate) device_order: Vec<String>,

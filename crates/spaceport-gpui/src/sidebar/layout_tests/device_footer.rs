@@ -1,6 +1,7 @@
 // ABOUTME: Checks device footer layout, scope changes and setup input isolation.
 // ABOUTME: Opts into Core where the fixture includes Core group and setup controls.
 use super::*;
+use spaceport_sidebar::device_scope::DeviceScope;
 
 #[gpui::test]
 fn device_footer_filters_both_lists_and_keeps_settings_visible(cx: &mut gpui::TestAppContext) {
@@ -82,10 +83,7 @@ fn device_footer_filters_both_lists_and_keeps_settings_visible(cx: &mut gpui::Te
     // All Devices -> Local. An explicit-socket fixture must not touch the catalog.
     cx.simulate_keystrokes("down enter");
     cx.update(|window, cx| {
-        assert_eq!(
-            view.read(cx).device_filter,
-            crate::menu::DeviceScope::only("local")
-        );
+        assert_eq!(view.read(cx).device_filter, DeviceScope::only("local"));
         assert!(!view.read(cx).device_visible("ssh:fixture"));
         assert!(view.read(cx).focus.is_focused(window));
         full_draw(window, cx).clear(cx);
@@ -108,7 +106,7 @@ fn device_footer_filters_both_lists_and_keeps_settings_visible(cx: &mut gpui::Te
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
     cx.simulate_keystrokes("enter");
     cx.update(|window, cx| {
-        assert!(view.read(cx).device_filter == crate::menu::DeviceScope::All);
+        assert!(view.read(cx).device_filter == DeviceScope::All);
         assert_eq!(view.read(cx).selected_endpoint, 0);
         full_draw(window, cx).clear(cx);
     });

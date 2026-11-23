@@ -13,18 +13,20 @@ use super::{
     wash,
 };
 use crate::direction::Logical;
+use crate::endpoint::origin::describe;
 use crate::{SpaceportWindow, endpoint::Endpoint};
 use gpui::{prelude::*, *};
+use spaceport_sidebar::origin::Origin;
 
 /// Where the device runs and how it is reached, named again by its tooltip.
 fn origin_mark(
-    origin: crate::endpoint::origin::Origin,
+    origin: Origin,
     id: String,
     size: f32,
     color: u32,
     theme: &crate::config::Theme,
 ) -> Stateful<Div> {
-    let text = SharedString::from(origin.describe());
+    let text = SharedString::from(describe(origin));
     let (foreground, surface) = (theme.foreground, theme.surface);
     div()
         .id(SharedString::from(id.clone()))
@@ -96,7 +98,7 @@ impl SpaceportWindow {
             .max(0.);
         // The layout decides whether headers have a mark; the setting turns it off.
         let origin = (self.config.show_device_icons && self.config.layout.mode.device_icons())
-            .then(|| crate::endpoint::origin::Origin::of(&endpoint.connection.target));
+            .then(|| Origin::of(&endpoint.connection.target));
         let icon_size = (font.size * 0.9).round();
         let icon_room = origin.map_or(0., |_| icon_size + host_gap);
         let label_width = (label_width - icon_room).max(0.);

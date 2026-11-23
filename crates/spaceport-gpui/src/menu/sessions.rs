@@ -5,11 +5,12 @@
 //! sessions cost an SSH round trip — so only an unfolded device asks.
 // i18n: migrated
 use super::devices::picker::Line;
-use super::{Page, colors, devices};
+use super::{Page, colors};
 use crate::i18n::fl;
 use crate::{SpaceportWindow, endpoint::Endpoint, sessions::DeviceScan};
 use gpui::{prelude::*, *};
 use spaceport_client::{ConnectTarget, LocalSession};
+use spaceport_sidebar::device_scope::DeviceScope;
 mod management;
 
 pub(super) use management::{Edit, Target};
@@ -480,7 +481,7 @@ impl SpaceportWindow {
                 self.select_local_session(&name, cx);
                 // The picker's own follow-up: the sidebar follows the host that
                 // was just chosen, and another session's tree is not this one's.
-                self.set_device_scope(devices::DeviceScope::only(self.endpoints[0].id.clone()));
+                self.set_device_scope(DeviceScope::only(self.endpoints[0].id.clone()));
             }
             // A device row is one of that device's sessions, so it retargets the
             // device rather than adding an endpoint for every session it runs.
@@ -500,7 +501,7 @@ impl SpaceportWindow {
                 // The local branch's own follow-up: the sidebar follows the host
                 // that was just chosen, and another session's tree is not this
                 // one's.
-                self.set_device_scope(devices::DeviceScope::only(id));
+                self.set_device_scope(DeviceScope::only(id));
             }
         }
     }
