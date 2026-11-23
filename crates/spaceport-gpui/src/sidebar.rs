@@ -21,7 +21,7 @@ mod render;
 mod reorder;
 mod row;
 mod search;
-pub(crate) mod slide;
+mod slide;
 mod sticky;
 mod tag_groups;
 mod tokens;
@@ -45,16 +45,22 @@ pub(crate) use {
     hover::{HoverMenu, HoverRest},
     metrics::{HOST_ARROW_WIDTH, STATUS_WIDTH},
     paint::label_text,
+    metrics::{ARROW_RESERVE, HOST_ARROW_WIDTH, ICON_RESERVE, STATUS_WIDTH},
     rail::SidebarMode,
     render::NestedReveal,
     reorder::WorkspaceDrag,
+    row::label_text,
     search::SidebarSearch,
     view::SidebarView,
     workspaces::{workspace_entries, workspace_label},
 };
 
 pub(crate) use layout::SidebarMetrics;
+pub(crate) use spaceport_sidebar::device_drag::{DeviceDrag, DevicePlan};
+pub(crate) use spaceport_sidebar::hover::{HoverMenu, HoverRest};
 pub(crate) use spaceport_sidebar::order::step as sidebar_step;
+pub(crate) use spaceport_sidebar::reorder::{MoveBlock, Plan, WorkspaceDrag, resolve};
+pub(crate) use spaceport_sidebar::slide::SidebarSlide;
 
 #[cfg(any(test, feature = "integration-test"))]
 pub(crate) use metrics::LABEL_WIDTH;

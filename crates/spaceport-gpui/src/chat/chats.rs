@@ -5,7 +5,7 @@
 
 use super::{
     Error, MAX_FAILURES, Result, Route, Source, Target,
-    labels::Labels,
+    labels::{self, Labels},
     link::{Dial, Link},
     list::{self, Splice},
     prepared::Prepared,
@@ -307,7 +307,7 @@ impl ChatPane {
             generation: 0,
             glide,
             history: Default::default(),
-            labels: Labels::now(),
+            labels: labels::now(),
             list,
             list_keys: Vec::new(),
             list_snapshots: 0,
@@ -695,7 +695,7 @@ impl Chats {
             return false;
         }
         for pane in &mut self.panes {
-            pane.labels = Labels::now();
+            pane.labels = labels::now();
             pane.prepared.forget_text();
             pane.refresh_text();
             pane.list.remeasure();

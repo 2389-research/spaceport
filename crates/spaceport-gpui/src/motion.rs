@@ -9,7 +9,9 @@ use gpui::{
     AnimationElement, AnimationExt, Div, ElementId, IntoElement, ParentElement, Pixels, Styled,
     div, px,
 };
-pub(crate) use spaceport_motion::{ENTER, LEAVE, duration, is_slow, now, progress, set_slow};
+pub(crate) use spaceport_motion::{
+    ENTER, LEAVE, Toggle, duration, is_slow, now, progress, set_slow,
+};
 use std::{cell::Cell, rc::Rc, time::Instant};
 
 /// How far a dropdown drops into place as it appears.
@@ -108,58 +110,3 @@ pub(crate) fn fold(
             },
         )
 }
-
-/// Something that opens and closes, such as a panel: how much of it shows.
-#[derive(Clone, Copy, Debug, Default)]
-pub(crate) struct Toggle {
-    open: bool,
-    /// When it last opened or closed; `None` before either, so a panel
-    /// that is open when first drawn is simply there.
-    since: Option<Instant>,
-}
-
-impl Toggle {
-    /// Opens or closes it at `now`. The first report sets where it is
-    /// without moving, as a view first drawn shows what it has.
-    pub(crate) fn set(&mut self, open: bool, now: Instant, first: bool) {
-        if first {
-            *self = Self { open, since: None };
-            return;
-        }
-        if open != self.open {
-            // Reversing mid-way starts from where it is, not from an end.
-            let shown = self.shown(now);
-            let length = if open { ENTER } else { LEAVE };
-            let done = if open { shown } else { 1. - shown };
-            // Inverts the ease: the time at which it would have come this far.
-            let back = length.mul_f32(1. - (1. - done.clamp(0., 1.)).cbrt());
-            self.open = open;
-            self.since = Some(now.checked_sub(back).unwrap_or(now));
-        }
-    }
-
-    /// Whether it is open or opening, rather than closed or closing.
-    pub(crate) fn is_open(&self) -> bool {
-        self.open
-    }
-
-    /// How much of it shows at `now`, from 0 closed to 1 open.
-    pub(crate) fn shown(&self, now: Instant) -> f32 {
-        let length = if self.open { ENTER } else { LEAVE };
-        let k = self
-            .since
-            .and_then(|since| progress(since, now, length))
-            .unwrap_or(1.);
-        if self.open { k } else { 1. - k }
-    }
-
-    /// Whether it is still opening or closing.
-    pub(crate) fn moving(&self, now: Instant) -> bool {
-        let length = if self.open { ENTER } else { LEAVE };
-        self.since
-            .is_some_and(|since| progress(since, now, length).is_some())
-    }
-}
-
-#[cfg(test)]
-mod tests;

@@ -1,51 +1,19 @@
 //! Devices grouped by tag: the switch over the list, which narrows it to one
-//! tag, and the section heading above each group.
+//! tag, and the section heading above each group. A tag's colour, which devices
+//! section together, and whether the filter it set is stale are
+//! `spaceport-sidebar`'s; the switch and the headings are the window's, since
+//! they word themselves and set this window's folds.
 
 use super::{HOST_ARROW_WIDTH, label_text, layout::SidebarLook, line_height, scaled};
-use crate::{
-    SpaceportWindow,
-    config::corners,
-    device_tags::{self, DeviceTags, Tags},
-    i18n::fl,
-};
+use crate::{SpaceportWindow, config::corners, device_tags::DeviceTags, i18n::fl};
 use gpui::{prelude::*, *};
 
-/// The ANSI colors a tag takes, leaving out green, which says online.
-const HUES: [usize; 4] = [3, 4, 5, 6];
-
-/// A tag's color: from its letters, so it is the same on every machine.
-pub(super) fn tag_color(theme: &crate::config::Theme, tag: &str) -> u32 {
-    let sum: usize = tag.to_lowercase().bytes().map(usize::from).sum();
-    let hue = theme.palette[HUES[sum % HUES.len()]];
-    theme.ink(crate::config::mix(theme.foreground, hue, 44))
-}
+pub(super) use spaceport_sidebar::tag_groups::{filter_stale, same_section};
+use spaceport_sidebar::tag_groups::{in_use, switchable, tag_color};
 
 /// A section's key among the folds: tags match whatever their case.
 fn fold_key(section: Option<&str>) -> Option<String> {
     section.map(str::to_lowercase)
-}
-
-/// Whether two devices list together: `work` and `Work` are one section.
-pub(super) fn same_section(one: Option<&str>, other: Option<&str>) -> bool {
-    match (one, other) {
-        (Some(one), Some(other)) => device_tags::same(one, other),
-        (None, None) => true,
-        _ => false,
-    }
-}
-
-fn in_use(tags: &Tags, tag: &str) -> bool {
-    tags.all().iter().any(|known| device_tags::same(known, tag))
-}
-
-/// Whether the switch shows: with one tag, its sections already say it all.
-fn switchable(tags: &[&str]) -> bool {
-    tags.len() > 1
-}
-
-/// Whether `filter` can no longer be cleared, its switch or segment gone.
-pub(super) fn filter_stale(tags: &Tags, filter: &str) -> bool {
-    !switchable(&tags.all()) || !in_use(tags, filter)
 }
 
 impl SpaceportWindow {

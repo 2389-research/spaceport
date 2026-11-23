@@ -1,5 +1,5 @@
 use super::*;
-use crate::chat::labels::Labels;
+use crate::chat::labels;
 use crate::chat::prepared::tool_text;
 use spaceport_chat_protocol::ToolContent;
 
@@ -7,7 +7,7 @@ mod states;
 
 #[core::prelude::v1::test]
 fn question_tool_labels_do_not_change_unknown_tools() {
-    let labels = Labels::now();
+    let labels = labels::now();
     assert_eq!(tool_header("request_user_input", &labels), "Ask user");
     assert_eq!(tool_header("request_user_input_async", &labels), "Ask user");
     assert_eq!(
@@ -18,7 +18,7 @@ fn question_tool_labels_do_not_change_unknown_tools() {
 
 #[core::prelude::v1::test]
 fn expanded_tool_content_keeps_long_lines_and_every_diff_line() {
-    let labels = Labels::now();
+    let labels = labels::now();
     let text = format!("{}\n{}\nlast output", "x".repeat(900), "line\n".repeat(20));
     assert_eq!(
         tool_text(&ToolContent::Text { text: text.clone() }, &labels),

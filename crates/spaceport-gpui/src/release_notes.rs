@@ -13,9 +13,7 @@ use crate::{
 use gpui::{prelude::*, *};
 use spaceport_release_notes::Mark;
 // The model at the paths the rest of the app reads it at.
-pub(crate) use spaceport_release_notes::{
-    Kind, Limits, Line, MAX_URL, bare_url, note, parse, parse_within,
-};
+pub(crate) use spaceport_release_notes::{Kind, Line, parse};
 use std::{cell::RefCell, ops::Range, rc::Rc};
 
 /// The lines of the last body drawn, so a repaint draws from prepared lines

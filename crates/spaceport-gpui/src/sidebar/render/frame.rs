@@ -2,7 +2,7 @@
 //! their headings, the two lists, the footer, and the edges dragged to resize.
 
 use super::super::{
-    DEVICE_FOOTER_HEIGHT, SidebarDrag, agents_sort, label_text, line_height, reorder, search,
+    DEVICE_FOOTER_HEIGHT, SidebarDrag, agents_sort, label_text, line_height, resolve, search,
     sidebar_width,
 };
 use super::header::header;
@@ -207,7 +207,7 @@ impl SpaceportWindow {
                                         event.position,
                                         event.pressed_button == Some(MouseButton::Left),
                                         |lift| {
-                                            reorder::resolve(
+                                            resolve(
                                                 &drop_rows,
                                                 &drop_requests,
                                                 drop_dragged,

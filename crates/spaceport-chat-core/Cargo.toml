@@ -11,6 +11,8 @@ workspace = true
 
 [dependencies]
 pulldown-cmark.workspace          = true
+# The card catalog's fields and the form values they accept, as JSON.
+serde.workspace                   = true
 serde_json.workspace              = true
 spaceport-chat-protocol.workspace = true
 spaceport-client.workspace        = true

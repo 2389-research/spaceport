@@ -1,0 +1,667 @@
+//! What the view draws for an entry, prepared when the entry changes rather
+//! than on every frame: message text parsed as Markdown with its Mermaid
+//! fences split out as diagrams, its HTML fences as pages to preview, and
+//! its picture links as pictures, a tool call's output and file changes
+//! summarized, and every picture an entry draws named as a [`Want`].
+//!
+//! The pictures themselves are the window's: a want is a value holding an
+//! identity and its source, reported in the order the parse admitted it, and
+//! the app answers it with a texture. Preparing the same entry twice asks for
+//! nothing new.
+
+use crate::{
+    labels::Labels,
+    rich::{Fence, Want},
+    summary::Summary,
+    visual::{MAX_DIAGRAM_SOURCE, Source, VisualId},
+    widgets::{Document, Key, MAX_SOURCE},
+};
+use spaceport_chat_protocol::{
+    Author, EntryId, EntryKind, MAX_QUESTION_ANSWERS, MAX_QUESTION_TEXT, QuestionAnswer,
+    ToolContent, Transcript,
+};
+use spaceport_client::text::safe_text;
+use spaceport_release_notes::{self as release_notes, Line};
+use spaceport_web_url::WebUrl;
+use std::{
+    borrow::Cow,
+    collections::{HashMap, HashSet},
+    fmt::Write as _,
+    rc::Rc,
+};
+
+/// Lines of a tool call's text output shown under it.
+const TOOL_LINES: usize = 6;
+/// Bytes of a diff's sides compared line by line; past them it is counted
+/// as changed without its lines.
+const DIFF_BYTES: usize = 512 * 1024;
+/// How much of one answer is drawn: as much text as the program keeps for
+/// an entry, with room for long code. A longer answer ends with a note.
+pub const MESSAGE: release_notes::Limits = release_notes::Limits {
+    body: 256 * 1024,
+    lines: 2_000,
+    line: 4_000,
+};
+
+/// What ends an answer cut at [`MESSAGE`].
+fn cut_note(labels: &Labels) -> String {
+    labels.answer_cut.clone()
+}
+
+/// Markdown prose as rich blocks, or as lines when it is too large to be
+/// rich.
+fn prose(
+    text: &str,
+    wants: &mut Vec<Want>,
+    labels: &Labels,
+    destination: fn(&str) -> Option<String>,
+) -> Part {
+    match crate::rich::parse(text, wants, destination) {
+        Some(blocks) => Part::Rich(blocks.into()),
+        None => Part::Text(message_lines(text, labels)),
+    }
+}
+
+/// An answer's Markdown lines, ending with a note when some are not shown;
+/// Copy still takes the whole answer.
+fn message_lines(text: &str, labels: &Labels) -> Rc<[Line]> {
+    let (mut lines, cut) = release_notes::parse_within(text, MESSAGE);
+    if cut {
+        lines.push(release_notes::note(&cut_note(labels)));
+    }
+    lines.into()
+}
+
+/// Diagrams drawn per message; later fences stay code.
+const DIAGRAMS: usize = 8;
+/// Pictures shown under one tool call.
+const TOOL_IMAGES: usize = 4;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DiffSummary {
+    pub path: String,
+    pub added: usize,
+    pub removed: usize,
+}
+
+/// Characters of a tool call's header.
+const TOOL_HEADER: usize = 300;
+/// Characters of a notice's folded line or the label above its answers.
+const NOTICE_LABEL: usize = 240;
+/// Characters of a folded thought's first line.
+const FOLDED_THOUGHT: usize = 120;
+
+/// What a tool call's title reads as, before it is cut to a header.
+fn tool_label<'a>(title: &'a str, labels: &Labels) -> Cow<'a, str> {
+    match title {
+        "request_user_input" | "request_user_input_async" => {
+            Cow::Owned(labels.tool_ask_user.clone())
+        }
+        _ => Cow::Borrowed(title),
+    }
+}
+
+// The selection document writes an entry's plain text with the helpers
+// below, and the view draws the document's segments. The view calls them
+// itself only for text the document does not hold.
+
+/// As much of an entry's plain text as is drawn.
+pub fn shown_text(text: &str) -> &str {
+    MESSAGE.clip(text)
+}
+
+/// A tool call's header.
+pub fn tool_header(title: &str, labels: &Labels) -> String {
+    safe_text(&tool_label(title, labels), TOOL_HEADER)
+}
+
+/// A notice's folded line, or the label above its answers.
+pub fn notice_label(text: &str) -> String {
+    safe_text(text, NOTICE_LABEL)
+}
+
+/// The first line of a folded thought with any text on it.
+pub fn folded_thought(text: &str) -> String {
+    let first = text
+        .lines()
+        .find(|line| !line.trim().is_empty())
+        .unwrap_or("");
+    safe_text(first, FOLDED_THOUGHT)
+}
+
+/// Expanded tool output comes from the retained transcript, not its preview.
+/// The selection document holds it; the view draws it from there.
+pub fn tool_text(content: &ToolContent, labels: &Labels) -> Option<String> {
+    match content {
+        ToolContent::Text { text } => Some(text.clone()),
+        ToolContent::Diff { old, new, path } => Some(match old {
+            // Each label is a line of its own, between the file's text.
+            Some(old) => format!(
+                "{path}\n{}\n{old}\n{}\n{new}",
+                labels.diff_before, labels.diff_after
+            ),
+            None => format!("{path}\n{}\n{new}", labels.diff_new_file),
+        }),
+        ToolContent::Terminal { id } => Some((labels.terminal)(&id.to_string())),
+        ToolContent::Image { .. } => None,
+    }
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct ToolSummary {
+    pub diffs: Vec<DiffSummary>,
+    /// The first lines of its text output.
+    pub lines: Vec<String>,
+    /// Pictures it returned, the first [`TOOL_IMAGES`] of them.
+    pub images: Vec<VisualId>,
+    /// Text lines left out.
+    pub more: usize,
+    pub terminals: usize,
+}
+
+/// One stretch of a user or agent message.
+#[derive(Debug)]
+pub enum Part {
+    Text(Rc<[Line]>),
+    Rich(Rc<[crate::rich::Block]>),
+    Widget(Rc<Document>),
+    /// A Mermaid fence, with its source as code lines for when it cannot be
+    /// drawn.
+    Diagram(VisualId, Rc<[Line]>),
+    /// An HTML fence: a page the user may preview.
+    Html {
+        page: Rc<str>,
+    },
+    /// A picture on the agent's machine; herdr-acp adds it after the
+    /// message, so the message only names it.
+    Picture {
+        alt: String,
+    },
+    /// A picture on the web, fetched once the user asks for it.
+    Remote {
+        id: VisualId,
+        url: WebUrl,
+        alt: String,
+    },
+}
+
+#[derive(Debug)]
+pub enum Body {
+    Message(Vec<Part>),
+    /// Historical Q&A, with its readable copy payload prepared once as well.
+    Answers {
+        text: Rc<str>,
+        parts: Vec<Part>,
+    },
+    /// An agent's compaction summary, folded.
+    Summary(Summary),
+    Image(VisualId),
+    Tool(ToolSummary),
+}
+
+impl Body {
+    fn visuals(&self) -> impl Iterator<Item = VisualId> + '_ {
+        let (parts, images): (&[Part], &[VisualId]) = match self {
+            Self::Message(parts) | Self::Answers { parts, .. } => (parts, &[]),
+            Self::Summary(_) => (&[], &[]),
+            Self::Image(id) => (&[], std::slice::from_ref(id)),
+            Self::Tool(summary) => (&[], &summary.images),
+        };
+        parts
+            .iter()
+            .flat_map(|part| {
+                let (own, blocks): (_, &[crate::rich::Block]) = match part {
+                    Part::Diagram(id, _) | Part::Remote { id, .. } => (Some(*id), &[]),
+                    Part::Rich(blocks) => (None, blocks),
+                    Part::Text(_) | Part::Widget(_) | Part::Html { .. } | Part::Picture { .. } => {
+                        (None, &[])
+                    }
+                };
+                own.into_iter()
+                    .chain(blocks.iter().flat_map(crate::rich::Block::visuals))
+            })
+            .chain(images.iter().copied())
+    }
+}
+
+/// Bodies by entry, each with the revision it was prepared at, and the
+/// pictures the last [`Self::update`] asked for.
+#[derive(Default)]
+pub struct Prepared {
+    bodies: HashMap<EntryId, (u64, Rc<Body>)>,
+    /// Files the transcript's tool calls changed, first change first, with
+    /// their lines added and removed summed.
+    changed: Vec<DiffSummary>,
+    /// Each sub-agent's steps, by its call id, in order.
+    steps: HashMap<String, Vec<EntryId>>,
+    /// Pictures the last update admitted, in the order it admitted them.
+    wants: Vec<Want>,
+}
+
+impl Prepared {
+    pub fn body(&self, id: EntryId) -> Option<Rc<Body>> {
+        self.bodies.get(&id).map(|(_, body)| body.clone())
+    }
+
+    /// The bodies by entry, for the selectable projection of the same text.
+    pub fn bodies(&self) -> &HashMap<EntryId, (u64, Rc<Body>)> {
+        &self.bodies
+    }
+
+    /// Whether the message part at `key` is still the card `document`.
+    pub fn shows_widget(&self, (entry, part): Key, document: &Document) -> bool {
+        self.bodies.get(&entry).is_some_and(|(_, body)| {
+            matches!(&**body, Body::Message(parts)
+                if matches!(parts.get(part), Some(Part::Widget(shown))
+                    if shown.source == document.source))
+        })
+    }
+
+    pub fn changed(&self) -> &[DiffSummary] {
+        &self.changed
+    }
+
+    /// The steps the sub-agent of the call `call` took, in order.
+    pub fn steps(&self, call: &str) -> &[EntryId] {
+        self.steps.get(call).map_or(&[], Vec::as_slice)
+    }
+
+    /// The entries that draw `visual`, to measure again once it lands.
+    pub fn drawing(&self, visual: VisualId) -> impl Iterator<Item = EntryId> + '_ {
+        self.bodies
+            .iter()
+            .filter(move |(_, (_, body))| body.visuals().any(|id| id == visual))
+            .map(|(id, _)| *id)
+    }
+
+    /// Every picture the prepared bodies draw, for the window to forget the
+    /// rest.
+    pub fn drawn(&self) -> HashSet<VisualId> {
+        self.bodies
+            .values()
+            .flat_map(|(_, body)| body.visuals())
+            .collect()
+    }
+
+    /// The pictures [`Self::update`] asked for since it was last called.
+    pub fn take_wants(&mut self) -> Vec<Want> {
+        std::mem::take(&mut self.wants)
+    }
+
+    /// Prepares the entries whose revision moved and forgets those gone.
+    ///
+    /// `destination` classifies a Markdown link's target, which only the app
+    /// knows. Whatever this asks for is collected for [`Self::take_wants`].
+    pub fn update(
+        &mut self,
+        transcript: &Transcript,
+        keys: &[(EntryId, u64)],
+        labels: &Labels,
+        destination: fn(&str) -> Option<String>,
+    ) {
+        self.wants.clear();
+        let live: HashSet<EntryId> = keys.iter().map(|(id, _)| *id).collect();
+        self.bodies.retain(|id, _| live.contains(id));
+        for (entry, (_, revision)) in transcript.entries.iter().zip(keys) {
+            if self
+                .bodies
+                .get(&entry.id)
+                .is_some_and(|(prepared, _)| prepared == revision)
+            {
+                continue;
+            }
+            let wants = &mut self.wants;
+            let body = match &entry.kind {
+                EntryKind::User { text, .. } => {
+                    Body::Message(message(text, Author::User, wants, labels, destination))
+                }
+                EntryKind::Notice { answers, .. } if !answers.is_empty() => {
+                    let text: Rc<str> = answers_text(answers, labels).into();
+                    let parts = vec![prose(&text, wants, labels, destination)];
+                    Body::Answers { text, parts }
+                }
+                EntryKind::Agent { text } => {
+                    let (lines, cut) = release_notes::parse_within(text, MESSAGE);
+                    match crate::summary::summary(&lines) {
+                        Some(mut summary) => {
+                            if cut {
+                                summary.lines.push(release_notes::note(&cut_note(labels)));
+                            }
+                            Body::Summary(summary)
+                        }
+                        None => {
+                            Body::Message(message(text, Author::Agent, wants, labels, destination))
+                        }
+                    }
+                }
+                EntryKind::Image { image, .. } => {
+                    let id = VisualId::of(&image.data);
+                    wants.push(Want::new(id, Source::Image(image.clone())));
+                    Body::Image(id)
+                }
+                EntryKind::Tool(tool) => Body::Tool(summarize(&tool.content, wants)),
+                _ => {
+                    self.bodies.remove(&entry.id);
+                    continue;
+                }
+            };
+            self.bodies.insert(entry.id, (*revision, Rc::new(body)));
+        }
+        self.steps.clear();
+        for entry in &transcript.entries {
+            if let EntryKind::Tool(tool) = &entry.kind
+                && let Some(parent) = &tool.parent
+            {
+                self.steps.entry(parent.clone()).or_default().push(entry.id);
+            }
+        }
+        self.changed.clear();
+        for entry in &transcript.entries {
+            let Some((_, body)) = self.bodies.get(&entry.id) else {
+                continue;
+            };
+            let Body::Tool(summary) = &**body else {
+                continue;
+            };
+            for diff in &summary.diffs {
+                match self
+                    .changed
+                    .iter_mut()
+                    .find(|known| known.path == diff.path)
+                {
+                    Some(known) => {
+                        known.added += diff.added;
+                        known.removed += diff.removed;
+                    }
+                    None => self.changed.push(diff.clone()),
+                }
+            }
+        }
+    }
+
+    /// Forgets the bodies, keeping the pictures, so the next
+    /// [`Self::update`] writes every label again in the language now shown.
+    pub fn forget_bodies(&mut self) {
+        self.bodies.clear();
+    }
+
+    /// Starts over, as after a snapshot that may reuse entry ids.
+    pub fn clear(&mut self) {
+        self.bodies.clear();
+        self.changed.clear();
+        self.steps.clear();
+        self.wants.clear();
+    }
+}
+
+/// Readable history and its copy payload share the same bounded Markdown.
+/// Only rich Markdown parses this text; HTML/widget fences remain code.
+pub fn answers_text(answers: &[QuestionAnswer], labels: &Labels) -> String {
+    let mut source = String::new();
+    let mut remaining = MAX_QUESTION_TEXT;
+    let mut truncated = answers.len() > MAX_QUESTION_ANSWERS;
+    'answers: for (index, answer) in answers.iter().take(MAX_QUESTION_ANSWERS).enumerate() {
+        if index > 0 {
+            source.push_str("\n\n");
+        }
+        let _ = write!(source, "**{}**\n\n", (labels.question_number)(index + 1));
+        let answer_label = format!("\n\n**{}**\n\n", labels.question_answer);
+        for (label, text) in [
+            ("", &answer.question),
+            (answer_label.as_str(), &answer.answer),
+        ] {
+            source.push_str(label);
+            let end = text.floor_char_boundary(remaining.min(text.len()));
+            source.push_str(&text[..end]);
+            remaining -= end;
+            if end < text.len() {
+                truncated = true;
+                break 'answers;
+            }
+        }
+    }
+    if truncated {
+        let _ = write!(source, "\n\n{}", labels.question_truncated);
+    }
+    source
+}
+
+/// A message as Markdown text with its diagrams, pages, and
+/// pictures between it. Only a closed fence becomes a diagram or a page, so
+/// one still streaming shows as code. A user's own text is shown as Markdown,
+/// but only an agent's reply can become a live card or a page preview:
+/// pasting an earlier reply must not turn the user's bubble into a form that
+/// sends prompts.
+fn message(
+    text: &str,
+    author: Author,
+    wants: &mut Vec<Want>,
+    labels: &Labels,
+    destination: fn(&str) -> Option<String>,
+) -> Vec<Part> {
+    let end = MESSAGE
+        .clip(text)
+        .split_inclusive('\n')
+        .take(MESSAGE.lines)
+        .map(str::len)
+        .sum();
+    let cut = end < text.len();
+    let text = &text[..end];
+    let mut parts = Vec::new();
+    let mut markdown = String::new();
+    let flush = |text: &mut String, parts: &mut Vec<Part>, wants: &mut Vec<Want>| {
+        if !text.trim().is_empty() {
+            parts.push(prose(text, wants, labels, destination));
+        }
+        text.clear();
+    };
+    let mut lines = text.split_inclusive('\n');
+    let (mut diagrams, mut pages, mut widgets) = (0, 0, 0);
+    while let Some(line) = lines.next() {
+        let trimmed = line.trim_start();
+        let indentation = &line[..line.len() - trimmed.len()];
+        if indentation.len() > 3 || !indentation.chars().all(|ch| ch == ' ') {
+            markdown.push_str(line);
+            continue;
+        }
+        if let Some(part) = picture(line) {
+            flush(&mut markdown, &mut parts, wants);
+            parts.push(part);
+            continue;
+        }
+        let Some(fence) = Fence::open(line) else {
+            markdown.push_str(line);
+            continue;
+        };
+        let info = fence.info;
+        let kind = if info.eq_ignore_ascii_case("mermaid") && diagrams < DIAGRAMS {
+            Embed::Diagram
+        } else if author == Author::Agent && info.eq_ignore_ascii_case("html") && pages < PAGES {
+            Embed::Page
+        } else if author == Author::Agent
+            && info.eq_ignore_ascii_case("herdr-ui")
+            && widgets < WIDGETS
+        {
+            Embed::Widget
+        } else {
+            Embed::Code
+        };
+        let mut source = String::new();
+        let mut closed = false;
+        let mut block = line.to_owned();
+        for inner in lines.by_ref() {
+            block.push_str(inner);
+            if fence.closes(inner) {
+                closed = true;
+                break;
+            }
+            source.push_str(inner);
+        }
+        let limit = match kind {
+            Embed::Diagram => MAX_DIAGRAM_SOURCE,
+            Embed::Page => MAX_PAGE,
+            Embed::Widget => MAX_SOURCE,
+            Embed::Code => MESSAGE.body,
+        };
+        if !closed || source.trim().is_empty() || source.len() > limit {
+            markdown.push_str(&block);
+            continue;
+        }
+        match kind {
+            // Markdown draws code fences itself, in place in the prose.
+            Embed::Code => markdown.push_str(&block),
+            Embed::Widget => match Document::parse(&source) {
+                Ok(document) => {
+                    flush(&mut markdown, &mut parts, wants);
+                    widgets += 1;
+                    parts.push(Part::Widget(Rc::new(document)));
+                }
+                Err(_) => markdown.push_str(&block),
+            },
+            Embed::Diagram => {
+                flush(&mut markdown, &mut parts, wants);
+                diagrams += 1;
+                let id = VisualId::of(&source);
+                let code = release_notes::parse(&block).into();
+                wants.push(Want::new(id, Source::Diagram(source.into())));
+                parts.push(Part::Diagram(id, code));
+            }
+            Embed::Page => {
+                flush(&mut markdown, &mut parts, wants);
+                pages += 1;
+                parts.push(Part::Html {
+                    page: source.into(),
+                });
+            }
+        }
+    }
+    if !markdown.trim().is_empty() || parts.is_empty() {
+        parts.push(prose(&markdown, wants, labels, destination));
+    }
+    if cut {
+        let note = release_notes::note(&cut_note(labels));
+        match parts.last_mut() {
+            // Lines cut for their own length already end with the note.
+            Some(Part::Text(lines)) if lines.last() == Some(&note) => {}
+            Some(Part::Text(lines)) => *lines = lines.iter().cloned().chain([note]).collect(),
+            _ => parts.push(Part::Text(vec![note].into())),
+        }
+    }
+    parts
+}
+
+/// What a closed fence becomes.
+enum Embed {
+    Code,
+    Diagram,
+    Page,
+    Widget,
+}
+
+/// Cards per message; excess cards remain readable source.
+const WIDGETS: usize = 4;
+
+/// Pages per message; later HTML fences stay code.
+const PAGES: usize = 4;
+/// Bytes of an HTML fence shown as a page; a longer one stays code.
+pub const MAX_PAGE: usize = 256 * 1024;
+
+/// A line that is only a Markdown picture, `![alt](target)`: a web address
+/// to fetch on request, or a file herdr-acp shows after the message.
+fn picture(line: &str) -> Option<Part> {
+    let inner = line.trim().strip_prefix("![")?.strip_suffix(')')?;
+    let (alt, target) = inner.split_once("](")?;
+    if alt.contains(['[', ']']) || target.contains(['(', ')']) {
+        return None;
+    }
+    let target = target.trim();
+    let target = target
+        .strip_prefix('<')
+        .and_then(|inner| inner.strip_suffix('>'))
+        .unwrap_or_else(|| target.split_whitespace().next().unwrap_or(""));
+    let alt = safe_text(alt.trim(), 200);
+    if target.is_empty() || target.starts_with("data:") {
+        return None;
+    }
+    if target.starts_with("http://") || target.starts_with("https://") {
+        let url = WebUrl::try_from(target).ok()?;
+        return Some(Part::Remote {
+            id: VisualId::of(url.as_str()),
+            url,
+            alt,
+        });
+    }
+    // herdr-acp reads a path or a file URL; any other scheme stays text. A
+    // Windows drive letter looks like a one-letter scheme.
+    let scheme = target.split_once(':').map(|(scheme, _)| scheme);
+    if scheme.is_some_and(|scheme| {
+        scheme.len() > 1
+            && scheme != "file"
+            && scheme
+                .chars()
+                .all(|ch| ch.is_ascii_alphanumeric() || "+-.".contains(ch))
+    }) {
+        return None;
+    }
+    Some(Part::Picture { alt })
+}
+
+pub fn summarize(content: &[ToolContent], wants: &mut Vec<Want>) -> ToolSummary {
+    let mut summary = ToolSummary::default();
+    for item in content {
+        match item {
+            ToolContent::Text { text } => {
+                for line in text.lines().filter(|line| !line.trim().is_empty()) {
+                    if summary.lines.len() < TOOL_LINES {
+                        summary.lines.push(safe_text(line, 400));
+                    } else {
+                        summary.more += 1;
+                    }
+                }
+            }
+            ToolContent::Diff { new, old, path } => {
+                let (added, removed) = diff_counts(old.as_deref().unwrap_or(""), new);
+                summary.diffs.push(DiffSummary {
+                    path: path.clone(),
+                    added,
+                    removed,
+                });
+            }
+            ToolContent::Image { image } => {
+                if summary.images.len() < TOOL_IMAGES {
+                    let id = VisualId::of(&image.data);
+                    wants.push(Want::new(id, Source::Image(image.clone())));
+                    summary.images.push(id);
+                }
+            }
+            ToolContent::Terminal { .. } => summary.terminals += 1,
+        }
+    }
+    summary
+}
+
+/// Lines added and removed between two versions of a file, by counting
+/// each distinct line on both sides: what `+`/`-` totals show, without the
+/// cost of an alignment.
+pub fn diff_counts(old: &str, new: &str) -> (usize, usize) {
+    if old.len() + new.len() > DIFF_BYTES {
+        return (new.lines().count(), old.lines().count());
+    }
+    let mut counts: HashMap<&str, isize> = HashMap::new();
+    for line in old.lines() {
+        *counts.entry(line).or_default() -= 1;
+    }
+    for line in new.lines() {
+        *counts.entry(line).or_default() += 1;
+    }
+    counts
+        .values()
+        .fold((0, 0), |(added, removed), &count| match count {
+            count if count > 0 => (added + count.unsigned_abs(), removed),
+            count => (added, removed + count.unsigned_abs()),
+        })
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, clippy::unwrap_used)]
+mod tests;

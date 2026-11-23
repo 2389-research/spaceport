@@ -10,6 +10,7 @@ use super::{
 use crate::SpaceportWindow;
 use crate::chat::visual::VisualId;
 use gpui::{Entity, Modifiers, TestAppContext, VisualTestContext};
+use spaceport_chat_core::prepared::MAX_PAGE;
 use spaceport_chat_protocol::{Tool, ToolKind, ToolStatus};
 use spaceport_client::ConnectTarget;
 
@@ -19,10 +20,7 @@ fn a_closed_html_fence_becomes_a_page_and_an_open_one_stays_code() {
     assert_eq!(shape, ["text:Here it is:", "page", "text:Enjoy."]);
     let (_, shape) = message("Here it is:\n```html\n<h1>Hi</h1>\n");
     assert_eq!(shape, ["text:Here it is:"]);
-    let long = format!(
-        "```html\n{}\n```",
-        "x".repeat(crate::chat::prepared::MAX_PAGE + 1)
-    );
+    let long = format!("```html\n{}\n```", "x".repeat(MAX_PAGE + 1));
     let (_, shape) = message(&long);
     assert!(!shape.contains(&"page".to_owned()), "too long to preview");
 }

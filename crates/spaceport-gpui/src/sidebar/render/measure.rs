@@ -6,9 +6,8 @@ use gpui::{prelude::*, *};
 use std::time::Instant;
 
 use super::super::{
-    HOST_ARROW_WIDTH,
+    DevicePlan, HOST_ARROW_WIDTH,
     cell::{RowLayout, layout_for},
-    device_drag::DevicePlan,
     layout::{self, SidebarLook},
     scaled, sidebar_width, sticky,
 };

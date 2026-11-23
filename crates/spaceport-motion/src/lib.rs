@@ -82,5 +82,57 @@ fn stretch(length: Duration, slow: bool) -> Duration {
     if slow { length * FACTOR } else { length }
 }
 
+/// Something that opens and closes, such as a panel: how much of it shows.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Toggle {
+    open: bool,
+    /// When it last opened or closed; `None` before either, so a panel
+    /// that is open when first drawn is simply there.
+    since: Option<Instant>,
+}
+
+impl Toggle {
+    /// Opens or closes it at `now`. The first report sets where it is
+    /// without moving, as a view first drawn shows what it has.
+    pub fn set(&mut self, open: bool, now: Instant, first: bool) {
+        if first {
+            *self = Self { open, since: None };
+            return;
+        }
+        if open != self.open {
+            // Reversing mid-way starts from where it is, not from an end.
+            let shown = self.shown(now);
+            let length = if open { ENTER } else { LEAVE };
+            let done = if open { shown } else { 1. - shown };
+            // Inverts the ease: the time at which it would have come this far.
+            let back = length.mul_f32(1. - (1. - done.clamp(0., 1.)).cbrt());
+            self.open = open;
+            self.since = Some(now.checked_sub(back).unwrap_or(now));
+        }
+    }
+
+    /// Whether it is open or opening, rather than closed or closing.
+    pub fn is_open(&self) -> bool {
+        self.open
+    }
+
+    /// How much of it shows at `now`, from 0 closed to 1 open.
+    pub fn shown(&self, now: Instant) -> f32 {
+        let length = if self.open { ENTER } else { LEAVE };
+        let k = self
+            .since
+            .and_then(|since| progress(since, now, length))
+            .unwrap_or(1.);
+        if self.open { k } else { 1. - k }
+    }
+
+    /// Whether it is still opening or closing.
+    pub fn moving(&self, now: Instant) -> bool {
+        let length = if self.open { ENTER } else { LEAVE };
+        self.since
+            .is_some_and(|since| progress(since, now, length).is_some())
+    }
+}
+
 #[cfg(test)]
 mod tests;

@@ -1,13 +1,11 @@
 //! Per-pane form values and native input entities. Merely displaying a card
 //! allocates no retained state; the first user edit creates it.
 
-use super::{Document, Values};
+use super::{Document, Key, Values};
 use crate::{chat::prepared::Prepared, search_input::SearchInput};
 use gpui::{App, Entity, Subscription, Window};
-use spaceport_chat_protocol::EntryId;
 use std::{collections::BTreeMap, rc::Rc};
 
-pub(crate) type Key = (EntryId, usize);
 const MAX_FORMS: usize = 64;
 
 pub(crate) struct Input {
