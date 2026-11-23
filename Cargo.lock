@@ -6533,6 +6533,7 @@ dependencies = [
  "spaceport-release-notes",
  "spaceport-remote",
  "spaceport-settings",
+ "spaceport-web-url",
  "syntect",
  "tempfile",
  "thiserror 2.0.21",

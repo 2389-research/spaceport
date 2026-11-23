@@ -18,6 +18,8 @@ spaceport-remote.workspace        = true
 # The theme a code block's tokens are coloured in, and the contrast rule that
 # makes them readable there.
 spaceport-settings.workspace      = true
+# The bounded addresses a chat's remote picture is fetched from.
+spaceport-web-url.workspace       = true
 # The bundled grammars `highlight` parses a code block's lines with.
 syntect.workspace                 = true
 thiserror.workspace               = true

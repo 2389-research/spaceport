@@ -4,28 +4,34 @@
 //! memory caps as a pane's graphics, and a diagram's source is bounded and
 //! drawn by a renderer that loads nothing it names.
 //!
+//! The values these draw from — a visual's identity, its source, the bounds
+//! that admit it, and a diagram's theme — are [`spaceport_chat_core::visual`]'s;
+//! this module paints them.
+//!
 //! Each visual is keyed by a hash of what it draws, so a message that keeps
 //! streaming does not redraw a diagram it already finished. Diagrams follow
 //! the theme: a theme change redraws them while the old texture stays up.
 
-use super::rich::MathMode;
-use crate::config::{FontConfig, Theme};
 use base64::Engine as _;
 use gpui::{RenderImage, SvgRenderer};
 use image::{ImageFormat, ImageReader, Limits};
 use spaceport_chat_protocol::{Image, ImageType};
 mod remote;
 
+// The visual model below the app's views, at the paths the rest of the chat
+// reads it at.
+pub(crate) use spaceport_chat_core::visual::{
+    DiagramStyle, MAX_DIAGRAM_SOURCE, MAX_MATH_TEXTURE_BYTES, MAX_RICH_VISUALS, Source, VisualId,
+};
+use spaceport_chat_core::visual::{Kind, MAX_RUNNING, MathMode};
+
 use std::{
     collections::{HashMap, HashSet},
-    hash::{DefaultHasher, Hash, Hasher},
     io::Cursor,
     panic::{AssertUnwindSafe, catch_unwind},
     sync::Arc,
 };
 
-/// Bytes of Mermaid source drawn; a longer fence stays code.
-pub(crate) const MAX_DIAGRAM_SOURCE: usize = 16 * 1024;
 /// Decoded bytes one image may allocate.
 const MAX_DECODE_BYTES: u64 = 128 * 1024 * 1024;
 /// Pixels on a side of a decoded image.
@@ -34,12 +40,6 @@ const MAX_IMAGE_SIDE: u32 = 8_192;
 const MAX_TEXTURE_SIDE: f32 = 4_096.;
 /// Device pixels per diagram point, so labels stay sharp on dense screens.
 const DIAGRAM_SCALE: f32 = 2.;
-/// Visuals one chat prepares at once; the rest wait their turn.
-const MAX_RUNNING: usize = 2;
-/// Rich entries admitted per pane, including queued work and failures.
-pub(crate) const MAX_RICH_VISUALS: usize = 128;
-/// Retained formula textures per pane; images/diagrams keep their own limits.
-pub(crate) const MAX_MATH_TEXTURE_BYTES: usize = 64 * 1024 * 1024;
 
 pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -67,47 +67,6 @@ pub(crate) enum Error {
     #[error("the diagram could not be drawn")]
     Raster(#[source] Box<dyn std::error::Error + Send + Sync>),
     // keep-sorted end
-}
-
-/// A visual's identity: a hash of what it draws.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(crate) struct VisualId(u64);
-
-impl VisualId {
-    pub(crate) fn of(content: impl Hash) -> Self {
-        let mut hasher = DefaultHasher::new();
-        content.hash(&mut hasher);
-        Self(hasher.finish())
-    }
-}
-
-/// What a visual is drawn from.
-#[derive(Clone, Debug)]
-pub(crate) enum Source {
-    Image(Image),
-    Code {
-        language: String,
-        source: Arc<str>,
-    },
-    Math {
-        source: Arc<str>,
-        mode: MathMode,
-    },
-    Diagram(Arc<str>),
-    /// A picture on the web, asked for by the user.
-    Remote(crate::browser::WebUrl),
-}
-
-impl Source {
-    /// Code and math count against the rich budget; math also against the
-    /// texture budget.
-    fn kind(&self) -> Kind {
-        match self {
-            Self::Code { .. } => Kind::Code,
-            Self::Math { .. } => Kind::Math,
-            Self::Image(_) | Self::Diagram(_) | Self::Remote(_) => Kind::Other,
-        }
-    }
 }
 
 /// A texture and the size it is drawn at, in points.
@@ -153,82 +112,49 @@ pub(crate) enum Shown<'a> {
     Failed(&'a Error),
 }
 
-/// The theme a diagram is drawn in, as the colors and font it uses.
-#[derive(Clone, Debug, PartialEq)]
-pub(crate) struct DiagramStyle {
-    background: u32,
-    border: u32,
-    dark: bool,
-    family: String,
-    fill: u32,
-    line: u32,
-    note: u32,
-    size: f32,
-    text: u32,
-}
-
-impl DiagramStyle {
-    pub(crate) fn of(theme: &Theme, font: &FontConfig) -> Self {
-        Self {
-            background: theme.background,
-            border: theme.muted,
-            dark: luminance(theme.background) < 0.5,
-            family: font.family.clone(),
-            fill: theme.surface,
-            line: theme.subtext(),
-            note: theme.active,
-            size: font.size,
-            text: theme.foreground,
-        }
-    }
-
-    fn theme(&self) -> mermaid_rs_renderer::Theme {
-        let hex = |color: u32| format!("#{:06x}", color & 0x00ff_ffff);
-        let mut theme = if self.dark {
-            mermaid_rs_renderer::Theme::dark()
-        } else {
-            mermaid_rs_renderer::Theme::modern()
-        };
-        // GPUI's own aliases such as `.SystemUIFont` mean nothing to the SVG
-        // font database, so named sans faces follow the UI font.
-        let family = self.family.replace(['"', '\'', '<', '>', '&'], "");
-        let named = (!family.starts_with('.')).then(|| format!("'{family}', "));
-        theme.font_family = format!(
-            // i18n: data
-            "{}'Helvetica Neue', 'Segoe UI', 'Noto Sans', 'IBM Plex Sans', Arial, sans-serif",
-            named.unwrap_or_default()
-        );
-        theme.font_size = self.size.clamp(10., 24.);
-        theme.background = hex(self.background);
-        theme.primary_color = hex(self.fill);
-        theme.primary_text_color = hex(self.text);
-        theme.primary_border_color = hex(self.border);
-        theme.line_color = hex(self.line);
-        theme.secondary_color = hex(self.note);
-        theme.tertiary_color = hex(self.fill);
-        theme.edge_label_background = hex(self.background);
-        theme.cluster_background = hex(self.background);
-        theme.cluster_border = hex(self.border);
-        theme.sequence_actor_fill = hex(self.fill);
-        theme.sequence_actor_border = hex(self.border);
-        theme.sequence_actor_line = hex(self.line);
-        theme.sequence_note_fill = hex(self.note);
-        theme.sequence_note_border = hex(self.border);
-        theme.sequence_activation_fill = hex(self.note);
-        theme.sequence_activation_border = hex(self.border);
-        theme.text_color = hex(self.text);
-        theme.pie_title_text_color = hex(self.text);
-        theme.pie_section_text_color = hex(self.text);
-        theme.pie_legend_text_color = hex(self.text);
-        theme.pie_stroke_color = hex(self.background);
-        theme.pie_outer_stroke_color = hex(self.border);
-        theme
-    }
-}
-
-fn luminance(color: u32) -> f32 {
-    let channel = |shift: u32| ((color >> shift) & 0xff) as f32 / 255.;
-    0.2126 * channel(16) + 0.7152 * channel(8) + 0.0722 * channel(0)
+/// The theme the renderer draws a diagram in, from the colors and font the
+/// [`DiagramStyle`] carries.
+fn mermaid_theme(style: &DiagramStyle) -> mermaid_rs_renderer::Theme {
+    let hex = |color: u32| format!("#{:06x}", color & 0x00ff_ffff);
+    let mut theme = if style.dark {
+        mermaid_rs_renderer::Theme::dark()
+    } else {
+        mermaid_rs_renderer::Theme::modern()
+    };
+    // GPUI's own aliases such as `.SystemUIFont` mean nothing to the SVG
+    // font database, so named sans faces follow the UI font.
+    let family = style.family.replace(['"', '\'', '<', '>', '&'], "");
+    let named = (!family.starts_with('.')).then(|| format!("'{family}', "));
+    theme.font_family = format!(
+        // i18n: data
+        "{}'Helvetica Neue', 'Segoe UI', 'Noto Sans', 'IBM Plex Sans', Arial, sans-serif",
+        named.unwrap_or_default()
+    );
+    theme.font_size = style.size.clamp(10., 24.);
+    theme.background = hex(style.background);
+    theme.primary_color = hex(style.fill);
+    theme.primary_text_color = hex(style.text);
+    theme.primary_border_color = hex(style.border);
+    theme.line_color = hex(style.line);
+    theme.secondary_color = hex(style.note);
+    theme.tertiary_color = hex(style.fill);
+    theme.edge_label_background = hex(style.background);
+    theme.cluster_background = hex(style.background);
+    theme.cluster_border = hex(style.border);
+    theme.sequence_actor_fill = hex(style.fill);
+    theme.sequence_actor_border = hex(style.border);
+    theme.sequence_actor_line = hex(style.line);
+    theme.sequence_note_fill = hex(style.note);
+    theme.sequence_note_border = hex(style.border);
+    theme.sequence_activation_fill = hex(style.note);
+    theme.sequence_activation_border = hex(style.border);
+    theme.text_color = hex(style.text);
+    theme.pie_title_text_color = hex(style.text);
+    theme.pie_section_text_color = hex(style.text);
+    theme.pie_legend_text_color = hex(style.text);
+    theme.pie_stroke_color = hex(style.background);
+    theme.pie_outer_stroke_color = hex(style.border);
+    theme
 }
 
 /// One visual to prepare in the background, and the ticket its result
@@ -312,7 +238,7 @@ fn diagram(source: &str, style: &DiagramStyle, renderer: &SvgRenderer) -> Result
     // The lenient parser, as Mermaid itself accepts participants and nodes
     // a diagram never declared.
     let parsed = mermaid::parse_mermaid(source).map_err(|error| Error::Diagram(error.into()))?;
-    let theme = style.theme();
+    let theme = mermaid_theme(style);
     let config = mermaid::LayoutConfig::default();
     let layout = mermaid::compute_layout(&parsed.graph, &theme, &config);
     let size = mermaid::measure_svg_dimensions(&layout, &config, None);
@@ -339,13 +265,6 @@ enum Phase {
     Queued,
     Running(u64),
     Done,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Kind {
-    Code,
-    Math,
-    Other,
 }
 
 struct Item {

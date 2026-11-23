@@ -2,9 +2,10 @@
 //! window may attach to, the `[chat.env]` table a chat's tab is created with,
 //! how the measured entry list follows a transcript, the attach side itself —
 //! the transcript a session holds and the worker that reads it — the syntax
-//! spans of the code a transcript shows, how long a step or turn took, and
-//! which of an agent's answers is a compaction summary. The transcript's own
-//! wire types are [`spaceport_chat_protocol`]'s.
+//! spans of the code a transcript shows, the identity, bounds and diagram theme
+//! of the pictures it shows, how long a step or turn took, and which of an
+//! agent's answers is a compaction summary. The transcript's own wire types are
+//! [`spaceport_chat_protocol`]'s.
 //!
 //! Everything here is a pure function of its inputs or hands its blocking work
 //! to a worker thread, so it is tested without a window. The app keeps the rest
@@ -21,6 +22,7 @@ pub mod list;
 pub mod session;
 pub mod summary;
 pub mod text;
+pub mod visual;
 
 pub use error::{Error, Result};
 
