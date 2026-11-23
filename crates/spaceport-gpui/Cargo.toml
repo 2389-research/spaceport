@@ -42,6 +42,7 @@ spaceport-panes.workspace         = true
 spaceport-remote.workspace        = true
 spaceport-reorder.workspace      = true
 spaceport-settings.workspace     = true
+spaceport-sidebar.workspace      = true
 spaceport-sound.workspace         = true
 spaceport-state-file.workspace    = true
 spaceport-usage.workspace         = true

@@ -6689,6 +6689,7 @@ dependencies = [
  "spaceport-remote",
  "spaceport-reorder",
  "spaceport-settings",
+ "spaceport-sidebar",
  "spaceport-sound",
  "spaceport-state-file",
  "spaceport-truncate",
@@ -6828,6 +6829,15 @@ dependencies = [
  "tracing",
  "windows-sys 0.61.2",
  "zed-font-kit",
+]
+
+[[package]]
+name = "spaceport-sidebar"
+version = "0.1.0"
+dependencies = [
+ "spaceport-client",
+ "spaceport-commands",
+ "spaceport-settings",
 ]
 
 [[package]]
