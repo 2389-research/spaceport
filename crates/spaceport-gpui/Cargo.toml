@@ -81,6 +81,8 @@ winresource.workspace = true
 fluent-syntax.workspace    = true
 # `window/image_source/tests.rs` builds the checksums of a PNG fixture.
 flate2.workspace = true
+# `tests/live_gui/shutdown.rs` and `saved_state.rs` hash the sandbox state.
+sha2.workspace = true
 # `i18n/errors/tests/sound.rs` names the audio library's own error types.
 rodio.workspace    = true
 gpui = { features = ["test-support"], workspace = true }
