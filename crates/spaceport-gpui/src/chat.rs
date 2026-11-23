@@ -24,7 +24,6 @@ mod files;
 mod glide;
 mod harnesses;
 mod highlight;
-mod link;
 pub(crate) mod page;
 pub(crate) mod pasted;
 mod prepared;
@@ -33,7 +32,6 @@ pub(crate) mod preview;
 mod reader;
 mod rich;
 mod selection;
-mod session;
 mod start;
 mod summary;
 mod terminal;
@@ -44,10 +42,11 @@ pub(crate) mod widgets;
 mod window;
 
 pub(crate) use chats::{ChatInput, Chats, LauncherDeck, Toward};
-pub(crate) use session::Refusal;
-// The model below the views, at the paths the rest of the chat reads it at.
+// The attach side and the model below the views, at the paths the rest of the
+// chat reads them at.
 pub(crate) use spaceport_chat_core::env::{check_env, env_text, parse_env};
-pub(crate) use spaceport_chat_core::{MAX_CHATS, env, existing, list};
+pub(crate) use spaceport_chat_core::session::Refusal;
+pub(crate) use spaceport_chat_core::{MAX_CHATS, env, existing, link, list, session};
 #[cfg(feature = "integration-test")]
 pub(crate) use start::native as native_start;
 pub(crate) use start::{Error as StartError, Program, Receipt};
@@ -65,11 +64,6 @@ pub(crate) use core_pane::key as core_pane_key;
 
 use spaceport_chat_protocol::EndpointId;
 
-/// Commands waiting for their acknowledgement, per pane.
-const MAX_PENDING: usize = 32;
-/// Messages a worker holds for the window before it gives the connection up
-/// as too far behind; the program then replays from the cursor.
-const MAX_EVENTS: usize = 1024;
 /// Connection failures in a row after which the pane shows its terminal.
 const MAX_FAILURES: u32 = 3;
 

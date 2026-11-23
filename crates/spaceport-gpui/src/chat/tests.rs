@@ -27,7 +27,6 @@ mod controls;
 mod core_panes;
 #[cfg(unix)]
 mod core_spawn_identity;
-mod delivery;
 mod delivery_ui;
 mod discovery;
 mod document_text;
@@ -56,8 +55,6 @@ mod recall;
 mod relocale;
 mod running;
 mod selection;
-mod session;
-mod session_stream;
 mod source;
 #[cfg(unix)]
 mod spaceport_discovery;

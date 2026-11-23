@@ -1,6 +1,7 @@
 // ABOUTME: Checks chat writer receipts against real frame and flush behavior.
 // ABOUTME: Exercises partial writes without sockets, daemons, or timing guesses.
 use super::*;
+use crate::session::Session;
 use spaceport_chat_protocol::{Command, encode_frame};
 
 struct FailingWriter {
@@ -73,7 +74,7 @@ impl Write for StalledWriter {
 
 #[test]
 fn draining_a_stalled_writer_ends_without_waiting_for_its_peer() {
-    let mut session = crate::chat::session::Session::default();
+    let mut session = Session::default();
     let welcome = ServerMessage::Welcome {
         agent: "Fixture".into(),
         pane: None,
