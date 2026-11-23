@@ -14,6 +14,7 @@ pub(super) use fence::Fence;
 pub(super) use math::draw as draw_math;
 pub(super) use parse::parse;
 pub(super) use remote::remote_content;
+pub(crate) use spaceport_chat_core::visual::MathMode;
 
 use super::visual::{Source, VisualId, Visuals};
 use pulldown_cmark::{Alignment, HeadingLevel};
@@ -30,13 +31,6 @@ pub(crate) struct Style {
     pub code: bool,
     pub strike: bool,
     pub link: Option<String>,
-}
-
-/// How a formula is typeset: within a line, or set apart as its own display.
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-pub(crate) enum MathMode {
-    Inline,
-    Display,
 }
 
 #[derive(Clone, Debug)]
