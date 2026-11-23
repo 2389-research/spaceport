@@ -7,14 +7,14 @@ use std::ops::Range;
 
 /// One edit of the list: the rows in `range` become `count` new rows.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct Splice {
-    pub(crate) range: Range<usize>,
-    pub(crate) count: usize,
+pub struct Splice {
+    pub range: Range<usize>,
+    pub count: usize,
 }
 
 /// How to bring a list showing `old` to `new`, both entry ids with their
 /// revisions; `None` when only a reset will do.
-pub(crate) fn splices(old: &[(EntryId, u64)], new: &[(EntryId, u64)]) -> Option<Vec<Splice>> {
+pub fn splices(old: &[(EntryId, u64)], new: &[(EntryId, u64)]) -> Option<Vec<Splice>> {
     let Some(&(first, _)) = new.first() else {
         return old.is_empty().then(Vec::new);
     };
@@ -52,3 +52,6 @@ pub(crate) fn splices(old: &[(EntryId, u64)], new: &[(EntryId, u64)]) -> Option<
     }
     Some(splices)
 }
+
+#[cfg(test)]
+mod tests;

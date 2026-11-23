@@ -31,7 +31,7 @@ use std::{
 pub(crate) mod native;
 
 /// The environment variable the typed line runs the program from.
-pub(crate) const PROGRAM_ENV: &str = "HERDR_ACP";
+pub(crate) use spaceport_chat_core::env::PROGRAM_ENV;
 /// The legacy lookup name; the shared locator prefers the app-owned helper.
 const PROGRAM: &str = if cfg!(windows) {
     "herdr-acp.exe"

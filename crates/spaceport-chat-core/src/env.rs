@@ -1,13 +1,16 @@
 //! The environment a chat's tab is created with: the `[chat.env]` pairs as the
 //! Settings field shows and reads them, checked against what a `tab.create`
 //! request can carry and what the app sets itself.
-use crate::chat::PROGRAM_ENV;
 use std::collections::BTreeMap;
+
+/// The variable the app sets to the chat program's path when it creates a
+/// chat's tab.
+pub const PROGRAM_ENV: &str = "HERDR_ACP";
 
 /// Variables kept, and the bytes their names and values take together, so
 /// a `tab.create` request stays small.
-pub(crate) const MAX_ENV: usize = 64;
-pub(crate) const MAX_ENV_BYTES: usize = 16 * 1024;
+pub const MAX_ENV: usize = 64;
+pub const MAX_ENV_BYTES: usize = 16 * 1024;
 
 /// Names the app sets itself, which the table may not replace.
 const RESERVED: [&str; 1] = [PROGRAM_ENV];
@@ -19,15 +22,15 @@ pub enum Error {
     Name { name: String },
     #[error(
         "[chat.env] holds more than {} variables or {} bytes",
-        super::MAX_ENV,
-        super::MAX_ENV_BYTES
+        MAX_ENV,
+        MAX_ENV_BYTES
     )]
     Size,
 }
 
 /// Every name a valid variable name and not one the app sets, every value
 /// free of NUL, and the whole within [`MAX_ENV`] and [`MAX_ENV_BYTES`].
-pub(crate) fn check_env(env: &BTreeMap<String, String>) -> Result<(), Error> {
+pub fn check_env(env: &BTreeMap<String, String>) -> Result<(), Error> {
     if env.len() > MAX_ENV {
         return Err(Error::Size);
     }
@@ -55,7 +58,7 @@ pub(crate) fn check_env(env: &BTreeMap<String, String>) -> Result<(), Error> {
 
 /// The table as the Settings field shows it: `NAME=value` pairs separated
 /// by spaces, a value with spaces or quotes in double quotes.
-pub(crate) fn env_text(env: &BTreeMap<String, String>) -> String {
+pub fn env_text(env: &BTreeMap<String, String>) -> String {
     env.iter()
         .map(|(name, value)| {
             if value.is_empty() || value.contains([' ', '"', '\\', '\t']) {
@@ -70,7 +73,7 @@ pub(crate) fn env_text(env: &BTreeMap<String, String>) -> String {
 }
 
 /// The pairs the Settings field holds, or `None` when one is malformed.
-pub(crate) fn parse_env(text: &str) -> Option<BTreeMap<String, String>> {
+pub fn parse_env(text: &str) -> Option<BTreeMap<String, String>> {
     let mut env = BTreeMap::new();
     let mut chars = text.chars().peekable();
     loop {
@@ -104,3 +107,7 @@ pub(crate) fn parse_env(text: &str) -> Option<BTreeMap<String, String>> {
     }
     check_env(&env).ok().map(|()| env)
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests;

@@ -30,7 +30,7 @@ const SETTLED: Duration = Duration::from_secs(30);
 /// One unreachable probe keeps the overlays; this many in a row drop them.
 const MAX_FAILURES: u8 = 2;
 mod error;
-pub(crate) use error::Error;
+pub use error::Error;
 
 const MAX_MATCHING_PROCESSES: usize = 16;
 const LIMITS: ScriptLimits = ScriptLimits {
@@ -40,26 +40,26 @@ const LIMITS: ScriptLimits = ScriptLimits {
 
 /// An answer is valid only for this particular connected daemon generation.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct Scope {
-    pub(crate) target: ConnectTarget,
-    pub(crate) boot: String,
+pub struct Scope {
+    pub target: ConnectTarget,
+    pub boot: String,
     /// How many times the window has switched daemons.
-    pub(crate) selection: u64,
+    pub selection: u64,
     /// How many times the selected daemon's connection has started.
-    pub(crate) connection: u64,
+    pub connection: u64,
 }
 
 /// The process and conversation both matter: one process may open several
 /// subagent transcripts, and a pane may run another agent after this one exits.
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
-pub(crate) struct Binding {
-    pub(crate) pane_id: String,
-    pub(crate) agent: Agent,
-    pub(crate) session_id: String,
-    pub(crate) herdr_session: Option<String>,
-    pub(crate) pid: u32,
-    pub(crate) shell_pid: u32,
-    pub(crate) started_ticks: u64,
+pub struct Binding {
+    pub pane_id: String,
+    pub agent: Agent,
+    pub session_id: String,
+    pub herdr_session: Option<String>,
+    pub pid: u32,
+    pub shell_pid: u32,
+    pub started_ticks: u64,
 }
 
 struct Probe {
@@ -74,7 +74,7 @@ impl Drop for Probe {
 }
 
 #[derive(Default)]
-pub(crate) struct Existing {
+pub struct Existing {
     activity: u64,
     bindings: Vec<Binding>,
     candidates: Vec<String>,
@@ -87,11 +87,11 @@ pub(crate) struct Existing {
 }
 
 impl Existing {
-    pub(crate) fn bindings(&self) -> &[Binding] {
+    pub fn bindings(&self) -> &[Binding] {
         &self.bindings
     }
 
-    pub(crate) fn error(&self) -> Option<&Error> {
+    pub fn error(&self) -> Option<&Error> {
         self.error.as_ref()
     }
 
@@ -100,7 +100,7 @@ impl Existing {
     /// waiting for a probe that was started under older metadata. `activity`
     /// fingerprints what the daemon reports about those panes, such as their
     /// statuses; a change brings the next probe forward.
-    pub(crate) fn poll(
+    pub fn poll(
         &mut self,
         scope: Option<Scope>,
         candidates: &[String],
@@ -214,14 +214,14 @@ fn start(scope: Scope, candidates: Vec<String>) -> Result<Probe, Error> {
     Ok(Probe { cancelled, result })
 }
 
-pub(super) fn query(host: &Host, body: &str, cancelled: &AtomicBool) -> Result<Vec<u8>, Error> {
+fn query(host: &Host, body: &str, cancelled: &AtomicBool) -> Result<Vec<u8>, Error> {
     let mut output = Vec::new();
     host.stream(body, std::io::empty(), &mut output, LIMITS, cancelled)
         .map_err(Error::Query)?;
     Ok(output)
 }
 
-pub(super) fn snapshot(host: &Host, cancelled: &AtomicBool) -> Result<SnapshotResult, Error> {
+fn snapshot(host: &Host, cancelled: &AtomicBool) -> Result<SnapshotResult, Error> {
     // i18n: data
     let bytes = query(host, "herdr_cli api snapshot\n", cancelled)?;
     serde_json::from_slice::<Envelope<SnapshotResult>>(&bytes)
@@ -367,19 +367,19 @@ fi
 
 /// The agents in `snapshot` that discovery may observe: Codex and Claude
 /// running in their own CLIs, not through a chat program already.
-pub(crate) fn candidates(snapshot: &ClientShellSnapshot) -> Vec<&ClientShellAgent> {
+pub fn candidates(snapshot: &ClientShellSnapshot) -> Vec<&ClientShellAgent> {
     snapshot
         .agents
         .iter()
         .filter(|agent| agent.agent.as_deref().and_then(observable).is_some())
-        .filter(|agent| super::discovery::endpoint(&agent.tokens).is_none())
+        .filter(|agent| super::endpoint(&agent.tokens).is_none())
         .take(super::MAX_CHATS)
         .collect()
 }
 
 /// The agent named `name`, when it is one whose running conversation can be
 /// observed: its CLI reports a session id the observer can read.
-pub(crate) fn observable(name: &str) -> Option<Agent> {
+fn observable(name: &str) -> Option<Agent> {
     match name.parse() {
         Ok(agent @ (Agent::Codex | Agent::Claude)) => Some(agent),
         _ => None,
@@ -462,7 +462,7 @@ struct Selected<'a> {
 
 /// The foreground processes running `agent`, unless there are more than
 /// [`MAX_MATCHING_PROCESSES`] to verify.
-pub(super) fn agent_processes(
+fn agent_processes(
     agent: Agent,
     info: &spaceport_remote::snapshot::ProcessInfo,
 ) -> Option<Vec<&spaceport_remote::snapshot::Process>> {

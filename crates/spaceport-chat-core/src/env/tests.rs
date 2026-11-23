@@ -1,6 +1,6 @@
 //! The `[chat.env]` field's text and the environment a tab may be created
 //! with.
-use crate::chat::{MAX_ENV, MAX_ENV_BYTES, check_env, env_text, parse_env};
+use super::{Error, MAX_ENV, MAX_ENV_BYTES, check_env, env_text, parse_env};
 use std::collections::BTreeMap;
 
 /// Pairs as a caller would build them.
@@ -54,13 +54,7 @@ fn malformed_or_unsafe_pairs_are_refused() {
     let many: BTreeMap<String, String> = (0..=MAX_ENV)
         .map(|i| (format!("V{i}"), String::new()))
         .collect();
-    assert!(matches!(
-        check_env(&many),
-        Err(crate::chat::env::Error::Size)
-    ));
+    assert!(matches!(check_env(&many), Err(Error::Size)));
     let large = env(&[("BIG", &"x".repeat(MAX_ENV_BYTES))]);
-    assert!(matches!(
-        check_env(&large),
-        Err(crate::chat::env::Error::Size)
-    ));
+    assert!(matches!(check_env(&large), Err(Error::Size)));
 }

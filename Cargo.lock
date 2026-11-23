@@ -6524,6 +6524,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "spaceport-chat-core"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "spaceport-chat-protocol",
+ "spaceport-client",
+ "spaceport-remote",
+ "tempfile",
+ "thiserror 2.0.21",
+ "uuid",
+]
+
+[[package]]
 name = "spaceport-chat-protocol"
 version = "0.1.0"
 dependencies = [
@@ -6660,6 +6673,7 @@ dependencies = [
  "spaceport-ago",
  "spaceport-backend",
  "spaceport-browser",
+ "spaceport-chat-core",
  "spaceport-chat-protocol",
  "spaceport-client",
  "spaceport-commands",
