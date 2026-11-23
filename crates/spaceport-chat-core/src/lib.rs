@@ -5,13 +5,13 @@
 //! spans of the code a transcript shows, the identity, bounds and diagram theme
 //! of the pictures it shows, how long a step or turn took, which of an agent's
 //! answers is a compaction summary, and the block model a message's Markdown is
-//! parsed into. The transcript's own wire types are
-//! [`spaceport_chat_protocol`]'s.
+//! parsed into, with the parse that asks for the visuals a message draws. The
+//! transcript's own wire types are [`spaceport_chat_protocol`]'s.
 //!
 //! Everything here is a pure function of its inputs or hands its blocking work
 //! to a worker thread, so it is tested without a window. The app keeps the rest
-//! of its chat: the views, the messages they write, the parse that registers
-//! the visuals a message asks for, and every piece of window state those read.
+//! of its chat: the views, the messages they write, the classification of the
+//! destinations it may act on, and every piece of window state those read.
 
 mod error;
 

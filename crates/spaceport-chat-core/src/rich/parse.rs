@@ -1,6 +1,8 @@
-use super::{Block, Fence, Inline, Kind, MathMode, Style, formula, math_input::Normalized};
-use crate::chat::visual::{Source, VisualId, Visuals};
+use super::{Block, Fence, Inline, Kind, MathMode, Style, Want, formula, math_input::Normalized};
+use crate::visual::{Source, VisualId};
 use pulldown_cmark::{Alignment, CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
+use spaceport_client::text::unsafe_char;
+use spaceport_release_notes::{MAX_URL, bare_url};
 use std::{collections::HashMap, ops::Range, sync::Arc};
 
 /// Words of one rich fragment; a longer one uses the plain line renderer.
@@ -11,13 +13,24 @@ const MAX_EVENTS: usize = 16_384;
 const MAX_TABLE_ROWS: usize = 128;
 const MAX_TABLE_COLUMNS: usize = 16;
 /// Code blocks per fragment highlighted by a worker; later ones stay plain.
-const MAX_HIGHLIGHTED: usize = 32;
+pub(super) const MAX_HIGHLIGHTED: usize = 32;
 /// Characters of a fence's language kept.
 const MAX_LANGUAGE: usize = 64;
+/// Bytes of one code block highlighted by a worker; a longer one stays plain.
+const MAX_CODE_BYTES: usize = 32 * 1024;
 
 /// Every bounded message uses the same Markdown semantics. Ordinary prose is
 /// laid out as shaped text runs; only mixed math needs individual inline atoms.
-pub(in crate::chat) fn parse(text: &str, visuals: &mut Visuals) -> Option<Vec<Block>> {
+///
+/// `wants` collects the code blocks and formulas this message asks the app to
+/// draw, in document order; `destination` is the app's classification of a
+/// link's target, which returns `None` for one it cannot act on, so that
+/// target stays visible source.
+pub fn parse(
+    text: &str,
+    wants: &mut Vec<Want>,
+    destination: fn(&str) -> Option<String>,
+) -> Option<Vec<Block>> {
     // Inline layout creates native word elements. Oversized rich fragments
     // use the existing bounded source renderer instead of building a huge tree.
     if text.split_whitespace().take(MAX_WORDS + 1).count() > MAX_WORDS {
@@ -35,7 +48,7 @@ pub(in crate::chat) fn parse(text: &str, visuals: &mut Visuals) -> Option<Vec<Bl
     if events.len() > MAX_EVENTS {
         return None;
     }
-    let mut builder = Builder::new(&display.markdown, &display.sources, visuals);
+    let mut builder = Builder::new(&display.markdown, &display.sources, wants, destination);
     for (event, range) in events {
         builder.event(event, range)?;
     }
@@ -75,7 +88,9 @@ struct Builder<'a> {
     markdown: &'a str,
     /// Display math sources by the offset of their placeholder.
     display: &'a HashMap<usize, String>,
-    visuals: &'a mut Visuals,
+    wants: &'a mut Vec<Want>,
+    /// The app's classification of a link's target.
+    destination: fn(&str) -> Option<String>,
     blocks: Vec<Block>,
     /// The paragraph being built.
     content: Vec<Inline>,
@@ -105,12 +120,14 @@ impl<'a> Builder<'a> {
     fn new(
         markdown: &'a str,
         display: &'a HashMap<usize, String>,
-        visuals: &'a mut Visuals,
+        wants: &'a mut Vec<Want>,
+        destination: fn(&str) -> Option<String>,
     ) -> Self {
         Self {
             markdown,
             display,
-            visuals,
+            wants,
+            destination,
             blocks: Vec::new(),
             content: Vec::new(),
             kind: Kind::Paragraph,
@@ -169,7 +186,7 @@ impl<'a> Builder<'a> {
             Event::Start(tag) => self.start(tag, range),
             Event::End(tag) => return self.end(tag),
             Event::InlineMath(source) => {
-                match formula(&source, MathMode::Inline, &mut self.maths, self.visuals) {
+                match formula(&source, MathMode::Inline, &mut self.maths, self.wants) {
                     Some((id, source)) => self.content.push(Inline::Math { id, source }),
                     None => self.text(&format!("${source}$")),
                 }
@@ -339,12 +356,8 @@ impl<'a> Builder<'a> {
 
     fn start_link(&mut self, destination: CowStr<'_>) {
         let previous = self.style.link.take();
-        self.style.link = crate::browser::WebUrl::try_from(destination.as_ref())
-            .ok()
-            .map(|url| url.as_str().to_owned())
-            .or_else(|| {
-                crate::terminal::file_target(&destination).map(|_| destination.to_string())
-            });
+        let classify = self.destination;
+        self.style.link = classify(destination.as_ref());
         // Unsupported schemes remain visible, never actionable.
         let literal = self.style.link.is_none().then(|| destination.into_string());
         if literal.is_some() {
@@ -364,14 +377,14 @@ impl<'a> Builder<'a> {
         };
         let source: Arc<str> = source.into();
         let id = VisualId::of(("code", &language, &source));
-        if closed && source.len() <= super::MAX_CODE_BYTES && self.codes < MAX_HIGHLIGHTED {
-            self.visuals.want(
+        if closed && source.len() <= MAX_CODE_BYTES && self.codes < MAX_HIGHLIGHTED {
+            self.wants.push(Want::new(
                 id,
                 Source::Code {
                     language: language.clone(),
                     source: source.clone(),
                 },
-            );
+            ));
             self.codes += 1;
         }
         self.blocks.push(Block::Code {
@@ -384,7 +397,7 @@ impl<'a> Builder<'a> {
     fn display_math(&mut self, source: &str, range: Range<usize>) {
         let display = self.display;
         let source = display.get(&range.start).map_or(source, String::as_str);
-        let Some((id, source)) = formula(source, MathMode::Display, &mut self.maths, self.visuals)
+        let Some((id, source)) = formula(source, MathMode::Display, &mut self.maths, self.wants)
         else {
             self.text(&format!("$${source}$$"));
             return;
@@ -403,7 +416,7 @@ fn push_text(content: &mut Vec<Inline>, text: &str, style: &Style) {
     // literal image/HTML source; stripping them can concatenate its tokens.
     let text: String = text
         .chars()
-        .filter(|ch| *ch == '\n' || !crate::notifications::unsafe_char(*ch))
+        .filter(|ch| *ch == '\n' || !unsafe_char(*ch))
         .collect();
     if let Some(Inline::Text(previous, previous_style)) = content.last_mut()
         && previous_style == style
@@ -429,8 +442,8 @@ fn push_linked_text(content: &mut Vec<Inline>, text: &str, style: &Style) {
             .len();
         let found = token[..end].match_indices("http").find_map(|(start, _)| {
             let candidate = &token[start..end];
-            (candidate.len() <= crate::release_notes::MAX_URL)
-                .then(|| crate::release_notes::bare_url(candidate))
+            (candidate.len() <= MAX_URL)
+                .then(|| bare_url(candidate))
                 .flatten()
                 .map(|url| (start, url))
         });

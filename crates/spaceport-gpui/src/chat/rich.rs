@@ -1,57 +1,51 @@
-//! Structured Markdown kept separately from layout: the app parses a message
-//! into the block model [`spaceport_chat_core::rich`] defines, asking for the
-//! visuals its formulas and code blocks need, and splits a message into its
+//! Structured Markdown kept separately from layout: a message is parsed into
+//! the block model [`spaceport_chat_core::rich`] defines, asking [`Visuals`]
+//! for the visuals its formulas and code blocks need, and split into its
 //! diagrams and pages by the fences that model reads. Math rasterization and
 //! grammar parsing use Visuals' workers.
 //!
-//! The values parsed here — a paragraph's inline style, a heading, a list item,
-//! a table, a code block, a display formula, a code line's drawn offsets, a
-//! fence, a block quote marker — are the crate's; this module re-exports them
-//! and keeps what builds them.
+//! The values parsed here — a paragraph's inline style, a heading, a list
+//! item, a table, a code block, a display formula, a code line's drawn
+//! offsets, a fence, a block quote marker — are the crate's, as is the parse;
+//! this module re-exports them, hands the parse the destinations this client
+//! may act on, and keeps what builds a visual's texture.
 
 mod math;
-mod math_input;
-mod parse;
 mod remote;
 
 // What this module keeps, and the crate's rich model at the paths the rest of
 // the chat reads it at.
 pub(super) use math::draw as draw_math;
-pub(super) use parse::parse;
 pub(super) use remote::remote_content;
 pub(crate) use spaceport_chat_core::rich::{Block, Inline, Kind, Style};
 pub(super) use spaceport_chat_core::rich::{
-    CodeText, Fence, MAX_CODE_LINE_CHARS, MAX_CODE_LINES, TAB_WIDTH, quote,
+    CodeText, Fence, MAX_CODE_LINE_CHARS, MAX_CODE_LINES, MAX_MATH_BYTES,
 };
 pub(crate) use spaceport_chat_core::visual::MathMode;
 
-use super::visual::{Source, VisualId, Visuals};
-use std::sync::Arc;
+use super::visual::Visuals;
+use crate::{browser::WebUrl, terminal::file_target};
 
-pub(super) const MAX_MATH_BYTES: usize = 4_096;
-pub(super) const MAX_MATH: usize = 64;
-pub(super) const MAX_CODE_BYTES: usize = 32 * 1024;
+/// The destination this client may act on: a web address, or a path its
+/// terminal's link rules read. Anything else stays visible source.
+fn destination(url: &str) -> Option<String> {
+    WebUrl::try_from(url)
+        .ok()
+        .map(|url| url.as_str().to_owned())
+        .or_else(|| file_target(url).map(|_| url.to_owned()))
+}
 
-fn formula(
-    source: &str,
-    mode: MathMode,
-    count: &mut usize,
-    visuals: &mut Visuals,
-) -> Option<(VisualId, Arc<str>)> {
-    if source.len() > MAX_MATH_BYTES || source.trim().is_empty() || *count >= MAX_MATH {
-        return None;
+/// Markdown as rich blocks, asking `visuals` for the visuals it draws.
+///
+/// The wants are replayed whatever the parse returns: it reports what it
+/// admitted as it goes, and a fragment it gives up on is drawn as lines.
+pub(super) fn parse(text: &str, visuals: &mut Visuals) -> Option<Vec<Block>> {
+    let mut wants = Vec::new();
+    let blocks = spaceport_chat_core::rich::parse(text, &mut wants, destination);
+    for want in wants {
+        visuals.want(want.id(), want.into_source());
     }
-    *count += 1;
-    let source: Arc<str> = source.into();
-    let id = VisualId::of(("math", mode, &source));
-    visuals.want(
-        id,
-        Source::Math {
-            source: source.clone(),
-            mode,
-        },
-    );
-    Some((id, source))
+    blocks
 }
 
 /// Classify bounded code text with the shared chat grammar cache.
