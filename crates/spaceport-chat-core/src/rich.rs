@@ -1,0 +1,91 @@
+//! The block model a chat's Markdown is parsed into: a paragraph's inline
+//! style, a heading, a list item, a quote, a table, a code block and a display
+//! formula, each carrying the visual it draws by. The app parses a message
+//! into these and paints them; nothing here draws.
+//!
+//! The code, fence and quote rules that read the same text live beside it: a
+//! code line's drawn and source offsets, whether a fence is closed, and which
+//! block quote markers a line carries.
+
+mod code;
+mod fence;
+pub mod quote;
+
+pub use code::{CodeText, MAX_CODE_LINE_CHARS, MAX_CODE_LINES, TAB_WIDTH};
+pub use fence::Fence;
+
+use crate::visual::VisualId;
+use pulldown_cmark::{Alignment, HeadingLevel};
+use std::sync::Arc;
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Style {
+    pub bold: bool,
+    pub italic: bool,
+    pub code: bool,
+    pub strike: bool,
+    pub link: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+pub enum Inline {
+    Text(String, Style),
+    Math { id: VisualId, source: Arc<str> },
+    Break,
+}
+
+/// What a paragraph block is, which sets its typography and marker.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Kind {
+    Paragraph,
+    Heading(HeadingLevel),
+    Bullet,
+    /// An ordered list item, with the number it was written with.
+    Numbered(u32),
+    Quote,
+    /// A thematic break, which has no content.
+    Rule,
+}
+
+#[derive(Debug)]
+pub enum Block {
+    Paragraph {
+        kind: Kind,
+        /// Nested list depth; bounded in the view so deep input stays readable.
+        indent: usize,
+        content: Vec<Inline>,
+    },
+    Math {
+        id: VisualId,
+        source: Arc<str>,
+    },
+    Code {
+        id: VisualId,
+        language: String,
+        source: Arc<str>,
+    },
+    Table {
+        align: Vec<Alignment>,
+        rows: Vec<Vec<Vec<Inline>>>,
+    },
+}
+
+impl Block {
+    /// The visuals this block draws: its own code or display formula, or the
+    /// inline formulas in its text.
+    pub fn visuals(&self) -> impl Iterator<Item = VisualId> + '_ {
+        let (own, prose, rows): (_, &[Inline], &[Vec<Vec<Inline>>]) = match self {
+            Self::Code { id, .. } | Self::Math { id, .. } => (Some(*id), &[], &[]),
+            Self::Paragraph { content, .. } => (None, content, &[]),
+            Self::Table { rows, .. } => (None, &[], rows),
+        };
+        let inline = prose.iter().chain(rows.iter().flatten().flatten());
+        own.into_iter().chain(inline.filter_map(|part| match part {
+            Inline::Math { id, .. } => Some(*id),
+            _ => None,
+        }))
+    }
+}
+
+#[cfg(test)]
+mod tests;

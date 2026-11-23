@@ -10,6 +10,7 @@ version.workspace      = true
 workspace = true
 
 [dependencies]
+pulldown-cmark.workspace          = true
 serde_json.workspace              = true
 spaceport-chat-protocol.workspace = true
 spaceport-client.workspace        = true
@@ -23,6 +24,7 @@ spaceport-web-url.workspace       = true
 # The bundled grammars `highlight` parses a code block's lines with.
 syntect.workspace                 = true
 thiserror.workspace               = true
+unicode-width.workspace           = true
 uuid.workspace                    = true
 
 [dev-dependencies]

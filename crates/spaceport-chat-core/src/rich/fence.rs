@@ -4,20 +4,20 @@
 
 /// The line that opens a fenced code block.
 #[derive(Debug, PartialEq, Eq)]
-pub(in crate::chat) struct Fence<'a> {
+pub struct Fence<'a> {
     /// A backtick or a tilde.
     marker: char,
     /// How many markers open the fence; a closing run needs at least as many.
     count: usize,
     /// What follows the markers, such as a language.
-    pub(in crate::chat) info: &'a str,
+    pub info: &'a str,
 }
 
 impl<'a> Fence<'a> {
     /// The fence `line` opens: at most three spaces, then three or more
     /// backticks or tildes. A backtick fence's info has no backtick, or the
     /// line is inline code.
-    pub(in crate::chat) fn open(line: &'a str) -> Option<Self> {
+    pub fn open(line: &'a str) -> Option<Self> {
         let trimmed = line.trim_start_matches(' ');
         if line.len() - trimmed.len() > 3 {
             return None;
@@ -40,7 +40,7 @@ impl<'a> Fence<'a> {
 
     /// Whether `line` closes this fence: at most three spaces, then at least
     /// as many of the same marker, then only spaces, tabs, or the line end.
-    pub(in crate::chat) fn closes(&self, line: &str) -> bool {
+    pub fn closes(&self, line: &str) -> bool {
         let close = line.trim_end_matches([' ', '\t', '\r', '\n']);
         let run = close.trim_start_matches(' ');
         close.len() - run.len() <= 3
