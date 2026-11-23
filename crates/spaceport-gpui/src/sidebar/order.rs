@@ -1,14 +1,13 @@
 //! The order the sidebar lists workspaces and agents in, which the previous,
 //! next, and numbered shortcuts step through, as Herdr's TUI steps through
-//! its own sidebar: every listed host's rows, top to bottom.
+//! its own sidebar: every listed host's rows, top to bottom. What a step lands
+//! on is `spaceport-sidebar`'s; which rows the sidebar lists is the window's.
 
 use super::{SidebarMode, agents::panel_agents, visible_workspace_entries};
-use crate::{SpaceportWindow, controls::Command, endpoint::Endpoint, state::LiveState};
+use crate::{SpaceportWindow, endpoint::Endpoint, state::LiveState};
 use spaceport_client::protocol::ClientShellAgent;
 
-/// A listed row: its host, by endpoint index, and the workspace or agent
-/// pane it shows.
-pub(crate) type Row<'a> = (usize, &'a str);
+pub(crate) use spaceport_sidebar::order::Row;
 
 // What the sidebar lists. The expanded list and the rail paint through these
 // and the shortcuts step through them, so a step lands on a painted row.
@@ -107,81 +106,5 @@ impl SpaceportWindow {
             })
             .map(|(index, agent)| (index, agent.pane_id.as_str()))
             .collect()
-    }
-}
-
-/// Which row a sidebar step lands on. `current` is the focused row, if the
-/// sidebar lists it; `selected` is the selected host. Previous and next wrap
-/// around, and start from an end when nothing listed is focused. A numbered
-/// workspace counts only the selected host's rows and a numbered agent every
-/// host's, as Herdr numbers them.
-pub(crate) fn step(
-    rows: &[Row<'_>],
-    current: Option<usize>,
-    selected: usize,
-    command: Command,
-) -> Option<usize> {
-    let len = rows.len();
-    if len == 0 {
-        return None;
-    }
-    match command {
-        Command::PreviousWorkspace | Command::PreviousAgent => {
-            Some(current.map_or(len - 1, |index| (index + len - 1) % len))
-        }
-        Command::NextWorkspace | Command::NextAgent => {
-            Some(current.map_or(0, |index| (index + 1) % len))
-        }
-        Command::WorkspaceNumber(number) => rows
-            .iter()
-            .enumerate()
-            .filter(|(_, (host, _))| *host == selected)
-            .nth(usize::from(number).checked_sub(1)?)
-            .map(|(index, _)| index),
-        Command::AgentNumber(number) => {
-            let index = usize::from(number).checked_sub(1)?;
-            (index < len).then_some(index)
-        }
-        _ => None,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn steps_wrap_and_start_from_an_end() {
-        let rows = [(0, "a"), (0, "b"), (1, "c")];
-        for (command, current, expected) in [
-            (Command::NextWorkspace, Some(0), Some(1)),
-            (Command::NextWorkspace, Some(2), Some(0)),
-            (Command::NextWorkspace, None, Some(0)),
-            (Command::PreviousWorkspace, Some(0), Some(2)),
-            (Command::PreviousWorkspace, Some(2), Some(1)),
-            (Command::PreviousWorkspace, None, Some(2)),
-            (Command::NextAgent, Some(1), Some(2)),
-            (Command::PreviousAgent, None, Some(2)),
-        ] {
-            assert_eq!(step(&rows, current, 0, command), expected, "{command:?}");
-        }
-        for command in [Command::NextWorkspace, Command::PreviousAgent] {
-            assert_eq!(step(&[], None, 0, command), None);
-        }
-        assert_eq!(step(&rows, Some(0), 0, Command::Tab), None);
-    }
-
-    #[test]
-    fn numbers_count_from_one() {
-        let rows = [(0, "a"), (1, "b"), (0, "c"), (1, "d")];
-        // A numbered workspace counts the selected host's rows only.
-        assert_eq!(step(&rows, None, 0, Command::WorkspaceNumber(2)), Some(2));
-        assert_eq!(step(&rows, None, 1, Command::WorkspaceNumber(1)), Some(1));
-        assert_eq!(step(&rows, None, 1, Command::WorkspaceNumber(3)), None);
-        assert_eq!(step(&rows, None, 0, Command::WorkspaceNumber(0)), None);
-        // A numbered agent counts every host's.
-        assert_eq!(step(&rows, None, 0, Command::AgentNumber(4)), Some(3));
-        assert_eq!(step(&rows, None, 0, Command::AgentNumber(5)), None);
-        assert_eq!(step(&rows, None, 0, Command::AgentNumber(0)), None);
     }
 }

@@ -71,16 +71,9 @@ fn sort_label(sort: AgentSort) -> String {
     }
 }
 
-/// Attention first, then the most recent change, as upstream orders it.
-pub(super) fn status_priority(status: AgentStatus) -> u8 {
-    match status {
-        AgentStatus::Blocked => 4,
-        AgentStatus::Done => 3,
-        AgentStatus::Working => 2,
-        AgentStatus::Idle => 1,
-        AgentStatus::Unknown => 0,
-    }
-}
+// The ranking below, so a sorted agent list and a folded group's shown status
+// order by the same rule.
+pub(super) use spaceport_sidebar::order::status_priority;
 
 /// The agents of one endpoint in the order the panel paints them.
 ///

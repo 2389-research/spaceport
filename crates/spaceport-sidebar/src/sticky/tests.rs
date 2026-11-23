@@ -1,4 +1,4 @@
-use crate::sidebar::sticky::{HostHeader, cover, pinned};
+use super::*;
 
 /// Where `pinned` draws its copy: the host, and its top.
 fn pin(rows: &[(usize, f32, f32)]) -> Option<(usize, f32)> {
