@@ -1,5 +1,5 @@
 #[derive(Debug, thiserror::Error)]
-pub(crate) enum Error {
+pub enum Error {
     // keep-sorted start
     #[error("invalid interactive card: action is no longer present")]
     ActionGone,

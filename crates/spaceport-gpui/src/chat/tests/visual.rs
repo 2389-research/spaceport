@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     chat::{
-        labels::Labels,
+        labels,
         prepared::{Body, Part, Prepared},
         visual::{self, DiagramStyle, Error, Shown, Source, VisualId, Visuals},
     },
@@ -27,7 +27,7 @@ pub(super) fn message(text: &str) -> (Prepared, Vec<String>) {
     let mut transcript = Transcript::new("Claude");
     transcript.entries = vec![agent(1, text)];
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &[(EntryId(1), 1)], &Labels::now());
+    prepared.update(&transcript, &[(EntryId(1), 1)], &labels::now());
     let Body::Message(parts) = &*prepared.body(EntryId(1)).unwrap() else {
         panic!("not a message");
     };
@@ -84,7 +84,7 @@ fn a_fence_still_streaming_or_too_long_stays_code() {
     assert_eq!(shape, ["text:flowchart LR"]);
     let long = format!(
         "```mermaid\n{}\n```\n",
-        "A-->B\n".repeat(visual::MAX_DIAGRAM_SOURCE)
+        "A-->B\n".repeat(spaceport_chat_core::visual::MAX_DIAGRAM_SOURCE)
     );
     let shape = message(&long).1;
     assert_eq!(shape.first().map(String::as_str), Some("text:A-->B"));
@@ -108,11 +108,11 @@ fn image_entries_and_tool_images_ask_for_visuals() {
         },
     }];
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &[(EntryId(1), 1)], &Labels::now());
+    prepared.update(&transcript, &[(EntryId(1), 1)], &labels::now());
     let id = VisualId::of(&image.data);
     assert!(matches!(&*prepared.body(EntryId(1)).unwrap(), Body::Image(found) if *found == id));
     transcript.entries.clear();
-    prepared.update(&transcript, &[], &Labels::now());
+    prepared.update(&transcript, &[], &labels::now());
     assert!(prepared.drawing(id).next().is_none());
 }
 
@@ -312,13 +312,13 @@ fn replacing_a_full_rich_transcript_admits_new_math_without_losing_worker_slots(
         .map(|entry| (entry.id, 1))
         .collect();
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &keys, &Labels::now());
+    prepared.update(&transcript, &keys, &labels::now());
     assert_eq!(prepared.visuals.rich_budget().0, visual::MAX_RICH_VISUALS);
     let old_jobs = prepared.visuals.jobs(&styled(0xffffff), &renderer);
     assert_eq!(old_jobs.len(), 2);
 
     transcript.entries = vec![agent(1, "$y$")];
-    prepared.update(&transcript, &[(EntryId(1), 2)], &Labels::now());
+    prepared.update(&transcript, &[(EntryId(1), 2)], &labels::now());
     let replacement = VisualId::of(("math", rich::MathMode::Inline, "y"));
     assert!(prepared.visuals.wants(replacement));
     assert_eq!(prepared.visuals.rich_budget().0, 1);

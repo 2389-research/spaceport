@@ -3,9 +3,10 @@ use super::*;
 
 #[core::prelude::v1::test]
 fn a_remote_styled_link_shows_its_path_once_and_keeps_web_links() {
-    let blocks = crate::chat::rich::parse(
+    let blocks = spaceport_chat_core::rich::parse(
         "[Changes **and** `details`](/tmp/file.md) and [web](https://example.org).",
-        &mut Visuals::default(),
+        &mut Vec::new(),
+        crate::chat::rich::destination,
     )
     .unwrap();
     let Block::Paragraph { content, .. } = &blocks[0] else {
@@ -52,9 +53,10 @@ fn a_remote_styled_link_shows_its_path_once_and_keeps_web_links() {
 
 #[core::prelude::v1::test]
 fn separated_remote_links_each_keep_their_destination() {
-    let blocks = crate::chat::rich::parse(
+    let blocks = spaceport_chat_core::rich::parse(
         "[First](/tmp/file.md) then [second](/tmp/file.md)",
-        &mut Visuals::default(),
+        &mut Vec::new(),
+        crate::chat::rich::destination,
     )
     .unwrap();
     let Block::Paragraph { content, .. } = &blocks[0] else {

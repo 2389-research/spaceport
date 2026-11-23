@@ -6,12 +6,10 @@ use super::{
 };
 use crate::{
     SpaceportWindow,
-    chat::{
-        prepared::MESSAGE,
-        selection::{Cell, Region},
-    },
+    chat::selection::{Cell, Region},
 };
 use gpui::{Entity, TestAppContext, VisualTestContext};
+use spaceport_chat_core::prepared::MESSAGE;
 use spaceport_chat_protocol::{
     NoticeLevel, QuestionAnswer, Tool, ToolContent, ToolKind, ToolStatus, TurnEnd, TurnSummary,
 };

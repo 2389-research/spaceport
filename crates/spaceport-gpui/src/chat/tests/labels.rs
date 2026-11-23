@@ -4,8 +4,9 @@
 use super::*;
 use crate::chat::{
     labels::Labels,
-    prepared::{Body, Part, Prepared, answers_text, tool_header, tool_text},
+    prepared::{Body, Part, Prepared, tool_header, tool_text},
 };
+use spaceport_chat_core::prepared::answers_text;
 use spaceport_chat_protocol::{MAX_QUESTION_ANSWERS, QuestionAnswer, ToolContent};
 
 /// Labels nothing else would write, so a place that kept reading the language

@@ -21,7 +21,7 @@ mod remote;
 // The visual model below the app's views, at the paths the rest of the chat
 // reads it at.
 pub(crate) use spaceport_chat_core::visual::{
-    DiagramStyle, MAX_DIAGRAM_SOURCE, MAX_MATH_TEXTURE_BYTES, MAX_RICH_VISUALS, Source, VisualId,
+    DiagramStyle, MAX_MATH_TEXTURE_BYTES, MAX_RICH_VISUALS, Source, VisualId,
 };
 use spaceport_chat_core::visual::{Kind, MAX_RUNNING, MathMode};
 
