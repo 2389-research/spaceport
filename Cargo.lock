@@ -6516,10 +6516,10 @@ dependencies = [
  "spaceport-reorder",
  "spaceport-state-file",
  "spaceport-truncate",
+ "spaceport-web-url",
  "tempfile",
  "thiserror 2.0.21",
  "tracing",
- "url",
  "uuid",
 ]
 
@@ -6694,6 +6694,7 @@ dependencies = [
  "spaceport-state-file",
  "spaceport-truncate",
  "spaceport-usage",
+ "spaceport-web-url",
  "spaceport-words",
  "sparkle-updater",
  "sysinfo 0.39.6",
@@ -6906,6 +6907,16 @@ dependencies = [
  "thiserror 2.0.21",
  "toml 1.1.6+spec-1.1.0",
  "uuid",
+]
+
+[[package]]
+name = "spaceport-web-url"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "url",
 ]
 
 [[package]]

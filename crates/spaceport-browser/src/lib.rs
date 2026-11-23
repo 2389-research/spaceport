@@ -22,7 +22,6 @@ mod strip;
 mod tab_appear;
 mod tab_body;
 mod tab_scroll;
-mod web_url;
 
 pub use browser::Browser;
 pub use close_run::CloseRun;
@@ -34,8 +33,8 @@ pub use hidden::Hidden;
 pub use hosts::BrowserHosts;
 pub use layouts::Layouts;
 pub use location::Location;
+pub use spaceport_web_url::WebUrl;
 pub use store::{CoreGroupKey, Scope, Store, Tab, TabId};
 pub use tab_appear::{Leaving, Listed, TabAppear};
 pub use tab_body::{Cells, Frame, List, Span, TabBodies};
 pub use tab_scroll::{TabScroll, Thumb, ThumbDrag};
-pub use web_url::WebUrl;

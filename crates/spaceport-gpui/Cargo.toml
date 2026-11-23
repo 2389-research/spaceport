@@ -47,6 +47,7 @@ spaceport-sound.workspace         = true
 spaceport-state-file.workspace    = true
 spaceport-usage.workspace         = true
 spaceport-truncate.workspace      = true
+spaceport-web-url.workspace       = true
 spaceport-words.workspace         = true
 image                          = { features = ["bmp", "tiff"], workspace = true }
 keepawake.workspace            = true

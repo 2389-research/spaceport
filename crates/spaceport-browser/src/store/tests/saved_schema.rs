@@ -165,7 +165,7 @@ fn a_malformed_retired_payload_refuses_the_whole_file() {
         format!(r#"{{"kind":"local","file":{{"root":{root},"entry":"{entry}"}}}}"#)
     };
     // Each payload fails its own check; the message names which.
-    let url = Error::InvalidBrowserUrl.to_string();
+    let url = spaceport_web_url::Error::InvalidUrl.to_string();
     let page = Error::InvalidLocalPage.to_string();
     let review = Error::InvalidReviewCheckout.to_string();
     let tabs = Error::InvalidBrowserTabs.to_string();
