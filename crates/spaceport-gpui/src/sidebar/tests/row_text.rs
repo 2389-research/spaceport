@@ -167,6 +167,7 @@ fn cells_hand_their_state_and_data_to_the_layout() {
         mark: Default::default(),
         host: None,
         right_to_left: false,
+        painters: crate::sidebar::paint::PAINTERS,
     };
     let recorder = Recorder::default();
     let workspace = || {

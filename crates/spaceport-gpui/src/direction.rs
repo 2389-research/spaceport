@@ -17,8 +17,8 @@
 //! its cells left to right whatever the interface reads.
 
 use gpui::{AbsoluteLength, Anchor, DefiniteLength, Length, Styled, TextAlign};
-use spaceport_sidebar::direction as mirror;
 pub(crate) use spaceport_i18n::Direction;
+use spaceport_sidebar::direction as mirror;
 
 // `spaceport_sidebar::direction` is named as a module rather than imported as a
 // trait: the two `Logical` traits would otherwise both answer a bare

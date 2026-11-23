@@ -28,8 +28,14 @@ fn right_to_left_mirrors_every_side() {
         (style(|s| s.pe(true, px(4.))), style(|s| s.pl(px(4.)))),
         (style(|s| s.ms(true, px(4.))), style(|s| s.mr(px(4.)))),
         (style(|s| s.me(true, px(4.))), style(|s| s.ml(px(4.)))),
-        (style(|s| s.inset_s(true, px(4.))), style(|s| s.right(px(4.)))),
-        (style(|s| s.inset_e(true, px(4.))), style(|s| s.left(px(4.)))),
+        (
+            style(|s| s.inset_s(true, px(4.))),
+            style(|s| s.right(px(4.))),
+        ),
+        (
+            style(|s| s.inset_e(true, px(4.))),
+            style(|s| s.left(px(4.))),
+        ),
         (
             style(|s| s.border_s(true, px(1.))),
             style(|s| s.border_r(px(1.))),
@@ -46,7 +52,10 @@ fn right_to_left_mirrors_every_side() {
     for (logical, physical) in pairs {
         assert_eq!(logical, physical);
     }
-    assert_eq!(style(|s| s.row(true)), style(|s| s.flex().flex_row_reverse()));
+    assert_eq!(
+        style(|s| s.row(true)),
+        style(|s| s.flex().flex_row_reverse())
+    );
     assert_eq!(style(|s| s.text_start(true)), style(|s| s.text_right()));
     assert_eq!(style(|s| s.text_end(true)), style(|s| s.text_left()));
     assert_eq!(text_start(true), TextAlign::Right);

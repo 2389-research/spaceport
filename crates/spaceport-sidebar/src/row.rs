@@ -14,6 +14,7 @@ use crate::{
     direction::Logical,
     layout::SidebarLook,
     metrics::{STATUS_WIDTH, line_height, scaled},
+    paint::Painters,
     wash::HostMark,
 };
 use gpui::{prelude::*, *};
@@ -230,6 +231,9 @@ pub struct RowContext<'a> {
     /// row's leading edge is on. The app reads the shown locale's direction;
     /// a crate cannot, so it is an input like the rest.
     pub right_to_left: bool,
+    /// How the row reaches what only the app can paint: the element its text
+    /// is, the window's layer for a mark that moves, and the copy for a word.
+    pub painters: Painters,
 }
 
 impl RowContext<'_> {

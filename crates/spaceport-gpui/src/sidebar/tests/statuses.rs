@@ -117,6 +117,7 @@ fn wide_mark_rows_keep_layout_density_and_expand_child_indent() {
                         mark: Default::default(),
                         host: None,
                         right_to_left: false,
+                        painters: crate::sidebar::paint::PAINTERS,
                     },
                 );
                 assert_eq!(

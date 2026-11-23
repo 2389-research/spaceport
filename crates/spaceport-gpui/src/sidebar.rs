@@ -17,6 +17,7 @@ mod layouts;
 mod metrics;
 mod note_line;
 mod order;
+mod paint;
 mod rail;
 mod render;
 mod reorder;

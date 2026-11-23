@@ -25,6 +25,15 @@ pub const ENTER: Duration = Duration::from_millis(180);
 /// How long something takes to shrink out; leaving is a little quicker.
 pub const LEAVE: Duration = Duration::from_millis(150);
 
+/// The most frames a second a repeating mark asks for. A turning or pulsing
+/// mark reads as smooth at this rate, and it is what a working agent costs:
+/// every frame of one mark rebuilds its whole window's scene, measured at
+/// 4.0 ms in a 1200x780 window with a 40-workspace sidebar, whatever the
+/// number of marks on screen. That is 8% of a core while any agent works,
+/// against 12% at 30 fps and none at all once nothing moves. One home, so a
+/// mark drawn in a row and one drawn in the window's layer turn at one rate.
+pub const MARK_MAX_FPS: f32 = 20.;
+
 /// When slow motion was turned on, while it is.
 static SINCE: Mutex<Option<Instant>> = Mutex::new(None);
 

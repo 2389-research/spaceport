@@ -5,7 +5,8 @@
 //! runs, which workspace rows a folded group shows, what a row is and how the
 //! two lines of it are weighted, the inputs every row of one render shares, the
 //! trunk, tick and icons a row's leading edge draws, which side that edge is on
-//! in a right-to-left language, the rows the daemon's
+//! in a right-to-left language, how it reaches the text, moving marks and words
+//! only the app can paint, the rows the daemon's
 //! configured tokens resolve to, the props its status marks are drawn with, the
 //! status sets drawn rather than loaded from assets, the note and mute marks at
 //! a row's trailing edge, the colour wash a host lays over its rows, and the
@@ -28,6 +29,7 @@ pub mod layout;
 pub mod metrics;
 pub mod order;
 pub mod origin;
+pub mod paint;
 pub mod row;
 pub mod sticky;
 pub mod tokens;

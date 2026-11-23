@@ -37,6 +37,7 @@ fn the_slot_dot_follows_a_configured_leading_state_icon() {
         mark: Default::default(),
         host: None,
         right_to_left: false,
+        painters: crate::sidebar::paint::PAINTERS,
     };
     let working = AgentStatus::Working;
     let native = indicators.color(working);

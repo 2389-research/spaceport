@@ -28,13 +28,11 @@ use std::{
 
 type Build = Rc<dyn Fn() -> AnyElement>;
 
-/// The most frames a second a repeating mark asks for. A turning or pulsing
-/// mark reads as smooth at this rate, and it is what a working agent costs:
-/// every frame of one mark rebuilds its whole window's scene, measured at
-/// 4.0 ms in a 1200x780 window with a 40-workspace sidebar, whatever the
-/// number of marks on screen. That is 8% of a core while any agent works,
-/// against 12% at 30 fps and none at all once nothing moves.
-pub(crate) const MAX_FPS: f32 = 20.;
+/// The most frames a second a repeating mark asks for, under the name this
+/// module has always read it by. It lives in `spaceport-motion` with the rest
+/// of the window's motion budget, so a mark a row draws and one this layer
+/// draws turn at one rate.
+pub(crate) use spaceport_motion::MARK_MAX_FPS as MAX_FPS;
 
 /// One reserved slot: where it landed, the clip it landed under, and how to
 /// draw the mark there.
