@@ -43,7 +43,6 @@ pub(crate) use {
     activity::{Activity, ActivityPanel},
     agents::{Indicators, agent_name, pane_name, state_label, status_indicator, status_text},
     device_drag::DeviceDrag,
-    hover::{HoverMenu, HoverRest},
     metrics::{ARROW_RESERVE, HOST_ARROW_WIDTH, ICON_RESERVE, STATUS_WIDTH},
     rail::SidebarMode,
     render::NestedReveal,
@@ -55,6 +54,7 @@ pub(crate) use {
 };
 
 pub(crate) use layout::SidebarMetrics;
+pub(crate) use spaceport_sidebar::hover::{HoverMenu, HoverRest};
 pub(crate) use spaceport_sidebar::order::step as sidebar_step;
 pub(crate) use spaceport_sidebar::slide::SidebarSlide;
 

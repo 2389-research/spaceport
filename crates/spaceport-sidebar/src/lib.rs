@@ -22,6 +22,7 @@ pub mod agents;
 pub mod animated;
 pub mod device_scope;
 pub mod device_tags;
+pub mod hover;
 pub mod layout;
 pub mod metrics;
 pub mod order;
