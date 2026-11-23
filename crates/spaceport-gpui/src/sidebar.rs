@@ -60,10 +60,6 @@ pub(crate) use spaceport_sidebar::order::step as sidebar_step;
 #[cfg(any(test, feature = "integration-test"))]
 pub(crate) use metrics::LABEL_WIDTH;
 
-// The native smoke checks measure host headers and label columns by these.
-#[cfg(feature = "integration-test")]
-pub(crate) use metrics::{HOST_GAP, LABEL_GAP};
-
 pub(crate) use view::element as view_element;
 
 use agents::agents_sort;
