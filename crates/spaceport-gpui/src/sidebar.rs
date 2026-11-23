@@ -41,7 +41,7 @@ pub(crate) mod native_tests;
 pub(crate) use {
     activity::{Activity, ActivityPanel},
     agents::{Indicators, agent_name, pane_name, state_label, status_indicator, status_text},
-    metrics::{ARROW_RESERVE, HOST_ARROW_WIDTH, ICON_RESERVE, STATUS_WIDTH},
+    metrics::{HOST_ARROW_WIDTH, STATUS_WIDTH},
     paint::label_text,
     rail::SidebarMode,
     render::NestedReveal,
@@ -49,6 +49,9 @@ pub(crate) use {
     view::SidebarView,
     workspaces::{workspace_entries, workspace_label},
 };
+
+#[cfg(any(test, feature = "integration-test"))]
+pub(crate) use spaceport_sidebar::metrics::{ARROW_RESERVE, ICON_RESERVE};
 
 pub(crate) use layout::SidebarMetrics;
 pub(crate) use spaceport_sidebar::device_drag::{DeviceDrag, DevicePlan};
