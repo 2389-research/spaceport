@@ -1,0 +1,20 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-icons"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+gpui.workspace               = true
+spaceport-protocol.workspace = true
+spaceport-settings.workspace = true
+
+[dev-dependencies]
+gpui = { features = ["test-support"], workspace = true }
+image.workspace = true
+sha2.workspace  = true

@@ -19,13 +19,7 @@ pub(crate) use render::Hint;
 pub(crate) use spaceport_usage::registry;
 pub(crate) use spaceport_usage::{Host, Provider, Reading, Shell, Usage, model};
 
-pub(crate) fn icon(path: &str) -> Option<&'static [u8]> {
-    icons::PROVIDER_ICONS
-        .iter()
-        .find(|(name, _)| *name == path)
-        .map(|(_, bytes)| *bytes)
-}
-
+/// Every embedded logo's asset path.
 pub(crate) fn icon_paths() -> impl Iterator<Item = &'static str> {
-    icons::PROVIDER_ICONS.iter().map(|(name, _)| *name)
+    spaceport_icons::provider_paths()
 }

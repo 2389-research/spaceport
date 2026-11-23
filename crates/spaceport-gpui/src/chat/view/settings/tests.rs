@@ -67,7 +67,7 @@ fn settings_at_hand_have_marks_of_their_own() {
     for (index, mark) in marks.iter().enumerate() {
         assert!(!marks[..index].contains(mark), "{mark} is used twice");
         assert!(
-            matches!(crate::icons::Icons.load(mark), Ok(Some(_))),
+            matches!(spaceport_icons::Icons.load(mark), Ok(Some(_))),
             "{mark} is not embedded"
         );
     }

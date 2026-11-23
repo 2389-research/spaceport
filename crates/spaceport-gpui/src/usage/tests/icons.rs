@@ -6,7 +6,7 @@ fn every_provider_has_an_embedded_icon() {
     for provider in registry::all() {
         let icon = crate::usage::icons::path(provider);
         assert!(
-            crate::usage::icon(icon).is_some() || icon.starts_with("icons/agent-"),
+            spaceport_icons::provider_logo(icon).is_some() || icon.starts_with("icons/agent-"),
             "{} has no icon at {icon}",
             provider.id()
         );

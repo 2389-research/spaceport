@@ -6669,7 +6669,6 @@ dependencies = [
  "rustix",
  "serde",
  "serde_json",
- "sha2 0.11.1",
  "socket2",
  "spaceport-ago",
  "spaceport-backend",
@@ -6682,6 +6681,7 @@ dependencies = [
  "spaceport-core-client",
  "spaceport-diagnostics",
  "spaceport-i18n",
+ "spaceport-icons",
  "spaceport-motion",
  "spaceport-osc52",
  "spaceport-panes",
@@ -6728,6 +6728,17 @@ dependencies = [
  "sys-locale",
  "thiserror 2.0.21",
  "unic-langid",
+]
+
+[[package]]
+name = "spaceport-icons"
+version = "0.1.0"
+dependencies = [
+ "gpui-pre",
+ "image",
+ "sha2 0.11.1",
+ "spaceport-protocol",
+ "spaceport-settings",
 ]
 
 [[package]]
