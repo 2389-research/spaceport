@@ -12,6 +12,7 @@ mod framing;
 mod identity;
 #[cfg(windows)]
 mod pipe;
+mod status_compatibility;
 #[cfg(unix)]
 mod unix;
 

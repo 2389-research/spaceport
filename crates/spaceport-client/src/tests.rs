@@ -47,6 +47,7 @@ mod session_state;
 mod surface_encoding;
 mod surfaces;
 mod version_mismatch;
+mod worker_panic;
 const SNAPSHOT: &str =
     include_str!("../../spaceport-protocol/tests/fixtures/endpoint-snapshot-v1.json");
 const WELCOME: &str =

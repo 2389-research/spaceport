@@ -13,7 +13,7 @@ use crate::{
     cli,
     config::{Config, Theme},
     core_terminals::Start,
-    diagnostics, icons,
+    diagnostics,
     keymap::Keymap,
     log_window, menus, titlebar,
 };
@@ -506,7 +506,7 @@ pub(crate) fn run() -> std::process::ExitCode {
     // Whether the launcher is installed is read once here, never while a window opens.
     let taskbar = crate::taskbar::Taskbar::load();
     gpui_platform::application()
-        .with_assets(icons::Icons)
+        .with_assets(spaceport_icons::Icons)
         .run(move |cx| {
             crate::core_feature::install(appearance.dark.config.herdr_core_enabled, cx);
             let window_count = window_state.as_ref().map_or(1, |state| state.count());

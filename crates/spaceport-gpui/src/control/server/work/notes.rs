@@ -6,7 +6,7 @@ use crate::{
         Caller, ErrorCode, MAX_MESSAGE, Response,
         work::{NoteInfo, Reply},
     },
-    worktree_notes::{Checkout, Note, Notes},
+    worktree_notes::{Checkout, Notes},
 };
 use gpui::App;
 use spaceport_client::protocol::ClientShellWorkspace;
@@ -33,12 +33,6 @@ fn info(checkout: &Checkout, text: &str) -> NoteInfo {
     }
 }
 
-impl From<&Note> for NoteInfo {
-    fn from(note: &Note) -> Self {
-        info(&note.checkout, &note.text)
-    }
-}
-
 /// Room for notes in one answer, short of the socket's message bound.
 const LIST_BUDGET: usize = MAX_MESSAGE - 4096;
 
@@ -46,7 +40,12 @@ const LIST_BUDGET: usize = MAX_MESSAGE - 4096;
 /// characters, with their keys, could pass the socket's bound.
 pub(super) fn list(cx: &mut App) -> Response {
     let all: Vec<NoteInfo> = Notes::of(cx)
-        .map(|notes| notes.recent().map(NoteInfo::from).collect())
+        .map(|notes| {
+            notes
+                .recent()
+                .map(|note| info(&note.checkout, &note.text))
+                .collect()
+        })
         .unwrap_or_default();
     let (notes, omitted) = within(all, LIST_BUDGET);
     Response::Work {

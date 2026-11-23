@@ -106,7 +106,6 @@ impl Localize for Error {
                 fl!("error-path", path = path(file), error = source.localize())
             }
             Self::PortForward(error) => error.localize(),
-            Self::PreferencesPath => fl!("error-preferences-path"),
             Self::Processes(error) => error.localize(),
             Self::RelativeConfigRoot => fl!("error-relative-config-root"),
             Self::Remote(error) => error.localize(),

@@ -1,0 +1,27 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-chat-core"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde_json.workspace              = true
+spaceport-chat-protocol.workspace = true
+spaceport-client.workspace        = true
+spaceport-remote.workspace        = true
+# The theme a code block's tokens are coloured in, and the contrast rule that
+# makes them readable there.
+spaceport-settings.workspace      = true
+# The bundled grammars `highlight` parses a code block's lines with.
+syntect.workspace                 = true
+thiserror.workspace               = true
+uuid.workspace                    = true
+
+[dev-dependencies]
+spaceport-remote = { features = ["test-support"], workspace = true }
+tempfile.workspace = true

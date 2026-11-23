@@ -7,12 +7,16 @@ use super::{
 use gpui::TestAppContext;
 use spaceport_client::ConnectTarget;
 
+mod bounds;
+
 fn replace(view: &gpui::Entity<crate::SpaceportWindow>, cx: &mut gpui::VisualTestContext) {
     view.update(cx, |view, _| {
         let mut target = view.chats.panes().next().unwrap().target.clone();
         target.source = Source::Program(EndpointId::random());
         view.chats
-            .reconcile(vec![target], Instant::now(), &mut |_, _| Err(Error::Closed));
+            .reconcile(vec![target], Instant::now(), &mut |_, _| {
+                Err(Error::Attach(spaceport_chat_core::Error::Closed))
+            });
     });
 }
 

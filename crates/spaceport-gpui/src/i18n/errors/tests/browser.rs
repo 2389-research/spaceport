@@ -5,5 +5,9 @@ use spaceport_browser::Error;
 
 #[test]
 fn saved_state_admission_errors_are_complete_localized_messages() {
-    assert_localized(&[Error::RestorationBlocked, Error::TabIdsExhausted]);
+    assert_localized(&[
+        Error::RestorationBlocked,
+        Error::TabIdsExhausted,
+        Error::WebUrl(spaceport_web_url::Error::InvalidUrl),
+    ]);
 }

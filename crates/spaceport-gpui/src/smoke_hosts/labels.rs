@@ -66,7 +66,7 @@ pub(super) async fn resized(
                     .0
                     .get("fixture-1")
                     .context("missing resized host collapse control")?;
-                let icon_room = host.bounds.left() - arrow.right() - px(sidebar::HOST_GAP);
+                let icon_room = host.bounds.left() - arrow.right() - px(spaceport_sidebar::metrics::HOST_GAP);
                 let host_width = host_baseline - f32::from(icon_room);
                 for (name, prefix, expected_width) in [
                     (REMOTE, host_prefix, host_width),

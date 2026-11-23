@@ -15,12 +15,12 @@ fn a_full_queue_refuses_only_the_new_request() {
     let mut spawning = Spawning::default();
     for _ in 0..CAPACITY {
         assert!(matches!(
-            spawning.transition(Event::Queue(purpose(), Box::default(), None)),
+            spawning.transition(Event::Queue(purpose(), Box::default(), None, None)),
             Outcome::Accepted
         ));
     }
     assert!(matches!(
-        spawning.transition(Event::Queue(purpose(), Box::default(), None)),
+        spawning.transition(Event::Queue(purpose(), Box::default(), None, None)),
         Outcome::Full
     ));
     assert!(matches!(&spawning, Spawning::Queued(queued) if queued.len() == CAPACITY));
@@ -44,6 +44,7 @@ fn queued_work_cannot_move_to_another_core() {
         purpose(),
         Box::default(),
         Some("core-a".into()),
+        None,
     ));
     assert!(matches!(
         spawning.transition(Event::Start(&backend, &Infos::default(), spawn_worker)),
@@ -58,9 +59,9 @@ fn connection_failure_discards_waiting_work_but_consumes_the_running_request_onc
     let (backend, peer) = crate::core_terminals::tests::scripted_core::connect("core-a");
     let mut spawning = Spawning::default();
     let infos = Infos::default();
-    spawning.transition(Event::Queue(purpose(), Box::default(), None));
+    spawning.transition(Event::Queue(purpose(), Box::default(), None, None));
     spawning.transition(Event::Start(&backend, &infos, spawn_worker));
-    spawning.transition(Event::Queue(purpose(), Box::default(), None));
+    spawning.transition(Event::Queue(purpose(), Box::default(), None, None));
     assert!(matches!(
         spawning.transition(Event::Unavailable),
         Outcome::Cleared
@@ -70,7 +71,7 @@ fn connection_failure_discards_waiting_work_but_consumes_the_running_request_onc
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
     loop {
         match spawning.transition(Event::Poll) {
-            Outcome::Finished(_, outcome) if outcome.is_err() => break,
+            Outcome::Finished(_, _, outcome, _) if outcome.is_err() => break,
             Outcome::None => {}
             _ => panic!("lost connection must finish with an error"),
         }
@@ -97,9 +98,9 @@ fn a_worker_launch_error_preserves_its_typed_io_source_until_completion() {
     }
     let (backend, _peer) = crate::core_terminals::tests::scripted_core::connect("core-a");
     let mut spawning = Spawning::default();
-    spawning.transition(Event::Queue(purpose(), Box::default(), None));
+    spawning.transition(Event::Queue(purpose(), Box::default(), None, None));
     spawning.transition(Event::Start(&backend, &Infos::default(), fail));
-    let Outcome::Finished(_, outcome) = spawning.transition(Event::Poll) else {
+    let Outcome::Finished(_, _, outcome, _) = spawning.transition(Event::Poll) else {
         panic!("failed launch must finish through the normal completion path");
     };
     let error = outcome.unwrap_err();

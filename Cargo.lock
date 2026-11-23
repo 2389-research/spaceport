@@ -2190,9 +2190,9 @@ checksum = "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b"
 
 [[package]]
 name = "form_urlencoded"
-version = "1.2.2"
+version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb4cb245038516f5f85277875cdaa4f7d2c9a0fa0468de06ed190163b1581fcf"
+checksum = "afa489199eaffb1211795df1c6236ce1ad0d41a6fa45250add73e3b02420f06e"
 dependencies = [
  "percent-encoding",
 ]
@@ -6516,10 +6516,25 @@ dependencies = [
  "spaceport-reorder",
  "spaceport-state-file",
  "spaceport-truncate",
+ "spaceport-web-url",
  "tempfile",
  "thiserror 2.0.21",
  "tracing",
- "url",
+ "uuid",
+]
+
+[[package]]
+name = "spaceport-chat-core"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "spaceport-chat-protocol",
+ "spaceport-client",
+ "spaceport-remote",
+ "spaceport-settings",
+ "syntect",
+ "tempfile",
+ "thiserror 2.0.21",
  "uuid",
 ]
 
@@ -6625,12 +6640,13 @@ dependencies = [
  "dispatch2",
  "flate2",
  "fluent-syntax",
- "fontdb 0.24.0",
  "foreign-types",
+ "futures-channel",
  "futures-lite",
  "gpui-pre",
  "gpui-pre-platform",
  "image",
+ "interprocess",
  "keepawake",
  "libc",
  "mermaid-rs-renderer",
@@ -6658,6 +6674,7 @@ dependencies = [
  "spaceport-ago",
  "spaceport-backend",
  "spaceport-browser",
+ "spaceport-chat-core",
  "spaceport-chat-protocol",
  "spaceport-client",
  "spaceport-commands",
@@ -6665,19 +6682,21 @@ dependencies = [
  "spaceport-core-client",
  "spaceport-diagnostics",
  "spaceport-i18n",
+ "spaceport-icons",
  "spaceport-motion",
  "spaceport-osc52",
  "spaceport-panes",
  "spaceport-remote",
  "spaceport-reorder",
  "spaceport-settings",
+ "spaceport-sidebar",
  "spaceport-sound",
  "spaceport-state-file",
  "spaceport-truncate",
  "spaceport-usage",
+ "spaceport-web-url",
  "spaceport-words",
  "sparkle-updater",
- "syntect",
  "sysinfo 0.39.6",
  "tempfile",
  "test-case",
@@ -6712,6 +6731,17 @@ dependencies = [
  "sys-locale",
  "thiserror 2.0.21",
  "unic-langid",
+]
+
+[[package]]
+name = "spaceport-icons"
+version = "0.1.0"
+dependencies = [
+ "gpui-pre",
+ "image",
+ "sha2 0.11.1",
+ "spaceport-protocol",
+ "spaceport-settings",
 ]
 
 [[package]]
@@ -6803,6 +6833,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "spaceport-sidebar"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gpui-pre",
+ "serde",
+ "serde_json",
+ "spaceport-client",
+ "spaceport-commands",
+ "spaceport-icons",
+ "spaceport-motion",
+ "spaceport-settings",
+ "tempfile",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "spaceport-sound"
 version = "0.1.0"
 dependencies = [
@@ -6860,6 +6907,16 @@ dependencies = [
  "thiserror 2.0.21",
  "toml 1.1.6+spec-1.1.0",
  "uuid",
+]
+
+[[package]]
+name = "spaceport-web-url"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "url",
 ]
 
 [[package]]
@@ -7757,9 +7814,9 @@ dependencies = [
 
 [[package]]
 name = "url"
-version = "2.5.8"
+version = "2.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed"
+checksum = "f00cd2407bb42c0ef17be88d4cf020f5cceffd121665bac9b8b9493a369b3b1a"
 dependencies = [
  "form_urlencoded",
  "idna",

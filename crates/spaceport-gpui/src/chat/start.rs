@@ -22,6 +22,7 @@ use spaceport_chat_protocol::Agent;
 use spaceport_client::Method;
 use std::{
     path::{Path, PathBuf},
+    sync::{Arc, mpsc},
     time::{Duration, Instant},
 };
 
@@ -30,7 +31,7 @@ use std::{
 pub(crate) mod native;
 
 /// The environment variable the typed line runs the program from.
-pub(crate) const PROGRAM_ENV: &str = "HERDR_ACP";
+pub(crate) use spaceport_chat_core::env::PROGRAM_ENV;
 /// The legacy lookup name; the shared locator prefers the app-owned helper.
 const PROGRAM: &str = if cfg!(windows) {
     "herdr-acp.exe"
@@ -62,7 +63,7 @@ pub enum Error {
     #[error("{app} is still looking for {program}", app = crate::constants::WINDOW_TITLE, program = Program::file_name())]
     ProgramUnknown,
     #[error("{0}")]
-    Request(#[source] std::sync::Arc<crate::Error>),
+    Request(#[source] Arc<crate::Error>),
     #[error("Herdr's answer did not name the chat's tab")]
     Response,
     #[error("another tab is still opening")]
@@ -165,6 +166,18 @@ pub(crate) fn tab_params(
     params
 }
 
+/// The daemon-acknowledged IDs of a newly created chat tab.
+#[derive(Debug)]
+pub(crate) struct Created {
+    pub(crate) tab_id: String,
+    pub(crate) pane_id: String,
+}
+
+/// Where a start's outcome arrives once the daemon answers. A dropped
+/// sender means the outcome is unknown.
+pub(crate) type Receipt = mpsc::Receiver<crate::Result<Created, Arc<crate::Error>>>;
+type Reporter = mpsc::SyncSender<crate::Result<Created, Arc<crate::Error>>>;
+
 /// A chat whose tab is being made, fenced by the selection, connection, and
 /// daemon boot it was asked of.
 #[derive(Debug)]
@@ -178,6 +191,7 @@ pub(crate) struct Starting {
     endpoint: (u64, u64),
     endpoint_id: String,
     request: String,
+    report: Reporter,
 }
 
 impl SpaceportWindow {
@@ -224,7 +238,11 @@ impl SpaceportWindow {
 
     /// Opens a tab running a chat with `agent` in the workspace of `beside`,
     /// else of the focused pane, in that pane's folder.
-    pub(crate) fn start_chat(&mut self, agent: Agent, beside: Option<&str>) -> Result<(), Error> {
+    pub(crate) fn start_chat(
+        &mut self,
+        agent: Agent,
+        beside: Option<&str>,
+    ) -> Result<Receipt, Error> {
         if !self.config.features.acp_chats {
             return Err(Error::Disabled);
         }
@@ -270,6 +288,7 @@ impl SpaceportWindow {
             )
             .map_err(|_| Error::NotConnected)?;
         self.chats.last_started = Some(agent);
+        let (report, receipt) = mpsc::sync_channel(1);
         self.chats.starting = Some(Starting {
             agent,
             remote: program.is_none(),
@@ -278,17 +297,18 @@ impl SpaceportWindow {
             endpoint: (self.selection_epoch, endpoint.generation),
             endpoint_id: endpoint.id.clone(),
             request,
+            report,
         });
-        Ok(())
+        Ok(receipt)
     }
 
     /// [`Self::start_chat`], reporting a failure as a flash.
     /// A herdr-core tab in the active group splits with the chat instead.
     pub(crate) fn start_chat_or_flash(&mut self, agent: Agent, cx: &mut Context<Self>) {
         let started = match self.core_chat_group_tab(None, cx) {
-            Some(tab) => self.start_core_chat(agent, tab, cx),
+            Some(tab) => self.start_core_chat(agent, tab, cx).map(drop),
             None if self.selected_core_group().is_some() => Err(Error::CoreTerminalRequired),
-            None => self.start_chat(agent, None),
+            None => self.start_chat(agent, None).map(drop),
         };
         if let Err(error) = started {
             self.flash_chat_error(&error, cx);
@@ -312,7 +332,7 @@ impl SpaceportWindow {
             return;
         }
         match self.start_chat(agent, None) {
-            Ok(()) => self.expect_new_tab_in(group),
+            Ok(_) => self.expect_new_tab_in(group),
             Err(error) => self.flash_chat_error(&error, cx),
         }
         cx.notify();
@@ -343,7 +363,11 @@ impl SpaceportWindow {
                 .as_ref()
                 .is_some_and(|snapshot| snapshot.boot_id == starting.boot);
         if !current {
-            self.chats.starting = None;
+            if let Some(starting) = self.chats.starting.take() {
+                let _ = starting
+                    .report
+                    .try_send(Err(Arc::new(crate::Error::StaleConnection)));
+            }
             return self.show_flash(
                 Flash::warning(fl!(
                     "chat-start-failed",
@@ -353,7 +377,10 @@ impl SpaceportWindow {
             );
         }
         if Instant::now() >= starting.deadline {
-            self.chats.starting = None;
+            if let Some(starting) = self.chats.starting.take() {
+                let error = super::Error::from(Error::Timeout).into();
+                let _ = starting.report.try_send(Err(Arc::new(error)));
+            }
             return self.show_flash(
                 Flash::warning(fl!("chat-start-failed", error = Error::Timeout.localize())),
                 cx,
@@ -366,7 +393,7 @@ impl SpaceportWindow {
         let Some(starting) = self.chats.starting.take() else {
             return;
         };
-        let typed: crate::Result<String> = result
+        let typed: crate::Result<Created> = result
             .map_err(|error| super::Error::from(Error::Request(error)).into())
             .and_then(|response| {
                 crate::window::tab_start::created_tab(&response)?
@@ -379,17 +406,29 @@ impl SpaceportWindow {
                     command_line(starting.agent)
                 };
                 self.type_script_line(&starting.boot, &pane, &line)?;
-                Ok(tab)
+                Ok(Created {
+                    tab_id: tab,
+                    pane_id: pane,
+                })
             });
         match typed {
-            Ok(tab) => {
-                self.navigate_endpoint(&starting.endpoint_id, NavigationTarget::Tab(&tab), cx);
+            Ok(created) => {
+                self.navigate_endpoint(
+                    &starting.endpoint_id,
+                    NavigationTarget::Tab(&created.tab_id),
+                    cx,
+                );
+                let _ = starting.report.try_send(Ok(created));
                 cx.notify();
             }
-            Err(error) => self.show_flash(
-                Flash::warning(fl!("chat-start-failed", error = error.localize())),
-                cx,
-            ),
+            Err(error) => {
+                let error = Arc::new(error);
+                let _ = starting.report.try_send(Err(error.clone()));
+                self.show_flash(
+                    Flash::warning(fl!("chat-start-failed", error = error.localize())),
+                    cx,
+                );
+            }
         }
     }
 }

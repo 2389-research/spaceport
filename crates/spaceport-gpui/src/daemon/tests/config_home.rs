@@ -63,7 +63,7 @@ fn a_stale_socket_is_replaced_by_a_daemon_at_the_polled_path() {
             // As `herdr server` does: replace the stale file and listen.
             std::fs::remove_file(&path).unwrap();
             listener = Some(UnixListener::bind(&path).unwrap());
-            Command::new("/usr/bin/true")
+            Ok(Command::new("/usr/bin/true"))
         },
         true,
     )

@@ -106,7 +106,7 @@ fn reconcile(chats: &mut Chats, listener: &Program, targets: Vec<Target>, starte
     let path = listener.path.clone();
     chats.reconcile(targets, Instant::now(), &mut |_, since| {
         *started += 1;
-        Link::start(path.clone(), since)
+        Link::start(path.clone(), since).map_err(Error::from)
     });
 }
 
@@ -238,7 +238,7 @@ fn a_local_program_is_dialled_at_its_endpoints_socket() {
     // The helper is not looked for: the program already runs.
     match (chats::dial(&target, &Helper::Missing), address) {
         (Ok(Dial::Socket(path)), Some(address)) => assert_eq!(path, address),
-        (Err(Error::NoEndpointDir), None) => {}
+        (Err(Error::Attach(spaceport_chat_core::Error::NoEndpointDir)), None) => {}
         (Ok(Dial::Socket(path)), None) => panic!("dialled {path:?} with no socket directory"),
         (Ok(Dial::Process(_)), _) => panic!("started a child for a local program"),
         (Err(error), _) => panic!("{error:?}"),

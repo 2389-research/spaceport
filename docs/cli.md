@@ -65,12 +65,23 @@ unknown option, not `status` asked for JSON.
 | 0 | Done |
 | 1 | Refused or failed |
 | 2 | Invalid arguments, or an address or file that cannot be shown |
-| 3 | Spaceport is not running |
+| 3 | Spaceport is not running, or the control connection closed without an answer |
 | 4 | Nothing yet: no notes, no events, no chat panes, no ports, no usage, no log, a key not set, or the wait not met |
 | 5 | The window, workspace, tab, host, file, or `run` command name is not there |
 | 6 | A dialog is open in the window, or the app is busy |
 | 7 | The app did not answer in time |
 | 8 | Not available on this platform or in this version of the app |
+
+With `--json`, an error the app returns keeps the app's exact code, such as
+`workspace_not_found`, `no_window`, `not_found`, `invalid_request`, or
+`failed`; the exit status stays the coarser category above. Errors the
+command line finds itself use the category's name: `usage`, `not_running`,
+`timeout`, `unsupported`, or `refused`.
+
+An answer this command line cannot read, or a `status` from another control
+protocol version, exits 8. A read or write timeout on the control connection
+exits 7. A lost answer does not prove a change failed: check the app's state
+before you retry a change. Commands never retry on their own.
 
 ## Commands
 
@@ -127,7 +138,7 @@ Legacy windows keep their existing launch target.
 | `worktree [status]`, `worktree mute\|unmute` | Whether your worktree's notifications are muted; silence them or let them through again |
 | `chat [status]`, `chat list` | The `sheprd-acp` chat panes of the window's host, this machine or an SSH host: agent, status, model, context window use, and whether the chat view or the terminal shows |
 | `chat show\|hide\|toggle [--pane ID]` | Show the native chat view over your pane (or ID, else the focused one), or its terminal |
-| `chat new AGENT [--pane ID]` | Open a tab running a `sheprd-acp` chat with a built-in agent (`claude`, `codex`, `copilot`, `gemini`, `opencode`, `pi`) in the workspace and folder of your pane (or ID). On an SSH host the tab runs that host's `sheprd-acp` (see [Chats on SSH hosts](#chats-on-ssh-hosts)). With no Herdr pane to go by, as when called from a Herdr 2 pane, a Herdr 2 tab in the active group splits its pane in use with the chat instead (see [Chats in Herdr 2 panes](rich-chat.md#chats-in-herdr-2-panes)); its pane id in `chat` is `core:` and the terminal's. Exits 8 when `sheprd-acp` is missing here or the agent is not installed on it (`sheprd-acp agents` lists those that are), and 1 when the host cannot be reached |
+| `chat new AGENT [--pane ID]` | Open a tab running a `sheprd-acp` chat with a built-in agent (`claude`, `codex`, `copilot`, `gemini`, `opencode`, `pi`) in the workspace and folder of your pane (or ID). On an SSH host the tab runs that host's `sheprd-acp` (see [Chats on SSH hosts](#chats-on-ssh-hosts)). With no Herdr pane to go by, as when called from a Herdr 2 pane, a Herdr 2 tab in the active group splits its pane in use with the chat instead (see [Chats in Herdr 2 panes](rich-chat.md#chats-in-herdr-2-panes)); its pane id in `chat` is `core:` and the terminal's. Waits up to 30 seconds for Herdr or Herdr 2 to create the tab and pane, then prints the pane id and window (see [Chat creation](#chat-creation)). Exits 8 when `sheprd-acp` is missing here or the agent is not installed on it (`sheprd-acp agents` lists those that are), 1 when the host cannot be reached, and 7 or 1 when the outcome is unknown |
 
 ### Hosts
 
@@ -269,10 +280,28 @@ One JSON request line, one JSON response line, then the socket closes. Every
 request but `status` is `{"method", "caller", "op"}`, where `caller` carries
 the pane, workspace, daemon socket, and window, and `op` is tagged with
 `"op"`. `status` carries those caller fields beside `"method": "status"`
-instead, with no `op`. It reports the protocol version, currently 37.
+instead, with no `op`. It reports the protocol version, currently 38.
 Requests and responses are bounded to 256 KiB. A request that waits says for
 how long (at most 600 seconds), and the app answers at most a few requests at
 a time.
+
+### Chat creation
+
+`chat new` waits up to 30 seconds for the runtime to create the chat's tab.
+For Herdr 2, the wait also covers placing the new pane in its tab. Success
+replies `created` with `agent`, `window_id`, `tab`, and `pane_id`. The agent
+may still be starting, and the chat view attaches once it reports.
+
+The `tab` field names its runtime, because each runtime owns its own tab IDs.
+Herdr uses `{"runtime":"herdr","tab_id":"w1:t9"}`. Herdr 2 uses
+`{"runtime":"core","tab_id":9,"terminal_id":"t9"}`, with a tab ID that
+Spaceport owns. Use each ID only with its own runtime's commands. Pass the
+`pane_id` to `chat show --pane ID --window WINDOW_ID`.
+
+If the wait expires, the answer is lost, or the window closes, the reply is
+an error saying the outcome is unknown. The chat may exist anyway. Inspect
+the window with `spaceport chat` before you retry. Spaceport never sends the
+request again on its own. The wait takes one of the bounded waiting slots.
 
 ### Windows
 

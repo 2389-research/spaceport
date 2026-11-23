@@ -9,6 +9,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[3]
 REMOTE = ROOT / "crates/spaceport-remote"
+CHAT_CORE = ROOT / "crates/spaceport-chat-core/src"
 APP = ROOT / "crates/spaceport-gpui/src"
 
 
@@ -37,8 +38,8 @@ class TeleportEngineAbsence(unittest.TestCase):
                 self.assertNotIn(command, text, source)
 
     def test_retained_callers_use_the_narrow_shared_contract(self):
-        for relative in ("chat/existing.rs", "pane_move.rs"):
-            text = (APP / relative).read_text()
+        for relative, base in (("existing.rs", CHAT_CORE), ("pane_move.rs", APP)):
+            text = (base / relative).read_text()
             self.assertIn("host_script::", text, relative)
         self.assertIn("agent::AgentKind", (APP / "overview/reopen.rs").read_text())
         processes = (APP / "processes.rs").read_text()

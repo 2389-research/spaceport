@@ -11,7 +11,6 @@ impl Localize for Error {
     fn localize(&self) -> String {
         match self {
             Self::InvalidBrowserTabs => fl!("error-browser-tabs"),
-            Self::InvalidBrowserUrl => fl!("error-browser-url"),
             Self::InvalidCodeFile => fl!("error-browser-code-file"),
             Self::InvalidGroupLayouts => fl!("error-browser-group-layouts"),
             Self::InvalidLocalPage => fl!("error-browser-local-page"),
@@ -20,6 +19,15 @@ impl Localize for Error {
             Self::RestorationBlocked => fl!("error-browser-restoration-blocked"),
             Self::StateFile(error) => error.localize(),
             Self::TabIdsExhausted => fl!("error-browser-tab-ids-exhausted"),
+            Self::WebUrl(error) => error.localize(),
+        }
+    }
+}
+
+impl Localize for spaceport_web_url::Error {
+    fn localize(&self) -> String {
+        match self {
+            Self::InvalidUrl => fl!("error-browser-url"),
         }
     }
 }

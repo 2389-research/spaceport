@@ -2,7 +2,7 @@
 
 use super::{MAX_CHATS, Route, Source, Surface, Target};
 use crate::state::LiveState;
-use spaceport_chat_protocol::{EndpointId, TOKEN};
+pub(crate) use spaceport_chat_core::endpoint;
 use spaceport_client::{ConnectTarget, protocol::ClientShellSnapshot};
 use std::collections::HashSet;
 
@@ -34,14 +34,6 @@ pub(crate) fn route(target: &ConnectTarget, live: &LiveState) -> Option<Route> {
         }
         _ => None,
     }
-}
-
-/// The program a pane's metadata names, when its token holds a valid id.
-pub(crate) fn endpoint(tokens: &[(String, String)]) -> Option<EndpointId> {
-    tokens
-        .iter()
-        .find(|(name, _)| name == TOKEN)
-        .and_then(|(_, value)| value.parse().ok())
 }
 
 /// The chat panes of a reachable daemon's snapshot, in its order, one per

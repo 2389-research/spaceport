@@ -180,7 +180,7 @@ pub(super) fn window_for(
 #[cfg(test)]
 pub(crate) fn chat_status(cx: &mut App) -> Response {
     use super::protocol::{Call, chat::ChatOp};
-    chat::serve(
+    chat::immediate(
         Call {
             caller: Caller::default(),
             op: ChatOp::Status,
@@ -267,7 +267,7 @@ fn serve(incoming: socket::Incoming, state: &mut State, cx: &mut App) {
         Request::Settings(call) => settings::serve(call, incoming, &mut state.watches, cx),
         Request::Events(call) => events::serve(call, incoming, &mut state.watches, cx),
         Request::Link(call) => incoming.respond(links::serve(call, cx)),
-        Request::Chat(call) => incoming.respond(chat::serve(call, cx)),
+        Request::Chat(call) => chat::serve(call, incoming, &mut state.watches, cx),
     }
 }
 

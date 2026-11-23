@@ -2,10 +2,7 @@
 
 use super::{
     STATUS_DOT_UNKNOWN, STATUS_WIDTH, agent_name,
-    agents::{
-        Indicators, PANE_CAPTION_LIMIT, agent_labels, agent_place, pane_name, status_indicator,
-        status_style,
-    },
+    agents::{Indicators, agent_labels, agent_place, pane_name, status_indicator, status_style},
     layout_tests,
     render::header::header,
     workspace_label,
@@ -18,6 +15,7 @@ use crate::{
 use spaceport_client::protocol::{
     AgentStatus, ClientShellAgent, ClientShellPane, ClientShellSnapshot, ClientShellWorkspace,
 };
+use spaceport_sidebar::agents::PANE_CAPTION_LIMIT;
 
 /// Every status, most urgent first.
 const STATUSES: [AgentStatus; 5] = [
@@ -31,12 +29,10 @@ const STATUSES: [AgentStatus; 5] = [
 mod agent_activity;
 mod agent_order;
 mod hierarchy;
-mod host_mark;
 mod listing;
 mod mark_sizes;
 mod pane_names;
 mod row_text;
 mod statuses;
-mod sticky_hosts;
 mod working_marks;
 mod workspace_marks;

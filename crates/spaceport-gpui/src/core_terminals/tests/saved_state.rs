@@ -155,7 +155,7 @@ fn unreadable_layouts_refuse_a_new_core_tab_before_sending_a_request(cx: &mut Te
     });
 
     // The existing split supplies the first frame on the bounded fixture socket.
-    let request = matches!(split, Some(Ok(()))).then(|| read_request(&mut peer));
+    let request = matches!(split, Some(Ok(_))).then(|| read_request(&mut peer));
     drop(peer);
     cx.quit();
 

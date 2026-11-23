@@ -84,7 +84,9 @@ pub(super) fn attached(
         cx.update(|window, cx| {
             view.update(cx, |view, cx| {
                 view.poll_chats_with(
-                    &mut |_, since| crate::chat::link::Link::start(path.clone(), since),
+                    &mut |_, since| {
+                        crate::chat::link::Link::start(path.clone(), since).map_err(Error::from)
+                    },
                     window,
                     cx,
                 );

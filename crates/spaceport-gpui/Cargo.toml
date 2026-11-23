@@ -19,11 +19,13 @@ anyhow.workspace               = true
 base64.workspace               = true
 chrono.workspace               = true
 config_loader.workspace        = true
+futures-channel.workspace      = true
 gpui.workspace                 = true
 # Unlike gpui 0.2.2, the platform crate enables nothing by default: without
 # font-kit (macOS) or a Linux backend, text silently goes to a no-op system.
 gpui_platform                  = { features = ["font-kit", "runtime_shaders", "wayland", "x11"], workspace = true }
 spaceport-ago.workspace           = true
+spaceport-chat-core.workspace     = true
 spaceport-chat-protocol.workspace = true
 spaceport-backend.workspace       = true
 spaceport-browser.workspace       = true
@@ -33,16 +35,19 @@ spaceport-control-protocol.workspace = true
 spaceport-core-client.workspace   = true
 spaceport-diagnostics.workspace   = true
 spaceport-i18n.workspace          = true
+spaceport-icons.workspace         = true
 spaceport-motion.workspace        = true
 spaceport-osc52.workspace         = true
 spaceport-panes.workspace         = true
 spaceport-remote.workspace        = true
 spaceport-reorder.workspace      = true
 spaceport-settings.workspace     = true
+spaceport-sidebar.workspace      = true
 spaceport-sound.workspace         = true
 spaceport-state-file.workspace    = true
 spaceport-usage.workspace         = true
 spaceport-truncate.workspace      = true
+spaceport-web-url.workspace       = true
 spaceport-words.workspace         = true
 image                          = { features = ["bmp", "tiff"], workspace = true }
 keepawake.workspace            = true
@@ -56,7 +61,6 @@ ratex-types.workspace          = true
 serde.workspace                = true
 serde_json.workspace           = true
 sysinfo.workspace              = true
-syntect.workspace              = true
 tempfile.workspace             = true
 thiserror.workspace            = true
 toml.workspace                 = true
@@ -79,8 +83,8 @@ winresource.workspace = true
 fluent-syntax.workspace    = true
 # `window/image_source/tests.rs` builds the checksums of a PNG fixture.
 flate2.workspace = true
-# `icons/tests/omo.rs` checks a generated icon's digest.
-sha2.workspace    = true
+# `tests/live_gui/shutdown.rs` and `saved_state.rs` hash the sandbox state.
+sha2.workspace = true
 # `i18n/errors/tests/sound.rs` names the audio library's own error types.
 rodio.workspace    = true
 gpui = { features = ["test-support"], workspace = true }
@@ -99,6 +103,10 @@ test-case.workspace = true
 
 [target.'cfg(unix)'.dev-dependencies]
 libc.workspace = true
+
+# `daemon/windows_tests.rs` serves private named pipes with chosen owners.
+[target.'cfg(windows)'.dev-dependencies]
+interprocess.workspace = true
 
 [features]
 default = []
@@ -152,7 +160,6 @@ windows-sys = { features = [
 ], workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-fontdb.workspace       = true
 futures-lite.workspace = true
 nix.workspace          = true
 oo7.workspace          = true

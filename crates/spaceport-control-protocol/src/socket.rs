@@ -307,7 +307,22 @@ pub fn call(path: &Path, request: &Request) -> crate::Result<Response> {
     if line.is_empty() {
         return Err(crate::Error::NoResponse);
     }
-    Ok(serde_json::from_slice(&line)?)
+    // Check a status answer's protocol before decoding the rest: a newer
+    // app's status may carry fields this command line cannot read.
+    let response: serde_json::Value = serde_json::from_slice(&line)?;
+    if response.get("status").and_then(serde_json::Value::as_str) == Some("status")
+        && let Some(protocol) = response.get("protocol").and_then(serde_json::Value::as_u64)
+        && protocol != u64::from(crate::protocol::PROTOCOL_VERSION)
+    {
+        return Err(crate::Error::Rejected {
+            code: ErrorCode::Unsupported,
+            message: format!(
+                "Spaceport speaks control protocol {protocol}, but this command line speaks {}; update the older of the two",
+                crate::protocol::PROTOCOL_VERSION
+            ),
+        });
+    }
+    Ok(serde_json::from_value(response)?)
 }
 
 #[cfg(any(test, feature = "test-support"))]

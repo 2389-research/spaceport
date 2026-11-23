@@ -244,7 +244,10 @@ fn a_file_link_survives_a_redraw_and_a_resolved_span_is_no_click(cx: &mut gpui::
         assert!(view.terminal_link_at(link).is_none());
         assert!(view.file_link_at(link).is_none());
         let pressed = view.terminal_link_press(link, modifiers).unwrap();
-        assert!(pressed.url.is_none() && pressed.file.is_none());
+        assert!(matches!(
+            pressed.target,
+            PressedTarget::Unopened(RowTarget::OtherHost(_))
+        ));
     });
     cx.simulate_click(link, modifiers);
     nothing_more(cx);

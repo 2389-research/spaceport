@@ -39,7 +39,8 @@ use serde::{Deserialize, Serialize};
 /// and retired page kinds from app status/tab replies.
 /// 36: removed custom app updater operations and replies.
 /// 37: removed chat conversion requests and replies.
-pub const PROTOCOL_VERSION: u32 = 37;
+/// 38: `chat new` waits for the created tab and pane, replying `created`.
+pub const PROTOCOL_VERSION: u32 = 38;
 
 /// Bounds a request and a response alike.
 pub const MAX_MESSAGE: usize = 256 * 1024;
@@ -124,14 +125,14 @@ impl Request {
             Self::Tab(call) => call.op.wait_seconds(),
             Self::Host(call) => call.op.wait_seconds(),
             Self::Settings(call) => call.op.wait_seconds(),
+            Self::Chat(call) => call.op.wait_seconds(),
             Self::Status(_)
             | Self::App(_)
             | Self::Window(_)
             | Self::Ui(_)
             | Self::Command(_)
             | Self::Work(_)
-            | Self::Link(_)
-            | Self::Chat(_) => 0,
+            | Self::Link(_) => 0,
         };
         wait.min(MAX_WAIT_SECONDS)
     }

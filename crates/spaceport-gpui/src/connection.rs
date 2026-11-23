@@ -1,5 +1,7 @@
 // ABOUTME: Bridges ordered connection events into bounded UI mailboxes.
 // ABOUTME: Keeps reader notifications scoped to their test and connection owners.
+mod reader;
+
 use crate::{
     config::Theme,
     daemon::Start,
@@ -12,7 +14,7 @@ use spaceport_client::{
     protocol::{ClientHostAppearance, ClientHostColor, ClientPaneInputEvent},
 };
 use std::sync::{
-    Arc, Mutex,
+    Arc, Mutex, MutexGuard, TryLockError,
     atomic::{AtomicBool, Ordering},
 };
 
@@ -341,6 +343,7 @@ impl ConnectionBridge {
             })
             .map_err(crate::Error::from)
             .and_then(|client| {
+                let handle = client.handle.clone();
                 self.handle = Some(client.handle);
                 let inbox = self.inbox.clone();
                 let drained = self.drained.clone();
@@ -349,41 +352,17 @@ impl ConnectionBridge {
                 let scrollback = self.scrollback.clone();
                 // Drain ordered events even while GPUI is busy; retain only coherent state.
                 spawn(Box::new(move || {
-                    while let Ok(event) = client.events.recv() {
-                        match &event {
-                            ClientEvent::Connected(_) => tracing::debug!("Connection bridge connected"),
-                            ClientEvent::Disconnected { .. } => tracing::debug!(category = "transport_disconnected", "Connection bridge disconnected"),
-                            _ => {}
-                        }
-                        let event = match integrations.lock() {
-                            Ok(mut integrations) => integrations.apply(event),
-                            Err(_) => Some(event),
-                        };
-                        let event = event.and_then(|event| match scrollback.lock() {
-                            Ok(mut scrollback) => scrollback.apply(event),
-                            Err(_) => Some(event),
-                        });
-                        let event = event.and_then(|event| match links.lock() {
-                            Ok(mut links) => links.apply(event),
-                            Err(_) => Some(event),
-                        });
-                        if let Ok(mut state) = inbox.lock() {
-                            match event {
-                                Some(event) => state.apply(event),
-                                // A link answer changes nothing the live state
-                                // holds, but the window polls only when it is dirty.
-                                None => state.dirty = true,
-                            }
-                        }
-                        // After the guard is gone, so a woken waiter always
-                        // finds the update in the inbox.
+                    let reader = reader::Reader {
+                        drained,
+                        handle,
+                        inbox,
+                        integrations,
+                        links,
+                        scrollback,
                         #[cfg(all(test, unix))]
-                        reader_wake.notify();
-                    }
-                    drained.store(true, Ordering::Release);
-                    #[cfg(all(test, unix))]
-                    reader_wake.notify();
-                    tracing::debug!("Connection bridge event reader drained");
+                        wake: reader_wake,
+                    };
+                    reader.read(&client.events);
                 }))
                 .map_err(crate::Error::from)
             });
@@ -411,27 +390,40 @@ impl ConnectionBridge {
 
     /// Cheap enough to call every display frame: never blocks the UI thread.
     pub fn has_update(&self) -> bool {
-        self.inbox.try_lock().is_ok_and(|state| state.dirty)
+        self.try_inbox().is_some_and(|state| state.dirty)
+    }
+
+    /// Never blocks. A reader that panicked while holding the inbox poisons it;
+    /// that connection is retired and its inbox reports a disconnection.
+    fn try_inbox(&self) -> Option<MutexGuard<'_, LiveState>> {
+        match self.inbox.try_lock() {
+            Ok(state) => Some(state),
+            Err(TryLockError::WouldBlock) => None,
+            Err(TryLockError::Poisoned(error)) => {
+                if let Some(handle) = &self.handle {
+                    handle.disconnect();
+                }
+                let mut state = error.into_inner();
+                reader::recover(&self.inbox, &mut state);
+                Some(state)
+            }
+        }
     }
 
     /// Preserve final reader events until the UI has consumed their projection.
     pub(crate) fn retry_ready(&self) -> bool {
-        self.drained.load(Ordering::Acquire)
-            && self.inbox.try_lock().is_ok_and(|state| !state.dirty)
+        self.drained.load(Ordering::Acquire) && self.try_inbox().is_some_and(|state| !state.dirty)
     }
 
     /// Whether the worker has reported this link up, which the window learns
     /// only when it next takes an update. Never blocks: `None` while the event
     /// reader holds the inbox, when the answer is not yet known.
     pub fn reports_connected(&self) -> Option<bool> {
-        self.inbox
-            .try_lock()
-            .ok()
-            .map(|state| state.status.is_connected())
+        self.try_inbox().map(|state| state.status.is_connected())
     }
 
     pub fn take_update(&self) -> Option<LiveState> {
-        let mut state = self.inbox.try_lock().ok()?;
+        let mut state = self.try_inbox()?;
         if let Ok(mut retired) = self.retired.lock() {
             for (answer, request) in retired.drain(..) {
                 state.clear_answer(answer, &request);

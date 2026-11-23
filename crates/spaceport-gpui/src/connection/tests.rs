@@ -7,6 +7,7 @@ mod idle_history;
 mod local_peer_warning;
 mod retired_answers;
 mod sounds;
+mod worker_panic;
 
 fn bridge() -> ConnectionBridge {
     ConnectionBridge::new(ConnectTarget::Socket("/unused-connection-test.sock".into()))

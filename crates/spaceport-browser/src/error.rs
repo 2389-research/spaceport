@@ -9,8 +9,6 @@ pub enum Error {
     // keep-sorted start
     #[error("Invalid saved browser tabs")]
     InvalidBrowserTabs,
-    #[error("Browser tabs open only http and https addresses with a host, of at most 8 KiB.")]
-    InvalidBrowserUrl,
     #[error("An old source tab must name an absolute file path without control characters")]
     InvalidCodeFile,
     #[error("Invalid saved editor groups")]
@@ -33,5 +31,7 @@ pub enum Error {
         "Saved tab IDs are exhausted. Check browser-tabs.json and editor-groups.json, then restart Spaceport before opening new tabs."
     )]
     TabIdsExhausted,
+    #[error(transparent)]
+    WebUrl(#[from] spaceport_web_url::Error),
     // keep-sorted end
 }

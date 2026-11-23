@@ -4,7 +4,7 @@
 use super::*;
 use crate::{
     config::{Density, LayoutMode, StatusIcons, Style, Worktrees},
-    sidebar::{STATUS_WIDTH, layout::SidebarMetrics},
+    sidebar::{STATUS_WIDTH, SidebarMetrics},
 };
 use spaceport_settings::Surface;
 

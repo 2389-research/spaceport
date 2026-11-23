@@ -47,7 +47,7 @@ impl SpaceportWindow {
         let width = SidebarMode::Rail
             .width(None, f32::from(window.viewport_size().width))
             .unwrap_or(0.);
-        let look = layout::for_config(&self.config, self.fill());
+        let look = layout::for_config(&self.config, self.fill().mark());
         let hint = Hint::new(&self.theme);
         let multi = self.endpoints.len() > 1;
         // What each listed host's mutes silence. A muted workspace shows its
