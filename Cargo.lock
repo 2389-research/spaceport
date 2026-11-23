@@ -6530,6 +6530,7 @@ dependencies = [
  "serde_json",
  "spaceport-chat-protocol",
  "spaceport-client",
+ "spaceport-release-notes",
  "spaceport-remote",
  "spaceport-settings",
  "syntect",
@@ -6686,6 +6687,7 @@ dependencies = [
  "spaceport-motion",
  "spaceport-osc52",
  "spaceport-panes",
+ "spaceport-release-notes",
  "spaceport-remote",
  "spaceport-reorder",
  "spaceport-settings",
@@ -6789,6 +6791,13 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "spaceport-release-notes"
+version = "0.1.0"
+dependencies = [
+ "spaceport-client",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 use super::*;
-use crate::release_notes::parse;
+use spaceport_release_notes::parse;
 
 const COMPACTED: &str = "## Objective\n- No technical task in progress.\n\n## Important Details\n\
 - Language: English.\n\n## Work State\n### Completed\n- Delivered joke.\n### Active\n- (none)\n\

@@ -6,7 +6,7 @@ fn kinds(lines: &[Line]) -> Vec<Kind> {
     lines.iter().map(|line| line.kind).collect()
 }
 
-#[core::prelude::v1::test]
+#[test]
 fn lists_quotes_rules_and_tables_are_typed() {
     let lines = parse(
         "1. first\n2) second\n  - nested\n    + deeper\n> quoted *text*\n---\n\
@@ -33,7 +33,7 @@ fn lists_quotes_rules_and_tables_are_typed() {
     assert_eq!(lines[7].text, "a.rs \u{2502} 12");
 }
 
-#[core::prelude::v1::test]
+#[test]
 fn emphasis_needs_a_word_boundary() {
     let line = &parse("an *emphasized* and _also_ word, but snake_case_name and 2*3*4 stay")[0];
     let spans: Vec<_> = line
@@ -49,7 +49,7 @@ fn emphasis_needs_a_word_boundary() {
     assert_eq!(&line.text[line.italic[0].clone()], "it");
 }
 
-#[core::prelude::v1::test]
+#[test]
 fn numbers_need_a_marker_and_a_space() {
     assert_eq!(kinds(&parse("2024.10 release")), [Kind::Paragraph]);
     assert_eq!(kinds(&parse("1234567890. too long")), [Kind::Paragraph]);
