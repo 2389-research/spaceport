@@ -46,7 +46,6 @@ pub(crate) use {
     metrics::{ARROW_RESERVE, HOST_ARROW_WIDTH, ICON_RESERVE, STATUS_WIDTH},
     rail::SidebarMode,
     render::NestedReveal,
-    reorder::WorkspaceDrag,
     row::label_text,
     search::SidebarSearch,
     view::SidebarView,
@@ -56,6 +55,7 @@ pub(crate) use {
 pub(crate) use layout::SidebarMetrics;
 pub(crate) use spaceport_sidebar::hover::{HoverMenu, HoverRest};
 pub(crate) use spaceport_sidebar::order::step as sidebar_step;
+pub(crate) use spaceport_sidebar::reorder::{MoveBlock, Plan, WorkspaceDrag, resolve};
 pub(crate) use spaceport_sidebar::slide::SidebarSlide;
 
 #[cfg(any(test, feature = "integration-test"))]

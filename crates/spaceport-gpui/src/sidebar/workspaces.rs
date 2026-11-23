@@ -10,7 +10,7 @@ use super::{RowBadge, row::first_text};
 use spaceport_client::protocol::ClientShellWorkspace;
 
 pub(crate) use spaceport_sidebar::workspaces::{
-    displayed_workspace_status, grouped_keys, visible_workspace_entries, workspace_entries,
+    displayed_workspace_status, visible_workspace_entries, workspace_entries,
 };
 
 /// Note and mute marks for a workspace row. Notes belong to a checkout;

@@ -24,6 +24,7 @@ spaceport-client.workspace   = true
 spaceport-commands.workspace = true
 spaceport-icons.workspace    = true
 spaceport-motion.workspace   = true
+spaceport-reorder.workspace  = true
 spaceport-settings.workspace = true
 thiserror.workspace          = true
 unicode-width.workspace      = true

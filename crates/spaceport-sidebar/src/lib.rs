@@ -27,6 +27,7 @@ pub mod layout;
 pub mod metrics;
 pub mod order;
 pub mod origin;
+pub mod reorder;
 pub mod row;
 pub mod slide;
 pub mod sticky;
