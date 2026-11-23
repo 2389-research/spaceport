@@ -50,7 +50,6 @@ mod opencode;
 mod overlay;
 mod pasted;
 mod pinned;
-mod prepared;
 mod questions;
 mod recall;
 mod relocale;

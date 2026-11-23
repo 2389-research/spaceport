@@ -1,12 +1,13 @@
 use super::*;
 use crate::{
     chat::{
-        labels::Labels,
-        prepared::{Body, Part, Prepared, answers_text},
+        labels,
+        prepared::{Body, Part, Prepared},
     },
     config::ChatLayoutMode,
 };
 use gpui::{Modifiers, TestAppContext, px, size};
+use spaceport_chat_core::prepared::answers_text;
 use spaceport_chat_protocol::{
     MAX_QUESTION_ANSWERS, MAX_QUESTION_TEXT, NoticeLevel, QuestionAnswer,
 };
@@ -44,11 +45,11 @@ fn answered(answers: Vec<QuestionAnswer>) -> Entry {
 fn answers_prepare_rich_content_and_readable_copy_once_without_widgets_or_pages() {
     let mut answers = answers();
     answers[1].answer.push_str("\n\n```herdr-ui\n{\"type\":\"button\",\"label\":\"Never run\"}\n```\n\n```html\n<button>Never run</button>\n```");
-    let expected = answers_text(&answers, &Labels::now());
+    let expected = answers_text(&answers, &labels::now());
     let mut transcript = Transcript::new("Codex");
     transcript.entries.push(answered(answers));
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &[(EntryId(1), 1)], &Labels::now());
+    prepared.update(&transcript, &[(EntryId(1), 1)], &labels::now());
     let first = prepared.body(EntryId(1)).unwrap();
     let Body::Answers { text, parts } = &*first else {
         panic!("prepared answers")
@@ -76,19 +77,19 @@ fn answers_prepare_rich_content_and_readable_copy_once_without_widgets_or_pages(
         );
     }
     assert_eq!(text.matches("**Question ").count(), 2);
-    prepared.update(&transcript, &[(EntryId(1), 1)], &Labels::now());
+    prepared.update(&transcript, &[(EntryId(1), 1)], &labels::now());
     assert!(Rc::ptr_eq(&first, &prepared.body(EntryId(1)).unwrap()));
     if let EntryKind::Notice { answers, .. } = &mut transcript.entries[0].kind {
         answers[0].answer = "Use **nine**.".into();
     }
-    prepared.update(&transcript, &[(EntryId(1), 2)], &Labels::now());
+    prepared.update(&transcript, &[(EntryId(1), 2)], &labels::now());
     let next = prepared.body(EntryId(1)).unwrap();
     assert!(!Rc::ptr_eq(&first, &next));
     assert!(matches!(next.as_ref(), Body::Answers { text, .. } if text.contains("Use **nine**.")));
     if let EntryKind::Notice { answers, .. } = &mut transcript.entries[0].kind {
         answers.clear();
     }
-    prepared.update(&transcript, &[(EntryId(1), 3)], &Labels::now());
+    prepared.update(&transcript, &[(EntryId(1), 3)], &labels::now());
     assert!(prepared.body(EntryId(1)).is_none());
 }
 
@@ -101,14 +102,14 @@ fn answers_copy_and_preparation_share_count_and_utf8_text_limits() {
         };
         MAX_QUESTION_ANSWERS + 1
     ];
-    let text = answers_text(&too_many, &Labels::now());
+    let text = answers_text(&too_many, &labels::now());
     assert_eq!(text.matches("**Question ").count(), MAX_QUESTION_ANSWERS);
     assert!(text.ends_with("… (answers truncated)"));
     let huge = vec![QuestionAnswer {
         question: "α".repeat(MAX_QUESTION_TEXT),
         answer: "This suffix exceeds the aggregate budget".into(),
     }];
-    let text = answers_text(&huge, &Labels::now());
+    let text = answers_text(&huge, &labels::now());
     assert!(text.len() <= MAX_QUESTION_TEXT + MAX_QUESTION_ANSWERS * 64 + 64);
     assert!(text.ends_with("… (answers truncated)"));
     assert!(!text.contains("This suffix"));
@@ -122,7 +123,7 @@ fn answered_questions_show_rich_text_and_copy_answers_or_original_source(cx: &mu
         (ChatLayoutMode::IMessage, "Catppuccin Latte"),
     ] {
         let answers = answers();
-        let expected = answers_text(&answers, &Labels::now());
+        let expected = answers_text(&answers, &labels::now());
         let (view, _peer, cx) = overlay::open(cx, ConnectTarget::Local);
         view.update(cx, |view, _| {
             view.config.chat.layout = layout;

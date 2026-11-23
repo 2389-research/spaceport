@@ -4,6 +4,17 @@ use crate::chat::visual::{Error, Visuals};
 
 mod display_math;
 
+/// The parse as the prepared shell runs it: the crate's model, with this
+/// client's destination policy, handing its wants to `visuals`.
+fn parse(text: &str, visuals: &mut Visuals) -> Option<Vec<Block>> {
+    let mut wants = Vec::new();
+    let blocks = spaceport_chat_core::rich::parse(text, &mut wants, destination);
+    for want in wants {
+        visuals.want(want.id(), want.into_source());
+    }
+    blocks
+}
+
 #[test]
 fn code_is_copied_verbatim_and_only_complete_fences_queue_grammars() {
     let mut visuals = Visuals::default();

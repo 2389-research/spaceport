@@ -1,8 +1,9 @@
 use super::*;
-use crate::chat::labels::Labels;
+use crate::chat::labels;
 use crate::chat::prepared::{Body, Part, Prepared};
 use core::prelude::v1::test;
 use spaceport_chat_protocol::{Entry, EntryId, EntryKind, Transcript};
+use std::rc::Rc;
 
 const KEY: (EntryId, usize) = (EntryId(4), 0);
 
@@ -16,7 +17,7 @@ fn update(prepared: &mut Prepared, state: &mut State, text: Option<&str>, revisi
         });
         keys.push((KEY.0, revision));
     }
-    prepared.update(&transcript, &keys, &Labels::now());
+    prepared.update(&transcript, &keys, &labels::now());
     state.retain(prepared);
 }
 

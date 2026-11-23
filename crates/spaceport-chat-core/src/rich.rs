@@ -45,7 +45,7 @@ pub struct Want {
 }
 
 impl Want {
-    fn new(id: VisualId, source: Source) -> Self {
+    pub(crate) fn new(id: VisualId, source: Source) -> Self {
         Self { id, source }
     }
 

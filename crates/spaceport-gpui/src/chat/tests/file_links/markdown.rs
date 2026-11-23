@@ -1,8 +1,5 @@
 use super::*;
-use crate::chat::{
-    rich::{self, Block, Inline},
-    visual::Visuals,
-};
+use crate::chat::rich::{self, Block, Inline};
 use pulldown_cmark::{Event, Parser, Tag};
 
 fn destination(source: &str) -> String {
@@ -15,7 +12,7 @@ fn destination(source: &str) -> String {
 }
 
 fn rich_destination(source: &str) -> String {
-    rich::parse(source, &mut Visuals::default())
+    spaceport_chat_core::rich::parse(source, &mut Vec::new(), rich::destination)
         .unwrap()
         .into_iter()
         .find_map(|block| match block {

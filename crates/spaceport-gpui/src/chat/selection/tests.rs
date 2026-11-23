@@ -1,7 +1,7 @@
 #![allow(clippy::unwrap_used)]
 
 use super::*;
-use crate::chat::labels::Labels;
+use crate::chat::labels;
 use crate::chat::prepared::{Body, Part, Prepared};
 use crate::chat::rich::{MAX_CODE_LINE_CHARS, MAX_CODE_LINES};
 use spaceport_chat_protocol::{Entry, EntryKind, NoticeLevel, QuestionAnswer, Transcript};
@@ -25,7 +25,7 @@ fn prepare(entries: Vec<Entry>) -> (Transcript, Prepared, Vec<(EntryId, u64)>) {
         .map(|entry| (entry.id, 1))
         .collect::<Vec<_>>();
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &keys, &Labels::now());
+    prepared.update(&transcript, &keys, &labels::now());
     (transcript, prepared, keys)
 }
 
@@ -171,13 +171,13 @@ fn unchanged_projection_is_shared_and_append_preserves_selection() {
     selection.select_all(prepared.text());
     transcript.entries.push(agent(1, "later"));
     keys.push((EntryId(1), 1));
-    prepared.update(&transcript, &keys, &Labels::now());
+    prepared.update(&transcript, &keys, &labels::now());
     assert!(Rc::ptr_eq(&projected, &prepared.text().entries[0]));
     assert!(!selection.validate(prepared.text()));
     assert_eq!(selection.text(prepared.text()).as_deref(), Some("stable"));
     transcript.entries[1] = agent(1, "later changed");
     keys[1].1 += 1;
-    prepared.update(&transcript, &keys, &Labels::now());
+    prepared.update(&transcript, &keys, &labels::now());
     assert!(!selection.validate(prepared.text()));
 }
 
@@ -189,13 +189,13 @@ fn changing_an_interior_selected_entry_or_reordering_invalidates() {
     selection.select_all(prepared.text());
     transcript.entries[1] = agent(3, "changed");
     keys[1].1 += 1;
-    prepared.update(&transcript, &keys, &Labels::now());
+    prepared.update(&transcript, &keys, &labels::now());
     assert!(selection.text(prepared.text()).is_none());
     assert!(selection.validate(prepared.text()));
     selection.select_all(prepared.text());
     transcript.entries.swap(0, 1);
     keys.swap(0, 1);
-    prepared.update(&transcript, &keys, &Labels::now());
+    prepared.update(&transcript, &keys, &labels::now());
     assert!(selection.validate(prepared.text()));
 }
 
@@ -206,7 +206,7 @@ fn snapshot_reset_fences_old_keys_even_when_ids_and_revisions_are_reused() {
     let mut selection = Selection::default();
     selection.select_all(prepared.text());
     prepared.clear();
-    prepared.update(&transcript, &keys, &Labels::now());
+    prepared.update(&transcript, &keys, &labels::now());
     assert!(selection.validate(prepared.text()));
     assert!(!selection.press(prepared.text(), old, 1, false));
     assert_ne!(old.key, caret(prepared.text(), 1, 0, 0, 0, 1).key);
@@ -218,7 +218,7 @@ fn remote_file_destinations_match_visible_expanded_labels() {
         prepare(vec![agent(1, "Read [**source** file](src/main.rs:5).")]);
     let old = caret(prepared.text(), 1, 0, 0, 0, 0);
     prepared.set_remote_links(true);
-    prepared.update(&transcript, &keys, &Labels::now());
+    prepared.update(&transcript, &keys, &labels::now());
     assert!(prepared.text().segment(old.key).is_none());
     let new = caret(prepared.text(), 1, 0, 0, 0, 0);
     assert_eq!(
@@ -250,7 +250,7 @@ fn notice_answers_and_inert_source_have_distinct_segments() {
             .contains("<record>")
     );
     prepared.set_expanded(&std::collections::HashSet::from([EntryId(4)]));
-    prepared.update(&transcript, &keys, &Labels::now());
+    prepared.update(&transcript, &keys, &labels::now());
     assert!(selection.validate(prepared.text()));
     let document = prepared.text();
     assert_eq!(
@@ -294,7 +294,7 @@ fn fallback_lines_are_shared_and_keep_their_newlines() {
         (1, Rc::new(Body::Message(vec![Part::Text(lines)]))),
     )]);
     let mut document = Document::default();
-    document.update(&transcript, &[(EntryId(1), 1)], &bodies, &Labels::now());
+    document.update(&transcript, &[(EntryId(1), 1)], &bodies, &labels::now());
     let mut selection = Selection::default();
     selection.select_all(&document);
     assert_eq!(selection.text(&document).as_deref(), Some("plain\n\nx\ny"));
@@ -326,7 +326,7 @@ fn code_projection_obeys_preview_bounds_without_copying_full_source() {
         ),
     )]);
     let mut document = Document::default();
-    document.update(&transcript, &[(EntryId(1), 1)], &bodies, &Labels::now());
+    document.update(&transcript, &[(EntryId(1), 1)], &bodies, &labels::now());
     let key = document
         .key(EntryId(1), Region::Body(0), Cell::default())
         .unwrap();
@@ -376,7 +376,7 @@ fn folded_thoughts_and_tools_never_leak_hidden_text_across_messages() {
         Some("before\n\nvisible thought\n\nRead file\n\nafter")
     );
     prepared.set_expanded(&std::collections::HashSet::from([EntryId(2), EntryId(3)]));
-    prepared.update(&transcript, &keys, &Labels::now());
+    prepared.update(&transcript, &keys, &labels::now());
     assert!(selection.validate(prepared.text()));
     selection.select_all(prepared.text());
     let text = selection.text(prepared.text()).unwrap();
@@ -402,7 +402,7 @@ fn toggling_an_unselected_record_preserves_existing_selection() {
     let start = caret(prepared.text(), 1, 0, 0, 0, 0);
     selection.press(prepared.text(), start, 3, false);
     prepared.set_expanded(&std::collections::HashSet::from([EntryId(2)]));
-    prepared.update(&transcript, &keys, &Labels::now());
+    prepared.update(&transcript, &keys, &labels::now());
     assert!(!selection.validate(prepared.text()));
     assert_eq!(selection.text(prepared.text()).as_deref(), Some("stable"));
 }
@@ -428,7 +428,7 @@ fn oversized_selection_is_refused_instead_of_silently_truncated() {
         .map(|entry| (entry.id, 1))
         .collect::<Vec<_>>();
     let mut document = Document::default();
-    document.update(&transcript, &keys, &HashMap::new(), &Labels::now());
+    document.update(&transcript, &keys, &HashMap::new(), &labels::now());
     let mut selection = Selection::default();
     selection.select_all(&document);
     assert!(selection.text(&document).is_none());

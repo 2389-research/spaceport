@@ -6528,6 +6528,7 @@ name = "spaceport-chat-core"
 version = "0.1.0"
 dependencies = [
  "pulldown-cmark",
+ "serde",
  "serde_json",
  "spaceport-chat-protocol",
  "spaceport-client",
