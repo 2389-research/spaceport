@@ -10,6 +10,12 @@ version.workspace      = true
 workspace = true
 
 [dependencies]
+serde.workspace              = true
+serde_json.workspace         = true
 spaceport-client.workspace   = true
 spaceport-commands.workspace = true
 spaceport-settings.workspace = true
+thiserror.workspace          = true
+
+[dev-dependencies]
+tempfile.workspace = true
