@@ -28,7 +28,7 @@ fn turning_the_repository_icons_off_gives_the_name_their_room(cx: &mut gpui::Tes
     assert_eq!(hidden.right(), shown.right());
     assert_eq!(
         hidden.size.width,
-        shown.size.width + px(crate::sidebar::ICON_RESERVE)
+        shown.size.width + px(spaceport_sidebar::metrics::ICON_RESERVE)
     );
 
     view.update(cx, |view, cx| {
@@ -78,7 +78,10 @@ fn configured_rows_give_the_icon_room_to_their_first_line(cx: &mut gpui::TestApp
     assert!(cx.debug_bounds("detail-herdr").is_none());
     let icon = cx.debug_bounds("workspace-icon-herdr").unwrap();
     let shown = cx.debug_bounds("name-herdr").unwrap();
-    assert_eq!(shown.left(), icon.left() + px(crate::sidebar::ICON_RESERVE));
+    assert_eq!(
+        shown.left(),
+        icon.left() + px(spaceport_sidebar::metrics::ICON_RESERVE)
+    );
 
     view.update(cx, |view, cx| {
         view.config.show_repository_icons = false;
