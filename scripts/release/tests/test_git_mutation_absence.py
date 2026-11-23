@@ -21,7 +21,9 @@ class GitRouteAbsence(unittest.TestCase):
         self.assertFalse("    Git," in page)
 
     def test_branch_is_still_a_plain_sidebar_token(self):
-        tokens = (GUI / "sidebar/tokens.rs").read_text()
+        # The token table lives in spaceport-sidebar; the app's façade words
+        # the statuses. The branch token stays a plain sidebar token either way.
+        tokens = (ROOT / "crates/spaceport-sidebar/src/tokens.rs").read_text()
         self.assertIn("SpaceToken::Branch => text(context.branch?", tokens)
         self.assertNotIn("SpaceToken::GitStatus", tokens)
 
