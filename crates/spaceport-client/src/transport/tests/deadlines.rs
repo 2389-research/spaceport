@@ -8,6 +8,14 @@ use std::{
 
 const CHUNK: usize = overlapped::CHUNK;
 
+/// How long the echo child may go without echoing before the test calls it
+/// stalled. It is measured from the last byte the child echoed, not from its
+/// spawn: PowerShell's cold start on a loaded runner has held these pipes
+/// silent for the whole 30s this test once waited, and that is the runner's
+/// time, not the transport's. A child that never starts, or stops echoing,
+/// still fails here.
+const ECHO_SILENCE: Duration = Duration::from_secs(60);
+
 fn bytes(len: usize) -> Vec<u8> {
     (0..len).map(|index| (index % 251) as u8).collect()
 }
@@ -172,20 +180,26 @@ fn a_bridge_child_streams_both_ways_and_its_exit_reads_as_closed() {
     let mut child = command.spawn().unwrap();
     drop(command);
     // More than both pipes hold: alternate bounded writes and reads, as the
-    // session loop does, or the child would block on its full output.
+    // session loop does, or the child would block on its full output. Each
+    // pass that finds nothing to read ends in a deadline, and that operation
+    // stays in flight for the next pass, so a wider deadline only makes the
+    // loop wake less often while the child starts.
     let sent = bytes(3 * CHUNK);
     stream
-        .set_read_timeout(Some(Duration::from_millis(20)))
+        .set_read_timeout(Some(Duration::from_millis(200)))
         .unwrap();
     stream
-        .set_write_timeout(Some(Duration::from_millis(20)))
+        .set_write_timeout(Some(Duration::from_millis(200)))
         .unwrap();
     let mut offset = 0;
     let mut echoed = Vec::new();
     let mut buffer = [0; 8192];
-    let start = Instant::now();
+    let mut last_byte = Instant::now();
     while echoed.len() < sent.len() {
-        assert!(start.elapsed() < Duration::from_secs(30), "echo stalled");
+        assert!(
+            last_byte.elapsed() < ECHO_SILENCE,
+            "the child echoed nothing for {ECHO_SILENCE:?}"
+        );
         if offset < sent.len() {
             match stream.write(&sent[offset..]) {
                 Ok(written) => offset += written,
@@ -195,7 +209,10 @@ fn a_bridge_child_streams_both_ways_and_its_exit_reads_as_closed() {
         }
         match stream.read(&mut buffer) {
             Ok(0) => panic!("the child closed early"),
-            Ok(read) => echoed.extend_from_slice(&buffer[..read]),
+            Ok(read) => {
+                echoed.extend_from_slice(&buffer[..read]);
+                last_byte = Instant::now();
+            }
             Err(error) if timed_out(&error) => {}
             Err(error) => panic!("{error}"),
         }
