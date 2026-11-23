@@ -4,7 +4,8 @@
 //! pinned while the list scrolls, which devices it lists and where each one
 //! runs, which workspace rows a folded group shows, what a row is and how the
 //! two lines of it are weighted, the inputs every row of one render shares, the
-//! trunk, tick and icons a row's leading edge draws, the rows the daemon's
+//! trunk, tick and icons a row's leading edge draws, which side that edge is on
+//! in a right-to-left language, the rows the daemon's
 //! configured tokens resolve to, the props its status marks are drawn with, the
 //! status sets drawn rather than loaded from assets, the note and mute marks at
 //! a row's trailing edge, the colour wash a host lays over its rows, and the
@@ -22,6 +23,7 @@ pub mod agents;
 pub mod animated;
 pub mod device_scope;
 pub mod device_tags;
+pub mod direction;
 pub mod layout;
 pub mod metrics;
 pub mod order;

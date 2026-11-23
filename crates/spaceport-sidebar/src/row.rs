@@ -11,6 +11,7 @@ pub use badge::RowBadge;
 
 use crate::{
     agents::Indicators,
+    direction::Logical,
     layout::SidebarLook,
     metrics::{STATUS_WIDTH, line_height, scaled},
     wash::HostMark,
@@ -136,10 +137,7 @@ impl RowIcon {
             .size(px(size))
             .flex_none()
             .overflow_hidden();
-        let slot = match cx.right_to_left {
-            true => slot.right(px(0.)),
-            false => slot.left(px(0.)),
-        };
+        let slot = slot.inset_s(cx.right_to_left, px(0.));
         slot.child(self.element(cx.theme.muted))
     }
 
@@ -283,11 +281,8 @@ pub fn guide(
         .absolute()
         .w(px(width))
         .top_0()
-        .bottom_0();
-    let gutter = match right_to_left {
-        true => gutter.right(px(x)),
-        false => gutter.left(px(x)),
-    };
+        .bottom_0()
+        .inset_s(right_to_left, px(x));
     Some(
         gutter.child(
             canvas(
@@ -332,11 +327,8 @@ pub fn trunk_below(
         .absolute()
         .w(px(width))
         .top_0()
-        .bottom_0();
-    let trunk = match right_to_left {
-        true => trunk.right(px(x)),
-        false => trunk.left(px(x)),
-    };
+        .bottom_0()
+        .inset_s(right_to_left, px(x));
     Some(
         trunk.child(
             canvas(
@@ -399,11 +391,8 @@ pub fn agent_mark(key: &str, icon: AgentIcon, size: f32, color: u32, cx: &RowCon
         .debug_selector(|| format!("agent-icon-{key}"))
         .absolute()
         .top(px((line_height(cx.font) - size) / 2.))
-        .size(px(size));
-    let mark = match cx.right_to_left {
-        true => mark.right(px(0.)),
-        false => mark.left(px(0.)),
-    };
+        .size(px(size))
+        .inset_s(cx.right_to_left, px(0.));
     mark.child(icon.element(size, color))
 }
 
