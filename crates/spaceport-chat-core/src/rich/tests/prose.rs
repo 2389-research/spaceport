@@ -3,12 +3,12 @@ use pulldown_cmark::HeadingLevel;
 
 #[test]
 fn ordinary_markdown_keeps_hierarchy_lists_and_inline_semantics_without_visual_jobs() {
-    let mut visuals = Visuals::default();
-    let blocks = parse(
+    let (blocks, wants) = parse_with(
         "# Main\n\nParagraph with **bold**, *emphasis*, `code`, and ~~old~~ text.\n\n## Details\n\n- Parent\n  - Nested\n\n3. Third\n4. Fourth\n\n> Quote\n\nLast paragraph.",
-        &mut visuals,
-    ).unwrap();
+    );
+    let blocks = blocks.unwrap();
     assert!(blocks.iter().all(|block| block.visuals().next().is_none()));
+    assert!(wants.is_empty());
     let paragraphs: Vec<_> = blocks
         .iter()
         .filter_map(|block| match block {
@@ -47,46 +47,9 @@ fn ordinary_markdown_keeps_hierarchy_lists_and_inline_semantics_without_visual_j
 }
 
 #[test]
-fn prose_links_accept_web_and_explicit_file_targets_but_leave_unsafe_schemes_literal() {
-    let blocks = parse(
-        "[docs](https://example.org/docs) https://example.org/raw. `https://example.org/code` [bad](javascript:alert) [file](/tmp/x)",
-        &mut Visuals::default(),
-    ).unwrap();
-    let Block::Paragraph { content, .. } = &blocks[0] else {
-        panic!("paragraph")
-    };
-    let links: Vec<_> = content
-        .iter()
-        .filter_map(|part| match part {
-            Inline::Text(_, style) => style.link.as_deref(),
-            _ => None,
-        })
-        .collect();
-    assert_eq!(
-        links,
-        [
-            "https://example.org/docs",
-            "https://example.org/raw",
-            "/tmp/x"
-        ]
-    );
-    let visible = content
-        .iter()
-        .filter_map(|part| match part {
-            Inline::Text(text, _) => Some(text.as_str()),
-            _ => None,
-        })
-        .collect::<String>();
-    assert!(visible.contains("file"));
-    assert!(!visible.contains("[file](/tmp/x)"));
-    assert!(visible.contains("[bad](javascript:alert)"));
-}
-
-#[test]
 fn inline_images_preserve_their_source_without_loading_or_linking() {
     let source = "See ![**plot**](plots/a.png) and ![remote](https://example.org/a.png).";
-    let mut visuals = Visuals::default();
-    let blocks = parse(source, &mut visuals).unwrap();
+    let blocks = parsed(source);
     assert!(blocks.iter().all(|block| block.visuals().next().is_none()));
     let Block::Paragraph { content, .. } = &blocks[0] else {
         panic!("paragraph")

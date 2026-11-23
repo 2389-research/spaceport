@@ -4,14 +4,15 @@
 //! so a copy matches what is on screen byte for byte.
 
 use super::{Inline, Style};
-use crate::terminal::file_target;
 use std::borrow::Cow;
 
-/// `content` with each file link made inert and its target appended once.
-pub(in crate::chat) fn remote_content(content: &[Inline]) -> Cow<'_, [Inline]> {
+/// `content` with each file link made inert and its target appended once;
+/// `is_local_path` is the app's test for a destination that names a file on
+/// the machine this client runs on.
+pub fn remote_content(content: &[Inline], is_local_path: fn(&str) -> bool) -> Cow<'_, [Inline]> {
     if !content.iter().any(|part| {
         matches!(part, Inline::Text(_, style)
-            if style.link.as_deref().is_some_and(|url| file_target(url).is_some()))
+            if style.link.as_deref().is_some_and(is_local_path))
     }) {
         return Cow::Borrowed(content);
     }
@@ -21,11 +22,7 @@ pub(in crate::chat) fn remote_content(content: &[Inline]) -> Cow<'_, [Inline]> {
             shown.push(part.clone());
             continue;
         };
-        let Some(target) = style
-            .link
-            .as_deref()
-            .filter(|url| file_target(url).is_some())
-        else {
+        let Some(target) = style.link.as_deref().filter(|url| is_local_path(url)) else {
             shown.push(part.clone());
             continue;
         };

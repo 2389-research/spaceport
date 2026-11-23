@@ -1,5 +1,6 @@
 use super::*;
-use crate::chat::{highlight::Token, rich::TAB_WIDTH};
+use crate::chat::highlight::Token;
+use spaceport_chat_core::rich::TAB_WIDTH;
 
 mod truncation;
 
