@@ -1,99 +1,22 @@
-//! Notes the user keeps on checkouts, to remember what each of many worktrees
-//! is for or waiting on. They belong to this client alone: never sent to the
-//! daemon nor written into the repository. They are keyed
-//! by endpoint, repository, and branch, because workspace IDs do not survive
-//! a daemon restart. Every window shows the same notes.
+//! The app's copy of the notes the user keeps on checkouts, and the file it is
+//! saved in. The notes themselves — their bounds, their one safe line of text,
+//! and the order they are kept in — are `spaceport-sidebar`'s
+//! [`worktree_notes`](spaceport_sidebar::worktree_notes); this holds them where
+//! every window reads them and saves them on a worker.
 use gpui::{App, Global};
-use serde::{Deserialize, Serialize};
+use spaceport_sidebar::worktree_notes as model;
 use std::path::PathBuf;
 
-/// Notes kept; the least recently edited go first beyond this.
-const MAX_NOTES: usize = 512;
-/// Characters in one note. A note is a reminder, not a document.
-pub(crate) const MAX_CHARS: usize = 500;
-/// Bytes in each part of a checkout's key. A longer key gets no note, so
-/// every note the store accepts fits in the file it reads back.
-const MAX_FIELD_BYTES: usize = 1024;
-/// Room for the most notes the store keeps, each as large as it accepts:
-/// JSON escapes at most double a string's bytes (quotes and backslashes are
-/// one byte each), plus the field names and punctuation.
-const MAX_FILE_BYTES: u64 =
-    (MAX_NOTES * (2 * (MAX_CHARS * 4 + 3 * MAX_FIELD_BYTES) + 128) + 64) as u64;
+pub(crate) use model::{Checkout, Note, clean};
+
 const FILE: &str = "worktree-notes.json";
-
-/// The checkout a note is about.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct Checkout {
-    pub(crate) endpoint: String,
-    pub(crate) repo_key: String,
-    pub(crate) branch: String,
-}
-
-impl Checkout {
-    fn valid(&self) -> bool {
-        [&self.endpoint, &self.repo_key, &self.branch]
-            .iter()
-            .all(|field| !field.is_empty() && field.len() <= MAX_FIELD_BYTES)
-    }
-
-    fn is(&self, endpoint: &str, repo_key: &str, branch: &str) -> bool {
-        self.endpoint == endpoint && self.repo_key == repo_key && self.branch == branch
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct Note {
-    #[serde(flatten)]
-    pub(crate) checkout: Checkout,
-    pub(crate) text: String,
-}
-
-impl Note {
-    fn valid(&self) -> bool {
-        self.checkout.valid() && clean(&self.text) == self.text && !self.text.is_empty()
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-struct Saved {
-    notes: Vec<Note>,
-}
-
-/// One line of bounded text, free of control and bidirectional formatting
-/// characters, with its runs of whitespace collapsed.
-pub(crate) fn clean(text: &str) -> String {
-    let spaced: String = text
-        .chars()
-        .take(MAX_CHARS * 4)
-        .map(|c| if c.is_whitespace() { ' ' } else { c })
-        .collect();
-    crate::notifications::safe_text(&spaced, MAX_CHARS * 4)
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ")
-        .chars()
-        .take(MAX_CHARS)
-        .collect::<String>()
-        .trim_end()
-        .to_owned()
-}
-
-fn parse(bytes: &[u8]) -> crate::Result<Vec<Note>> {
-    let saved: Saved = serde_json::from_slice(bytes)?;
-    if saved.notes.len() > MAX_NOTES || !saved.notes.iter().all(Note::valid) {
-        return Err(crate::Error::InvalidWorktreeNotes);
-    }
-    Ok(saved.notes)
-}
 
 /// The app's notes, oldest edit first.
 #[derive(Default)]
 pub(crate) struct Notes {
-    notes: Vec<Note>,
-    writer: Option<spaceport_state_file::Writer<Saved>>,
+    notes: model::Notes,
+    writer: Option<spaceport_state_file::Writer<model::Saved>>,
     quitting: bool,
-    /// Counts changes, so a prepared list can tell it is out of date.
-    revision: u64,
 }
 
 impl Global for Notes {}
@@ -113,9 +36,9 @@ impl Notes {
         let notes = path
             .as_deref()
             .map(|path| {
-                spaceport_state_file::read(path, MAX_FILE_BYTES)
+                spaceport_state_file::read(path, model::MAX_FILE_BYTES)
                     .map_err(crate::Error::from)
-                    .and_then(|bytes| bytes.as_deref().map_or(Ok(Vec::new()), parse))
+                    .and_then(|bytes| bytes.as_deref().map_or(Ok(model::Notes::default()), parse))
             })
             .transpose()
             .unwrap_or_else(|error| {
@@ -136,7 +59,6 @@ impl Notes {
             notes,
             writer,
             quitting: false,
-            revision: 0,
         }
     }
 
@@ -170,45 +92,24 @@ impl Notes {
     }
 
     pub(crate) fn get(&self, endpoint: &str, repo_key: &str, branch: &str) -> Option<&str> {
-        self.notes
-            .iter()
-            .find(|note| note.checkout.is(endpoint, repo_key, branch))
-            .map(|note| note.text.as_str())
+        self.notes.get(endpoint, repo_key, branch)
     }
 
     pub(crate) fn revision(&self) -> u64 {
-        self.revision
+        self.notes.revision()
     }
 
     /// Every note, most recently edited first.
     pub(crate) fn recent(&self) -> impl Iterator<Item = &Note> {
-        self.notes.iter().rev()
+        self.notes.recent()
     }
 
     /// Writes `text` as the checkout's note, or removes the note when the
     /// cleaned text is empty. Returns whether anything changed.
     pub(crate) fn set(&mut self, checkout: Checkout, text: &str) -> bool {
-        if !checkout.valid() {
+        if !self.notes.set(checkout, text) {
             return false;
         }
-        let text = clean(text);
-        let position = self.notes.iter().position(|note| note.checkout == checkout);
-        if position.is_some_and(|index| self.notes[index].text == text) {
-            return false;
-        }
-        if let Some(index) = position {
-            self.notes.remove(index);
-        } else if text.is_empty() {
-            return false;
-        }
-        if !text.is_empty() {
-            self.notes.push(Note { checkout, text });
-            if self.notes.len() > MAX_NOTES {
-                let excess = self.notes.len() - MAX_NOTES;
-                self.notes.drain(..excess);
-            }
-        }
-        self.revision += 1;
         self.save();
         true
     }
@@ -218,11 +119,15 @@ impl Notes {
             return;
         }
         if let Some(writer) = &self.writer {
-            writer.save(Saved {
-                notes: self.notes.clone(),
-            });
+            writer.save(self.notes.saved());
         }
     }
+}
+
+/// The notes `bytes` holds, or the reason a file of them cannot be read.
+fn parse(bytes: &[u8]) -> crate::Result<model::Notes> {
+    let saved: model::Saved = serde_json::from_slice(bytes)?;
+    model::Notes::from_saved(saved.notes).ok_or(crate::Error::InvalidWorktreeNotes)
 }
 
 #[cfg(test)]

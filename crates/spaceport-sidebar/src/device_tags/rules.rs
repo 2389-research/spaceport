@@ -30,7 +30,7 @@ impl ComputerTags {
     }
 }
 
-pub(crate) fn normalized(text: &str) -> Option<String> {
+pub fn normalized(text: &str) -> Option<String> {
     let words = text
         .split_whitespace()
         .filter(|word| !word.chars().any(char::is_control))
@@ -41,6 +41,6 @@ pub(crate) fn normalized(text: &str) -> Option<String> {
     (!tag.is_empty()).then(|| tag.to_owned())
 }
 
-pub(crate) fn same(one: &str, other: &str) -> bool {
+pub fn same(one: &str, other: &str) -> bool {
     one.to_lowercase() == other.to_lowercase()
 }
