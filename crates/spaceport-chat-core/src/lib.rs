@@ -1,8 +1,9 @@
 //! The chat model below the app's views: which existing agent conversations a
 //! window may attach to, the `[chat.env]` table a chat's tab is created with,
-//! how the measured entry list follows a transcript, and the attach side
-//! itself — the transcript a session holds and the worker that reads it. The
-//! transcript's own wire types are [`spaceport_chat_protocol`]'s.
+//! how the measured entry list follows a transcript, the attach side itself —
+//! the transcript a session holds and the worker that reads it — and the
+//! syntax spans of the code a transcript shows. The transcript's own wire
+//! types are [`spaceport_chat_protocol`]'s.
 //!
 //! Everything here is a pure function of its inputs or hands its blocking work
 //! to a worker thread, so it is tested without a window. The app keeps the rest
@@ -13,6 +14,7 @@ mod error;
 
 pub mod env;
 pub mod existing;
+pub mod highlight;
 pub mod link;
 pub mod list;
 pub mod session;

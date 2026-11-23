@@ -1,12 +1,13 @@
 //! Syntax spans for bounded rich-chat code blocks. Tokens stay separate from
 //! theme colours so a theme change can recolour prepared text.
-use crate::config::Theme;
+use spaceport_settings::Theme;
+use spaceport_settings::contrast::ink_on_chrome;
 use std::sync::OnceLock;
 use syntect::parsing::{ParseState, Scope, ScopeStack, ScopeStackOp, SyntaxReference, SyntaxSet};
 
 /// What a stretch of code is, as far as its colour goes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Token {
+pub enum Token {
     Comment,
     String,
     Number,
@@ -18,7 +19,7 @@ pub(crate) enum Token {
 
 /// How a token's colour is made readable where its code is drawn.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Contrast {
+pub enum Contrast {
     /// Every colour moved to read at text contrast on this background.
     On(u32),
 }
@@ -26,7 +27,7 @@ pub(crate) enum Contrast {
 impl Token {
     /// The token's colour in `theme`: the terminal palette's, or the muted
     /// colour for comments, made readable as `contrast` says.
-    pub(crate) fn colour(self, theme: &Theme, contrast: Contrast) -> u32 {
+    pub fn colour(self, theme: &Theme, contrast: Contrast) -> u32 {
         let colour = match self {
             Self::Comment => theme.muted,
             Self::String => theme.palette[2],
@@ -36,16 +37,14 @@ impl Token {
             Self::Function => theme.palette[4],
         };
         match contrast {
-            Contrast::On(background) => {
-                crate::contrast::ink_on_chrome(colour, [background; 3], 4.5)
-            }
+            Contrast::On(background) => ink_on_chrome(colour, [background; 3], 4.5),
         }
     }
 }
 
 /// A coloured stretch of a row's text, in bytes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Span {
+pub struct Span {
     pub start: usize,
     pub end: usize,
     pub token: Token,
@@ -176,7 +175,7 @@ fn grammar(name: &str) -> Option<&'static SyntaxReference> {
 /// The spans of each of the first `limit` lines of `text`, a whole file
 /// named `name`, read top to bottom. Blocking: it runs on the background
 /// executor.
-pub(crate) fn colour_file(name: &str, text: &str, limit: usize) -> Vec<Vec<Span>> {
+pub fn colour_file(name: &str, text: &str, limit: usize) -> Vec<Vec<Span>> {
     let Some(syntax) = grammar(name) else {
         return Vec::new();
     };
