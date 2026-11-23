@@ -126,7 +126,13 @@ impl SpaceportWindow {
         if !self.custom_agent_rows() {
             return Some(Vec::new());
         }
-        tokens::agent_rows(&self.config.sidebar_layout.agents, agent, snapshot, host)
+        tokens::agent_rows(
+            &self.config.sidebar_layout.agents,
+            agent,
+            snapshot,
+            host,
+            status_text,
+        )
     }
 
     /// Space above the agent row painted `count`-th in its list: a

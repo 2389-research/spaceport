@@ -23,6 +23,7 @@ pub mod metrics;
 pub mod order;
 pub mod row;
 pub mod sticky;
+pub mod tokens;
 pub mod wash;
 pub mod workspaces;
 pub mod worktree_notes;

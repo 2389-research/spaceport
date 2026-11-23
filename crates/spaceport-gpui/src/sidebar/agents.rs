@@ -21,7 +21,7 @@ use spaceport_client::protocol::{AgentStatus, ClientShellAgent};
 
 pub(crate) use spaceport_sidebar::agents::{
     Indicators, agent_labels, agent_place, icon_size, pane_name, sorted_agents, state_label,
-    status_key, status_style, tile_size,
+    status_style, tile_size,
 };
 
 pub(super) fn agents_sort(
@@ -113,7 +113,7 @@ pub(super) fn panel_agents<'a>(
         .collect()
 }
 
-pub(crate) use spaceport_client::text::{agent_name, agent_names};
+pub(crate) use spaceport_client::text::agent_name;
 
 /// The edge rail's bar on a row's leading edge, for the statuses worth
 /// noticing. Absolutely placed, so the row must be `relative`.
@@ -301,7 +301,7 @@ fn drawn_mark(icons: StatusIcons, status: AgentStatus, size: f32, color: u32) ->
 
 /// The word the daemon's `state_text` token shows for a status when its
 /// sidebar config asks for it, in the app's language. Rules match
-/// [`status_key`] instead, so they hold in every language.
+/// the daemon's status key instead, so they hold in every language.
 pub(crate) fn status_text(status: AgentStatus) -> String {
     match status {
         AgentStatus::Working => fl!("sidebar-status-working"),

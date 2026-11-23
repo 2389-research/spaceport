@@ -26,7 +26,7 @@ fn invisible_marks_in_daemon_labels_drive_rules_and_withdrawn_tokens_drop_rows()
     let agent = &mut snapshot.agents[0];
     agent.display_agent = Some(format!("alpha{HEAD}"));
     agent.tokens = vec![("group_sub".into(), "review \u{b7} report".into())];
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None, status_text).unwrap();
     assert_eq!(texts(&rows)[1], ["review \u{b7} report"]);
     assert!(bold(&rows[0][1]), "a group head is bold");
     assert_eq!(rows[1][0].style.dim, Some(true));
@@ -36,7 +36,7 @@ fn invisible_marks_in_daemon_labels_drive_rules_and_withdrawn_tokens_drop_rows()
     let agent = &mut snapshot.agents[0];
     agent.display_agent = Some("alpha".into());
     agent.tokens.clear();
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None, status_text).unwrap();
     assert_eq!(rows.len(), 1);
     assert!(!bold(&rows[0][1]));
 }
@@ -56,6 +56,7 @@ fn a_home_mark_in_a_workspace_label_makes_its_row_the_group_head() {
                 tokens: &[],
                 indented: false,
             },
+            status_text,
         )
         .remove(0)
     };

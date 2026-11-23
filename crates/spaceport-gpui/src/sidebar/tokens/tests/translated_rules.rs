@@ -11,7 +11,7 @@ fn state_rules_match_the_english_status_in_every_language() {
     let agents = agent_layout(
         r#"rows = [[{ token = "state_text", rules = [{ equals = "working", hide = true }] }, "workspace"]]"#,
     );
-    let rows = agent_rows(&agents, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(&agents, &snapshot.agents[0], &snapshot, None, status_text).unwrap();
     let spaces = space_layout(
         r##"rows = [[{ token = "state_text", rules = [{ equals = "blocked", fg = "#ff0000" }] }]]"##,
     );
@@ -24,6 +24,7 @@ fn state_rules_match_the_english_status_in_every_language() {
             tokens: &[],
             indented: false,
         },
+        status_text,
     );
     crate::i18n::show(&spaceport_i18n::Locale::FALLBACK);
     assert!(

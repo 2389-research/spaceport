@@ -6,6 +6,7 @@ use crate::{
     direction::Logical,
     sidebar::{
         STATUS_WIDTH,
+        agents::status_text,
         cell::{Cell, Fold, RowContext, RowData, WorkspaceRow},
         line_height,
         reorder::Plan,
@@ -172,6 +173,7 @@ impl SpaceportWindow {
                         tokens: &workspace.tokens,
                         indented,
                     },
+                    status_text,
                 )
             } else {
                 Vec::new()
