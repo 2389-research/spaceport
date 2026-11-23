@@ -75,7 +75,7 @@ fn directional_icons_swap_with_an_embedded_mirror() {
         assert_eq!(icon(icon_path), *mirror);
         assert_eq!(icon(mirror), *icon_path);
         for path in [icon_path, mirror] {
-            let asset = gpui::AssetSource::load(&crate::icons::Icons, path);
+            let asset = gpui::AssetSource::load(&spaceport_icons::Icons, path);
             assert!(matches!(asset, Ok(Some(_))), "{path} has no embedded asset");
         }
     }

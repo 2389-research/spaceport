@@ -54,7 +54,7 @@ fn navigation_lists_every_section_under_its_group(cx: &mut TestAppContext) {
 fn every_section_icon_loads_through_the_registry() {
     use gpui::AssetSource;
     for section in Section::ALL {
-        let loaded = crate::icons::Icons.load(section.icon());
+        let loaded = spaceport_icons::Icons.load(section.icon());
         assert!(
             matches!(loaded, Ok(Some(_))),
             "{section:?} icon {} is not in the registry",

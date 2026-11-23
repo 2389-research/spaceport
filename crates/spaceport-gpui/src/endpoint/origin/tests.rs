@@ -61,7 +61,7 @@ fn every_mark_is_an_embedded_icon() {
     use gpui::AssetSource;
     for origin in [Origin::Local, Origin::Ssh, Origin::Tailscale, Origin::Wsl] {
         assert!(
-            crate::icons::Icons
+            spaceport_icons::Icons
                 .load(origin.icon())
                 .ok()
                 .flatten()
