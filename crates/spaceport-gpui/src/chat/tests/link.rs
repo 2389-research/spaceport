@@ -2,6 +2,7 @@
 // ABOUTME: Verifies frame order, delivery receipts, and connection cleanup.
 use super::*;
 use crate::chat::link::{Link, Polled};
+use spaceport_chat_core::Error;
 use spaceport_chat_protocol::{ByeReason, Command, CommandId};
 
 /// Polls `link` until it has `count` messages or ends, at most [`WAIT`].
@@ -137,7 +138,7 @@ fn a_window_that_falls_behind_is_cut_off() {
     let program = Program::new();
     let link = Link::start(program.path.clone(), None).unwrap();
     let (mut stream, _) = program.accept();
-    for _ in 0..MAX_EVENTS + 8 {
+    for _ in 0..spaceport_chat_core::MAX_EVENTS + 8 {
         if write_frame(&mut stream, &welcome()).is_err() {
             break;
         }
@@ -157,7 +158,7 @@ fn a_window_that_falls_behind_is_cut_off() {
         end.is_some()
     });
     assert!(matches!(end, Some(Error::Overflow)));
-    assert!(messages <= MAX_EVENTS);
+    assert!(messages <= spaceport_chat_core::MAX_EVENTS);
 }
 
 #[test]

@@ -12,6 +12,19 @@ impl Localize for Error {
     fn localize(&self) -> String {
         match self {
             // keep-sorted start
+            Self::Attach(error) => error.localize(),
+            Self::Environment(error) => error.localize(),
+            Self::Pasted(error) => error.localize(),
+            Self::Start(error) => error.localize(),
+            // keep-sorted end
+        }
+    }
+}
+
+impl Localize for spaceport_chat_core::Error {
+    fn localize(&self) -> String {
+        match self {
+            // keep-sorted start
             Self::Apply(_) => fl!("error-chat-apply"),
             Self::Busy => fl!("error-chat-busy"),
             // The chat protocol's own name for the reason.
@@ -19,16 +32,17 @@ impl Localize for Error {
             Self::Closed => fl!("error-chat-closed"),
             Self::Connect(_) => fl!("error-chat-connect"),
             Self::Environment(error) => error.localize(),
+            // The existing-agent probe is shown in its own words: the app
+            // has no message for it and no path attaches to it.
+            Self::Existing(error) => error.to_string(),
             Self::Handshake => fl!("error-chat-handshake"),
             Self::NoEndpointDir => fl!("error-chat-no-endpoint-dir"),
             Self::NotAttached => fl!("error-chat-not-attached"),
             Self::Overflow => fl!("error-chat-overflow"),
-            Self::Pasted(error) => error.localize(),
             Self::Read(_) => fl!("error-chat-read"),
             Self::ReadOnly => fl!("error-chat-read-only"),
             Self::Remote(_) => fl!("error-chat-remote"),
             Self::Spawn(_) => fl!("error-chat-spawn"),
-            Self::Start(error) => error.localize(),
             // Stream positions, as the chat protocol writes them.
             Self::Stream { after, got } => fl!(
                 "error-chat-stream",

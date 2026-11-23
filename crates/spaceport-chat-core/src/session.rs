@@ -1,6 +1,6 @@
 // ABOUTME: Applies fenced chat transcripts and owns pending command delivery.
 // ABOUTME: Distinguishes socket writes from queued work and acknowledgements.
-//! What the window knows of one chat: the transcript as of its cursor, and
+//! What a client knows of one chat: the transcript as of its cursor, and
 //! the commands the program has not acknowledged yet. Pure state, applied
 //! from a link's messages, so ordering and fencing are tested without a
 //! socket.
@@ -43,7 +43,7 @@ enum Attachment {
 
 /// Local delivery uncertainty is distinct from the program refusing a command.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
-pub(crate) enum Refusal {
+pub enum Refusal {
     #[error(
         "The chat command was not acknowledged. It may have run. Check the conversation before trying again."
     )]
@@ -74,7 +74,7 @@ enum Transition {
 }
 
 #[derive(Debug, Default)]
-pub(crate) struct Session {
+pub struct Session {
     /// The agent the program greeted with, until a transcript names one.
     agent: String,
     pending: Vec<Pending>,
@@ -98,14 +98,14 @@ pub(crate) struct Session {
 
 impl Session {
     /// A new connection: it must greet before anything else counts.
-    pub(crate) fn begin(&mut self) {
+    pub fn begin(&mut self) {
         self.attachment = Attachment::Unwelcomed;
         self.transition(Transition::Retry);
     }
 
     /// The connection ended. After a change that did not fit, the next one
     /// asks for a snapshot; the transcript stays on screen meanwhile.
-    pub(crate) fn lost(&mut self, error: &Error) {
+    pub fn lost(&mut self, error: &Error) {
         self.attachment = Attachment::Unwelcomed;
         // `receive` forgot the position already when it returned such an
         // error; this covers one that reaches the session any other way.
@@ -115,27 +115,27 @@ impl Session {
     }
 
     /// Where the next connection resumes.
-    pub(crate) fn since(&self) -> Option<Cursor> {
+    pub fn since(&self) -> Option<Cursor> {
         self.replica.since()
     }
 
     /// Whether a transcript has arrived since the session began.
-    pub(crate) fn synced(&self) -> bool {
+    pub fn synced(&self) -> bool {
         self.snapshots > 0
     }
 
     /// Greeted, with the connection's current transcript epoch validated.
-    pub(crate) fn live(&self) -> bool {
+    pub fn live(&self) -> bool {
         self.attachment == Attachment::Current && self.replica.since().is_some()
     }
 
-    pub(crate) fn transcript(&self) -> &Transcript {
+    pub fn transcript(&self) -> &Transcript {
         self.replica.transcript()
     }
 
     /// A log observer cannot infer live execution state from historical text.
     /// Its daemon supplies status without changing the transcript wire cursor.
-    pub(crate) fn set_observed_status(&mut self, status: spaceport_chat_protocol::Status) -> bool {
+    pub fn set_observed_status(&mut self, status: spaceport_chat_protocol::Status) -> bool {
         let transcript = self.replica.transcript_mut();
         if !transcript.read_only || transcript.status == status {
             return false;
@@ -144,7 +144,7 @@ impl Session {
         true
     }
 
-    pub(crate) fn agent(&self) -> &str {
+    pub fn agent(&self) -> &str {
         let transcript = self.transcript();
         if transcript.agent.is_empty() {
             &self.agent
@@ -153,24 +153,24 @@ impl Session {
         }
     }
 
-    pub(crate) fn rejection(&self) -> Option<Refusal> {
+    pub fn rejection(&self) -> Option<Refusal> {
         self.rejection
     }
 
-    pub(crate) fn snapshots(&self) -> u64 {
+    pub fn snapshots(&self) -> u64 {
         self.snapshots
     }
 
     /// Whether a snapshot changed the last entry since this was last asked.
     /// A snapshot drops the revisions, so only it can tell a reply that grew
     /// while the connection was down from the same reply sent again.
-    pub(crate) fn take_tail_changed(&mut self) -> bool {
+    pub fn take_tail_changed(&mut self) -> bool {
         std::mem::take(&mut self.tail_changed)
     }
 
     /// Each entry with the revision it last changed at. A sub-agent's call
     /// lists its steps, so it changes with the latest of them too.
-    pub(crate) fn keys(&self) -> Vec<(EntryId, u64)> {
+    pub fn keys(&self) -> Vec<(EntryId, u64)> {
         let revision = |id: &EntryId| self.revisions.get(id).copied().unwrap_or(0);
         let mut steps: HashMap<&str, u64> = HashMap::new();
         for entry in &self.transcript().entries {
@@ -201,7 +201,7 @@ impl Session {
     /// program acknowledges one it already ran without running it twice.
     /// One that reached [`SENDS`] complete writes, each followed by a loss
     /// without an answer, is given up and shown as refused.
-    pub(crate) fn resend(&mut self) -> Vec<ClientMessage> {
+    pub fn resend(&mut self) -> Vec<ClientMessage> {
         if self.attachment != Attachment::Current {
             return Vec::new();
         }
@@ -219,7 +219,7 @@ impl Session {
     }
 
     /// Records `command` as waiting and returns the message that sends it.
-    pub(crate) fn submit(&mut self, command: Command) -> Result<ClientMessage> {
+    pub fn submit(&mut self, command: Command) -> Result<ClientMessage> {
         if self.transcript().read_only {
             return Err(Error::ReadOnly);
         }
@@ -243,7 +243,7 @@ impl Session {
     /// Applies one message, returning whether anything shown changed. An
     /// error ends the connection; the session keeps the transcript it had,
     /// and after a change that did not follow or fit, no stream position.
-    pub(crate) fn receive(&mut self, message: ServerMessage) -> Result<bool> {
+    pub fn receive(&mut self, message: ServerMessage) -> Result<bool> {
         match message {
             ServerMessage::Welcome { agent, version, .. } => {
                 if version != VERSION {
@@ -288,7 +288,7 @@ impl Session {
     }
 
     /// Applies writer receipts before a link's final end becomes visible.
-    pub(crate) fn delivered(&mut self, outcome: super::link::WriteOutcome) -> bool {
+    pub fn delivered(&mut self, outcome: super::link::WriteOutcome) -> bool {
         let before = self.rejection;
         self.transition(match outcome {
             super::link::WriteOutcome::Written(id) => Transition::Written(id),
@@ -382,3 +382,7 @@ impl Session {
         }
     }
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests;

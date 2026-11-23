@@ -1,9 +1,58 @@
 // ABOUTME: Checks pure transcript and pending-command session contracts.
 // ABOUTME: Covers acknowledgement, stream fencing, and bounded retries.
 use super::*;
-use crate::chat::session::Session;
-use crate::chat::{Refusal, link::WriteOutcome};
-use spaceport_chat_protocol::{ByeReason, Command, Rejection};
+use crate::link::WriteOutcome;
+use spaceport_chat_protocol::{ByeReason, Change, Command, Entry, EntryKind, Status, Transcript};
+
+mod delivery;
+mod stream;
+
+fn epoch(n: u128) -> uuid::Uuid {
+    uuid::Uuid::from_u128(n)
+}
+
+fn cursor(n: u128, seq: u64) -> Cursor {
+    Cursor {
+        epoch: epoch(n),
+        seq,
+    }
+}
+
+fn welcome() -> ServerMessage {
+    ServerMessage::Welcome {
+        agent: "Claude".into(),
+        pane: Some("p1".into()),
+        version: VERSION,
+    }
+}
+
+fn agent(id: u64, text: &str) -> Entry {
+    Entry {
+        id: EntryId(id),
+        kind: EntryKind::Agent { text: text.into() },
+    }
+}
+
+fn snapshot(at: Cursor, entries: Vec<Entry>) -> ServerMessage {
+    let mut transcript = Transcript::new("Claude");
+    transcript.entries = entries;
+    transcript.status = Status::Idle;
+    ServerMessage::Snapshot {
+        cursor: at,
+        transcript: Box::new(transcript),
+    }
+}
+
+fn change(change: Change, at: Cursor) -> ServerMessage {
+    ServerMessage::Change { change, cursor: at }
+}
+
+fn append(id: u64, text: &str) -> Change {
+    Change::Append {
+        id: EntryId(id),
+        text: text.into(),
+    }
+}
 
 fn live(at: Cursor, entries: Vec<Entry>) -> Session {
     let mut session = Session::default();

@@ -49,7 +49,11 @@ pub(super) fn poll(view: &Entity<SpaceportWindow>, program: &Program, cx: &mut V
     let path = program.path.clone();
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
-            view.poll_chats_with(&mut |_, since| Link::start(path.clone(), since), window, cx);
+            view.poll_chats_with(
+                &mut |_, since| Link::start(path.clone(), since).map_err(Error::from),
+                window,
+                cx,
+            );
         });
         full_draw(window, cx).clear(cx);
     });
@@ -136,7 +140,7 @@ fn an_ssh_daemons_chat_is_dialled_over_ssh_and_keeps_its_terminal_until_it_answe
             view.poll_chats_with(
                 &mut |target, _| {
                     routes.push(target.route.clone());
-                    Err(Error::Closed)
+                    Err(Error::Attach(spaceport_chat_core::Error::Closed))
                 },
                 window,
                 cx,

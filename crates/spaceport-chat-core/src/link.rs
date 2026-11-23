@@ -1,14 +1,14 @@
 // ABOUTME: Runs bounded chat socket workers without blocking the UI thread.
 // ABOUTME: Reports completed or uncertain writes before exposing connection loss.
 //! One connection to a chat program. A reader thread connects, starts a
-//! writer thread, and reads; the window only ever polls and queues, through
-//! bounded channels, so no socket I/O or thread join reaches the UI thread.
+//! writer thread, and reads; the caller only ever polls and queues, through
+//! bounded channels, so no socket I/O or thread join reaches a UI thread.
 //! The endpoint is `spaceport_client::private_endpoint`: a socket on Unix, and on
 //! Windows a pipe checked to be this user's before anything is sent. A chat
 //! on an SSH host is reached through a child process instead, `ssh` running
 //! `herdr-acp connect` there, whose standard streams carry the same frames.
-//! A reader that gets ahead of the window by [`MAX_EVENTS`] messages gives the
-//! connection up rather than buffering more, and the window reconnects from
+//! A reader that gets ahead of the caller by [`MAX_EVENTS`] messages gives the
+//! connection up rather than buffering more, and the caller reconnects from
 //! its cursor.
 
 use super::{Error, MAX_EVENTS, MAX_PENDING, Result};
@@ -42,15 +42,15 @@ const DRAIN_TIMEOUT: Duration = Duration::from_millis(100);
 
 /// What one poll of a link found.
 #[derive(Debug, Default)]
-pub(crate) struct Polled {
-    pub(crate) messages: Vec<ServerMessage>,
-    pub(crate) writes: Vec<WriteOutcome>,
+pub struct Polled {
+    pub messages: Vec<ServerMessage>,
+    pub writes: Vec<WriteOutcome>,
     /// Why the connection ended, once every message before it was taken.
-    pub(crate) end: Option<Error>,
+    pub end: Option<Error>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum WriteOutcome {
+pub enum WriteOutcome {
     Written(CommandId),
     Uncertain(CommandId),
 }
@@ -107,7 +107,7 @@ impl WriterProgress {
 }
 
 /// How a link reaches its program.
-pub(crate) enum Dial {
+pub enum Dial {
     /// The program's private endpoint on this machine.
     Socket(PathBuf),
     /// A child whose stdin and stdout carry the connection, such as `ssh`
@@ -185,7 +185,7 @@ fn open(dial: Dial) -> std::io::Result<Parts> {
     }
 }
 
-pub(crate) struct Link {
+pub struct Link {
     commands: SyncSender<ClientMessage>,
     events: Receiver<ServerMessage>,
     writes: Receiver<WriteOutcome>,
@@ -236,7 +236,7 @@ impl Socket {
 impl Link {
     /// Starts connecting to the program `dial` reaches, resuming after
     /// `since`. Commands are queued only after the session validates its epoch.
-    pub(crate) fn start(dial: impl Into<Dial>, since: Option<Cursor>) -> Result<Self> {
+    pub fn start(dial: impl Into<Dial>, since: Option<Cursor>) -> Result<Self> {
         let dial = dial.into();
         let (commands, queued) = mpsc::sync_channel(MAX_COMMANDS);
         let (sender, events) = mpsc::sync_channel(MAX_EVENTS);
@@ -267,7 +267,7 @@ impl Link {
     }
 
     /// Queues `message` for the writer without waiting.
-    pub(crate) fn send(&self, message: ClientMessage) -> Result<()> {
+    pub fn send(&self, message: ClientMessage) -> Result<()> {
         if self.socket.closed.load(Ordering::SeqCst) {
             return Err(Error::NotAttached);
         }
@@ -279,12 +279,12 @@ impl Link {
             })
     }
 
-    pub(crate) fn stopped(&self) -> bool {
+    pub fn stopped(&self) -> bool {
         self.socket.closed.load(Ordering::SeqCst)
     }
 
     /// Stops both workers. Their outcomes drain before the final error appears.
-    pub(crate) fn stop(&self, error: Error) {
+    pub fn stop(&self, error: Error) {
         self.state.set(State::Draining);
         if let Ok(mut end) = self.end.lock() {
             end.get_or_insert(error);
@@ -294,7 +294,7 @@ impl Link {
 
     /// Takes at most `budget` messages, and the reason the connection ended
     /// once none are left before it.
-    pub(crate) fn poll(&self, budget: usize) -> Polled {
+    pub fn poll(&self, budget: usize) -> Polled {
         let mut polled = Polled::default();
         while polled.messages.len() < budget {
             match self.events.try_recv() {

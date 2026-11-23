@@ -24,7 +24,6 @@ mod files;
 mod glide;
 mod harnesses;
 mod highlight;
-mod link;
 pub(crate) mod page;
 pub(crate) mod pasted;
 mod prepared;
@@ -33,7 +32,6 @@ pub(crate) mod preview;
 mod reader;
 mod rich;
 mod selection;
-mod session;
 mod start;
 mod summary;
 mod terminal;
@@ -44,10 +42,11 @@ pub(crate) mod widgets;
 mod window;
 
 pub(crate) use chats::{ChatInput, Chats, LauncherDeck, Toward};
-pub(crate) use session::Refusal;
-// The model below the views, at the paths the rest of the chat reads it at.
+// The attach side and the model below the views, at the paths the rest of the
+// chat reads them at.
 pub(crate) use spaceport_chat_core::env::{check_env, env_text, parse_env};
-pub(crate) use spaceport_chat_core::{MAX_CHATS, env, existing, list};
+pub(crate) use spaceport_chat_core::session::Refusal;
+pub(crate) use spaceport_chat_core::{MAX_CHATS, env, existing, link, list, session};
 #[cfg(feature = "integration-test")]
 pub(crate) use start::native as native_start;
 pub(crate) use start::{Error as StartError, Program, Receipt};
@@ -63,79 +62,47 @@ pub(super) fn now_ms() -> u64 {
 }
 pub(crate) use core_pane::key as core_pane_key;
 
-use spaceport_chat_protocol::{ByeReason, EndpointId};
-use std::io;
+use spaceport_chat_protocol::EndpointId;
 
-/// Commands waiting for their acknowledgement, per pane.
-const MAX_PENDING: usize = 32;
-/// Messages a worker holds for the window before it gives the connection up
-/// as too far behind; the program then replays from the cursor.
-const MAX_EVENTS: usize = 1024;
 /// Connection failures in a row after which the pane shows its terminal.
 const MAX_FAILURES: u32 = 3;
 
 pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
+/// The failures a chat has: the attach side's own, which the model below the
+/// views reports, and the ones only the app can have.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     // keep-sorted start
-    /// A change that does not fit the transcript this client holds.
-    #[error("a chat change does not fit the transcript")]
-    Apply(#[source] spaceport_chat_protocol::Error),
-    #[error("too many chat commands are waiting for an answer")]
-    Busy,
-    #[error("the chat program left: {0:?}")]
-    Bye(ByeReason),
-    #[error("the chat program closed the connection")]
-    Closed,
-    #[error("could not reach the chat program")]
-    Connect(#[source] io::Error),
+    /// Connecting to the program, and the transcript it carries.
+    #[error(transparent)]
+    Attach(#[from] spaceport_chat_core::Error),
     #[error(transparent)]
     Environment(#[from] env::Error),
-    #[error("the chat program did not greet first")]
-    Handshake,
-
-    #[error("no private directory holds chat sockets")]
-    NoEndpointDir,
-    #[error("the chat view is not attached")]
-    NotAttached,
-    #[error("the chat view fell behind the program")]
-    Overflow,
     #[error(transparent)]
     Pasted(#[from] pasted::Error),
-    #[error("could not read from the chat program")]
-    Read(#[source] spaceport_chat_protocol::Error),
-    #[error("This is a read-only transcript; use the agent's terminal to reply")]
-    ReadOnly,
-    #[error("could not reach the chat program over SSH")]
-    Remote(#[source] spaceport_client::Error),
-    #[error("could not start the chat worker")]
-    Spawn(#[source] io::Error),
     #[error(transparent)]
     Start(#[from] start::Error),
-    #[error("chat change {got:?} does not follow {after:?}")]
-    Stream {
-        after: Option<spaceport_chat_protocol::Cursor>,
-        got: spaceport_chat_protocol::Cursor,
-    },
-    #[error("the chat program speaks protocol version {0}")]
-    Version(u32),
     // keep-sorted end
 }
 
 impl Error {
-    /// Whether trying again cannot help, so the pane keeps its terminal.
+    /// Whether trying again cannot help, so the pane keeps its terminal. Only
+    /// a failure to attach can be permanent; the app's own are retried.
     fn permanent(&self) -> bool {
-        matches!(
-            self,
-            Self::Version(_) | Self::Bye(ByeReason::Version { .. }) | Self::NoEndpointDir
-        )
+        match self {
+            Self::Attach(error) => error.permanent(),
+            Self::Environment(_) | Self::Pasted(_) | Self::Start(_) => false,
+        }
     }
 
     /// Whether the client's copy no longer fits the program's stream, so the
     /// next connection asks for a whole snapshot.
     fn desynced(&self) -> bool {
-        matches!(self, Self::Stream { .. } | Self::Apply(_))
+        match self {
+            Self::Attach(error) => error.desynced(),
+            Self::Environment(_) | Self::Pasted(_) | Self::Start(_) => false,
+        }
     }
 }
 

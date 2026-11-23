@@ -39,18 +39,19 @@ pub(crate) fn connect(
     program: &super::Program,
     since: Option<Cursor>,
 ) -> Result<Link> {
-    Link::start(dial(target, program)?, since)
+    Ok(Link::start(dial(target, program)?, since)?)
 }
 
 /// How [`connect`] reaches `target`, before anything is started.
 pub(super) fn dial(target: &Target, program: &super::Program) -> Result<Dial> {
     let remote = |host: &str, args: &str| {
         let script = super::remote_program_script(args);
-        spaceport_client::script_command(host, &script).map_err(Error::Remote)
+        spaceport_client::script_command(host, &script).map_err(spaceport_chat_core::Error::Remote)
     };
     Ok(match (&target.source, &target.route) {
         (Source::Program(endpoint), Route::Local) => Dial::Socket(
-            spaceport_chat_protocol::endpoint_address(endpoint).ok_or(Error::NoEndpointDir)?,
+            spaceport_chat_protocol::endpoint_address(endpoint)
+                .ok_or(spaceport_chat_core::Error::NoEndpointDir)?,
         ),
         (Source::Program(endpoint), Route::Ssh(host)) => {
             Dial::Process(remote(host, &format!("connect {endpoint}"))?)
@@ -400,7 +401,10 @@ impl ChatPane {
         tracing::debug!(%error, pane = %self.target.pane_id, "Chat connection ended");
         // Ended unless a retry is set below; this drops and closes the link.
         self.phase = Phase::Ended;
-        self.session.lost(error);
+        // Only a failure to attach can have ended the connection's transcript.
+        if let Error::Attach(error) = error {
+            self.session.lost(error);
+        }
         // No window here: `poll_chats_with` gives the keyboard back to the
         // composer when the closed menu's search field held it.
         self.close_menu();
@@ -408,7 +412,9 @@ impl ChatPane {
             || (matches!(self.target.source, Source::Observed(_))
                 && matches!(
                     error,
-                    Error::Bye(spaceport_chat_protocol::ByeReason::Exiting)
+                    Error::Attach(spaceport_chat_core::Error::Bye(
+                        spaceport_chat_protocol::ByeReason::Exiting
+                    ))
                 ))
         {
             return;
@@ -466,7 +472,7 @@ impl ChatPane {
             self.failures = 0;
         }
         if let Some(error) = end.or(polled.end) {
-            self.fail(&error, now);
+            self.fail(&Error::Attach(error), now);
             changed = true;
         }
         self.dispatch();

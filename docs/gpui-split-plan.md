@@ -23,7 +23,7 @@ with no `gpui` types; `spaceport-browser` is the first that has to carry them:
 | `crates/spaceport-state-file` | `crates/sheprd-gpui/src/state_file.rs` | `serde`, `serde_json`, `tempfile`, `thiserror`, `tracing` | 10 |
 | `crates/spaceport-motion` | `crates/sheprd-gpui/src/motion/slow*`, `motion.rs`'s clock | none | 49 (through the `crate::motion` façade) |
 | `crates/spaceport-browser` | `crates/sheprd-gpui/src/browser*` | `gpui`, `serde`, `serde_json`, `spaceport-client`, `spaceport-motion`, `spaceport-panes`, `spaceport-reorder`, `spaceport-state-file`, `spaceport-truncate`, `thiserror`, `tracing`, `url`, `uuid` | 51 (through the `crate::browser` façade) |
-| `crates/spaceport-chat-core` | `crates/spaceport-gpui/src/chat/{env,list,existing}*` | `serde_json`, `spaceport-chat-protocol`, `spaceport-client`, `spaceport-remote`, `thiserror`, `uuid` | 3 (`chat.rs`'s façade, `chat/discovery.rs`, `chat/start.rs`) |
+| `crates/spaceport-chat-core` | `crates/spaceport-gpui/src/chat/{env,list,existing,session,link}*` | `serde_json`, `spaceport-chat-protocol`, `spaceport-client`, `spaceport-remote`, `thiserror`, `uuid` | 13 (`chat.rs`'s façade, `chat/chats.rs`, `chat/discovery.rs`, `chat/start.rs`, `i18n/errors/chat.rs` and 8 tests) |
 
 The browser's own record is
 [`notes-browser-extraction.md`](notes-browser-extraction.md): what moved, what
@@ -160,15 +160,45 @@ before. The only other edits in the app are where a definition moved and its
 old path is now a re-export (`chat/discovery.rs` for `endpoint`,
 `chat/start.rs` for `PROGRAM_ENV`) and the two dropped `mod` lines in
 `chat/tests.rs`. No call site changed, which is the `#143` discipline this
-crate is meant to prove, and the app's chat error, session and link are
-untouched.
+crate is meant to prove, and the app's chat error, session and link were left
+for stage 2.
 
-`session.rs` (384 lines) and `link.rs` (475) are the same kind of `gpui`-free
-code and were deliberately left behind for stage 2: both take `super::{Error,
-MAX_PENDING, MAX_EVENTS, Result}`, and that `Error` is the app's, carrying
-`Environment(env::Error)`, `Pasted(pasted::Error)` and `Start(start::Error)`
-beside the attach-side variants. Moving the type is a rewrite of the app's chat
-error vocabulary, not a move; see "Next extractions" for its exact shape.
+Stage 2 added the attach model: `chat/session.rs`, `chat/link.rs` and their
+tests, after splitting the one type that held them back.
+
+| Before | After |
+| --- | --- |
+| the app's `chat::Error`, 18 variants: 15 attach-side (`Apply`, `Busy`, `Bye`, `Closed`, `Connect`, `Handshake`, `NoEndpointDir`, `NotAttached`, `Overflow`, `Read`, `ReadOnly`, `Remote`, `Spawn`, `Stream`, `Version`) beside `Environment`, `Pasted` and `Start` | `src/error.rs` holds those 15 with `permanent()` and `desynced()`, next to the `Environment` and `Existing` it already had; the app's `chat::Error` keeps its three wrappers and gains one transparent `Attach(#[from] spaceport_chat_core::Error)` |
+| `i18n/errors/chat.rs`, 18 arms matching the app's chat error, plus `env::Error`'s 2 | 4 arms on the app's error, each delegating, and `impl Localize for spaceport_chat_core::Error` with 17 arms — the same messages, at the same `.ftl` ids; the crate's `Existing` variant, which no attach path raises, keeps its own words |
+| `chat/session.rs`, 384 lines: `Session`, `Refusal`, the pending-command state machine | `src/session.rs` |
+| `chat/link.rs`, 475 lines: `Link`, `Dial`, `Polled`, `WriteOutcome`, the reader and writer threads | `src/link.rs` |
+| `chat/tests/session.rs`, `session_stream.rs`, `delivery.rs`, 30 tests | `src/session/tests.rs` (fixtures and the session tests) with `src/session/tests/stream.rs` and `src/session/tests/delivery.rs`, moved as they were |
+| `chat/link/tests.rs`, 8 tests | `src/link/tests.rs`, moved as it was |
+| `chat.rs`'s `MAX_PENDING`, `MAX_EVENTS` | `spaceport_chat_core::{MAX_PENDING, MAX_EVENTS}`: both bound the attach side, so they moved with it |
+
+`crates/spaceport-gpui/src/chat.rs` again keeps every path the app uses, with
+`pub(crate) use spaceport_chat_core::{MAX_CHATS, env, existing, link, list,
+session}` and `pub(crate) use spaceport_chat_core::session::Refusal`, so
+`crate::chat::link::Link`, `crate::chat::session::Session` and
+`crate::chat::Refusal` resolve as before. `chat/tests/link.rs` stays in the
+app: it drives a `Link` through the shared private-endpoint fixture (`Program`,
+`Peer`) that the window's own chat tests use, and it names
+`spaceport_chat_core::MAX_EVENTS` for the bound it checks. `MAX_FAILURES` and
+every retry decision stay in `chat/chats.rs`.
+
+The error split is why this stage is two commits. Splitting the error alone
+touched 19 files and moved none of them: 4 sites in `chat/chats.rs`, 6 in
+`chat/tests/chats/phase.rs`, one each in
+`chat/tests/{uploads,source,overlay,feature}.rs`, the 4 test connectors that
+now map `Link::start`'s error into the app's, and the two i18n files — 18 arms
+on the app's error became 4 that delegate, and the core error's 17 arms carry
+the messages. The second commit then moved `session.rs` and `link.rs` with no
+behaviour change, which is what makes the diff reviewable.
+
+`crates/spaceport-chat-core` now holds 1,662 production and 1,514 test lines;
+`crates/spaceport-gpui/src/chat` is down to 190 files. The app's chat tests
+lost 30 session tests and 8 link tests, the core crate gained all 38 and none
+was dropped: 357 chat-module tests before, 357 after.
 
 ## The pattern
 
@@ -218,7 +248,7 @@ homes. Counted today, production lines first:
 | Feature | production / test lines | `gpui::`/entity uses | i18n messages | files importing it | what blocks it |
 | --- | --- | --- | --- | --- | --- |
 | `browser` | moved: `crates/spaceport-browser` holds 3,398 production and 1,904 test lines | — | 10 | 51 | done; 1,395 production lines stay in the app as the window's own (wrappers, element building, `group_shown`, the close driver) — see [`notes-browser-extraction.md`](notes-browser-extraction.md) |
-| `chat` | 20,440 / 16,011, of which `crates/spaceport-chat-core` holds 680 production and 553 test lines | 128 | 174 | 12 | GPUI views all the way down; stage 1 landed the model-only core (`spaceport-chat-core`), stages 2-4 below; needs `browser` below it for the URL and page parts, then the proposed live-state crate described in the settings design |
+| `chat` | 20,706 / 16,719, of which `crates/spaceport-chat-core` holds 1,662 production and 1,514 test lines | 128 | 174 | 12 | GPUI views all the way down; stages 1-2 landed the core (`spaceport-chat-core`: the model and the attach side), stages 3-4 below; needs `browser` below it for the URL and page parts, then the proposed live-state crate described in the settings design |
 | `sidebar` | 11,195 / 14,506 | 162 | 75 | 263 | the most-imported module in the crate; settings now below it, still needs `menu`, `keymap`, `endpoint`, `icons`, `worktree_notes`, `device_tags` |
 
 Order that falls out of the counts: `browser` before `sidebar` (53 against 263
@@ -234,27 +264,12 @@ Counted on the commit that landed stage 1: of the 203 files under
 only three modules were free of the app itself (stage 1, above). The other 89
 are `gpui`-free but reach the app, and split into the stages below.
 
-- **Stage 2, the rest of the attach model: `session.rs` and `link.rs`.** Both
-  are `gpui`-free and already tested without a window (`tests/session.rs`,
-  `tests/session_stream.rs`, `tests/delivery.rs`, `link/tests.rs`); 859
-  production and 921 test lines in all. Their blocker is one type: they take
-  `super::{Error, MAX_PENDING, MAX_EVENTS, Result}` and `Error` is the app's
-  chat error, which also carries `Environment(env::Error)`,
-  `Pasted(pasted::Error)` and `Start(start::Error)`. The precondition, and the
-  reason they are not in stage 1:
-  - Move `MAX_PENDING`, `MAX_EVENTS` and the attach-side `Error` variants —
-    `Apply`, `Busy`, `Bye`, `Closed`, `Connect`, `Handshake`, `NoEndpointDir`,
-    `NotAttached`, `Overflow`, `Read`, `ReadOnly`, `Remote`, `Spawn`, `Stream`,
-    `Version`, with `permanent()` and `desynced()` — into the core crate.
-  - The app's `chat::Error` then keeps only its wrappers (`Environment`,
-    `Pasted`, `Start`) and gains one transparent `Attach(#[from]
-    spaceport_chat_core::Error)`, per the "wrap another crate's error" rule.
-  - That rewrites the app's chat error vocabulary, not just its paths: 3 sites
-    in `chat/chats.rs`, 6 in `chat/tests/chats/phase.rs`, one each in
-    `chat/tests/{uploads,source,overlay,feature}.rs`, the 17 match arms of
-    `i18n/errors/chat.rs`, and the 16 construction sites in its
-    `i18n/errors/tests/chat.rs` — about 46 edits. Do it as its own commit, with
-    the message table as the proof that no variant was dropped.
+- **Stage 2, the rest of the attach model: `session.rs` and `link.rs`.** Done,
+  in two commits: the error split, then the move. What the split cost is
+  counted under `spaceport-chat-core` above; the move took 859 production and
+  921 test lines out of the app without changing a line of behaviour. One test
+  file stayed: `chat/tests/link.rs` drives the moved `Link` through the app's
+  shared private-endpoint fixture.
 - **Stage 3, parsing and measurement: `prepared.rs`, `rich/`, `selection/`,
   `text.rs`, `summary.rs`, `highlight.rs`.** `gpui`-free today but read the
   app's words and neighbours: `crate::i18n::fl` (messages are the app's, per
@@ -270,8 +285,9 @@ are `gpui`-free but reach the app, and split into the stages below.
   These need `SpaceportWindow`, `Entity`, `ListState` or `LiveState` and stay
   until the live-state crate described in the settings design exists.
 
-Do not start stage 3 before stage 2's error split: stage 3's messages are what
-the attach error is displayed through.
+Stage 3's messages are what the attach error is displayed through, so its
+`crate::i18n::fl` calls have to move the same way stage 2's arms did: the crate
+returns the values, the app writes the words (`docs/i18n.md`).
 
 ## What this does not do
 

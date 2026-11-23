@@ -88,7 +88,7 @@ fn a_prompt_the_window_could_not_send_stays_out_of_history(cx: &mut TestAppConte
     // A full queue refuses the next command, as a stalled link's does.
     view.update(cx, |view, _| {
         let pane = view.chats.pane_mut("w1:p1").unwrap();
-        for _ in 0..MAX_PENDING {
+        for _ in 0..spaceport_chat_core::MAX_PENDING {
             pane.session.submit(Command::Cancel).unwrap();
         }
     });

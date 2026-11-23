@@ -1,18 +1,21 @@
 //! The chat model below the app's views: which existing agent conversations a
 //! window may attach to, the `[chat.env]` table a chat's tab is created with,
-//! and how the measured entry list follows a transcript. The transcript's own
-//! wire types are [`spaceport_chat_protocol`]'s.
+//! how the measured entry list follows a transcript, and the attach side
+//! itself — the transcript a session holds and the worker that reads it. The
+//! transcript's own wire types are [`spaceport_chat_protocol`]'s.
 //!
 //! Everything here is a pure function of its inputs or hands its blocking work
 //! to a worker thread, so it is tested without a window. The app keeps the rest
-//! of its chat: the views, the messages they write, the connection worker and
-//! the session state it applies to, and every piece of window state those read.
+//! of its chat: the views, the messages they write, and every piece of window
+//! state those read.
 
 mod error;
 
 pub mod env;
 pub mod existing;
+pub mod link;
 pub mod list;
+pub mod session;
 
 pub use error::{Error, Result};
 
@@ -20,6 +23,12 @@ use spaceport_chat_protocol::{EndpointId, TOKEN};
 
 /// Chat panes attached at once; more are left to their terminal views.
 pub const MAX_CHATS: usize = 16;
+
+/// Commands waiting for their acknowledgement, per pane.
+pub const MAX_PENDING: usize = 32;
+/// Messages a worker holds for the window before it gives the connection up
+/// as too far behind; the program then replays from the cursor.
+pub const MAX_EVENTS: usize = 1024;
 
 /// The program a pane's metadata names, when its token holds a valid id.
 pub fn endpoint(tokens: &[(String, String)]) -> Option<EndpointId> {
