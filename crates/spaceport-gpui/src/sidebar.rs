@@ -44,7 +44,7 @@ pub(crate) use {
     agents::{Indicators, agent_name, pane_name, state_label, status_indicator, status_text},
     device_drag::DeviceDrag,
     hover::{HoverMenu, HoverRest},
-    metrics::{ARROW_RESERVE, HOST_ARROW_WIDTH, HOST_GAP, ICON_RESERVE, LABEL_GAP, STATUS_WIDTH},
+    metrics::{ARROW_RESERVE, HOST_ARROW_WIDTH, ICON_RESERVE, STATUS_WIDTH},
     rail::SidebarMode,
     render::NestedReveal,
     reorder::WorkspaceDrag,
@@ -59,6 +59,10 @@ pub(crate) use spaceport_sidebar::order::step as sidebar_step;
 
 #[cfg(any(test, feature = "integration-test"))]
 pub(crate) use metrics::LABEL_WIDTH;
+
+// The native smoke checks measure host headers and label columns by these.
+#[cfg(feature = "integration-test")]
+pub(crate) use metrics::{HOST_GAP, LABEL_GAP};
 
 pub(crate) use view::element as view_element;
 

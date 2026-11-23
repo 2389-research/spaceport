@@ -69,7 +69,7 @@ impl SpaceportWindow {
     ) -> SidebarMeasure<'_> {
         let width = sidebar_width(self.sidebar_width, f32::from(window.viewport_size().width));
         let split = self.sidebar_split.unwrap_or(0.5).clamp(0.1, 0.9);
-        let heading_look = layout::for_config(&self.config, self.fill());
+        let heading_look = layout::for_config(&self.config, self.fill().mark());
         let font = &self.config.sidebar;
         let theme = &self.theme;
         let menu_target = self.workspace_menu_target();

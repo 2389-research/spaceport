@@ -29,7 +29,6 @@ const STATUSES: [AgentStatus; 5] = [
 mod agent_activity;
 mod agent_order;
 mod hierarchy;
-mod host_mark;
 mod listing;
 mod mark_sizes;
 mod pane_names;

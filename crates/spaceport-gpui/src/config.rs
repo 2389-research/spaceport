@@ -24,13 +24,16 @@ pub(crate) mod watch;
 // unused in a plain build.
 pub use spaceport_settings::{
     AgentLayout, AgentToken, AgentsPlacement, Axis, Backdrop, BellConfig, ChatLauncher,
-    ChatLayoutMode, ClipboardToast, ClipboardToastPosition, Config, Density, DeviceFooter, Error,
+    ChatLayoutMode, ClipboardToast, ClipboardToastPosition, Config, DeviceFooter, Error,
     FONT_SIZE_RANGE, FONT_SIZE_STEP, Feature, FontConfig, FontFace, KeybindingSource, LayoutMode,
     MAX_PADDING, Material, NotificationConfig, NotificationDelivery, OptionAsAlt, OptionKeys,
     Padding, Rows, SelectMode, Side, SidebarOverrides, SidebarStyle, SkillInstall, SoundConfig,
-    SpaceLayout, SpaceToken, StatusIcons, Style, TabLayoutMode, ThemeName, ThemeParseError,
-    TokenStyle, Weight, ZenWidth,
+    SpaceLayout, SpaceToken, StatusIcons, TabLayoutMode, ThemeName, ThemeParseError, TokenStyle,
+    Weight, ZenWidth,
 };
+// A density or style only the layout tests name.
+#[cfg(any(test, feature = "integration-test"))]
+pub use spaceport_settings::{Density, Style};
 pub use spaceport_settings::{
     FOLLOW_HERDR, Layer, SshConfig, Theme, Worktrees, backdrop, chat, corners, favorite_themes,
     font_weight, home, mix, parse_hex, parse_value, preferences, status_bar, tab_layout,

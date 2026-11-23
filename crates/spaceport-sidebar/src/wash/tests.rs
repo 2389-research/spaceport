@@ -1,9 +1,8 @@
 //! Which wash and dimming a host's rows get for each selection mode.
-use super::super::wash::{HostMark, REST_ALPHA, SELECTED_ALPHA, Wash};
-use crate::{
-    config::{SelectMode, SidebarStyle, Theme},
-    contrast::Contrast,
-};
+#![allow(clippy::unwrap_used)]
+
+use super::{HostMark, REST_ALPHA, SELECTED_ALPHA, Wash};
+use spaceport_settings::{SelectMode, SidebarStyle, Theme, contrast::Contrast};
 use std::collections::BTreeMap;
 
 fn style(select: SelectMode) -> SidebarStyle {
