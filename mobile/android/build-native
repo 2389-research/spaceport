@@ -1,0 +1,44 @@
+#!/bin/bash
+# ABOUTME: Cross-compiles the shared controller with the Android NDK for each packaged ABI.
+# ABOUTME: Generates Kotlin from the same native library Gradle embeds in the APK.
+set -euo pipefail
+if [[ $# != 2 ]]; then
+    echo "usage: $0 ANDROID_NDK_DIRECTORY MIN_SDK" >&2
+    exit 2
+fi
+ndk=$1
+api=$2
+toolchains=("$ndk"/toolchains/llvm/prebuilt/*/bin)
+bin=${toolchains[0]}
+if [[ ! -x "$bin/llvm-ar" ]]; then
+    echo "Install Android NDK ${ndk##*/} under ${ndk%/ndk/*} with the SDK Manager." >&2
+    exit 1
+fi
+
+cd "$(dirname "$0")/../rust"
+mobile=$(cd .. && pwd)
+out="$mobile/.build/android"
+export CARGO_TARGET_DIR="$PWD/target"
+version=$(awk '/^name = "uniffi"$/ {getline; gsub(/"/, "", $3); print $3; exit}' Cargo.lock)
+generator="$mobile/.build/tools/bin/uniffi-bindgen"
+if [[ ! -x "$generator" || "$("$generator" --version)" != "uniffi-bindgen $version" ]]; then
+    cargo install --locked uniffi --version "$version" --features cli --bin uniffi-bindgen --root "$mobile/.build/tools"
+fi
+rustup target add aarch64-linux-android x86_64-linux-android
+
+build_library() {
+    local triple=$1 abi=$2
+    local target=${triple//-/_}
+    local upper
+    upper=$(echo "$target" | tr '[:lower:]' '[:upper:]')
+    local clang="$bin/$triple$api-clang"
+    env "CC_$target=$clang" "AR_$target=$bin/llvm-ar" "CARGO_TARGET_${upper}_LINKER=$clang" \
+        cargo rustc --locked --release --lib --crate-type cdylib --target "$triple"
+    mkdir -p "$out/jniLibs/$abi"
+    cp "$CARGO_TARGET_DIR/$triple/release/libspaceport_mobile.so" "$out/jniLibs/$abi/"
+}
+build_library aarch64-linux-android arm64-v8a
+build_library x86_64-linux-android x86_64
+mkdir -p "$out/kotlin"
+"$generator" generate --language kotlin --no-format --metadata-no-deps \
+    --out-dir "$out/kotlin" "$out/jniLibs/arm64-v8a/libspaceport_mobile.so"

@@ -41,11 +41,10 @@ The app can show a lower bound once it has observed an hour of the same idle spe
 Click **priority** in the Agents header to return to workspace order.
 A host's custom Herdr agent view keeps its chosen order.
 
-## iPhone and iPad
-
+## iPhone, iPad, and Android
 
 [Spaceport Mobile](mobile/README.md) connects directly over SSH to an installed Herdr TUI runtime.
-It has its own Xcode build and uses the desktop Rust client's terminal protocol.
+The Swift and Kotlin apps share the Rust client and build separately from the desktop app.
 
 ## Work on the fork
 

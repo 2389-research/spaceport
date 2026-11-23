@@ -1,10 +1,60 @@
 # Spaceport Mobile
 
-Open a saved SSH host and named Herdr TUI session from an iPhone or iPad.
+Open a saved SSH host and named Herdr TUI session from Android, iPhone, or iPad.
 The host needs an ordinary SSH account with a POSIX shell and a compatible installed Herdr 1.
 Tailscale is optional. The desktop app can be closed.
 
-## Build and run
+## Build and run on Android
+
+Use macOS or Linux with Bash, JDK 17, and Rustup. Use the Rust toolchain pinned in this repository.
+Install Android SDK Platform 36, Build Tools 35.0.0, Platform Tools, and NDK 28.2.13676358 with Android Studio’s SDK Manager.
+Set `ANDROID_HOME` if your SDK lives outside the default location.
+
+Run these commands from the repository root to install a debug build on a connected device.
+
+```sh
+./mobile/build-android
+adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+The Kotlin app supports Android 8.0 and newer on ARM64 and x86-64.
+Gradle builds the shared Rust controller for both ABIs and generates matching Kotlin bindings with UniFFI.
+The debug application ID is `ai.research2389.spaceport.mobile.debug`.
+The APK uses Android debug signing. `./mobile/build-android --release` builds an unsigned release APK.
+
+1. Open **Add host**. Enter the SSH hostname, port, username, and Herdr session. Tap **Connect**.
+2. Compare the displayed SSH fingerprint with the host administrator’s copy before trusting it.
+3. For password sign-in, enter the account password. Open **Session → Phone key → Install key** to enroll the device.
+   Spaceport installs the public key through the password session and verifies a fresh key-only SSH login.
+4. For an account that requires a key, open **Phone key → Copy public key** at the password prompt.
+   Authorize that public key for the SSH account, then tap **Use phone key**. The P-256 private key stays in Android Keystore.
+   Key login requires Android 9 or later and secure hardware. The phone must be unlocked to sign.
+   Android 8 and devices without a hardware-backed key support password sign-in.
+5. Tap **Go To** to select an agent or workspace. Android draws Herdr’s terminal cells on a native Canvas.
+   The iOS Ghostty experiment uses a separate renderer.
+
+On Android 12–14, set a PIN, password, or pattern before creating a phone key.
+Removing the screen lock can delete that key. If it does, install the replacement key on the host.
+Some biometric unlocks on these versions require a subsequent PIN, password, or pattern unlock before signing.
+Android 15 fixes these screen-lock issues. [Android Keystore documentation](https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec.Builder#setUnlockedDeviceRequired(boolean))
+
+For Gradle commands outside Android Studio, set `ANDROID_HOME` to the installed SDK or set `sdk.dir` in `mobile/android/local.properties`.
+Run unit tests with the first command. Connect a device or emulator for the second.
+
+```sh
+./mobile/android/gradlew -p mobile/android :app:testDebugUnitTest
+./mobile/android/gradlew -p mobile/android :app:connectedDebugAndroidTest
+```
+
+The device suite checks the actual Rust library packaged in the APK.
+To run [LiveSessionTest](android/app/src/androidTest/java/ai/spaceport/mobile/LiveSessionTest.kt), supply a fresh disposable SSH endpoint.
+Pass `herdrHost`, `herdrPort`, `herdrUser`, `herdrPassword`, `herdrFingerprint`, and `herdrSession` as Android instrumentation arguments.
+For the [terminal UI test](android/app/src/androidTest/java/ai/spaceport/mobile/LiveTerminalTest.kt), seed a separate session with `mobile/test-support/seed-agent-order`.
+Pass its name as `herdrTerminalSession`. The test replies to the disposable Reviewer pane.
+The [Home UI test](android/app/src/androidTest/java/ai/spaceport/mobile/LiveHomeTest.kt) accepts a separately seeded session through `herdrHomeSession`.
+These tests skip themselves when their fixture is absent.
+
+## Build and run on iOS
 
 Use an Apple silicon Mac with Xcode, Rustup, the repository's pinned Rust toolchain, and XcodeGen.
 Run these commands from the repository root.
@@ -38,7 +88,7 @@ Revisit the values if the app's cryptography or distribution changes.
 For an existing upload, use **Manage** on the build in TestFlight.
 [Apple's export compliance instructions](https://developer.apple.com/help/app-store-connect/manage-app-information/determine-and-upload-app-encryption-documentation)
 
-## First connection
+## First connection on iOS
 
 1. Open **Add Host** and enter `user@host[:port]`. Choose Password or Phone Key and name the first Herdr session.
 2. Tap **Connect**. Compare the complete SHA-256 fingerprint with the host administrator’s copy before granting trust.

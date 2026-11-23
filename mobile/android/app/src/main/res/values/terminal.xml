@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ABOUTME: Names terminal controls and progress messages for Compose and Find. -->
+<!-- ABOUTME: Keeps remote pane names and history counts in localizable format strings. -->
+<resources>
+    <string name="terminal_use_selected">Use selected pane</string>
+    <string name="terminal_compose_return">Press Return after pasting</string>
+    <string name="terminal_compose_to">To %1$s</string>
+    <string name="terminal_copy_image">Copy an image, then tap Paste screenshot.</string>
+    <string name="terminal_reading_image">Reading screenshot…</string>
+    <string name="terminal_image_attached">Screenshot attached</string>
+    <string name="terminal_sending_image">Sending screenshot…</string>
+    <string name="terminal_changed_destination">The pane changed. Review the destination before sending.</string>
+    <string name="terminal_searching">Searching…</string>
+    <string name="terminal_no_matches">No matches</string>
+    <string name="terminal_history_count">Match %1$s of %2$s</string>
+</resources>
