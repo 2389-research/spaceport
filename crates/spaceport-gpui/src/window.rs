@@ -34,6 +34,8 @@ pub(crate) use lifecycle::reasserts;
 mod links;
 mod monitors;
 pub(crate) use links::PressedLink;
+#[cfg(test)]
+pub(crate) use links::PressedTarget;
 mod mouse;
 mod navigate;
 mod pending_input;

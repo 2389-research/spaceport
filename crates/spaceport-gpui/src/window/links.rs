@@ -83,16 +83,27 @@ enum PollResult {
     Answered(crate::Result<serde_json::Value>),
 }
 
+/// What a press with the link modifier held is on, with whatever was already
+/// verified about it. A press is one of these or no link at all, and only a
+/// click on one acts: the daemon is never asked to.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum PressedTarget {
+    /// A web address the row-local detector validated, which the click opens
+    /// in the browser.
+    Web(WebUrl),
+    /// A local file, which the click opens in the system's application once
+    /// the check off the UI thread finds it.
+    File(FileLink),
+    /// An explicit hyperlink this client never opens: an address with another
+    /// scheme, a file on another host, or a destination it cannot read. A
+    /// click only explains it.
+    Unopened(RowTarget),
+}
+
 /// A press that may become a click on a link.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct PressedLink {
-    /// The address the row-local detector reads there, if any.
-    pub(crate) url: Option<String>,
-    /// A file path, where no web link is.
-    pub(crate) file: Option<FileLink>,
-    /// What else the row reads there: an address with another scheme, or an
-    /// explicit hyperlink that a click only explains.
-    pub(crate) other: Option<RowTarget>,
+    pub(crate) target: PressedTarget,
     pub(crate) position: Point<Pixels>,
 }
 
@@ -103,7 +114,29 @@ impl PressedLink {
     /// under the pointer keeps the click wherever the content revision moved.
     /// Text replaced with another target, or with none, is a different click.
     fn same_link(&self, release: &Self) -> bool {
-        self.url == release.url && self.file == release.file && self.other == release.other
+        self.target == release.target
+    }
+}
+
+impl PressedTarget {
+    /// What a click on the link opens, or which refusal it explains.
+    fn click(self) -> Option<ClickTarget> {
+        match self {
+            Self::Web(url) => Some(ClickTarget::Web(url)),
+            Self::File(link) => Some(ClickTarget::File(link)),
+            Self::Unopened(RowTarget::External(url)) => Some(ClickTarget::External(url)),
+            Self::Unopened(RowTarget::OtherHost(host)) => {
+                Some(ClickTarget::Unopened(crate::Error::LinkOnAnotherHost {
+                    host,
+                }))
+            }
+            Self::Unopened(RowTarget::Malformed) => {
+                Some(ClickTarget::Unopened(crate::Error::MalformedLink))
+            }
+            // A press files a web address and a path under their own
+            // variants, so no click reads one here.
+            Self::Unopened(RowTarget::Web(_) | RowTarget::Path { .. }) => None,
+        }
     }
 }
 
@@ -210,10 +243,13 @@ impl SpaceportWindow {
     /// Whether a press is on a link known to be one: anything but a printed
     /// path whose check has not found it yet, which may name nothing.
     pub(crate) fn verified_press(&self, press: &PressedLink) -> bool {
-        press.file.as_ref().is_none_or(|file| {
-            file.explicit
-                || matches!(&self.links.checked, Some((checked, Some(true))) if checked == file)
-        })
+        match &press.target {
+            PressedTarget::File(file) => {
+                file.explicit
+                    || matches!(&self.links.checked, Some((checked, Some(true))) if checked == file)
+            }
+            PressedTarget::Web(_) | PressedTarget::Unopened(_) => true,
+        }
     }
 
     /// Follows the pointer and the link modifier. Without the modifier
@@ -370,26 +406,25 @@ impl SpaceportWindow {
         if !crate::keymap::secondary(&modifiers) {
             return None;
         }
-        let url = self.terminal_link_at(position);
-        let local = url
-            .is_none()
-            .then(|| self.local_link_at(position))
-            .flatten();
-        let other = local
-            .as_ref()
-            .map(|link| &link.link.target)
-            .filter(|target| !matches!(target, RowTarget::Path { .. } | RowTarget::Web(_)))
-            .cloned();
-        let file = local.and_then(|link| self.clickable_file(link));
-        if url.is_none() && file.is_none() && other.is_none() {
-            return None;
-        }
         Some(PressedLink {
-            url,
-            file,
-            other,
+            target: self.press_target(position)?,
             position,
         })
+    }
+
+    /// What a press at `position` is on, by either reading: the address the
+    /// row-local detector validated there, or else the link it reads.
+    fn press_target(&self, position: Point<Pixels>) -> Option<PressedTarget> {
+        if let Some(url) = self.terminal_link_at(position) {
+            return WebUrl::try_from(url.as_str()).ok().map(PressedTarget::Web);
+        }
+        let link = self.local_link_at(position)?;
+        match link.link.target {
+            // A web address is the one `terminal_link_at` reads above.
+            RowTarget::Web(_) => None,
+            RowTarget::Path { .. } => self.clickable_file(link).map(PressedTarget::File),
+            other => Some(PressedTarget::Unopened(other)),
+        }
     }
 
     /// Opens the link a click released on, if it is the one it pressed.
@@ -407,24 +442,7 @@ impl SpaceportWindow {
         if !pressed.same_link(&release) {
             return false;
         }
-        let target = match (release.file, release.other) {
-            (Some(link), _) => Some(ClickTarget::File(link)),
-            (None, Some(RowTarget::External(url))) => Some(ClickTarget::External(url)),
-            (None, Some(RowTarget::OtherHost(host))) => {
-                Some(ClickTarget::Unopened(crate::Error::LinkOnAnotherHost {
-                    host,
-                }))
-            }
-            (None, Some(RowTarget::Malformed)) => {
-                Some(ClickTarget::Unopened(crate::Error::MalformedLink))
-            }
-            (None, _) => release
-                .url
-                .as_deref()
-                .and_then(|url| WebUrl::try_from(url).ok())
-                .map(ClickTarget::Web),
-        };
-        self.open_link(target, window, cx);
+        self.open_link(release.target.click(), window, cx);
         true
     }
 
