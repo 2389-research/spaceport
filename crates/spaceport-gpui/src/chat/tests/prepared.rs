@@ -1,4 +1,5 @@
 use super::*;
+use crate::chat::labels::Labels;
 use crate::chat::prepared::{Body, DiffSummary, Part, Prepared, diff_counts, summarize};
 use spaceport_chat_protocol::{Tool, ToolContent, ToolKind, ToolStatus};
 
@@ -88,7 +89,7 @@ fn bodies_are_prepared_once_per_revision() {
     ];
     let keys = vec![(EntryId(1), 1), (EntryId(2), 1), (EntryId(3), 1)];
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, &Labels::now());
     let first = prepared.body(EntryId(1)).unwrap();
     assert!(matches!(&*first, Body::Message(parts)
         if matches!(&parts[..], [Part::Rich(blocks)]
@@ -102,13 +103,13 @@ fn bodies_are_prepared_once_per_revision() {
         &*prepared.body(EntryId(3)).unwrap(),
         Body::Message(_)
     ));
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, &Labels::now());
     assert!(std::rc::Rc::ptr_eq(
         &first,
         &prepared.body(EntryId(1)).unwrap()
     ));
     transcript.entries.remove(0);
-    prepared.update(&transcript, &keys[1..]);
+    prepared.update(&transcript, &keys[1..], &Labels::now());
     assert!(prepared.body(EntryId(1)).is_none());
 }
 
@@ -121,7 +122,7 @@ fn an_answer_too_long_to_show_ends_with_a_note() {
     let mut transcript = Transcript::new("Claude");
     transcript.entries = vec![agent(1, &text)];
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &[(EntryId(1), 1)]);
+    prepared.update(&transcript, &[(EntryId(1), 1)], &Labels::now());
     let Body::Message(parts) = &*prepared.body(EntryId(1)).unwrap() else {
         panic!("not a message");
     };
@@ -140,7 +141,7 @@ fn an_answer_too_long_to_show_ends_with_a_note() {
     assert!(lines.last().unwrap().text.contains("Copy takes all of it"));
     // A short answer has no note.
     transcript.entries = vec![agent(2, "short")];
-    prepared.update(&transcript, &[(EntryId(2), 1)]);
+    prepared.update(&transcript, &[(EntryId(2), 1)], &Labels::now());
     let Body::Message(parts) = &*prepared.body(EntryId(2)).unwrap() else {
         panic!("not a message");
     };

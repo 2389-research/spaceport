@@ -1,4 +1,5 @@
 use super::*;
+use crate::chat::labels::Labels;
 use crate::chat::prepared::{Body, Part, Prepared};
 use gpui::{Modifiers, TestAppContext};
 use spaceport_client::ConnectTarget;
@@ -23,6 +24,7 @@ fn user_code_math_and_xml_are_prepared_without_agent_summary_classification() {
     prepared.update(
         &transcript,
         &[(EntryId(1), 1), (EntryId(2), 1), (EntryId(3), 1)],
+        &Labels::now(),
     );
     let body = prepared.body(EntryId(1)).unwrap();
     let Body::Message(parts) = &*body else {
@@ -148,7 +150,11 @@ fn a_users_pasted_card_or_page_stays_inert_code() {
         },
     ];
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &[(EntryId(1), 1), (EntryId(2), 1)]);
+    prepared.update(
+        &transcript,
+        &[(EntryId(1), 1), (EntryId(2), 1)],
+        &Labels::now(),
+    );
     let parts = |id| {
         let body = prepared.body(EntryId(id)).unwrap();
         let Body::Message(parts) = &*body else {

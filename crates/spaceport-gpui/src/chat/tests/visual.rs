@@ -1,6 +1,7 @@
 use super::*;
 use crate::{
     chat::{
+        labels::Labels,
         prepared::{Body, Part, Prepared},
         visual::{self, DiagramStyle, Error, Shown, Source, VisualId, Visuals},
     },
@@ -26,7 +27,7 @@ pub(super) fn message(text: &str) -> (Prepared, Vec<String>) {
     let mut transcript = Transcript::new("Claude");
     transcript.entries = vec![agent(1, text)];
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &[(EntryId(1), 1)]);
+    prepared.update(&transcript, &[(EntryId(1), 1)], &Labels::now());
     let Body::Message(parts) = &*prepared.body(EntryId(1)).unwrap() else {
         panic!("not a message");
     };
@@ -107,11 +108,11 @@ fn image_entries_and_tool_images_ask_for_visuals() {
         },
     }];
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &[(EntryId(1), 1)]);
+    prepared.update(&transcript, &[(EntryId(1), 1)], &Labels::now());
     let id = VisualId::of(&image.data);
     assert!(matches!(&*prepared.body(EntryId(1)).unwrap(), Body::Image(found) if *found == id));
     transcript.entries.clear();
-    prepared.update(&transcript, &[]);
+    prepared.update(&transcript, &[], &Labels::now());
     assert!(prepared.drawing(id).next().is_none());
 }
 
@@ -311,13 +312,13 @@ fn replacing_a_full_rich_transcript_admits_new_math_without_losing_worker_slots(
         .map(|entry| (entry.id, 1))
         .collect();
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &keys);
+    prepared.update(&transcript, &keys, &Labels::now());
     assert_eq!(prepared.visuals.rich_budget().0, visual::MAX_RICH_VISUALS);
     let old_jobs = prepared.visuals.jobs(&styled(0xffffff), &renderer);
     assert_eq!(old_jobs.len(), 2);
 
     transcript.entries = vec![agent(1, "$y$")];
-    prepared.update(&transcript, &[(EntryId(1), 2)]);
+    prepared.update(&transcript, &[(EntryId(1), 2)], &Labels::now());
     let replacement = VisualId::of(("math", rich::MathMode::Inline, "y"));
     assert!(prepared.visuals.wants(replacement));
     assert_eq!(prepared.visuals.rich_budget().0, 1);

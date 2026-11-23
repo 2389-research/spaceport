@@ -23,6 +23,7 @@ mod discovery;
 mod files;
 mod glide;
 mod harnesses;
+mod labels;
 pub(crate) mod page;
 pub(crate) mod pasted;
 mod prepared;
