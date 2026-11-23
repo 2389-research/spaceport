@@ -311,7 +311,7 @@ impl RowLayout for Superset {
             .when_some(fold, |line, fold| {
                 let width = m.icon * 0.6;
                 let size = scaled(cx.font, 14.);
-                line.fixed(width, fold.element(theme).w(px(width)).text_size(px(size)))
+                line.fixed(width, fold.element(cx).w(px(width)).text_size(px(size)))
             });
         // The slot is centred in the row, so the tick meets it halfway down.
         shell(label, state, indent, line, cx).children(guide(

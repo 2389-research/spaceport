@@ -16,7 +16,7 @@ use gpui::{prelude::*, *};
 use spaceport_client::protocol::{AgentStatus, ClientShellAgent};
 
 pub(crate) use spaceport_sidebar::agents::{
-    Indicators, agent_labels, agent_place, icon_mark, pane_name, rail, sorted_agents, state_label,
+    Indicators, agent_labels, agent_place, icon_mark, pane_name, sorted_agents, state_label,
     status_indicator, status_style,
 };
 

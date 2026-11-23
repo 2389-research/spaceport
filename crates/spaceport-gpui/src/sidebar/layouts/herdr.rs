@@ -39,7 +39,7 @@ impl RowLayout for Herdr {
             ..
         } = row;
         let arrow = fold.map(|fold| {
-            fold.element(cx.theme)
+            fold.element(cx)
                 .w(px(scaled(cx.font, ARROW_RESERVE) - density.gap()))
                 .h(px(line_height(cx.font) * text_lines as f32))
                 .text_size(px(scaled(cx.font, 16.)))

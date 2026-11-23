@@ -22,6 +22,7 @@ pub use error::{Error, Result};
 
 pub mod agents;
 pub mod animated;
+pub mod cell;
 pub mod device_scope;
 pub mod device_tags;
 pub mod direction;

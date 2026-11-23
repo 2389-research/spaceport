@@ -132,7 +132,7 @@ impl RowLayout for Minimal {
                     width,
                     parts::first_line(
                         width,
-                        fold.element(theme)
+                        fold.element(cx)
                             .w(px(width))
                             .text_size(px(scaled(cx.font, 16.))),
                         cx,

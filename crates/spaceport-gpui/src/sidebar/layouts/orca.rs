@@ -224,7 +224,7 @@ impl RowLayout for Orca {
                 })
                 .when_some(fold, |text, fold| {
                     let size = scaled(font, 14.);
-                    let arrow = fold.element(theme).w(px(size)).text_size(px(size));
+                    let arrow = fold.element(cx).w(px(size)).text_size(px(size));
                     text.fixed(size, parts::first_line(size, arrow, cx))
                 });
             return card(label, state, indent, 8., (theme, cx.mark))
@@ -256,7 +256,7 @@ impl RowLayout for Orca {
             })
             .when_some(fold, |line, fold| {
                 let size = scaled(font, 14.);
-                line.fixed(size, fold.element(theme).w(px(size)).text_size(px(size)))
+                line.fixed(size, fold.element(cx).w(px(size)).text_size(px(size)))
             });
         let details = Line::new(width, GAP)
             .when_some(cx.host, |line, host| {
