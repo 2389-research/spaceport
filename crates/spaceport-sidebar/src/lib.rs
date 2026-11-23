@@ -27,6 +27,7 @@ pub mod metrics;
 pub mod order;
 pub mod origin;
 pub mod row;
+pub mod slide;
 pub mod sticky;
 pub mod tokens;
 pub mod wash;

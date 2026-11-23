@@ -9,6 +9,13 @@ version.workspace      = true
 [lints]
 workspace = true
 
+[features]
+# The GPUI test harness enables this so a drag reports its phase and the gap
+# it holds, and the slide says where it has settled, to the app's tests; a
+# normal build keeps them to itself. A cargo feature, not `cfg(test)`, because
+# a dependency's own `cfg(test)` is false inside its consumers' test builds.
+test-support = []
+
 [dependencies]
 gpui.workspace               = true
 serde.workspace              = true

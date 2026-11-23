@@ -22,7 +22,7 @@ mod render;
 mod reorder;
 mod row;
 mod search;
-pub(crate) mod slide;
+mod slide;
 mod sticky;
 mod tag_groups;
 mod tokens;
@@ -56,6 +56,7 @@ pub(crate) use {
 
 pub(crate) use layout::SidebarMetrics;
 pub(crate) use spaceport_sidebar::order::step as sidebar_step;
+pub(crate) use spaceport_sidebar::slide::SidebarSlide;
 
 #[cfg(any(test, feature = "integration-test"))]
 pub(crate) use metrics::LABEL_WIDTH;
