@@ -1,34 +1,37 @@
-//! Durations and turn summaries a chat shows, written from the typed values
-//! herdr-chat-protocol keeps. Its `display` helpers write them in English
-//! for herdr-acp's own view; the window writes them in its language.
+//! The words for what `spaceport-chat-core` measures: `950ms`, `12s`,
+//! `3m 4s`, `1h 2m`, and `Worked 12s · 3.2k in · 450 out`. The crate measures
+//! and the app writes the words, as every crate below the app leaves its
+//! messages to the app (`docs/i18n.md`).
 
 use crate::i18n::fl;
+use spaceport_chat_core::text::Elapsed;
 use spaceport_chat_protocol::{TurnEnd, TurnSummary, display};
+
+/// The words for a measured duration.
+fn words(elapsed: Elapsed) -> String {
+    match elapsed {
+        Elapsed::Milliseconds(ms) => fl!("chat-text-milliseconds", ms = ms),
+        Elapsed::Seconds(seconds) => fl!("chat-text-seconds", seconds = seconds),
+        Elapsed::Minutes { minutes, seconds } => {
+            fl!("chat-text-minutes", minutes = minutes, seconds = seconds)
+        }
+        Elapsed::Hours { hours, minutes } => {
+            fl!("chat-text-hours", hours = hours, minutes = minutes)
+        }
+    }
+}
 
 /// `950ms`, `12s`, `3m 4s`, or `1h 2m`.
 pub(crate) fn duration(ms: u64) -> String {
-    let seconds = ms / 1000;
-    match seconds {
-        0 => fl!("chat-text-milliseconds", ms = ms),
-        1..60 => fl!("chat-text-seconds", seconds = seconds),
-        60..3600 => fl!(
-            "chat-text-minutes",
-            minutes = seconds / 60,
-            seconds = seconds % 60
-        ),
-        _ => fl!(
-            "chat-text-hours",
-            hours = seconds / 3600,
-            minutes = seconds % 3600 / 60
-        ),
-    }
+    words(spaceport_chat_core::text::duration(ms))
 }
 
 /// `Worked 12s · 3.2k in · 450 out`: how a turn ended, how long it took,
 /// and the tokens it used when the agent reports them.
 pub(crate) fn turn(summary: &TurnSummary) -> String {
-    let duration = duration(summary.duration_ms);
-    let ended = match summary.end {
+    let measured = spaceport_chat_core::text::turn(summary);
+    let duration = words(measured.elapsed);
+    let ended = match measured.end {
         TurnEnd::Done => fl!("chat-text-turn-done", duration = duration),
         TurnEnd::Cancelled => fl!("chat-text-turn-cancelled", duration = duration),
         TurnEnd::Limit => fl!("chat-text-turn-limit", duration = duration),
@@ -36,7 +39,7 @@ pub(crate) fn turn(summary: &TurnSummary) -> String {
         TurnEnd::Failed => fl!("chat-text-turn-failed", duration = duration),
         TurnEnd::Other => fl!("chat-text-turn-other", duration = duration),
     };
-    let Some(tokens) = &summary.tokens else {
+    let Some(tokens) = measured.tokens else {
         return ended;
     };
     // Token counts in the protocol's short form: `950`, `18.6k`, `1.2M`.

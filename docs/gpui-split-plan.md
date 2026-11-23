@@ -1,8 +1,10 @@
 # Splitting `crates/spaceport-gpui`
 
 `crates/spaceport-gpui` is ~313k lines over 1911 files and links the app's heaviest
-dependencies (mermaid-rs-renderer, ratex-*, image, nucleo-matcher, syntect) for
-every change, whether or not it touches them. This note records the
+dependencies (mermaid-rs-renderer, ratex-*, image, nucleo-matcher) for
+every change, whether or not it touches them. `syntect` left the app's own
+dependencies with stage 3a below and stays in the binary through
+`spaceport-chat-core`. This note records the
 extractions so far, the pattern they proved, and the dependency analysis for the
 next ones. Update it as each step lands.
 
@@ -23,7 +25,7 @@ with no `gpui` types; `spaceport-browser` is the first that has to carry them:
 | `crates/spaceport-state-file` | `crates/sheprd-gpui/src/state_file.rs` | `serde`, `serde_json`, `tempfile`, `thiserror`, `tracing` | 10 |
 | `crates/spaceport-motion` | `crates/sheprd-gpui/src/motion/slow*`, `motion.rs`'s clock | none | 49 (through the `crate::motion` façade) |
 | `crates/spaceport-browser` | `crates/sheprd-gpui/src/browser*` | `gpui`, `serde`, `serde_json`, `spaceport-client`, `spaceport-motion`, `spaceport-panes`, `spaceport-reorder`, `spaceport-state-file`, `spaceport-truncate`, `thiserror`, `tracing`, `url`, `uuid` | 51 (through the `crate::browser` façade) |
-| `crates/spaceport-chat-core` | `crates/spaceport-gpui/src/chat/{env,list,existing,session,link}*` | `serde_json`, `spaceport-chat-protocol`, `spaceport-client`, `spaceport-remote`, `thiserror`, `uuid` | 13 (`chat.rs`'s façade, `chat/chats.rs`, `chat/discovery.rs`, `chat/start.rs`, `i18n/errors/chat.rs` and 8 tests) |
+| `crates/spaceport-chat-core` | `crates/spaceport-gpui/src/chat/{env,list,existing,session,link,highlight,text}*` | `serde_json`, `spaceport-chat-protocol`, `spaceport-client`, `spaceport-remote`, `spaceport-settings`, `syntect`, `thiserror`, `uuid` | 13 (`chat.rs`'s façade, `chat/chats.rs`, `chat/discovery.rs`, `chat/start.rs`, `i18n/errors/chat.rs` and 8 tests), plus the 6 chat files reading `highlight` and the 6 calling `text` |
 
 The browser's own record is
 [`notes-browser-extraction.md`](notes-browser-extraction.md): what moved, what
@@ -195,10 +197,39 @@ on the app's error became 4 that delegate, and the core error's 17 arms carry
 the messages. The second commit then moved `session.rs` and `link.rs` with no
 behaviour change, which is what makes the diff reviewable.
 
-`crates/spaceport-chat-core` now holds 1,662 production and 1,514 test lines;
-`crates/spaceport-gpui/src/chat` is down to 190 files. The app's chat tests
-lost 30 session tests and 8 link tests, the core crate gained all 38 and none
-was dropped: 357 chat-module tests before, 357 after.
+`crates/spaceport-chat-core` holds 1,662 production and 1,514 test lines after
+stage 2, and `crates/spaceport-gpui/src/chat` is down to 190 files. The app's
+chat tests lost 30 session tests and 8 link tests, the core crate gained all 38
+and none was dropped: 357 chat-module tests before, 357 after.
+
+Stage 3a took the two stage-3 modules that needed no split first. `highlight.rs`
+was `gpui`-free and reached the app only for the settings types the move takes
+below it; `text.rs` moved once it stopped writing words.
+
+| Before | After |
+| --- | --- |
+| `crates/spaceport-gpui/src/chat/highlight.rs`, 188 lines: `Token`, `Contrast`, `Span`, `colour_file` | `crates/spaceport-chat-core/src/highlight.rs`, moved as it was apart from its two imports (`spaceport_settings::Theme` and `spaceport_settings::contrast::ink_on_chrome`) and its `pub(crate)` items becoming `pub` |
+| `crates/spaceport-gpui/src/chat/text.rs`, 66 lines: `duration` and `turn` writing their own words through `crate::i18n::fl` | `crates/spaceport-chat-core/src/text.rs`, 58 lines: `Elapsed` (milliseconds, seconds, minutes with their seconds, hours with their minutes), `Measured` (how a turn ended, its `Elapsed`, its tokens), and `duration(ms)` and `turn(&TurnSummary)` to fill them |
+| its 12 `chat-text-*` messages | stay in `chat/text.rs`, 69 lines: `words(Elapsed)`, and `duration(ms)` and `turn(&TurnSummary)` over the crate's values, as `src/ago.rs` writes `spaceport-ago`'s. Every call site keeps its signature |
+| `chat/text/tests.rs`, 1 test comparing the English to the protocol's `display` | stays, driving the app's writer over the crate's measurement: it needs the shown locale |
+| 2 new tests | `crates/spaceport-chat-core/src/text/tests.rs`: the unit boundaries of `duration`, and `turn` keeping what its summary says |
+
+`chat.rs` keeps every path the app uses again, with `highlight` added to
+`pub(crate) use spaceport_chat_core::{MAX_CHATS, env, existing, highlight, link,
+list, session}` and `mod highlight` dropped, so `crate::chat::highlight::Span`
+and `super::highlight::colour_file` resolve as before. No call site changed: the
+6 chat files that read `highlight` and the 6 that call `crate::chat::text::{duration,
+turn}` name the same items at the same paths.
+
+`syntect` left `spaceport-gpui`'s own `[dependencies]` in the first of the two
+commits: 54 direct dependencies before, 53 after, and `spaceport-chat-core` 6 to
+8 (`spaceport-settings` and `syntect`). The grammars are still in the built
+binary through `spaceport-chat-core`, so a code block is coloured exactly as
+before; what changed is ownership, and that the parser can be tested without
+building GPUI. The crate holds 1,910 production and 1,605 test lines after
+this stage, `crates/spaceport-gpui/src/chat` is down to 189 files, and the core
+crate's 60 test functions became 62: 2 added, none moved, none dropped. The
+app's chat tests stay at 408 and its bin suite still runs 3,632.
 
 ## The pattern
 
@@ -248,7 +279,7 @@ homes. Counted today, production lines first:
 | Feature | production / test lines | `gpui::`/entity uses | i18n messages | files importing it | what blocks it |
 | --- | --- | --- | --- | --- | --- |
 | `browser` | moved: `crates/spaceport-browser` holds 3,398 production and 1,904 test lines | — | 10 | 51 | done; 1,395 production lines stay in the app as the window's own (wrappers, element building, `group_shown`, the close driver) — see [`notes-browser-extraction.md`](notes-browser-extraction.md) |
-| `chat` | 20,706 / 16,719, of which `crates/spaceport-chat-core` holds 1,662 production and 1,514 test lines | 128 | 174 | 12 | GPUI views all the way down; stages 1-2 landed the core (`spaceport-chat-core`: the model and the attach side), stages 3-4 below; needs `browser` below it for the URL and page parts, then the proposed live-state crate described in the settings design |
+| `chat` | 20,706 / 16,719, of which `crates/spaceport-chat-core` holds 1,910 production and 1,605 test lines | 128 | 174 | 12 | GPUI views all the way down; stages 1-3a landed the core (`spaceport-chat-core`: the model, the attach side, the syntax spans and the measurements), stages 3b-4 below; needs `browser` below it for the URL and page parts, then the proposed live-state crate described in the settings design |
 | `sidebar` | 11,195 / 14,506 | 162 | 75 | 263 | the most-imported module in the crate; settings now below it, still needs `menu`, `keymap`, `endpoint`, `icons`, `worktree_notes`, `device_tags` |
 
 Order that falls out of the counts: `browser` before `sidebar` (53 against 263
@@ -271,13 +302,16 @@ are `gpui`-free but reach the app, and split into the stages below.
   file stayed: `chat/tests/link.rs` drives the moved `Link` through the app's
   shared private-endpoint fixture.
 - **Stage 3, parsing and measurement: `prepared.rs`, `rich/`, `selection/`,
-  `text.rs`, `summary.rs`, `highlight.rs`.** `gpui`-free today but read the
-  app's words and neighbours: `crate::i18n::fl` (messages are the app's, per
+  `text.rs`, `summary.rs`, `highlight.rs`.** `gpui`-free but read the app's
+  words and neighbours: `crate::i18n::fl` (messages are the app's, per
   `docs/i18n.md`, so these have to return the values the app writes, as
   `spaceport-ago` does), `crate::release_notes`, `crate::browser::WebUrl`,
   `crate::terminal::file_target`, `crate::chat::visual` (whose `Visuals` holds
   `gpui::RenderImage`) and `crate::config::Theme`/`crate::contrast`. Each of
-  those has to be below the crate first.
+  those has to be below the crate first. `text.rs` and `highlight.rs` are done
+  (stage 3a above); `prepared.rs`, `rich/`, `selection/` and `summary.rs` wait
+  on the release notes' line model, `spaceport-browser`'s `WebUrl`, the
+  terminal's file targets and a `visual` without `RenderImage`.
 - **Stage 4, everything that paints or holds an entity:** `view/` (the largest
   group), `widgets/state.rs`, `visual/`, `files.rs`, `pasted.rs`, `page.rs`,
   `harnesses.rs`, `start.rs`, `preview/`, `window.rs`, `chats.rs`, `reader.rs`,
@@ -287,11 +321,15 @@ are `gpui`-free but reach the app, and split into the stages below.
 
 Stage 3's messages are what the attach error is displayed through, so its
 `crate::i18n::fl` calls have to move the same way stage 2's arms did: the crate
-returns the values, the app writes the words (`docs/i18n.md`).
+returns the values, the app writes the words (`docs/i18n.md`). Stage 3a is the
+pattern for the rest: `text.rs`'s 12 messages stayed in the app with the
+typed `Elapsed` and `Measured` beside them, and no call site changed.
 
 ## What this does not do
 
 No behaviour changes, no new dependencies, no file reshuffles beyond the module
 that moved, and no change to another crate. `spaceport-gpui` still links
-`mermaid-rs-renderer`, `ratex-*`, `image` and `syntect` until `chat` moves; that
-is the commit that shrinks the build next.
+`mermaid-rs-renderer`, `ratex-*` and `image` until `chat` moves; that
+is the commit that shrinks the build next. `syntect` is no longer one of its own
+dependencies since stage 3a, though the binary still links it below
+`spaceport-chat-core`.
