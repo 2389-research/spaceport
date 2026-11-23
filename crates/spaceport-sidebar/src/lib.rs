@@ -30,6 +30,7 @@ pub mod origin;
 pub mod row;
 pub mod slide;
 pub mod sticky;
+pub mod tag_groups;
 pub mod tokens;
 pub mod wash;
 pub mod workspaces;
