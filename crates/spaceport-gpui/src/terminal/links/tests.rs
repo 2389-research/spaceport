@@ -241,17 +241,17 @@ fn click_dispatch_opens_browser_and_respects_menu_and_revision(cx: &mut gpui::Te
             event.up.position = position + point(px(20.), px(0.));
             event.down.click_count = 1;
             view.pressed_terminal_link = Some(crate::window::PressedLink {
-                url: Some("https://example.com/click".into()),
-                file: None,
-                other: None,
+                target: crate::window::PressedTarget::Web(
+                    crate::browser::WebUrl::try_from("https://example.com/click").unwrap(),
+                ),
                 position,
             });
             view.open_terminal_link(&gpui::ClickEvent::Mouse(event.clone()), window, cx);
             event.up.position = position;
             view.pressed_terminal_link = Some(crate::window::PressedLink {
-                url: Some("https://different.example/".into()),
-                file: None,
-                other: None,
+                target: crate::window::PressedTarget::Web(
+                    crate::browser::WebUrl::try_from("https://different.example/").unwrap(),
+                ),
                 position,
             });
             view.open_terminal_link(&gpui::ClickEvent::Mouse(event), window, cx);

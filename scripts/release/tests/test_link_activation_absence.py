@@ -29,7 +29,12 @@ class LinkActivationAbsence(unittest.TestCase):
 
     def test_a_click_opens_through_the_local_readings_only(self):
         window = (GPUI / "window/links.rs").read_text()
-        click = window.split("fn activate_terminal_link", 1)[1].split("fn open_link", 1)[0]
+        # The click path is the activation entry, the typed target's mapping,
+        # and the opener dispatch: one span, sliced from the window source.
+        click = (
+            window.split("fn activate_terminal_link", 1)[1].split("fn open_link", 1)[0]
+            + window.split("fn click(self)", 1)[1].split("    fn link_cell_at", 1)[0]
+        )
         # The click path names its own openers, and asks the daemon nothing.
         for opener in ("ClickTarget::Web", "ClickTarget::File", "ClickTarget::External"):
             self.assertIn(opener, click)
