@@ -28,7 +28,7 @@ pub use spaceport_settings::{
     FONT_SIZE_STEP, Feature, FontConfig, FontFace, KeybindingSource, LayoutMode, MAX_PADDING,
     Material, NotificationConfig, NotificationDelivery, OptionAsAlt, OptionKeys, Padding,
     SelectMode, Side, SidebarOverrides, SidebarStyle, SkillInstall, SoundConfig, SpaceLayout,
-    StatusIcons, TabLayoutMode, ThemeName, ThemeParseError, TokenStyle, Weight, ZenWidth,
+    StatusIcons, TabLayoutMode, ThemeName, ThemeParseError, Weight, ZenWidth,
 };
 // A density or style only the layout tests name.
 #[cfg(any(test, feature = "integration-test"))]

@@ -6,8 +6,14 @@
 //! edge shows, which needs only a font and a theme.
 
 mod badge;
+mod configured;
+mod paint;
 
 pub use badge::RowBadge;
+pub use configured::{
+    TokenLook, configured_status, configured_status_style, leading_status, styled, token_column,
+};
+pub use paint::row;
 
 use crate::{
     agents::Indicators,

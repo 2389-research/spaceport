@@ -7,8 +7,9 @@ use super::{
     },
     dot,
 };
-use crate::config::{FontConfig, LayoutMode, Theme, TokenStyle};
+use crate::config::{FontConfig, LayoutMode, Theme};
 use spaceport_client::protocol::AgentStatus;
+use spaceport_settings::TokenStyle;
 
 #[core::prelude::v1::test]
 fn the_slot_dot_follows_a_configured_leading_state_icon() {
