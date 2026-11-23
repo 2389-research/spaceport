@@ -17,15 +17,15 @@ use gpui::{prelude::*, *};
 use spaceport_client::protocol::AgentStatus;
 use unicode_width::UnicodeWidthStr;
 
-mod badge;
 mod configured;
 
-pub(super) use badge::RowBadge;
 use configured::configured_lines;
 pub(super) use configured::{
     TokenLook, configured_status, configured_status_style, leading_status, token_column,
 };
-pub(super) use spaceport_sidebar::row::{Elbow, RowKind, RowLift, RowTree, first_text, row_text};
+pub(super) use spaceport_sidebar::row::{
+    Elbow, RowBadge, RowKind, RowLift, RowTree, first_text, row_text,
+};
 
 /// What a row shows in its leading icon slot: a neutral repository icon, an
 /// empty slot for a folder outside a checkout, or no slot for a child row or

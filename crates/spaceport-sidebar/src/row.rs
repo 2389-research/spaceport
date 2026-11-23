@@ -3,6 +3,10 @@
 //! name weight and colors its two lines take. The app draws every row, so the
 //! decisions a layout and the painter must agree on live here.
 
+mod badge;
+
+pub use badge::RowBadge;
+
 use gpui::FontWeight;
 use spaceport_icons::AgentIcon;
 use spaceport_settings::Theme;

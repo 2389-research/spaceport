@@ -6842,6 +6842,7 @@ dependencies = [
  "spaceport-client",
  "spaceport-commands",
  "spaceport-icons",
+ "spaceport-motion",
  "spaceport-settings",
  "tempfile",
  "thiserror 2.0.21",
