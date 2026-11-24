@@ -24,6 +24,8 @@ mod host_theme;
 mod limits;
 mod local_network;
 pub mod local_path;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod local_peer;
 pub mod login_env;
 mod method;
 mod options;
@@ -82,6 +84,8 @@ pub use handle::{Client, ClientHandle};
 pub use host_theme::HostTheme;
 pub use limits::wait;
 pub use local_network::{LocalNetworkAccess, local_network_access};
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use local_peer::{LocalPeerWarning, UntrustedEndpoint};
 pub use method::Method;
 pub use options::ConnectOptions;
 #[cfg(windows)]

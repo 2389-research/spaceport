@@ -200,7 +200,8 @@ impl Endpoint {
     fn sync_live_projection(&mut self) {
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         if let Some(warning) = self.live.local_peer_warning.take() {
-            self.toasts.receive([warning.notice(Instant::now())]);
+            self.toasts
+                .receive([crate::daemon::warning::notice(&warning, Instant::now())]);
         }
         // Without surface support there is no navigation fence to watch, so
         // a travel waits for the next focus change instead.

@@ -16,7 +16,7 @@ fn local_peer_warning_shows_recovery_text_without_stealing_focus(cx: &mut TestAp
                 );
                 view.endpoints[0]
                     .toasts
-                    .receive([warning.notice(Instant::now())]);
+                    .receive([crate::daemon::warning::notice(&warning, Instant::now())]);
             });
             window.draw(cx).clear(cx);
             assert!(view.read(cx).focus.is_focused(window));

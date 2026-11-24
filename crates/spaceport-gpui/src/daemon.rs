@@ -5,9 +5,11 @@
 
 mod error;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-mod warning;
+pub(crate) mod warning;
 
 use spaceport_client::{ConnectTarget, Stream};
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) use spaceport_client::{LocalPeerWarning, UntrustedEndpoint};
 use std::{
     env, io,
     path::{Path, PathBuf},
@@ -16,8 +18,6 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use warning::LocalPeerWarning;
 
 pub(crate) use error::Error;
 
@@ -175,27 +175,6 @@ fn local_peer(stream: &Stream, target: &ConnectTarget, socket: &Path) -> LocalPe
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 fn local_peer(_stream: &Stream, _target: &ConnectTarget, _socket: &Path) -> LocalPeer {
     LocalPeer::Unverified
-}
-
-/// Which local endpoint check refused the connection.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
-pub(crate) enum UntrustedEndpoint {
-    /// The peer is another user, or its credentials could not be read.
-    #[error("The daemon's user could not be verified as your user.")]
-    PeerUser,
-    /// The standard session socket is missing or is not a socket (e.g. a symlink).
-    #[error("The standard local endpoint is missing or is not a socket.")]
-    NotSocket,
-    /// The dialed socket is not the standard session socket.
-    #[error("This is not the standard local session socket.")]
-    OtherSocket,
-    /// The socket is not owned by this user or is group/world-writable.
-    #[error("The daemon socket has untrusted ownership or write permissions.")]
-    SocketPermissions,
-    /// The socket's directory is not owned by this user or is world-writable.
-    #[error("The daemon socket directory must be owned by your user and not world-writable.")]
-    DirectoryPermissions,
 }
 
 /// The user ID of the process at the other end of the socket.

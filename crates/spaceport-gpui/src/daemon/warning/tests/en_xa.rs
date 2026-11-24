@@ -14,8 +14,10 @@ fn every_warning_is_a_message_under_en_xa() {
     ]
     .into_iter()
     .flat_map(|reason| {
-        let notice = LocalPeerWarning::new(reason, "/tmp/herdr/herdr-client.sock".into())
-            .notice(std::time::Instant::now());
+        let notice = notice(
+            &LocalPeerWarning::new(reason, "/tmp/herdr/herdr-client.sock".into()),
+            std::time::Instant::now(),
+        );
         [notice.title, notice.body.unwrap_or_default()]
     })
     .collect();
@@ -31,11 +33,13 @@ fn every_warning_is_a_message_under_en_xa() {
 #[test]
 fn the_warning_keeps_its_direction_marks_under_en_xb() {
     i18n::show(&Pseudo::Bidi.locale());
-    let notice = LocalPeerWarning::new(
-        UntrustedEndpoint::SocketPermissions,
-        "/tmp/herdr/herdr-client.sock".into(),
-    )
-    .notice(std::time::Instant::now());
+    let notice = notice(
+        &LocalPeerWarning::new(
+            UntrustedEndpoint::SocketPermissions,
+            "/tmp/herdr/herdr-client.sock".into(),
+        ),
+        std::time::Instant::now(),
+    );
     i18n::show(&Locale::FALLBACK);
     let body = notice.body.unwrap_or_default();
     assert!(notice.title.contains('\u{202e}'), "{}", notice.title);
