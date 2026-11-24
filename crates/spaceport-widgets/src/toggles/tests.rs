@@ -1,7 +1,7 @@
 #![allow(clippy::unwrap_used)]
 
 use super::*;
-use crate::contrast::{Contrast, luminance, ratio};
+use spaceport_settings::contrast::{Contrast, luminance, ratio};
 
 #[test]
 fn colors_follow_primary_and_contrast_in_every_theme() {

@@ -1,0 +1,26 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-widgets"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace       = true
+
+[lints]
+workspace = true
+
+[features]
+# The app's tests show a pseudo-locale on one thread at a time, so the direction
+# each reads has to be its own thread's; a normal build keeps it for the
+# process, as the app's catalog is. A cargo feature, not `cfg(test)`, because a
+# dependency's own `cfg(test)` is false inside its consumers' test builds.
+test-support = []
+
+[dependencies]
+gpui.workspace               = true
+spaceport-i18n.workspace     = true
+spaceport-settings.workspace = true
+spaceport-sidebar.workspace  = true
+
+[dev-dependencies]
+spaceport-icons.workspace = true

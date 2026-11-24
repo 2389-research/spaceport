@@ -6,8 +6,10 @@
 //! The locale is a GPUI global, [`CurrentLocale`], chosen by the `language`
 //! setting or a QA pseudo-locale. Its catalog is also kept process-wide, as
 //! `motion`'s slow switch is, so text is found where there is no app
-//! context. Changing it reinstalls the menus and redraws every window; text
-//! a view already built keeps its language until it is built again.
+//! context, and the direction its locale lays the chrome out in is published to
+//! `spaceport-widgets` there, which mirrors every element by it. Changing the
+//! locale reinstalls the menus and redraws every window; text a view already
+//! built keeps its language until it is built again.
 
 mod check;
 mod current;
@@ -187,13 +189,6 @@ pub(crate) fn shown_pseudo() -> Option<Pseudo> {
 /// notice a switch. Read where there is no app context, as [`shown_pseudo`] is.
 pub(crate) fn shown_locale() -> Option<Locale> {
     current::catalog().map(|catalog| catalog.locale().clone())
-}
-
-/// Which way the windows lay their chrome out: the shown locale's
-/// direction, read where there is no app context, as [`shown_pseudo`] is.
-/// [`crate::direction`] mirrors layout by it.
-pub(crate) fn direction() -> Direction {
-    current::direction()
 }
 
 /// Shows `locale` on this test's thread with no app, for tests of text and
