@@ -1395,9 +1395,11 @@ the client already has, and asks the daemon only for rows scrolled out of view.
 
 A program that copies with OSC 52 — many editors and agent CLIs do, especially
 when they own the mouse — is honored too: the daemon forwards the bytes to this
-client, which writes them to the same system clipboard and shows the same flash.
-Only bounded UTF-8 text is written; malformed, non-text, or oversized writes are
-dropped without replacing what was already on the clipboard.
+client, which writes them to the same system clipboard and shows the
+`copied from the terminal` flash. Only bounded UTF-8 text is written; malformed,
+non-text, or oversized writes are dropped without replacing what was already on
+the clipboard. An empty write, which a program sends to clear the clipboard, is
+dropped too: a pane never wipes what you copied yourself.
 
 A selection stays inside the pane it started in, and a drag that leaves the pane
 or the window selects up to its edge rather than into its neighbor. A selection

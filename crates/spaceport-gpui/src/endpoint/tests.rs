@@ -6,6 +6,7 @@ use spaceport_client::{ClientEvent, SavedHost};
 use spaceport_sidebar::device_scope::DeviceScope;
 
 mod catalog_link;
+mod clipboard_writes;
 mod en_xa;
 mod follow_focus;
 mod live_of;
@@ -107,35 +108,6 @@ fn notifications_stay_endpoint_owned_and_expire_without_new_updates() {
         deadline
     ));
     assert!(endpoints[1].toasts.entries.is_empty());
-}
-
-/// A pane app's OSC 52 copy reaches the pasteboard and reports the same
-/// copy a local selection does, unless the toast is configured off.
-#[gpui::test]
-fn daemon_clipboard_writes_reach_the_pasteboard_and_report(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
-    view.update(cx, |view, cx| {
-        assert!(view.apply_clipboard_writes(vec!["hello".into()], cx));
-        assert!(
-            view.flash.is_some(),
-            "the copy is reported like a selection"
-        );
-    });
-    assert_eq!(
-        cx.update(|_, cx| cx.read_from_clipboard().and_then(|item| item.text())),
-        Some("hello".into())
-    );
-    view.update(cx, |view, cx| {
-        view.config.clipboard_toast.enabled = false;
-        view.clear_flash(false);
-        assert!(view.apply_clipboard_writes(vec!["quiet".into()], cx));
-        assert!(view.flash.is_none(), "a disabled toast stays silent");
-        assert!(!view.apply_clipboard_writes(Vec::new(), cx));
-    });
-    assert_eq!(
-        cx.update(|_, cx| cx.read_from_clipboard().and_then(|item| item.text())),
-        Some("quiet".into())
-    );
 }
 
 #[test]
