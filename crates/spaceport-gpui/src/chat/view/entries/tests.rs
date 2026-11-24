@@ -1,6 +1,6 @@
 use super::*;
 use crate::chat::labels;
-use crate::chat::prepared::tool_text;
+use spaceport_chat_core::prepared::tool_text;
 use spaceport_chat_protocol::ToolContent;
 
 mod states;

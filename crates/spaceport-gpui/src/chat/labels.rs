@@ -21,5 +21,6 @@ pub(crate) fn now() -> Labels {
         question_truncated: fl!("chat-question-truncated"),
         terminal: |id| fl!("chat-tool-terminal", id = id.to_owned()),
         tool_ask_user: fl!("chat-tool-ask-user"),
+        turn: super::text::turn,
     }
 }

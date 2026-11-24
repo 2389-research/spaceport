@@ -7,7 +7,8 @@
 //! answers is a compaction summary, the block model a message's Markdown is
 //! parsed into with the parse that asks for the visuals a message draws, the
 //! entries a view draws out of that — their parts, the pictures they ask for,
-//! and the words written into them — and the catalog agent JSON is read into.
+//! and the words written into them — the selectable text of a transcript and
+//! the selection over it, and the catalog agent JSON is read into.
 //! The transcript's own wire types are [`spaceport_chat_protocol`]'s.
 //!
 //! Everything here is a pure function of its inputs or hands its blocking work
@@ -26,6 +27,7 @@ pub mod link;
 pub mod list;
 pub mod prepared;
 pub mod rich;
+pub mod selection;
 pub mod session;
 pub mod summary;
 pub mod text;

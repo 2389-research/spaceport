@@ -33,7 +33,7 @@ pub(super) fn destination(url: &str) -> Option<String> {
 }
 
 /// Whether a destination names a file on the machine this client runs on.
-fn is_local_path(url: &str) -> bool {
+pub(super) fn is_local_path(url: &str) -> bool {
     file_target(url).is_some()
 }
 

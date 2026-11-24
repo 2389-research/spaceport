@@ -1,10 +1,12 @@
 //! The words `prepared` writes into its entries: a cut answer's note, the
 //! labels around a file's two versions, a question's heading and its answer's,
-//! and the line naming a terminal. A crate below the app has no messages
-//! (`docs/i18n.md`), so this names the shape only: the app reads the words in
-//! the language it shows and hands them down. A prepared body caches them,
-//! which is why a pane keeps one [`Labels`] and replaces it when the language
-//! shown changes.
+//! the line naming a terminal, and how a measured turn reads. A crate below the
+//! app has no messages (`docs/i18n.md`), so this names the shape only: the app
+//! reads the words in the language it shows and hands them down. A prepared
+//! body caches them, which is why a pane keeps one [`Labels`] and replaces it
+//! when the language shown changes.
+
+use spaceport_chat_protocol::TurnSummary;
 
 /// The chat labels, in the language the app showed when they were read.
 #[derive(Clone, Debug)]
@@ -27,4 +29,7 @@ pub struct Labels {
     pub terminal: fn(&str) -> String,
     /// The title a tool asking the user questions is shown under.
     pub tool_ask_user: String,
+    /// How a turn ended, how long it took, and the tokens it used when the
+    /// agent reports them.
+    pub turn: fn(&TurnSummary) -> String,
 }

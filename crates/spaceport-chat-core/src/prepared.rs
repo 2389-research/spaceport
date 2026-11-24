@@ -101,9 +101,9 @@ fn tool_label<'a>(title: &'a str, labels: &Labels) -> Cow<'a, str> {
     }
 }
 
-// The selection document writes an entry's plain text with the helpers
-// below, and the view draws the document's segments. The view calls them
-// itself only for text the document does not hold.
+// The selection document (`crate::selection`) writes an entry's plain text
+// with the helpers below, and the view draws the document's segments. The
+// view calls them itself only for text the document does not hold.
 
 /// As much of an entry's plain text as is drawn.
 pub fn shown_text(text: &str) -> &str {
@@ -130,7 +130,7 @@ pub fn folded_thought(text: &str) -> String {
 }
 
 /// Expanded tool output comes from the retained transcript, not its preview.
-/// The selection document holds it; the view draws it from there.
+/// [`crate::selection`] holds it; the view draws it from there.
 pub fn tool_text(content: &ToolContent, labels: &Labels) -> Option<String> {
     match content {
         ToolContent::Text { text } => Some(text.clone()),
