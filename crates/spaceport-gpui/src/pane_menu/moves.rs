@@ -3,7 +3,7 @@
 //! worker (see `crate::pane_move`); the menu stays open saying so until
 //! Herdr answers.
 
-use super::{Action, PaneMenu, Target};
+use super::{Action, PaneMenu};
 use crate::direction::Logical;
 use crate::i18n::fl;
 use crate::{
@@ -18,14 +18,14 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 /// settles a menu reopened since.
 static NEXT_MOVE: AtomicU64 = AtomicU64::new(0);
 
-impl Target {
+impl PaneMenu {
     /// The move picker's rows: a new tab here and a new workspace first, then
     /// every other place the pane can go.
     pub(super) fn destinations(&self) -> Vec<Choice> {
         [
             Choice {
                 destination: Destination::NewTab {
-                    workspace_id: self.workspace.clone(),
+                    workspace_id: self.target.workspace.clone(),
                 },
                 workspace: None,
                 place: fl!("pane-menu-new-tab"),
@@ -40,13 +40,11 @@ impl Target {
         .chain(self.choices.iter().cloned())
         .collect()
     }
-}
 
-impl PaneMenu {
     /// How many rows the current page lists.
     pub(super) fn rows(&self, page: Option<Page>) -> usize {
         if page == Some(Page::MovePane) {
-            self.target.destinations().len()
+            self.destinations().len()
         } else {
             self.actions().len()
         }
@@ -217,7 +215,7 @@ impl SpaceportWindow {
         let Some(index) = pane.selected else {
             return;
         };
-        if let Some(choice) = pane.target.destinations().get(index) {
+        if let Some(choice) = pane.destinations().get(index) {
             self.move_pane(choice.destination.clone(), window, cx);
         }
     }
@@ -276,7 +274,7 @@ impl SpaceportWindow {
                     }
                 }))
         };
-        for (index, choice) in pane.target.destinations().into_iter().enumerate() {
+        for (index, choice) in pane.destinations().into_iter().enumerate() {
             let destination = choice.destination;
             body = body.child(
                 row(index)

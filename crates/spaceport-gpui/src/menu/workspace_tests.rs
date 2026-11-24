@@ -2,16 +2,13 @@
 
 use super::{WorkspaceAction, WorkspaceMenuAction, WorkspaceTarget};
 use crate::{SpaceportWindow, dialog_input::DialogInput, sidebar};
-use spaceport_client::Method;
 
 mod dialog_layout;
 mod en_xa;
 mod excluded_creation;
 mod excluded_remote_workspace;
 mod group_fold;
-mod left_checkout;
 mod mute;
-mod naming;
 mod no_pull_request;
 mod removed_checkpoints;
 mod removed_close_delete;

@@ -108,7 +108,6 @@ mod usage;
 mod window;
 mod window_state;
 mod worker_stop;
-mod worktree;
 mod worktree_banner;
 mod worktree_identity;
 mod worktree_notes;

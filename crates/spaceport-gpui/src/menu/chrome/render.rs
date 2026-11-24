@@ -5,7 +5,7 @@
 use super::COVER_MARGIN;
 use super::{MENU_MARGIN, Page, rail};
 use crate::direction::Logical;
-use crate::{SpaceportWindow, actions, fonts::StyledFont};
+use crate::{SpaceportWindow, actions, fonts::StyledFont, menu::page_title};
 use gpui::{prelude::*, *};
 use std::time::Instant;
 
@@ -606,8 +606,8 @@ impl SpaceportWindow {
             .debug_selector(|| "menu-overlay".into())
             // Focus stays here while the popup is open, so this is the menu
             // or dialog a screen reader announces.
-            .role(page.accessible_role())
-            .aria_label(page.accessible_name())
+            .role(page_title::role(page))
+            .aria_label(page_title::name(page))
             .absolute()
             .top_0()
             .inset_s(px(0.))

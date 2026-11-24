@@ -46,8 +46,6 @@ impl Localize for Error {
             Self::Control(error) => error.localize(),
             Self::Daemon(error) => error.localize(),
             Self::Devices(error) => error.localize(),
-            Self::EmptyTabName => fl!("error-empty-tab-name"),
-            Self::EmptyWorkspaceLabel => fl!("error-empty-workspace-label"),
             Self::Endpoint(error) => error.localize(),
             Self::FileDrop(error) => error.localize(),
             Self::ImageAnimationResize => fl!("error-image-animation-resize"),
@@ -82,13 +80,13 @@ impl Localize for Error {
                 fl!("error-link-on-another-host", host = host.as_str())
             }
             Self::ListeningPorts(error) => error.localize(),
-            Self::LocalWorktreeNote => fl!("error-local-worktree-note"),
             Self::LogRead { path: file, source } => fl!(
                 "error-log-read",
                 path = path(file),
                 error = source.to_string()
             ),
             Self::MalformedLink => fl!("error-malformed-link"),
+            Self::Menu(error) => error.localize(),
             Self::MissingHome => fl!("error-missing-home"),
             Self::MissingStateRoot => fl!("error-missing-state-root"),
             Self::NoSnapshot => fl!("error-no-snapshot"),

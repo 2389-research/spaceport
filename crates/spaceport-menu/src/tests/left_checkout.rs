@@ -1,10 +1,11 @@
 //! Whether a checkout's directory has left the repository Herdr keeps for it.
-//! Checkout identity decides that from the endpoint's paths alone, so the
-//! sidebar's group folding and the note dialog agree on it.
+//! Checkout identity decides that from the endpoint's paths alone, so group
+//! folding and the note dialog agree on it.
+
+use crate::worktree::left_checkout;
 
 #[test]
 fn checkout_paths_follow_the_endpoint_shape() {
-    use crate::worktree::left_checkout;
     let key = "/home/mac/src/herdr-gpui/.git";
     for cwd in [
         "/home/mac/src/herdr-gpui",

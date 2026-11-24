@@ -38,8 +38,6 @@ fn every_own_variant_has_a_message() {
         },
         Error::ConnectionBusy,
         Error::ConnectionNotReady,
-        Error::EmptyTabName,
-        Error::EmptyWorkspaceLabel,
         Error::ImageAnimationResize,
         Error::ImageDecode(image()),
         Error::ImageDecodeLimit,
@@ -59,7 +57,6 @@ fn every_own_variant_has_a_message() {
         Error::LinkOnAnotherHost {
             host: "build-box".into(),
         },
-        Error::LocalWorktreeNote,
         Error::LogRead {
             path: path.clone(),
             source: io(),

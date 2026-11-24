@@ -1,8 +1,9 @@
-//! Checkout identity used by the remaining workspace actions.
+//! Checkout identity a workspace target needs: whether the shell in a main
+//! checkout still stands inside the repository Herdr keeps for it.
 
 /// The main checkout a `<root>/.git` Git directory belongs to. Any other key
 /// (a bare repository, a separate Git directory) does not name its checkout.
-pub(super) fn checkout_root(key: &str) -> Option<&str> {
+fn checkout_root(key: &str) -> Option<&str> {
     key.strip_suffix("/.git")
         .or_else(|| key.strip_suffix("\\.git"))
         .filter(|root| !root.is_empty())
@@ -11,7 +12,7 @@ pub(super) fn checkout_root(key: &str) -> Option<&str> {
 /// Whether `cwd` lies outside the main checkout whose Git directory is `key`.
 /// This compares endpoint paths rather than reading local files. Either
 /// separator is accepted, and Windows paths ignore case.
-pub(super) fn left_checkout(key: &str, cwd: &str) -> bool {
+pub(crate) fn left_checkout(key: &str, cwd: &str) -> bool {
     let Some(root) = checkout_root(key) else {
         return false;
     };

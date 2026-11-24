@@ -29,10 +29,7 @@ fn move_picker_keeps_local_rows_without_cross_host_carry(cx: &mut TestAppContext
             view.activate_pane_menu(Action::MoveTo, window, cx);
             let pane = view.menu.pane.as_ref().unwrap();
             assert_eq!(view.menu.page, Some(Page::MovePane));
-            assert_eq!(
-                pane.rows(Some(Page::MovePane)),
-                pane.target.destinations().len()
-            );
+            assert_eq!(pane.rows(Some(Page::MovePane)), pane.destinations().len());
         });
         window.draw(cx).clear(cx);
     });

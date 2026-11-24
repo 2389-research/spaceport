@@ -1,0 +1,16 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-menu"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde_json.workspace       = true
+spaceport-client.workspace = true
+spaceport-usage.workspace  = true
+thiserror.workspace        = true

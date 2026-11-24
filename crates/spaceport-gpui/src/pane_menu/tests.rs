@@ -1,7 +1,10 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
+use crate::menu::labels;
 use core::prelude::v1::test;
-use spaceport_client::ClientEvent;
+use serde_json::json;
+use spaceport_client::{ClientEvent, protocol::ClientShellSnapshot};
+use spaceport_menu::pane::ACTIONS;
 use std::sync::Arc;
 
 pub(crate) mod close_option;
@@ -25,100 +28,27 @@ pub(super) fn snapshot() -> ClientShellSnapshot {
     snapshot
 }
 
+/// The English words each row says, which the moved model no longer holds.
 #[test]
-fn captured_pane_payloads_ignore_focus_and_reject_stale_membership() {
-    let original = snapshot();
-    let target = Target::capture(&original, "inactive").unwrap();
-    let mut snapshot = original.clone();
-    snapshot.focused_pane_id = None;
-    snapshot.focused_tab_id = None;
-    snapshot.focused_workspace_id = None;
-    assert!(target.validate(&snapshot).is_ok());
+fn the_rows_say_what_the_panes_own_state_makes_them_do() {
+    let snapshot = snapshot();
+    let target = Target::capture(&snapshot, "inactive").unwrap();
+    assert_eq!(labels::pane_action(Action::Zoom, &target), "Zoom");
     assert_eq!(
-        target.rename_params("  \u{4e2d}  "),
-        json!({"pane_id":"inactive", "label":"\u{4e2d}"})
-    );
-    assert_eq!(
-        target.rename_params(" \u{2003}\t"),
-        json!({"pane_id":"inactive", "label":""})
-    );
-    for (action, direction) in [(Action::SplitRight, "right"), (Action::SplitDown, "down")] {
-        assert_eq!(
-            action.request(&target).unwrap(),
-            (
-                Method::PaneSplit,
-                json!({"target_pane_id":"inactive", "direction":direction, "focus":true})
-            )
-        );
-    }
-    assert_eq!(
-        Action::Zoom.request(&target).unwrap(),
-        (Method::PaneZoom, json!({"pane_id":"inactive", "mode":"on"}))
-    );
-    assert_eq!(Action::Zoom.label(&target), "Zoom");
-    let mut zoomed = original.clone();
-    zoomed.tabs[0].zoomed = true;
-    let target_zoomed = Target::capture(&zoomed, "inactive").unwrap();
-    assert_eq!(Action::Zoom.label(&target_zoomed), "Unzoom");
-    assert_eq!(
-        Action::Zoom.request(&target_zoomed).unwrap(),
-        (
-            Method::PaneZoom,
-            json!({"pane_id":"inactive", "mode":"off"})
-        )
-    );
-    // The focused pane takes the menu's pane's place.
-    assert_eq!(
-        Action::Swap.request(&target).unwrap(),
-        (
-            Method::PaneSwap,
-            json!({"source_pane_id": original.focused_pane_id, "target_pane_id":"inactive"})
-        )
-    );
-    let focused = Target::capture(&original, original.focused_pane_id.as_deref().unwrap()).unwrap();
-    assert!(focused.focused.is_none());
-    assert!(Action::Swap.request(&focused).is_none());
-    assert_eq!(
-        Action::RightClick.request(&target).unwrap(),
-        (
-            Method::PaneInputSet,
-            json!({"pane_id":"inactive", "right_click":"pane"})
-        )
-    );
-    assert_eq!(
-        Action::RightClick.label(&target),
+        labels::pane_action(Action::RightClick, &target),
         "Send Right-Clicks to Pane"
     );
-    let mut routed = original.clone();
+    let mut zoomed = snapshot.clone();
+    zoomed.tabs[0].zoomed = true;
+    let zoomed = Target::capture(&zoomed, "inactive").unwrap();
+    assert_eq!(labels::pane_action(Action::Zoom, &zoomed), "Unzoom");
+    let mut routed = snapshot;
     routed.panes[1].right_click_passthrough = true;
     let routed = Target::capture(&routed, "inactive").unwrap();
     assert_eq!(
-        Action::RightClick.request(&routed).unwrap(),
-        (
-            Method::PaneInputSet,
-            json!({"pane_id":"inactive", "right_click":"herdr"})
-        )
-    );
-    assert_eq!(
-        Action::RightClick.label(&routed),
+        labels::pane_action(Action::RightClick, &routed),
         "Open This Menu on Right-Click"
     );
-    for case in 0..7 {
-        let mut snapshot = original.clone();
-        match case {
-            0 => snapshot.boot_id.push('x'),
-            1 => snapshot.workspaces.clear(),
-            2 => snapshot.tabs.clear(),
-            3 => snapshot.tabs[0].workspace_id.push('x'),
-            4 => snapshot.panes[1].tab_id.push('x'),
-            5 => snapshot.panes[1].workspace_id.push('x'),
-            _ => snapshot.panes.truncate(1),
-        }
-        assert!(matches!(
-            target.validate(&snapshot),
-            Err(crate::Error::StalePane)
-        ));
-    }
 }
 
 #[gpui::test]

@@ -59,7 +59,6 @@ fn tab_moves_offer_workspaces_and_settle_once(cx: &mut TestAppContext) {
                 .tab
                 .as_ref()
                 .unwrap()
-                .target
                 .choices
                 .iter()
                 .map(|choice| choice.place.as_str())

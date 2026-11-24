@@ -4,160 +4,36 @@ use crate::{
     SpaceportWindow,
     browser::GroupId,
     controls::Command,
-    menu::Page,
+    menu::{Page, labels},
     notification_mutes::Scope,
     pane_move::{self, Choice, Destination},
     search_input::SearchInput,
 };
 use gpui::{prelude::*, *};
-use serde_json::{Value, json};
-use spaceport_client::{Method, protocol::ClientShellSnapshot};
+use spaceport_client::Method;
+use spaceport_menu::tab::{Action, Offers, Target};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+
+#[cfg(test)]
+mod tests;
 
 /// Tells one tab move's result from another's, so a late answer never
 /// settles a menu reopened since.
 static NEXT_MOVE: AtomicU64 = AtomicU64::new(0);
 
-#[derive(Clone)]
-struct Target {
-    boot: String,
-    workspace: String,
-    tab: String,
-    label: String,
-    /// The tab's panes in snapshot order, moved together to another workspace.
-    panes: Vec<String>,
-    /// Destinations the tab can move to: a new workspace, then other workspaces.
-    choices: Vec<Choice>,
-}
-
-#[cfg(test)]
-mod tests;
-
-impl Target {
-    fn capture(snapshot: &ClientShellSnapshot, id: &str) -> Option<Self> {
-        let tab = snapshot.tabs.iter().find(|tab| tab.tab_id == id)?;
-        let panes = snapshot
-            .panes
-            .iter()
-            .filter(|pane| pane.tab_id == tab.tab_id && pane.workspace_id == tab.workspace_id)
-            .map(|pane| pane.pane_id.clone())
-            .collect();
-        let choices = pane_move::workspace_choices(snapshot, &tab.workspace_id);
-        Some(Self {
-            boot: snapshot.boot_id.clone(),
-            workspace: tab.workspace_id.clone(),
-            tab: tab.tab_id.clone(),
-            label: tab.label.clone(),
-            panes,
-            choices,
-        })
-    }
-
-    fn validate(&self, snapshot: &ClientShellSnapshot) -> crate::Result<()> {
-        if snapshot.boot_id != self.boot
-            || !snapshot
-                .workspaces
-                .iter()
-                .any(|w| w.workspace_id == self.workspace)
-            || !snapshot
-                .tabs
-                .iter()
-                .any(|t| t.tab_id == self.tab && t.workspace_id == self.workspace)
-        {
-            return Err(crate::Error::StaleTab);
-        }
-        Ok(())
-    }
-
-    fn validate_move(&self, snapshot: &ClientShellSnapshot) -> crate::Result<()> {
-        self.validate(snapshot)?;
-        let current = snapshot
-            .panes
-            .iter()
-            .filter(|p| p.tab_id == self.tab && p.workspace_id == self.workspace);
-        if self.panes.is_empty()
-            || current.clone().count() != self.panes.len()
-            || !self
-                .panes
-                .iter()
-                .all(|id| current.clone().any(|p| p.pane_id == *id))
-        {
-            return Err(crate::Error::StaleTab);
-        }
-        Ok(())
-    }
-
-    fn rename_params(&self, label: &str) -> crate::Result<Value> {
-        let label = label.trim();
-        if label.is_empty() {
-            return Err(crate::Error::EmptyTabName);
-        }
-        Ok(json!({"tab_id": self.tab, "label": label}))
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Action {
-    NewTab,
-    Rename,
-    MoveToWorkspace,
-    /// Silence this tab's notifications, or let them through again.
-    Mute,
-    Unmute,
-    /// The tab is silent because its workspace is muted: lift that.
-    UnmuteWorkspace,
-    /// The tab is silent because its device is muted: lift that.
-    UnmuteDevice,
-    Close,
-}
-
-impl Action {
-    fn label(self) -> String {
-        match self {
-            Self::NewTab => fl!("tab-menu-new-tab"),
-            Self::Rename => fl!("tab-menu-rename"),
-            Self::MoveToWorkspace => fl!("tab-menu-move-to-workspace"),
-            Self::Mute => fl!("tab-menu-mute"),
-            Self::Unmute => fl!("tab-menu-unmute"),
-            Self::UnmuteWorkspace => fl!("tab-menu-unmute-workspace"),
-            Self::UnmuteDevice => fl!("tab-menu-unmute-device"),
-            Self::Close => fl!("tab-menu-close"),
-        }
-    }
-}
-
-/// Herdr's own tab menu, in its order.
-const ACTIONS: [Action; 4] = [
-    Action::NewTab,
-    Action::Rename,
-    Action::MoveToWorkspace,
-    Action::Close,
-];
-
 impl TabMenu {
-    /// The rows this menu offers: moving to a workspace needs a host the
-    /// `herdr` CLI can run on and at least one pane in the tab. This
-    /// client's mute row comes before closing, which stays last.
+    /// The rows this menu offers, in the order the keys walk them.
     fn actions(&self) -> Vec<Action> {
-        let mut actions: Vec<_> = ACTIONS
-            .into_iter()
-            .filter(|action| match action {
-                Action::MoveToWorkspace => self.movable && !self.target.panes.is_empty(),
-                _ => true,
-            })
-            .collect();
-        let close = actions
-            .iter()
-            .position(|action| *action == Action::Close)
-            .unwrap_or(actions.len());
-        actions.insert(close, self.mute);
-        actions
+        self.target.actions(Offers {
+            movable: self.movable,
+            mute: self.mute,
+        })
     }
 
     /// How many rows the current page lists.
     fn rows(&self, page: Option<Page>) -> usize {
         if page == Some(Page::MoveTab) {
-            self.target.choices.len()
+            self.choices.len()
         } else {
             self.actions().len()
         }
@@ -166,6 +42,8 @@ impl TabMenu {
 
 pub(super) struct TabMenu {
     target: Target,
+    /// Destinations the tab can move to: a new workspace, then other workspaces.
+    choices: Vec<Choice>,
     /// The editor group whose strip opened the menu, if any. A new tab
     /// opens in it, and while split, closing removes the tab from it alone.
     group: Option<GroupId>,
@@ -194,12 +72,11 @@ impl SpaceportWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(target) = self
-            .live
-            .snapshot
-            .as_ref()
-            .and_then(|s| Target::capture(s, id))
-        else {
+        let Some((target, choices)) = self.live.snapshot.as_ref().and_then(|snapshot| {
+            let target = Target::capture(snapshot, id)?;
+            let choices = pane_move::workspace_choices(snapshot, &target.workspace);
+            Some((target, choices))
+        }) else {
             return;
         };
         if !self.open_menu(window, cx) {
@@ -220,6 +97,7 @@ impl SpaceportWindow {
         self.menu.page = Some(Page::Tab);
         self.menu.tab = Some(TabMenu {
             target,
+            choices,
             group,
             selected: None,
             input: None,
@@ -450,7 +328,7 @@ impl SpaceportWindow {
             .menu
             .tab
             .as_ref()
-            .and_then(|tab| tab.selected.and_then(|index| tab.target.choices.get(index)))
+            .and_then(|tab| tab.selected.and_then(|index| tab.choices.get(index)))
             .map(|choice| choice.destination.clone())
         else {
             return;
@@ -623,7 +501,7 @@ impl SpaceportWindow {
                 .text_color(rgb(self.theme.muted))
                 .child(fl!("tab-menu-move-heading")),
         );
-        for (index, choice) in tab.target.choices.iter().enumerate() {
+        for (index, choice) in tab.choices.iter().enumerate() {
             let destination = choice.destination.clone();
             let place = choice.place.clone();
             body = body.child(
@@ -697,7 +575,7 @@ impl SpaceportWindow {
                                 .debug_selector(move || format!("tab-menu-label-{index}"))
                                 .min_w_0()
                                 .truncate()
-                                .child(action.label()),
+                                .child(labels::tab_action(action)),
                         )
                         .on_hover(cx.listener(move |this, hovered, _, cx| {
                             if *hovered && let Some(tab) = &mut this.menu.tab {

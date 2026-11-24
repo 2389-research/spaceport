@@ -57,10 +57,6 @@ pub enum Error {
     Daemon(#[from] crate::daemon::Error),
     #[error(transparent)]
     Devices(#[from] crate::menu::devices::Error),
-    #[error("Enter a tab name.")]
-    EmptyTabName,
-    #[error("Workspace label must not be empty.")]
-    EmptyWorkspaceLabel,
     #[error(transparent)]
     Endpoint(#[from] crate::endpoint::Error),
     #[error(transparent)]
@@ -116,8 +112,6 @@ pub enum Error {
     LinkOnAnotherHost { host: String },
     #[error(transparent)]
     ListeningPorts(#[from] crate::listening_ports::Error),
-    #[error("Worktree notes stay in this app and are never sent to the daemon")]
-    LocalWorktreeNote,
     #[error("Could not read the log {}: {source}", path.display())]
     LogRead {
         path: PathBuf,
@@ -126,6 +120,8 @@ pub enum Error {
     },
     #[error("This link's address is not valid, so it opens nothing.")]
     MalformedLink,
+    #[error(transparent)]
+    Menu(#[from] spaceport_menu::Error),
     #[error("HOME is not set")]
     MissingHome,
     #[error("neither XDG_STATE_HOME nor HOME is set")]

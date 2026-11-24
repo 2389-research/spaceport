@@ -6,7 +6,7 @@
 use crate::i18n::fl;
 use crate::{
     SpaceportWindow, i18n,
-    menu::{WorkspaceAction, WorkspaceMenuAction, accent},
+    menu::{WorkspaceAction, WorkspaceMenuAction, accent, workspace_action_icon},
 };
 use gpui::{prelude::*, *};
 
@@ -83,7 +83,7 @@ fn leading_icon(action: WorkspaceMenuAction, label: Label, color: Rgba) -> Div {
         .flex()
         .items_center()
         .justify_center()
-        .when_some(action.icon(), |slot, icon| {
+        .when_some(workspace_action_icon(action), |slot, icon| {
             slot.child(
                 svg()
                     .path(icon)
@@ -311,7 +311,7 @@ impl SpaceportWindow {
             .text_size(px((self.config.ui.size - 2.).max(8.)))
             .cursor_pointer()
             .on_hover(Self::workspace_hover(action, cx))
-            .when_some(action.icon(), |toggle, icon| {
+            .when_some(workspace_action_icon(action), |toggle, icon| {
                 toggle.child(
                     svg()
                         .path(icon)
@@ -376,7 +376,7 @@ impl SpaceportWindow {
         .bg(if selected { rgb(theme.active) } else { resting })
         .text_color(ink)
         .text_size(px((self.config.ui.size - 1.).max(8.)))
-        .when_some(tile.action.icon(), |tile_div, icon| {
+        .when_some(workspace_action_icon(tile.action), |tile_div, icon| {
             tile_div.child(
                 svg()
                     .path(icon)

@@ -74,7 +74,6 @@ fn pane_moves_offer_destinations_and_settle_once(cx: &mut TestAppContext) {
                 .pane
                 .as_ref()
                 .unwrap()
-                .target
                 .destinations()
                 .into_iter()
                 .map(|choice| (choice.workspace, choice.place))
@@ -296,7 +295,6 @@ fn short_workspace_names_leave_the_tab_whole(cx: &mut TestAppContext) {
                 .pane
                 .as_ref()
                 .unwrap()
-                .target
                 .destinations()
                 .into_iter()
                 .map(|choice| (choice.workspace, choice.place))
