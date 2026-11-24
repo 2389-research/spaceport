@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 gpui.workspace               = true
+spaceport-i18n.workspace     = true
 spaceport-settings.workspace = true
 spaceport-widgets.workspace  = true
 

@@ -3,4 +3,4 @@
 //! `spaceport-settings` declares them, with the messages naming each; the app
 //! words them where it draws.
 
-pub(in crate::settings_window) use spaceport_settings::section::{Group, Section};
+pub(in crate::settings_window) use spaceport_settings::section::Section;

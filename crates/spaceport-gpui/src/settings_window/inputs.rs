@@ -7,6 +7,8 @@ use super::{SettingsWindow, ui};
 use crate::{config::preferences::Preference, search_input::SearchInput};
 use gpui::{prelude::*, *};
 pub(in crate::settings_window) use spaceport_settings::fields::{DropdownField, NumberField};
+pub(in crate::settings_window) use spaceport_settings_window::inputs::NumberPreview;
+use spaceport_settings_window::inputs::{self, Choice, picked};
 
 /// The number field being typed into: the field, its text and whether what it
 /// holds does not parse, with the blur that commits it.
@@ -15,14 +17,6 @@ pub(in crate::settings_window) struct NumberEdit {
     pub input: Entity<SearchInput>,
     pub invalid: bool,
     pub _blur: Subscription,
-}
-
-/// A slider that writes only on release: the value it shows while dragged,
-/// and after release until the save's reload.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(in crate::settings_window) struct NumberPreview {
-    pub field: NumberField,
-    pub value: f32,
 }
 
 impl SettingsWindow {
@@ -59,44 +53,17 @@ impl SettingsWindow {
         index: usize,
         cx: &mut Context<Self>,
     ) {
-        use super::pages::{CLIPBOARD_POSITIONS, TOAST_POSITIONS};
         self.dropdown = None;
         if self.persistence.quitting() || self.persistence.closing() {
             cx.notify();
             return;
         }
-        let local = index.checked_sub(1);
-        let flag = local.map(|choice| choice == 0);
-        let edit = match field {
-            DropdownField::Layout => {
-                if let Some(mode) = crate::config::LayoutMode::ALL.get(index) {
-                    self.accept_layout_choice(*mode, cx);
-                }
-                cx.notify();
-                return;
-            }
-            DropdownField::Language => {
-                let Some(language) = super::pages::language_choices(&self.config.language)
-                    .into_iter()
-                    .nth(index)
-                else {
-                    cx.notify();
-                    return;
-                };
-                Preference::Language(language)
-            }
-            DropdownField::ClipboardEnabled => Preference::ClipboardEnabled(flag),
-            DropdownField::ClipboardPosition => Preference::ClipboardPosition(
-                local
-                    .and_then(|i| CLIPBOARD_POSITIONS.get(i))
-                    .map(|(p, _)| *p),
-            ),
-            DropdownField::ToastEnabled => Preference::NotificationEnabled(flag),
-            DropdownField::ToastPosition => Preference::NotificationPosition(
-                local.and_then(|i| TOAST_POSITIONS.get(i)).map(|(p, _)| *p),
-            ),
-        };
-        self.save_preference(edit, cx);
+        let languages = super::pages::language_choices(&self.config.language);
+        match picked(field, index, &languages) {
+            Some(Choice::Layout(mode)) => self.accept_layout_choice(mode, cx),
+            Some(Choice::Preference(edit)) => self.save_preference(edit, cx),
+            None => {}
+        }
         cx.notify();
     }
 
@@ -189,16 +156,9 @@ impl SettingsWindow {
         let value = match change {
             ui::NumberChange::Preview(value) => {
                 // Shown at once; written only on release.
-                let preview = NumberPreview { field, value };
-                if matches!(
-                    field,
-                    NumberField::ChatMaxWidth
-                        | NumberField::SoundVolume
-                        | NumberField::TerminalPadding(..)
-                ) && field.range().contains(&value)
-                    && self.number_preview != Some(preview)
-                {
-                    self.number_preview = Some(preview);
+                let preview = NumberPreview::dragged(field, value);
+                if preview.is_some() && self.number_preview != preview {
+                    self.number_preview = preview;
                     cx.notify();
                 }
                 return;
@@ -230,24 +190,16 @@ impl SettingsWindow {
                 NumberField::Spacing(_) => {}
             }
         }
-        if let Some(preview) = &mut self.number_preview
-            && preview.field == field
-        {
+        if let Some(preview) = self.number_preview.filter(|preview| preview.field == field) {
             // The released value stays until the save's reload shows it.
-            if started && self.persistence.saving() {
-                preview.value = value;
-            } else {
-                self.number_preview = None;
-            }
+            self.number_preview = preview.after_commit(value, started, self.persistence.saving());
             cx.notify();
         }
     }
 
     /// What `field` shows: a live drag's value, else `saved`.
     pub(super) fn number_value(&self, field: NumberField, saved: f32) -> f32 {
-        self.number_preview
-            .filter(|preview| preview.field == field)
-            .map_or(saved, |preview| preview.value)
+        inputs::number_value(self.number_preview, field, saved)
     }
 
     /// Ends a slider preview unwritten: its drag was abandoned, its page

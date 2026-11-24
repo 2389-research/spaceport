@@ -1,6 +1,7 @@
 #![allow(clippy::unimplemented, clippy::unwrap_used)]
 //! Fixtures shared by this crate's tests.
 
+use crate::navigation;
 use crate::ui::{Labels, MESSAGE_IDS, SWATCH_NONE, Source, Unit, VALUE_MARK};
 
 /// The app's words, as the English catalog words them, so a test checks the
@@ -13,6 +14,15 @@ pub(crate) fn labels() -> Labels {
     }
 }
 
+/// The app's words for the section list and the footer: the same messages, so
+/// a test reads what a reader would.
+pub(crate) fn navigation_labels() -> navigation::Labels {
+    navigation::Labels {
+        message,
+        unsaved: |drafts| format!("{drafts} unsaved"),
+    }
+}
+
 fn message(id: &'static str) -> String {
     match id {
         id if id == Source::Herdr.label_id() => "Herdr".to_owned(),
@@ -21,6 +31,11 @@ fn message(id: &'static str) -> String {
         id if id == Unit::Pixels.label_id() => "px".to_owned(),
         id if id == Unit::Seconds.label_id() => "s".to_owned(),
         id if id == SWATCH_NONE => "none".to_owned(),
+        id if id == navigation::SECTIONS => "Sections".to_owned(),
+        id if id == navigation::SECTIONS_LABEL => "Settings sections".to_owned(),
+        "settings-saved" => "All changes saved.".to_owned(),
+        "settings-save-now" => "Save now".to_owned(),
+        "settings-reload" => "Reload".to_owned(),
         id => id.to_owned(),
     }
 }
