@@ -18,8 +18,10 @@ endpoint-status =
         [online] online
        *[connecting] connecting
     }
-# A daemon copied text to the clipboard (OSC 52).
-endpoint-copied = copied to clipboard
+# A pane program copied text to the clipboard with OSC 52. It is worded apart
+# from the user's own selection copy (window-find-copied) because the text came
+# from inside the terminal, not from a gesture of theirs.
+endpoint-copied = copied from the terminal
 # $error says why.
 endpoint-save-selection-failed = Save host selection: { $error }
 endpoint-catalog-failed = Host catalog: { $error }

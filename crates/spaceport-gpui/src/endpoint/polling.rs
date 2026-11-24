@@ -40,19 +40,31 @@ impl SpaceportWindow {
     }
 
     /// Writes daemon-forwarded OSC 52 payloads to the pasteboard and reports
-    /// the copy the way a local selection does. Returns whether anything was
-    /// written, so the window repaints for the flash.
+    /// the copy with the `endpoint-copied` flash, unless the toast is
+    /// configured off. Returns whether anything was written, so the window
+    /// repaints for the flash.
+    ///
+    /// A pane program's empty payload asks to clear the clipboard. That is not
+    /// honored: this client writes the clipboard for copies it did not ask
+    /// for, so a clear arriving after a selection the user just made would
+    /// wipe that copy while the flash still reported it. The clipboard belongs
+    /// to the user's gestures here, not to whichever pane spoke last.
     pub(super) fn apply_clipboard_writes(
         &mut self,
         writes: impl IntoIterator<Item = String>,
         cx: &mut Context<Self>,
     ) -> bool {
-        let mut writes = writes.into_iter().peekable();
-        if writes.peek().is_none() {
-            return false;
-        }
+        let mut wrote = false;
         for text in writes {
+            if text.is_empty() {
+                tracing::debug!("dropped the terminal's empty clipboard clear");
+                continue;
+            }
             cx.write_to_clipboard(ClipboardItem::new_string(text));
+            wrote = true;
+        }
+        if !wrote {
+            return false;
         }
         if self.config.clipboard_toast.enabled {
             self.show_flash(crate::window::Flash::success(fl!("endpoint-copied")), cx);
