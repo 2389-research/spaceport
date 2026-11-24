@@ -38,7 +38,7 @@ pub(crate) use crate::state::ConnectionStatus;
 pub(crate) use spaceport_client::SshFailure;
 #[cfg(all(test, unix))]
 pub(crate) use spaceport_endpoint::{MAX_RETRY_DELAY, STABLE_CONNECTION_PERIOD};
-#[cfg(all(test, unix))]
+#[cfg(test)]
 pub(crate) use std::time::Duration;
 // The endpoint program below GPUI, reached through the paths this module has
 // always named it by: the policy stage 1 and 2 lowered, and the host the link
