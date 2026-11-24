@@ -4,8 +4,8 @@
 //! feedback, the browser skill and launch at login (Windows).
 // i18n: migrated
 use super::{
-    CLIPBOARD_POSITIONS, SettingsWindow, catalog, on_off, on_off_choices, on_value, position_name,
-    position_names, ui,
+    CLIPBOARD_POSITIONS, PageState, SettingsWindow, catalog, on_off, on_off_choices, on_value,
+    position_name, position_names, ui,
 };
 use crate::settings_window::inputs::{DropdownField, NumberField};
 use crate::{
@@ -19,21 +19,22 @@ use crate::{
 use gpui::{prelude::*, *};
 
 impl SettingsWindow {
-    pub(in crate::settings_window) fn render_general(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
+    pub(in crate::settings_window) fn render_general(
+        &self,
+        page: &PageState<'_>,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let theme = page.theme;
         let ready = self.controls_shared_ready();
-        let copy = self
-            .shared
-            .as_ref()
-            .is_none_or(|shared| shared.copy_on_select);
-        let base = self.shared.as_ref().map_or_else(
+        let copy = page.shared.is_none_or(|shared| shared.copy_on_select);
+        let base = page.shared.map_or_else(
             || {
                 let default = ClipboardToast::default();
                 (default.enabled, default.position)
             },
             |shared| (shared.clipboard.enabled, shared.clipboard.position),
         );
-        let overrides = self.config.clipboard_overrides;
+        let overrides = page.config.clipboard_overrides;
         let position = overrides
             .position()
             .and_then(|p| CLIPBOARD_POSITIONS.iter().position(|(c, _)| *c == p));
@@ -61,31 +62,34 @@ impl SettingsWindow {
                 &fl!("settings-general-section-interface"),
                 None,
             ))
-            .child(self.language_row(cx))
+            .child(self.language_row(page, cx))
             .child(
                 ui::row(theme, &catalog::GENERAL_PORTS).switch(self.preference_toggle(
+                    page.theme,
                     "general-ports-toggle",
-                    self.config.show_listening_ports,
-                    Preference::ShowListeningPorts(!self.config.show_listening_ports),
+                    page.config.show_listening_ports,
+                    Preference::ShowListeningPorts(!page.config.show_listening_ports),
                     cx,
                 )),
             )
             .child(
                 ui::row(theme, &catalog::GENERAL_SMOOTH_SCROLL).switch(self.preference_toggle(
+                    page.theme,
                     "general-smooth-scroll-toggle",
-                    self.config.smooth_scroll,
-                    Preference::SmoothScroll(!self.config.smooth_scroll),
+                    page.config.smooth_scroll,
+                    Preference::SmoothScroll(!page.config.smooth_scroll),
                     cx,
                 )),
             )
             .when(
-                self.available(catalog::GENERAL_WINDOW_CONTROLS.availability, cx),
-                |page| {
-                    page.child(ui::row(theme, &catalog::GENERAL_WINDOW_CONTROLS).switch(
+                page.available(catalog::GENERAL_WINDOW_CONTROLS.availability),
+                |shown| {
+                    shown.child(ui::row(theme, &catalog::GENERAL_WINDOW_CONTROLS).switch(
                         self.preference_toggle(
+                            page.theme,
                             "general-window-controls-toggle",
-                            self.config.show_window_controls,
-                            Preference::ShowWindowControls(!self.config.show_window_controls),
+                            page.config.show_window_controls,
+                            Preference::ShowWindowControls(!page.config.show_window_controls),
                             cx,
                         ),
                     ))
@@ -98,14 +102,15 @@ impl SettingsWindow {
             ))
             .child(
                 ui::row(theme, &catalog::GENERAL_HERDR_CORE).switch(self.preference_toggle(
+                    page.theme,
                     "general-herdr-core-toggle",
-                    self.config.herdr_core_enabled,
-                    Preference::HerdrCoreEnabled(!self.config.herdr_core_enabled),
+                    page.config.herdr_core_enabled,
+                    Preference::HerdrCoreEnabled(!page.config.herdr_core_enabled),
                     cx,
                 )),
             )
             .children(
-                crate::core_feature::restart_required(self.config.herdr_core_enabled, cx).then(
+                crate::core_feature::restart_required(page.config.herdr_core_enabled, cx).then(
                     || {
                         div()
                             .debug_selector(|| "general-herdr-core-restart".into())
@@ -120,9 +125,9 @@ impl SettingsWindow {
                 &fl!("settings-general-section-features"),
                 None,
             ))
-            .children(self.feature_rows(cx))
+            .children(self.feature_rows(page, cx))
             .children(
-                self.available(catalog::GENERAL_CHAT_LAYOUT.availability, cx)
+                page.available(catalog::GENERAL_CHAT_LAYOUT.availability)
                     .then(|| {
                         let layouts: Vec<_> = ChatLayoutMode::ALL
                             .iter()
@@ -132,7 +137,7 @@ impl SettingsWindow {
                             theme,
                             "general-chat-layout-control",
                             &layouts,
-                            Some(self.config.chat.layout),
+                            Some(page.config.chat.layout),
                             !self.persistence.quitting() && !self.persistence.closing(),
                             on_value(cx, |this, mode, _, cx| {
                                 this.save_preference(Preference::ChatLayout(mode), cx)
@@ -141,11 +146,11 @@ impl SettingsWindow {
                     }),
             )
             .children(
-                self.available(catalog::GENERAL_CHAT_FULL_WIDTH.availability, cx)
-                    .then(|| self.chat_width_controls(cx)),
+                page.available(catalog::GENERAL_CHAT_FULL_WIDTH.availability)
+                    .then(|| self.chat_width_controls(page, cx)),
             )
             .children(
-                self.available(catalog::GENERAL_CHAT_LAUNCHER.availability, cx)
+                page.available(catalog::GENERAL_CHAT_LAUNCHER.availability)
                     .then(|| {
                         let launchers: Vec<_> = ChatLauncher::ALL
                             .iter()
@@ -155,7 +160,7 @@ impl SettingsWindow {
                             theme,
                             "general-chat-launcher-control",
                             &launchers,
-                            Some(self.config.chat.launcher),
+                            Some(page.config.chat.launcher),
                             !self.persistence.quitting() && !self.persistence.closing(),
                             on_value(cx, |this, launcher, _, cx| {
                                 this.save_preference(Preference::ChatLauncher(launcher), cx)
@@ -164,12 +169,13 @@ impl SettingsWindow {
                     }),
             )
             .children(
-                self.available(catalog::GENERAL_CHAT_GLIDE.availability, cx)
+                page.available(catalog::GENERAL_CHAT_GLIDE.availability)
                     .then(|| {
                         ui::row(theme, &catalog::GENERAL_CHAT_GLIDE).switch(self.preference_toggle(
+                            page.theme,
                             "general-chat-glide-toggle",
-                            self.config.chat.glide,
-                            Preference::ChatGlide(!self.config.chat.glide),
+                            page.config.chat.glide,
+                            Preference::ChatGlide(!page.config.chat.glide),
                             cx,
                         ))
                     }),
@@ -181,7 +187,7 @@ impl SettingsWindow {
                 None,
             ))
             .child(
-                self.gate_shared(
+                page.gate_shared(
                     ui::row(theme, &catalog::GENERAL_COPY_ON_SELECT).tag(ui::Source::Herdr),
                 )
                 .switch(
@@ -199,6 +205,7 @@ impl SettingsWindow {
                 ui::row(theme, &catalog::GENERAL_COPIED_TOAST)
                     .tag(ui::Source::Spaceport)
                     .control(self.override_dropdown(
+                        page.theme,
                         DropdownField::ClipboardEnabled,
                         &on_off(base.0),
                         &on_off_choices(),
@@ -210,6 +217,7 @@ impl SettingsWindow {
                 ui::row(theme, &catalog::GENERAL_CLIPBOARD_POSITION)
                     .tag(ui::Source::Spaceport)
                     .control(self.override_dropdown(
+                        page.theme,
                         DropdownField::ClipboardPosition,
                         &base_position,
                         &position_names,
@@ -234,30 +242,31 @@ impl SettingsWindow {
                         ),
                     ),
             )
-            .children(self.startup_rows(cx))
+            .children(self.startup_rows(page, cx))
     }
 
     /// Windows' **Launch at login**; other platforms have no such setting yet.
-    fn startup_rows(&self, cx: &mut Context<Self>) -> Vec<AnyElement> {
+    fn startup_rows(&self, page: &PageState<'_>, cx: &mut Context<Self>) -> Vec<AnyElement> {
         #[cfg(windows)]
-        return self.launch_at_login_rows(cx);
+        return self.launch_at_login_rows(page, cx);
         #[cfg(not(windows))]
         {
-            let _ = cx;
+            let _ = (page, cx);
             Vec::new()
         }
     }
 
     /// One row per `[features]` flag, generated from [`Feature::ALL`] so a
     /// flag added to the table shows up here on its own.
-    fn feature_rows(&self, cx: &mut Context<Self>) -> Vec<ui::Row> {
-        let features = self.config.features;
+    fn feature_rows(&self, page: &PageState<'_>, cx: &mut Context<Self>) -> Vec<ui::Row> {
+        let features = page.config.features;
         Feature::ALL
             .iter()
             .map(|&feature| {
                 let id = feature.setting_id();
                 let on = features.enabled(feature);
-                ui::row(&self.theme, &catalog::feature(feature)).switch(self.preference_toggle(
+                ui::row(page.theme, &catalog::feature(feature)).switch(self.preference_toggle(
+                    page.theme,
                     format!("{id}-toggle"),
                     on,
                     Preference::Feature(feature, !on),
@@ -309,15 +318,16 @@ impl SettingsWindow {
         );
     }
 
-    fn chat_width_controls(&self, cx: &mut Context<Self>) -> Div {
-        let full = self.config.chat.max_width == 0;
+    fn chat_width_controls(&self, page: &PageState<'_>, cx: &mut Context<Self>) -> Div {
+        let full = page.config.chat.max_width == 0;
         let field = NumberField::ChatMaxWidth;
-        let value = self.number_value(field, f32::from(self.config.chat.max_width));
+        let value = self.number_value(field, f32::from(page.config.chat.max_width));
         let view = cx.entity().downgrade();
         div()
             .child(
-                ui::row(&self.theme, &catalog::GENERAL_CHAT_FULL_WIDTH).switch(
+                ui::row(page.theme, &catalog::GENERAL_CHAT_FULL_WIDTH).switch(
                     self.preference_toggle(
+                        page.theme,
                         "general-chat-full-width-toggle",
                         full,
                         Preference::ChatMaxWidth(if full {
@@ -330,11 +340,11 @@ impl SettingsWindow {
                 ),
             )
             .when(
-                self.available(catalog::GENERAL_CHAT_WIDTH.availability, cx),
+                page.available(catalog::GENERAL_CHAT_WIDTH.availability),
                 |controls| {
-                    controls.child(ui::row(&self.theme, &catalog::GENERAL_CHAT_WIDTH).control(
+                    controls.child(ui::row(page.theme, &catalog::GENERAL_CHAT_WIDTH).control(
                         ui::number(
-                            &self.theme,
+                            page.theme,
                             ui::Number {
                                 id: field.selector(),
                                 value,

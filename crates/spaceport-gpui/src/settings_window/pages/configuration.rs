@@ -1,7 +1,7 @@
 //! Configuration: the files behind these settings, and reload.
 // i18n: migrated
 use super::{
-    SettingsWindow,
+    PageState, SettingsWindow,
     catalog::{self, Entry},
     ui,
 };
@@ -42,9 +42,13 @@ pub(in crate::settings_window) fn open_path(reveal: bool, path: PathBuf, cx: &mu
 }
 
 impl SettingsWindow {
-    pub(in crate::settings_window) fn render_configuration(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
-        let shared_path = self.shared.as_ref().map(|shared| shared.path.clone());
+    pub(in crate::settings_window) fn render_configuration(
+        &self,
+        page: &PageState<'_>,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let theme = page.theme;
+        let shared_path = page.shared.map(|shared| shared.path.clone());
         div()
             .flex()
             .flex_col()
@@ -54,12 +58,14 @@ impl SettingsWindow {
                 None,
             ))
             .child(self.file_row(
+                page,
                 &catalog::CONFIG_LOCAL,
                 ui::Source::Spaceport,
                 self.controls.local_path.clone(),
                 self.controls.local_file.clone(),
             ))
-            .child(self.gate_shared(self.file_row(
+            .child(page.gate_shared(self.file_row(
+                page,
                 &catalog::CONFIG_SHARED,
                 ui::Source::Herdr,
                 shared_path.as_ref().map_or_else(
@@ -78,26 +84,34 @@ impl SettingsWindow {
 
     /// A file's row, which shows the file's path where search matches the
     /// entry's description of the file.
-    fn file_row_base(&self, entry: &Entry, source: ui::Source, path: String) -> ui::Row {
-        ui::row(&self.theme, entry).tag(source).description(path)
+    fn file_row_base(
+        &self,
+        page: &PageState<'_>,
+        entry: &Entry,
+        source: ui::Source,
+        path: String,
+    ) -> ui::Row {
+        ui::row(page.theme, entry).tag(source).description(path)
     }
 
     /// A file's row with Reveal and Open buttons, which only exist where the
     /// platform has something to hand the path to.
     fn file_row(
         &self,
+        page: &PageState<'_>,
         entry: &'static Entry,
         source: ui::Source,
         text: String,
         file: Option<PathBuf>,
     ) -> ui::Row {
-        let row = self.file_row_base(entry, source, text);
-        self.file_buttons(row, entry.id, file)
+        let row = self.file_row_base(page, entry, source, text);
+        self.file_buttons(page, row, entry.id, file)
     }
 
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     pub(in crate::settings_window) fn file_buttons(
         &self,
+        page: &PageState<'_>,
         mut row: ui::Row,
         id: &'static str,
         file: Option<PathBuf>,
@@ -109,7 +123,7 @@ impl SettingsWindow {
             let enabled = file.is_some();
             let file = file.clone();
             row = row.control(
-                ui::button(&self.theme, format!("{id}-{suffix}"), label, enabled).when(
+                ui::button(page.theme, format!("{id}-{suffix}"), label, enabled).when(
                     enabled,
                     |button| {
                         button.on_click(move |_, _, cx| {
@@ -127,6 +141,7 @@ impl SettingsWindow {
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     pub(in crate::settings_window) fn file_buttons(
         &self,
+        _page: &PageState<'_>,
         row: ui::Row,
         _id: &'static str,
         _file: Option<PathBuf>,

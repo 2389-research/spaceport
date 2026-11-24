@@ -1,6 +1,6 @@
 //! Fonts: one family and size per face, then a live specimen of the face in use.
 // i18n: migrated
-use super::{SettingsWindow, catalog, ui};
+use super::{PageState, SettingsWindow, catalog, ui};
 use crate::{
     config::{FONT_SIZE_RANGE, FontFace},
     font_picker::FontTarget,
@@ -32,24 +32,29 @@ const fn face_entry(face: FontFace) -> &'static catalog::Entry {
 }
 
 impl SettingsWindow {
-    pub(in crate::settings_window) fn render_fonts(&self, cx: &mut Context<Self>) -> Div {
+    pub(in crate::settings_window) fn render_fonts(
+        &self,
+        page: &PageState<'_>,
+        cx: &mut Context<Self>,
+    ) -> Div {
         #[cfg(all(feature = "integration-test", target_os = "macos"))]
         self.reset_native_font_bounds(cx);
-        let theme = &self.theme;
-        let mut page = div().flex().flex_col().min_w_0().child(ui::section(
+        let theme = page.theme;
+        let mut rows = div().flex().flex_col().min_w_0().child(ui::section(
             theme,
             &fl!("settings-fonts-section-faces"),
             None,
         ));
         for (face, _) in FACES {
-            page = page.child(self.face_row(face, cx));
+            rows = rows.child(self.face_row(page, face, cx));
         }
-        page.child(
-            ui::row(theme, &catalog::FONTS_ALL_ROW).control(self.all_families_button().on_click(
-                cx.listener(|this, _, window, cx| {
-                    this.open_control_font_picker(FontTarget::All, window, cx)
-                }),
-            )),
+        rows.child(
+            ui::row(theme, &catalog::FONTS_ALL_ROW).control(
+                self.all_families_button(page)
+                    .on_click(cx.listener(|this, _, window, cx| {
+                        this.open_control_font_picker(FontTarget::All, window, cx)
+                    })),
+            ),
         )
         .child(ui::section(
             theme,
@@ -59,21 +64,26 @@ impl SettingsWindow {
         .child(self.render_font_specimen())
     }
 
-    fn all_families_button(&self) -> Stateful<Div> {
+    fn all_families_button(&self, page: &PageState<'_>) -> Stateful<Div> {
         self.font_button("fonts-all".into(), fl!("settings-fonts-use-one"))
             .border_1()
-            .border_color(rgb(self.theme.active))
-            .bg(rgb(self.theme.surface))
+            .border_color(rgb(page.theme.active))
+            .bg(rgb(page.theme.surface))
     }
 
-    fn face_row(&self, face: FontFace, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = &self.theme;
+    fn face_row(
+        &self,
+        page: &PageState<'_>,
+        face: FontFace,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
+        let theme = page.theme;
         let field = NumberField::FontSize(face);
         let id = field.selector();
         let size = self.control_face_size(face);
         let view = cx.entity().downgrade();
         let row = ui::row(theme, face_entry(face))
-            .control(self.family_button(face, cx))
+            .control(self.family_button(page, face, cx))
             .control(
                 ui::number(
                     theme,
@@ -116,27 +126,32 @@ impl SettingsWindow {
     }
 
     /// The family as a dropdown-styled button that opens the font picker.
-    fn family_button(&self, face: FontFace, cx: &mut Context<Self>) -> Stateful<Div> {
+    fn family_button(
+        &self,
+        page: &PageState<'_>,
+        face: FontFace,
+        cx: &mut Context<Self>,
+    ) -> Stateful<Div> {
         self.font_button(format!("fonts-{}-family", face.name()), "")
             .w(px(220.))
             .justify_between()
             .gap(px(6.))
             .border_1()
-            .border_color(rgb(self.theme.active))
-            .bg(rgb(self.theme.surface))
+            .border_color(rgb(page.theme.active))
+            .bg(rgb(page.theme.surface))
             .child(
                 div()
                     .min_w_0()
                     .flex_1()
                     .truncate()
-                    .child(family_label(&face_font(&self.config, face).family)),
+                    .child(family_label(&face_font(page.config, face).family)),
             )
             .child(
                 svg()
                     .path("icons/chevron-down.svg")
                     .size(px(12.))
                     .flex_none()
-                    .text_color(rgb(self.theme.muted)),
+                    .text_color(rgb(page.theme.muted)),
             )
             .on_click(cx.listener(move |this, _, window, cx| {
                 this.open_control_font_picker(FontTarget::Face(face), window, cx);

@@ -3,7 +3,7 @@
 //! Tabs & panes: tab layout and bar, closing confirmations, pane focus and
 //! session restore.
 // i18n: migrated
-use super::{SettingsWindow, catalog, on_value, ui};
+use super::{PageState, SettingsWindow, catalog, on_value, ui};
 use crate::{
     config::{Label as _, TabLayoutMode, preferences::Preference},
     herdr_settings::{Edit, TabBarPosition},
@@ -13,10 +13,14 @@ use crate::{
 use gpui::{prelude::*, *};
 
 impl SettingsWindow {
-    pub(in crate::settings_window) fn render_tabs(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
+    pub(in crate::settings_window) fn render_tabs(
+        &self,
+        page: &PageState<'_>,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let theme = page.theme;
         let ready = self.controls_shared_ready();
-        let shared = self.shared.as_ref();
+        let shared = page.shared;
         let position = shared.map(|shared| shared.tab_bar_position);
         let hide = shared.is_some_and(|shared| shared.hide_tab_bar_when_single_tab);
         let history = shared.is_some_and(|shared| shared.pane_history);
@@ -25,7 +29,7 @@ impl SettingsWindow {
             .map(|&mode| (mode, mode.label()))
             .collect();
         let open = !self.persistence.quitting() && !self.persistence.closing();
-        let mut page = div()
+        let mut rows = div()
             .flex()
             .flex_col()
             .child(ui::section(
@@ -37,7 +41,7 @@ impl SettingsWindow {
                 theme,
                 "tabs-layout-control",
                 &layouts,
-                Some(self.config.tab_layout),
+                Some(page.config.tab_layout),
                 open,
                 on_value(cx, |this, mode, _, cx| {
                     this.save_preference(Preference::TabLayout(mode), cx)
@@ -45,30 +49,29 @@ impl SettingsWindow {
             )))
             .child(
                 ui::row(theme, &catalog::TABS_AGENT_TITLE).switch(self.preference_toggle(
+                    page.theme,
                     "tabs-agent-title-toggle",
-                    self.config.tab_labels.agent_title,
-                    Preference::TabAgentTitle(!self.config.tab_labels.agent_title),
+                    page.config.tab_labels.agent_title,
+                    Preference::TabAgentTitle(!page.config.tab_labels.agent_title),
                     cx,
                 )),
             )
-            .children(
-                self.available(catalog::TABS_HERDR_2.availability, cx)
-                    .then(|| {
-                        ui::row(theme, &catalog::TABS_HERDR_2).switch(self.preference_toggle(
-                            "tabs-herdr-2-toggle",
-                            self.config.herdr_2_terminals,
-                            Preference::Herdr2Terminals(!self.config.herdr_2_terminals),
-                            cx,
-                        ))
-                    }),
-            )
+            .children(page.available(catalog::TABS_HERDR_2.availability).then(|| {
+                ui::row(theme, &catalog::TABS_HERDR_2).switch(self.preference_toggle(
+                    page.theme,
+                    "tabs-herdr-2-toggle",
+                    page.config.herdr_2_terminals,
+                    Preference::Herdr2Terminals(!page.config.herdr_2_terminals),
+                    cx,
+                ))
+            }))
             .child(ui::section(
                 theme,
                 &fl!("settings-tabs-section-tab-bar"),
                 Some(ui::Source::Herdr),
             ))
             .child(
-                self.gate_shared(ui::row(theme, &catalog::TABS_POSITION))
+                page.gate_shared(ui::row(theme, &catalog::TABS_POSITION))
                     .control(ui::segmented(
                         theme,
                         "tabs-position-control",
@@ -84,7 +87,7 @@ impl SettingsWindow {
                     )),
             )
             .child(
-                self.gate_shared(ui::row(theme, &catalog::TABS_HIDE_SINGLE))
+                page.gate_shared(ui::row(theme, &catalog::TABS_HIDE_SINGLE))
                     .switch(
                         ui::toggle(theme, "tabs-hide-single-toggle", hide, ready).when(
                             ready,
@@ -103,17 +106,19 @@ impl SettingsWindow {
             ))
             .child(
                 ui::row(theme, &catalog::TABS_CONFIRM_TAB).switch(self.preference_toggle(
+                    page.theme,
                     "tabs-confirm-tab-toggle",
-                    self.config.confirm_close_tab,
-                    Preference::ConfirmCloseTab(!self.config.confirm_close_tab),
+                    page.config.confirm_close_tab,
+                    Preference::ConfirmCloseTab(!page.config.confirm_close_tab),
                     cx,
                 )),
             )
             .child(
                 ui::row(theme, &catalog::TABS_CONFIRM_PANE).switch(self.preference_toggle(
+                    page.theme,
                     "tabs-confirm-pane-toggle",
-                    self.config.confirm_close_pane,
-                    Preference::ConfirmClosePane(!self.config.confirm_close_pane),
+                    page.config.confirm_close_pane,
+                    Preference::ConfirmClosePane(!page.config.confirm_close_pane),
                     cx,
                 )),
             )
@@ -124,9 +129,10 @@ impl SettingsWindow {
             ))
             .child(ui::row(theme, &catalog::TABS_FOCUS_FOLLOWS_MOUSE).switch(
                 self.preference_toggle(
+                    page.theme,
                     "tabs-focus-follows-mouse-toggle",
-                    self.config.focus_follows_mouse,
-                    Preference::FocusFollowsMouse(!self.config.focus_follows_mouse),
+                    page.config.focus_follows_mouse,
+                    Preference::FocusFollowsMouse(!page.config.focus_follows_mouse),
                     cx,
                 ),
             ))
@@ -136,7 +142,7 @@ impl SettingsWindow {
                 None,
             ))
             .child(
-                self.gate_shared(
+                page.gate_shared(
                     ui::row(theme, &catalog::TABS_PANE_HISTORY).tag(ui::Source::Herdr),
                 )
                 .switch(
@@ -167,7 +173,7 @@ impl SettingsWindow {
                 HostState::Ready(_) => fl!("settings-tabs-host-ready"),
             };
             let id = format!("tabs-pane-history-host-{index}");
-            page = page.child(
+            rows = rows.child(
                 ui::data_row(theme, id.clone(), host.label.clone())
                     .description(note)
                     .switch(
@@ -182,6 +188,6 @@ impl SettingsWindow {
                     ),
             );
         }
-        page
+        rows
     }
 }

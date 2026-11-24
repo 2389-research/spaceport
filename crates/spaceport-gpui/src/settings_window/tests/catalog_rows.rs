@@ -78,7 +78,9 @@ fn pages_and_catalog_declare_the_same_rows(cx: &mut TestAppContext) {
             }
         }
         for entry in entries {
-            let available = view.read_with(cx, |view, cx| view.available(entry.availability, cx));
+            let available = view.read_with(cx, |view, cx| {
+                PageState::of(view, cx).available(entry.availability)
+            });
             if available && cx.debug_bounds(entry.id).is_none() {
                 unrendered.insert(format!("{section:?}: {}", entry.id));
             }
@@ -115,8 +117,9 @@ fn pages_draw_the_text_search_indexes() {
             shown.extend(recorder.take());
             for entry in catalog::CATALOG.iter().filter(|e| e.section == section) {
                 let id = entry.id;
-                let available =
-                    view.read_with(cx, |view, cx| view.available(entry.availability, cx));
+                let available = view.read_with(cx, |view, cx| {
+                    PageState::of(view, cx).available(entry.availability)
+                });
                 if !available {
                     continue;
                 }

@@ -12,8 +12,11 @@ mod tabs;
 mod theme;
 mod window;
 
-use super::{SettingsWindow, catalog, inputs::DropdownField, ui};
-use crate::i18n::{self, fl};
+use super::{PageState, SettingsWindow, catalog, inputs::DropdownField, ui};
+use crate::{
+    config::Theme,
+    i18n::{self, fl},
+};
 use gpui::{prelude::*, *};
 pub(super) use language::language_choices;
 pub(super) use spaceport_settings::fields::{
@@ -32,30 +35,11 @@ pub(super) fn override_label(shared_value: &str, local: Option<&str>) -> String 
 }
 
 impl SettingsWindow {
-    /// Disables a row that edits Herdr's shared file when that file cannot be
-    /// written, saying why instead of showing the description.
-    fn gate_shared(&self, row: ui::Row) -> ui::Row {
-        match self.shared_gate() {
-            Some(reason) => row.disabled(reason),
-            None => row,
-        }
-    }
-
-    /// Why rows that edit Herdr's shared file are disabled, if they are.
-    pub(in crate::settings_window) fn shared_gate(&self) -> Option<String> {
-        if !cfg!(unix) {
-            Some(fl!("settings-shared-read-only"))
-        } else if self.shared.is_none() {
-            Some(fl!("settings-shared-unavailable"))
-        } else {
-            None
-        }
-    }
-
     /// A dropdown whose first entry follows Herdr and whose other entries are
     /// local overrides. `local` is the index into `choices` of the current one.
     fn override_dropdown(
         &self,
+        theme: &Theme,
         field: DropdownField,
         shared_value: &str,
         choices: &[String],
@@ -74,7 +58,7 @@ impl SettingsWindow {
         let view = cx.entity().downgrade();
         let (opener, picker, dismisser) = (view.clone(), view.clone(), view);
         ui::dropdown(
-            &self.theme,
+            theme,
             field.selector(),
             label,
             true,
@@ -96,6 +80,16 @@ impl SettingsWindow {
                 let _ = dismisser.update(cx, |this, cx| this.close_dropdown(window, cx));
             },
         )
+    }
+}
+
+#[cfg(test)]
+impl SettingsWindow {
+    /// Why rows that edit Herdr's shared file are disabled, if they are. The
+    /// pages read [`PageState::shared_gate`]; a test holding this window
+    /// reads the same rule.
+    pub(in crate::settings_window) fn shared_gate(&self) -> Option<String> {
+        super::page_state::shared_gate(self.shared.as_ref())
     }
 }
 

@@ -2,7 +2,7 @@
 //! edge rail. Each card's preview is the sidebar's own marks, so a mark that
 //! moves there moves here too.
 // i18n: migrated
-use super::{SettingsWindow, catalog, ui};
+use super::{PageState, SettingsWindow, catalog, ui};
 use crate::direction::Logical;
 use crate::{
     config::{StatusIcons, corners, preferences::Preference},
@@ -25,20 +25,18 @@ const PREVIEW: [(AgentStatus, &str); 5] = [
 const CARD_WIDTH: f32 = 212.;
 
 impl SettingsWindow {
-    pub(in crate::settings_window) fn render_indicators(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
-        let rail = self.config.edge_rail;
+    pub(in crate::settings_window) fn render_indicators(
+        &self,
+        page: &PageState<'_>,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let theme = page.theme;
+        let rail = page.config.edge_rail;
         let light = matches!(
             cx.window_appearance(),
             WindowAppearance::Light | WindowAppearance::VibrantLight
         );
-        let indicators = Indicators::new(
-            self.shared.as_ref(),
-            self.config.status_icons,
-            rail,
-            light,
-            theme,
-        );
+        let indicators = Indicators::new(page.shared, page.config.status_icons, rail, light, theme);
         div()
             .flex()
             .flex_col()
@@ -46,6 +44,7 @@ impl SettingsWindow {
                 ui::row(theme, &catalog::INDICATORS_EDGE_RAIL)
                     .tag(ui::Source::Spaceport)
                     .switch(self.preference_toggle(
+                        page.theme,
                         "indicators-edge-rail-toggle",
                         rail,
                         Preference::EdgeRail(!rail),
@@ -72,7 +71,7 @@ impl SettingsWindow {
                     .children(
                         StatusIcons::ALL
                             .iter()
-                            .map(|&set| self.set_card(set, indicators.with_icons(set), cx)),
+                            .map(|&set| self.set_card(page, set, indicators.with_icons(set), cx)),
                     ),
             )
     }
@@ -81,13 +80,14 @@ impl SettingsWindow {
     /// with it, and a line on what sets it apart. Clicking picks it.
     fn set_card(
         &self,
+        page: &PageState<'_>,
         set: StatusIcons,
         indicators: Indicators,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
-        let theme = &self.theme;
-        let on = self.config.status_icons == set;
-        let font = &self.config.sidebar;
+        let theme = page.theme;
+        let on = page.config.status_icons == set;
+        let font = &page.config.sidebar;
         let (name, description) = set_messages(set);
         div()
             .id(("indicator-set", set as usize))

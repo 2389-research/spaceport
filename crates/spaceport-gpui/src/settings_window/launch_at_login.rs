@@ -3,7 +3,7 @@
 //! time it comes to the front (Task Manager may have changed it meanwhile),
 //! and after each change, so the row shows what Windows will do.
 // i18n: migrated
-use super::{SettingsWindow, catalog, ui};
+use super::{PageState, SettingsWindow, catalog, ui};
 use crate::i18n::{Localize, fl};
 use crate::launch_at_login::{self, State};
 use gpui::{prelude::*, *};
@@ -72,8 +72,12 @@ impl SettingsWindow {
         .detach();
     }
 
-    pub(super) fn launch_at_login_rows(&self, cx: &mut Context<Self>) -> Vec<AnyElement> {
-        let theme = &self.theme;
+    pub(super) fn launch_at_login_rows(
+        &self,
+        page: &PageState<'_>,
+        cx: &mut Context<Self>,
+    ) -> Vec<AnyElement> {
+        let theme = page.theme;
         let state = self.launch_at_login.state;
         let on = state == Some(State::On);
         let ready = !self.launch_at_login.busy && matches!(state, Some(State::On | State::Off));

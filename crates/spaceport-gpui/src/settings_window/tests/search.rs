@@ -41,7 +41,10 @@ fn every_catalog_id_is_a_rendered_row(cx: &mut TestAppContext) {
         for entry in catalog::CATALOG.iter().filter(|e| e.section == section) {
             // A row the fixture's state does not render, such as the theme
             // side row outside following, has its own test.
-            if !view.read_with(cx, |view, cx| view.available(entry.availability, cx)) {
+            let available = view.read_with(cx, |view, cx| {
+                PageState::of(view, cx).available(entry.availability)
+            });
+            if !available {
                 continue;
             }
             assert!(

@@ -1,7 +1,7 @@
 //! Theme > Window and Terminal padding: what shows behind the main window,
 //! and the space between each terminal and the edges of its tab group.
 // i18n: migrated
-use super::{SettingsWindow, on_value, padding_ids, ui};
+use super::{PageState, SettingsWindow, on_value, padding_ids, ui};
 use crate::{
     config::{Axis, Side, preferences::Preference},
     i18n::fl,
@@ -18,8 +18,12 @@ pub(in crate::settings_window) const PADDING_SIDES: [(Axis, Side); 4] = [
 ];
 
 impl SettingsWindow {
-    pub(in crate::settings_window) fn render_window_rows(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
+    pub(in crate::settings_window) fn render_window_rows(
+        &self,
+        page: &PageState<'_>,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let theme = page.theme;
         div()
             .flex()
             .flex_col()
@@ -40,16 +44,22 @@ impl SettingsWindow {
                 )
                 .debug_selector(|| "settings-terminal-padding".into()),
             )
-            .children(PADDING_SIDES.map(|(axis, side)| self.padding_row(axis, side, cx)))
+            .children(PADDING_SIDES.map(|(axis, side)| self.padding_row(page, axis, side, cx)))
     }
 
-    fn padding_row(&self, axis: Axis, side: Side, cx: &mut Context<Self>) -> ui::Row {
+    fn padding_row(
+        &self,
+        page: &PageState<'_>,
+        axis: Axis,
+        side: Side,
+        cx: &mut Context<Self>,
+    ) -> ui::Row {
         let field = NumberField::TerminalPadding(axis, side);
         let (entry, _) = padding_ids(axis, side);
-        let value = self.number_value(field, self.config.terminal_padding.axis(axis).side(side));
+        let value = self.number_value(field, page.config.terminal_padding.axis(axis).side(side));
         let view = cx.entity().downgrade();
-        ui::row(&self.theme, entry).control(ui::number(
-            &self.theme,
+        ui::row(page.theme, entry).control(ui::number(
+            page.theme,
             ui::Number {
                 id: field.selector(),
                 value,

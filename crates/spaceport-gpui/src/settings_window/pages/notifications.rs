@@ -1,8 +1,8 @@
 //! Notifications: delivery, in-app toasts, and sound.
 // i18n: migrated
 use super::{
-    SettingsWindow, TOAST_POSITIONS, catalog, on_off, on_off_choices, on_value, position_name,
-    position_names, ui,
+    PageState, SettingsWindow, TOAST_POSITIONS, catalog, on_off, on_off_choices, on_value,
+    position_name, position_names, ui,
 };
 use crate::settings_window::inputs::{DropdownField, NumberField};
 use crate::{
@@ -13,11 +13,15 @@ use crate::{
 use gpui::{prelude::*, *};
 
 impl SettingsWindow {
-    pub(in crate::settings_window) fn render_notifications(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
+    pub(in crate::settings_window) fn render_notifications(
+        &self,
+        page: &PageState<'_>,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let theme = page.theme;
         let ready = self.controls_shared_ready();
-        let shared = self.shared.as_ref();
-        let overrides = self.config.notification_overrides;
+        let shared = page.shared;
+        let overrides = page.config.notification_overrides;
         let shared_enabled = shared.is_some_and(|s| s.toast_delivery == ToastDelivery::Herdr);
         let position = overrides
             .position()
@@ -29,7 +33,7 @@ impl SettingsWindow {
         );
         let base_position = position_name(&TOAST_POSITIONS, &base_position);
         let sound = shared.is_some_and(|shared| shared.sound_enabled);
-        let finished = self.config.notifications.finished;
+        let finished = page.config.notifications.finished;
         let source_alive = self.source.upgrade().is_some();
         div()
             .flex()
@@ -40,7 +44,7 @@ impl SettingsWindow {
                 Some(ui::Source::Herdr),
             ))
             .child(
-                self.gate_shared(ui::row(theme, &catalog::NOTIF_DELIVERY))
+                page.gate_shared(ui::row(theme, &catalog::NOTIF_DELIVERY))
                     .control(ui::segmented(
                         theme,
                         "notif-delivery-control",
@@ -73,6 +77,7 @@ impl SettingsWindow {
                 ui::row(theme, &catalog::NOTIF_FINISHED)
                     .tag(ui::Source::Spaceport)
                     .switch(self.preference_toggle(
+                        page.theme,
                         "notif-finished-toggle",
                         finished,
                         Preference::NotificationFinished(!finished),
@@ -86,6 +91,7 @@ impl SettingsWindow {
             ))
             .child(
                 ui::row(theme, &catalog::NOTIF_SHOW).control(self.override_dropdown(
+                    page.theme,
                     DropdownField::ToastEnabled,
                     &on_off(shared_enabled),
                     &on_off_choices(),
@@ -93,9 +99,10 @@ impl SettingsWindow {
                     cx,
                 )),
             )
-            .child(self.delay_row(cx))
+            .child(self.delay_row(page, cx))
             .child(
                 ui::row(theme, &catalog::NOTIF_POSITION).control(self.override_dropdown(
+                    page.theme,
                     DropdownField::ToastPosition,
                     &base_position,
                     &position_names,
@@ -109,7 +116,7 @@ impl SettingsWindow {
                 None,
             ))
             .child(
-                self.gate_shared(
+                page.gate_shared(
                     ui::row(theme, &catalog::NOTIF_SOUND)
                         .tag(ui::Source::Herdr)
                         // Without a main window the row adds how to preview.
@@ -142,21 +149,21 @@ impl SettingsWindow {
                     }),
                 ),
             )
-            .child(self.volume_row(cx))
+            .child(self.volume_row(page, cx))
     }
 
     /// The delay in seconds: a typed field with steppers, and a reset when the
     /// local file overrides Herdr's delay.
-    fn delay_row(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let overridden = self.config.notification_overrides.delay_seconds().is_some();
+    fn delay_row(&self, page: &PageState<'_>, cx: &mut Context<Self>) -> impl IntoElement {
+        let overridden = page.config.notification_overrides.delay_seconds().is_some();
         let on_change = on_value(cx, |this, change, _, cx| {
             this.commit_number(NumberField::ToastDelay, change, cx)
         });
-        let value = self.config.notifications.delay_seconds as f32;
+        let value = page.config.notifications.delay_seconds as f32;
         let view = cx.entity().downgrade();
-        ui::row(&self.theme, &catalog::NOTIF_DELAY)
+        ui::row(page.theme, &catalog::NOTIF_DELAY)
             .control(ui::number(
-                &self.theme,
+                page.theme,
                 ui::Number {
                     id: NumberField::ToastDelay.selector(),
                     value,
@@ -176,7 +183,7 @@ impl SettingsWindow {
             .when(overridden, |row| {
                 row.control(
                     ui::button(
-                        &self.theme,
+                        page.theme,
                         "notif-delay-reset",
                         fl!("settings-notifications-delay-reset"),
                         true,
@@ -191,19 +198,19 @@ impl SettingsWindow {
     /// The local sound volume: a slider and a typed percentage, editable
     /// even where Herdr's shared sound settings are read-only, since it lives
     /// in this app's own file.
-    fn volume_row(&self, cx: &mut Context<Self>) -> impl IntoElement {
+    fn volume_row(&self, page: &PageState<'_>, cx: &mut Context<Self>) -> impl IntoElement {
         let on_change = on_value(cx, |this, change, _, cx| {
             this.commit_number(NumberField::SoundVolume, change, cx)
         });
         let value = self.number_value(
             NumberField::SoundVolume,
-            f32::from(self.config.sound.volume),
+            f32::from(page.config.sound.volume),
         );
         let view = cx.entity().downgrade();
-        ui::row(&self.theme, &catalog::NOTIF_VOLUME)
+        ui::row(page.theme, &catalog::NOTIF_VOLUME)
             .tag(ui::Source::Spaceport)
             .control(ui::number(
-                &self.theme,
+                page.theme,
                 ui::Number {
                     id: NumberField::SoundVolume.selector(),
                     value,

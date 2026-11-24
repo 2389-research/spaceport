@@ -12,7 +12,7 @@ pub(super) use fonts::native_probe;
 pub(super) use fonts::{face_font, face_message, family_label};
 pub(super) mod preferences;
 
-use super::{Section, SettingsWindow};
+use super::{PageState, Section, SettingsWindow};
 use crate::{
     config::{Config, FONT_SIZE_RANGE, FontFace, corners},
     font_picker::FontTarget,
@@ -284,15 +284,16 @@ impl SettingsWindow {
     }
 
     pub(super) fn render_controls(&self, _window: &mut Window, cx: &mut Context<Self>) -> Div {
+        let page = PageState::of(self, cx);
         let content = match self.section {
-            Section::Fonts => self.render_fonts(cx),
-            Section::StatusBar => self.render_status_bar(cx),
-            Section::Sidebar => self.render_sidebar(cx),
-            Section::Indicators => self.render_indicators(cx),
-            Section::General => self.render_general(cx),
-            Section::Tabs => self.render_tabs(cx),
-            Section::Notifications => self.render_notifications(cx),
-            Section::Configuration => self.render_configuration(cx),
+            Section::Fonts => self.render_fonts(&page, cx),
+            Section::StatusBar => self.render_status_bar(&page, cx),
+            Section::Sidebar => self.render_sidebar(&page, cx),
+            Section::Indicators => self.render_indicators(&page, cx),
+            Section::General => self.render_general(&page, cx),
+            Section::Tabs => self.render_tabs(&page, cx),
+            Section::Notifications => self.render_notifications(&page, cx),
+            Section::Configuration => self.render_configuration(&page, cx),
             Section::Theme | Section::Integrations => div(),
         };
         div().flex().flex_col().min_w_0().child(content)

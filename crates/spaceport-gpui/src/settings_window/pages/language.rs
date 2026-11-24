@@ -4,7 +4,7 @@
 //! language with messages, each named in itself so a reader finds their own
 //! whatever the windows show.
 // i18n: migrated
-use super::{SettingsWindow, catalog, ui};
+use super::{PageState, SettingsWindow, catalog, ui};
 use crate::{
     i18n::{self, fl},
     settings_window::inputs::DropdownField,
@@ -45,9 +45,13 @@ fn label(language: &Language, available: &[Locale], system: &[LanguageIdentifier
 }
 
 impl SettingsWindow {
-    pub(in crate::settings_window) fn language_row(&self, cx: &mut Context<Self>) -> ui::Row {
+    pub(in crate::settings_window) fn language_row(
+        &self,
+        page: &PageState<'_>,
+        cx: &mut Context<Self>,
+    ) -> ui::Row {
         const FIELD: DropdownField = DropdownField::Language;
-        let configured = &self.config.language;
+        let configured = &page.config.language;
         let available = i18n::available();
         let system = spaceport_i18n::system_languages();
         let choices = language_choices(configured);
@@ -62,8 +66,8 @@ impl SettingsWindow {
         let current = options.get(selected).cloned().unwrap_or_default();
         let view = cx.entity().downgrade();
         let (opener, picker, dismisser) = (view.clone(), view.clone(), view);
-        ui::row(&self.theme, &catalog::GENERAL_LANGUAGE).control(ui::dropdown(
-            &self.theme,
+        ui::row(page.theme, &catalog::GENERAL_LANGUAGE).control(ui::dropdown(
+            page.theme,
             FIELD.selector(),
             current,
             false,

@@ -2,7 +2,7 @@
 //! Usage and network quality keep their existing visibility keys,
 //! which also stop their sampling.
 // i18n: migrated
-use super::{SettingsWindow, catalog, on_value, ui};
+use super::{PageState, SettingsWindow, catalog, on_value, ui};
 use crate::{
     config::{
         Config,
@@ -46,11 +46,15 @@ struct ButtonRow {
 }
 
 impl SettingsWindow {
-    pub(in crate::settings_window) fn render_status_bar(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
-        let items = self.config.status_bar;
-        let usage = self.config.usage.show;
-        let network_quality = self.config.show_network_quality;
+    pub(in crate::settings_window) fn render_status_bar(
+        &self,
+        page: &PageState<'_>,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let theme = page.theme;
+        let items = page.config.status_bar;
+        let usage = page.config.usage.show;
+        let network_quality = page.config.show_network_quality;
         let keep_awake = items.keep_awake;
         let buttons = [
             ButtonRow {
@@ -86,6 +90,7 @@ impl SettingsWindow {
             .child(
                 ui::row(theme, &catalog::STATUS_USAGE)
                     .control(self.detail_control(
+                        page,
                         "status-usage-detail",
                         items.usage,
                         usage,
@@ -108,6 +113,7 @@ impl SettingsWindow {
             )
             .child(
                 ui::row(theme, &catalog::STATUS_NETWORK_QUALITY).switch(self.preference_toggle(
+                    page.theme,
                     "status-network-quality-toggle",
                     network_quality,
                     Preference::ShowNetworkQuality(!network_quality),
@@ -130,13 +136,14 @@ impl SettingsWindow {
                         }),
                     ))
                     .switch(self.preference_toggle(
+                        page.theme,
                         "status-keep-awake-toggle",
                         keep_awake,
                         Preference::StatusBar(Edit::KeepAwake(!keep_awake)),
                         cx,
                     )),
             )
-            .children(buttons.map(|button| self.button_row(button, cx)))
+            .children(buttons.map(|button| self.button_row(page, button, cx)))
             .child(
                 self.control_note(fl!("settings-status-bar-note"))
                     .mt(px(10.))
@@ -147,6 +154,7 @@ impl SettingsWindow {
     /// Detailed or Compact for an item; inert while the item is hidden.
     fn detail_control(
         &self,
+        page: &PageState<'_>,
         id: &'static str,
         current: Detail,
         shown: bool,
@@ -154,7 +162,7 @@ impl SettingsWindow {
         cx: &mut Context<Self>,
     ) -> Div {
         ui::segmented(
-            &self.theme,
+            page.theme,
             id,
             &choices(&DETAILS),
             shown.then_some(current),
@@ -166,7 +174,12 @@ impl SettingsWindow {
     }
 
     /// A switch that hides the button, then whether it keeps its name.
-    fn button_row(&self, button: ButtonRow, cx: &mut Context<Self>) -> ui::Row {
+    fn button_row(
+        &self,
+        page: &PageState<'_>,
+        button: ButtonRow,
+        cx: &mut Context<Self>,
+    ) -> ui::Row {
         let ButtonRow {
             entry,
             toggle,
@@ -176,9 +189,9 @@ impl SettingsWindow {
         } = button;
         let shown = current.shown();
         let toggled = if shown { Button::Hidden } else { Button::Label };
-        ui::row(&self.theme, entry)
+        ui::row(page.theme, entry)
             .control(ui::segmented(
-                &self.theme,
+                page.theme,
                 style,
                 &choices(&STYLES),
                 shown.then_some(current),
@@ -187,7 +200,13 @@ impl SettingsWindow {
                     this.save_preference(Preference::StatusBar(edit(choice)), cx)
                 }),
             ))
-            .switch(self.preference_toggle(toggle, shown, Preference::StatusBar(edit(toggled)), cx))
+            .switch(self.preference_toggle(
+                page.theme,
+                toggle,
+                shown,
+                Preference::StatusBar(edit(toggled)),
+                cx,
+            ))
     }
 }
 
