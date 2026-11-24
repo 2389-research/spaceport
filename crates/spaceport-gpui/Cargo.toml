@@ -44,6 +44,7 @@ spaceport-release-notes.workspace = true
 spaceport-remote.workspace        = true
 spaceport-reorder.workspace      = true
 spaceport-settings.workspace     = true
+spaceport-settings-window.workspace = true
 spaceport-sidebar.workspace      = true
 spaceport-sound.workspace         = true
 spaceport-state-file.workspace    = true
@@ -126,6 +127,7 @@ integration-test = [
   "dep:core-graphics",
   "dep:foreign-types",
   "dep:objc",
+  "spaceport-settings-window/integration-test",
 ]
 
 [target.'cfg(unix)'.dependencies]

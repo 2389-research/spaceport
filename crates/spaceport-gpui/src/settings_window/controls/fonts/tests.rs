@@ -65,7 +65,7 @@ fn compact_rows_and_unclipped_picker_at_both_window_sizes(cx: &mut TestAppContex
         for index in 0..4 {
             let row = cx.debug_bounds(ROWS[index]).unwrap();
             inside(row, body);
-            assert!(row.size.height >= px(crate::settings_window::ui::ROW_HEIGHT));
+            assert!(row.size.height >= px(spaceport_settings_window::ui::ROW_HEIGHT));
             if let Some(previous) = previous {
                 // Rows are divider-separated and sit flush.
                 assert_eq!(row.top(), previous.bottom());

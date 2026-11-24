@@ -39,8 +39,7 @@ pub use spaceport_settings::{Density, Style};
 pub use spaceport_settings::AgentToken;
 pub use spaceport_settings::{
     FOLLOW_HERDR, Layer, SshConfig, Theme, Worktrees, backdrop, chat, corners, favorite_themes,
-    font_weight, home, mix, parse_hex, parse_value, preferences, status_bar, tab_layout,
-    view_settings_path,
+    font_weight, home, mix, parse_value, preferences, status_bar, tab_layout, view_settings_path,
 };
 
 /// Pads `element`, so the bounds its children are laid out in exclude the
@@ -53,20 +52,9 @@ pub(crate) fn pad<E: gpui::Styled>(element: E, padding: Padding) -> E {
         .pb(gpui::px(padding.y.end()))
 }
 
-/// The shaping font for `face`. Terminal prompts draw powerline separators and
-/// Nerd Font icons from the Private Use Area, which no text face and no
-/// platform default cascade covers, so those cells shape to the missing-glyph
-/// box unless the cascade names an icon font explicitly.
-pub(crate) fn font_for(face: &FontConfig) -> gpui::Font {
-    let mut font = gpui::font(face.family.clone());
-    font.weight = weight(face.weight);
-    font.fallbacks = face
-        .fallbacks
-        .as_ref()
-        .filter(|families| !families.is_empty())
-        .map(|families| gpui::FontFallbacks::from_fonts(families.clone()));
-    font
-}
+/// The shaping font for `face`, from `spaceport_widgets::fonts`, at the path the
+/// app has always named it by.
+pub(crate) use spaceport_widgets::fonts::font_for;
 
 /// A configured weight as the renderer's.
 pub(crate) fn weight(weight: Weight) -> gpui::FontWeight {

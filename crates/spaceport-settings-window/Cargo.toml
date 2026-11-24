@@ -1,0 +1,27 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-settings-window"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace       = true
+
+[lints]
+workspace = true
+
+[dependencies]
+gpui.workspace               = true
+spaceport-settings.workspace = true
+spaceport-widgets.workspace  = true
+
+[dev-dependencies]
+gpui               = { features = ["test-support"], workspace = true }
+spaceport-settings = { features = ["test-support"], workspace = true }
+# The kit's popovers report in place to a test build, as the app's tests see them.
+spaceport-widgets  = { features = ["test-support"], workspace = true }
+
+[features]
+# The app's native macOS tests click the kit's controls by the bounds they
+# report. A cargo feature, not `cfg(test)`, because the probe is used from the
+# app's test binary, where this crate's `cfg(test)` is false.
+integration-test = []

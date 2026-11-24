@@ -1,14 +1,18 @@
 //! Dropdown: a button that opens a floating option list beneath itself. The
 //! list renders inside the button's subtree via `deferred(anchored(..))`, so
 //! no bounds are passed around and it paints above the page.
-use crate::direction::Logical;
-use crate::{
-    config::{Theme, corners},
-    i18n::fl,
-    settings_window::inputs::DropdownField,
-};
+use crate::ui::Labels;
 use gpui::{prelude::*, *};
+use spaceport_settings::fields::DropdownField;
+use spaceport_settings::{Theme, corners};
+use spaceport_widgets::direction::Logical;
+use spaceport_widgets::motion::pop_in;
 use std::{cell::RefCell, collections::HashSet, ops::Range, rc::Rc};
+
+/// Where Herdr's value goes in [`Labels::follow_herdr`]. Formatted around a
+/// character no value holds, so the message shows where the value sits in any
+/// language.
+pub const VALUE_MARK: &str = "\u{0}";
 
 thread_local! {
     /// Dropdowns whose list was open when the button went down; the click that
@@ -17,7 +21,7 @@ thread_local! {
 }
 
 /// The open popover the view holds in `self.dropdown: Option<Dropdown>`.
-pub(in crate::settings_window) struct Dropdown {
+pub struct Dropdown {
     pub field: DropdownField,
     pub options: Vec<SharedString>,
     pub selected: usize,
@@ -25,7 +29,7 @@ pub(in crate::settings_window) struct Dropdown {
 }
 
 impl Dropdown {
-    pub(in crate::settings_window) fn open(
+    pub fn open(
         field: DropdownField,
         options: Vec<SharedString>,
         selected: usize,
@@ -42,13 +46,13 @@ impl Dropdown {
         }
     }
 
-    pub(in crate::settings_window) fn focus(&self) -> &FocusHandle {
+    pub fn focus(&self) -> &FocusHandle {
         &self.focus
     }
 
     /// Up/Down/Enter/Escape. Returns `Some(index)` on Enter, `Some(usize::MAX)`
     /// on Escape (the caller closes), else `None`.
-    pub(in crate::settings_window) fn key(&mut self, event: &KeyDownEvent) -> Option<usize> {
+    pub fn key(&mut self, event: &KeyDownEvent) -> Option<usize> {
         let count = self.options.len();
         match event.keystroke.key.as_str() {
             "down" if count > 0 => self.selected = (self.selected + 1) % count,
@@ -63,13 +67,14 @@ impl Dropdown {
 
 /// The button, plus its list when `open` is this dropdown.
 #[allow(clippy::too_many_arguments)]
-pub(in crate::settings_window) fn dropdown(
+pub fn dropdown(
     theme: &Theme,
     id: &'static str,
     label: impl Into<SharedString>,
     shared_prefix: bool,
     enabled: bool,
     open: Option<&Dropdown>,
+    labels: &Labels,
     on_open: impl Fn(&mut Window, &mut App) + 'static,
     on_pick: impl Fn(usize, &mut Window, &mut App) + 'static,
     on_dismiss: impl Fn(&mut Window, &mut App) + 'static,
@@ -80,7 +85,7 @@ pub(in crate::settings_window) fn dropdown(
     let on_dismiss = Rc::new(on_dismiss);
     let dismiss_button = on_dismiss.clone();
     let dismiss_list = on_dismiss;
-    let label_el = match follow_herdr_value(&label).filter(|_| shared_prefix) {
+    let label_el = match follow_herdr_value(labels, &label).filter(|_| shared_prefix) {
         // One line, so the words around Herdr's value stay a single message.
         Some(value) => {
             let muted = HighlightStyle {
@@ -138,22 +143,18 @@ pub(in crate::settings_window) fn dropdown(
         .child(label_el)
         .child(div().text_color(rgb(theme.subtext())).child("⌄"))
         .children(open.map(|open| {
-            deferred(
-                anchored()
-                    .snap_to_window_with_margin(px(8.))
-                    .child(crate::motion::pop_in(
-                        popover_list(theme, open, on_pick, move |window, cx| {
-                            dismiss_list(window, cx)
-                        }),
-                        SharedString::from(format!("{id}-list")),
-                    )),
-            )
+            deferred(anchored().snap_to_window_with_margin(px(8.)).child(pop_in(
+                popover_list(theme, open, on_pick, move |window, cx| {
+                    dismiss_list(window, cx)
+                }),
+                SharedString::from(format!("{id}-list")),
+            )))
             .with_priority(1)
         }))
 }
 
 /// The floating list; also usable on its own where the view wants it elsewhere.
-pub(in crate::settings_window) fn popover_list(
+pub fn popover_list(
     theme: &Theme,
     open: &Dropdown,
     on_pick: impl Fn(usize, &mut Window, &mut App) + 'static,
@@ -199,14 +200,11 @@ pub(in crate::settings_window) fn popover_list(
         }))
 }
 
-/// Where Herdr's value sits in a label that follows Herdr
-/// (`settings-use-herdr`), so the button can mute the words around it.
-fn follow_herdr_value(label: &str) -> Option<Range<usize>> {
-    // Formatted around a character no value holds, the message shows where
-    // the value goes in any language.
-    const MARK: &str = "\u{0}";
-    let template = fl!("settings-use-herdr", value = MARK);
-    let (before, after) = template.split_once(MARK)?;
+/// Where Herdr's value sits in a label that follows Herdr, so the button can
+/// mute the words around it.
+pub fn follow_herdr_value(labels: &Labels, label: &str) -> Option<Range<usize>> {
+    let template = (labels.follow_herdr)();
+    let (before, after) = template.split_once(VALUE_MARK)?;
     label.strip_prefix(before)?.strip_suffix(after)?;
     Some(before.len()..label.len() - after.len())
 }

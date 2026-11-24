@@ -6,34 +6,13 @@
 //! The clock they are measured by, and how long each takes, are
 //! [`spaceport_motion`]'s, so code below this crate can time a motion too.
 use gpui::{
-    AnimationElement, AnimationExt, Div, ElementId, IntoElement, ParentElement, Pixels, Styled,
-    div, px,
+    AnimationElement, AnimationExt, Div, ElementId, IntoElement, ParentElement, Pixels, Styled, div,
 };
 pub(crate) use spaceport_motion::{
     ENTER, LEAVE, Toggle, duration, is_slow, now, progress, set_slow,
 };
+pub(crate) use spaceport_widgets::motion::pop_in;
 use std::{cell::Cell, rc::Rc, time::Instant};
-
-/// How far a dropdown drops into place as it appears.
-const DROP: f32 = 4.;
-
-/// A dropdown or small popover appearing: it fades in while dropping a few
-/// pixels into place, on the same curve as [`progress`]. `id` names it; GPUI
-/// plays the motion again each time an element of that id appears anew.
-/// Unit tests see it in place, so geometry checks need not wait it out.
-pub(crate) fn pop_in<E: IntoElement + Styled + 'static>(
-    element: E,
-    id: impl Into<ElementId>,
-) -> AnimationElement<E> {
-    element.with_animation(
-        id,
-        gpui::Animation::new(duration(ENTER)).with_easing(|k| 1. - (1. - k).powi(3)),
-        |element, k| {
-            let k = if cfg!(test) { 1. } else { k };
-            element.opacity(k).mt(px(-(1. - k) * DROP))
-        },
-    )
-}
 
 /// A disclosure opening, such as a device unfolding its sessions: the space
 /// grows from nothing to the content's height while the content fades in,

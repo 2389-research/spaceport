@@ -8,6 +8,15 @@ use crate::{config::preferences::Preference, search_input::SearchInput};
 use gpui::{prelude::*, *};
 pub(in crate::settings_window) use spaceport_settings::fields::{DropdownField, NumberField};
 
+/// The number field being typed into: the field, its text and whether what it
+/// holds does not parse, with the blur that commits it.
+pub(in crate::settings_window) struct NumberEdit {
+    pub field: NumberField,
+    pub input: Entity<SearchInput>,
+    pub invalid: bool,
+    pub _blur: Subscription,
+}
+
 /// A slider that writes only on release: the value it shows while dragged,
 /// and after release until the save's reload.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -120,7 +129,7 @@ impl SettingsWindow {
                 this.finish_number_edit(false, cx);
             }
         });
-        self.number_edit = Some(ui::NumberEdit {
+        self.number_edit = Some(NumberEdit {
             field,
             input,
             invalid: false,
@@ -249,7 +258,7 @@ impl SettingsWindow {
         }
     }
 
-    pub(super) fn number_edit_for(&self, field: NumberField) -> Option<&ui::NumberEdit> {
+    pub(super) fn number_edit_for(&self, field: NumberField) -> Option<&NumberEdit> {
         self.number_edit.as_ref().filter(|edit| edit.field == field)
     }
 

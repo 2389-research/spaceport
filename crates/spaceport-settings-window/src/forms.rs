@@ -1,0 +1,66 @@
+//! Form pieces shared by the controls: a titled block under the shared section
+//! heading and a labelled switch row.
+use crate::ui::{ROW_HEIGHT, section};
+use gpui::prelude::*;
+use gpui::{Div, ElementId, FontWeight, Role, SharedString, Stateful, Toggled, div, px, rgb};
+use spaceport_settings::Theme;
+use spaceport_widgets::direction::Logical;
+use spaceport_widgets::{accessibility, toggles};
+
+/// A block of form content under a section heading; no card frame.
+pub fn control_card(theme: &Theme, title: &str) -> Div {
+    div()
+        .flex()
+        .flex_col()
+        .gap(px(10.))
+        .min_w_0()
+        .child(section(theme, title, None))
+}
+
+/// A clickable row with `label` and a switch; the caller adds `.on_click`
+/// when `enabled`.
+pub fn control_switch(
+    theme: &Theme,
+    id: impl Into<SharedString>,
+    label: impl Into<SharedString>,
+    checked: bool,
+    enabled: bool,
+) -> Stateful<Div> {
+    let id = id.into();
+    let toggle = format!("{id}-toggle");
+    let label = label.into();
+    // The whole row is the switch; the track inside only draws it.
+    let row = div()
+        .id(ElementId::Name(id.clone()))
+        .debug_selector(move || id.to_string())
+        .role(Role::Switch)
+        .aria_label(label.clone())
+        .aria_toggled(if checked {
+            Toggled::True
+        } else {
+            Toggled::False
+        });
+    accessibility::disabled(row, !enabled)
+        .row()
+        .items_center()
+        .justify_between()
+        .gap(px(12.))
+        .min_h(px(ROW_HEIGHT))
+        .py(px(6.))
+        .border_b_1()
+        .border_color(rgb(theme.active))
+        .when(enabled, |row| row.cursor_pointer())
+        .when(!enabled, |row| row.opacity(0.5))
+        .child(
+            div()
+                .min_w_0()
+                .text_size(px(12.))
+                .font_weight(FontWeight::MEDIUM)
+                .child(label),
+        )
+        .child(
+            toggles::switch(theme, 20., checked)
+                .id(ElementId::Name(toggle.clone().into()))
+                .debug_selector(move || toggle.clone()),
+        )
+}

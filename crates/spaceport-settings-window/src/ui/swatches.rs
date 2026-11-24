@@ -1,32 +1,31 @@
 //! Host colour row: a curated swatch strip, a "none" swatch, a hex field and
 //! a reset glyph. Pure rendering; the page owns the colour and the saves.
-// i18n: migrated
-use crate::direction::Logical;
-use crate::{
-    config::{FontConfig, Theme, corners, parse_hex},
-    fonts::StyledFont,
-    i18n::fl,
-    search_input::SearchInput,
-};
+use crate::ui::Labels;
 use gpui::{prelude::*, *};
+use spaceport_settings::{FontConfig, Theme, corners, parse_hex};
+use spaceport_widgets::direction::Logical;
+use spaceport_widgets::fonts::StyledFont;
 use std::rc::Rc;
 
 /// Curated host tints, muted enough to sit behind sidebar text.
-pub(in crate::settings_window) const SWATCHES: [u32; 11] = [
+pub(crate) const SWATCHES: [u32; 11] = [
     0x3a4a6b, 0x2f5d5a, 0x4a5b2f, 0x6b5a2f, 0x6b3a3a, 0x5a3a6b, 0x2f4a6b, 0x4a4a4a, 0x7a4f2a,
     0x2a6b4f, 0x6b2a5a,
 ];
 
 const SWATCH_SIZE: f32 = 18.;
 
+/// The message naming the swatch that gives a host no colour of its own.
+pub const SWATCH_NONE: &str = "settings-swatch-none";
+
 #[derive(Clone, Debug, PartialEq)]
-pub(in crate::settings_window) enum HostColorChange {
+pub enum HostColorChange {
     Set(u32),
     Clear,
 }
 
 /// `#rgb` or `#rrggbb` with or without the `#`, any case, padded by spaces.
-pub(in crate::settings_window) fn parse_hex_input(text: &str) -> Option<u32> {
+pub fn parse_hex_input(text: &str) -> Option<u32> {
     let text = text.trim().to_lowercase();
     if text.starts_with('#') {
         parse_hex(&text)
@@ -35,15 +34,19 @@ pub(in crate::settings_window) fn parse_hex_input(text: &str) -> Option<u32> {
     }
 }
 
+/// The colour row for the host called `host` at `index`: the swatch strip, the
+/// hex text field when the view is editing one (the field's element and whether
+/// what it holds does not parse), and a reset glyph once the host has a colour.
 #[allow(clippy::too_many_arguments)]
-pub(in crate::settings_window) fn swatch_row(
+pub fn swatch_row(
     theme: &Theme,
     host: &str,
     index: usize,
     current: Option<u32>,
     mono: &FontConfig,
     hint: SharedString,
-    hex_input: Option<(Entity<SearchInput>, bool)>,
+    hex_input: Option<(AnyElement, bool)>,
+    labels: &Labels,
     on_change: impl Fn(HostColorChange, &mut Window, &mut App) + 'static,
     on_edit_hex: impl Fn(&mut Window, &mut App) + 'static,
 ) -> Div {
@@ -116,7 +119,7 @@ pub(in crate::settings_window) fn swatch_row(
             None => {
                 let (label, color) = match current {
                     Some(color) => (format!("#{color:06x}"), theme.foreground),
-                    None => (fl!("settings-swatch-none"), theme.muted),
+                    None => ((labels.message)(SWATCH_NONE), theme.muted),
                 };
                 hex.text_font(mono)
                     .text_color(rgb(color))

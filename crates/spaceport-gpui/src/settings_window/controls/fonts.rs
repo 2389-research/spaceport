@@ -11,28 +11,10 @@ use crate::{
 /// The terminal face's specimen: code, the same in every language.
 const TERMINAL_SAMPLE: &str = "let answer = 42;\nif answer != 0 {\n    println!(\"ready\");\n}"; // i18n: data
 
+/// Where a probed element was painted is `spaceport-settings-window`'s, so the
+/// number field its kit draws is probed the same way as these controls.
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
-#[derive(Default)]
-struct NativeBounds(std::collections::HashMap<String, Bounds<Pixels>>);
-#[cfg(all(feature = "integration-test", target_os = "macos"))]
-impl Global for NativeBounds {}
-
-#[cfg(all(feature = "integration-test", target_os = "macos"))]
-pub(in crate::settings_window) fn native_probe(id: impl Into<String>) -> impl IntoElement {
-    let id = id.into();
-    canvas(
-        |_, _, _| (),
-        move |bounds, _, _, cx| {
-            cx.default_global::<NativeBounds>()
-                .0
-                .insert(id.clone(), bounds);
-        },
-    )
-    .absolute()
-    .top_0()
-    .inset_s(px(0.))
-    .size_full()
-}
+pub(in crate::settings_window) use spaceport_settings_window::native::native_probe;
 
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
 impl SettingsWindow {
@@ -41,7 +23,7 @@ impl SettingsWindow {
         id: &str,
         cx: &App,
     ) -> Option<Bounds<Pixels>> {
-        cx.try_global::<NativeBounds>()?.0.get(id).copied()
+        spaceport_settings_window::native::bounds(cx, id)
     }
 
     pub(in crate::settings_window) fn native_font_search(
@@ -298,7 +280,7 @@ impl SettingsWindow {
     /// Forgets last frame's painted bounds so the native checks read fresh ones.
     #[cfg(all(feature = "integration-test", target_os = "macos"))]
     pub(in crate::settings_window) fn reset_native_font_bounds(&self, cx: &mut Context<Self>) {
-        cx.default_global::<NativeBounds>().0.clear();
+        spaceport_settings_window::native::clear(cx);
     }
 
     /// The live sample for the active face, set in its own font and size.
