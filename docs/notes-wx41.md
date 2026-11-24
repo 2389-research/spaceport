@@ -38,7 +38,7 @@ commits, not of what they left behind.
 
 | File | Lines | What it holds | Callers |
 | --- | --- | --- | --- |
-| `rich/math.rs` | 112 | `draw` (RaTeX layout and rasterization, the 2 MiB bound, the texture upload) and `within_limits`, which bounds recursion and control characters before the third-party parser | `chat/visual.rs:185` through `rich.rs`'s `draw_math`; `rich/tests.rs` and `rich/tests/display_math.rs` |
+| `rich/math.rs` | 112 | `draw` (RaTeX layout and rasterization, its pixel and side bounds, the texture upload) and `within_limits`, which bounds recursion and control characters before the third-party parser | `chat/visual.rs:185` through `rich.rs`'s `draw_math`; `rich/tests.rs` and `rich/tests/display_math.rs` |
 | `rich/tests.rs` | 174 | the app's parse *shell* (the crate's `parse` with this client's `destination`, its wants handed to a real `Visuals`), the rasterizer's limits and the link policy | itself |
 | `rich/tests/display_math.rs` | 31 | display math's optical size and its scaling past the old 32 px cap, measured on the raster | itself |
 
@@ -97,7 +97,7 @@ Coverage of the three moved models, by layer:
 
 ### The gap: no fixture builds a non-local `Target`
 
-`chat/preview.rs:508-514` is the only `Target` a fixture constructs and it
+`chat/preview.rs:508-514` is the only `Target` a native fixture constructs and it
 hard-codes `route: Route::Local`. So two one-line reads of the same fact are
 unproven end to end:
 
@@ -171,9 +171,9 @@ window they drive.
 
 ## Verification
 
-- `cargo fmt --all` clean
+- `cargo fmt --all --check` clean
 - `cargo check -p spaceport-gpui -p spaceport-chat-core --all-targets --features integration-test` clean (no dead or unused re-export)
-- `cargo clippy -p spaceport-gpui -p spaceport-chat-core --all-targets --features integration-test`
+- `cargo clippy -p spaceport-gpui -p spaceport-chat-core --all-targets --features integration-test` clean
 - `cargo test -p spaceport-gpui --bin spaceport chat` — 445 passed
 - `cargo test -p spaceport-chat-core` — 122 passed
 - `git grep` per symbol before concluding a deletion: the counts above are the
