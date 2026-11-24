@@ -279,7 +279,7 @@ homes. Counted today, production lines first:
 | Feature | production / test lines | `gpui::`/entity uses | i18n messages | files importing it | what blocks it |
 | --- | --- | --- | --- | --- | --- |
 | `browser` | moved: `crates/spaceport-browser` holds 3,398 production and 1,904 test lines | — | 10 | 51 | done; 1,395 production lines stay in the app as the window's own (wrappers, element building, `group_shown`, the close driver) — see [`notes-browser-extraction.md`](notes-browser-extraction.md) |
-| `chat` | 20,706 / 16,719, of which `crates/spaceport-chat-core` holds 1,910 production and 1,605 test lines | 128 | 174 | 12 | GPUI views all the way down; stages 1-3a landed the core (`spaceport-chat-core`: the model, the attach side, the syntax spans and the measurements), stages 3b-4 below; needs `browser` below it for the URL and page parts, then the proposed live-state crate described in the settings design |
+| `chat` | 16,145 production / 14,139 test lines stay in the app (`src/chat` with `chat.rs`), beside `crates/spaceport-chat-core`'s 5,225 / 3,202 (which names no `gpui` at all) | 74 | 141 | 30 (through the `crate::chat` façade) | stages 1-3d landed: the crate holds the attach model, the syntax spans and measurements, the prepared entry model with its widgets, the rich block model and parse, and the selectable text; what stays app-side is every painter (`view/` and `view.rs`, 10,005 lines with their tests), the `Visuals` workers, the `Prepared` shell that hands their wants over, the link classification, and the I/O and process paths; stage 4 below waits on the live-state crate described in the settings design — see [`notes-wx41.md`](notes-wx41.md) |
 | `sidebar` | 6,481 / 13,803 remain in the app, beside `crates/spaceport-sidebar`'s 6,610 / 1,611 (31 `gpui::` uses; the crate is a GPUI crate, like `spaceport-browser`) | 74 | 263 | stages 1–8a landed: the crate holds the row/agent models, geometry, layouts, tokens, row paint, the direction mirror, and the interaction math (reorder, device drag, hover, order); what stays app-side is window-owned glue (~680 lines of `impl SpaceportWindow` in `reorder.rs`, `device_drag.rs`, `hover.rs`, `order.rs`) that sends the crate's typed requests — the browser program's terminal shape, not a defect to fix. Still needs `menu` (20.6k lines app-side), `endpoint` (16.2k), `keymap` (3.1k), `worktree_notes`, `device_tags` before the render lane can follow |
 
 Order that falls out of the counts: `browser` before `sidebar` (53 against 263
@@ -308,10 +308,17 @@ are `gpui`-free but reach the app, and split into the stages below.
   `spaceport-ago` does), `crate::release_notes`, `crate::browser::WebUrl`,
   `crate::terminal::file_target`, `crate::chat::visual` (whose `Visuals` holds
   `gpui::RenderImage`) and `crate::config::Theme`/`crate::contrast`. Each of
-  those has to be below the crate first. `text.rs` and `highlight.rs` are done
-  (stage 3a above); `prepared.rs`, `rich/`, `selection/` and `summary.rs` wait
-  on the release notes' line model, `spaceport-browser`'s `WebUrl`, the
-  terminal's file targets and a `visual` without `RenderImage`.
+  those has to be below the crate first, and each was paid in turn: `text.rs`
+  and `highlight.rs` (stage 3a), the rich block model and its parse with the two
+  destinations injected as policies — `parse` and `Document` take the app's
+  `destination` and `is_local_path` instead of the crate reading `WebUrl` or
+  `file_target` (stage 3b), the release notes' line model with the prepared
+  entry model and the widgets (stage 3c), and the selectable text (stage 3d).
+  `prepared.rs` stays as the shell that pairs the crate's model with the
+  window's `Visuals` and selectable `Document`; `selection.rs` and `rich.rs`
+  stay as a facade and as the link policy at the paths every importer already
+  uses. The `Visuals` sink is why a `visual` without `RenderImage` was never
+  needed: the crate reports its wants and the app answers them.
 - **Stage 4, everything that paints or holds an entity:** `view/` (the largest
   group), `widgets/state.rs`, `visual/`, `files.rs`, `pasted.rs`, `page.rs`,
   `harnesses.rs`, `start.rs`, `preview/`, `window.rs`, `chats.rs`, `reader.rs`,
