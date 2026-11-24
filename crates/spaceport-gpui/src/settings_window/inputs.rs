@@ -3,58 +3,10 @@
 //! Transient input state the pages share: the open dropdown, the number field
 //! being typed into, and the root key routing for both.
 // i18n: migrated
-use super::{
-    SettingsWindow,
-    pages::{Spacing, padding_ids, size_control},
-    ui,
-};
-use crate::{
-    config::{
-        Axis, FONT_SIZE_RANGE, FontFace, MAX_PADDING, Side, SoundConfig, preferences::Preference,
-    },
-    search_input::SearchInput,
-};
+use super::{SettingsWindow, ui};
+use crate::{config::preferences::Preference, search_input::SearchInput};
 use gpui::{prelude::*, *};
-use std::ops::RangeInclusive;
-
-/// Every number field the pages show; the selector is the control's id.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(in crate::settings_window) enum NumberField {
-    ChatMaxWidth,
-    Spacing(Spacing),
-    FontSize(FontFace),
-    ToastDelay,
-    SoundVolume,
-    TerminalPadding(Axis, Side),
-}
-
-impl NumberField {
-    pub(in crate::settings_window) fn selector(self) -> &'static str {
-        match self {
-            Self::ChatMaxWidth => "general-chat-width-control",
-            Self::Spacing(spacing) => spacing.control(),
-            Self::FontSize(face) => size_control(face),
-            Self::ToastDelay => "notif-delay-control",
-            Self::SoundVolume => "notif-volume-control",
-            Self::TerminalPadding(axis, side) => padding_ids(axis, side).1,
-        }
-    }
-
-    /// The values the field accepts.
-    pub(in crate::settings_window) fn range(self) -> RangeInclusive<f32> {
-        match self {
-            Self::ChatMaxWidth => {
-                let range = crate::config::chat::MAX_WIDTH_RANGE;
-                f32::from(*range.start())..=f32::from(*range.end())
-            }
-            Self::Spacing(spacing) => spacing.range(),
-            Self::FontSize(_) => FONT_SIZE_RANGE,
-            Self::ToastDelay => 0.0..=3600.0,
-            Self::SoundVolume => 0.0..=f32::from(SoundConfig::MAX_VOLUME),
-            Self::TerminalPadding(..) => 0.0..=MAX_PADDING,
-        }
-    }
-}
+pub(in crate::settings_window) use spaceport_settings::fields::{DropdownField, NumberField};
 
 /// A slider that writes only on release: the value it shows while dragged,
 /// and after release until the save's reload.
@@ -62,30 +14,6 @@ impl NumberField {
 pub(in crate::settings_window) struct NumberPreview {
     pub field: NumberField,
     pub value: f32,
-}
-
-/// Every dropdown the pages show; the selector is the button's id.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(in crate::settings_window) enum DropdownField {
-    Layout,
-    ClipboardEnabled,
-    ClipboardPosition,
-    Language,
-    ToastEnabled,
-    ToastPosition,
-}
-
-impl DropdownField {
-    pub(in crate::settings_window) fn selector(self) -> &'static str {
-        match self {
-            Self::Layout => "sidebar-layout-control",
-            Self::ClipboardEnabled => "general-copied-toast-control",
-            Self::ClipboardPosition => "general-clipboard-position-control",
-            Self::Language => "general-language-control",
-            Self::ToastEnabled => "notif-show-control",
-            Self::ToastPosition => "notif-position-control",
-        }
-    }
 }
 
 impl SettingsWindow {
@@ -124,7 +52,7 @@ impl SettingsWindow {
     ) {
         use super::pages::{CLIPBOARD_POSITIONS, TOAST_POSITIONS};
         self.dropdown = None;
-        if self.persistence.quitting() || self.persistence.closing().is_some() {
+        if self.persistence.quitting() || self.persistence.closing() {
             cx.notify();
             return;
         }

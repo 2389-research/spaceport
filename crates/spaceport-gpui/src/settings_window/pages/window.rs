@@ -1,7 +1,7 @@
 //! Theme > Window and Terminal padding: what shows behind the main window,
 //! and the space between each terminal and the edges of its tab group.
 // i18n: migrated
-use super::{SettingsWindow, catalog, on_value, ui};
+use super::{SettingsWindow, on_value, padding_ids, ui};
 use crate::{
     config::{Axis, Side, preferences::Preference},
     i18n::fl,
@@ -16,19 +16,6 @@ pub(in crate::settings_window) const PADDING_SIDES: [(Axis, Side); 4] = [
     (Axis::Y, Side::Start),
     (Axis::Y, Side::End),
 ];
-
-/// The catalog entry of one padded side's row, and its number field's id.
-pub(in crate::settings_window) fn padding_ids(
-    axis: Axis,
-    side: Side,
-) -> (&'static catalog::Entry, &'static str) {
-    match (axis, side) {
-        (Axis::X, Side::Start) => (&catalog::THEME_PADDING_LEFT, "terminal-padding-left"),
-        (Axis::X, Side::End) => (&catalog::THEME_PADDING_RIGHT, "terminal-padding-right"),
-        (Axis::Y, Side::Start) => (&catalog::THEME_PADDING_TOP, "terminal-padding-top"),
-        (Axis::Y, Side::End) => (&catalog::THEME_PADDING_BOTTOM, "terminal-padding-bottom"),
-    }
-}
 
 impl SettingsWindow {
     pub(in crate::settings_window) fn render_window_rows(&self, cx: &mut Context<Self>) -> Div {

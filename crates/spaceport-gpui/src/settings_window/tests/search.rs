@@ -27,40 +27,6 @@ fn catalog_search_matches_title_description_and_page() {
     assert!(catalog::search("zzzz").is_empty());
 }
 
-#[test]
-fn every_feature_flag_has_a_general_catalog_entry() {
-    for feature in crate::config::Feature::ALL {
-        assert!(
-            catalog::CATALOG
-                .iter()
-                .any(|entry| entry.id == feature.setting_id() && entry.section == Section::General),
-            "{}",
-            feature.key()
-        );
-    }
-}
-
-#[test]
-fn every_catalog_id_is_unique_and_belongs_to_its_section() {
-    let mut seen = std::collections::HashSet::new();
-    for entry in catalog::CATALOG {
-        assert!(seen.insert(entry.id), "duplicate {}", entry.id);
-        let prefix = match entry.section {
-            Section::Theme => "theme-",
-            Section::Sidebar => "sidebar-",
-            Section::Indicators => "indicators-",
-            Section::Fonts => "fonts-",
-            Section::General => "general-",
-            Section::Tabs => "tabs-",
-            Section::Notifications => "notif-",
-            Section::StatusBar => "status-",
-            Section::Integrations => "integrations-",
-            Section::Configuration => "config-",
-        };
-        assert!(entry.id.starts_with(prefix), "{}", entry.id);
-    }
-}
-
 #[gpui::test]
 fn every_catalog_id_is_a_rendered_row(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(skill_fixture);

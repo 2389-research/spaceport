@@ -12,16 +12,6 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 
-/// The number control's id for a face; ids live for the whole run.
-pub(in crate::settings_window) const fn size_control(face: FontFace) -> &'static str {
-    match face {
-        FontFace::Terminal => "fonts-terminal-size-control",
-        FontFace::Sidebar => "fonts-sidebar-size-control",
-        FontFace::Tabs => "fonts-tabs-size-control",
-        FontFace::Ui => "fonts-ui-size-control",
-    }
-}
-
 fn specimen_title(face: FontFace) -> String {
     match face {
         FontFace::Terminal => fl!("settings-fonts-specimen-terminal"),

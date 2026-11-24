@@ -594,7 +594,7 @@ pub(crate) fn fixture_window(
             },
             // The plain sidebar, at the window's edge; the activity bar's
             // tests turn the bar on.
-            sidebar_style: crate::config::SidebarStyle {
+            sidebar_style: spaceport_settings::SidebarStyle {
                 activity_bar: false,
                 ..Default::default()
             },

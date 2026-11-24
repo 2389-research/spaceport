@@ -54,7 +54,7 @@ impl SettingsWindow {
             )
             .child(ui::section(
                 theme,
-                &catalog::INDICATORS_SETS.title(),
+                &catalog::title(&catalog::INDICATORS_SETS),
                 Some(ui::Source::Spaceport),
             ))
             .child(

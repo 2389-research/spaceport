@@ -3,18 +3,22 @@
 //! Loading and saving preferences off the UI thread, then reconciling the result,
 //! including the config watcher and the saves that finish when the app quits.
 // i18n: migrated
-use super::{Kind, Section, SettingsWindow, layouts, themes};
-pub(super) mod lifecycle;
-
-mod operation;
+use super::{Section, SettingsWindow};
 use crate::{
     config::{Config, FontFace, Theme, ThemeName},
     herdr_settings::{self, Edit},
     i18n::{Localize, fl},
 };
 use gpui::*;
-use operation::{Operation, reconcile};
-pub(super) use operation::{Reconciled, Request, SharedWrite};
+pub(super) use spaceport_settings::save_queue::{
+    Kind, Operation, Reconciled, SharedWrite, reconcile,
+};
+use spaceport_settings::save_queue::{Lifecycle as SaveQueue, PendingWrite};
+
+/// One write queued behind a running save, and the reload that reconciles it.
+pub(super) type Request = spaceport_settings::save_queue::Request<Loaded, crate::Error>;
+/// The bounded queue those writes wait in.
+pub(super) type Lifecycle = SaveQueue<Request>;
 
 pub(super) struct Loaded {
     pub(super) config: Config,
@@ -181,13 +185,17 @@ impl SettingsWindow {
                     }
                 }
             }
-            while let Some(Request {
-                operation, load, ..
-            }) = pending_writes.pop_front()
-            {
+            while let Some(request) = pending_writes.pop_front() {
+                let (operation, load, _) = request.into_parts();
                 let saved = operation.run();
                 let loaded = load();
-                let reconciled = reconcile(&saved, &loaded);
+                let reconciled = reconcile(
+                    &saved,
+                    loaded
+                        .as_ref()
+                        .ok()
+                        .and_then(|loaded| loaded.shared.as_ref()),
+                );
                 if saved.is_ok() {
                     shared = reconciled.snapshot;
                 }
@@ -419,14 +427,14 @@ impl SettingsWindow {
             return;
         };
         self.submit(
-            Request {
-                operation: Operation::Shared {
+            Request::new(
+                Operation::Shared {
                     snapshot: std::sync::Arc::new(shared),
                     edit,
                 },
-                load: Box::new(load),
-                shared: true,
-            },
+                Box::new(load),
+                true,
+            ),
             cx,
         );
     }
@@ -439,17 +447,13 @@ impl SettingsWindow {
         cx: &mut Context<Self>,
     ) {
         self.submit(
-            Request {
-                operation: Operation::plain(operation),
-                load: Box::new(load),
-                shared,
-            },
+            Request::new(Operation::plain(operation), Box::new(load), shared),
             cx,
         );
     }
 
     fn submit(&mut self, request: Request, cx: &mut Context<Self>) {
-        if self.persistence.quitting() || self.persistence.closing().is_some() {
+        if self.persistence.quitting() || self.persistence.closing() {
             return;
         }
         if self.busy() {
@@ -472,15 +476,11 @@ impl SettingsWindow {
     ) {
         // This action's UI is disabled while busy. Its callback records the
         // managed skill choice, so retain its existing single-write contract.
-        if self.busy() || self.persistence.closing().is_some() {
+        if self.busy() || self.persistence.closing() {
             return;
         }
         self.start_save(
-            Request {
-                operation: Operation::plain(operation),
-                load: Box::new(load),
-                shared,
-            },
+            Request::new(Operation::plain(operation), Box::new(load), shared),
             Kind::Ordinary,
             on_saved,
             cx,
@@ -510,11 +510,11 @@ impl SettingsWindow {
             return;
         }
         self.start_save(
-            Request {
-                operation: Operation::Captured(Box::new(operation)),
-                load: Box::new(load),
+            Request::new(
+                Operation::Captured(Box::new(operation)),
+                Box::new(load),
                 shared,
-            },
+            ),
             kind,
             |_| {},
             cx,
@@ -522,7 +522,7 @@ impl SettingsWindow {
     }
 
     fn resume_pending(&mut self, cx: &mut Context<Self>) {
-        if let Some(request) = self.persistence.next() {
+        if let Some(request) = self.persistence.take_next() {
             self.start_save(request, Kind::Ordinary, |_| {}, cx);
         }
     }
@@ -534,11 +534,7 @@ impl SettingsWindow {
         on_saved: impl FnOnce(&mut Context<Self>) + 'static,
         cx: &mut Context<Self>,
     ) {
-        let Request {
-            operation,
-            load,
-            shared,
-        } = request;
+        let (operation, load, shared) = request.into_parts();
         self.persistence.begin_save(kind);
         self.error = None;
         let retained = cx.entity();
@@ -553,7 +549,13 @@ impl SettingsWindow {
             let written = watched.as_ref().map(sample);
             // A persistence error can occur after replacement. Always reconcile.
             let loaded = load();
-            let reconciled = reconcile(&saved, &loaded);
+            let reconciled = reconcile(
+                &saved,
+                loaded
+                    .as_ref()
+                    .ok()
+                    .and_then(|loaded| loaded.shared.as_ref()),
+            );
             let saved = saved.map(|_| ()).map_err(std::sync::Arc::new);
             let _ = finished.send(saved.clone().map(|()| reconciled.clone()));
             (saved, loaded, written, reconciled.write)
@@ -580,11 +582,11 @@ impl SettingsWindow {
                 if saved.is_ok() && matches!(&kind, Kind::Theme(revision)
                     if this.theme_intent.as_ref().is_some_and(|intent| intent.revision == *revision)) {
                     this.theme_intent = None;
-                    themes::clear_theme_draft(cx);
+                    super::drafts::drafts_mut(cx).clear_theme();
                 }
                 if saved.is_ok() && matches!(&kind, Kind::Layout(mode) if this.layout_intent == Some(*mode)) {
                     this.layout_intent = None;
-                    layouts::clear_layout_draft(cx);
+                    super::drafts::drafts_mut(cx).clear_layout();
                 }
                 let sidebar_save = match kind { Kind::Sidebar(intent) => Some(intent), _ => None };
                 let sidebar_saved = this.finish_sidebar_save(sidebar_save, saved.is_ok(), cx);

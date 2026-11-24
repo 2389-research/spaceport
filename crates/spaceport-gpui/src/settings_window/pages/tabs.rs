@@ -24,7 +24,7 @@ impl SettingsWindow {
             .iter()
             .map(|&mode| (mode, mode.label()))
             .collect();
-        let open = !self.persistence.quitting() && self.persistence.closing().is_none();
+        let open = !self.persistence.quitting() && !self.persistence.closing();
         let mut page = div()
             .flex()
             .flex_col()

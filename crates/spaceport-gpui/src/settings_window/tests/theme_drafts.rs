@@ -264,7 +264,7 @@ fn theme_close_failure_keeps_window_and_draft_without_retrying(cx: &mut TestAppC
         assert!(!view.persistence.saving());
         assert!(theme_pending(cx));
         assert!(view.theme_dirty());
-        assert!(view.persistence.closing().is_none());
+        assert!(!view.persistence.closing());
         assert_eq!(
             source.read(cx).unwrap().theme,
             Theme::builtin("Nord").unwrap()

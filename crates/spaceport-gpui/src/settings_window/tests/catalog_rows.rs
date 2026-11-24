@@ -120,7 +120,8 @@ fn pages_draw_the_text_search_indexes() {
                 if !available {
                     continue;
                 }
-                let (title, description) = cx.update(|_, _| (entry.title(), entry.description()));
+                let (title, description) =
+                    cx.update(|_, _| (catalog::title(entry), catalog::description(entry)));
                 // A heading is drawn in capitals.
                 if !shown.contains(&title) && !shown.contains(&title.to_uppercase()) {
                     drifted.insert(format!("{id}: the page draws another title"));

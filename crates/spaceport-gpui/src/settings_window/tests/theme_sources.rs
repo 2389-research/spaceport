@@ -153,7 +153,7 @@ fn failed_definition_keeps_close_pending_draft_for_explicit_retry(cx: &mut TestA
     cx.update(|cx| {
         let view = settings.read(cx).unwrap();
         assert!(view.theme_dirty());
-        assert!(view.persistence.closing().is_none());
+        assert!(!view.persistence.closing());
         assert!(view.error.as_ref().unwrap().contains("Load theme"));
         source
             .update(cx, |view, _, cx| {

@@ -133,7 +133,7 @@ impl SettingsWindow {
                             "general-chat-layout-control",
                             &layouts,
                             Some(self.config.chat.layout),
-                            !self.persistence.quitting() && self.persistence.closing().is_none(),
+                            !self.persistence.quitting() && !self.persistence.closing(),
                             on_value(cx, |this, mode, _, cx| {
                                 this.save_preference(Preference::ChatLayout(mode), cx)
                             }),
@@ -156,7 +156,7 @@ impl SettingsWindow {
                             "general-chat-launcher-control",
                             &launchers,
                             Some(self.config.chat.launcher),
-                            !self.persistence.quitting() && self.persistence.closing().is_none(),
+                            !self.persistence.quitting() && !self.persistence.closing(),
                             on_value(cx, |this, launcher, _, cx| {
                                 this.save_preference(Preference::ChatLauncher(launcher), cx)
                             }),
@@ -342,7 +342,7 @@ impl SettingsWindow {
                                 unit: ui::Unit::Pixels,
                                 look: ui::Look::Slider,
                                 enabled: !self.persistence.quitting()
-                                    && self.persistence.closing().is_none(),
+                                    && !self.persistence.closing(),
                             },
                             self.number_edit_for(field),
                             on_value(cx, move |this, change, _, cx| {

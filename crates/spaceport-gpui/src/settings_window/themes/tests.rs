@@ -2,6 +2,7 @@
 // ABOUTME: Exercises UI state and persistence with isolated fixtures.
 #![allow(clippy::unwrap_used)]
 use super::*;
+use crate::config::Config;
 use core::prelude::v1::test;
 
 mod scrolling;
@@ -30,26 +31,6 @@ pub(super) fn fixture(window: &mut Window, cx: &mut Context<SettingsWindow>) -> 
         resolve: None,
     });
     view
-}
-
-#[test]
-fn full_catalog_and_unicode_tokens_are_not_capped() {
-    let names: Vec<_> = (0..400)
-        .map(|index| format!("Catalog {index:03}"))
-        .collect();
-    assert_eq!(
-        filter_names(names.iter().map(String::as_str), "").len(),
-        400
-    );
-    assert_eq!(
-        filter_names(names.iter().map(String::as_str), "399 CATALOG"),
-        ["Catalog 399"]
-    );
-    assert_eq!(
-        filter_names(["Été 東京 Night", "Other"], "東京 ÉTÉ"),
-        ["Été 東京 Night"]
-    );
-    assert!(filter_names(["Nord"], "not found").is_empty());
 }
 
 #[gpui::test]

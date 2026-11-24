@@ -444,6 +444,37 @@ static BUNDLED_THEMES: LazyLock<Vec<(&str, Theme)>> = LazyLock::new(|| {
         .collect()
 });
 
+/// Where a theme a picker lists comes from: the theme library this app reads,
+/// or the one Herdr's shared settings name.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Scope {
+    #[default]
+    App,
+    Herdr,
+}
+
+impl Scope {
+    /// Whether this platform can write a theme of this scope. Herdr's library
+    /// is its shared config file, which only Unix has.
+    pub const fn editable(self) -> bool {
+        matches!(self, Self::App) || cfg!(unix)
+    }
+}
+
+/// The names among `names` that hold every word of `query`, ignoring case.
+pub fn filter_names<'a>(names: impl IntoIterator<Item = &'a str>, query: &str) -> Vec<String> {
+    let query = query.to_lowercase();
+    let tokens: Vec<_> = query.split_whitespace().collect();
+    names
+        .into_iter()
+        .filter(|name| {
+            let name = name.to_lowercase();
+            tokens.iter().all(|token| name.contains(token))
+        })
+        .map(str::to_owned)
+        .collect()
+}
+
 /// How a theme name compares for duplicates: Ghostty's older files spell the
 /// same theme `tokyonight` or `catppuccin-mocha` where newer ones say
 /// `TokyoNight` and `Catppuccin Mocha`. Other punctuation, such as the `+`

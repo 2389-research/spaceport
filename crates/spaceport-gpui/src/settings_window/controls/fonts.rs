@@ -112,14 +112,7 @@ pub(in crate::settings_window) fn family_label(family: &str) -> String {
 }
 
 /// The message titling a face, its Settings row's.
-pub(in crate::settings_window) const fn face_message(face: FontFace) -> &'static str {
-    match face {
-        FontFace::Terminal => "settings-fonts-terminal",
-        FontFace::Sidebar => "settings-fonts-sidebar",
-        FontFace::Tabs => "settings-fonts-tabs",
-        FontFace::Ui => "settings-fonts-ui",
-    }
-}
+pub(in crate::settings_window) use spaceport_settings::fields::face_message;
 
 /// The messages of the specimen's lines for a face. The terminal's is code,
 /// the same in every language.

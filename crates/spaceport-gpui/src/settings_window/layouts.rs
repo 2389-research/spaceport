@@ -4,44 +4,7 @@
 // i18n: migrated
 use super::SettingsWindow;
 use crate::config::{Config, LayoutMode};
-use gpui::{App, Context, Global};
-
-#[derive(Default)]
-struct LayoutDraft {
-    active: bool,
-    revision: u64,
-    mode: Option<LayoutMode>,
-}
-impl Global for LayoutDraft {}
-
-pub(crate) fn layout_load_revision(cx: &App) -> u64 {
-    cx.try_global::<LayoutDraft>()
-        .map_or(0, |draft| draft.revision)
-}
-
-pub(crate) fn apply_loaded_layout(config: &mut Config, revision: u64, cx: &App) {
-    if let Some(draft) = cx.try_global::<LayoutDraft>()
-        && (draft.active || draft.revision != revision)
-        && let Some(mode) = draft.mode
-    {
-        // Reads started before commit must not put the old layout back either.
-        config.layout.mode = mode;
-    }
-}
-
-pub(super) fn clear_layout_draft(cx: &mut App) {
-    let draft = cx.default_global::<LayoutDraft>();
-    draft.active = false;
-    draft.revision = draft.revision.wrapping_add(1);
-}
-
-/// Leaves `mode` as a draft being edited, as a click in Settings does.
-#[cfg(test)]
-pub(super) fn draft_layout(mode: LayoutMode, cx: &mut App) {
-    let draft = cx.default_global::<LayoutDraft>();
-    draft.active = true;
-    draft.mode = Some(mode);
-}
+use gpui::Context;
 
 #[cfg(test)]
 #[derive(Clone)]
@@ -53,17 +16,14 @@ pub(super) struct LayoutIo {
 impl SettingsWindow {
     pub(super) fn accept_layout_choice(&mut self, mode: LayoutMode, cx: &mut Context<Self>) {
         if self.persistence.quitting()
-            || self.persistence.closing().is_some()
+            || self.persistence.closing()
             || self.config.layout.mode == mode
         {
             return;
         }
         self.layout_intent = Some(mode);
         self.config.layout.mode = mode;
-        let draft = cx.default_global::<LayoutDraft>();
-        draft.active = true;
-        draft.mode = Some(mode);
-        draft.revision = draft.revision.wrapping_add(1);
+        super::drafts::drafts_mut(cx).begin_layout(mode);
         self.broadcast_layout(cx);
     }
 

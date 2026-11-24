@@ -4,13 +4,17 @@
 // i18n: migrated
 mod catalog;
 mod controls;
+mod drafts;
 mod inputs;
 #[cfg(windows)]
 mod launch_at_login;
 mod layouts;
 mod navigation;
 mod pages;
-pub(crate) use layouts::{apply_loaded_layout, layout_load_revision};
+pub(crate) use drafts::{
+    apply_loaded_layout, apply_loaded_sidebar, apply_loaded_theme, layout_load_revision,
+    sidebar_load_revision, theme_load_revision, theme_pending,
+};
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
 mod native;
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
@@ -26,17 +30,12 @@ use section::{Group, Section};
 mod sidebar;
 #[cfg(test)]
 use persistence::SizeIo;
-use persistence::lifecycle::{Kind, Lifecycle};
-use persistence::{Loaded, SaveCompletion};
+use persistence::{Kind, Lifecycle, Loaded, SaveCompletion};
 use sidebar::SidebarIntent;
-pub(crate) use sidebar::{apply_loaded_sidebar, sidebar_load_revision};
 mod themes;
 mod ui;
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
 pub(crate) use native::verify_native;
-pub(crate) use themes::{
-    apply_loaded_theme, apply_theme_draft, theme_load_revision, theme_pending,
-};
 
 use crate::direction::Logical;
 use crate::{
@@ -193,6 +192,8 @@ struct SettingsWindow {
     /// The window's width at its last render, which caps the section list.
     viewport_width: f32,
     persistence: Lifecycle,
+    /// The window to remove once the writes a close waits on have drained.
+    close_when_idle: Option<AnyWindowHandle>,
     save_completion: Option<std::sync::mpsc::Receiver<SaveCompletion>>,
     _quit: Subscription,
     _search: Subscription,
@@ -303,6 +304,7 @@ impl SettingsWindow {
             navigation_width: crate::panel_resize::SETTINGS_NAVIGATION,
             viewport_width: 0.,
             persistence: Lifecycle::default(),
+            close_when_idle: None,
             save_completion: None,
             _quit: quit,
             new_window_target,
@@ -457,7 +459,9 @@ impl SettingsWindow {
             theme: self.theme.clone(),
             error: None,
         };
-        apply_theme_draft(&mut appearance.config, &mut appearance.theme, cx);
+        if let Some(drafts) = drafts::drafts(cx) {
+            drafts.apply_theme_draft(&mut appearance.config, &mut appearance.theme);
+        }
         cx.set_global(appearance);
         if !previewing {
             crate::log_window::set_appearance(&self.config, &self.theme, cx);
@@ -511,7 +515,7 @@ impl SettingsWindow {
     /// Shared entry point for the native titlebar and keyboard close actions.
     pub(super) fn should_close(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
         self.hover_theme(None, cx);
-        if self.persistence.closing().is_some() {
+        if self.persistence.closing() {
             return false;
         }
         if !self.finish_number_edit(true, cx) || !self.finish_hex_edit(true, cx) {
@@ -525,7 +529,8 @@ impl SettingsWindow {
         {
             return true;
         }
-        self.persistence.close(window.window_handle());
+        self.close_when_idle = Some(window.window_handle());
+        self.persistence.close();
         self.status = Some(fl!("settings-finishing"));
         self.theme_load_failed = false;
         self.drive_theme_intent(cx);
@@ -540,11 +545,10 @@ impl SettingsWindow {
 
     fn finish_close(&mut self, cx: &mut Context<Self>) {
         self.finish_flush(cx);
-        if self.persistence.sidebar_queued() && self.persistence.closing().is_none() && !self.busy()
-        {
+        if self.persistence.sidebar_queued() && !self.persistence.closing() && !self.busy() {
             self.save_queued_sidebar(cx);
         }
-        if !self.busy() && !self.theme_dirty() && self.persistence.closing().is_some() {
+        if !self.busy() && !self.theme_dirty() && self.persistence.closing() {
             if self.layout_intent.is_some() {
                 self.save_layout_draft(cx);
                 return;
@@ -558,7 +562,8 @@ impl SettingsWindow {
             && !self.theme_dirty()
             && self.layout_intent.is_none()
             && !self.sidebar_dirty()
-            && let Some(handle) = self.persistence.take_close()
+            && let Some(handle) = self.close_when_idle.take()
+            && self.persistence.take_close()
         {
             cx.defer(move |cx| {
                 let _ = handle.update(cx, |_, window, _| window.remove_window());
@@ -623,7 +628,7 @@ impl Render for SettingsWindow {
         let heading = if searching.is_some() {
             fl!("settings-results")
         } else {
-            self.section.label()
+            crate::i18n::message(self.section.message(), &[])
         };
         let content = match &searching {
             Some(_) => self.render_search_results(cx),
@@ -700,17 +705,22 @@ impl Render for SettingsWindow {
                                     .font_weight(FontWeight::SEMIBOLD)
                                     .child(heading),
                             )
-                            .child(div().mb(px(16.)).when_some(
-                                self.section.lead().filter(|_| searching.is_none()),
-                                |header, lead| {
-                                    header.mt(px(2.)).child(
-                                        div()
-                                            .text_size(px(12.))
-                                            .text_color(rgb(theme.subtext()))
-                                            .child(lead),
-                                    )
-                                },
-                            ))
+                            .child(
+                                div().mb(px(16.)).when_some(
+                                    self.section
+                                        .lead()
+                                        .filter(|_| searching.is_none())
+                                        .map(|message| crate::i18n::message(message, &[])),
+                                    |header, lead| {
+                                        header.mt(px(2.)).child(
+                                            div()
+                                                .text_size(px(12.))
+                                                .text_color(rgb(theme.subtext()))
+                                                .child(lead),
+                                        )
+                                    },
+                                ),
+                            )
                             .child(content),
                         cx,
                     ),

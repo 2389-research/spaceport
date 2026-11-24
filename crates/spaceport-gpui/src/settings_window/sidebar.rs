@@ -5,166 +5,13 @@
 // i18n: migrated
 use super::{SettingsWindow, ui};
 use crate::{
-    config::{Config, SidebarStyle, preferences::Preference},
+    config::{Config, preferences::Preference},
     search_input::SearchInput,
 };
 use gpui::{prelude::*, *};
-use std::collections::BTreeSet;
-
-/// One `[sidebar]` key a draft can change.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub(super) enum SidebarKey {
-    Indent,
-    RowPadding,
-    Gap,
-    HostGap,
-    Select,
-    DeviceFooter,
-    ActivityBar,
-    Automations,
-    Host(String),
-}
-
-impl SidebarKey {
-    const FIXED: &[Self] = &[
-        Self::Indent,
-        Self::RowPadding,
-        Self::Gap,
-        Self::HostGap,
-        Self::Select,
-        Self::DeviceFooter,
-        Self::ActivityBar,
-        Self::Automations,
-    ];
-
-    /// Copies this key's value from `from` into `to`.
-    fn copy(&self, from: &SidebarStyle, to: &mut SidebarStyle) {
-        let (old, new) = (&from.overrides, &mut to.overrides);
-        match self {
-            Self::Indent => new.indent = old.indent,
-            Self::RowPadding => new.row_padding = old.row_padding,
-            Self::Gap => new.gap = old.gap,
-            Self::HostGap => new.host_gap = old.host_gap,
-            Self::Select => to.select = from.select,
-            Self::DeviceFooter => to.device_footer = from.device_footer,
-            Self::ActivityBar => to.activity_bar = from.activity_bar,
-            Self::Automations => to.automations = from.automations,
-            Self::Host(host) => match from.hosts.get(host) {
-                Some(color) => {
-                    to.hosts.insert(host.clone(), *color);
-                }
-                None => {
-                    to.hosts.remove(host);
-                }
-            },
-        }
-    }
-
-    /// The write that puts `style`'s value for this key in the file.
-    fn preference(&self, style: &SidebarStyle) -> Preference {
-        let overrides = &style.overrides;
-        match self {
-            Self::Indent => Preference::SidebarIndent(overrides.indent),
-            Self::RowPadding => Preference::SidebarRowPadding(overrides.row_padding),
-            Self::Gap => Preference::SidebarRowGap(overrides.gap),
-            Self::HostGap => Preference::SidebarHostGap(overrides.host_gap),
-            Self::Select => Preference::SidebarSelect(style.select),
-            Self::DeviceFooter => Preference::SidebarDeviceFooter(style.device_footer),
-            Self::ActivityBar => Preference::SidebarActivityBar(style.activity_bar),
-            Self::Automations => Preference::SidebarAutomations(style.automations),
-            Self::Host(host) => Preference::HostColor {
-                host: host.clone(),
-                color: style.hosts.get(host).copied(),
-            },
-        }
-    }
-
-    fn differs(&self, before: &SidebarStyle, after: &SidebarStyle) -> bool {
-        let (old, new) = (&before.overrides, &after.overrides);
-        match self {
-            Self::Indent => old.indent != new.indent,
-            Self::RowPadding => old.row_padding != new.row_padding,
-            Self::Gap => old.gap != new.gap,
-            Self::HostGap => old.host_gap != new.host_gap,
-            Self::Select => before.select != after.select,
-            Self::DeviceFooter => before.device_footer != after.device_footer,
-            Self::ActivityBar => before.activity_bar != after.activity_bar,
-            Self::Automations => before.automations != after.automations,
-            Self::Host(host) => before.hosts.get(host) != after.hosts.get(host),
-        }
-    }
-}
-
-/// The keys a draft has changed since it started. Only these are written,
-/// and a reload keeps every other key as the file has it.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub(super) struct SidebarTouched(BTreeSet<SidebarKey>);
-
-impl SidebarTouched {
-    /// Every key whose value differs between `before` and `after`.
-    fn between(before: &SidebarStyle, after: &SidebarStyle) -> Self {
-        let hosts = before
-            .hosts
-            .keys()
-            .chain(after.hosts.keys())
-            .map(|host| SidebarKey::Host(host.clone()));
-        Self(
-            SidebarKey::FIXED
-                .iter()
-                .cloned()
-                .chain(hosts)
-                .filter(|key| key.differs(before, after))
-                .collect(),
-        )
-    }
-
-    fn extend(&mut self, other: &Self) {
-        self.0.extend(other.0.iter().cloned());
-    }
-
-    fn keys(&self) -> impl Iterator<Item = &SidebarKey> {
-        self.0.iter()
-    }
-}
-
-/// What the Sidebar page shows and every main window uses until it is saved.
-#[derive(Clone, Debug, PartialEq)]
-pub(super) struct SidebarIntent {
-    pub style: SidebarStyle,
-    /// Filled in by `preview_sidebar` from what the draft changed.
-    pub touched: SidebarTouched,
-}
-
-impl SidebarIntent {
-    pub(super) fn of(config: &Config) -> Self {
-        Self {
-            style: config.sidebar_style.clone(),
-            touched: SidebarTouched::default(),
-        }
-    }
-
-    /// Every key, touched or not.
-    pub(super) fn apply(&self, config: &mut Config) {
-        config.sidebar_style = self.style.clone();
-    }
-
-    /// Only the keys this draft changed, over whatever `config` holds.
-    fn overlay(&self, config: &mut Config) {
-        for key in self.touched.keys() {
-            key.copy(&self.style, &mut config.sidebar_style);
-        }
-    }
-
-    /// Takes every untouched key from a fresh load, so a later write and
-    /// the windows see what the file says there.
-    fn rebase(&mut self, loaded: &Config) {
-        let mut style = loaded.sidebar_style.clone();
-        for key in self.touched.keys() {
-            key.copy(&self.style, &mut style);
-        }
-        self.style = style;
-    }
-}
+pub(in crate::settings_window) use spaceport_settings::sidebar_draft::{
+    SidebarIntent, SidebarTouched, diff_preferences, touched_preferences,
+};
 
 /// The host colour being typed as hex, for the host it was opened on: rows
 /// can reorder while it is open.
@@ -175,56 +22,6 @@ pub(super) struct HexEdit {
     pub _blur: Subscription,
 }
 
-#[derive(Default)]
-struct SidebarDraft {
-    active: bool,
-    revision: u64,
-    intent: Option<SidebarIntent>,
-}
-impl Global for SidebarDraft {}
-
-pub(crate) fn sidebar_load_revision(cx: &App) -> u64 {
-    cx.try_global::<SidebarDraft>()
-        .map_or(0, |draft| draft.revision)
-}
-
-pub(crate) fn apply_loaded_sidebar(config: &mut Config, revision: u64, cx: &App) {
-    if let Some(draft) = cx.try_global::<SidebarDraft>()
-        && (draft.active || draft.revision != revision)
-        && let Some(intent) = &draft.intent
-    {
-        // Reads started before a commit must not put the old spacing back,
-        // nor the draft's copy of a key it never changed over the file's.
-        intent.overlay(config);
-    }
-}
-
-fn clear_sidebar_draft(cx: &mut App) {
-    let draft = cx.default_global::<SidebarDraft>();
-    draft.active = false;
-    draft.revision = draft.revision.wrapping_add(1);
-}
-
-/// Every touched key whose value differs from `saved`, in one save's order.
-fn diff_preferences(saved: &Config, intent: &SidebarIntent) -> Vec<Preference> {
-    intent
-        .touched
-        .keys()
-        .filter(|key| key.differs(&saved.sidebar_style, &intent.style))
-        .map(|key| key.preference(&intent.style))
-        .collect()
-}
-
-/// Every touched key of `intent`, for a quit that cannot know what an
-/// in-flight save left on disk: a revert to the loaded value must still land.
-fn touched_preferences(intent: &SidebarIntent) -> Vec<Preference> {
-    intent
-        .touched
-        .keys()
-        .map(|key| key.preference(&intent.style))
-        .collect()
-}
-
 impl SettingsWindow {
     pub(super) fn sidebar_dirty(&self) -> bool {
         self.sidebar_intent.is_some()
@@ -232,7 +29,7 @@ impl SettingsWindow {
 
     /// Live, unsaved: updates the draft global and every SpaceportWindow.
     pub(super) fn preview_sidebar(&mut self, mut intent: SidebarIntent, cx: &mut Context<Self>) {
-        if self.persistence.quitting() || self.persistence.closing().is_some() {
+        if self.persistence.quitting() || self.persistence.closing() {
             return;
         }
         // A key stays touched for the draft's life, even dragged back.
@@ -242,10 +39,7 @@ impl SettingsWindow {
             intent.touched.extend(&live.touched);
         }
         intent.apply(&mut self.config);
-        let draft = cx.default_global::<SidebarDraft>();
-        draft.active = true;
-        draft.intent = Some(intent.clone());
-        draft.revision = draft.revision.wrapping_add(1);
+        super::drafts::drafts_mut(cx).edit_sidebar(intent.clone());
         self.sidebar_intent = Some(intent);
         self.broadcast_sidebar(cx);
     }
@@ -255,8 +49,7 @@ impl SettingsWindow {
     pub(super) fn discard_sidebar_draft(&mut self, cx: &mut Context<Self>) {
         self.sidebar_intent = None;
         self.persistence.queue_sidebar(None);
-        clear_sidebar_draft(cx);
-        cx.default_global::<SidebarDraft>().intent = None;
+        super::drafts::drafts_mut(cx).discard_sidebar();
         SidebarIntent::of(&self.loaded_config).apply(&mut self.config);
         self.broadcast_sidebar(cx);
     }
@@ -264,7 +57,7 @@ impl SettingsWindow {
     /// Live and queued for save: preview, then write every changed key
     /// through one serial save.
     pub(super) fn commit_sidebar(&mut self, intent: SidebarIntent, cx: &mut Context<Self>) {
-        if self.persistence.quitting() || self.persistence.closing().is_some() {
+        if self.persistence.quitting() || self.persistence.closing() {
             return;
         }
         self.preview_sidebar(intent, cx);
@@ -383,7 +176,7 @@ impl SettingsWindow {
         // a preview made after that commit must remain unwritten.
         if self.sidebar_intent.as_ref() == Some(&saved) {
             self.sidebar_intent = None;
-            clear_sidebar_draft(cx);
+            super::drafts::drafts_mut(cx).clear_sidebar();
         }
         true
     }
@@ -465,7 +258,7 @@ impl SettingsWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.persistence.quitting() || self.persistence.closing().is_some() {
+        if self.persistence.quitting() || self.persistence.closing() {
             return;
         }
         if !self.finish_hex_edit(true, cx) {
