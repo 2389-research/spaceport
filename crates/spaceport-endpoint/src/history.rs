@@ -7,25 +7,27 @@ use spaceport_client::protocol::ClientShellSnapshot;
 use std::collections::VecDeque;
 
 /// How many panes the trail remembers; older ones fall off the back.
-const LIMIT: usize = 100;
+pub(crate) const LIMIT: usize = 100;
 
 /// Which way along the trail.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Step {
+pub enum Step {
     Back,
     Forward,
 }
 
+/// The panes a host has focused, oldest first, and where along them the
+/// window is.
 #[derive(Debug, Default)]
-pub(crate) struct History {
-    boot: String,
-    panes: VecDeque<String>,
+pub struct History {
+    pub(crate) boot: String,
+    pub(crate) panes: VecDeque<String>,
     /// The entry the focused pane was reached as.
-    cursor: usize,
+    pub(crate) cursor: usize,
     /// The entry a Back or Forward asked the daemon for. Until its focus
     /// arrives, the next step continues from there, and the arriving focus
     /// moves the cursor instead of cutting off the entries ahead.
-    travel: Option<usize>,
+    pub(crate) travel: Option<usize>,
 }
 
 impl History {
@@ -36,7 +38,7 @@ impl History {
     /// travel lives only that long: once the daemon has answered, failed, or
     /// the connection carrying it is gone, whatever focus arrived is the
     /// outcome, and later steps start from where the user really is.
-    pub(crate) fn observe(&mut self, snapshot: Option<&ClientShellSnapshot>, navigating: bool) {
+    pub fn observe(&mut self, snapshot: Option<&ClientShellSnapshot>, navigating: bool) {
         if let Some(snapshot) = snapshot {
             self.record(snapshot);
         }
@@ -74,20 +76,20 @@ impl History {
     }
 
     /// Whether `step` has a pane to go to in `snapshot`.
-    pub(crate) fn can(&self, step: Step, snapshot: &ClientShellSnapshot) -> bool {
+    pub fn can(&self, step: Step, snapshot: &ClientShellSnapshot) -> bool {
         self.target(step, snapshot).is_some()
     }
 
     /// The entry `step` would go to and its pane, without going. The caller
     /// asks the daemon to focus the pane and calls [`Self::begin`] only once
     /// the request is queued, so a press that cannot be sent changes nothing.
-    pub(crate) fn peek(&self, step: Step, snapshot: &ClientShellSnapshot) -> Option<(usize, &str)> {
+    pub fn peek(&self, step: Step, snapshot: &ClientShellSnapshot) -> Option<(usize, &str)> {
         let index = self.target(step, snapshot)?;
         Some((index, self.entry(index)?))
     }
 
     /// Marks `index` as the travel in flight.
-    pub(crate) fn begin(&mut self, index: usize) {
+    pub fn begin(&mut self, index: usize) {
         if index < self.panes.len() {
             self.travel = Some(index);
         }
@@ -117,6 +119,3 @@ impl History {
         self.panes.get(index).map(String::as_str)
     }
 }
-
-#[cfg(test)]
-mod tests;

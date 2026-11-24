@@ -23,7 +23,6 @@ mod config_reload;
 mod error;
 pub(crate) mod fence;
 mod follow;
-mod history;
 mod link;
 mod order;
 pub(crate) mod origin;
@@ -33,27 +32,14 @@ mod wake;
 
 pub(super) use catalog::Catalog;
 pub use error::Error;
-pub(crate) use history::Step;
 use link::{Link, Transition};
 pub(crate) use phase::Phase;
-pub(super) use wake::WakeClock;
-pub(crate) use wake::watch_network;
-
-pub(super) const LOCAL: &str = "local";
-/// Saved SSH endpoints are keyed `ssh:<profile-id>`, so no catalog ID can
-/// collide with `LOCAL`.
-const SAVED_PREFIX: &str = "ssh:";
-/// Saved WSL distributions are keyed `wsl:<distribution>`; a distribution is
-/// saved at most once.
-pub(crate) const WSL_PREFIX: &str = "wsl:";
-
-/// The catalog profile ID behind a saved SSH endpoint's ID, which is what the
-/// `herdr machine` commands and per-device credentials are keyed by.
-pub(crate) fn saved_profile_id(endpoint_id: &str) -> Option<&str> {
-    endpoint_id
-        .strip_prefix(SAVED_PREFIX)
-        .filter(|id| spaceport_client::valid_profile_id(id))
-}
+// The endpoint policy below GPUI, reached through the paths this module has
+// always named it by.
+pub(crate) use spaceport_endpoint::{
+    History, LOCAL, SAVED_PREFIX, Step, WSL_PREFIX, WakeClock, focus_requested, saved_profile_id,
+    watch_network,
+};
 const STABLE_CONNECTION_PERIOD: Duration = Duration::from_secs(60);
 /// Upstream rechecks failed SSH machines every 30 seconds, so authentication
 /// repaired outside the app (a new master, a loaded key) is picked up promptly.
@@ -166,7 +152,7 @@ pub(super) struct Endpoint {
     /// Each tab's last frame before `live` moved on, for Go To's preview.
     pub(crate) last_seen: crate::palette::LastSeen,
     /// Back and Forward through the panes `live` has focused.
-    pub(crate) history: history::History,
+    pub(crate) history: History,
     pub generation: u64,
     pub(crate) toasts: crate::notifications::Toasts,
     /// Derived from `live.snapshot`; refreshed by `sync_live` whenever `live` changes.

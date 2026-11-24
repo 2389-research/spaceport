@@ -44,64 +44,6 @@ fn receive_at(endpoint: &mut Endpoint, snapshot: ClientShellSnapshot, now: Insta
     endpoint.poll(now);
 }
 
-/// Whether going from `old` to `new` on a background host is noted.
-fn noted(old: ClientShellSnapshot, new: ClientShellSnapshot) -> bool {
-    let mut endpoint = remote();
-    receive(&mut endpoint, old);
-    assert!(
-        !endpoint.focus_requested,
-        "a first snapshot asks for nothing"
-    );
-    receive(&mut endpoint, new);
-    endpoint.focus_requested
-}
-
-#[test]
-fn a_move_between_existing_tabs_is_a_focus_asked_for() {
-    assert!(noted(on_tab("t0", 1), on_tab("t1", 2)));
-}
-
-#[test]
-fn staying_on_a_tab_asks_for_nothing() {
-    assert!(!noted(on_tab("t0", 1), on_tab("t0", 2)));
-    // The daemon shares a tab's focused pane among its clients: this may be
-    // someone at a terminal on the host.
-    let mut other_pane = on_tab("t0", 2);
-    other_pane.focused_pane_id = Some("p1".into());
-    assert!(!noted(on_tab("t0", 1), other_pane));
-}
-
-#[test]
-fn closing_the_focused_tab_is_not_a_focus_asked_for() {
-    let mut closed = on_tab("t1", 2);
-    closed.tabs.retain(|tab| tab.tab_id != "t0");
-    assert!(!noted(on_tab("t0", 1), closed));
-}
-
-#[test]
-fn a_tab_opening_with_focus_does_not_take_the_window() {
-    let mut before = on_tab("t0", 1);
-    before.tabs.retain(|tab| tab.tab_id != "t1");
-    assert!(!noted(before, on_tab("t1", 2)));
-}
-
-#[test]
-fn a_restarted_daemon_is_not_a_focus_asked_for() {
-    let mut restarted = on_tab("t1", 2);
-    restarted.boot_id = "another-boot".into();
-    assert!(!noted(on_tab("t0", 1), restarted));
-}
-
-#[test]
-fn a_snapshot_without_a_focused_tab_asks_for_nothing() {
-    let mut none = on_tab("t0", 1);
-    none.focused_tab_id = None;
-    assert!(!noted(none.clone(), on_tab("t1", 2)));
-    let mut gone = none;
-    gone.revision = 3;
-    assert!(!noted(on_tab("t0", 2), gone));
-}
-
 #[test]
 fn a_replaced_connection_forgets_a_focus_it_saw() {
     let mut endpoint = remote();

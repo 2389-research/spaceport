@@ -1,12 +1,10 @@
-//! Following a focus asked for on a host the window is not showing.
-//!
-//! `herdr agent focus` and its kin move every client of the daemon, so the
-//! connection this window keeps to a background host sees the move in its
-//! snapshot. Herdr sends no event for it, and names no asker, so the snapshot
-//! is all there is to go by.
-use super::{Endpoint, SpaceportWindow};
+//! Following a focus asked for on a host the window is not showing: whether
+//! the window's own click explains the move, how long the user's typing holds
+//! it off, and which window speaks for the rest. `spaceport_endpoint`'s
+//! `focus_requested` says whether the snapshot shows one at all.
+use super::{Endpoint, SpaceportWindow, focus_requested};
 use gpui::{App, Context, WindowId};
-use spaceport_client::{ConnectTarget, protocol::ClientShellSnapshot};
+use spaceport_client::ConnectTarget;
 use std::time::{Duration, Instant};
 
 /// How long after the window leaves a host that host's moves are still taken
@@ -17,25 +15,6 @@ const LEAVING: Duration = Duration::from_secs(2);
 /// A host is not trusted with what is typed for another: anything on it can
 /// ask for a focus, and keys following the switch would go there.
 const TYPING: Duration = Duration::from_secs(1);
-
-/// Whether going from `old` to `new` shows someone asking for a focus.
-///
-/// Only a move between two tabs that both still exist counts. Herdr keeps a
-/// tab per client, and a background connection may not navigate, so nothing
-/// but a public focus moves it there. A closed tab moves it too, and a new
-/// tab or workspace takes focus as it opens, which a script or dispatch does
-/// on a host nobody is watching; neither should take the window. The pane
-/// within a tab is shared by the daemon's clients, so a move inside one may
-/// be someone working in a terminal on that host, and is not followed.
-fn focus_requested(old: &ClientShellSnapshot, new: &ClientShellSnapshot) -> bool {
-    let (Some(from), Some(to)) = (old.focused_tab_id.as_deref(), new.focused_tab_id.as_deref())
-    else {
-        return false;
-    };
-    let lists =
-        |snapshot: &ClientShellSnapshot, id: &str| snapshot.tabs.iter().any(|tab| tab.tab_id == id);
-    old.boot_id == new.boot_id && from != to && lists(new, from) && lists(old, to)
-}
 
 impl Endpoint {
     /// Notes a focus asked for in the update `new` about to replace `live`,

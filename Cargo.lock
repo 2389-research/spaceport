@@ -6631,6 +6631,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "spaceport-endpoint"
+version = "0.1.0"
+dependencies = [
+ "block2 0.6.2",
+ "dispatch2",
+ "serde_json",
+ "spaceport-client",
+ "spaceport-reorder",
+ "tracing",
+]
+
+[[package]]
 name = "spaceport-gpui"
 version = "0.1.0"
 dependencies = [
@@ -6642,7 +6654,6 @@ dependencies = [
  "cocoa 0.27.0",
  "config",
  "core-graphics 0.25.0",
- "dispatch2",
  "flate2",
  "fluent-syntax",
  "foreign-types",
@@ -6686,6 +6697,7 @@ dependencies = [
  "spaceport-control-protocol",
  "spaceport-core-client",
  "spaceport-diagnostics",
+ "spaceport-endpoint",
  "spaceport-i18n",
  "spaceport-icons",
  "spaceport-menu",

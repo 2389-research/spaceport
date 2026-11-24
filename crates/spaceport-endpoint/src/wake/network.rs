@@ -1,12 +1,12 @@
 //! The macOS network path monitor: counts each time a usable path comes back
 //! after there was none, such as Wi-Fi joining after a wake, apart from each
 //! time a usable path is reported again, such as the primary interface
-//! moving or a VPN coming up, so the window can tell how much to recover.
+//! moving or a VPN coming up, so the caller can tell how much to recover.
 //!
 //! Network.framework has no maintained Rust binding (`objc2-network` is only
 //! a reserved name), so its five C functions are declared here, and calling
 //! them needs `unsafe`. The monitor runs on its own serial queue and only
-//! touches atomics; the window reads the counters on its poll.
+//! touches atomics; the counters are read on a poll, from any thread.
 
 use super::NetworkChanges;
 use block2::RcBlock;

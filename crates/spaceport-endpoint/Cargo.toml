@@ -1,0 +1,26 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-endpoint"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+spaceport-client.workspace  = true
+spaceport-reorder.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# The network path monitor: a block on its own queue, which only counts.
+block2.workspace    = true
+dispatch2.workspace = true
+# What the monitor reports as it counts.
+tracing.workspace = true
+
+[dev-dependencies]
+# The history and focus tests read the protocol's own endpoint snapshot
+# fixture, as the app's did.
+serde_json.workspace = true

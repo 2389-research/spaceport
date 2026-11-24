@@ -34,6 +34,7 @@ spaceport-commands.workspace      = true
 spaceport-control-protocol.workspace = true
 spaceport-core-client.workspace   = true
 spaceport-diagnostics.workspace   = true
+spaceport-endpoint.workspace      = true
 spaceport-i18n.workspace          = true
 spaceport-icons.workspace         = true
 spaceport-menu.workspace          = true
@@ -175,7 +176,6 @@ oo7.workspace          = true
 sparkle-updater = { optional = true, workspace = true }
 font-kit.workspace              = true
 block2.workspace                = true
-dispatch2.workspace             = true
 objc2-core-foundation.workspace = true
 objc2-user-notifications.workspace = true
 cocoa                        = { optional = true, workspace = true }
