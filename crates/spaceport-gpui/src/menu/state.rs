@@ -160,6 +160,12 @@ impl MenuState {
         }
     }
 
+    /// Whether a session form covers the All Devices picker, which makes that
+    /// page a dialog for as long as it is there.
+    pub(crate) fn session_modal(&self, page: Page) -> bool {
+        page == Page::Devices && self.session_edit.is_some()
+    }
+
     pub fn reset(&mut self) {
         self.application = None;
         #[cfg(any(windows, test, feature = "integration-test"))]

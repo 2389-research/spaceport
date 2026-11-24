@@ -10,8 +10,11 @@ version.workspace      = true
 workspace = true
 
 [dependencies]
-serde_json.workspace       = true
-spaceport-client.workspace = true
-spaceport-motion.workspace = true
-spaceport-usage.workspace  = true
-thiserror.workspace        = true
+gpui.workspace               = true
+serde_json.workspace         = true
+spaceport-client.workspace   = true
+spaceport-motion.workspace   = true
+spaceport-settings.workspace = true
+spaceport-usage.workspace    = true
+spaceport-widgets.workspace  = true
+thiserror.workspace          = true

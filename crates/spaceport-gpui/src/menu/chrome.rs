@@ -1,23 +1,20 @@
 // ABOUTME: Opens and paints popup pages with shared window geometry.
 // ABOUTME: Keeps popup input and focus isolated from terminal panes.
-//! The popup shell: opening and dismissing it, keeping its input isolated from
-//! the panes beneath, and painting the page the menu is currently on. Geometry
-//! here is the same geometry used for hit testing and IME placement.
+//! The popup shell's window half: opening and dismissing it, keeping its input
+//! isolated from the panes beneath, and what the page bodies and handlers it
+//! draws are. The geometry and the paint are `spaceport_menu::chrome`'s; this
+//! is what only the window knows.
 
 // i18n: migrated
 mod keys;
 mod render;
 
-use super::{MENU_MARGIN, Page, devices::rail};
-use crate::direction::Logical;
+use super::Page;
+use crate::SpaceportWindow;
 use crate::i18n::fl;
-use crate::{SpaceportWindow, fonts::StyledFont};
+use crate::{config::FontConfig, fonts::StyledFont};
 use gpui::{prelude::*, *};
-
-/// How far past its panel a popover counts as covering, for the Windows
-/// pages that hide under it.
-#[cfg(any(windows, test, feature = "integration-test"))]
-const COVER_MARGIN: f32 = 8.;
+use spaceport_menu::chrome::{Metrics, Text};
 
 impl SpaceportWindow {
     pub(crate) fn open_menu(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
@@ -231,53 +228,14 @@ impl SpaceportWindow {
         page: Page,
         lift: Pixels,
     ) -> Stateful<Div> {
-        let (room, above) = self.footer_room(viewport);
-        let list = page == Page::Devices;
-        let width = if list {
-            super::devices::MENU_WIDTH
-        } else {
-            180.
-        };
-        // From the window's start edge, which right to left is its right.
-        let anchor = match crate::direction::is_rtl() {
-            false => self.menu.anchor.x,
-            true => viewport.width - self.menu.anchor.x,
-        };
-        let start = match page {
-            Page::Devices => anchor,
-            _ => px(56.),
-        };
-        let panel = panel
-            .absolute()
-            .inset_s(start)
-            .w(px(width).min((viewport.width - px(16.)).max(px(0.))));
-        if above {
-            panel
-                .bottom(
-                    (viewport.height - self.menu.anchor.y
-                        + px(if list { super::devices::MENU_GAP } else { 12. }))
-                    .max(px(MENU_MARGIN))
-                        - lift,
-                )
-                .max_h(room)
-        } else {
-            panel.top(self.menu.anchor.y + px(12.) - lift).max_h(room)
-        }
-    }
-
-    /// The room a footer menu has, and whether it opens above its anchor,
-    /// as it does from the sidebar footer at the window's foot.
-    fn footer_room(&self, viewport: Size<Pixels>) -> (Pixels, bool) {
-        let chrome = px(crate::titlebar::HEIGHT);
-        let band = (viewport.height - chrome - px(2. * MENU_MARGIN)).max(px(60.));
-        let room = |side: Pixels| side.clamp(px(0.), band).max(px(60.)).min(band);
-        let above = room(self.menu.anchor.y - px(12. + MENU_MARGIN) - chrome);
-        let below = room(viewport.height - self.menu.anchor.y - px(12. + MENU_MARGIN));
-        if above >= below {
-            (above, true)
-        } else {
-            (below, false)
-        }
+        spaceport_menu::chrome::anchor_footer_panel(
+            panel,
+            page,
+            self.menu.anchor,
+            viewport,
+            crate::titlebar::HEIGHT,
+            lift,
+        )
     }
 
     /// Whether the open menu is a dialog that dims the window behind it,
@@ -286,11 +244,25 @@ impl SpaceportWindow {
         let Some(page) = self.menu.page else {
             return false;
         };
-        let session_modal = page == Page::Devices && self.menu.session_edit.is_some();
-        let footer_anchored = matches!(page, Page::Menu | Page::Devices) && !session_modal;
-        !footer_anchored
-            && !matches!(page, Page::Usage(_) | Page::Application)
-            && !page.pointer_anchored()
+        spaceport_menu::chrome::dims(page, self.menu.session_modal(page))
+    }
+}
+
+/// The font the popup chrome is set in.
+pub(crate) fn text(ui: &FontConfig) -> Text {
+    Text {
+        font: crate::config::font_for(ui),
+        line_height: ui.line_height(),
+        size: ui.size,
+    }
+}
+
+/// The window's own measurements the popup chrome lays out against.
+pub(crate) fn metrics(viewport: Size<Pixels>) -> Metrics {
+    Metrics {
+        chrome: crate::titlebar::HEIGHT,
+        usage_width: crate::usage::PANEL_WIDTH,
+        viewport,
     }
 }
 

@@ -1,4 +1,6 @@
 use super::*;
+use std::cell::Cell;
+use std::rc::Rc;
 
 #[gpui::test]
 fn shared_action_dispatches_after_dismissal(cx: &mut TestAppContext) {

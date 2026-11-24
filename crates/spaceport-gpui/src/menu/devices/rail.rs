@@ -7,15 +7,6 @@ use crate::SpaceportWindow;
 use crate::i18n::fl;
 use gpui::{prelude::*, *};
 
-/// Below this panel width the rail shows only icons.
-pub(in crate::menu) const COMPACT_BELOW: f32 = 560.;
-/// The dialog's width when there is room: the rail and a form beside it.
-pub(in crate::menu) const WIDTH: f32 = 640.;
-/// The dialog's height, the same for every source so switching never
-/// resizes it: room for the SSH form and setup prompts. A form taller
-/// than that scrolls inside.
-pub(in crate::menu) const HEIGHT: f32 = 620.;
-
 /// One entry of the rail.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::menu) enum Source {

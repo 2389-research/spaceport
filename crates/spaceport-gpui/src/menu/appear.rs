@@ -21,7 +21,7 @@ pub(super) use spaceport_menu::appear::{Shown, leaves};
 
 use super::Page;
 use crate::{SpaceportWindow, motion};
-use gpui::{AnyElement, Context, Pixels, Point, Rgba, Window, div, prelude::*, px, rgba};
+use gpui::{AnyElement, Context, Pixels, Point, Rgba, Window, div, prelude::*, rgba};
 use spaceport_menu::appear::Appear as State;
 use std::time::Instant;
 
@@ -41,11 +41,6 @@ pub(super) fn popover(anchor: Point<Pixels>) -> Shown {
         x: anchor.x.into(),
         y: anchor.y.into(),
     }
-}
-
-/// How far a popup `shown` of the way in still has to go.
-pub(super) fn offset(dims: bool, shown: f32) -> Pixels {
-    px(spaceport_menu::appear::offset(dims, shown))
 }
 
 /// The window's menu layer, and the seam unit tests lay menus out by.

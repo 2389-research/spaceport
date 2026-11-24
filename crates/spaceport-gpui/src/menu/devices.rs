@@ -26,9 +26,8 @@ use crate::i18n::fl;
 use crate::{Command, SpaceportWindow};
 use gpui::{prelude::*, *};
 use spaceport_client::ConnectTarget;
+use spaceport_menu::chrome::{DEVICES_MENU_GAP, MENU_MARGIN};
 use spaceport_sidebar::device_scope::DeviceScope;
-
-pub(super) const MENU_GAP: f32 = 12.;
 
 /// How the picker says several devices can be listed at once.
 fn multi_select_hint() -> String {
@@ -62,7 +61,6 @@ impl From<SetupUnavailable> for SharedString {
         reason.text().into()
     }
 }
-pub(super) const MENU_WIDTH: f32 = 280.;
 
 /// How tall the device picker's list may be, measured from the origin of the
 /// control that opened it, so it never grows over the terminal: the room
@@ -76,7 +74,7 @@ fn device_list_height(anchor_y: Pixels) -> Pixels {
 
 fn room_above(anchor_y: Pixels) -> Pixels {
     let chrome = crate::titlebar::HEIGHT;
-    anchor_y - px(chrome + MENU_GAP + super::MENU_MARGIN + 12.)
+    anchor_y - px(chrome + DEVICES_MENU_GAP + MENU_MARGIN + 12.)
 }
 
 pub(crate) struct SettingsHint {

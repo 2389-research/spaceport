@@ -4,7 +4,7 @@
 //! it was started under.
 
 mod appear;
-mod chrome;
+pub(crate) mod chrome;
 mod colors;
 pub(crate) mod devices;
 pub(crate) mod labels;
@@ -85,7 +85,3 @@ fn action_icon(
                 .debug_selector(move || selector.clone()),
         )
 }
-
-/// Breathing room between a popup and the window's edges, so a list that had
-/// to be clamped still shows that it stops short of the frame.
-const MENU_MARGIN: f32 = 8.;
