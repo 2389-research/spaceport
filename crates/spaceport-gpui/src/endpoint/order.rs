@@ -1,42 +1,16 @@
-//! The order the window lists devices in. The catalogs list them as each was
-//! saved: SSH hosts as upstream keeps them, then WSL distributions.
-//! Dragging a device's header reorders them for this client
-//! only, by endpoint ID, so upstream's catalog is never rewritten and a
-//! device saved later simply lists after the ones the user arranged.
+//! The device order the window lists and arranges, by the user's own: the
+//! crate's `rank` and `moved` decide where a device sorts and lands, and this
+//! module keeps the endpoints in that order and remembers it.
 //!
 //! Much of the window knows Local as endpoint 0, so the endpoints keep it
 //! first and the rest in the user's order; the sidebar places Local among
 //! them where the user put it, and lists it first until then.
 
+pub(super) use spaceport_endpoint::{moved, rank};
+
 use super::{Endpoint, LOCAL};
 use crate::SpaceportWindow;
 use spaceport_reorder::Beside;
-
-/// Where `id` sorts under the user's `order`: its place there, or after
-/// every arranged device, so a stable sort keeps the catalog's own order
-/// for the rest.
-pub(super) fn rank(order: &[String], id: &str) -> usize {
-    order
-        .iter()
-        .position(|arranged| arranged == id)
-        .unwrap_or(order.len())
-}
-
-/// The device order after moving `moved` beside an anchor, from `ids`, the
-/// devices in their current order. `None` when either is not listed.
-fn moved(ids: &[&str], moved: &str, to: Beside<&str>) -> Option<Vec<String>> {
-    let mut order: Vec<_> = ids.iter().copied().filter(|id| *id != moved).collect();
-    if order.len() == ids.len() {
-        return None;
-    }
-    let at = |anchor: &str| order.iter().position(|id| *id == anchor);
-    let index = match to {
-        Beside::Before(anchor) => at(anchor)?,
-        Beside::After(anchor) => at(anchor)? + 1,
-    };
-    order.insert(index, moved);
-    Some(order.into_iter().map(str::to_owned).collect())
-}
 
 impl SpaceportWindow {
     /// Every device with its endpoint index, in the order the sidebar lists
