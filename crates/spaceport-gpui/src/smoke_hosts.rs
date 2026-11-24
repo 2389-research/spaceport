@@ -295,7 +295,7 @@ async fn clicks(
             if step == 9 {
                 // The title ends at the label column's edge, even with an avatar.
                 point.x =
-                    p.bounds.right() + px((spaceport_sidebar::metrics::LABEL_GAP + sidebar::ARROW_RESERVE) / 2.);
+                    p.bounds.right() + px((spaceport_sidebar::metrics::LABEL_GAP + spaceport_sidebar::metrics::ARROW_RESERVE) / 2.);
             }
             Ok((Target::acquire(window)?, point))
         })

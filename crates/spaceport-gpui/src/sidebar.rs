@@ -7,16 +7,15 @@
 mod accessibility;
 mod activity;
 mod agents;
-mod animated;
 mod cell;
 mod device_drag;
 mod host_row;
 mod hover;
 mod layout;
-mod layouts;
 mod metrics;
 mod note_line;
 mod order;
+pub(crate) mod paint;
 mod rail;
 mod render;
 mod reorder;
@@ -42,10 +41,10 @@ pub(crate) mod native_tests;
 pub(crate) use {
     activity::{Activity, ActivityPanel},
     agents::{Indicators, agent_name, pane_name, state_label, status_indicator, status_text},
-    metrics::{ARROW_RESERVE, HOST_ARROW_WIDTH, ICON_RESERVE, STATUS_WIDTH},
+    metrics::{HOST_ARROW_WIDTH, STATUS_WIDTH},
+    paint::label_text,
     rail::SidebarMode,
     render::NestedReveal,
-    row::label_text,
     search::SidebarSearch,
     view::SidebarView,
     workspaces::{workspace_entries, workspace_label},
@@ -57,9 +56,6 @@ pub(crate) use spaceport_sidebar::hover::{HoverMenu, HoverRest};
 pub(crate) use spaceport_sidebar::order::step as sidebar_step;
 pub(crate) use spaceport_sidebar::reorder::{MoveBlock, Plan, WorkspaceDrag, resolve};
 pub(crate) use spaceport_sidebar::slide::SidebarSlide;
-
-#[cfg(any(test, feature = "integration-test"))]
-pub(crate) use metrics::LABEL_WIDTH;
 
 pub(crate) use view::element as view_element;
 

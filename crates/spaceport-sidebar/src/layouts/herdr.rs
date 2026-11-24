@@ -3,16 +3,14 @@
 //! right edge. Density and style decide spacing and which lines show.
 
 use super::super::{
-    ARROW_RESERVE,
     agents::agent_labels,
-    cell::{AgentRow, RowContext, RowLayout, RowState, WorkspaceRow},
-    line_height,
-    row::{RowIcon, RowKind, RowTree},
-    scaled,
+    cell::{AgentRow, RowLayout, WorkspaceRow},
+    metrics::{ARROW_RESERVE, line_height, scaled},
+    row::{RowContext, RowIcon, RowKind, RowState, RowTree},
 };
 use gpui::{prelude::*, *};
 
-pub(in super::super) struct Herdr;
+pub struct Herdr;
 
 impl RowLayout for Herdr {
     fn workspace(&self, row: WorkspaceRow<'_>, state: RowState, cx: &RowContext<'_>) -> Div {
@@ -39,7 +37,7 @@ impl RowLayout for Herdr {
             ..
         } = row;
         let arrow = fold.map(|fold| {
-            fold.element(cx.theme)
+            fold.element(cx)
                 .w(px(scaled(cx.font, ARROW_RESERVE) - density.gap()))
                 .h(px(line_height(cx.font) * text_lines as f32))
                 .text_size(px(scaled(cx.font, 16.)))

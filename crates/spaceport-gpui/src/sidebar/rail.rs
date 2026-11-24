@@ -387,7 +387,13 @@ fn indicator(status: AgentStatus, font: &FontConfig, indicators: Indicators) -> 
         .h(px(line_height(font)))
         .row()
         .items_center()
-        .child(status_indicator(status, font, indicators))
+        .child(status_indicator(
+            status,
+            font,
+            indicators,
+            crate::sidebar::paint::PAINTERS,
+            crate::direction::is_rtl(),
+        ))
 }
 
 /// The host's initial, as Herdr marks a machine in its rail.

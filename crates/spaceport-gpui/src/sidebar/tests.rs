@@ -1,8 +1,10 @@
 #![allow(clippy::unwrap_used)]
 
+use spaceport_sidebar::agents::agent_labels;
+
 use super::{
     STATUS_DOT_UNKNOWN, STATUS_WIDTH, agent_name,
-    agents::{Indicators, agent_labels, agent_place, pane_name, status_indicator, status_style},
+    agents::{Indicators, agent_place, pane_name, status_indicator},
     layout_tests,
     render::header::header,
     workspace_label,
@@ -15,7 +17,7 @@ use crate::{
 use spaceport_client::protocol::{
     AgentStatus, ClientShellAgent, ClientShellPane, ClientShellSnapshot, ClientShellWorkspace,
 };
-use spaceport_sidebar::agents::PANE_CAPTION_LIMIT;
+use spaceport_sidebar::agents::{PANE_CAPTION_LIMIT, status_style};
 
 /// Every status, most urgent first.
 const STATUSES: [AgentStatus; 5] = [

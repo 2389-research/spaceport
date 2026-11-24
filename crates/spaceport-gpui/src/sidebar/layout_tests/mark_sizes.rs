@@ -95,7 +95,7 @@ fn marks_grow_with_the_sidebar_font(cx: &mut gpui::TestAppContext) {
             drawn += 1;
             let growth = match mode {
                 LayoutMode::Classic { .. } | LayoutMode::Minimal => {
-                    px(crate::sidebar::ARROW_RESERVE)
+                    px(spaceport_sidebar::metrics::ARROW_RESERVE)
                 }
                 _ => small,
             };
@@ -137,7 +137,13 @@ fn marks_grow_with_the_sidebar_font(cx: &mut gpui::TestAppContext) {
             bounds(measured, "name-herdr").unwrap().left()
                 - bounds(measured, "workspace-icon-herdr").unwrap().left()
         };
-        assert_eq!(reserve(&small), px(crate::sidebar::ICON_RESERVE));
-        assert_eq!(reserve(&large), px(2. * crate::sidebar::ICON_RESERVE));
+        assert_eq!(
+            reserve(&small),
+            px(spaceport_sidebar::metrics::ICON_RESERVE)
+        );
+        assert_eq!(
+            reserve(&large),
+            px(2. * spaceport_sidebar::metrics::ICON_RESERVE)
+        );
     }
 }

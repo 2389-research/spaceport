@@ -82,17 +82,19 @@ pub(super) fn check_row_geometry(cx: &mut gpui::VisualTestContext) {
         let detail = cx.debug_bounds(detail).unwrap();
         assert_eq!(
             name.left(),
-            parent.left() + px(crate::sidebar::CHILD_INDENT - crate::sidebar::ICON_RESERVE)
+            parent.left()
+                + px(spaceport_sidebar::metrics::CHILD_INDENT
+                    - spaceport_sidebar::metrics::ICON_RESERVE)
         );
         // A member has no chevron, so its name also takes the head's arrow
         // column.
         assert_eq!(
             name.size.width,
-            px(crate::sidebar::LABEL_WIDTH - crate::sidebar::CHILD_INDENT)
+            px(spaceport_sidebar::metrics::LABEL_WIDTH - spaceport_sidebar::metrics::CHILD_INDENT)
         );
         assert_eq!(
             name.right(),
-            parent.right() + px(crate::sidebar::ARROW_RESERVE)
+            parent.right() + px(spaceport_sidebar::metrics::ARROW_RESERVE)
         );
         assert_eq!(detail.size.width, name.size.width);
         assert_eq!(name.size.height, px(16.));
@@ -165,23 +167,25 @@ pub(super) fn check_sidebar_resize(
         let label = cx.debug_bounds("name-herdr").unwrap();
         assert_eq!(
             label.size.width,
-            px(crate::sidebar::LABEL_WIDTH + target - 232. - crate::sidebar::ICON_RESERVE)
+            px(spaceport_sidebar::metrics::LABEL_WIDTH + target
+                - 232.
+                - spaceport_sidebar::metrics::ICON_RESERVE)
         );
         let parent = cx.debug_bounds("name-agent-launcher").unwrap();
         let child = cx.debug_bounds("name-sidebar-child").unwrap();
         assert_eq!(
             parent.size.width,
-            label.size.width - px(crate::sidebar::ARROW_RESERVE)
+            label.size.width - px(spaceport_sidebar::metrics::ARROW_RESERVE)
         );
         assert_eq!(
             child.size.width,
-            parent.size.width - px(crate::sidebar::CHILD_INDENT)
-                + px(crate::sidebar::ICON_RESERVE)
-                + px(crate::sidebar::ARROW_RESERVE)
+            parent.size.width - px(spaceport_sidebar::metrics::CHILD_INDENT)
+                + px(spaceport_sidebar::metrics::ICON_RESERVE)
+                + px(spaceport_sidebar::metrics::ARROW_RESERVE)
         );
         assert_eq!(
             child.right(),
-            parent.right() + px(crate::sidebar::ARROW_RESERVE)
+            parent.right() + px(spaceport_sidebar::metrics::ARROW_RESERVE)
         );
         cx.update(|_, cx| {
             for (text, (bounds, rendered, glyph_width)) in &cx.global::<TextProbes>().0 {
@@ -300,8 +304,11 @@ pub(super) fn check_scaled_sidebar(
     let font = cx.update(|_, cx| view.read(cx).config.sidebar.clone());
     let marks = crate::sidebar::scaled(&font, crate::sidebar::STATUS_WIDTH)
         - crate::sidebar::STATUS_WIDTH
-        + crate::sidebar::scaled(&font, crate::sidebar::ICON_RESERVE);
-    assert_eq!(title.size.width, px(crate::sidebar::LABEL_WIDTH - marks));
+        + crate::sidebar::scaled(&font, spaceport_sidebar::metrics::ICON_RESERVE);
+    assert_eq!(
+        title.size.width,
+        px(spaceport_sidebar::metrics::LABEL_WIDTH - marks)
+    );
     assert_eq!(title.right(), detail.right());
     assert_eq!(icon.center().y, title.center().y);
     cx.simulate_keystrokes("escape");

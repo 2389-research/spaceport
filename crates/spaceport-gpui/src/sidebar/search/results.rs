@@ -66,9 +66,14 @@ impl SpaceportWindow {
                 );
             }
             let lead = match (hit.kind, hit.status) {
-                (Kind::Worktree, Some(status)) => {
-                    status_indicator(status, font, indicators).into_any_element()
-                }
+                (Kind::Worktree, Some(status)) => status_indicator(
+                    status,
+                    font,
+                    indicators,
+                    crate::sidebar::paint::PAINTERS,
+                    crate::direction::is_rtl(),
+                )
+                .into_any_element(),
                 (kind, _) => svg()
                     .path(match kind {
                         Kind::Device => "icons/devices.svg",

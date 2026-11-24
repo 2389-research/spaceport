@@ -52,7 +52,13 @@ fn status_slots_are_fixed_for_each_set_and_font_size() {
                 assert_eq!(width, drawn, "{icons:?} at {size}");
             }
             for status in STATUSES {
-                let mut slot = status_indicator(status, &font, indicators);
+                let mut slot = status_indicator(
+                    status,
+                    &font,
+                    indicators,
+                    crate::sidebar::paint::PAINTERS,
+                    crate::direction::is_rtl(),
+                );
                 assert_eq!(
                     slot.style().size.width,
                     Some(px(width).into()),
@@ -65,9 +71,10 @@ fn status_slots_are_fixed_for_each_set_and_font_size() {
 
 #[test]
 fn wide_mark_rows_keep_layout_density_and_expand_child_indent() {
-    use super::super::row::{RowIcon, RowKind, RowTree, row};
+    use super::super::row::{RowIcon, RowTree};
     use crate::config::LayoutMode;
     use gpui::{Styled, px};
+    use spaceport_sidebar::row::{RowKind, row};
 
     let font = FontConfig {
         family: "Menlo".into(),
@@ -117,6 +124,7 @@ fn wide_mark_rows_keep_layout_density_and_expand_child_indent() {
                         mark: Default::default(),
                         host: None,
                         right_to_left: false,
+                        painters: crate::sidebar::paint::PAINTERS,
                     },
                 );
                 assert_eq!(

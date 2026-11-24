@@ -3,9 +3,9 @@
 //! layout paints lives in `spaceport-sidebar`; the app words each status,
 //! which is the one thing here that needs the catalog.
 
-pub(super) use spaceport_sidebar::tokens::{
-    ResolvedToken, SpaceContext, TextRole, TokenKind, agent_rows, budgets, separator, space_rows,
-};
+pub(super) use spaceport_sidebar::tokens::{ResolvedToken, SpaceContext, agent_rows, space_rows};
+#[cfg(test)]
+pub(super) use spaceport_sidebar::tokens::{TextRole, TokenKind};
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]

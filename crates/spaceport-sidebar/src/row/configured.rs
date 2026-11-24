@@ -2,28 +2,24 @@
 //! built-in name and detail lines.
 
 use super::{
-    RowIcon, RowKind, agent_icon_size, agent_mark, place_line, row_text, shared_label_text,
+    RowContext, RowIcon, RowKind, agent_icon_size, agent_mark, paint::place_line, row_text,
 };
 use crate::{
-    config::Theme,
-    sidebar::{
-        ICON_RESERVE,
-        agents::status_mark,
-        cell::RowContext,
-        glyph_width, line_height, scaled,
-        tokens::{ResolvedToken, TextRole, TokenKind, budgets, separator},
-    },
+    agents::status_mark,
+    metrics::{ICON_RESERVE, glyph_width, line_height, scaled},
+    tokens::{ResolvedToken, TextRole, TokenKind, budgets, separator},
 };
 use gpui::{prelude::*, *};
 use spaceport_client::protocol::AgentStatus;
+use spaceport_settings::{Theme, TokenStyle};
 use unicode_width::UnicodeWidthStr;
 
 /// What colors a configured row's tokens: the row they paint and its state.
 #[derive(Clone, Copy)]
-pub(in crate::sidebar) struct TokenLook {
-    pub(in crate::sidebar) kind: RowKind,
-    pub(in crate::sidebar) status: AgentStatus,
-    pub(in crate::sidebar) focused: bool,
+pub struct TokenLook {
+    pub kind: RowKind,
+    pub status: AgentStatus,
+    pub focused: bool,
 }
 
 fn token_appearance(kind: &TokenKind, look: TokenLook, cx: &RowContext<'_>) -> (u32, FontWeight) {
@@ -42,9 +38,9 @@ fn token_appearance(kind: &TokenKind, look: TokenLook, cx: &RowContext<'_>) -> (
 }
 
 /// A token's base color and weight with its configured `fg`, `dim`, and `bold`.
-pub(crate) fn styled(
+pub fn styled(
     (color, weight): (u32, FontWeight),
-    style: crate::config::TokenStyle,
+    style: TokenStyle,
     theme: &Theme,
 ) -> (u32, FontWeight) {
     let color = style.fg.unwrap_or(color);
@@ -115,6 +111,8 @@ fn token_line(row: &[ResolvedToken], look: TokenLook, width: f32, cx: &RowContex
                         cx.status_indicators(),
                         color,
                         weight == FontWeight::BOLD,
+                        cx.painters,
+                        cx.right_to_left,
                     )
                     .debug_selector(|| "inline-status-mark".into()),
                 ),
@@ -125,21 +123,21 @@ fn token_line(row: &[ResolvedToken], look: TokenLook, width: f32, cx: &RowContex
                 .whitespace_nowrap()
                 .font_weight(weight)
                 .text_color(rgb(color))
-                .child(shared_label_text(text.clone())),
+                .child(cx.painters.label(text.clone())),
             TokenKind::Text(text, _) => cell
                 .truncate()
                 .font_weight(weight)
                 .text_color(rgb(color))
-                .child(shared_label_text(text.clone())),
+                .child(cx.painters.label(text.clone())),
         };
         (gap, advance, cell)
     });
-    place_line(parts, width, font, theme.muted)
+    place_line(parts, width, cx)
 }
 
 /// The `state_icon` leading a configured row's first line. It takes the row's
 /// status slot; a configured row without one shows no status of its own.
-pub(in crate::sidebar) fn leading_status(lines: &[Vec<ResolvedToken>]) -> Option<&ResolvedToken> {
+pub fn leading_status(lines: &[Vec<ResolvedToken>]) -> Option<&ResolvedToken> {
     lines
         .first()
         .and_then(|line| line.first())
@@ -147,7 +145,7 @@ pub(in crate::sidebar) fn leading_status(lines: &[Vec<ResolvedToken>]) -> Option
 }
 
 /// The color, and whether bold, a leading `state_icon` paints the status in.
-pub(in crate::sidebar) fn configured_status_style(
+pub fn configured_status_style(
     token: &ResolvedToken,
     status: AgentStatus,
     cx: &RowContext<'_>,
@@ -161,13 +159,17 @@ pub(in crate::sidebar) fn configured_status_style(
 }
 
 /// The status mark a leading `state_icon` styles, offset onto the first line.
-pub(in crate::sidebar) fn configured_status(
-    token: &ResolvedToken,
-    status: AgentStatus,
-    cx: &RowContext<'_>,
-) -> Div {
+pub fn configured_status(token: &ResolvedToken, status: AgentStatus, cx: &RowContext<'_>) -> Div {
     let (color, bold) = configured_status_style(token, status, cx);
-    status_mark(status, cx.font, cx.status_indicators(), color, bold)
+    status_mark(
+        status,
+        cx.font,
+        cx.status_indicators(),
+        color,
+        bold,
+        cx.painters,
+        cx.right_to_left,
+    )
 }
 
 /// A line's tokens, less the leading `state_icon` the status slot draws.
@@ -188,7 +190,7 @@ fn line_selector(key: &str, index: usize) -> String {
 
 /// Configured lines stacked at `width`, for layouts that draw their own
 /// status and icons beside the text.
-pub(in crate::sidebar) fn token_column(
+pub fn token_column(
     key: &str,
     lines: &[Vec<ResolvedToken>],
     look: TokenLook,

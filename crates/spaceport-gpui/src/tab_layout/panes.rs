@@ -48,7 +48,14 @@ pub(crate) struct PaneContext<'a> {
 impl PaneContext<'_> {
     /// The status dot the sidebar and tabs draw for `status`.
     fn dot(&self, status: AgentStatus) -> Div {
-        status_indicator(status, self.tabs, self.indicators).flex_none()
+        status_indicator(
+            status,
+            self.tabs,
+            self.indicators,
+            crate::sidebar::paint::PAINTERS,
+            crate::direction::is_rtl(),
+        )
+        .flex_none()
     }
 
     /// The word for `status`, for chrome that spells it out; nothing for a

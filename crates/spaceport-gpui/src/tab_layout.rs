@@ -350,10 +350,16 @@ fn lead_mark(
 ) -> Option<AnyElement> {
     match mark {
         Mark::Herdr { status, .. } => (mark.lead() == Lead::Status).then(|| {
-            status_indicator(*status, cx.font, cx.indicators)
-                .mt_0()
-                .debug_selector(probe.status(cx.slot))
-                .into_any_element()
+            status_indicator(
+                *status,
+                cx.font,
+                cx.indicators,
+                crate::sidebar::paint::PAINTERS,
+                crate::direction::is_rtl(),
+            )
+            .mt_0()
+            .debug_selector(probe.status(cx.slot))
+            .into_any_element()
         }),
         Mark::Icon(path) => Some(icon(path, size, text)),
     }

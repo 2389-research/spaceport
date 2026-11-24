@@ -1,14 +1,15 @@
 use super::{
     super::super::{
         agents::Indicators,
-        cell::RowContext,
         layout,
+        paint::PLAIN,
+        row::RowContext,
         tokens::{ResolvedToken, TextRole, TokenKind},
     },
     dot,
 };
-use crate::config::{FontConfig, LayoutMode, Theme, TokenStyle};
 use spaceport_client::protocol::AgentStatus;
+use spaceport_settings::{FontConfig, LayoutMode, StatusIcons, Theme, TokenStyle, Weight};
 
 #[core::prelude::v1::test]
 fn the_slot_dot_follows_a_configured_leading_state_icon() {
@@ -17,16 +18,10 @@ fn the_slot_dot_follows_a_configured_leading_state_icon() {
         size: 12.,
         fallbacks: None,
         line_height_multiple: None,
-        weight: crate::config::Weight::NORMAL,
+        weight: Weight::NORMAL,
     };
     let theme = Theme::default();
-    let indicators = Indicators::new(
-        None,
-        crate::config::StatusIcons::default(),
-        false,
-        false,
-        &theme,
-    );
+    let indicators = Indicators::new(None, StatusIcons::default(), false, false, &theme);
     let cx = RowContext {
         indicators,
         font: &font,
@@ -37,6 +32,7 @@ fn the_slot_dot_follows_a_configured_leading_state_icon() {
         mark: Default::default(),
         host: None,
         right_to_left: false,
+        painters: PLAIN,
     };
     let working = AgentStatus::Working;
     let native = indicators.color(working);

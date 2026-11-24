@@ -6,13 +6,21 @@
 //! edge shows, which needs only a font and a theme.
 
 mod badge;
+mod configured;
+mod paint;
 
 pub use badge::RowBadge;
+pub use configured::{
+    TokenLook, configured_status, configured_status_style, leading_status, styled, token_column,
+};
+pub use paint::row;
 
 use crate::{
     agents::Indicators,
+    direction::Logical,
     layout::SidebarLook,
     metrics::{STATUS_WIDTH, line_height, scaled},
+    paint::Painters,
     wash::HostMark,
 };
 use gpui::{prelude::*, *};
@@ -136,10 +144,7 @@ impl RowIcon {
             .size(px(size))
             .flex_none()
             .overflow_hidden();
-        let slot = match cx.right_to_left {
-            true => slot.right(px(0.)),
-            false => slot.left(px(0.)),
-        };
+        let slot = slot.inset_s(cx.right_to_left, px(0.));
         slot.child(self.element(cx.theme.muted))
     }
 
@@ -232,6 +237,9 @@ pub struct RowContext<'a> {
     /// row's leading edge is on. The app reads the shown locale's direction;
     /// a crate cannot, so it is an input like the rest.
     pub right_to_left: bool,
+    /// How the row reaches what only the app can paint: the element its text
+    /// is, the window's layer for a mark that moves, and the copy for a word.
+    pub painters: Painters,
 }
 
 impl RowContext<'_> {
@@ -283,11 +291,8 @@ pub fn guide(
         .absolute()
         .w(px(width))
         .top_0()
-        .bottom_0();
-    let gutter = match right_to_left {
-        true => gutter.right(px(x)),
-        false => gutter.left(px(x)),
-    };
+        .bottom_0()
+        .inset_s(right_to_left, px(x));
     Some(
         gutter.child(
             canvas(
@@ -332,11 +337,8 @@ pub fn trunk_below(
         .absolute()
         .w(px(width))
         .top_0()
-        .bottom_0();
-    let trunk = match right_to_left {
-        true => trunk.right(px(x)),
-        false => trunk.left(px(x)),
-    };
+        .bottom_0()
+        .inset_s(right_to_left, px(x));
     Some(
         trunk.child(
             canvas(
@@ -399,11 +401,8 @@ pub fn agent_mark(key: &str, icon: AgentIcon, size: f32, color: u32, cx: &RowCon
         .debug_selector(|| format!("agent-icon-{key}"))
         .absolute()
         .top(px((line_height(cx.font) - size) / 2.))
-        .size(px(size));
-    let mark = match cx.right_to_left {
-        true => mark.right(px(0.)),
-        false => mark.left(px(0.)),
-    };
+        .size(px(size))
+        .inset_s(cx.right_to_left, px(0.));
     mark.child(icon.element(size, color))
 }
 

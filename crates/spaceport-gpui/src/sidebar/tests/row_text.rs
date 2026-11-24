@@ -87,8 +87,8 @@ fn agent_rows_name_their_place_then_their_agent() {
 
 #[test]
 fn rows_weight_and_dim_their_text_like_upstream() {
-    use super::super::row::{RowKind, row_text};
     use gpui::FontWeight;
+    use spaceport_sidebar::row::{RowKind, row_text};
     let theme = Theme::default();
     // Agents stay bold whether or not they are the current row; a workspace
     // earns bold only while focused, and hands its branch the accent then.
@@ -167,6 +167,7 @@ fn cells_hand_their_state_and_data_to_the_layout() {
         mark: Default::default(),
         host: None,
         right_to_left: false,
+        painters: crate::sidebar::paint::PAINTERS,
     };
     let recorder = Recorder::default();
     let workspace = || {

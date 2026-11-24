@@ -8,16 +8,15 @@
 //! with an explicit width, so nothing can push past the row's edge.
 
 use super::super::{
-    cell::{RowContext, RowState},
-    glyph_width, label_text, line_height,
-    row::{self, RowIcon, RowLift, removing_dot},
-    status_indicator,
+    agents::status_indicator,
+    metrics::{glyph_width, line_height},
+    row::{self, RowContext, RowIcon, RowLift, RowState, removing_dot},
     tokens::ResolvedToken,
 };
-use crate::config::{FontConfig, Theme};
 use crate::direction::Logical;
 use gpui::{prelude::*, *};
 use spaceport_client::protocol::AgentStatus;
+use spaceport_settings::{FontConfig, Theme};
 use std::borrow::Cow;
 
 /// How a piece claims its width.
@@ -55,7 +54,7 @@ struct Piece<'a> {
 }
 
 /// A row of pieces with a known total width.
-pub(super) struct Line<'a> {
+pub struct Line<'a> {
     width: f32,
     gap: f32,
     pieces: Vec<Piece<'a>>,
@@ -64,7 +63,7 @@ pub(super) struct Line<'a> {
 impl FluentBuilder for Line<'_> {}
 
 impl<'a> Line<'a> {
-    pub(super) fn new(width: f32, gap: f32) -> Self {
+    pub fn new(width: f32, gap: f32) -> Self {
         Self {
             width: width.max(0.),
             gap,
@@ -84,25 +83,19 @@ impl<'a> Line<'a> {
 
     /// An element that keeps `width` however short the line is. It is placed
     /// as is, so it must already be `width` wide.
-    pub(super) fn fixed(self, width: f32, element: impl IntoElement) -> Self {
+    pub fn fixed(self, width: f32, element: impl IntoElement) -> Self {
         let content = Content::Element(element.into_any_element());
         self.push(div(), content, width, Fit::Fixed)
     }
 
     /// Text sized to its content, up to `share` of the line. `glyph` is the
     /// width of one glyph at the size the shell sets.
-    pub(super) fn label(
-        self,
-        shell: Div,
-        text: impl Into<Cow<'a, str>>,
-        glyph: f32,
-        share: f32,
-    ) -> Self {
+    pub fn label(self, shell: Div, text: impl Into<Cow<'a, str>>, glyph: f32, share: f32) -> Self {
         self.padded(shell, text, glyph, share, 0.)
     }
 
     /// A label whose shell pads it by `inset` on each side, such as a chip.
-    pub(super) fn padded(
+    pub fn padded(
         self,
         shell: Div,
         text: impl Into<Cow<'a, str>>,
@@ -122,13 +115,7 @@ impl<'a> Line<'a> {
 
     /// A label that keeps its natural width, up to `share` of the line, ahead
     /// of every other label, so a short state outlasts long names before it.
-    pub(super) fn keep(
-        self,
-        shell: Div,
-        text: impl Into<Cow<'a, str>>,
-        glyph: f32,
-        share: f32,
-    ) -> Self {
+    pub fn keep(self, shell: Div, text: impl Into<Cow<'a, str>>, glyph: f32, share: f32) -> Self {
         let text = text.into();
         let natural = (text.chars().count() as f32 * glyph)
             .ceil()
@@ -137,19 +124,13 @@ impl<'a> Line<'a> {
     }
 
     /// Text that takes the room the other pieces leave.
-    pub(super) fn fill(self, shell: Div, text: impl Into<Cow<'a, str>>) -> Self {
+    pub fn fill(self, shell: Div, text: impl Into<Cow<'a, str>>) -> Self {
         self.push(shell, Content::Text(text.into(), 0.), 0., Fit::Fill)
     }
 
     /// Text that fills the room the others leave, but first keeps its natural
     /// width, up to `share` of the line, ahead of every label.
-    pub(super) fn lead(
-        self,
-        shell: Div,
-        text: impl Into<Cow<'a, str>>,
-        glyph: f32,
-        share: f32,
-    ) -> Self {
+    pub fn lead(self, shell: Div, text: impl Into<Cow<'a, str>>, glyph: f32, share: f32) -> Self {
         let text = text.into();
         let natural = (text.chars().count() as f32 * glyph)
             .ceil()
@@ -158,12 +139,12 @@ impl<'a> Line<'a> {
     }
 
     /// Content that takes the room the other pieces leave, built at that width.
-    pub(super) fn fill_with(self, build: impl FnOnce(f32) -> Div + 'a) -> Self {
+    pub fn fill_with(self, build: impl FnOnce(f32) -> Div + 'a) -> Self {
         self.push(div(), Content::Build(Box::new(build)), 0., Fit::Fill)
     }
 
     /// Empty room that pushes the pieces after it to the line's end.
-    pub(super) fn spacer(self) -> Self {
+    pub fn spacer(self) -> Self {
         self.push(div(), Content::Shell, 0., Fit::Fill)
     }
 
@@ -227,12 +208,12 @@ impl<'a> Line<'a> {
         widths
     }
 
-    pub(super) fn into_div(self) -> Div {
+    pub fn into_div(self, cx: &RowContext<'_>) -> Div {
         let widths = self.widths();
         let line = div()
             .w(px(self.width))
             .flex_none()
-            .row()
+            .row(cx.right_to_left)
             .items_center()
             .gap(px(self.gap))
             .overflow_hidden();
@@ -247,9 +228,10 @@ impl<'a> Line<'a> {
                 }
                 let shell = piece.shell.w(px(width)).flex_none().overflow_hidden();
                 line.child(match piece.content {
-                    Content::Text(text, inset) => {
-                        shell.px(px(inset)).truncate().child(label_text(&text))
-                    }
+                    Content::Text(text, inset) => shell
+                        .px(px(inset))
+                        .truncate()
+                        .child(cx.painters.label(text.as_ref())),
                     Content::Build(build) => shell.child(build(width)),
                     Content::Element(_) | Content::Shell => shell,
                 })
@@ -258,12 +240,12 @@ impl<'a> Line<'a> {
 }
 
 /// Glyph width at `size`, scaled from the sidebar font's.
-pub(super) fn glyph_at(font: &FontConfig, size: f32) -> f32 {
+pub fn glyph_at(font: &FontConfig, size: f32) -> f32 {
     glyph_width(font) * size / font.size
 }
 
 /// `color` at `alpha` out of 255, for washes laid over the sidebar surface.
-pub(super) fn wash(color: u32, alpha: u8) -> Rgba {
+pub fn wash(color: u32, alpha: u8) -> Rgba {
     rgba((color << 8) | u32::from(alpha))
 }
 
@@ -271,7 +253,7 @@ pub(super) fn wash(color: u32, alpha: u8) -> Rgba {
 /// or while highlighted. A carried row becomes an opaque card lifted by a
 /// shadow, so the rows it floats over stay hidden in every theme; the rows it
 /// passes stop answering hover, leaving the gap to mark where it lands.
-pub(super) fn mark(row: Div, state: RowState, colors: (Rgba, Rgba), theme: &Theme) -> Div {
+pub fn mark(row: Div, state: RowState, colors: (Rgba, Rgba), theme: &Theme) -> Div {
     let (fill, hover) = colors;
     let selected = state.selected;
     match state.lift {
@@ -293,13 +275,13 @@ pub(super) fn mark(row: Div, state: RowState, colors: (Rgba, Rgba), theme: &Them
     }
 }
 
-pub(super) fn icon(path: impl Into<SharedString>, size: f32, color: u32) -> AnyElement {
-    crate::icons::icon(path, size, color)
+pub fn icon(path: impl Into<SharedString>, size: f32, color: u32) -> AnyElement {
+    spaceport_icons::icon(path, size, color)
 }
 
 /// The status dot, or the pulse that replaces it while a checkout is deleted.
 /// Unlike the Herdr row's, it carries no offset: a line centers it.
-pub(super) fn status(status: AgentStatus, removing: bool, cx: &RowContext<'_>) -> Div {
+pub fn status(status: AgentStatus, removing: bool, cx: &RowContext<'_>) -> Div {
     if removing {
         div()
             .w(px(cx.indicators.width(cx.font)))
@@ -308,14 +290,21 @@ pub(super) fn status(status: AgentStatus, removing: bool, cx: &RowContext<'_>) -
             .justify_center()
             .child(removing_dot("worktree-removing", cx.font, cx.theme))
     } else {
-        status_indicator(status, cx.font, cx.status_indicators()).mt_0()
+        status_indicator(
+            status,
+            cx.font,
+            cx.status_indicators(),
+            cx.painters,
+            cx.right_to_left,
+        )
+        .mt_0()
     }
 }
 
 /// What a configured row shows in its status slot: the removal pulse, the
 /// mark its leading `state_icon` styles, or nothing. Both sit on the first
 /// line, so the slot suits a line whose pieces align to its top.
-pub(super) fn configured_status(
+pub fn configured_status(
     lines: &[Vec<ResolvedToken>],
     status: AgentStatus,
     removing: bool,
@@ -333,7 +322,7 @@ pub(super) fn configured_status(
 
 /// `element` centered in a box one line tall, for pieces beside a block of
 /// configured lines that align to its first line.
-pub(super) fn first_line(width: f32, element: impl IntoElement, cx: &RowContext<'_>) -> Div {
+pub fn first_line(width: f32, element: impl IntoElement, cx: &RowContext<'_>) -> Div {
     div()
         .w(px(width))
         .h(px(line_height(cx.font)))
@@ -345,14 +334,14 @@ pub(super) fn first_line(width: f32, element: impl IntoElement, cx: &RowContext<
 }
 
 /// A workspace whose notifications the user muted.
-pub(super) fn muted(key: &str, size: f32, theme: &Theme) -> Div {
-    crate::icons::muted(theme, size).debug_selector(|| format!("muted-{key}"))
+pub fn muted(key: &str, size: f32, theme: &Theme) -> Div {
+    spaceport_icons::muted(theme, size).debug_selector(|| format!("muted-{key}"))
 }
 
 /// The branch glyph a linked worktree standing alone leads its name with,
 /// in the hue its icon carries. These rows have no repository icon slot;
 /// other icons draw nothing here.
-pub(super) fn worktree(key: &str, icon: &RowIcon, size: f32) -> Option<Div> {
+pub fn worktree(key: &str, icon: &RowIcon, size: f32) -> Option<Div> {
     let RowIcon::Worktree(hue) = icon else {
         return None;
     };
@@ -366,7 +355,7 @@ pub(super) fn worktree(key: &str, icon: &RowIcon, size: f32) -> Option<Div> {
 }
 
 /// Where an agent runs, as one muted label: host, workspace, and tab.
-pub(super) fn agent_place<'a>(
+pub fn agent_place<'a>(
     place: Option<(&'a str, Option<&'a str>)>,
     host: Option<&'a str>,
 ) -> Option<Cow<'a, str>> {
