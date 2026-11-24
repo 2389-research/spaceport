@@ -1,29 +1,7 @@
-//! Applying a configured face to elements.
-//!
-//! Shell prompts draw powerline separators and Nerd Font icons from the Private
-//! Use Area. No text face covers those codepoints and no platform default
-//! cascade reaches an installed icon font, so every such cell shapes to the
-//! missing-glyph box until the cascade names one. [`crate::config::FontConfig`]
-//! carries that cascade alongside the family; this trait applies both.
+//! Applying a configured face to elements: `spaceport_widgets::fonts`' trait
+//! and font, at the paths the app already names them by.
 
-use crate::config::FontConfig;
-use gpui::{Font, Styled};
-
-pub(crate) trait StyledFont: Styled + Sized {
-    /// Sets the family and its fallback cascade, and nothing else. `Styled::font`
-    /// would also reset weight and style, which nested chrome inherits.
-    fn text_font(mut self, config: &FontConfig) -> Self {
-        let Font {
-            family, fallbacks, ..
-        } = crate::config::font_for(config);
-        let style = self.text_style();
-        style.font_family = Some(family);
-        style.font_fallbacks = fallbacks;
-        self
-    }
-}
-
-impl<E: Styled> StyledFont for E {}
+pub(crate) use spaceport_widgets::fonts::StyledFont;
 
 #[cfg(test)]
 mod tests {
