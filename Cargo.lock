@@ -6703,6 +6703,7 @@ dependencies = [
  "spaceport-endpoint",
  "spaceport-i18n",
  "spaceport-icons",
+ "spaceport-live",
  "spaceport-menu",
  "spaceport-motion",
  "spaceport-osc52",
@@ -6788,6 +6789,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "spaceport-live"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "spaceport-client",
+ "spaceport-osc52",
+ "spaceport-sound",
+ "tracing",
+]
+
+[[package]]
 name = "spaceport-menu"
 version = "0.1.0"
 dependencies = [
@@ -6818,6 +6830,7 @@ dependencies = [
  "serde_json",
  "spaceport-client",
  "spaceport-commands",
+ "spaceport-live",
  "thiserror 2.0.21",
  "unicode-segmentation",
 ]

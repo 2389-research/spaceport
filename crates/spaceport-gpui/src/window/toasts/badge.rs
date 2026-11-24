@@ -1,6 +1,7 @@
 //! A toast's leading badge. The wire format has no icon field, so a sender
 //! picks one by starting the title with an emoji; otherwise the badge shows
 //! the sending agent's mark, then an icon for the notification kind.
+use crate::icons::AgentIcon;
 use crate::notifications::Notice;
 use spaceport_client::protocol::SemanticNotificationKind;
 use unicode_properties::{EmojiStatus, UnicodeEmoji};
@@ -31,7 +32,12 @@ pub(super) fn badge(notice: &Notice) -> Badge<'_> {
             title,
         };
     }
-    let icon = match (notice.agent, notice.kind) {
+    let agent = notice
+        .agent
+        .as_deref()
+        .map(|identity| AgentIcon::from_identity(Some(identity)))
+        .filter(|icon| *icon != AgentIcon::Generic);
+    let icon = match (agent, notice.kind) {
         (Some(agent), _) => agent.path(),
         (None, SemanticNotificationKind::NeedsAttention) => "icons/bell.svg",
         (None, SemanticNotificationKind::Finished) => "icons/check.svg",

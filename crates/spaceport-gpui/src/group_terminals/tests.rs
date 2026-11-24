@@ -72,10 +72,12 @@ fn parked(
 ) -> Parked {
     let mut connection = ConnectionBridge::new(target);
     connection.handle = Some(peer.client.handle.clone());
-    let mut live = LiveState::default();
-    live.status = ConnectionStatus::Connected;
-    live.surface = Some(surface(&snapshot, "p1"));
-    live.snapshot = Some(Arc::new(snapshot));
+    let live = LiveState {
+        status: ConnectionStatus::Connected,
+        surface: Some(surface(&snapshot, "p1")),
+        snapshot: Some(Arc::new(snapshot)),
+        ..LiveState::default()
+    };
     Parked {
         group,
         workspace,

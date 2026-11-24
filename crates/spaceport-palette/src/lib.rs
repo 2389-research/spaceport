@@ -12,8 +12,8 @@
 //! the app builds every entry from its own catalog and its daemon state, words
 //! every label and badge (`docs/i18n.md`), keeps the palette entity, the
 //! frecency history, the project scan and the paint. The navigation target a
-//! Go To row aims at also lives here for now; its expected home is the
-//! live-state activation program.
+//! Go To row aims at is `spaceport-live`'s, re-exported here for the rows that
+//! carry one.
 
 mod action;
 mod agent_filter;
@@ -21,7 +21,6 @@ mod entry;
 mod error;
 mod filter;
 mod frecency;
-mod navigation;
 mod project;
 mod rank;
 pub mod search;
@@ -33,9 +32,9 @@ pub use entry::Entry;
 pub use error::{Error, Result};
 pub use filter::Filter;
 pub use frecency::{Key, MAX_FIELD_BYTES};
-pub use navigation::{NavigationTarget, OwnedNavigationTarget};
 pub use project::{NewProject, Project};
 pub use rank::rank_rows;
+pub use spaceport_live::{NavigationTarget, OwnedNavigationTarget};
 pub use target::Target;
 
 #[cfg(test)]

@@ -50,9 +50,10 @@ fn host_theme_paints_cell_colors_and_follows_system_appearance() {
 fn settings_reload_is_coalesced_consumed_once_and_connection_fenced() {
     let mut bridge = bridge();
     for _ in 0..3 {
-        bridge.inbox.lock().unwrap().apply(ClientEvent::Message(
-            spaceport_client::protocol::ServerMessage::ReloadSoundConfig,
-        ));
+        bridge.inbox.lock().unwrap().apply(
+            ClientEvent::Message(spaceport_client::protocol::ServerMessage::ReloadSoundConfig),
+            &crate::state::labels(),
+        );
     }
     let update = bridge.take_update().unwrap();
     assert!(!update.settings_reload);
@@ -62,9 +63,10 @@ fn settings_reload_is_coalesced_consumed_once_and_connection_fenced() {
     drop(guard);
     assert!(bridge.take_settings_reload());
     assert!(!bridge.take_settings_reload());
-    bridge.inbox.lock().unwrap().apply(ClientEvent::Message(
-        spaceport_client::protocol::ServerMessage::ReloadSoundConfig,
-    ));
+    bridge.inbox.lock().unwrap().apply(
+        ClientEvent::Message(spaceport_client::protocol::ServerMessage::ReloadSoundConfig),
+        &crate::state::labels(),
+    );
     assert!(bridge.take_settings_reload());
     assert!(bridge.take_update().unwrap().reload_sound);
     bridge.inbox.lock().unwrap().set_outer_focus(true);
@@ -73,21 +75,22 @@ fn settings_reload_is_coalesced_consumed_once_and_connection_fenced() {
     old.lock().unwrap().settings_reload = true;
     bridge.detach(false);
     assert!(!bridge.take_settings_reload());
-    old.lock().unwrap().apply(ClientEvent::Message(
-        spaceport_client::protocol::ServerMessage::ReloadSoundConfig,
-    ));
+    old.lock().unwrap().apply(
+        ClientEvent::Message(spaceport_client::protocol::ServerMessage::ReloadSoundConfig),
+        &crate::state::labels(),
+    );
     assert!(!bridge.take_settings_reload());
-    bridge.inbox.lock().unwrap().apply(ClientEvent::Message(
-        spaceport_client::protocol::ServerMessage::ReloadSoundConfig,
-    ));
-    bridge
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Disconnected {
+    bridge.inbox.lock().unwrap().apply(
+        ClientEvent::Message(spaceport_client::protocol::ServerMessage::ReloadSoundConfig),
+        &crate::state::labels(),
+    );
+    bridge.inbox.lock().unwrap().apply(
+        ClientEvent::Disconnected {
             reason: "closed".into(),
             ssh: None,
-        });
+        },
+        &crate::state::labels(),
+    );
     assert!(!bridge.take_settings_reload());
 }
 
@@ -97,8 +100,10 @@ fn integration_responses_do_not_overwrite_dialog_responses() {
         pending: Some(("integration".into(), None)),
         ..Default::default()
     };
-    let mut state = LiveState::default();
-    state.dialog_response = Some(("dialog".into(), None));
+    let mut state = LiveState {
+        dialog_response: Some(("dialog".into(), None)),
+        ..LiveState::default()
+    };
     for (id, response) in [
         (
             "integration",
@@ -113,7 +118,7 @@ fn integration_responses_do_not_overwrite_dialog_responses() {
             request_id: id.into(),
             response,
         }) {
-            state.apply(event);
+            state.apply(event, &crate::state::labels());
         }
     }
     assert_eq!(
@@ -236,12 +241,16 @@ fn bells_move_once_titles_persist_and_old_inboxes_are_fenced() {
     {
         let mut state = old.lock().unwrap();
         state.status = ConnectionStatus::Connected;
-        state.apply(ClientEvent::Message(ServerMessage::TerminalBell {
-            count: 2,
-        }));
-        state.apply(ClientEvent::Message(ServerMessage::WindowTitle {
-            title: Some("agent".into()),
-        }));
+        state.apply(
+            ClientEvent::Message(ServerMessage::TerminalBell { count: 2 }),
+            &crate::state::labels(),
+        );
+        state.apply(
+            ClientEvent::Message(ServerMessage::WindowTitle {
+                title: Some("agent".into()),
+            }),
+            &crate::state::labels(),
+        );
     }
     let update = bridge.take_update().unwrap();
     assert_eq!(update.bells, 2);
@@ -258,12 +267,16 @@ fn bells_move_once_titles_persist_and_old_inboxes_are_fenced() {
     bridge.reset(ConnectionStatus::Connected, false);
     {
         let mut state = old.lock().unwrap();
-        state.apply(ClientEvent::Message(ServerMessage::TerminalBell {
-            count: 1,
-        }));
-        state.apply(ClientEvent::Message(ServerMessage::WindowTitle {
-            title: Some("late".into()),
-        }));
+        state.apply(
+            ClientEvent::Message(ServerMessage::TerminalBell { count: 1 }),
+            &crate::state::labels(),
+        );
+        state.apply(
+            ClientEvent::Message(ServerMessage::WindowTitle {
+                title: Some("late".into()),
+            }),
+            &crate::state::labels(),
+        );
     }
     let replacement = bridge.take_update().unwrap();
     assert_eq!(replacement.bells, 0);
@@ -280,9 +293,12 @@ fn notifications_move_once_are_bounded_and_fenced_by_replacement() {
         let mut state = old.lock().unwrap();
         state.status = ConnectionStatus::Connected;
         for id in 0..100 {
-            state.apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-                notification(&id.to_string()),
-            )));
+            state.apply(
+                ClientEvent::Message(ServerMessage::SemanticNotification(notification(
+                    &id.to_string(),
+                ))),
+                &crate::state::labels(),
+            );
         }
         state.set_outer_focus(true);
     }
@@ -300,32 +316,38 @@ fn notifications_move_once_are_bounded_and_fenced_by_replacement() {
     assert!(next.sound_events.is_empty());
     bridge.detach(false);
     assert!(update.sound_cancel.load(Ordering::Acquire));
-    old.lock()
-        .unwrap()
-        .apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-            notification("late"),
-        )));
+    old.lock().unwrap().apply(
+        ClientEvent::Message(ServerMessage::SemanticNotification(notification("late"))),
+        &crate::state::labels(),
+    );
     let detached = bridge.take_update().unwrap();
     assert!(detached.notifications.is_empty());
     assert!(detached.sound_events.is_empty());
     bridge.reset(ConnectionStatus::Connected, false);
-    old.lock()
-        .unwrap()
-        .apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-            notification("late again"),
-        )));
+    old.lock().unwrap().apply(
+        ClientEvent::Message(ServerMessage::SemanticNotification(notification(
+            "late again",
+        ))),
+        &crate::state::labels(),
+    );
     let replacement = bridge.take_update().unwrap();
     assert!(replacement.notifications.is_empty());
     assert!(replacement.sound_events.is_empty());
     {
         let mut state = bridge.inbox.lock().unwrap();
-        state.apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-            notification("discard on disconnect"),
-        )));
-        state.apply(ClientEvent::Disconnected {
-            reason: "test".into(),
-            ssh: None,
-        });
+        state.apply(
+            ClientEvent::Message(ServerMessage::SemanticNotification(notification(
+                "discard on disconnect",
+            ))),
+            &crate::state::labels(),
+        );
+        state.apply(
+            ClientEvent::Disconnected {
+                reason: "test".into(),
+                ssh: None,
+            },
+            &crate::state::labels(),
+        );
     }
     let disconnected = bridge.take_update().unwrap();
     assert!(disconnected.notifications.is_empty());
@@ -337,13 +359,12 @@ fn notifications_move_once_are_bounded_and_fenced_by_replacement() {
 fn clipboard_writes_move_out_of_the_mailbox_exactly_once() {
     use spaceport_client::protocol::ServerMessage;
     let bridge = bridge();
-    bridge
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Message(ServerMessage::Clipboard {
+    bridge.inbox.lock().unwrap().apply(
+        ClientEvent::Message(ServerMessage::Clipboard {
             data: "aGVsbG8=".into(),
-        }));
+        }),
+        &crate::state::labels(),
+    );
     let update = bridge.take_update().unwrap();
     assert_eq!(
         update
@@ -417,15 +438,21 @@ fn detach_and_reconnect_fence_old_inboxes() {
     old.lock().unwrap().local_daemon_peer = true;
     old.lock().unwrap().dialog_response = Some(("remove".into(), None));
     bridge.detach(true);
-    old.lock().unwrap().apply(ClientEvent::Response {
-        request_id: "remove".into(),
-        response: serde_json::json!({"error":{"code":"dirty_worktree_requires_force"}}),
-    });
+    old.lock().unwrap().apply(
+        ClientEvent::Response {
+            request_id: "remove".into(),
+            response: serde_json::json!({"error":{"code":"dirty_worktree_requires_force"}}),
+        },
+        &crate::state::labels(),
+    );
     old.lock().unwrap().missing_installation = true;
-    old.lock().unwrap().apply(ClientEvent::Disconnected {
-        reason: "old connection".into(),
-        ssh: None,
-    });
+    old.lock().unwrap().apply(
+        ClientEvent::Disconnected {
+            reason: "old connection".into(),
+            ssh: None,
+        },
+        &crate::state::labels(),
+    );
     let detached = bridge.take_update().unwrap();
     assert_eq!(detached.status, ConnectionStatus::Detached);
     assert!(!detached.missing_installation);
@@ -438,10 +465,13 @@ fn detach_and_reconnect_fence_old_inboxes() {
     let mut options = ConnectOptions::default();
     options.surface_size.cols = 0;
     bridge.reconnect(options, false, true, Start::WhenMissing);
-    old.lock().unwrap().apply(ClientEvent::Disconnected {
-        reason: "detached connection".into(),
-        ssh: None,
-    });
+    old.lock().unwrap().apply(
+        ClientEvent::Disconnected {
+            reason: "detached connection".into(),
+            ssh: None,
+        },
+        &crate::state::labels(),
+    );
     let failed = bridge.take_update().unwrap();
     assert_eq!(failed.status, ConnectionStatus::Disconnected);
     assert!(!failed.local_daemon_peer);
@@ -457,10 +487,13 @@ fn dialog_result_moves_out_once_without_losing_pending_registration() {
         bridge.take_update().unwrap().dialog_response,
         Some((id, None)) if id == "list"
     ));
-    bridge.inbox.lock().unwrap().apply(ClientEvent::Response {
-        request_id: "list".into(),
-        response: serde_json::json!({"result":{}}),
-    });
+    bridge.inbox.lock().unwrap().apply(
+        ClientEvent::Response {
+            request_id: "list".into(),
+            response: serde_json::json!({"result":{}}),
+        },
+        &crate::state::labels(),
+    );
     assert!(
         bridge
             .take_update()

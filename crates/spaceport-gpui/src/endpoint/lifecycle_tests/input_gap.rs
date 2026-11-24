@@ -54,10 +54,10 @@ fn type_across_gap(
                     pixel_height: 480,
                 }));
             }
-            inbox
-                .lock()
-                .unwrap()
-                .apply(ClientEvent::Snapshot(Arc::new(next)));
+            inbox.lock().unwrap().apply(
+                ClientEvent::Snapshot(Arc::new(next)),
+                &crate::state::labels(),
+            );
             project_until(view, cx, "newer snapshot", |view| {
                 if gap == Gap::FocusMoves {
                     !view.input_ready()
@@ -71,10 +71,10 @@ fn type_across_gap(
                 view.pending_input.len(),
                 if gap == Gap::FocusMoves { 2 } else { 0 }
             );
-            inbox
-                .lock()
-                .unwrap()
-                .apply(ClientEvent::Surface(Arc::new(frame)));
+            inbox.lock().unwrap().apply(
+                ClientEvent::Surface(Arc::new(frame)),
+                &crate::state::labels(),
+            );
             project_until(view, cx, "matching surface", SpaceportWindow::input_ready);
             assert_eq!(view.pending_input.len(), 0);
             view.send(ClientPaneInputEvent::TextCommit("sentinel".into()), cx);
@@ -167,12 +167,10 @@ fn input_held_across_gap_is_bounded_and_dropped_on_reset(cx: &mut gpui::TestAppC
         let mut next = (**view.live.snapshot.as_ref().unwrap()).clone();
         next.revision += 1;
         next.focused_pane_id = Some("w1:p2".into());
-        view.endpoints[1]
-            .connection
-            .inbox
-            .lock()
-            .unwrap()
-            .apply(ClientEvent::Snapshot(Arc::new(next)));
+        view.endpoints[1].connection.inbox.lock().unwrap().apply(
+            ClientEvent::Snapshot(Arc::new(next)),
+            &crate::state::labels(),
+        );
         project_until(view, cx, "newer snapshot", |view| !view.input_ready());
         for _ in 0..300 {
             view.send(ClientPaneInputEvent::TextCommit("x".into()), cx);

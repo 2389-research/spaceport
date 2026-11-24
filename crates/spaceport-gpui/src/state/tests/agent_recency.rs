@@ -23,26 +23,32 @@ fn changes_on_different_daemons_order_as_they_arrive() {
     let (mut first, mut second) = (LiveState::default(), LiveState::default());
     // The first daemon has counted far more changes than the second, which
     // says nothing about which of their agents changed last.
-    first.apply(ClientEvent::Snapshot(agents("one", &[("a", 50)])));
-    second.apply(ClientEvent::Snapshot(agents("two", &[("b", 2)])));
+    first.apply(
+        ClientEvent::Snapshot(agents("one", &[("a", 50)])),
+        &labels(),
+    );
+    second.apply(ClientEvent::Snapshot(agents("two", &[("b", 2)])), &labels());
     assert!(second.agent_recency.of("b") > first.agent_recency.of("a"));
-    first.apply(ClientEvent::Snapshot(agents("one", &[("a", 51)])));
+    first.apply(
+        ClientEvent::Snapshot(agents("one", &[("a", 51)])),
+        &labels(),
+    );
     assert!(first.agent_recency.of("a") > second.agent_recency.of("b"));
 }
 
 #[test]
 fn only_a_changed_agent_is_restamped_and_older_changes_stamp_first() {
     let mut state = LiveState::default();
-    state.apply(ClientEvent::Snapshot(agents(
-        "boot",
-        &[("late", 7), ("early", 3)],
-    )));
+    state.apply(
+        ClientEvent::Snapshot(agents("boot", &[("late", 7), ("early", 3)])),
+        &labels(),
+    );
     let late = state.agent_recency.of("late");
     assert!(late > state.agent_recency.of("early"));
-    state.apply(ClientEvent::Snapshot(agents(
-        "boot",
-        &[("late", 7), ("early", 8)],
-    )));
+    state.apply(
+        ClientEvent::Snapshot(agents("boot", &[("late", 7), ("early", 8)])),
+        &labels(),
+    );
     assert_eq!(state.agent_recency.of("late"), late);
     assert!(state.agent_recency.of("early") > late);
 }
@@ -50,20 +56,29 @@ fn only_a_changed_agent_is_restamped_and_older_changes_stamp_first() {
 #[test]
 fn history_ends_with_its_pane_boot_or_connection() {
     let mut state = LiveState::default();
-    state.apply(ClientEvent::Snapshot(agents(
-        "boot",
-        &[("kept", 1), ("closed", 2)],
-    )));
-    state.apply(ClientEvent::Snapshot(agents("boot", &[("kept", 1)])));
+    state.apply(
+        ClientEvent::Snapshot(agents("boot", &[("kept", 1), ("closed", 2)])),
+        &labels(),
+    );
+    state.apply(
+        ClientEvent::Snapshot(agents("boot", &[("kept", 1)])),
+        &labels(),
+    );
     assert_eq!(state.agent_recency.of("closed"), 0);
     let kept = state.agent_recency.of("kept");
     assert!(kept > 0);
     // A restarted daemon reuses pane IDs for unrelated panes.
-    state.apply(ClientEvent::Snapshot(agents("rebooted", &[("kept", 1)])));
+    state.apply(
+        ClientEvent::Snapshot(agents("rebooted", &[("kept", 1)])),
+        &labels(),
+    );
     assert!(state.agent_recency.of("kept") > kept);
-    state.apply(ClientEvent::Disconnected {
-        reason: "gone".into(),
-        ssh: None,
-    });
+    state.apply(
+        ClientEvent::Disconnected {
+            reason: "gone".into(),
+            ssh: None,
+        },
+        &labels(),
+    );
     assert_eq!(state.agent_recency, AgentRecency::default());
 }

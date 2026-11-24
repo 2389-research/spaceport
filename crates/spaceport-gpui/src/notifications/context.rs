@@ -11,7 +11,7 @@ const PART_LIMIT: usize = 120;
 /// The agent's task on the first line and its place, named as the sidebar
 /// names it, on the second. `None` when the snapshot knows neither, so the
 /// daemon's body stays.
-pub(super) fn describe(snapshot: &ClientShellSnapshot, pane_id: &str) -> Option<String> {
+pub(crate) fn describe(snapshot: &ClientShellSnapshot, pane_id: &str) -> Option<String> {
     let pane = snapshot.panes.iter().find(|p| p.pane_id == pane_id)?;
     let agent = snapshot.agents.iter().find(|a| a.pane_id == pane_id);
     let task = agent.and_then(task);

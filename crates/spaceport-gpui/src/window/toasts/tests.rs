@@ -120,7 +120,7 @@ fn notifications_layout_dismissal_and_focus_are_nonmodal(cx: &mut TestAppContext
             view.endpoints[0].toasts.receive((0..3).map(|_| {
                 let mut wire = notification(&"long title ".repeat(100));
                 wire.body = Some("body ".repeat(200));
-                Notice::new(wire, Instant::now()).preview()
+                Notice::new(wire, Instant::now(), &crate::state::labels()).preview()
             }));
             let mut remote = crate::endpoint::Endpoint::new(
                 "remote".into(),
@@ -128,9 +128,12 @@ fn notifications_layout_dismissal_and_focus_are_nonmodal(cx: &mut TestAppContext
                 spaceport_client::ConnectTarget::Socket("/unused-toast-test.sock".into()),
                 true,
             );
-            remote
-                .toasts
-                .receive([Notice::new(notification("Remote"), Instant::now()).preview()]);
+            remote.toasts.receive([Notice::new(
+                notification("Remote"),
+                Instant::now(),
+                &crate::state::labels(),
+            )
+            .preview()]);
             view.endpoints.push(remote);
         });
     });
@@ -192,9 +195,12 @@ fn notifications_honor_all_corners_and_global_card_limit(cx: &mut TestAppContext
                 view.endpoints[0].toasts = Default::default();
                 let mut wire = notification("Corner");
                 wire.position = Some(position);
-                view.endpoints[0]
-                    .toasts
-                    .receive([Notice::new(wire, Instant::now()).preview()]);
+                view.endpoints[0].toasts.receive([Notice::new(
+                    wire,
+                    Instant::now(),
+                    &crate::state::labels(),
+                )
+                .preview()]);
             });
             window.draw(cx).clear(cx);
         });
@@ -225,9 +231,12 @@ fn notifications_honor_all_corners_and_global_card_limit(cx: &mut TestAppContext
                     spaceport_client::ConnectTarget::Socket("/unused-toast-test.sock".into()),
                     true,
                 );
-                endpoint
-                    .toasts
-                    .receive([Notice::new(notification(id), Instant::now()).preview()]);
+                endpoint.toasts.receive([Notice::new(
+                    notification(id),
+                    Instant::now(),
+                    &crate::state::labels(),
+                )
+                .preview()]);
                 view.endpoints.push(endpoint);
             }
         });

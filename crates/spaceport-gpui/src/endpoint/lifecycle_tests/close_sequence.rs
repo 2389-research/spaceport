@@ -50,12 +50,10 @@ fn close_sequence_waits_for_the_previous_closes_ack_and_surface(cx: &mut gpui::T
                 let mut next = (**view.live.snapshot.as_ref().unwrap()).clone();
                 next.revision += 1;
                 next.tabs.retain(|tab| tab.tab_id != "first");
-                view.endpoints[0]
-                    .connection
-                    .inbox
-                    .lock()
-                    .unwrap()
-                    .apply(ClientEvent::Snapshot(Arc::new(next.clone())));
+                view.endpoints[0].connection.inbox.lock().unwrap().apply(
+                    ClientEvent::Snapshot(Arc::new(next.clone())),
+                    &crate::state::labels(),
+                );
                 project_until(view, cx, "closed tab snapshot", |view| {
                     view.live.snapshot.as_ref().unwrap().revision == next.revision
                 });
@@ -84,7 +82,7 @@ fn close_sequence_waits_for_the_previous_closes_ack_and_surface(cx: &mut gpui::T
                         .inbox
                         .lock()
                         .unwrap()
-                        .apply(event);
+                        .apply(event, &crate::state::labels());
                     project_until(view, cx, "close barrier progress", |view| {
                         if index == 1 {
                             view.input_ready()

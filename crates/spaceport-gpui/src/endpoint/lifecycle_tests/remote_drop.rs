@@ -100,15 +100,13 @@ fn a_refusal_only_the_user_can_fix_waits_the_longest_retry_delay() {
         let (mut endpoint, _server) = connected_endpoint("ssh:remote");
         let error = spaceport_client::Error::Ssh(spaceport_client::ssh::Error::Refused(failure))
             .to_string();
-        endpoint
-            .connection
-            .inbox
-            .lock()
-            .unwrap()
-            .apply(ClientEvent::Disconnected {
+        endpoint.connection.inbox.lock().unwrap().apply(
+            ClientEvent::Disconnected {
                 reason: error.clone(),
                 ssh: Some(failure),
-            });
+            },
+            &crate::state::labels(),
+        );
         endpoint.connection.handle.as_ref().unwrap().disconnect();
         let now = Instant::now();
         // The inbox may be busy for a poll; the state still lands on a later one.
@@ -209,15 +207,13 @@ fn a_refusal_that_arrives_after_its_stop_still_waits_the_longest_delay() {
     let error =
         spaceport_client::Error::Ssh(spaceport_client::ssh::Error::Refused(SshFailure::HostKey))
             .to_string();
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Disconnected {
+    endpoint.connection.inbox.lock().unwrap().apply(
+        ClientEvent::Disconnected {
             reason: error.clone(),
             ssh: Some(SshFailure::HostKey),
-        });
+        },
+        &crate::state::labels(),
+    );
     let arrived = dropped + Duration::from_millis(16);
     endpoint.poll(arrived);
     assert_eq!(endpoint.outage(), Some(error.as_str()));

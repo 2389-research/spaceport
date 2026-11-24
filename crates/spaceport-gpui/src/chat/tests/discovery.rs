@@ -116,10 +116,11 @@ fn snapshot(agents: &[(&str, &str)]) -> ClientShellSnapshot {
 }
 
 fn connected(peer: bool) -> LiveState {
-    let mut live = LiveState::default();
-    live.status = crate::state::ConnectionStatus::Connected;
-    live.local_daemon_peer = peer;
-    live
+    LiveState {
+        status: crate::state::ConnectionStatus::Connected,
+        local_daemon_peer: peer,
+        ..LiveState::default()
+    }
 }
 
 #[test]

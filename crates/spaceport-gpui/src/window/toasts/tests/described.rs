@@ -6,7 +6,12 @@ fn a_long_task_keeps_the_place_on_its_own_visible_row(cx: &mut TestAppContext) {
     cx.simulate_resize(size(px(1000.), px(600.)));
     cx.update(|window, cx| {
         view.update(cx, |view, _| {
-            let mut notice = Notice::new(notification("claude finished"), Instant::now()).preview();
+            let mut notice = Notice::new(
+                notification("claude finished"),
+                Instant::now(),
+                &crate::state::labels(),
+            )
+            .preview();
             notice.body = Some(format!("{}\nrepo · tests", "long task ".repeat(12)));
             notice.described = true;
             view.endpoints[0].toasts.receive([notice]);

@@ -106,8 +106,9 @@ impl SpaceportWindow {
                 position: Some(self.config.notifications.position),
             },
             now,
+            &crate::state::labels(),
         )
-        .with_snapshot(self.live.snapshot.as_deref());
+        .with_snapshot(self.live.snapshot.as_deref(), &crate::state::labels());
         self.endpoints[self.selected_endpoint]
             .toasts
             .receive([notice]);

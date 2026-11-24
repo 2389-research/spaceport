@@ -87,6 +87,7 @@ impl Localize for StartError {
             Self::Request(error) => error.localize(),
             Self::Response => fl!("error-chat-start-response"),
             Self::SlotBusy => fl!("error-chat-start-slot-busy"),
+            Self::Start(error) => error.localize(),
             Self::Timeout => fl!("error-chat-start-timeout"),
             // keep-sorted end
         }

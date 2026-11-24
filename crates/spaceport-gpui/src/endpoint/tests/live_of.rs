@@ -19,10 +19,11 @@ fn booted(boot: &str) -> LiveState {
     for agent in &mut snapshot.agents {
         agent.pane_id = format!("{boot}-{}", agent.pane_id);
     }
-    let mut live = LiveState::default();
-    live.snapshot = Some(Arc::new(snapshot));
-    live.status = ConnectionStatus::Connected;
-    live
+    LiveState {
+        snapshot: Some(Arc::new(snapshot)),
+        status: ConnectionStatus::Connected,
+        ..LiveState::default()
+    }
 }
 
 fn boot(live: &LiveState) -> &str {

@@ -32,9 +32,10 @@ fn enabling_does_not_replay_undrained_disabled_ingress(cx: &mut gpui::TestAppCon
         {
             let mut state = inbox.lock().unwrap();
             state.status = ConnectionStatus::Connected;
-            state.apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-                wire.clone(),
-            )));
+            state.apply(
+                ClientEvent::Message(ServerMessage::SemanticNotification(wire.clone())),
+                &crate::state::labels(),
+            );
         }
         // Enabling cannot drain this inbox; the arrival fence must survive until later polling.
         let held = inbox.lock().unwrap();
@@ -59,12 +60,10 @@ fn enabling_does_not_replay_undrained_disabled_ingress(cx: &mut gpui::TestAppCon
         });
         let mut fresh = wire.clone();
         fresh.title = "enabled ingress".into();
-        inbox
-            .lock()
-            .unwrap()
-            .apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-                fresh,
-            )));
+        inbox.lock().unwrap().apply(
+            ClientEvent::Message(ServerMessage::SemanticNotification(fresh)),
+            &crate::state::labels(),
+        );
         view.update(cx, |view, cx| {
             view.poll_endpoints(cx);
             assert_eq!(view.endpoints[0].toasts.entries.len(), 1);
@@ -92,9 +91,11 @@ fn enabling_system_delivery_does_not_post_the_backlog(cx: &mut gpui::TestAppCont
         );
         let mut wire = notification("while off");
         wire.kind = spaceport_client::protocol::SemanticNotificationKind::Custom;
-        view.endpoints[0]
-            .toasts
-            .receive([Notice::new(wire, Instant::now())]);
+        view.endpoints[0].toasts.receive([Notice::new(
+            wire,
+            Instant::now(),
+            &crate::state::labels(),
+        )]);
     });
     view.update(cx, |view, cx| {
         view.load_gui_config_with(
@@ -140,9 +141,11 @@ fn notification_reload_retimes_pending_clears_disabled_and_keeps_failed_settings
             delay_seconds: 3600,
             ..Default::default()
         };
-        view.endpoints[0]
-            .toasts
-            .receive([Notice::new(notification("pending"), Instant::now())]);
+        view.endpoints[0].toasts.receive([Notice::new(
+            notification("pending"),
+            Instant::now(),
+            &crate::state::labels(),
+        )]);
         view.tick_toasts(false, Instant::now(), cx);
         assert!(!view.endpoints[0].toasts.entries[0].1.is_visible());
     });

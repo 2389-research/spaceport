@@ -30,14 +30,13 @@ fn surface(boot: &str, revision: u64) -> Arc<PaneSurfaceFrame> {
     })
 }
 
-/// `LiveState` keeps private fields, so the fixtures below are built by
-/// assignment rather than by struct update syntax.
 fn connected(boot: &str, revision: u64) -> LiveState {
-    let mut live = LiveState::default();
-    live.status = ConnectionStatus::Connected;
-    live.snapshot = Some(snapshot(boot, revision));
-    live.surface = Some(surface(boot, revision));
-    live
+    LiveState {
+        status: ConnectionStatus::Connected,
+        snapshot: Some(snapshot(boot, revision)),
+        surface: Some(surface(boot, revision)),
+        ..LiveState::default()
+    }
 }
 
 #[test]

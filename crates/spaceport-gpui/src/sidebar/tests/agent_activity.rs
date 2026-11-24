@@ -41,12 +41,12 @@ fn a_working_dot_does_not_outlive_the_agent_the_daemon_listed() {
     // daemon has dropped. It must not: an exited agent leaves no row, and no
     // stale working dot, behind.
     let mut live = LiveState::default();
-    live.apply(ClientEvent::Snapshot(listing(&[(
-        "w1:p1",
-        AgentStatus::Working,
-    )])));
+    live.apply(
+        ClientEvent::Snapshot(listing(&[("w1:p1", AgentStatus::Working)])),
+        &crate::state::labels(),
+    );
     assert_eq!(painted(&live), [("w1:p1", AgentStatus::Working)]);
-    live.apply(ClientEvent::Snapshot(listing(&[])));
+    live.apply(ClientEvent::Snapshot(listing(&[])), &crate::state::labels());
     assert!(painted(&live).is_empty());
 }
 
@@ -55,13 +55,16 @@ fn a_restarted_daemon_paints_the_status_it_reports_now() {
     // A new boot reuses pane ids for whatever runs there next, so the row left
     // from before must not keep the old agent's working dot.
     let mut live = LiveState::default();
-    live.apply(ClientEvent::Snapshot(listing(&[(
-        "w1:p1",
-        AgentStatus::Working,
-    )])));
+    live.apply(
+        ClientEvent::Snapshot(listing(&[("w1:p1", AgentStatus::Working)])),
+        &crate::state::labels(),
+    );
     assert_eq!(painted(&live), [("w1:p1", AgentStatus::Working)]);
     let mut reboot = (*listing(&[("w1:p1", AgentStatus::Idle)])).clone();
     reboot.boot_id = "next-boot".into();
-    live.apply(ClientEvent::Snapshot(Arc::new(reboot)));
+    live.apply(
+        ClientEvent::Snapshot(Arc::new(reboot)),
+        &crate::state::labels(),
+    );
     assert_eq!(painted(&live), [("w1:p1", AgentStatus::Idle)]);
 }

@@ -54,15 +54,24 @@ fn workspace_menu_keeps_immediate_and_deferred_navigation(cx: &mut gpui::TestApp
             }
             {
                 let mut state = view.endpoints[0].connection.inbox.lock().unwrap();
-                state.apply(ClientEvent::Snapshot(Arc::new(next.clone())));
-                state.apply(ClientEvent::Surface(surface(&next)));
-                state.apply(ClientEvent::Response {
-                    request_id: barrier["id"].as_str().unwrap().into(),
-                    response: serde_json::json!({"result": {
-                        "type": "client_shell_surface_set", "active": true,
-                        "projection_revision": next.revision
-                    }}),
-                });
+                state.apply(
+                    ClientEvent::Snapshot(Arc::new(next.clone())),
+                    &crate::state::labels(),
+                );
+                state.apply(
+                    ClientEvent::Surface(surface(&next)),
+                    &crate::state::labels(),
+                );
+                state.apply(
+                    ClientEvent::Response {
+                        request_id: barrier["id"].as_str().unwrap().into(),
+                        response: serde_json::json!({"result": {
+                            "type": "client_shell_surface_set", "active": true,
+                            "projection_revision": next.revision
+                        }}),
+                    },
+                    &crate::state::labels(),
+                );
             }
             project_until(
                 view,

@@ -83,10 +83,13 @@ fn creation_error(error: &crate::Error) -> Response {
         crate::Error::Chat(Error::Start(StartError::Response))
         | crate::Error::StaleConnection
         | crate::Error::NotConnected => unknown(ErrorCode::Failed),
-        crate::Error::Chat(Error::Start(StartError::Request(inner))) => match &**inner {
-            crate::Error::Client(client) if refused(client) => known(),
-            _ => unknown(ErrorCode::Failed),
-        },
+        crate::Error::Chat(Error::Start(StartError::Request(client))) => {
+            if refused(client) {
+                known()
+            } else {
+                unknown(ErrorCode::Failed)
+            }
+        }
         crate::Error::Client(client) if refused(client) => known(),
         crate::Error::Client(_) => unknown(ErrorCode::Failed),
         _ => known(),
@@ -239,6 +242,7 @@ fn start_code(error: &crate::chat::StartError) -> ErrorCode {
         StartError::SlotBusy | StartError::ProgramUnknown => ErrorCode::Busy,
         StartError::NotConnected
         | StartError::Request(_)
+        | StartError::Start(_)
         | StartError::Response
         | StartError::Timeout => ErrorCode::Failed,
     }

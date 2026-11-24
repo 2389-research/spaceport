@@ -14,7 +14,8 @@ fn pane_notice(snapshot: &ClientShellSnapshot) -> Notice {
     wire.body = Some("10 · 1".into());
     wire.workspace_id = None;
     wire.pane_id = Some("w1:p1".into());
-    Notice::new(wire, Instant::now()).with_snapshot(Some(snapshot))
+    Notice::new(wire, Instant::now(), &crate::state::labels())
+        .with_snapshot(Some(snapshot), &crate::state::labels())
 }
 
 #[test]
@@ -56,16 +57,17 @@ fn agent_name_alone_is_not_a_task_and_unknown_panes_keep_the_daemon_body() {
     let mut wire = notification("claude finished");
     wire.body = Some("10 · 1".into());
     wire.pane_id = Some("gone".into());
-    let notice = Notice::new(wire, Instant::now()).with_snapshot(Some(&snapshot));
+    let notice = Notice::new(wire, Instant::now(), &crate::state::labels())
+        .with_snapshot(Some(&snapshot), &crate::state::labels());
     assert_eq!(notice.body.as_deref(), Some("10 · 1"));
 
     // Local feedback and previews keep their own text.
     let mut wire = notification("preview");
     wire.workspace_id = None;
     wire.pane_id = Some("w1:p1".into());
-    let preview = Notice::new(wire, Instant::now())
+    let preview = Notice::new(wire, Instant::now(), &crate::state::labels())
         .preview()
-        .with_snapshot(Some(&snapshot));
+        .with_snapshot(Some(&snapshot), &crate::state::labels());
     assert_eq!(preview.body.as_deref(), Some("Review needed"));
 }
 
@@ -77,7 +79,8 @@ fn custom_notices_keep_the_senders_text() {
     wire.body = Some("Staging is green".into());
     wire.workspace_id = None;
     wire.pane_id = Some("w1:p1".into());
-    let notice = Notice::new(wire, Instant::now()).with_snapshot(Some(&snapshot));
+    let notice = Notice::new(wire, Instant::now(), &crate::state::labels())
+        .with_snapshot(Some(&snapshot), &crate::state::labels());
     assert!(notice.target(&snapshot).is_some());
     assert_eq!(notice.body.as_deref(), Some("Staging is green"));
     assert!(!notice.described);

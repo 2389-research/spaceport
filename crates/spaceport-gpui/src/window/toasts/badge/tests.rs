@@ -6,7 +6,7 @@ fn notice(title: &str, agent: Option<&str>, kind: SemanticNotificationKind) -> N
     let mut wire = notification(title);
     wire.agent = agent.map(Into::into);
     wire.kind = kind;
-    Notice::new(wire, Instant::now())
+    Notice::new(wire, Instant::now(), &crate::state::labels())
 }
 
 #[test]
@@ -61,16 +61,25 @@ fn a_known_agent_shows_its_mark_before_the_kind_icon() {
         Some("claude"),
         SemanticNotificationKind::Finished,
     );
-    assert_eq!(claude.agent, Some(AgentIcon::Claude));
+    assert_eq!(claude.agent.as_deref(), Some("claude"));
     assert_eq!(badge(&claude).mark, Mark::Icon(AgentIcon::Claude.path()));
     // A display-cased identity still resolves; an unknown one falls back.
     let codex = notice("Waiting", Some("Codex"), SemanticNotificationKind::Finished);
-    assert_eq!(codex.agent, Some(AgentIcon::Codex));
+    assert_eq!(codex.agent.as_deref(), Some("codex"));
     for agent in [Some("untrusted"), Some(&*"claude".repeat(20)), None] {
         let notice = notice("Waiting", agent, SemanticNotificationKind::NeedsAttention);
-        assert_eq!(notice.agent, None);
         assert_eq!(badge(&notice).mark, Mark::Icon("icons/bell.svg"));
     }
+    // An identity longer than a mark's label is not even kept.
+    assert_eq!(
+        notice(
+            "Waiting",
+            Some(&*"claude".repeat(20)),
+            SemanticNotificationKind::NeedsAttention
+        )
+        .agent,
+        None
+    );
 }
 
 #[test]

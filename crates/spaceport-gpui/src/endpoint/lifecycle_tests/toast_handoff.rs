@@ -11,11 +11,13 @@ fn newer_same_endpoint_navigation_cannot_replay_a_pending_toast(cx: &mut gpui::T
     let mut wire = crate::notifications::tests::notification("older intent");
     wire.workspace_id = Some("w1".into());
     wire.pane_id = Some("w1:p1".into());
-    endpoint
-        .toasts
-        .receive([crate::notifications::Notice::new(wire, Instant::now())
-            .with_snapshot(endpoint.live.snapshot.as_deref())
-            .preview()]);
+    endpoint.toasts.receive([crate::notifications::Notice::new(
+        wire,
+        Instant::now(),
+        &crate::state::labels(),
+    )
+    .with_snapshot(endpoint.live.snapshot.as_deref(), &crate::state::labels())
+    .preview()]);
     view.update(cx, |view, cx| {
         view.endpoints[0].detach_for_test();
         view.endpoints.push(endpoint);
@@ -71,8 +73,14 @@ fn newer_same_endpoint_navigation_cannot_replay_a_pending_toast(cx: &mut gpui::T
     wait_until(|| inbox.lock().unwrap().activation.revision() == Some(next.revision));
     {
         let mut state = inbox.lock().unwrap();
-        state.apply(ClientEvent::Snapshot(Arc::new(next.clone())));
-        state.apply(ClientEvent::Surface(surface(&next)));
+        state.apply(
+            ClientEvent::Snapshot(Arc::new(next.clone())),
+            &crate::state::labels(),
+        );
+        state.apply(
+            ClientEvent::Surface(surface(&next)),
+            &crate::state::labels(),
+        );
     }
     view.update(cx, |view, cx| {
         project_until(view, cx, "newer navigation completed", |view| {
@@ -125,11 +133,13 @@ fn toast_handoff_retains_busy_validation_and_revalidates_before_queueing(
         endpoint.initial_surface = already_active;
         let mut wire = crate::notifications::tests::notification("handoff");
         wire.workspace_id = Some("w1".into());
-        endpoint
-            .toasts
-            .receive([crate::notifications::Notice::new(wire, Instant::now())
-                .with_snapshot(endpoint.live.snapshot.as_deref())
-                .preview()]);
+        endpoint.toasts.receive([crate::notifications::Notice::new(
+            wire,
+            Instant::now(),
+            &crate::state::labels(),
+        )
+        .with_snapshot(endpoint.live.snapshot.as_deref(), &crate::state::labels())
+        .preview()]);
         view.update(cx, |view, cx| {
             view.selected_endpoint = 0;
             view.endpoints.truncate(1);
@@ -238,11 +248,13 @@ fn accepted_toast_survives_expiry_but_not_invalidation(cx: &mut gpui::TestAppCon
         let mut wire = crate::notifications::tests::notification("accepted");
         wire.workspace_id = Some("w1".into());
         wire.pane_id = Some("w1:p1".into());
-        endpoint.toasts.receive([
-            crate::notifications::Notice::new(wire.clone(), Instant::now())
-                .with_snapshot(endpoint.live.snapshot.as_deref())
-                .preview(),
-        ]);
+        endpoint.toasts.receive([crate::notifications::Notice::new(
+            wire.clone(),
+            Instant::now(),
+            &crate::state::labels(),
+        )
+        .with_snapshot(endpoint.live.snapshot.as_deref(), &crate::state::labels())
+        .preview()]);
         view.update(cx, |view, cx| {
             view.selected_endpoint = 0;
             view.endpoints.truncate(1);
@@ -274,9 +286,10 @@ fn accepted_toast_survives_expiry_but_not_invalidation(cx: &mut gpui::TestAppCon
                 "dismiss" => view.endpoints[1].toasts.dismiss(0),
                 "replace" => {
                     // Revalidate against an undrained replacement, not just the UI queue.
-                    inbox.lock().unwrap().apply(ClientEvent::Message(
-                        ServerMessage::SemanticNotification(wire),
-                    ));
+                    inbox.lock().unwrap().apply(
+                        ClientEvent::Message(ServerMessage::SemanticNotification(wire)),
+                        &crate::state::labels(),
+                    );
                 }
                 "boot" => {
                     Arc::make_mut(inbox.lock().unwrap().snapshot.as_mut().unwrap()).boot_id =
@@ -288,13 +301,17 @@ fn accepted_toast_survives_expiry_but_not_invalidation(cx: &mut gpui::TestAppCon
                 "generation" => view.endpoints[1].stop(),
                 "overflow" => {
                     let mut state = inbox.lock().unwrap();
-                    state.apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-                        wire,
-                    )));
+                    state.apply(
+                        ClientEvent::Message(ServerMessage::SemanticNotification(wire)),
+                        &crate::state::labels(),
+                    );
                     for _ in 0..crate::notifications::PENDING_LIMIT {
-                        state.apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-                            crate::notifications::tests::notification("other"),
-                        )));
+                        state.apply(
+                            ClientEvent::Message(ServerMessage::SemanticNotification(
+                                crate::notifications::tests::notification("other"),
+                            )),
+                            &crate::state::labels(),
+                        );
                     }
                 }
                 _ => {}
@@ -359,11 +376,13 @@ fn toast_handoff_defers_a_contended_source_without_activating_destination(
     let target_handle = target.connection.handle.clone().unwrap();
     let mut wire = crate::notifications::tests::notification("target");
     wire.workspace_id = Some("w1".into());
-    target
-        .toasts
-        .receive([crate::notifications::Notice::new(wire, Instant::now())
-            .with_snapshot(target.live.snapshot.as_deref())
-            .preview()]);
+    target.toasts.receive([crate::notifications::Notice::new(
+        wire,
+        Instant::now(),
+        &crate::state::labels(),
+    )
+    .with_snapshot(target.live.snapshot.as_deref(), &crate::state::labels())
+    .preview()]);
     let held = source_inbox.lock().unwrap();
     view.update(cx, |view, cx| {
         view.endpoints[0].detach_for_test();
@@ -418,7 +437,7 @@ fn toast_handoff_defers_a_contended_source_without_activating_destination(
     source_inbox.lock().unwrap().apply(ClientEvent::Response {
         request_id: request["id"].as_str().unwrap().into(),
         response: serde_json::json!({"result": {"type": "client_shell_surface_set", "active": false, "projection_revision": 7}}),
-    });
+    }, &crate::state::labels());
     view.update(cx, |view, cx| {
         project_until(view, cx, "source release acknowledged", |view| {
             view.endpoints[2].initial_surface

@@ -212,7 +212,7 @@ fn host_theme_reaches_each_connection_and_follows_theme_changes(cx: &mut gpui::T
             view.update(cx, |view, cx| {
                 let mut live = crate::state::LiveState::default();
                 for event in events {
-                    live.apply(event);
+                    live.apply(event, &crate::state::labels());
                 }
                 view.endpoints[0].live = live;
                 view.endpoints[0].connection.handle = Some(client.handle.clone());

@@ -70,8 +70,14 @@ fn newer_choice(cx: &mut gpui::TestAppContext, choice: Choice) {
             assert_eq!(view.group_pick(source), Some(expected.clone()));
             {
                 let mut state = view.endpoints[0].connection.inbox.lock().unwrap();
-                state.apply(ClientEvent::Snapshot(Arc::new(shown.clone())));
-                state.apply(ClientEvent::Surface(surface(&shown)));
+                state.apply(
+                    ClientEvent::Snapshot(Arc::new(shown.clone())),
+                    &crate::state::labels(),
+                );
+                state.apply(
+                    ClientEvent::Surface(surface(&shown)),
+                    &crate::state::labels(),
+                );
             }
             project_until(view, cx, "surface after newer choice", |view| {
                 view.pending_navigation.is_none()

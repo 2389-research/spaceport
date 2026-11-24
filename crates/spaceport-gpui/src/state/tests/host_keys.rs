@@ -21,10 +21,10 @@ fn welcome() -> ClientEvent {
 #[test]
 fn an_unverified_host_is_named_once_its_handshake_is_accepted() {
     let mut state = LiveState::default();
-    state.apply(ClientEvent::HostKeysUnverified);
+    state.apply(ClientEvent::HostKeysUnverified, &labels());
     // The bridge reports before the handshake; nothing shows until it lands.
     assert!(state.notices.is_none());
-    state.apply(welcome());
+    state.apply(welcome(), &labels());
     assert_eq!(
         state.notices.text(),
         Some(fl!("state-host-key-unverified").as_str())
@@ -34,24 +34,27 @@ fn an_unverified_host_is_named_once_its_handshake_is_accepted() {
 #[test]
 fn a_connection_that_checked_its_host_key_says_nothing() {
     let mut state = LiveState::default();
-    state.apply(welcome());
+    state.apply(welcome(), &labels());
     assert!(state.notices.is_none());
 }
 
 #[test]
 fn every_connection_to_an_unverified_host_says_it_again() {
     let mut state = LiveState::default();
-    state.apply(ClientEvent::HostKeysUnverified);
-    state.apply(welcome());
+    state.apply(ClientEvent::HostKeysUnverified, &labels());
+    state.apply(welcome(), &labels());
     assert!(state.notices.is_some());
-    state.apply(ClientEvent::Disconnected {
-        reason: "socket closed".into(),
-        ssh: None,
-    });
+    state.apply(
+        ClientEvent::Disconnected {
+            reason: "socket closed".into(),
+            ssh: None,
+        },
+        &labels(),
+    );
     // The next connection reports its own bridge, and shows the notice again
     // rather than keeping the drop's reason.
-    state.apply(ClientEvent::HostKeysUnverified);
-    state.apply(welcome());
+    state.apply(ClientEvent::HostKeysUnverified, &labels());
+    state.apply(welcome(), &labels());
     assert_eq!(
         state.notices.connection_reason(),
         None,

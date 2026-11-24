@@ -190,6 +190,18 @@ impl SpaceportWindow {
         Ok(target)
     }
 
+    /// Drops the pending rename and puts the caret back in its field, so a
+    /// refusal reads where the name was typed.
+    fn abandon_pane_rename(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(pane) = &mut self.menu.pane {
+            pane.pending = None;
+            if let Some(input) = &pane.input {
+                window.focus(&input.read(cx).focus.clone(), cx);
+            }
+        }
+        cx.notify();
+    }
+
     fn pane_error(&mut self, error: impl std::fmt::Display, cx: &mut Context<Self>) {
         if let Some(pane) = &mut self.menu.pane {
             pane.error = Some(error.to_string());
@@ -379,24 +391,23 @@ impl SpaceportWindow {
         else {
             return;
         };
-        let result = if let Err(error) = self.validate_pane_target() {
-            Some(Err(std::sync::Arc::new(error)))
-        } else {
-            self.live
-                .pane_rename
-                .as_ref()
-                .filter(|rename| &rename.request == request)
-                .and_then(|rename| rename.result.clone())
-        };
+        // A target this window refuses is not the daemon's answer: report it
+        // here, where the slot still holds no result.
+        if let Err(error) = self.validate_pane_target() {
+            self.abandon_pane_rename(window, cx);
+            self.pane_error(error, cx);
+            return;
+        }
+        let result = self
+            .live
+            .pane_rename
+            .as_ref()
+            .filter(|rename| &rename.request == request)
+            .and_then(|rename| rename.result.clone());
         match result {
             Some(Ok(())) => self.dismiss_menu(window, cx),
             Some(Err(error)) => {
-                if let Some(pane) = &mut self.menu.pane {
-                    pane.pending = None;
-                    if let Some(input) = &pane.input {
-                        window.focus(&input.read(cx).focus.clone(), cx);
-                    }
-                }
+                self.abandon_pane_rename(window, cx);
                 self.pane_error(error, cx);
             }
             None => {}

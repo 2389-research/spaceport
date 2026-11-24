@@ -259,7 +259,7 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
         .inbox
         .lock()
         .unwrap()
-        .apply(ClientEvent::Surface(frame));
+        .apply(ClientEvent::Surface(frame), &crate::state::labels());
     endpoint.poll(Instant::now());
     (endpoint, server)
 }

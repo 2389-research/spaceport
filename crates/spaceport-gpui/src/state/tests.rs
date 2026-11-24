@@ -1,7 +1,13 @@
 // ABOUTME: Exercises live-state projection and ordered client event reduction.
 // ABOUTME: Shares snapshots and surfaces across focused state regression topics.
 use super::*;
-use spaceport_client::protocol::FrameData;
+use crate::i18n::fl;
+use crate::state::labels;
+use spaceport_client::{
+    ClientEvent, SurfaceImages,
+    protocol::{ClientShellSnapshot, FrameData, PaneSurfaceFrame, ServerMessage},
+};
+use std::sync::Arc;
 
 mod activation_retry;
 mod agent_recency;

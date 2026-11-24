@@ -138,20 +138,26 @@ fn header_keeps_controls_reachable(cx: &mut TestAppContext) {
 
 #[test]
 fn endpoint_status_replaces_and_disconnect_clears() {
-    let mut live = LiveState::default();
-    live.status = ConnectionStatus::Connected;
+    let mut live = LiveState {
+        status: ConnectionStatus::Connected,
+        ..LiveState::default()
+    };
     let mut remote = crate::sidebar::layout_tests::snapshot(1);
     remote.tab_bar_right = vec![ClientShellTabStatusSegment {
         text: "Remote usage".into(),
         accent: false,
     }];
-    live.apply(spaceport_client::ClientEvent::Snapshot(
-        std::sync::Arc::new(remote),
-    ));
+    live.apply(
+        spaceport_client::ClientEvent::Snapshot(std::sync::Arc::new(remote)),
+        &crate::state::labels(),
+    );
     assert_eq!(StatusText::live(&live).text, "Remote usage");
-    live.apply(spaceport_client::ClientEvent::Disconnected {
-        reason: spaceport_client::Error::Disconnected.to_string(),
-        ssh: None,
-    });
+    live.apply(
+        spaceport_client::ClientEvent::Disconnected {
+            reason: spaceport_client::Error::Disconnected.to_string(),
+            ssh: None,
+        },
+        &crate::state::labels(),
+    );
     assert!(StatusText::live(&live).text.is_empty());
 }

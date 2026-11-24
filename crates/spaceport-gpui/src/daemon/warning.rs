@@ -24,6 +24,7 @@ pub(crate) fn notice(
             position: None,
         },
         now,
+        &crate::state::labels(),
     )
     // The cleanup above is for daemon text. This is the app's own: Fluent
     // messages, whose direction marks a right-to-left language needs, and

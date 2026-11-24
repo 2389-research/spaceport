@@ -36,11 +36,10 @@ fn first_snapshot_counts_existing_attention_without_surface_or_notifications(
             let mut initial = snapshot(2);
             initial.agents[0].agent_status = AgentStatus::Done;
             initial.agents[1].agent_status = AgentStatus::Blocked;
-            view.endpoints[0]
-                .live
-                .apply(spaceport_client::ClientEvent::Snapshot(Arc::new(
-                    initial.clone(),
-                )));
+            view.endpoints[0].live.apply(
+                spaceport_client::ClientEvent::Snapshot(Arc::new(initial.clone())),
+                &crate::state::labels(),
+            );
             assert!(view.endpoints[0].live.surface.is_none());
             assert!(view.endpoints[0].live.notifications.is_empty());
             sync(id, &view.endpoints, cx);
@@ -48,9 +47,10 @@ fn first_snapshot_counts_existing_attention_without_surface_or_notifications(
 
             initial.revision += 1;
             initial.agents[0].agent_status = AgentStatus::Idle;
-            view.endpoints[0]
-                .live
-                .apply(spaceport_client::ClientEvent::Snapshot(Arc::new(initial)));
+            view.endpoints[0].live.apply(
+                spaceport_client::ClientEvent::Snapshot(Arc::new(initial)),
+                &crate::state::labels(),
+            );
             sync(id, &view.endpoints, cx);
             assert_eq!(cx.global::<Badge>().published, Some(1));
         })

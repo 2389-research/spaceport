@@ -49,7 +49,7 @@ fn scrollbar_drag_survives_a_snapshot_ahead_of_its_surface(cx: &mut gpui::TestAp
                 .inbox
                 .lock()
                 .unwrap()
-                .apply(ClientEvent::Surface(surface));
+                .apply(ClientEvent::Surface(surface), &crate::state::labels());
             // Grab the thumb, at rest at the bottom of the track.
             assert!(view.scrollbar_mouse_down(
                 &MouseDownEvent {

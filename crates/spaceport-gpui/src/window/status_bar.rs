@@ -49,7 +49,7 @@ impl SpaceportWindow {
             (!matches!(self.live.status, ConnectionStatus::Connected)
                 || self.notices.is_some_at(now)
                 || self.live.notices.is_some_at(now))
-            .then(|| self.live.status_text(self.notices.text_at(now), now))
+            .then(|| crate::state::status_text(&self.live, self.notices.text_at(now), now))
         };
         let items = self.config.status_bar;
         let height = px(self.status_bar_height());

@@ -1,7 +1,7 @@
 //! What choosing a row does, and the identity two rows share.
 
 use crate::{
-    navigation::OwnedNavigationTarget,
+    OwnedNavigationTarget,
     project::{NewProject, Project},
 };
 use spaceport_client::protocol::ClientShellCommandAction;

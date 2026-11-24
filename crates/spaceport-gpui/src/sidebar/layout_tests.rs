@@ -646,10 +646,9 @@ pub(crate) fn fixture_window(
         toasts_hidden: false,
         pending_releases: Vec::new(),
         selected_generation: 0,
-        live: {
-            let mut live = LiveState::default();
-            live.snapshot = Some(Arc::new(snapshot(40)));
-            live
+        live: LiveState {
+            snapshot: Some(Arc::new(snapshot(40))),
+            ..LiveState::default()
         },
         focus,
         options: ConnectOptions::default(),

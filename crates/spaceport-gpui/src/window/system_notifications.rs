@@ -307,11 +307,12 @@ impl SpaceportWindow {
                 position: None,
             },
             Instant::now(),
+            &crate::state::labels(),
         )
         // Previews keep their own text rather than the pane's context.
         .preview()
         .with_message(title, body)
-        .with_snapshot(snapshot.as_deref());
+        .with_snapshot(snapshot.as_deref(), &crate::state::labels());
         // Retained like a real post, so a click resolves through the same path.
         notice.post();
         let post = SystemPost {

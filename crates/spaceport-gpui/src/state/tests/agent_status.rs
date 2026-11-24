@@ -50,22 +50,25 @@ fn daemon_status_reaches_the_sidebar_unchanged() {
         AgentStatus::Blocked,
     ] {
         let snapshot = agent_snapshot(status, 10);
-        state.apply(ClientEvent::Snapshot(snapshot.clone()));
-        state.apply(ClientEvent::Surface(agent_surface(&snapshot)));
+        state.apply(ClientEvent::Snapshot(snapshot.clone()), &labels());
+        state.apply(ClientEvent::Surface(agent_surface(&snapshot)), &labels());
         assert_status(&state, status);
     }
     let mut reboot = agent_snapshot(AgentStatus::Done, 100);
     Arc::make_mut(&mut reboot).boot_id = "new-boot".into();
-    state.apply(ClientEvent::Snapshot(reboot));
+    state.apply(ClientEvent::Snapshot(reboot), &labels());
     assert_status(&state, AgentStatus::Done);
-    state.apply(ClientEvent::Disconnected {
-        reason: "test".into(),
-        ssh: None,
-    });
-    state.apply(ClientEvent::Snapshot(agent_snapshot(
-        AgentStatus::Done,
-        200,
-    )));
+    state.apply(
+        ClientEvent::Disconnected {
+            reason: "test".into(),
+            ssh: None,
+        },
+        &labels(),
+    );
+    state.apply(
+        ClientEvent::Snapshot(agent_snapshot(AgentStatus::Done, 200)),
+        &labels(),
+    );
     assert_status(&state, AgentStatus::Done);
 }
 
@@ -74,13 +77,19 @@ fn agent_view_projection_is_a_query_not_an_activity_override() {
     // This is the endpoint.agent-view.v1 envelope and AgentViewSetParams
     // shape from upstream, not a per-agent status payload.
     let mut state = LiveState::default();
-    state.apply(ClientEvent::Snapshot(agent_snapshot(AgentStatus::Idle, 7)));
-    state.apply(ClientEvent::Message(ServerMessage::EndpointControl {
-        kind: "endpoint.agent-view.v1".into(),
-        data: include_str!(
-            "../../../../spaceport-protocol/tests/fixtures/endpoint-agent-view-v1.json"
-        )
-        .into(),
-    }));
+    state.apply(
+        ClientEvent::Snapshot(agent_snapshot(AgentStatus::Idle, 7)),
+        &labels(),
+    );
+    state.apply(
+        ClientEvent::Message(ServerMessage::EndpointControl {
+            kind: "endpoint.agent-view.v1".into(),
+            data: include_str!(
+                "../../../../spaceport-protocol/tests/fixtures/endpoint-agent-view-v1.json"
+            )
+            .into(),
+        }),
+        &labels(),
+    );
     assert_status(&state, AgentStatus::Idle);
 }

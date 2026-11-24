@@ -75,7 +75,7 @@ fn connected_split_drag_sends_coalesced_ratios_and_stops_on_layout_change(
                 .inbox
                 .lock()
                 .unwrap()
-                .apply(ClientEvent::Surface(surface));
+                .apply(ClientEvent::Surface(surface), &crate::state::labels());
             // Beside the border the pane keeps the pointer, even one that
             // reports mouse input; on it, the border wins.
             assert_eq!(view.split_cursor_at(mouse_position(view, 39.9, 5.)), None);

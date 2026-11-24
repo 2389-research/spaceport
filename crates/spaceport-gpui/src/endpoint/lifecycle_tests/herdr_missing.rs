@@ -10,10 +10,13 @@ const MISSING: &str =
 fn lose_herdr(endpoint: &mut Endpoint) {
     let mut state = endpoint.connection.inbox.lock().unwrap();
     state.missing_installation = true;
-    state.apply(ClientEvent::Disconnected {
-        reason: MISSING.into(),
-        ssh: None,
-    });
+    state.apply(
+        ClientEvent::Disconnected {
+            reason: MISSING.into(),
+            ssh: None,
+        },
+        &crate::state::labels(),
+    );
 }
 
 #[test]
