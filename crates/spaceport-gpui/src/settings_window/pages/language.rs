@@ -67,7 +67,7 @@ impl SettingsWindow {
             FIELD.selector(),
             current,
             false,
-            !self.persistence.quitting() && self.persistence.closing().is_none(),
+            !self.persistence.quitting() && !self.persistence.closing(),
             self.dropdown.as_ref().filter(|open| open.field == FIELD),
             move |window, cx| {
                 let options = options.clone();

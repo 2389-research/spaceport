@@ -136,7 +136,11 @@ fn shared_edit_queued_behind_a_captured_theme_write_uses_its_owned_snapshot(
         let shared = herdr_settings::Settings::load_fixture(path.clone()).unwrap();
         view.shared = Some(shared.clone());
         view.save_kind_with_snapshot(
-            move || persistence::SharedWrite::save(shared, Edit::Theme("nord".into())).map(Some),
+            move || {
+                persistence::SharedWrite::save(shared, Edit::Theme("nord".into()))
+                    .map(Some)
+                    .map_err(crate::Error::from)
+            },
             load_file(path.clone()),
             true,
             Kind::Theme(0),

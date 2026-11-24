@@ -133,7 +133,7 @@ impl SettingsWindow {
 
     pub(in crate::settings_window) fn render_sidebar(&self, cx: &mut Context<Self>) -> Div {
         let theme = &self.theme;
-        let ready = !self.persistence.quitting() && self.persistence.closing().is_none();
+        let ready = !self.persistence.quitting() && !self.persistence.closing();
         let mut page = div()
             .relative()
             .flex()

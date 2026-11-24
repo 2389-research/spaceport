@@ -143,7 +143,7 @@ fn pending_writes_are_bounded_and_saturation_reports_the_refusal(cx: &mut TestAp
     let writes = Arc::new(AtomicUsize::new(0));
     view.update(cx, |view, cx| {
         view.save_with(|| Ok(()), fixture_load, false, cx);
-        for _ in 0..persistence::lifecycle::QUEUE_LIMIT {
+        for _ in 0..spaceport_settings::save_queue::QUEUE_LIMIT {
             let writes = writes.clone();
             view.save_with(
                 move || {
@@ -171,7 +171,7 @@ fn pending_writes_are_bounded_and_saturation_reports_the_refusal(cx: &mut TestAp
     cx.run_until_parked();
     assert_eq!(
         writes.load(Ordering::SeqCst),
-        persistence::lifecycle::QUEUE_LIMIT
+        spaceport_settings::save_queue::QUEUE_LIMIT
     );
 }
 

@@ -160,7 +160,7 @@ fn layout_close_failure_retains_live_draft_until_explicit_retry(cx: &mut TestApp
     cx.update(|cx| {
         settings
             .update(cx, |view, _, cx| {
-                assert!(view.persistence.closing().is_none());
+                assert!(!view.persistence.closing());
                 assert!(!view.busy());
                 assert!(view.error.as_ref().unwrap().contains("Save settings"));
                 assert_eq!(view.layout_intent, Some(LayoutMode::Orca));
@@ -203,7 +203,7 @@ fn a_settings_draft_outlives_a_view_menu_choice_during_a_reload(cx: &mut TestApp
             },
             cx,
         );
-        layouts::draft_layout(LayoutMode::Orca, cx);
+        drafts::drafts_mut(cx).begin_layout(LayoutMode::Orca);
     })
     .unwrap();
     cx.run_until_parked();

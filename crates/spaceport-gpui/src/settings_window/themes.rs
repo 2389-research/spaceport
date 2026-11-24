@@ -4,31 +4,20 @@
 // i18n: migrated
 use super::SettingsWindow;
 use crate::{
-    config::{Config, FOLLOW_HERDR, Theme, ThemeName},
+    config::{FOLLOW_HERDR, Theme, ThemeName},
     contrast::Contrast,
     herdr_settings::{self, Edit},
     i18n::{Localize, fl},
     search_input::{Changed, SearchInput},
 };
 use gpui::{prelude::*, *};
+pub(super) use spaceport_settings::theme::Scope;
+use spaceport_settings::theme::filter_names;
 mod appearance;
 mod grid;
 mod system;
 
 const ROW_HEIGHT: f32 = 80.;
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(super) enum Scope {
-    #[default]
-    App,
-    Herdr,
-}
-
-impl Scope {
-    pub(super) const fn editable(self) -> bool {
-        matches!(self, Self::App) || cfg!(unix)
-    }
-}
 
 #[derive(Clone)]
 pub(super) struct ThemeIntent {
@@ -39,59 +28,6 @@ pub(super) struct ThemeIntent {
     /// expected state when the window holds none, so an external edit made
     /// since then is a conflict rather than silently replaced.
     shared: Option<herdr_settings::Settings>,
-}
-
-#[derive(Default)]
-pub(super) struct ThemeDraft {
-    active: bool,
-    revision: u64,
-    // Store unadjusted colors so a concurrent contrast edit is applied once.
-    appearance: Option<(String, Theme)>,
-}
-impl Global for ThemeDraft {}
-
-pub(crate) fn theme_pending(cx: &App) -> bool {
-    cx.try_global::<ThemeDraft>()
-        .is_some_and(|draft| draft.active)
-}
-
-pub(crate) fn apply_theme_draft(config: &mut Config, theme: &mut Theme, cx: &App) {
-    if !theme_pending(cx) {
-        return;
-    }
-    if let Some((name, raw)) = cx
-        .try_global::<ThemeDraft>()
-        .and_then(|draft| draft.appearance.as_ref())
-    {
-        config.theme = name.clone();
-        *theme = raw.clone().styled_for(config);
-    }
-}
-
-pub(crate) fn theme_load_revision(cx: &App) -> u64 {
-    cx.try_global::<ThemeDraft>()
-        .map_or(0, |draft| draft.revision)
-}
-
-pub(crate) fn apply_loaded_theme(config: &mut Config, theme: &mut Theme, revision: u64, cx: &App) {
-    if theme_pending(cx) {
-        apply_theme_draft(config, theme, cx);
-    } else if revision != theme_load_revision(cx)
-        && let Some((name, raw)) = cx
-            .try_global::<ThemeDraft>()
-            .and_then(|draft| draft.appearance.as_ref())
-    {
-        // This read began before the final draft was committed. Its other
-        // fields remain usable, but its older theme must not replace the commit.
-        config.theme = name.clone();
-        *theme = raw.clone().styled_for(config);
-    }
-}
-
-pub(super) fn clear_theme_draft(cx: &mut App) {
-    let draft = cx.default_global::<ThemeDraft>();
-    draft.active = false;
-    draft.revision = draft.revision.wrapping_add(1);
 }
 
 #[cfg(test)]
@@ -253,19 +189,6 @@ impl ThemeBrowser {
     }
 }
 
-fn filter_names<'a>(names: impl IntoIterator<Item = &'a str>, query: &str) -> Vec<String> {
-    let query = query.to_lowercase();
-    let tokens: Vec<_> = query.split_whitespace().collect();
-    names
-        .into_iter()
-        .filter(|name| {
-            let name = name.to_lowercase();
-            tokens.iter().all(|token| name.contains(token))
-        })
-        .map(str::to_owned)
-        .collect()
-}
-
 impl SettingsWindow {
     fn theme_operation(
         &self,
@@ -301,7 +224,8 @@ impl SettingsWindow {
                     shared.map_or_else(herdr_settings::Settings::load, Ok)?,
                     Edit::Theme(choice.name),
                 )
-                .map(Some),
+                .map(Some)
+                .map_err(crate::Error::from),
             }
         }
     }
@@ -370,7 +294,7 @@ impl SettingsWindow {
     }
 
     pub(super) fn accept_theme_choice(&mut self, choice: Choice, cx: &mut Context<Self>) {
-        if self.persistence.quitting() || self.persistence.closing().is_some() {
+        if self.persistence.quitting() || self.persistence.closing() {
             return;
         }
         if !choice.scope.editable() {
@@ -402,12 +326,7 @@ impl SettingsWindow {
             theme,
             shared,
         });
-        let draft = cx.default_global::<ThemeDraft>();
-        if !draft.active {
-            draft.appearance = None;
-        }
-        draft.active = true;
-        draft.revision = draft.revision.wrapping_add(1);
+        super::drafts::drafts_mut(cx).begin_theme();
         self.drive_theme_intent(cx);
     }
 
@@ -512,18 +431,18 @@ impl SettingsWindow {
         if let Some(theme) = intent.theme {
             if intent.choice.scope == Scope::App {
                 self.config.theme = intent.choice.name.clone();
-                cx.default_global::<ThemeDraft>().appearance =
-                    Some((self.config.theme.clone(), theme.clone()));
+                super::drafts::drafts_mut(cx)
+                    .preview_theme(self.config.theme.clone(), theme.clone());
                 self.theme = theme.styled_for(&self.config);
                 self.broadcast_theme(cx);
             } else if ThemeName::follows_herdr(&self.config.theme, light) {
-                cx.default_global::<ThemeDraft>().appearance =
-                    Some((self.config.theme.clone(), theme.clone()));
+                super::drafts::drafts_mut(cx)
+                    .preview_theme(self.config.theme.clone(), theme.clone());
                 self.theme = theme.styled_for(&self.config);
                 self.broadcast_theme(cx);
             }
         }
-        if (self.persistence.closing().is_none() && !self.persistence.flushing()) || self.busy() {
+        if (!self.persistence.closing() && !self.persistence.flushing()) || self.busy() {
             return;
         }
         let Some(intent) = self.theme_intent.as_ref() else {
@@ -566,7 +485,7 @@ impl SettingsWindow {
                     view.config.theme = self.config.theme.clone();
                     view.config.contrast = self.config.contrast;
                     view.theme = self.theme.clone();
-                    if !theme_pending(cx) {
+                    if !super::drafts::theme_pending(cx) {
                         view.settings.shared = self.shared.clone();
                     }
                     cx.notify();
@@ -740,7 +659,7 @@ impl SettingsWindow {
     /// drafting it; `None` puts the real appearance back at once.
     pub(super) fn hover_theme(&mut self, index: Option<usize>, cx: &mut Context<Self>) {
         let choice = index
-            .filter(|_| !self.persistence.quitting() && self.persistence.closing().is_none())
+            .filter(|_| !self.persistence.quitting() && !self.persistence.closing())
             .and_then(|index| self.themes.filtered.get(index).cloned());
         if self.themes.hovered == choice {
             return;
@@ -770,7 +689,9 @@ impl SettingsWindow {
         let theme = theme.cloned().unwrap_or_else(|| {
             let mut config = self.config.clone();
             let mut theme = self.theme.clone();
-            apply_theme_draft(&mut config, &mut theme, cx);
+            if let Some(drafts) = super::drafts::drafts(cx) {
+                drafts.apply_theme_draft(&mut config, &mut theme);
+            }
             theme
         });
         for handle in cx.windows() {
@@ -812,7 +733,7 @@ impl SettingsWindow {
 
     pub(super) fn select_settings_theme(&mut self, index: usize, cx: &mut Context<Self>) {
         if self.persistence.quitting()
-            || self.persistence.closing().is_some()
+            || self.persistence.closing()
             || index >= self.themes.filtered.len()
         {
             return;

@@ -124,7 +124,7 @@ impl SettingsWindow {
     ) {
         use super::pages::{CLIPBOARD_POSITIONS, TOAST_POSITIONS};
         self.dropdown = None;
-        if self.persistence.quitting() || self.persistence.closing().is_some() {
+        if self.persistence.quitting() || self.persistence.closing() {
             cx.notify();
             return;
         }

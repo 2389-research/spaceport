@@ -335,15 +335,15 @@ fn quit_shared_theme_uses_only_successfully_reconciled_preceding_snapshot(cx: &m
             source
                 .update(cx, |_, window, _| window.remove_window())
                 .unwrap();
-            themes::clear_theme_draft(cx);
+            drafts::drafts_mut(cx).clear_theme();
         });
     }
 }
 
 #[gpui::test]
 fn quit_writes_a_live_sidebar_draft_even_behind_its_own_running_save(cx: &mut TestAppContext) {
-    use crate::config::SidebarOverrides;
     use crate::config::preferences::Preference;
+    use spaceport_settings::SidebarOverrides;
     #[derive(Clone, Copy, Debug, PartialEq)]
     enum Case {
         Idle,
