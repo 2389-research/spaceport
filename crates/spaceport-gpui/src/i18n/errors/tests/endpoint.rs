@@ -16,7 +16,7 @@ fn every_catalog_variant_has_a_message() {
     assert_localized(&[spaceport_endpoint::Error::Client(
         spaceport_client::Error::Disconnected,
     )]);
-    assert_verbatim(&[spaceport_endpoint::Error::Worker(
-        std::io::Error::other("no worker"),
-    )]);
+    assert_verbatim(&[spaceport_endpoint::Error::Worker(std::io::Error::other(
+        "no worker",
+    ))]);
 }
