@@ -110,6 +110,9 @@ Run on macOS arm64 with `CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0` and
 - `cargo test -p spaceport-gpui --bin spaceport menu`: 290 passed, which
   includes `menus::in_window::tests::{navigation, config_change}` and
   `menu::appear::tests`.
+- `cargo test -p spaceport-gpui --bin spaceport`: 3,427 passed, 10 ignored, 0
+  failed — the whole app suite, since the panel and the layer are on every
+  popup's path.
 
 **Deferred, and honest about it.** The bar's own layout tests —
 `menus/in_window/tests/{bar, dragging, resizing, shortcut_labels}.rs` — are
