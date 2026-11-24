@@ -43,6 +43,7 @@ mod window;
 pub(crate) use chats::{ChatInput, Chats, LauncherDeck, Toward};
 // The attach side and the model below the views, at the paths the rest of the
 // chat reads them at.
+pub(crate) use spaceport_chat_core::discovery::Route;
 pub(crate) use spaceport_chat_core::env::{check_env, env_text, parse_env};
 pub(crate) use spaceport_chat_core::session::Refusal;
 pub(crate) use spaceport_chat_core::{
@@ -150,16 +151,6 @@ impl Target {
     pub(crate) fn is_local(&self) -> bool {
         self.route == Route::Local
     }
-}
-
-/// How the window reaches a chat's program.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub(crate) enum Route {
-    /// Its socket in this user's private directory on this machine.
-    Local,
-    /// `herdr-acp connect` on the SSH host the daemon runs on, carried over
-    /// `ssh`; the program there is reached as that host's user.
-    Ssh(String),
 }
 
 /// Folders a remote `sheprd-acp` is looked for in before the remote `PATH`,

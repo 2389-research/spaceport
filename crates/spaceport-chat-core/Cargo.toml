@@ -16,6 +16,9 @@ serde.workspace                   = true
 serde_json.workspace              = true
 spaceport-chat-protocol.workspace = true
 spaceport-client.workspace        = true
+# The connection's live state, which decides whether a chat's program is still
+# reachable.
+spaceport-live.workspace          = true
 spaceport-release-notes.workspace = true
 spaceport-remote.workspace        = true
 # The theme a code block's tokens are coloured in, and the contrast rule that
