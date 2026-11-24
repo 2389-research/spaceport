@@ -44,7 +44,7 @@ mod version_mismatch_tests;
 #[cfg(test)]
 pub(crate) mod workspace_tests;
 
-#[cfg(any(test, feature = "integration-test"))]
+#[cfg(test)]
 pub(crate) use state::Cover;
 pub(crate) use {
     colors::{accent, danger, online, tint},
