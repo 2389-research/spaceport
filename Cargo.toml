@@ -84,6 +84,7 @@ spaceport-lenient       = { path = "crates/spaceport-lenient" }
 spaceport-motion        = { path = "crates/spaceport-motion" }
 spaceport-osc52         = { path = "crates/spaceport-osc52" }
 spaceport-panes         = { path = "crates/spaceport-panes" }
+spaceport-menu          = { path = "crates/spaceport-menu" }
 spaceport-protocol      = { path = "crates/spaceport-protocol" }
 spaceport-release-notes = { path = "crates/spaceport-release-notes" }
 spaceport-remote        = { default-features = false, path = "crates/spaceport-remote" }
