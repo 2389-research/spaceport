@@ -30,14 +30,13 @@ mod phase;
 mod polling;
 mod wake;
 
-pub(super) use catalog::Catalog;
 pub use error::Error;
 use link::{Link, Transition};
 pub(crate) use phase::Phase;
 // The endpoint policy below GPUI, reached through the paths this module has
 // always named it by.
 pub(crate) use spaceport_endpoint::{
-    History, LOCAL, SAVED_PREFIX, Step, WSL_PREFIX, WakeClock, focus_requested, saved_profile_id,
+    Catalog, History, LOCAL, Step, WSL_PREFIX, WakeClock, focus_requested, saved_profile_id,
     watch_network,
 };
 const STABLE_CONNECTION_PERIOD: Duration = Duration::from_secs(60);

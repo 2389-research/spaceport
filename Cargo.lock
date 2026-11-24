@@ -6639,6 +6639,8 @@ dependencies = [
  "serde_json",
  "spaceport-client",
  "spaceport-reorder",
+ "tempfile",
+ "thiserror 2.0.21",
  "tracing",
 ]
 
