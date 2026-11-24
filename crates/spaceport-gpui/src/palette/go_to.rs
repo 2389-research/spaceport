@@ -4,7 +4,6 @@
 
 use super::{Action, Entry, Error, Source, frecency, projects};
 use crate::{NavigationTarget, Result, i18n::fl};
-use gpui::SharedString;
 use spaceport_client::protocol::{AgentStatus, ClientShellSnapshot};
 
 /// Whether a Go To destination listed from `boot` still exists in `snapshot`.
@@ -194,12 +193,10 @@ pub(super) fn go_to_entries(
                     name,
                     detail,
                     agent.map_or_else(
-                        || SharedString::from(fl!("palette-go-to-terminal")),
+                        || fl!("palette-go-to-terminal"),
                         |agent| {
                             let badge = status_badge(agent.agent_status);
-                            crate::sidebar::state_label(agent, &badge)
-                                .into_owned()
-                                .into()
+                            crate::sidebar::state_label(agent, &badge).into_owned()
                         },
                     ),
                     go(NavigationTarget::Pane(pane.pane_id.clone())),

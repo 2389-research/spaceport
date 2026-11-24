@@ -6705,6 +6705,7 @@ dependencies = [
  "spaceport-menu",
  "spaceport-motion",
  "spaceport-osc52",
+ "spaceport-palette",
  "spaceport-panes",
  "spaceport-release-notes",
  "spaceport-remote",
@@ -6803,6 +6804,19 @@ version = "0.1.0"
 [[package]]
 name = "spaceport-osc52"
 version = "0.1.0"
+
+[[package]]
+name = "spaceport-palette"
+version = "0.1.0"
+dependencies = [
+ "nucleo-matcher",
+ "serde",
+ "serde_json",
+ "spaceport-client",
+ "spaceport-commands",
+ "thiserror 2.0.21",
+ "unicode-segmentation",
+]
 
 [[package]]
 name = "spaceport-panes"

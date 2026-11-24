@@ -3,6 +3,7 @@
 use super::*;
 use core::prelude::v1::test;
 use gpui::TestAppContext;
+use spaceport_client::protocol::ClientShellCommandAction;
 use std::sync::Arc;
 
 #[gpui::test]

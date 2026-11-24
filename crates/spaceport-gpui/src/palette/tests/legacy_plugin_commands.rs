@@ -1,4 +1,5 @@
 use super::*;
+use spaceport_client::protocol::ClientShellCommandAction;
 
 #[gpui::test]
 fn plugin_actions_are_absent_from_palette_but_other_commands_remain(cx: &mut TestAppContext) {

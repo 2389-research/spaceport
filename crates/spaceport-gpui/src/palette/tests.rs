@@ -3,6 +3,7 @@ use crate::NavigationTarget;
 use core::prelude::v1::test;
 use gpui::TestAppContext;
 use spaceport_client::protocol::ClientShellCommand;
+use spaceport_client::protocol::ClientShellCommandAction;
 
 mod agent_filter;
 mod background_ranking;
@@ -307,9 +308,9 @@ fn go_to_lists_every_pane_under_its_workspace() {
             assert_eq!(endpoint, crate::endpoint::LOCAL);
             assert_eq!(boot, "boot-v1");
             (
-                entry.label.as_ref(),
-                entry.detail.as_ref(),
-                entry.badge.as_ref(),
+                entry.label.as_str(),
+                entry.detail.as_str(),
+                entry.badge.as_str(),
                 target.clone(),
             )
         })
@@ -392,7 +393,7 @@ fn go_to_names_remote_hosts_and_hides_a_lone_default_tab() {
     let snapshot = snapshot();
     let mut entries = Vec::new();
     go_to_entries("ssh:box", Some("Box"), &snapshot, &mut entries);
-    let details: Vec<_> = entries.iter().map(|entry| entry.detail.as_ref()).collect();
+    let details: Vec<_> = entries.iter().map(|entry| entry.detail.as_str()).collect();
     assert_eq!(details, ["Box  #1  main  /repo", "Box  repo  /repo"]);
     assert!(entries.iter().all(|entry| matches!(
         &entry.action,
@@ -406,7 +407,7 @@ fn go_to_names_remote_hosts_and_hides_a_lone_default_tab() {
                 "box claude",
             )
         })
-        .map(|entry| entry.label.as_ref());
+        .map(|entry| entry.label.as_str());
     assert_eq!(matching.next(), Some("Claude · shell"));
     assert_eq!(matching.next(), None);
 }
@@ -473,87 +474,4 @@ fn filtering_matches_all_unicode_tokens_in_any_order() {
     assert!(matches_query("\u{391}\u{392} workspace", "\u{3b1}\u{3b2}"));
     assert!(matches_query("anything", " \n "));
     assert!(!matches_query("CAF\u{c9} branch 42", "caf\u{e9} missing"));
-}
-
-#[test]
-fn invocation_uses_captured_ids_not_current_focus() {
-    let mut snapshot = snapshot();
-    snapshot.commands = vec![ClientShellCommand {
-        command_id: "build".into(),
-        action: ClientShellCommandAction::Shell,
-        description: None,
-        binding_label: String::new(),
-        binding_labels: Vec::new(),
-    }];
-    let target = Target::capture(&snapshot);
-    snapshot.focused_workspace_id = None;
-    snapshot.focused_tab_id = None;
-    snapshot.focused_pane_id = None;
-    assert_eq!(
-        target
-            .invocation(&snapshot, "build", ClientShellCommandAction::Shell)
-            .unwrap(),
-        json!({
-            "command_id": "build", "workspace_id": target.workspace,
-            "tab_id": target.tab, "pane_id": target.pane,
-        })
-    );
-    let empty_target = Target::capture(&snapshot);
-    assert_eq!(
-        empty_target
-            .invocation(&snapshot, "build", ClientShellCommandAction::Shell)
-            .unwrap(),
-        json!({"command_id": "build"})
-    );
-}
-
-#[test]
-fn invocation_rejects_stale_boot_command_action_and_membership() {
-    let mut original = snapshot();
-    original.commands = vec![ClientShellCommand {
-        command_id: "build".into(),
-        action: ClientShellCommandAction::Shell,
-        description: None,
-        binding_label: String::new(),
-        binding_labels: Vec::new(),
-    }];
-    let target = Target::capture(&original);
-    for change in 0..7 {
-        let mut snapshot = original.clone();
-        match change {
-            0 => snapshot.boot_id.push_str("-new"),
-            1 => snapshot.commands.clear(),
-            2 => snapshot.commands[0].action = ClientShellCommandAction::Pane,
-            3 => snapshot.workspaces.clear(),
-            4 => snapshot.tabs.clear(),
-            5 => snapshot.panes.clear(),
-            _ => {
-                for pane in &mut snapshot.panes {
-                    pane.tab_id = "foreign".into();
-                }
-            }
-        }
-        assert!(
-            target
-                .invocation(&snapshot, "build", ClientShellCommandAction::Shell)
-                .is_err()
-        );
-    }
-    original.commands[0].action = ClientShellCommandAction::Unknown;
-    assert!(
-        target
-            .invocation(&original, "build", ClientShellCommandAction::Unknown)
-            .is_err()
-    );
-}
-
-#[test]
-fn workspace_selection_rejects_removed_id_and_restarted_daemon() {
-    let mut snapshot = snapshot();
-    let target = Target::capture(&snapshot);
-    let id = snapshot.workspaces[0].workspace_id.clone();
-    assert!(target.workspace_exists(&snapshot, &id).is_ok());
-    assert!(target.workspace_exists(&snapshot, "missing").is_err());
-    snapshot.boot_id.push_str("-new");
-    assert!(target.workspace_exists(&snapshot, &id).is_err());
 }

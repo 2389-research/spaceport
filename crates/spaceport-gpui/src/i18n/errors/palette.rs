@@ -30,6 +30,7 @@ impl Localize for Error {
             }
             Self::SessionChanged => fl!("error-palette-session-changed"),
             Self::TabRemoved => fl!("error-palette-tab-removed"),
+            Self::UnsupportedCommand => fl!("error-unsupported-command"),
             Self::WorkspaceRemoved => fl!("error-palette-workspace-removed"),
             // keep-sorted end
         }

@@ -5,7 +5,7 @@
 //! `suffix$`, and `!negation` syntax applies per term. Highlights are
 //! computed here as byte ranges so rendering never runs the matcher.
 
-use super::Entry;
+use crate::entry::Entry;
 use nucleo_matcher::{
     Config, Matcher, Utf32Str, Utf32String,
     pattern::{Atom, CaseMatching, Normalization, Pattern},
@@ -15,23 +15,23 @@ use unicode_segmentation::UnicodeSegmentation;
 
 /// Lists up to this many candidates are ranked inline; larger ones go to the
 /// background executor so a keystroke never waits on a long project list.
-pub(super) const INLINE_CANDIDATES: usize = 512;
+pub const INLINE_CANDIDATES: usize = 512;
 /// Matching is O(needle × haystack), so both are capped. Longer text is
 /// still shown, only its tail is not searched.
-const MAX_QUERY_CHARS: usize = 256;
-const MAX_TERMS: usize = 16;
-const MAX_HAYSTACK_GRAPHEMES: usize = 512;
+pub(crate) const MAX_QUERY_CHARS: usize = 256;
+pub(crate) const MAX_TERMS: usize = 16;
+pub(crate) const MAX_HAYSTACK_GRAPHEMES: usize = 512;
 /// A term found in the name outranks the same term found in the context.
 const NAME_WEIGHT: u32 = 2;
 
 #[derive(Clone)]
-pub(super) struct Fields {
-    name: Utf32String,
+pub struct Fields {
+    pub(crate) name: Utf32String,
     context: Utf32String,
 }
 
 impl Fields {
-    pub(super) fn new(name: &str, context: &str) -> Self {
+    pub fn new(name: &str, context: &str) -> Self {
         Self {
             name: bounded(name).into(),
             context: bounded(context).into(),
@@ -51,10 +51,10 @@ fn bounded(text: &str) -> &str {
 }
 
 /// A parsed, bounded query. Parsing is cheap and done once per keystroke.
-pub(super) struct Query(Pattern);
+pub struct Query(pub(crate) Pattern);
 
 impl Query {
-    pub(super) fn parse(text: &str) -> Self {
+    pub fn parse(text: &str) -> Self {
         let end = text
             .char_indices()
             .nth(MAX_QUERY_CHARS)
@@ -66,28 +66,28 @@ impl Query {
         Self(pattern)
     }
 
-    pub(super) fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.0.atoms.is_empty()
     }
 }
 
 /// Byte ranges of matched characters in an entry's label and detail.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(super) struct Highlights {
+pub struct Highlights {
     pub label: Vec<Range<usize>>,
     pub detail: Vec<Range<usize>>,
 }
 
 /// One visible palette row.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct Hit {
+pub struct Hit {
     pub index: usize,
     /// Visible ancestors above this row, for indentation in entry order.
     pub depth: usize,
     pub highlights: Highlights,
 }
 
-pub(super) fn matcher() -> Matcher {
+pub fn matcher() -> Matcher {
     Matcher::new(Config::DEFAULT)
 }
 
@@ -95,7 +95,7 @@ pub(super) fn matcher() -> Matcher {
 /// raised by the entry's frecency boost. Ties keep the
 /// shorter name first and then entry order, as fzf's length tiebreak does;
 /// an empty query keeps entry order so nested rows stay under their parents.
-pub(super) fn rank(
+pub fn rank(
     entries: &[Entry],
     candidates: impl IntoIterator<Item = usize>,
     query: &Query,
@@ -226,6 +226,3 @@ fn byte_ranges(text: &str, indices: &mut Vec<u32>) -> Vec<Range<usize>> {
     }
     ranges
 }
-
-#[cfg(test)]
-mod tests;
