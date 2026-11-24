@@ -12,5 +12,6 @@ workspace = true
 [dependencies]
 serde_json.workspace       = true
 spaceport-client.workspace = true
+spaceport-motion.workspace = true
 spaceport-usage.workspace  = true
 thiserror.workspace        = true

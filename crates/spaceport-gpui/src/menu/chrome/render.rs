@@ -53,8 +53,8 @@ impl SpaceportWindow {
         let pointer_anchored = page.pointer_anchored();
         let dims = self.menu_dims();
         let now = crate::motion::now();
-        let shown = leaving.unwrap_or_else(|| self.menu.appear.panel(now));
-        let lift = crate::menu::appear::Appear::offset(dims, shown);
+        let shown = leaving.unwrap_or_else(|| self.menu.appear.state.panel(now));
+        let lift = crate::menu::appear::offset(dims, shown);
         let rises = page == Page::Devices && !session_modal;
         // The worktree popover widens for captions a language makes longer.
         let popover = (page == Page::Workspace)
@@ -120,16 +120,16 @@ impl SpaceportWindow {
                 // rises in takes its height from it, so a share of that box
                 // would be a share of nothing. Until a frame has measured it,
                 // the room it may take keeps it out of sight.
-                let height = self.menu.appear.rise_height.get().unwrap_or(room);
+                let height = self.menu.appear.state.rise_height.get().map_or(room, px);
                 let offset = height * below;
-                let measured = self.menu.appear.rise_height.clone();
+                let measured = self.menu.appear.state.rise_height.clone();
                 panel
                     .w_full()
                     .max_h(room)
                     .top(if above { offset } else { -offset })
                     .child(
                         canvas(
-                            move |bounds, _, _| measured.set(Some(bounds.size.height)),
+                            move |bounds, _, _| measured.set(Some(bounds.size.height.into())),
                             |_, _, _, _| {},
                         )
                         .absolute()
@@ -620,7 +620,7 @@ impl SpaceportWindow {
                     .justify_center()
                     .bg(crate::menu::appear::backdrop(
                         theme.background,
-                        self.menu.appear.backdrop(layer.now),
+                        self.menu.appear.state.backdrop(layer.now),
                     ))
             })
             .occlude()

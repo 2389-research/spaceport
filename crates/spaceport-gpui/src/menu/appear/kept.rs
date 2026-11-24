@@ -3,14 +3,8 @@
 //! taken out first, and drawn again from here until it is gone. Taking them
 //! out ends their effect before the leaving animation finishes.
 
-use super::super::{MenuState, Page};
+use super::super::MenuState;
 use crate::dialog_input::DialogInput;
-
-/// Whether `page` animates out after it closes: All Devices into the
-/// footer.
-pub(in crate::menu) fn leaves(page: Page) -> bool {
-    matches!(page, Page::Devices)
-}
 
 /// The fields a leaving page reads that closing clears.
 #[derive(Default)]

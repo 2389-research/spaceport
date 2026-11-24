@@ -17,57 +17,7 @@ use spaceport_sidebar::device_scope::DeviceScope;
 
 use super::rail::add_device_offer;
 
-/// A line of the picker, in paint order.
-pub(in crate::menu) enum Line {
-    All,
-    /// A device, by its index in the window's endpoints.
-    Device(usize),
-    /// A session row or note under the unfolded device.
-    Session(Entry),
-    AddDevice,
-}
-
-/// A device's sessions closing after it folded: drawn under its row,
-/// shrinking from where they were, until [`crate::motion::LEAVE`] passes.
-pub(in crate::menu) struct Folding {
-    pub(super) device: String,
-    pub(super) since: std::time::Instant,
-    /// Their height when they began to close.
-    height: Pixels,
-    /// How open they were then, from 0 to 1.
-    pub(super) from: f32,
-}
-
-impl Folding {
-    /// How open they still are at `now`, or `None` once closed.
-    fn shown(&self, now: std::time::Instant) -> Option<f32> {
-        crate::motion::progress(
-            self.since,
-            now,
-            crate::motion::duration(crate::motion::LEAVE),
-        )
-        .map(|k| self.from * (1. - k))
-    }
-}
-
-/// What a selectable line is, apart from where it sits: the keys stay on it
-/// while rows arrive above it.
-#[derive(PartialEq)]
-enum Pick {
-    All,
-    Device(String),
-    Session(Row),
-    AddDevice,
-}
-
-impl Line {
-    fn selectable(&self) -> bool {
-        match self {
-            Self::Session(entry) => entry.row().is_some(),
-            _ => true,
-        }
-    }
-}
+pub(in crate::menu) use spaceport_menu::picker::{Folding, Line, Pick};
 
 impl SpaceportWindow {
     /// Every line of the picker, in paint order.
@@ -189,7 +139,7 @@ impl SpaceportWindow {
         self.menu.folding = Some(Folding {
             device,
             since: now,
-            height: self.menu.unfolded_height.get() * from,
+            height: (self.menu.unfolded_height.get() * from).into(),
             from,
         });
     }
@@ -403,7 +353,7 @@ impl SpaceportWindow {
                     .occlude(),
             ),
             ElementId::Name(format!("device-sessions-folding-{}", folding.device).into()),
-            folding.height,
+            px(folding.height),
             folding.since,
         ))
     }

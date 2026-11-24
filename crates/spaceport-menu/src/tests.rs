@@ -6,9 +6,11 @@
 use serde_json::json;
 use spaceport_client::protocol::ClientShellSnapshot;
 
+mod appear;
 mod left_checkout;
 mod page_set;
 mod pane_payloads;
+mod picker_lines;
 mod tab_payloads;
 mod workspace_targets;
 
