@@ -22,7 +22,7 @@ fn assert_one_surface(endpoints: &[Endpoint]) {
 }
 
 fn confirm_blocked(endpoints: &mut [Endpoint]) {
-    Arc::make_mut(endpoints[1].live.snapshot.as_mut().unwrap()).agents[0].agent_status =
+    Arc::make_mut(endpoints[1].live_mut().snapshot.as_mut().unwrap()).agents[0].agent_status =
         AgentStatus::Blocked;
 }
 
@@ -209,7 +209,7 @@ fn a_preview_promoted_before_it_is_received_shows_at_once() {
     let mut notice = Notice::new(wire(Kind::NeedsAttention), now, &crate::state::labels())
         .preview()
         .with_snapshot(
-            endpoints[0].live.snapshot.as_deref(),
+            endpoints[0].live().snapshot.as_deref(),
             &crate::state::labels(),
         );
     notice.promote(now);

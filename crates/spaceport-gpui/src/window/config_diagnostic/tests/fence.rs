@@ -18,7 +18,7 @@ fn a_card_reaches_the_connection_it_was_drawn_from_while_it_exists(cx: &mut Test
         });
         set_diagnostic(&view, 0, Some("config.toml has unknown keys"), cx);
         view.update(cx, |view, cx| {
-            view.live = view.endpoints[0].live.clone();
+            view.live = view.endpoints[0].live().clone();
             let endpoint = &view.endpoints[0];
             let (id, generation, inbox, lines) = (
                 endpoint.id.clone(),

@@ -229,7 +229,7 @@ impl SpaceportWindow {
             this._poll = Task::ready(());
             if let Some(endpoint) = this.endpoints.first_mut() {
                 this.live.snapshot = Some(Arc::new(sidebar::layout_tests::snapshot(40)));
-                endpoint.live = this.live.clone();
+                *endpoint.live_mut() = this.live.clone();
                 if let Ok(mut inbox) = endpoint.connection.inbox.lock() {
                     *inbox = this.live.clone();
                 }

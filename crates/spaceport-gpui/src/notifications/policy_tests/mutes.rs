@@ -12,7 +12,7 @@ fn muted(endpoints: &[Endpoint], scope: Scope) -> Mutes {
         Scope::Workspace => "w1",
         Scope::Tab => "w1:t1",
     };
-    let snapshot = endpoints[1].live.snapshot.clone().unwrap();
+    let snapshot = endpoints[1].live().snapshot.clone().unwrap();
     assert!(mutes.set(
         &Daemon::of(&endpoints[1]),
         &snapshot,
@@ -74,7 +74,7 @@ fn muting_takes_away_a_showing_toast_and_unmuting_brings_back_nothing() {
     tick_muted(&mut endpoints, config(0), &mutes, now);
     assert_eq!(visible(&endpoints), ["event"]);
     let daemon = Daemon::of(&endpoints[1]);
-    let snapshot = endpoints[1].live.snapshot.clone().unwrap();
+    let snapshot = endpoints[1].live().snapshot.clone().unwrap();
     mutes.set(
         &daemon,
         &snapshot,
@@ -109,7 +109,7 @@ fn a_notice_waiting_out_its_delay_is_dropped_when_its_tab_is_muted() {
     let mut mutes = Mutes::default();
     tick_muted(&mut endpoints, config(5), &mutes, now);
     assert_eq!(endpoints[1].toasts.entries.len(), 1, "still waiting");
-    let snapshot = endpoints[1].live.snapshot.clone().unwrap();
+    let snapshot = endpoints[1].live().snapshot.clone().unwrap();
     mutes.set(
         &Daemon::of(&endpoints[1]),
         &snapshot,
@@ -170,7 +170,7 @@ fn an_os_notification_posted_before_a_mute_still_answers_its_click() {
     let mut mutes = Mutes::default();
     tick_muted(&mut endpoints, system(0), &mutes, now);
     assert_eq!(take_system(&mut endpoints, system(0)).len(), 1);
-    let snapshot = endpoints[1].live.snapshot.clone().unwrap();
+    let snapshot = endpoints[1].live().snapshot.clone().unwrap();
     mutes.set(
         &Daemon::of(&endpoints[1]),
         &snapshot,

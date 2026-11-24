@@ -6,6 +6,7 @@ use spaceport_client::protocol::ClientShellSnapshot;
 // keep-sorted start
 mod follow;
 mod history;
+mod host;
 mod order;
 mod wake;
 // keep-sorted end

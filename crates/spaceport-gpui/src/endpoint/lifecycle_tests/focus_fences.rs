@@ -60,7 +60,7 @@ fn startup_focus_waits_for_the_first_surface_without_flapping_on_later_updates(
     let view = fixture.update(cx, |fixture, _| fixture.0.clone());
     let (mut endpoint, mut server) = connected_endpoint(LOCAL);
     endpoint.connection.inbox.lock().unwrap().surface = None;
-    endpoint.live.surface = None;
+    endpoint.live_mut().surface = None;
     let inbox = endpoint.connection.inbox.clone();
     view.update(cx, |view, cx| {
         view.endpoints = vec![endpoint];

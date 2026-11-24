@@ -2,7 +2,7 @@
 //! from, as commands and the device picker word it. The words are the CLI's
 //! output and the `endpoint-status` selector, so they are pinned here.
 use super::*;
-use crate::endpoint::link::Failure;
+use spaceport_endpoint::{Failure, Link};
 use spaceport_i18n::Locale;
 
 const STATUSES: [ConnectionStatus; 6] = [
@@ -70,10 +70,10 @@ impl Flags {
             self.enabled,
         );
         endpoint.never_connect();
-        endpoint.live.status = self.status;
+        endpoint.live_mut().status = self.status;
         if self.error {
             endpoint
-                .live
+                .live_mut()
                 .notices
                 .show(crate::notice::Cause::Connection, "refused".into());
         }
@@ -94,8 +94,13 @@ impl Flags {
             Refusal::None if self.missing => Some(Failure::Missing { reason }),
             Refusal::None if self.outage || (!self.status.is_connected() && self.error) => {
                 Some(Failure::Transport {
-                    reason: reason
-                        .or_else(|| endpoint.live.notices.connection_reason().map(str::to_owned)),
+                    reason: reason.or_else(|| {
+                        endpoint
+                            .live()
+                            .notices
+                            .connection_reason()
+                            .map(str::to_owned)
+                    }),
                     needs_user: false,
                 })
             }
@@ -222,7 +227,7 @@ fn every_combination_of_link_fields_has_one_phase() {
         other.status = ConnectionStatus::Connecting;
         other.error = false;
         let stale = other.endpoint();
-        endpoint.live = stale.live.clone();
+        *endpoint.live_mut() = stale.live().clone();
         assert_eq!(endpoint.phase(), named(row.state), "{flags:?}");
     }
 }
@@ -244,16 +249,16 @@ fn the_devices_overview_does_not_show_a_dropped_host_online() {
     use crate::devices_overview::{Device, Link};
     let mut endpoint = Endpoint::new("ssh:box".into(), "box".into(), ConnectTarget::Local, true);
     endpoint.never_connect();
-    endpoint.live.status = ConnectionStatus::Connected;
-    endpoint.live.snapshot = Some(Arc::new(crate::sidebar::layout_tests::snapshot(1)));
+    endpoint.live_mut().status = ConnectionStatus::Connected;
+    endpoint.live_mut().snapshot = Some(Arc::new(crate::sidebar::layout_tests::snapshot(1)));
     endpoint.sync_live();
-    let device = Device::new(1, &endpoint, &endpoint.live);
+    let device = Device::new(1, &endpoint, endpoint.live());
     assert_eq!(device.link, Link::Online);
     assert!(device.tally.total() > 0);
 
     endpoint.lose_connection_for_test("connection lost");
     assert_eq!(endpoint.status(), "reconnecting");
-    let device = Device::new(1, &endpoint, &endpoint.live);
+    let device = Device::new(1, &endpoint, endpoint.live());
     assert_eq!(device.link, Link::Offline);
     assert_eq!(device.tally.total(), 0, "no stale agents");
 }

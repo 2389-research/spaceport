@@ -191,7 +191,7 @@ impl SpaceportWindow {
             None => fl!("devices-all"),
         };
         let connected = self.endpoints.iter().any(|endpoint| {
-            self.device_visible(&endpoint.id) && endpoint.live.status.is_connected()
+            self.device_visible(&endpoint.id) && endpoint.live().status.is_connected()
         });
         // Beside the activity bar, which carries Settings, the picker leads
         // with the device's initials and says how many hosts there are.

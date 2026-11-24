@@ -48,7 +48,7 @@ fn the_snapshot_follows_the_source_and_forgets_its_connection_when_it_closes(
             .update(cx, |view, _, cx| {
                 let endpoint = &mut view.endpoints[0];
                 endpoint.connection.target = target.clone();
-                endpoint.live.status = crate::state::ConnectionStatus::Connected;
+                endpoint.live_mut().status = crate::state::ConnectionStatus::Connected;
                 view.menu.page = Some(crate::menu::Page::Themes);
                 view.integrations.busy = true;
                 cx.notify();

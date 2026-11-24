@@ -289,7 +289,7 @@ impl SpaceportWindow {
         cx: &mut Context<Self>,
     ) {
         let index = self.selected_endpoint;
-        let snapshot = self.endpoints[index].live.snapshot.clone();
+        let snapshot = self.endpoints[index].live().snapshot.clone();
         let title = crate::i18n::fl!("notifications-preview-attention");
         let body = crate::i18n::fl!("notifications-preview-attention-body");
         let mut notice = crate::notifications::Notice::new(

@@ -16,7 +16,7 @@ fn host_headers_lead_with_the_device_origin_mark(cx: &mut gpui::TestAppContext) 
             },
             true,
         );
-        remote.live.snapshot = view.live.snapshot.clone();
+        remote.live_mut().snapshot = view.live.snapshot.clone();
         view.endpoints.push(remote);
         view
     });
@@ -73,7 +73,7 @@ fn remote_fixture(window: &mut Window, cx: &mut Context<SpaceportWindow>) -> Spa
         },
         true,
     );
-    remote.live.snapshot = view.live.snapshot.clone();
+    remote.live_mut().snapshot = view.live.snapshot.clone();
     view.endpoints.push(remote);
     view
 }

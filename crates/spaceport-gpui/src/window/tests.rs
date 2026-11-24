@@ -214,7 +214,7 @@ fn host_theme_reaches_each_connection_and_follows_theme_changes(cx: &mut gpui::T
                 for event in events {
                     live.apply(event, &crate::state::labels());
                 }
-                view.endpoints[0].live = live;
+                *view.endpoints[0].live_mut() = live;
                 view.endpoints[0].connection.handle = Some(client.handle.clone());
                 cx.notify();
             });

@@ -77,8 +77,8 @@ fn notifications_stay_endpoint_owned_and_expire_without_new_updates() {
     let now = Instant::now();
     assert_eq!(local.poll(now), Redraw::Window);
     assert_eq!(remote.poll(now), Redraw::Window);
-    assert!(local.live.notifications.is_empty());
-    assert!(remote.live.notifications.is_empty());
+    assert!(local.live().notifications.is_empty());
+    assert!(remote.live().notifications.is_empty());
     assert_eq!(local.toasts.entries[0].1.title, "Local");
     assert_eq!(remote.toasts.entries[0].1.title, "Remote");
     assert_eq!(remote.poll(now), Redraw::None);
@@ -162,7 +162,7 @@ fn lost_ingress_retires_predecessors_even_when_replacement_was_evicted() {
         Redraw::Terminal,
         "an update that changes nothing the chrome reads spares the sidebar"
     );
-    assert!(!endpoint.live.notifications_lost);
+    assert!(!endpoint.live().notifications_lost);
     assert_eq!(endpoint.toasts.entries.len(), PENDING_LIMIT);
 }
 
@@ -224,7 +224,7 @@ fn retired_generation_cannot_publish_into_replacement() {
         &crate::state::labels(),
     );
     endpoint.poll(Instant::now());
-    assert!(endpoint.live.snapshot.is_none());
+    assert!(endpoint.live().snapshot.is_none());
     assert!(!Arc::ptr_eq(&old, &endpoint.connection.inbox));
 }
 

@@ -23,7 +23,7 @@ fn endpoint(id: &str, label: &str) -> crate::endpoint::Endpoint {
         },
         true,
     );
-    remote.live.snapshot = Some(Arc::new(snapshot(WORKSPACES)));
+    remote.live_mut().snapshot = Some(Arc::new(snapshot(WORKSPACES)));
     remote
 }
 

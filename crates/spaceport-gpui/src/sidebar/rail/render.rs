@@ -142,7 +142,7 @@ impl SpaceportWindow {
         let initial = host_initial(&endpoint.label);
         let select_id = endpoint_id.clone();
         let menu_id = endpoint_id.clone();
-        let connected = endpoint.live.status.is_connected();
+        let connected = endpoint.live().status.is_connected();
         let text = if endpoint.collapsed {
             fl!("sidebar-rail-collapsed", host = endpoint.label.as_str())
         } else {

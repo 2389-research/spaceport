@@ -51,7 +51,7 @@ fn status_fixture(window: &mut Window, cx: &mut Context<SpaceportWindow>) -> Spa
     agent.agent_status = AgentStatus::Working;
     agent.state_labels.clear();
     snapshot.agents.push(agent);
-    view.endpoints[0].live = view.live.clone();
+    *view.endpoints[0].live_mut() = view.live.clone();
     view
 }
 

@@ -45,9 +45,9 @@ fn two_hosts(cx: &mut TestAppContext) -> (Entity<SpaceportWindow>, &mut VisualTe
             true,
         );
         remote.never_connect();
-        remote.live = booted("remote");
+        *remote.live_mut() = booted("remote");
         view.endpoints.push(remote);
-        view.endpoints[0].live = booted("stale");
+        *view.endpoints[0].live_mut() = booted("stale");
         view.live = booted("window");
         view
     })

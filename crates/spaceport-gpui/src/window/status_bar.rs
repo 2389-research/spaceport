@@ -27,7 +27,7 @@ impl SpaceportWindow {
     pub(super) fn expire_status_notices(&mut self, now: std::time::Instant) -> bool {
         let changed = self.notices.expire(now) | self.live.notices.expire(now);
         for endpoint in &mut self.endpoints {
-            endpoint.live.notices.expire(now);
+            endpoint.live_mut().notices.expire(now);
         }
         changed
     }
@@ -273,10 +273,10 @@ impl SpaceportWindow {
                 .filter(|endpoint| endpoint.enabled())
                 .map(|endpoint| {
                     endpoint
-                        .live
+                        .live()
                         .snapshot
                         .as_deref()
-                        .filter(|_| endpoint.live.status.is_connected())
+                        .filter(|_| endpoint.live().status.is_connected())
                 }),
         );
         let report = Self::caffeine_report(cx);

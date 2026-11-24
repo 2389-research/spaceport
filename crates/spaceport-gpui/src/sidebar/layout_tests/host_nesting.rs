@@ -20,8 +20,8 @@ fn remote_endpoint(view: &SpaceportWindow) -> crate::endpoint::Endpoint {
         },
         true,
     );
-    remote.live.snapshot = view.live.snapshot.clone();
-    let snapshot = Arc::make_mut(remote.live.snapshot.as_mut().unwrap());
+    remote.live_mut().snapshot = view.live.snapshot.clone();
+    let snapshot = Arc::make_mut(remote.live_mut().snapshot.as_mut().unwrap());
     snapshot.workspaces[0].label = "remote workspace".into();
     remote
 }
@@ -78,7 +78,7 @@ fn nested_worktree_rows_fit_a_narrow_sidebar(cx: &mut gpui::TestAppContext) {
             // screen below the local host's rows.
             view.live.snapshot = Some(Arc::new(snapshot(6)));
             let mut remote = remote_endpoint(&view);
-            let snapshot = Arc::make_mut(remote.live.snapshot.as_mut().unwrap());
+            let snapshot = Arc::make_mut(remote.live_mut().snapshot.as_mut().unwrap());
             // Its own branch name, so the row's selector is not the local
             // host's, and long enough to overflow 160 px on its own.
             snapshot.workspaces[4].branch =

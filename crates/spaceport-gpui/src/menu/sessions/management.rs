@@ -76,7 +76,8 @@ impl SpaceportWindow {
                 }) else {
                     return Some(fl!("sessions-menu-enable-device"));
                 };
-                (!endpoint.live.status.is_connected()).then(|| fl!("sessions-menu-device-offline"))
+                (!endpoint.live().status.is_connected())
+                    .then(|| fl!("sessions-menu-device-offline"))
             }
         }
     }

@@ -23,7 +23,7 @@ fn the_menu_folds_the_group_on_the_selected_host_only(cx: &mut gpui::TestAppCont
         view.update(cx, |view, cx| {
             view.live.snapshot = Some(Arc::new(sidebar::layout_tests::snapshot(6)));
             view.live.status = ConnectionStatus::Connected;
-            view.endpoints[0].live = view.live.clone();
+            *view.endpoints[0].live_mut() = view.live.clone();
             let mut remote = crate::endpoint::Endpoint::new(
                 "ssh:a".into(),
                 "ssh:a".into(),
@@ -33,7 +33,7 @@ fn the_menu_folds_the_group_on_the_selected_host_only(cx: &mut gpui::TestAppCont
                 },
                 true,
             );
-            remote.live = view.live.clone();
+            *remote.live_mut() = view.live.clone();
             remote.never_connect();
             view.endpoints.push(remote);
             let mut toggle = |view: &mut SpaceportWindow| {
@@ -49,7 +49,7 @@ fn the_menu_folds_the_group_on_the_selected_host_only(cx: &mut gpui::TestAppCont
 
             // Another host has its own folds, whichever is selected.
             view.selected_endpoint = 1;
-            view.live = view.endpoints[1].live.clone();
+            view.live = view.endpoints[1].live().clone();
             assert!(!view.collapsed_repos_for_selection().contains(REPO_KEY));
             toggle(view);
             assert_eq!(folded(view), ["local", "ssh:a"]);
@@ -57,7 +57,7 @@ fn the_menu_folds_the_group_on_the_selected_host_only(cx: &mut gpui::TestAppCont
             assert_eq!(folded(view), ["local"]);
 
             view.selected_endpoint = 0;
-            view.live = view.endpoints[0].live.clone();
+            view.live = view.endpoints[0].live().clone();
             toggle(view);
             assert!(folded(view).is_empty());
         });

@@ -18,8 +18,8 @@ fn move_picker_keeps_local_rows_without_cross_host_carry(cx: &mut TestAppContext
             },
             true,
         );
-        remote.live.snapshot = Some(Arc::new(snapshot()));
-        remote.live.status = ConnectionStatus::Connected;
+        remote.live_mut().snapshot = Some(Arc::new(snapshot()));
+        remote.live_mut().status = ConnectionStatus::Connected;
         view.endpoints.push(remote);
         view
     });

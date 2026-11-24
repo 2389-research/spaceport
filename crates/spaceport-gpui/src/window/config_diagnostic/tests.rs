@@ -22,7 +22,7 @@ fn set_diagnostic(
     snapshot.config_diagnostic = diagnostic.map(str::to_owned);
     view.update(cx, |view, cx| {
         let endpoint = &mut view.endpoints[index];
-        endpoint.live.snapshot = Some(Arc::new(snapshot));
+        endpoint.live_mut().snapshot = Some(Arc::new(snapshot));
         endpoint.sync_live();
         cx.notify();
     });

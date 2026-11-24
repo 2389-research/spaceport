@@ -119,7 +119,7 @@ fn notices_judge_agents_by_metadata_that_waits_for_its_surface() {
         );
         endpoints[0].poll(now + Duration::from_secs(1));
         assert!(Arc::ptr_eq(
-            endpoints[0].live.snapshot.as_ref().unwrap(),
+            endpoints[0].live().snapshot.as_ref().unwrap(),
             &staged
         ));
         crate::notifications::tick(

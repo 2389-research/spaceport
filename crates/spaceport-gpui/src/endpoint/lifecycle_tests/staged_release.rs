@@ -32,7 +32,7 @@ fn releasing_a_surface_publishes_metadata_that_no_longer_needs_matching_cells(
         assert!(state.surface.is_none());
         assert!(!state.surface_ready());
         assert_eq!(
-            view.endpoints[1].live.snapshot.as_ref().unwrap().revision,
+            view.endpoints[1].live().snapshot.as_ref().unwrap().revision,
             revision
         );
     });

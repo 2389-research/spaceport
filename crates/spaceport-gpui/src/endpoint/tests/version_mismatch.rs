@@ -30,7 +30,7 @@ fn refusal_survives_retries_until_a_handshake_is_accepted() {
     // A retry replaces the bridge's state before the daemon answers again.
     endpoint.stop();
     endpoint.poll(Instant::now());
-    assert!(endpoint.live.version_mismatch.is_none());
+    assert!(endpoint.live().version_mismatch.is_none());
     assert_eq!(endpoint.version_mismatch().cloned(), Some(mismatch));
 
     let welcome: EndpointServerWelcome = serde_json::from_str(include_str!(
@@ -59,9 +59,13 @@ fn a_newer_daemon_asks_for_an_app_update_and_retargeting_forgets_it() {
     );
     endpoint.poll(Instant::now());
     assert_eq!(endpoint.status(), "app update needed");
-    endpoint.retarget(ConnectTarget::Session {
-        name: "other".into(),
-        development: false,
-    });
+    let enabled = endpoint.enabled();
+    endpoint.retarget(
+        ConnectTarget::Session {
+            name: "other".into(),
+            development: false,
+        },
+        enabled,
+    );
     assert_eq!(endpoint.version_mismatch().cloned(), None);
 }

@@ -74,7 +74,7 @@ fn malformed_success_on_the_daemon_wire_returns_unknown_over_the_control_socket(
                 view.config.features.acp_chats = true;
                 view.live.local_daemon_peer = true;
                 view.endpoints[0].connection.target = spaceport_client::ConnectTarget::Local;
-                view.endpoints[0].live = view.live.clone();
+                *view.endpoints[0].live_mut() = view.live.clone();
                 view.chats.program = crate::chat::Program::Found("/fixture/spaceport-acp".into());
                 (
                     window.window_handle().window_id().as_u64(),

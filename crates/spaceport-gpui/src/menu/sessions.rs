@@ -110,8 +110,8 @@ impl SpaceportWindow {
         let fallback = || {
             (
                 saved.clone(),
-                endpoint.live.status.to_string(),
-                endpoint.live.status.is_connected(),
+                endpoint.live().status.to_string(),
+                endpoint.live().status.is_connected(),
                 attached,
             )
         };

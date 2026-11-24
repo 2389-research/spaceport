@@ -136,14 +136,14 @@ fn open_decoy(
                 snapshot.agents[0].display_agent = None;
                 snapshot.agents[0].name =
                     Some(format!("agent-{index}-with-a-deliberately-long-label"));
-                endpoint.live.snapshot = Some(std::sync::Arc::new(snapshot));
+                endpoint.live_mut().snapshot = Some(std::sync::Arc::new(snapshot));
                 if let Ok(mut inbox) = endpoint.connection.inbox.lock() {
-                    *inbox = endpoint.live.clone();
+                    *inbox = endpoint.live().clone();
                 }
                 view.endpoints.push(endpoint);
             }
             view.selected_endpoint = 0;
-            view.live = view.endpoints[0].live.clone();
+            view.live = view.endpoints[0].live().clone();
             view.endpoints[0].collapsed_repos.clear();
             view.marked = "preserve collapse composition".into();
             window.resize(fixture_size(480., height(focus)));

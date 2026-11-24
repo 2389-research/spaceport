@@ -5,11 +5,11 @@ use super::*;
 fn deliver(kind: Kind, base: NotificationConfig, finished: bool) -> (Vec<String>, usize) {
     let now = Instant::now();
     let mut endpoints = endpoints();
-    Arc::make_mut(endpoints[1].live.snapshot.as_mut().unwrap()).agents[0].agent_status = match kind
-    {
-        Kind::NeedsAttention => AgentStatus::Blocked,
-        _ => AgentStatus::Done,
-    };
+    Arc::make_mut(endpoints[1].live_mut().snapshot.as_mut().unwrap()).agents[0].agent_status =
+        match kind {
+            Kind::NeedsAttention => AgentStatus::Blocked,
+            _ => AgentStatus::Done,
+        };
     receive(&mut endpoints[1], wire(kind), now);
     let config = NotificationConfig { finished, ..base };
     tick(&mut endpoints, 0, config, false, now);

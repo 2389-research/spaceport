@@ -23,7 +23,7 @@ fn device_footer_filters_both_lists_and_keeps_settings_visible(cx: &mut gpui::Te
                 },
                 true,
             );
-            remote.live.snapshot = view.live.snapshot.clone();
+            remote.live_mut().snapshot = view.live.snapshot.clone();
             view.endpoints.push(remote);
         })
     });

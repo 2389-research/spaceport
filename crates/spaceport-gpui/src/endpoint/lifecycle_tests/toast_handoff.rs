@@ -16,7 +16,7 @@ fn newer_same_endpoint_navigation_cannot_replay_a_pending_toast(cx: &mut gpui::T
         Instant::now(),
         &crate::state::labels(),
     )
-    .with_snapshot(endpoint.live.snapshot.as_deref(), &crate::state::labels())
+    .with_snapshot(endpoint.live().snapshot.as_deref(), &crate::state::labels())
     .preview()]);
     view.update(cx, |view, cx| {
         view.endpoints[0].detach_for_test();
@@ -138,7 +138,7 @@ fn toast_handoff_retains_busy_validation_and_revalidates_before_queueing(
             Instant::now(),
             &crate::state::labels(),
         )
-        .with_snapshot(endpoint.live.snapshot.as_deref(), &crate::state::labels())
+        .with_snapshot(endpoint.live().snapshot.as_deref(), &crate::state::labels())
         .preview()]);
         view.update(cx, |view, cx| {
             view.selected_endpoint = 0;
@@ -179,7 +179,7 @@ fn toast_handoff_retains_busy_validation_and_revalidates_before_queueing(
                 view.endpoints[1].initial_surface = true;
                 // Project the completed handoff, then deterministically hold
                 // the inbox across polling and attempted terminal input.
-                view.endpoints[1].live = state.clone();
+                *view.endpoints[1].live_mut() = state.clone();
                 view.live = state.clone();
                 for _ in 0..2 {
                     view.poll_endpoints(cx);
@@ -253,7 +253,7 @@ fn accepted_toast_survives_expiry_but_not_invalidation(cx: &mut gpui::TestAppCon
             Instant::now(),
             &crate::state::labels(),
         )
-        .with_snapshot(endpoint.live.snapshot.as_deref(), &crate::state::labels())
+        .with_snapshot(endpoint.live().snapshot.as_deref(), &crate::state::labels())
         .preview()]);
         view.update(cx, |view, cx| {
             view.selected_endpoint = 0;
@@ -381,7 +381,7 @@ fn toast_handoff_defers_a_contended_source_without_activating_destination(
         Instant::now(),
         &crate::state::labels(),
     )
-    .with_snapshot(target.live.snapshot.as_deref(), &crate::state::labels())
+    .with_snapshot(target.live().snapshot.as_deref(), &crate::state::labels())
     .preview()]);
     let held = source_inbox.lock().unwrap();
     view.update(cx, |view, cx| {

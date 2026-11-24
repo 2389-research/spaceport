@@ -154,7 +154,7 @@ impl SpaceportWindow {
                 let live = if index == selected {
                     &self.live
                 } else {
-                    &endpoint.live
+                    endpoint.live()
                 };
                 let tally = online_tally(endpoint, live)?;
                 Some((endpoint.id.as_str(), tally.counts()))

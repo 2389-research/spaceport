@@ -28,7 +28,7 @@ fn draw(
                 },
                 true,
             );
-            remote.live.snapshot = view.live.snapshot.clone();
+            remote.live_mut().snapshot = view.live.snapshot.clone();
             view.endpoints.push(remote);
             view
         });

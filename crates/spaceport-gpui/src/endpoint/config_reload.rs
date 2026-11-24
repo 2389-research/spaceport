@@ -21,11 +21,14 @@ impl Endpoint {
     /// A full queue is not a failure: the reload stays held and a later poll
     /// sends it once the queue drains, so no error outlives that retry.
     pub(crate) fn flush_config_reload(&mut self) -> spaceport_client::Result<()> {
-        if !self.config_reload_pending || !self.initial_surface || !self.live.status.is_connected()
+        if !self.config_reload_pending
+            || !self.initial_surface
+            || !self.live().status.is_connected()
         {
             return Ok(());
         }
-        let (Some(handle), Some(snapshot)) = (&self.connection.handle, &self.live.snapshot) else {
+        let (Some(handle), Some(snapshot)) = (&self.connection.handle, &self.live().snapshot)
+        else {
             return Ok(());
         };
         match handle.request(

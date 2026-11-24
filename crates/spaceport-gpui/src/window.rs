@@ -411,7 +411,7 @@ impl SpaceportWindow {
     pub(crate) fn sync_host_theme(&self) {
         let theme = crate::connection::host_theme(&self.theme, self.theme_light);
         for endpoint in &self.endpoints {
-            endpoint.connection.sync_host_theme(&endpoint.live, &theme);
+            endpoint.connection.sync_host_theme(endpoint.live(), &theme);
         }
         self.sync_group_host_theme(&theme);
     }

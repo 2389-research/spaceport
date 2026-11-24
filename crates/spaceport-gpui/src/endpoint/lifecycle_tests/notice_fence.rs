@@ -21,7 +21,7 @@ fn noticed(
         Instant::now(),
         &crate::state::labels(),
     )
-    .with_snapshot(endpoint.live.snapshot.as_deref(), &crate::state::labels())
+    .with_snapshot(endpoint.live().snapshot.as_deref(), &crate::state::labels())
     .preview()]);
     let inbox = endpoint.connection.inbox.clone();
     let generation = view.update(cx, |view, cx| {

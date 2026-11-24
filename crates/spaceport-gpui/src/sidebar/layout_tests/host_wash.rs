@@ -31,13 +31,13 @@ fn washed(
                 },
                 true,
             );
-            remote.live.snapshot = view.live.snapshot.clone();
+            remote.live_mut().snapshot = view.live.snapshot.clone();
             // The selected host draws the window's own live snapshot, so the
             // remote's names go wherever the remote will read them from.
             let snapshot = if selected_endpoint == 1 {
                 &mut view.live.snapshot
             } else {
-                &mut remote.live.snapshot
+                &mut remote.live_mut().snapshot
             };
             let snapshot = Arc::make_mut(snapshot.as_mut().unwrap());
             snapshot.workspaces[0].label = "remote workspace".into();

@@ -12,9 +12,9 @@ use spaceport_client::protocol::ClientMessage;
 
 fn attach_local(view: &mut SpaceportWindow, peer: &MockPeer) {
     view.endpoints[0].connection.handle = Some(peer.client.handle.clone());
-    view.endpoints[0].live = view.live.clone();
+    *view.endpoints[0].live_mut() = view.live.clone();
     view.live.status = ConnectionStatus::Connected;
-    view.endpoints[0].live.status = ConnectionStatus::Connected;
+    view.endpoints[0].live_mut().status = ConnectionStatus::Connected;
     *view.endpoints[0].connection.inbox.lock().unwrap() = view.live.clone();
 }
 
@@ -28,10 +28,10 @@ fn select_remote_fixture(view: &mut SpaceportWindow) {
         },
         true,
     );
-    remote.live = view.live.clone();
+    *remote.live_mut() = view.live.clone();
     view.endpoints.push(remote);
     view.selected_endpoint = 1;
-    view.live = view.endpoints[1].live.clone();
+    view.live = view.endpoints[1].live().clone();
 }
 
 #[test]
@@ -112,10 +112,10 @@ fn creating_a_project_while_viewing_ssh_targets_local_and_waits_for_its_response
         id.clone()
     });
     cx.update(|window, cx| view.update(cx, |view, cx| {
-        view.endpoints[0].live.dialog_response = Some(("unrelated".into(), Some(Ok(json!({"result": {"type": "workspace_created", "workspace": {"workspace_id": "w2"}}})))));
+        view.endpoints[0].live_mut().dialog_response = Some(("unrelated".into(), Some(Ok(json!({"result": {"type": "workspace_created", "workspace": {"workspace_id": "w2"}}})))));
         view.update_palette_project(window, cx);
         assert!(view.menu.palette.is_some());
-        view.endpoints[0].live.dialog_response = Some((pending, Some(Ok(json!({"result": {"type": "workspace_created", "workspace": {"workspace_id": "w2"}}})))));
+        view.endpoints[0].live_mut().dialog_response = Some((pending, Some(Ok(json!({"result": {"type": "workspace_created", "workspace": {"workspace_id": "w2"}}})))));
         view.update_palette_project(window, cx);
         assert!(view.menu.palette.is_none());
         assert_eq!(view.selected_endpoint, 0);

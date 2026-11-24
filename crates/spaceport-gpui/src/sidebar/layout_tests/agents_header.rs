@@ -58,7 +58,7 @@ fn a_plugin_agent_view_on_another_host_keeps_the_hidden_header(cx: &mut gpui::Te
             ConnectTarget::Socket("/unused-agents-header-test.sock".into()),
             true,
         );
-        remote.live.snapshot = view.live.snapshot.clone();
+        remote.live_mut().snapshot = view.live.snapshot.clone();
         view.endpoints.push(remote);
         view
     });
@@ -67,7 +67,7 @@ fn a_plugin_agent_view_on_another_host_keeps_the_hidden_header(cx: &mut gpui::Te
         let shown = label.is_some();
         cx.update(|window, cx| {
             view.update(cx, |view, cx| {
-                let remote = view.endpoints[1].live.snapshot.as_mut().unwrap();
+                let remote = view.endpoints[1].live_mut().snapshot.as_mut().unwrap();
                 Arc::make_mut(remote).agent_view_label = label;
                 cx.notify();
             });

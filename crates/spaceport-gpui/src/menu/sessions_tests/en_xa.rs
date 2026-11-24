@@ -33,7 +33,7 @@ fn the_sessions_popup_and_its_dialogs_show_only_messages_under_en_xa() {
     under_en_xa("sessions en-XA leak", |cx, recorder| {
         let (view, cx) = device_window(cx, Some(reported(&[("default", true), ("agents", false)])));
         view.update(cx, |view, cx| {
-            view.endpoints[1].live.status = crate::state::ConnectionStatus::Connected;
+            view.endpoints[1].live_mut().status = crate::state::ConnectionStatus::Connected;
             cx.notify();
         });
         draw(cx);

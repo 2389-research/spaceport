@@ -162,8 +162,8 @@ fn endpoint_retargeting_drops_a_pending_press(cx: &mut gpui::TestAppContext) {
     let (view, cx) = window(&peer, false, cx);
     view.update(cx, |view, _| {
         place(view, WEB, 2);
-        view.endpoints[0].live.supports_surface = true;
-        view.endpoints[0].live.status = ConnectionStatus::Connected;
+        view.endpoints[0].live_mut().supports_surface = true;
+        view.endpoints[0].live_mut().status = ConnectionStatus::Connected;
         let mut remote = crate::endpoint::Endpoint::new(
             "ssh:box".into(),
             "Box".into(),
@@ -173,7 +173,7 @@ fn endpoint_retargeting_drops_a_pending_press(cx: &mut gpui::TestAppContext) {
             },
             true,
         );
-        remote.live.supports_surface = true;
+        remote.live_mut().supports_surface = true;
         view.endpoints.push(remote);
     });
     let link = at(&view, cx, 2, 0);

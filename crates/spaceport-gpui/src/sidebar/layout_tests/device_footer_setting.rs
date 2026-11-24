@@ -58,7 +58,7 @@ fn device_footer_setting_hides_it_and_gives_agents_the_room(cx: &mut gpui::TestA
             },
             true,
         );
-        remote.live.snapshot = view.live.snapshot.clone();
+        remote.live_mut().snapshot = view.live.snapshot.clone();
         view.endpoints.push(remote);
     });
     set_footer(&view, DeviceFooter::Never, cx);

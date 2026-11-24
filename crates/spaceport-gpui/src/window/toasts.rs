@@ -38,7 +38,7 @@ impl SpaceportWindow {
                 // The displayed target can start a handoff, but only a fresh
                 // inbox validation may queue navigation after contention ends.
                 let endpoint = &self.endpoints[index];
-                endpoint.live.latest_snapshot().and_then(|snapshot| {
+                endpoint.live().latest_snapshot().and_then(|snapshot| {
                     endpoint
                         .toasts
                         .entries
@@ -153,7 +153,10 @@ impl SpaceportWindow {
                 fl!("notifications-preview-custom-body"),
             ),
         };
-        let snapshot = self.endpoints[self.selected_endpoint].live.snapshot.clone();
+        let snapshot = self.endpoints[self.selected_endpoint]
+            .live()
+            .snapshot
+            .clone();
         let target = snapshot.as_ref().filter(|_| {
             matches!(
                 kind,
@@ -237,7 +240,7 @@ impl SpaceportWindow {
                     .filter(|(_, notice)| notice.is_visible())
                     .map(move |(id, notice)| {
                         let navigable = endpoint
-                            .live
+                            .live()
                             .snapshot
                             .as_deref()
                             .and_then(|s| notice.target(s))

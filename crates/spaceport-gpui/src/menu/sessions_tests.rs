@@ -755,7 +755,7 @@ fn a_device_offers_add_session_only_while_it_is_online(cx: &mut TestAppContext) 
         assert!(view.menu.page.is_some(), "the list stays open");
     });
     view.update(cx, |view, cx| {
-        view.endpoints[1].live.status = crate::state::ConnectionStatus::Connected;
+        view.endpoints[1].live_mut().status = crate::state::ConnectionStatus::Connected;
         cx.notify();
     });
     draw(cx);

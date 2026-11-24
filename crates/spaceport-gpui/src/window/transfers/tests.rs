@@ -285,7 +285,7 @@ impl Peer {
         self.prepare(view, cx);
         let local = &mut view.endpoints[0];
         local.connection.target = ConnectTarget::Socket("/unused-local-tab-test.sock".into());
-        local.live = view.live.clone();
+        *local.live_mut() = view.live.clone();
         if let Ok(mut inbox) = local.connection.inbox.lock() {
             *inbox = view.live.clone();
             inbox.dirty = false;

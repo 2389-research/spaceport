@@ -22,7 +22,7 @@ fn workspace_menu_keeps_immediate_and_deferred_navigation(cx: &mut gpui::TestApp
                 assert_eq!(view.menu.page, Some(crate::menu::Page::Workspace));
                 if deferred {
                     assert!(view.pending_navigation.is_some());
-                    view.live = view.endpoints[0].live.clone();
+                    view.live = view.endpoints[0].live().clone();
                     view.poll_endpoints(cx);
                 }
                 assert!(view.pending_navigation.is_none());

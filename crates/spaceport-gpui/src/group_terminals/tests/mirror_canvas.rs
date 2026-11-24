@@ -91,7 +91,7 @@ impl SpaceportWindow {
     fn show_grid(&mut self, grid: (u16, u16)) {
         let snapshot = self.live.snapshot.clone().unwrap();
         self.live.surface = Some(output(&snapshot, "p0", grid));
-        self.endpoints[self.selected_endpoint].live = self.live.clone();
+        *self.endpoints[self.selected_endpoint].live_mut() = self.live.clone();
     }
 }
 
@@ -161,7 +161,7 @@ fn a_mirrored_group_paints_the_cells_that_changed(cx: &mut TestAppContext) {
             let surface = Arc::make_mut(view.live.surface.as_mut().unwrap());
             surface.frame.cells[0].symbol = "x".into();
             let live = view.live.clone();
-            view.endpoints[view.selected_endpoint].live = live;
+            *view.endpoints[view.selected_endpoint].live_mut() = live;
         });
     });
     let changed = mark_frame_counts(cx);

@@ -35,11 +35,11 @@ fn agents_of_a_muted_workspace_or_tab_are_marked() {
     );
     // Agent p0 runs in workspace w0, tab t0; p1 in workspace w1.
     let snapshot = Arc::new(crate::sidebar::layout_tests::snapshot(2));
-    endpoint.live.snapshot = Some(snapshot.clone());
-    endpoint.live.status = ConnectionStatus::Connected;
+    endpoint.live_mut().snapshot = Some(snapshot.clone());
+    endpoint.live_mut().status = ConnectionStatus::Connected;
     let daemon = Daemon::of(&endpoint);
     let muted = |mutes: Option<&Mutes>| {
-        model::agent_rows(&endpoint, &endpoint.live, &Default::default(), mutes)
+        model::agent_rows(&endpoint, endpoint.live(), &Default::default(), mutes)
             .into_iter()
             .map(|row| row.muted)
             .collect::<Vec<_>>()

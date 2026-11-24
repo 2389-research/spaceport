@@ -13,7 +13,7 @@ fn connected(window: &mut Window, cx: &mut Context<SpaceportWindow>) -> Spacepor
     view.live.snapshot = Some(Arc::new(snapshot(6)));
     view.live.status = crate::state::ConnectionStatus::Connected;
     view.live.supports_surface = true;
-    view.endpoints[0].live = view.live.clone();
+    *view.endpoints[0].live_mut() = view.live.clone();
     view
 }
 

@@ -151,7 +151,7 @@ impl SpaceportWindow {
             let state = if index == self.selected_endpoint {
                 &self.live
             } else {
-                &endpoint.live
+                endpoint.live()
             };
             let Some(snapshot) = state
                 .snapshot
@@ -178,7 +178,7 @@ impl SpaceportWindow {
             let state = if index == self.selected_endpoint {
                 &self.live
             } else {
-                &endpoint.live
+                endpoint.live()
             };
             if let Some(snapshot) = state
                 .snapshot

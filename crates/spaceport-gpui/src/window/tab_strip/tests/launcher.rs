@@ -28,7 +28,7 @@ fn strip(
             view.config.chat.launcher = launcher;
             view.endpoints[0].connection.target = spaceport_client::ConnectTarget::Local;
             view.live.local_daemon_peer = true;
-            view.endpoints[0].live = view.live.clone();
+            *view.endpoints[0].live_mut() = view.live.clone();
             view.chats.program = Program::Found("/opt/herdr-acp".into());
             let id = view.endpoints[0].id.clone();
             view.chats

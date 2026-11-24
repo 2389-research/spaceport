@@ -13,7 +13,7 @@ fn local_and_live_operation_notices_expire_without_a_host_switch(cx: &mut TestAp
         view.live
             .notices
             .show(Cause::Daemon, "request refused".into());
-        view.endpoints[0].live = view.live.clone();
+        *view.endpoints[0].live_mut() = view.live.clone();
         assert!(
             crate::state::status_text(&view.live, view.notices.text(), Instant::now())
                 .contains("files busy")
@@ -25,7 +25,7 @@ fn local_and_live_operation_notices_expire_without_a_host_switch(cx: &mut TestAp
         );
         assert!(view.notices.is_none());
         assert!(view.live.notices.is_none());
-        assert!(view.endpoints[0].live.notices.is_none());
+        assert!(view.endpoints[0].live().notices.is_none());
     });
 }
 

@@ -194,7 +194,7 @@ fn host_rows_merge_configured_and_connected_hosts(cx: &mut TestAppContext) {
         source
             .update(cx, |window, _, cx| {
                 let endpoint = &mut window.endpoints[0];
-                endpoint.live.status = crate::state::ConnectionStatus::Connected;
+                endpoint.live_mut().status = crate::state::ConnectionStatus::Connected;
                 let label = endpoint.label.clone();
                 // Settings follows the source's own notifications.
                 cx.notify();

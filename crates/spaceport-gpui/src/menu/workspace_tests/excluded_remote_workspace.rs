@@ -18,7 +18,7 @@ fn legacy_new_workspace_stays_local_and_core_create_opens(cx: &mut gpui::TestApp
                 },
                 true,
             );
-            remote.live = view.live.clone();
+            *remote.live_mut() = view.live.clone();
             view.endpoints.push(remote);
 
             view.open_workspace_menu("w3", Default::default(), window, cx);

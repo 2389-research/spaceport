@@ -31,7 +31,7 @@ fn remote(id: &str, enabled: bool) -> Endpoint {
         },
         enabled,
     );
-    endpoint.live.snapshot = Some(Arc::new(snapshot(6)));
+    endpoint.live_mut().snapshot = Some(Arc::new(snapshot(6)));
     endpoint.never_connect();
     endpoint
 }
@@ -46,7 +46,7 @@ fn window(
         let view = cx.new(|cx| {
             let mut view = fixture_window(window, cx);
             view.live.snapshot = Some(Arc::new(snapshot(6)));
-            view.endpoints[0].live = view.live.clone();
+            *view.endpoints[0].live_mut() = view.live.clone();
             setup(&mut view);
             view
         });

@@ -31,8 +31,8 @@ fn agent_rows_open_their_panes_menu_on_any_host(cx: &mut gpui::TestAppContext) {
                 },
                 true,
             );
-            remote.live.snapshot = Some(Arc::new(listing));
-            remote.live.status = ConnectionStatus::Connected;
+            remote.live_mut().snapshot = Some(Arc::new(listing));
+            remote.live_mut().status = ConnectionStatus::Connected;
             view.endpoints.push(remote);
             view
         });

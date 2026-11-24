@@ -8,7 +8,7 @@ fn qa_play_sound_dispatches_without_daemon_or_pane(cx: &mut gpui::TestAppContext
         view.sound = sound.into();
         for endpoint in &mut view.endpoints {
             endpoint.stop();
-            endpoint.live = Default::default();
+            *endpoint.live_mut() = Default::default();
         }
     });
     cx.update(|window, cx| {
@@ -40,8 +40,8 @@ fn qa_play_sound_dispatches_without_daemon_or_pane(cx: &mut gpui::TestAppContext
     );
     view.update(cx, |view, _| {
         for endpoint in &view.endpoints {
-            assert!(endpoint.live.snapshot.is_none());
-            assert!(endpoint.live.sound_events.is_empty());
+            assert!(endpoint.live().snapshot.is_none());
+            assert!(endpoint.live().sound_events.is_empty());
         }
         view.sound = Default::default();
     });
@@ -94,7 +94,7 @@ fn inactive_endpoint_semantic_sound_reaches_worker_once(cx: &mut gpui::TestAppCo
         view.poll_endpoints(cx);
         let sound = played.recv().unwrap();
         assert_eq!(sound, SemanticNotificationSound::Request);
-        assert!(view.endpoints[1].live.sound_events.is_empty());
+        assert!(view.endpoints[1].live().sound_events.is_empty());
         // Subsequent coalesced updates cannot redeliver the moved event.
         view.endpoints[1]
             .connection
