@@ -8,14 +8,9 @@
 
 use super::{Action, Entry, Error, Palette, projects};
 use crate::i18n::fl;
-use std::{fs, path::PathBuf};
+use std::fs;
 
-/// A project folder the palette can create under a configured root.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct NewProject {
-    pub(super) path: PathBuf,
-    pub(super) label: String,
-}
+pub(super) use spaceport_palette::NewProject;
 
 /// One path segment that is safe to use as a folder name.
 ///

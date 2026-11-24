@@ -100,7 +100,7 @@ impl SpaceportWindow {
             }
             return;
         }
-        let result = (|| {
+        let result: Result<_> = (|| {
             if !self.input_ready() {
                 return Err(Error::ConnectionNotReady.into());
             }
@@ -116,7 +116,7 @@ impl SpaceportWindow {
                 .and_then(|p| p.target.as_ref())
                 .ok_or(Error::NoSession)?;
             match &action {
-                Action::Configured(id, action) => target.invocation(snapshot, id, *action),
+                Action::Configured(id, action) => Ok(target.invocation(snapshot, id, *action)?),
                 Action::Native(_)
                 | Action::Go { .. }
                 | Action::Project(_)
@@ -154,7 +154,7 @@ impl SpaceportWindow {
         {
             return;
         }
-        let result = (|| {
+        let result: Result<_> = (|| {
             if !self.input_ready() {
                 return Err(Error::ConnectionNotReady.into());
             }
@@ -163,7 +163,7 @@ impl SpaceportWindow {
                 .snapshot
                 .as_ref()
                 .ok_or(crate::Error::NoSnapshot)?;
-            Target::capture(snapshot).invocation(snapshot, id, action)
+            Ok(Target::capture(snapshot).invocation(snapshot, id, action)?)
         })();
         match result {
             Ok(params) => {

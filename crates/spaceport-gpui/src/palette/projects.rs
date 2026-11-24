@@ -1,4 +1,7 @@
 //! Local project discovery and path validation run only on background workers.
+//!
+//! The folder itself is `spaceport_palette`'s, since a row's action carries
+//! one; discovery, validation and the workspace a project opens into stay here.
 
 use super::Error;
 use crate::Result;
@@ -17,11 +20,7 @@ use std::{
 const MAX_VISITS: usize = 8192;
 const MAX_PROJECTS: usize = 2048;
 
-#[derive(Clone, Debug)]
-pub(super) struct Project {
-    pub(super) path: PathBuf,
-    pub(super) label: String,
-}
+pub(super) use spaceport_palette::Project;
 
 #[derive(Default)]
 pub(super) struct Collection {

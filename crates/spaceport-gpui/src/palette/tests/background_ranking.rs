@@ -37,7 +37,7 @@ fn large_lists_rank_in_the_background_and_keep_shown_rows_until_done(cx: &mut Te
         assert!(Arc::ptr_eq(&palette.entries, &palette.pending));
         assert!(palette.match_task.is_none());
         let entry = palette.selected_entry().unwrap();
-        assert_eq!(entry.label.as_ref(), "p511");
+        assert_eq!(entry.label.as_str(), "p511");
         assert_eq!(palette.filtered[0].highlights.label, vec![0..4]);
     });
 }

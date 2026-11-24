@@ -1,0 +1,19 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-palette"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+nucleo-matcher.workspace       = true
+serde.workspace                = true
+serde_json.workspace           = true
+spaceport-client.workspace     = true
+spaceport-commands.workspace   = true
+thiserror.workspace            = true
+unicode-segmentation.workspace = true

@@ -2,7 +2,7 @@
 // ABOUTME: Offers Core commands only when the current app session opted in.
 // i18n: migrated
 use crate::{
-    OwnedNavigationTarget, Result, SpaceportWindow,
+    SpaceportWindow,
     controls::{COMMANDS, Command},
     i18n::fl,
     keymap::Reach,
@@ -10,8 +10,7 @@ use crate::{
     search_input::{Changed, SearchInput},
 };
 use gpui::{prelude::*, *};
-use serde_json::{Value, json};
-use spaceport_client::protocol::{ClientShellCommandAction, ClientShellSnapshot};
+use spaceport_client::protocol::ClientShellSnapshot;
 use std::sync::Arc;
 
 mod activate;
@@ -24,6 +23,7 @@ mod go_to;
 #[cfg(test)]
 mod interaction_tests;
 mod keys;
+mod labels;
 mod last_seen;
 pub(crate) use error::Error;
 pub(crate) use last_seen::LastSeen;
@@ -34,260 +34,14 @@ mod projects;
 mod render;
 mod resume;
 pub(crate) use resume::Resume;
-mod search;
+
+/// The rows, filters and fences that are the palette's pure model.
+pub(crate) use spaceport_palette::search;
+pub(crate) use spaceport_palette::{Action, Entry, Filter, Identity, Target, rank_rows};
 
 use agent_filter::AgentFilter;
 use go_to::{destination_exists, go_to_entries, note_entries};
 use spaceport_settings::palette::PaletteConfig;
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(crate) enum Filter {
-    #[default]
-    All,
-    Navigation,
-    Commands,
-    Projects,
-    /// Checkouts the user keeps a note on.
-    Notes,
-}
-
-impl Filter {
-    const ALL: [Self; 5] = [
-        Self::All,
-        Self::Navigation,
-        Self::Commands,
-        Self::Projects,
-        Self::Notes,
-    ];
-
-    /// The English name its selectors use.
-    fn name(self) -> &'static str {
-        match self {
-            Self::All => "all",
-            Self::Navigation => "navigation",
-            Self::Commands => "commands",
-            Self::Projects => "projects",
-            Self::Notes => "notes",
-        }
-    }
-
-    fn label(self) -> String {
-        match self {
-            Self::All => fl!("palette-filter-all"),
-            Self::Navigation => fl!("palette-filter-navigation"),
-            Self::Commands => fl!("palette-filter-commands"),
-            Self::Projects => fl!("palette-filter-projects"),
-            Self::Notes => fl!("palette-filter-notes"),
-        }
-    }
-
-    fn accepts(self, action: &Action) -> bool {
-        self == Self::All
-            || self
-                == match action {
-                    Action::Native(_) | Action::Configured(..) => Self::Commands,
-                    Action::Go { .. } => Self::Navigation,
-                    Action::Project(_) | Action::NewProject(_) => Self::Projects,
-                    Action::Note { .. } => Self::Notes,
-                }
-    }
-}
-
-#[derive(Clone)]
-enum Action {
-    Native(Command),
-    /// A Go To destination, qualified by the host and daemon boot it was listed from.
-    Go {
-        endpoint: String,
-        boot: String,
-        target: OwnedNavigationTarget,
-    },
-    Configured(String, ClientShellCommandAction),
-    Project(projects::Project),
-    /// A new project directory to create or clone, named by the query.
-    NewProject(project_create::NewProject),
-    /// A workspace whose checkout has a note, gone to as Go To goes to it.
-    Note {
-        endpoint: String,
-        boot: String,
-        workspace: String,
-    },
-}
-
-#[derive(Clone)]
-struct Entry {
-    label: SharedString,
-    detail: SharedString,
-    badge: SharedString,
-    action: Action,
-    /// Index of the earlier row this one nests under, indented only while
-    /// that row is visible so a search never leaves it hanging beneath nothing.
-    parent: Option<usize>,
-    /// The daemon-reported status of a Go To row's agent, if it has one.
-    status: Option<spaceport_client::protocol::AgentStatus>,
-    /// How choosing this row is remembered, for rows ranked by frecency.
-    frecency: Option<frecency::Key>,
-    /// Ranking points from how often and recently the row was chosen.
-    boost: u32,
-    fields: search::Fields,
-}
-
-impl Entry {
-    fn new(
-        label: String,
-        detail: String,
-        badge: impl Into<SharedString>,
-        action: Action,
-        parent: Option<usize>,
-    ) -> Self {
-        Self::with_keywords(label, detail, badge, action, parent, "")
-    }
-
-    /// `keywords` are searchable but never shown, such as an agent's kind.
-    fn with_keywords(
-        label: String,
-        detail: String,
-        badge: impl Into<SharedString>,
-        action: Action,
-        parent: Option<usize>,
-        keywords: &str,
-    ) -> Self {
-        let badge = badge.into();
-        let id = match &action {
-            Action::Configured(id, _) => id.as_str(),
-            _ => "",
-        };
-        // The detail leads the context so match indices map back onto it.
-        let fields = search::Fields::new(&label, &format!("{detail} {badge} {id} {keywords}"));
-        Self {
-            label: label.into(),
-            detail: detail.into(),
-            badge,
-            action,
-            parent,
-            status: None,
-            frecency: None,
-            boost: 0,
-            fields,
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-enum Identity {
-    Native(Command),
-    Go(String, OwnedNavigationTarget),
-    Configured(String),
-    Project(std::path::PathBuf),
-    NewProject(std::path::PathBuf),
-    Note(String, String),
-}
-
-impl Action {
-    fn identity(&self) -> Identity {
-        match self {
-            Self::Native(command) => Identity::Native(*command),
-            Self::Go {
-                endpoint, target, ..
-            } => Identity::Go(endpoint.clone(), target.clone()),
-            Self::Configured(id, _) => Identity::Configured(id.clone()),
-            Self::Project(project) => Identity::Project(project.path.clone()),
-            Self::NewProject(project) => Identity::NewProject(project.path.clone()),
-            Self::Note {
-                endpoint,
-                workspace,
-                ..
-            } => Identity::Note(endpoint.clone(), workspace.clone()),
-        }
-    }
-}
-
-#[derive(Clone)]
-struct Target {
-    boot: String,
-    workspace: Option<String>,
-    tab: Option<String>,
-    pane: Option<String>,
-}
-
-impl Target {
-    fn capture(snapshot: &ClientShellSnapshot) -> Self {
-        Self {
-            boot: snapshot.boot_id.clone(),
-            workspace: snapshot.focused_workspace_id.clone(),
-            tab: snapshot.focused_tab_id.clone(),
-            pane: snapshot.focused_pane_id.clone(),
-        }
-    }
-
-    fn validate_boot(&self, snapshot: &ClientShellSnapshot) -> Result<()> {
-        if self.boot.is_empty() || self.boot != snapshot.boot_id {
-            return Err(Error::SessionChanged.into());
-        }
-        Ok(())
-    }
-
-    fn workspace_exists(&self, snapshot: &ClientShellSnapshot, id: &str) -> Result<()> {
-        self.validate_boot(snapshot)?;
-        if !snapshot.workspaces.iter().any(|w| w.workspace_id == id) {
-            return Err(Error::WorkspaceRemoved.into());
-        }
-        Ok(())
-    }
-
-    fn invocation(
-        &self,
-        snapshot: &ClientShellSnapshot,
-        id: &str,
-        action: ClientShellCommandAction,
-    ) -> Result<Value> {
-        self.validate_boot(snapshot)?;
-        if matches!(
-            action,
-            ClientShellCommandAction::PluginAction | ClientShellCommandAction::Unknown
-        ) {
-            return Err(crate::Error::UnsupportedCommand);
-        }
-        if !snapshot
-            .commands
-            .iter()
-            .any(|c| c.command_id == id && c.action == action)
-        {
-            return Err(Error::CommandChanged.into());
-        }
-        if let Some(id) = &self.workspace {
-            self.workspace_exists(snapshot, id)?;
-        }
-        if let Some(id) = &self.tab
-            && !snapshot
-                .tabs
-                .iter()
-                .any(|t| t.tab_id == *id && self.workspace.as_ref() == Some(&t.workspace_id))
-        {
-            return Err(Error::TabRemoved.into());
-        }
-        if let Some(id) = &self.pane
-            && !snapshot.panes.iter().any(|p| {
-                p.pane_id == *id
-                    && self.workspace.as_ref() == Some(&p.workspace_id)
-                    && self.tab.as_ref() == Some(&p.tab_id)
-            })
-        {
-            return Err(Error::PaneRemoved.into());
-        }
-        let mut params = json!({"command_id": id});
-        for (key, value) in [
-            ("workspace_id", &self.workspace),
-            ("tab_id", &self.tab),
-            ("pane_id", &self.pane),
-        ] {
-            if let Some(value) = value {
-                params[key] = json!(value);
-            }
-        }
-        Ok(params)
-    }
-}
 
 /// Whether ranking may keep the previously shown selection.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -407,23 +161,6 @@ impl Palette {
     fn busy(&self) -> bool {
         !matches!(self.project_operation, ProjectOperation::Idle)
     }
-}
-
-/// Ranks the `filter`'s rows. The flat project list has no order of its own
-/// to keep, so with no query its most frecent projects come first.
-fn rank_rows(
-    filter: Filter,
-    status: AgentFilter,
-    entries: &[Entry],
-    candidates: Vec<usize>,
-    query: &search::Query,
-    matcher: &mut nucleo_matcher::Matcher,
-) -> Vec<search::Hit> {
-    let mut hits = status.rank(entries, candidates, query, matcher);
-    if filter == Filter::Projects && query.is_empty() {
-        hits.sort_by_key(|hit| std::cmp::Reverse(entries[hit.index].boost));
-    }
-    hits
 }
 
 impl SpaceportWindow {

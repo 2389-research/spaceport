@@ -1,6 +1,6 @@
-use super::*;
-use crate::controls::Command;
-use crate::palette::{Action, Entry};
+use crate::search::*;
+use crate::{Action, Entry};
+use spaceport_commands::Command;
 
 fn entry(label: &str, detail: &str) -> Entry {
     Entry::new(

@@ -2,6 +2,9 @@
 //! so a typed query ranks familiar rows higher, as snacks.picker's frecency
 //! does. Kept per user on this machine, never sent to the daemon.
 //!
+//! The key a destination is remembered by is `spaceport_palette`'s, since a
+//! row carries it; the history, its decay and the file are the app's.
+//!
 //! Workspaces are remembered by host, launch path, and branch, which survive
 //! a daemon restart. Tab and pane IDs do not, so those are remembered by the
 //! daemon boot they were chosen in: a reused ID after a restart never
@@ -11,11 +14,10 @@ use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+pub(crate) use spaceport_palette::{Key, MAX_FIELD_BYTES};
+
 /// Destinations remembered; the least frecent go first beyond this.
 const MAX_KEYS: usize = 1024;
-/// Bytes in any one field of a key. A longer key is not remembered, so every
-/// key the store accepts fits in the file it reads back.
-const MAX_FIELD_BYTES: usize = 1024;
 /// Room for the most keys the store keeps, each as large as it accepts: JSON
 /// escapes at most double a string's bytes, plus field names and numbers.
 const MAX_FILE_BYTES: u64 = (MAX_KEYS * (2 * 3 * MAX_FIELD_BYTES + 256) + 64) as u64;
@@ -26,48 +28,7 @@ const HALF_LIFE_SECS: f64 = 7. * 24. * 60. * 60.;
 /// worth about one matched character; the boost grows logarithmically.
 const BOOST_SCALE: f64 = 16.;
 /// A familiar row can outrank a slightly better match, never a far better one.
-pub(super) const MAX_BOOST: u32 = 64;
-
-/// A destination the palette remembers choosing.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-pub(crate) enum Key {
-    Workspace {
-        endpoint: String,
-        root: String,
-        branch: Option<String>,
-    },
-    Tab {
-        endpoint: String,
-        boot: String,
-        id: String,
-    },
-    Pane {
-        endpoint: String,
-        boot: String,
-        id: String,
-    },
-    Project {
-        path: PathBuf,
-    },
-}
-
-impl Key {
-    fn valid(&self) -> bool {
-        let fits = |text: &str| !text.is_empty() && text.len() <= MAX_FIELD_BYTES;
-        match self {
-            Self::Workspace {
-                endpoint,
-                root,
-                branch,
-            } => fits(endpoint) && fits(root) && branch.as_deref().is_none_or(fits),
-            Self::Tab { endpoint, boot, id } | Self::Pane { endpoint, boot, id } => {
-                fits(endpoint) && fits(boot) && fits(id)
-            }
-            Self::Project { path } => path.to_str().is_some_and(fits),
-        }
-    }
-}
+const MAX_BOOST: u32 = 64;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 struct Visit {

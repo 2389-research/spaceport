@@ -4,7 +4,7 @@
 //! Shift-Tab, Ctrl-N/Ctrl-P, and Ctrl-J/Ctrl-K. Filters cycle with
 //! Ctrl-Tab/Ctrl-Shift-Tab or Alt-]/Alt-[, and Alt-P toggles Go To's preview.
 
-use super::{AgentFilter, Filter};
+use super::{Filter, agent_filter};
 use crate::SpaceportWindow;
 use gpui::*;
 
@@ -74,7 +74,7 @@ impl SpaceportWindow {
         // A Go To navigation binding keeps its key; otherwise Alt and a
         // navigator letter filter by agent status without typing the letter.
         if navigation.is_none()
-            && let Some(agent_filter) = AgentFilter::from_keystroke(&event.keystroke)
+            && let Some(agent_filter) = agent_filter::from_keystroke(&event.keystroke)
         {
             cx.stop_propagation();
             window.prevent_default();

@@ -1,6 +1,6 @@
 //! The palette paints prepared entries; input and daemon operations live elsewhere.
 
-use super::{Action, AgentFilter, Filter, Palette, preview};
+use super::{Action, AgentFilter, Filter, Palette, labels, preview};
 use crate::direction::Logical;
 use crate::{SpaceportWindow, i18n::fl};
 use gpui::{prelude::*, *};
@@ -65,7 +65,7 @@ impl SpaceportWindow {
                                         tab.bg(rgb(theme.active)).text_color(rgb(theme.foreground))
                                     })
                                     .hover(|tab| tab.bg(rgb(theme.active)))
-                                    .child(filter.label())
+                                    .child(labels::filter(filter))
                                     .on_click(cx.listener(move |this, _, window, cx| {
                                         this.set_palette_filter(filter, cx);
                                         if let Some(palette) = &this.menu.palette {
@@ -112,7 +112,7 @@ impl SpaceportWindow {
                         chip.bg(rgb(theme.active)).text_color(rgb(theme.foreground))
                     })
                     .hover(|chip| chip.bg(rgb(theme.active)))
-                    .child(filter.label())
+                    .child(labels::agent_filter(filter))
                     .on_click(cx.listener(move |this, _, window, cx| {
                         this.set_palette_agent_filter(filter, cx);
                         if let Some(palette) = &this.menu.palette {
@@ -144,8 +144,8 @@ impl SpaceportWindow {
             font_weight: Some(FontWeight::BOLD),
             ..Default::default()
         };
-        let styled = |text: &SharedString, ranges: &[std::ops::Range<usize>]| {
-            StyledText::new(text.clone())
+        let styled = |text: &str, ranges: &[std::ops::Range<usize>]| {
+            StyledText::new(text.to_owned())
                 .with_highlights(ranges.iter().map(|range| (range.clone(), matched)))
         };
         div()
