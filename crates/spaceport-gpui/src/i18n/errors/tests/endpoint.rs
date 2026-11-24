@@ -17,6 +17,6 @@ fn every_catalog_variant_has_a_message() {
         spaceport_client::Error::Disconnected,
     )]);
     assert_verbatim(&[spaceport_endpoint::Error::Worker(
-        std::io::Error::other("no worker").into(),
+        std::io::Error::other("no worker"),
     )]);
 }
