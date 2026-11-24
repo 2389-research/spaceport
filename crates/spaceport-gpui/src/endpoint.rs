@@ -34,11 +34,11 @@ pub use error::Error;
 // refusal they install, and the link curve's own bounds they time against.
 #[cfg(test)]
 pub(crate) use crate::state::ConnectionStatus;
-#[cfg(test)]
+#[cfg(all(test, unix))]
 pub(crate) use spaceport_client::SshFailure;
-#[cfg(test)]
+#[cfg(all(test, unix))]
 pub(crate) use spaceport_endpoint::{MAX_RETRY_DELAY, STABLE_CONNECTION_PERIOD};
-#[cfg(test)]
+#[cfg(all(test, unix))]
 pub(crate) use std::time::Duration;
 // The endpoint program below GPUI, reached through the paths this module has
 // always named it by: the policy stage 1 and 2 lowered, and the host the link
@@ -232,7 +232,7 @@ impl Endpoint {
         self.host.outage()
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, unix))]
     pub(super) fn retry_delay(&self) -> Duration {
         self.host.retry_delay()
     }

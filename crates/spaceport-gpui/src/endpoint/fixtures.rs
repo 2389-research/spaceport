@@ -38,10 +38,12 @@ impl Endpoint {
             .set_failure_for_test(self.connection.handle.is_some(), why);
     }
 
+    #[cfg(unix)]
     pub(crate) fn attempts_for_test(&self) -> u32 {
         self.host.attempts_for_test()
     }
 
+    #[cfg(unix)]
     pub(crate) fn set_attempts_for_test(&mut self, attempts: u32) {
         self.host.set_attempts_for_test(attempts);
     }
