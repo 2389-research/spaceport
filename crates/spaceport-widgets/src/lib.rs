@@ -15,4 +15,5 @@ pub mod accessibility;
 pub mod direction;
 pub mod fonts;
 pub mod motion;
+pub mod thumb;
 pub mod toggles;

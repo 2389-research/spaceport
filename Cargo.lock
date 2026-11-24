@@ -6517,6 +6517,7 @@ dependencies = [
  "spaceport-state-file",
  "spaceport-truncate",
  "spaceport-web-url",
+ "spaceport-widgets",
  "tempfile",
  "thiserror 2.0.21",
  "tracing",
@@ -6876,6 +6877,7 @@ name = "spaceport-settings-window"
 version = "0.1.0"
 dependencies = [
  "gpui-pre",
+ "spaceport-i18n",
  "spaceport-settings",
  "spaceport-widgets",
 ]
