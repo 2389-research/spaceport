@@ -14,17 +14,21 @@ fn catalog_retarget_forgets_the_previous_targets_failure(cx: &mut gpui::TestAppC
             {
                 let mut state = old_inbox.lock().unwrap();
                 if failure == "version" {
-                    state.apply(ClientEvent::VersionMismatch(
-                        VersionMismatch::DaemonOutdated {
+                    state.apply(
+                        ClientEvent::VersionMismatch(VersionMismatch::DaemonOutdated {
                             server_version: None,
-                        },
-                    ));
+                        }),
+                        &crate::state::labels(),
+                    );
                 }
                 state.missing_installation = failure == "missing";
-                state.apply(ClientEvent::Disconnected {
-                    reason: "old target failed".into(),
-                    ssh: None,
-                });
+                state.apply(
+                    ClientEvent::Disconnected {
+                        reason: "old target failed".into(),
+                        ssh: None,
+                    },
+                    &crate::state::labels(),
+                );
             }
             endpoint.poll(Instant::now());
             assert_ne!(endpoint.phase(), Phase::Connecting, "{failure}");
@@ -59,15 +63,13 @@ fn stopping_an_attempt_keeps_it_eligible_for_a_retry() {
 #[test]
 fn stopping_a_worker_diagnostic_without_an_outage_starts_fresh() {
     let mut endpoint = Endpoint::new(LOCAL.into(), "Local".into(), ConnectTarget::Local, true);
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Disconnected {
+    endpoint.connection.inbox.lock().unwrap().apply(
+        ClientEvent::Disconnected {
             reason: "attempt failed".into(),
             ssh: None,
-        });
+        },
+        &crate::state::labels(),
+    );
     endpoint.poll(Instant::now());
     assert_eq!(endpoint.phase(), Phase::Reconnecting);
     assert_eq!(endpoint.outage(), None);

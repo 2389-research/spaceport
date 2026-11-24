@@ -45,7 +45,7 @@ pub enum Error {
     #[error("Cannot read saved overview marks: {0}")]
     Json(#[from] serde_json::Error),
     #[error("{0}")]
-    ReopenRequest(#[source] std::sync::Arc<crate::Error>),
+    ReopenRequest(#[source] std::sync::Arc<spaceport_client::Error>),
     #[error("Unexpected daemon response while opening the agent's tab")]
     ReopenResponse,
 }

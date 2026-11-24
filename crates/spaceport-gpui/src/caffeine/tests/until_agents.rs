@@ -118,11 +118,10 @@ fn a_window_reports_its_working_agents(cx: &mut gpui::TestAppContext) {
             let working = |cx: &mut App| cx.default_global::<Caffeine>().working.contains(&id);
             let mut busy = snapshot(1);
             busy.agents[0].agent_status = AgentStatus::Working;
-            view.endpoints[0]
-                .live
-                .apply(spaceport_client::ClientEvent::Snapshot(Arc::new(
-                    busy.clone(),
-                )));
+            view.endpoints[0].live.apply(
+                spaceport_client::ClientEvent::Snapshot(Arc::new(busy.clone())),
+                &crate::state::labels(),
+            );
             view.observe_agent_work(window, cx);
             assert!(working(cx));
 
@@ -130,9 +129,10 @@ fn a_window_reports_its_working_agents(cx: &mut gpui::TestAppContext) {
             for agent in &mut busy.agents {
                 agent.agent_status = AgentStatus::Done;
             }
-            view.endpoints[0]
-                .live
-                .apply(spaceport_client::ClientEvent::Snapshot(Arc::new(busy)));
+            view.endpoints[0].live.apply(
+                spaceport_client::ClientEvent::Snapshot(Arc::new(busy)),
+                &crate::state::labels(),
+            );
             view.observe_agent_work(window, cx);
             assert!(!working(cx));
         })

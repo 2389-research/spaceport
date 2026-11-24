@@ -63,7 +63,7 @@ fn with_borders<'a>(
                 .inbox
                 .lock()
                 .unwrap()
-                .apply(ClientEvent::Surface(surface));
+                .apply(ClientEvent::Surface(surface), &crate::state::labels());
         });
     });
     (view, server, cx)

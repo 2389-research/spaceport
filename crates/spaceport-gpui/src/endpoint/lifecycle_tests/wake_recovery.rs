@@ -193,15 +193,13 @@ fn a_path_change_keeps_a_dial_and_its_backoff() {
 #[test]
 fn recovering_leaves_a_host_that_needs_the_user_on_its_wait() {
     let mut endpoint = Endpoint::new("ssh:test".into(), "test".into(), ssh(), true);
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Disconnected {
+    endpoint.connection.inbox.lock().unwrap().apply(
+        ClientEvent::Disconnected {
             reason: "authentication refused".into(),
             ssh: Some(SshFailure::Auth),
-        });
+        },
+        &crate::state::labels(),
+    );
     endpoint.poll(Instant::now());
     let later = Instant::now() + MAX_RETRY_DELAY;
     endpoint.set_retry_at_for_test(later);

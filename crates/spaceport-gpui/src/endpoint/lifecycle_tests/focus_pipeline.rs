@@ -71,8 +71,14 @@ fn navigate_with_early_activation(
     view.update(cx, |view, cx| {
         {
             let mut inbox = view.endpoints[0].connection.inbox.lock().unwrap();
-            inbox.apply(ClientEvent::Snapshot(Arc::new(next.clone())));
-            inbox.apply(ClientEvent::Surface(surface(&next)));
+            inbox.apply(
+                ClientEvent::Snapshot(Arc::new(next.clone())),
+                &crate::state::labels(),
+            );
+            inbox.apply(
+                ClientEvent::Surface(surface(&next)),
+                &crate::state::labels(),
+            );
         }
         project_until(view, cx, "projection at the activation floor", |view| {
             view.live.snapshot.as_ref().unwrap().revision == next.revision

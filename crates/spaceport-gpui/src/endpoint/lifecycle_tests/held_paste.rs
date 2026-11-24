@@ -38,12 +38,10 @@ fn open_gap(
     next.server_keybindings_toml = Some(format!("[keys]\n# revision {}", next.revision));
     let mut frame = (**view.live.surface.as_ref().unwrap()).clone();
     frame.projection_revision = next.revision;
-    view.endpoints[1]
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Snapshot(Arc::new(next)));
+    view.endpoints[1].connection.inbox.lock().unwrap().apply(
+        ClientEvent::Snapshot(Arc::new(next)),
+        &crate::state::labels(),
+    );
     project_until(view, cx, "newer snapshot", |view| !view.input_ready());
     Arc::new(frame)
 }
@@ -58,7 +56,7 @@ fn close_gap(
         .inbox
         .lock()
         .unwrap()
-        .apply(ClientEvent::Surface(frame));
+        .apply(ClientEvent::Surface(frame), &crate::state::labels());
     project_until(view, cx, "matching surface", SpaceportWindow::input_ready);
 }
 

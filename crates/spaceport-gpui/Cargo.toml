@@ -37,6 +37,7 @@ spaceport-diagnostics.workspace   = true
 spaceport-endpoint.workspace      = true
 spaceport-i18n.workspace          = true
 spaceport-icons.workspace         = true
+spaceport-live.workspace          = true
 spaceport-menu.workspace          = true
 spaceport-motion.workspace        = true
 spaceport-osc52.workspace         = true
@@ -106,6 +107,7 @@ spaceport-remote = { features = ["test-support"], workspace = true }
 spaceport-control-protocol = { features = ["test-support"], workspace = true }
 spaceport-diagnostics = { features = ["test-support"], workspace = true }
 spaceport-usage = { features = ["test-support"], workspace = true }
+spaceport-live = { features = ["test-support"], workspace = true }
 socket2.workspace = true
 test-case.workspace = true
 
@@ -129,6 +131,7 @@ integration-test = [
   "dep:core-graphics",
   "dep:foreign-types",
   "dep:objc",
+  "spaceport-live/test-support",
   "spaceport-settings-window/integration-test",
 ]
 

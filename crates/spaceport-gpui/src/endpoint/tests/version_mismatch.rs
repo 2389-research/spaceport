@@ -3,11 +3,17 @@ use spaceport_client::{VersionMismatch, protocol::endpoint::EndpointServerWelcom
 
 fn refuse(endpoint: &mut Endpoint, mismatch: VersionMismatch) {
     let mut inbox = endpoint.connection.inbox.lock().unwrap();
-    inbox.apply(ClientEvent::VersionMismatch(mismatch));
-    inbox.apply(ClientEvent::Disconnected {
-        reason: "Herdr server 0.8.2 is too old".into(),
-        ssh: None,
-    });
+    inbox.apply(
+        ClientEvent::VersionMismatch(mismatch),
+        &crate::state::labels(),
+    );
+    inbox.apply(
+        ClientEvent::Disconnected {
+            reason: "Herdr server 0.8.2 is too old".into(),
+            ssh: None,
+        },
+        &crate::state::labels(),
+    );
 }
 
 #[test]
@@ -36,7 +42,7 @@ fn refusal_survives_retries_until_a_handshake_is_accepted() {
         .inbox
         .lock()
         .unwrap()
-        .apply(ClientEvent::Connected(welcome));
+        .apply(ClientEvent::Connected(welcome), &crate::state::labels());
     endpoint.poll(Instant::now());
     assert_eq!(endpoint.version_mismatch().cloned(), None);
     assert_eq!(endpoint.status(), "online");

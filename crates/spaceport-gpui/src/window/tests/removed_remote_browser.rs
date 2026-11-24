@@ -11,12 +11,10 @@ fn stale_remote_page_tokens_do_not_open_a_tab(cx: &mut gpui::TestAppContext) {
             ("herdr-gpui-9-1_0".into(), "https://example.com/".into()),
         ];
         view.endpoints[0].never_connect();
-        view.endpoints[0]
-            .connection
-            .inbox
-            .lock()
-            .unwrap()
-            .apply(spaceport_client::ClientEvent::Snapshot(Arc::new(shown)));
+        view.endpoints[0].connection.inbox.lock().unwrap().apply(
+            spaceport_client::ClientEvent::Snapshot(Arc::new(shown)),
+            &crate::state::labels(),
+        );
     });
     cx.update(|window, cx| view.update(cx, |view, cx| view.tick(window, cx)));
     assert!(cx.update(|_, cx| cx.try_global::<crate::browser::Store>().is_none()));

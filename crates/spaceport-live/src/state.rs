@@ -1,0 +1,795 @@
+// ABOUTME: Reduces ordered connection events into the window's displayed state.
+// ABOUTME: Keeps snapshot and surface revisions coherent for rendering.
+//! A connection's live state, as the window reads it: what the daemon last
+//! said, the fences over it, and the mailboxes the window drains. Every word a
+//! notice says arrives in [`Labels`]; nothing here reads a message catalog.
+use crate::{
+    Labels,
+    activation::{self, Fence},
+    agent_recency::AgentRecency,
+};
+use spaceport_client::{
+    ClientEvent, Method, SurfaceImages,
+    protocol::{ClientShellSnapshot, PaneSurfaceFrame, ServerMessage},
+};
+use std::sync::Arc;
+
+/// A command's answer: the response body, or the daemon error that refused it.
+pub type DialogResponse = Result<serde_json::Value, Arc<spaceport_client::Error>>;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ConnectionStatus {
+    Connecting,
+    StartingDaemon,
+    AwaitingSnapshot,
+    Connected,
+    Disconnected,
+    Detached,
+}
+
+impl ConnectionStatus {
+    pub fn is_connected(self) -> bool {
+        matches!(self, Self::AwaitingSnapshot | Self::Connected)
+    }
+}
+
+impl std::fmt::Display for ConnectionStatus {
+    // The log's words; the status bar reads its own, translated.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Connecting => "Connecting...",                // i18n: data
+            Self::StartingDaemon => "Starting Herdr server...", // i18n: data
+            Self::AwaitingSnapshot => "Connected; waiting for snapshot", // i18n: data
+            Self::Connected => "Connected",                     // i18n: data
+            Self::Disconnected => "Disconnected",               // i18n: data
+            Self::Detached => "Detached (daemon still running)", // i18n: data
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct LiveState {
+    pub settings_reload: bool,
+    pub sound_events: std::collections::VecDeque<(
+        std::time::Instant,
+        spaceport_client::protocol::SemanticNotification,
+    )>,
+    pub reload_sound: bool,
+    /// Decoded OSC 52 clipboard writes from the daemon, in arrival order. The
+    /// UI thread drains them to the pasteboard; the queue is bounded like
+    /// sounds, since a pane may write faster than the window repaints.
+    pub clipboard_writes: std::collections::VecDeque<String>,
+    /// Terminal bells forwarded since the UI last drained them. Only their
+    /// presence matters to the window, so a saturating count bounds a burst.
+    pub bells: u16,
+    /// The outer window title the daemon pushed: an agent's
+    /// `client.window_title.set`, or its rendered `ui.window_title`. `None`
+    /// leaves the window on its own title. Sanitized on receipt.
+    pub window_title: Option<String>,
+    pub sound_cancel: Arc<std::sync::atomic::AtomicBool>,
+    pub sound_connection_cancel: Arc<std::sync::atomic::AtomicBool>,
+    pub snapshot: Option<Arc<ClientShellSnapshot>>,
+    /// One newer metadata projection, waiting for its matching cells.
+    pub pending_snapshot: Option<Arc<ClientShellSnapshot>>,
+    /// When each of `snapshot`'s agents last changed, on a clock shared with
+    /// every other connection, so the agents panel can merge hosts by recency.
+    pub agent_recency: AgentRecency,
+    pub idle_tracker: spaceport_client::agent_idle::IdleTracker,
+    pub last_agent_snapshot_ms: u64,
+    /// The pane focused before the current one, in any workspace or tab of
+    /// this daemon boot, for Herdr's `last_pane`.
+    pub previous_pane: Option<String>,
+    pub surface: Option<Arc<PaneSurfaceFrame>>,
+    /// Pixels for the images the connection's surfaces place, by asset key.
+    pub surface_images: Arc<SurfaceImages>,
+    pub pending_surface_images: Option<Arc<SurfaceImages>>,
+    pub status: ConnectionStatus,
+    pub notices: crate::notice::Notices,
+    /// Why `ssh` refused the bridge, when that is how the connection ended.
+    pub ssh_failure: Option<spaceport_client::SshFailure>,
+    /// This connection's SSH bridge was started without checking the host's
+    /// key, so whoever intercepts it can impersonate the host. Reported ahead
+    /// of the handshake, which is what shows the notice: a refused handshake
+    /// marks no connection.
+    pub host_keys_unverified: bool,
+    pub missing_installation: bool,
+    /// An intentional shutdown survives its following disconnect until a new handshake.
+    pub server_stopped: bool,
+    /// The daemon's reported version, from an accepted handshake or mismatch notice.
+    pub daemon_version: Option<String>,
+    /// Why the last handshake was refused, when updating one side fixes it.
+    /// Cleared by the next accepted handshake.
+    pub version_mismatch: Option<spaceport_client::VersionMismatch>,
+    /// Same-user peer at the owned standard socket, not executable attestation.
+    pub local_daemon_peer: bool,
+    /// A one-shot local Git diagnosis, delivered only after the handshake.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub local_peer_warning: Option<spaceport_client::LocalPeerWarning>,
+    /// `pane.clear` arrived after Herdr 0.9.1; older daemons reject it.
+    pub supports_pane_clear: bool,
+    /// `tab.move` reorders a workspace's tabs; daemons that do not offer it
+    /// to clients keep their tabs where they are.
+    pub supports_tab_move: bool,
+    /// `workspace.move` takes a single workspace; without it a drop sends
+    /// every reorder as `workspace.move_block`.
+    pub supports_workspace_move: bool,
+    /// `pane.link.resolve` lets the daemon name the cells a link covers,
+    /// including the rows a wrapped one continues onto; without it links are
+    /// underlined row by row here. Either way this client opens them itself.
+    pub supports_link_resolve: bool,
+    /// `pane.copy_search` drives the find bar; without it Find says so.
+    pub supports_copy_search: bool,
+    /// `pane.selection.read` copies selections reaching beyond the screen.
+    pub supports_selection_read: bool,
+    /// `pane.copy_motion` drives copy mode's text motions.
+    pub supports_copy_motion: bool,
+    /// `pane.edit_scrollback` opens a pane's history in the user's editor.
+    pub supports_edit_scrollback: bool,
+    pub dirty: bool,
+    pub dialog_response: Option<(String, Option<DialogResponse>)>,
+    /// The `tab.create` for a new chat or closed agent, kept apart from
+    /// dialogs so opening one cannot lose it. Cleared when the launch reads it.
+    pub script_response: Option<(String, Option<DialogResponse>)>,
+    pub notifications: std::collections::VecDeque<crate::notifications::Notice>,
+    pub notifications_lost: bool,
+    pub outer_focused: Option<bool>,
+    pub activation: Fence,
+    pub supports_surface: bool,
+    // Bounded rename slots survive coalesced snapshots and do not overwrite a
+    // worktree operation whose dialog has already closed.
+    pub tab_rename: Option<RenameResult>,
+    pub pane_rename: Option<RenameResult>,
+    /// The one scrollbar or split drag request in flight; the next waits for
+    /// it so a slow link coalesces to the latest position instead of queueing
+    /// a backlog.
+    pub drag_request: Option<String>,
+    /// The product announcement this client dismissed. It stays hidden until
+    /// the daemon drops it from the snapshot, and reappears if the daemon
+    /// rejects the dismissal.
+    pub announcement_dismissal: Option<AnnouncementDismissal>,
+    /// Both dismiss methods arrived with endpoint announcements; a daemon that
+    /// does not offer one can only have it hidden for this connection.
+    pub supports_announcement_dismiss: bool,
+    pub supports_release_notes_dismiss: bool,
+    /// The daemon's `ClientShellKeyboardReportAll`: the focused pane asked for
+    /// every key, including releases, as escape codes. Keys the window already
+    /// sends as key events then also send their release.
+    pub keyboard_report_all: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AnnouncementDismissal {
+    /// `None` when the daemon does not offer `product_announcement.dismiss`.
+    pub request: Option<String>,
+    pub version: String,
+    pub id: String,
+}
+
+impl AnnouncementDismissal {
+    pub fn covers(&self, snapshot: &ClientShellSnapshot) -> bool {
+        snapshot
+            .product_announcement
+            .as_ref()
+            .is_some_and(|current| current.version == self.version && current.id == self.id)
+    }
+}
+
+#[derive(Clone)]
+pub struct RenameResult {
+    pub request: String,
+    pub result: Option<Result<(), Arc<spaceport_client::Error>>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SurfaceActivation {
+    pub request: String,
+    pub boot: String,
+    pub focus: Option<crate::navigation::OwnedNavigationTarget>,
+    pub active: bool,
+}
+
+impl Default for LiveState {
+    fn default() -> Self {
+        Self {
+            settings_reload: false,
+            sound_events: Default::default(),
+            reload_sound: false,
+            clipboard_writes: Default::default(),
+            bells: 0,
+            window_title: None,
+            sound_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            sound_connection_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            snapshot: None,
+            pending_snapshot: None,
+            agent_recency: AgentRecency::default(),
+            idle_tracker: Default::default(),
+            last_agent_snapshot_ms: 0,
+            previous_pane: None,
+            surface: None,
+            surface_images: Default::default(),
+            pending_surface_images: None,
+            status: ConnectionStatus::Connecting,
+            notices: Default::default(),
+            ssh_failure: None,
+            host_keys_unverified: false,
+            missing_installation: false,
+            server_stopped: false,
+            daemon_version: None,
+            version_mismatch: None,
+            local_daemon_peer: false,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            local_peer_warning: None,
+            supports_pane_clear: false,
+            supports_tab_move: false,
+            supports_workspace_move: false,
+            supports_link_resolve: false,
+            supports_copy_search: false,
+            supports_selection_read: false,
+            supports_copy_motion: false,
+            supports_edit_scrollback: false,
+            dirty: true,
+            dialog_response: None,
+            script_response: None,
+            notifications: Default::default(),
+            notifications_lost: false,
+            keyboard_report_all: false,
+            outer_focused: None,
+            activation: Fence::default(),
+            supports_surface: false,
+            tab_rename: None,
+            pane_rename: None,
+            drag_request: None,
+            announcement_dismissal: None,
+            supports_announcement_dismiss: false,
+            supports_release_notes_dismiss: false,
+        }
+    }
+}
+
+/// A request slot a job outside the open dialog waits on, read once by the
+/// window and then cleared from the mailbox too.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Answer {
+    // keep-sorted start
+    Script,
+    // keep-sorted end
+}
+
+impl LiveState {
+    fn answer_slot(&mut self, answer: Answer) -> &mut Option<(String, Option<DialogResponse>)> {
+        match answer {
+            Answer::Script => &mut self.script_response,
+        }
+    }
+
+    /// `request`'s answer once it has arrived, emptying its slot. A newer
+    /// request's slot, or one still waiting, is left alone.
+    pub fn take_answer(&mut self, answer: Answer, request: &str) -> Option<DialogResponse> {
+        let slot = self.answer_slot(answer);
+        if !slot
+            .as_ref()
+            .is_some_and(|(id, result)| id == request && result.is_some())
+        {
+            return None;
+        }
+        slot.take().and_then(|(_, result)| result)
+    }
+
+    /// Empty `answer`'s slot if it still belongs to `request`.
+    pub fn clear_answer(&mut self, answer: Answer, request: &str) {
+        let slot = self.answer_slot(answer);
+        if slot.as_ref().is_some_and(|(id, _)| id == request) {
+            *slot = None;
+        }
+    }
+
+    /// Whether `next` repaints only the terminal: everything else the window
+    /// draws from, the sidebar above all, reads as it did in `self`. Every
+    /// field is named so a new one must decide whether it can change quietly.
+    pub fn only_surface_changed(&self, next: &Self) -> bool {
+        let Self {
+            sound_events,
+            reload_sound,
+            settings_reload,
+            clipboard_writes,
+            bells,
+            window_title,
+            sound_cancel,
+            sound_connection_cancel,
+            snapshot,
+            pending_snapshot: _,
+            // Changes only with `snapshot`, which is compared below.
+            agent_recency: _,
+            idle_tracker: _,
+            last_agent_snapshot_ms: _,
+            previous_pane,
+            surface: _,
+            surface_images: _,
+            pending_surface_images: _,
+            status,
+            notices,
+            ssh_failure,
+            host_keys_unverified,
+            missing_installation,
+            server_stopped,
+            daemon_version,
+            version_mismatch,
+            local_daemon_peer,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            local_peer_warning,
+            supports_pane_clear,
+            supports_tab_move,
+            supports_workspace_move,
+            supports_link_resolve,
+            supports_copy_search,
+            supports_selection_read,
+            supports_copy_motion,
+            supports_edit_scrollback,
+            dirty: _,
+            dialog_response,
+            script_response,
+            notifications,
+            notifications_lost,
+            outer_focused,
+            activation,
+            supports_surface,
+            tab_rename,
+            pane_rename,
+            drag_request,
+            announcement_dismissal,
+            supports_announcement_dismiss,
+            supports_release_notes_dismiss,
+            // Shapes the next key events, not anything drawn.
+            keyboard_report_all: _,
+        } = next;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        if local_peer_warning.is_some() {
+            return false;
+        }
+        let same_arc = |a: &Option<Arc<_>>, b: &Option<Arc<_>>| match (a, b) {
+            (Some(a), Some(b)) => Arc::ptr_eq(a, b),
+            (a, b) => a.is_none() && b.is_none(),
+        };
+        let pending_rename = |a: &Option<RenameResult>, b: &Option<RenameResult>| match (a, b) {
+            (Some(a), Some(b)) => {
+                a.request == b.request && a.result.is_none() && b.result.is_none()
+            }
+            (a, b) => a.is_none() && b.is_none(),
+        };
+        sound_events.is_empty()
+            && !reload_sound
+            && !settings_reload
+            && clipboard_writes.is_empty()
+            && *bells == 0
+            && *window_title == self.window_title
+            && Arc::ptr_eq(sound_cancel, &self.sound_cancel)
+            && Arc::ptr_eq(sound_connection_cancel, &self.sound_connection_cancel)
+            && same_arc(snapshot, &self.snapshot)
+            && *previous_pane == self.previous_pane
+            && *status == self.status
+            && *notices == self.notices
+            && *ssh_failure == self.ssh_failure
+            && *host_keys_unverified == self.host_keys_unverified
+            && *missing_installation == self.missing_installation
+            && *server_stopped == self.server_stopped
+            && *daemon_version == self.daemon_version
+            && *version_mismatch == self.version_mismatch
+            && *local_daemon_peer == self.local_daemon_peer
+            && *supports_pane_clear == self.supports_pane_clear
+            && *supports_tab_move == self.supports_tab_move
+            && *supports_workspace_move == self.supports_workspace_move
+            && *supports_link_resolve == self.supports_link_resolve
+            && *supports_copy_search == self.supports_copy_search
+            && *supports_selection_read == self.supports_selection_read
+            && *supports_copy_motion == self.supports_copy_motion
+            && *supports_edit_scrollback == self.supports_edit_scrollback
+            && match (dialog_response, &self.dialog_response) {
+                (Some((a, None)), Some((b, None))) => a == b,
+                (a, b) => a.is_none() && b.is_none(),
+            }
+            && match (script_response, &self.script_response) {
+                (Some((a, None)), Some((b, None))) => a == b,
+                (a, b) => a.is_none() && b.is_none(),
+            }
+            && notifications.is_empty()
+            && !notifications_lost
+            && *outer_focused == self.outer_focused
+            && *activation == self.activation
+            && *supports_surface == self.supports_surface
+            && pending_rename(tab_rename, &self.tab_rename)
+            && pending_rename(pane_rename, &self.pane_rename)
+            && *drag_request == self.drag_request
+            && *announcement_dismissal == self.announcement_dismissal
+            && *supports_announcement_dismiss == self.supports_announcement_dismiss
+            && *supports_release_notes_dismiss == self.supports_release_notes_dismiss
+    }
+
+    fn has_operation_result(&self, request_id: &str) -> bool {
+        [&self.dialog_response, &self.script_response]
+            .into_iter()
+            .flatten()
+            .any(|(id, _)| id == request_id)
+            || [&self.tab_rename, &self.pane_rename]
+                .into_iter()
+                .flatten()
+                .any(|rename| rename.request == request_id)
+            || self.dismissal_request(request_id)
+    }
+
+    fn dismissal_request(&self, request_id: &str) -> bool {
+        self.announcement_dismissal
+            .as_ref()
+            .and_then(|dismissal| dismissal.request.as_deref())
+            == Some(request_id)
+    }
+
+    /// The daemon's product announcement, unless this client dismissed it.
+    pub fn product_announcement(
+        &self,
+    ) -> Option<&spaceport_client::protocol::ClientShellProductAnnouncement> {
+        let snapshot = self.snapshot.as_deref()?;
+        if self
+            .announcement_dismissal
+            .as_ref()
+            .is_some_and(|dismissal| dismissal.covers(snapshot))
+        {
+            return None;
+        }
+        snapshot.product_announcement.as_ref()
+    }
+
+    /// Whether a navigation barrier is unacknowledged, failed, or still waiting
+    /// for its focus. An acknowledged activation stays recorded afterwards, so
+    /// its presence alone does not mean navigation is in flight.
+    pub fn activation_pending(&self) -> bool {
+        self.activation.pending()
+    }
+
+    pub fn surface_ready(&self) -> bool {
+        let (Some(snapshot), Some(surface)) = (&self.snapshot, &self.surface) else {
+            return false;
+        };
+        coherent(snapshot, surface) && self.activation.ready(snapshot, surface)
+    }
+
+    pub fn daemon_starting(&mut self) {
+        self.status = ConnectionStatus::StartingDaemon;
+        self.dirty = true;
+    }
+
+    /// The daemon's reported version from an active connection or mismatch notice.
+    pub fn daemon_version(&self) -> Option<&str> {
+        self.daemon_version.as_deref().or_else(|| {
+            self.version_mismatch
+                .as_ref()
+                .and_then(|m| m.server_version())
+        })
+    }
+
+    /// What the daemon reports of the agent in `pane_id`, while one runs there.
+    pub fn agent_status(&self, pane_id: &str) -> Option<spaceport_client::protocol::AgentStatus> {
+        self.snapshot.as_ref().and_then(|snapshot| {
+            snapshot
+                .agents
+                .iter()
+                .find(|agent| agent.pane_id == pane_id)
+                .map(|agent| agent.agent_status)
+        })
+    }
+
+    /// Track activation without treating receipt or focus gain as presentation.
+    pub fn set_outer_focus(&mut self, focused: bool) {
+        // A focus report retried after inbox contention must still cause a draw.
+        self.dirty |= self.outer_focused != Some(focused);
+        self.outer_focused = Some(focused);
+    }
+
+    pub fn apply(&mut self, event: ClientEvent, labels: &Labels) {
+        match event {
+            // Ahead of the handshake it belongs to, which is what shows the
+            // notice; a connection refused before it marks nothing.
+            ClientEvent::HostKeysUnverified => self.host_keys_unverified = true,
+            ClientEvent::Connected(welcome) => {
+                self.settings_reload = false;
+                self.daemon_version = sanitize_daemon_version(&welcome.server_version);
+                self.supports_pane_clear = Method::PaneClear.advertised_in(&welcome.methods);
+                self.supports_tab_move = Method::TabMove.advertised_in(&welcome.methods);
+                self.supports_workspace_move =
+                    Method::WorkspaceMove.advertised_in(&welcome.methods);
+                self.supports_announcement_dismiss =
+                    Method::ProductAnnouncementDismiss.advertised_in(&welcome.methods);
+                self.supports_release_notes_dismiss =
+                    Method::ReleaseNotesDismiss.advertised_in(&welcome.methods);
+                self.supports_link_resolve = Method::PaneLinkResolve.advertised_in(&welcome.methods);
+                self.supports_copy_search = Method::PaneCopySearch.advertised_in(&welcome.methods);
+                self.supports_selection_read =
+                    Method::PaneSelectionRead.advertised_in(&welcome.methods);
+                self.supports_copy_motion = Method::PaneCopyMotion.advertised_in(&welcome.methods);
+                self.supports_edit_scrollback =
+                    Method::PaneEditScrollback.advertised_in(&welcome.methods);
+                self.supports_surface = Method::ClientShellSurfaceSet
+                    .advertised_in(&welcome.methods)
+                    && ["surface_interest", "presentation_effects_fence"]
+                        .iter()
+                        .all(|capability| {
+                            welcome.capabilities.iter().any(|value| value == capability)
+                        });
+                self.missing_installation = false;
+                self.server_stopped = false;
+                self.version_mismatch = None;
+                // The daemon reports the mode to each new connection.
+                self.keyboard_report_all = false;
+                self.status = ConnectionStatus::AwaitingSnapshot;
+                self.notices.clear();
+                if self.host_keys_unverified {
+                    self.notices.show(
+                        crate::notice::Cause::HostKey,
+                        labels.host_key_unverified.clone(),
+                    );
+                }
+            }
+            ClientEvent::Snapshot(snapshot) => self.receive_snapshot(snapshot),
+            ClientEvent::Surface(surface) => self.receive_surface(surface),
+            ClientEvent::SurfaceImages(images) => self.receive_surface_images(images),
+            // The `Disconnected` that follows carries the reason text.
+            ClientEvent::VersionMismatch(mismatch) => {
+                if let Some(version) = mismatch.server_version() {
+                    self.daemon_version = sanitize_daemon_version(version);
+                }
+                self.version_mismatch = Some(mismatch);
+            }
+            ClientEvent::Disconnected { reason, ssh } => {
+                self.ssh_failure = ssh;
+                self.settings_reload = false;
+                self.notifications.clear();
+                self.cancel_sounds();
+                self.keyboard_report_all = false;
+                self.bells = 0;
+                self.window_title = None;
+                self.status = ConnectionStatus::Disconnected;
+                self.notices.show(crate::notice::Cause::Connection, reason);
+                self.snapshot = None;
+                self.pending_snapshot = None;
+                self.pending_surface_images = None;
+                self.agent_recency = AgentRecency::default();
+                self.idle_tracker.interrupt();
+                self.surface = None;
+                self.announcement_dismissal = None;
+                self.surface_images = Default::default();
+            }
+            ClientEvent::CommandRejected { request_id, reason } => {
+                if request_id.is_some() && request_id == self.drag_request {
+                    self.drag_request = None;
+                }
+                if !request_id
+                    .as_deref()
+                    .is_some_and(|id| self.has_operation_result(id))
+                {
+                    self.notices
+                        .show(crate::notice::Cause::Daemon, (labels.localize)(&reason));
+                }
+                let reason = Arc::new(reason);
+                for (id, result) in [&mut self.dialog_response, &mut self.script_response]
+                .into_iter()
+                .flatten()
+                {
+                    if request_id.as_ref() == Some(id) {
+                        *result = Some(Err(reason.clone()));
+                    }
+                }
+                for rename in [&mut self.tab_rename, &mut self.pane_rename]
+                    .into_iter()
+                    .flatten()
+                {
+                    if request_id.as_ref() == Some(&rename.request) {
+                        rename.result = Some(Err(reason.clone()));
+                    }
+                }
+                if let Some(id) = &request_id {
+                    self.activation.transition(activation::Transition::Rejected(id));
+                }
+                if request_id
+                    .as_deref()
+                    .is_some_and(|id| self.dismissal_request(id))
+                {
+                    self.announcement_dismissal = None;
+                }
+            }
+            ClientEvent::Response {
+                request_id,
+                response,
+            } => {
+                if self.drag_request.as_ref() == Some(&request_id) {
+                    self.drag_request = None;
+                }
+                let (result, refusal) = match spaceport_client::response::result(&response) {
+                    Ok(result) => (Some(result), None),
+                    Err(error @ spaceport_client::Error::Endpoint { .. }) => {
+                        (None, Some(Arc::new(error)))
+                    }
+                    Err(_) => (None, None),
+                };
+                for rename in [&mut self.tab_rename, &mut self.pane_rename]
+                    .into_iter()
+                    .flatten()
+                {
+                    if request_id == rename.request {
+                        rename.result = Some(refusal.clone().map_or(Ok(()), Err));
+                    }
+                }
+                self.activation.transition(activation::Transition::Response {
+                    request: &request_id,
+                    result,
+                });
+                if matches!(self.activation, Fence::Failed { cause: activation::Failure::InvalidResponse, .. })
+                    && self.activation.request().is_some_and(|request| request.request == request_id)
+                {
+                    self.notices.show(
+                        crate::notice::Cause::Activation,
+                        labels.activation_invalid.clone(),
+                    );
+                }
+                if let Some(refusal) = &refusal
+                    && !self.has_operation_result(&request_id)
+                {
+                    self.notices
+                        .show(crate::notice::Cause::Daemon, (labels.localize)(refusal));
+                }
+                if self.dismissal_request(&request_id) && refusal.is_some() {
+                    self.announcement_dismissal = None;
+                }
+                for (id, result) in self.script_response.iter_mut() {
+                    if *id == request_id {
+                        *result = Some(Ok(response.clone()));
+                    }
+                }
+                if let Some((id, result)) = &mut self.dialog_response
+                    && *id == request_id
+                {
+                    *result = Some(Ok(response));
+                }
+            }
+            ClientEvent::Message(ServerMessage::ClientShellError { message }) => {
+                self.notices.show(crate::notice::Cause::Daemon, message)
+            }
+            ClientEvent::Message(ServerMessage::SemanticNotification(notification)) => {
+                if !self.status.is_connected() {
+                    return;
+                }
+                if self.sound_events.len() == spaceport_sound::MAX_PENDING {
+                    self.sound_events.pop_front();
+                }
+                let received = std::time::Instant::now();
+                self.sound_events
+                    .push_back((received, notification.clone()));
+                if let Some(pane) = notification.pane_id.as_ref() {
+                    self.notifications
+                        .retain(|n| n.pane_id.as_ref() != Some(pane));
+                }
+                if self.notifications.len() == crate::notifications::PENDING_LIMIT {
+                    self.notifications.pop_front();
+                    // A dropped event may have invalidated an already displayed pane.
+                    self.notifications_lost = true;
+                }
+                let notice = crate::notifications::Notice::new(notification, received, labels)
+                    .with_snapshot(self.latest_snapshot().map(Arc::as_ref), labels);
+                self.notifications.push_back(notice);
+            }
+            ClientEvent::Message(ServerMessage::ReloadSoundConfig) => {
+                self.reload_sound = true;
+                self.settings_reload = true;
+            }
+            ClientEvent::Message(ServerMessage::Clipboard { data }) => {
+                // OSC 52 bytes from a pane, base64-encoded by the daemon. Only
+                // bounded UTF-8 text is written; anything else is dropped.
+                if let Some(text) = spaceport_osc52::decode(&data) {
+                    while self.clipboard_writes.len() >= spaceport_osc52::MAX_PENDING {
+                        self.clipboard_writes.pop_front();
+                    }
+                    self.clipboard_writes.push_back(text);
+                } else {
+                    tracing::debug!("dropped an invalid or oversized clipboard payload");
+                }
+            }
+            ClientEvent::Message(ServerMessage::TerminalBell { count }) => {
+                if count == 0 || !self.status.is_connected() {
+                    return;
+                }
+                self.bells = self.bells.saturating_add(count);
+            }
+            ClientEvent::Message(ServerMessage::WindowTitle { title }) => {
+                let title = title.as_deref().and_then(sanitize_window_title);
+                if title == self.window_title {
+                    return;
+                }
+                self.window_title = title;
+            }
+            ClientEvent::Message(ServerMessage::ClientShellKeyboardReportAll { enabled }) => {
+                if enabled == self.keyboard_report_all {
+                    return;
+                }
+                self.keyboard_report_all = enabled;
+            }
+            ClientEvent::Message(ServerMessage::ServerShutdown { .. }) => {
+                self.server_stopped = true;
+            }
+            // Herdr's own TUI drops `Notify` in client-shell mode as well. A
+            // shell client is notified through `SemanticNotification`, which
+            // drives toasts and sounds here; `Notify` is the flat form for
+            // direct terminal clients.
+            ClientEvent::Message(ServerMessage::Notify { .. })
+            // Tells the TUI whether to turn on its outer terminal's mouse
+            // reporting. Every native mouse event already reaches this window,
+            // and each surface pane's `mouse_reporting` decides between local
+            // selection and forwarding for the pane under the pointer.
+            | ClientEvent::Message(ServerMessage::MouseCapture { .. })
+            // Sent only to direct `herdr attach` terminal clients, never to a
+            // client shell; the daemon encodes keys for each pane itself.
+            | ClientEvent::Message(ServerMessage::DirectTerminalKeyboardProtocol { .. })
+            // ANSI frames and kitty graphics for the TUI's `TerminalAnsi`
+            // renderer; this client asks for semantic surfaces instead.
+            | ClientEvent::Message(ServerMessage::Terminal(_))
+            | ClientEvent::Message(ServerMessage::Graphics { .. })
+            | ClientEvent::Message(ServerMessage::GraphicsTransmissionRetired { .. })
+            // Never read: a daemon-named path is untrusted (see AGENTS.md).
+            | ClientEvent::Message(ServerMessage::GraphicsFile { .. })
+            // Legacy terminal handshake and binary snapshot; generation-1
+            // endpoints use the `endpoint.*` controls, which the session
+            // handles before anything reaches this state.
+            | ClientEvent::Message(ServerMessage::Welcome { .. })
+            | ClientEvent::Message(ServerMessage::ClientShellSnapshot(_))
+            // Consumed by the session worker and never forwarded here.
+            | ClientEvent::Message(ServerMessage::PaneSurface(_))
+            | ClientEvent::Message(ServerMessage::PaneSurfacePatch(_))
+            | ClientEvent::Message(ServerMessage::ClientShellEndpointResponseChunk { .. })
+            | ClientEvent::Message(ServerMessage::EndpointControl { .. }) => return,
+        }
+        // Focus is evidence for completing one navigation, not a permanent
+        // constraint on later server-driven focus changes. Settle in the inbox
+        // reducer so coalesced updates cannot miss the successful transition.
+        if self.surface_ready() {
+            self.activation.transition(activation::Transition::Settled);
+        }
+        self.dirty = true;
+    }
+
+    pub fn cancel_sounds(&mut self) {
+        self.sound_cancel
+            .store(true, std::sync::atomic::Ordering::Release);
+        self.sound_events.clear();
+        self.reload_sound = false;
+    }
+}
+
+/// Longest window title shown, in characters, as Herdr caps its own.
+pub const MAX_WINDOW_TITLE_CHARS: usize = 200;
+
+/// Daemon titles are untrusted pane-influenced text: drop control characters
+/// (escape, BEL, C1 terminators included) and cap the length, as Herdr's
+/// `sanitize_window_title_text` does. A blank result means no title.
+fn sanitize_window_title(title: &str) -> Option<String> {
+    let title = title
+        .chars()
+        .filter(|ch| !ch.is_control())
+        .take(MAX_WINDOW_TITLE_CHARS)
+        .collect::<String>();
+    let title = title.trim();
+    (!title.is_empty()).then(|| title.to_owned())
+}
+
+/// Maximum characters kept for a daemon version string.
+pub const MAX_DAEMON_VERSION_CHARS: usize = 64;
+
+fn sanitize_daemon_version(version: &str) -> Option<String> {
+    let version = version
+        .chars()
+        .filter(|ch| !ch.is_control())
+        .take(MAX_DAEMON_VERSION_CHARS)
+        .collect::<String>();
+    let version = version.trim();
+    (!version.is_empty()).then(|| version.to_owned())
+}
+
+pub(crate) fn coherent(snapshot: &ClientShellSnapshot, surface: &PaneSurfaceFrame) -> bool {
+    snapshot.boot_id == surface.boot_id && snapshot.revision == surface.projection_revision
+}

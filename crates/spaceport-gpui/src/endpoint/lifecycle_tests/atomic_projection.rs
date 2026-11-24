@@ -15,12 +15,10 @@ fn metadata_gaps_deliver_keys_wheel_and_click_without_waiting_for_surface(
             let mut next = (**view.live.snapshot.as_ref().unwrap()).clone();
             next.revision += 1;
             next.agents[0].title = Some("new spinner metadata".into());
-            view.endpoints[1]
-                .connection
-                .inbox
-                .lock()
-                .unwrap()
-                .apply(ClientEvent::Snapshot(Arc::new(next)));
+            view.endpoints[1].connection.inbox.lock().unwrap().apply(
+                ClientEvent::Snapshot(Arc::new(next)),
+                &crate::state::labels(),
+            );
             project_until(view, cx, "staged metadata", |view| {
                 view.live.pending_snapshot.is_some()
             });

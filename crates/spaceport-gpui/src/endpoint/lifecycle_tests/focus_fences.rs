@@ -76,10 +76,10 @@ fn startup_focus_waits_for_the_first_surface_without_flapping_on_later_updates(
         ClientMessage::ClientShellFocus { focused: false }
     ));
 
-    inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Surface(surface(&snapshot())));
+    inbox.lock().unwrap().apply(
+        ClientEvent::Surface(surface(&snapshot())),
+        &crate::state::labels(),
+    );
     view.update(cx, |view, cx| {
         project_until(
             view,
@@ -267,8 +267,14 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
                     .lock()
                     .unwrap();
                 // A fresh frame alone must not open input before the ordered ack.
-                state.apply(ClientEvent::Snapshot(Arc::new(next.clone())));
-                state.apply(ClientEvent::Surface(surface(&next)));
+                state.apply(
+                    ClientEvent::Snapshot(Arc::new(next.clone())),
+                    &crate::state::labels(),
+                );
+                state.apply(
+                    ClientEvent::Surface(surface(&next)),
+                    &crate::state::labels(),
+                );
             }
             project_until(view, cx, "fresh frame", |view| {
                 view.live.snapshot.as_ref().map(|s| s.revision) == Some(next.revision)
@@ -281,13 +287,16 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
                     .inbox
                     .lock()
                     .unwrap();
-                state.apply(ClientEvent::Response {
-                    request_id: barrier["id"].as_str().unwrap().into(),
-                    response: serde_json::json!({"result": {
-                        "type": "client_shell_surface_set", "active": true,
-                        "projection_revision": next.revision + 1
-                    }}),
-                });
+                state.apply(
+                    ClientEvent::Response {
+                        request_id: barrier["id"].as_str().unwrap().into(),
+                        response: serde_json::json!({"result": {
+                            "type": "client_shell_surface_set", "active": true,
+                            "projection_revision": next.revision + 1
+                        }}),
+                    },
+                    &crate::state::labels(),
+                );
             }
             project_until(view, cx, "ack ahead of the frame", |view| {
                 view.live.activation.revision() == Some(next.revision + 1)
@@ -303,8 +312,14 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
                     .inbox
                     .lock()
                     .unwrap();
-                state.apply(ClientEvent::Snapshot(Arc::new(next.clone())));
-                state.apply(ClientEvent::Surface(surface(&next)));
+                state.apply(
+                    ClientEvent::Snapshot(Arc::new(next.clone())),
+                    &crate::state::labels(),
+                );
+                state.apply(
+                    ClientEvent::Surface(surface(&next)),
+                    &crate::state::labels(),
+                );
             }
             project_until(view, cx, "frame matching the ack", |view| {
                 view.live.surface.as_ref().map(|s| s.projection_revision) == Some(next.revision)

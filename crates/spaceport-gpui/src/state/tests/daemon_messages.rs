@@ -11,28 +11,32 @@ fn window_titles_are_sanitized_capped_and_cleared() {
             title: Some(title.into()),
         })
     };
-    state.apply(title("  agent\u{1b}]2;evil\u{7}\u{9c}\r\n done  "));
+    state.apply(
+        title("  agent\u{1b}]2;evil\u{7}\u{9c}\r\n done  "),
+        &labels(),
+    );
     assert_eq!(state.window_title.as_deref(), Some("agent]2;evil done"));
 
-    state.apply(title(&"é".repeat(MAX_WINDOW_TITLE_CHARS + 50)));
+    state.apply(title(&"é".repeat(MAX_WINDOW_TITLE_CHARS + 50)), &labels());
     assert_eq!(
         state.window_title.as_ref().map(|t| t.chars().count()),
         Some(MAX_WINDOW_TITLE_CHARS)
     );
 
     // Nothing printable left is no title, as is an explicit clear.
-    state.apply(title("\u{1b}\u{7} \t"));
+    state.apply(title("\u{1b}\u{7} \t"), &labels());
     assert_eq!(state.window_title, None);
-    state.apply(title("x"));
-    state.apply(ClientEvent::Message(ServerMessage::WindowTitle {
-        title: None,
-    }));
+    state.apply(title("x"), &labels());
+    state.apply(
+        ClientEvent::Message(ServerMessage::WindowTitle { title: None }),
+        &labels(),
+    );
     assert_eq!(state.window_title, None);
 
     // An unchanged title does not wake the window.
-    state.apply(title("same"));
+    state.apply(title("same"), &labels());
     state.dirty = false;
-    state.apply(title("same"));
+    state.apply(title("same"), &labels());
     assert!(!state.dirty);
 }
 
@@ -41,30 +45,33 @@ fn keyboard_report_all_follows_the_daemon_and_ends_with_the_connection() {
     let report =
         |enabled| ClientEvent::Message(ServerMessage::ClientShellKeyboardReportAll { enabled });
     let mut state = LiveState::default();
-    state.apply(ClientEvent::Snapshot(snapshot()));
+    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
     state.dirty = false;
-    state.apply(report(true));
+    state.apply(report(true), &labels());
     assert!(state.keyboard_report_all && state.dirty);
     // A repeated report changes nothing to draw.
     state.dirty = false;
-    state.apply(report(true));
+    state.apply(report(true), &labels());
     assert!(!state.dirty);
     // It only shapes later key events, so the chrome is spared.
     let mut next = state.clone();
-    next.apply(report(false));
+    next.apply(report(false), &labels());
     assert!(!next.keyboard_report_all);
     assert!(state.only_surface_changed(&next));
-    state.apply(ClientEvent::Disconnected {
-        reason: "gone".into(),
-        ssh: None,
-    });
+    state.apply(
+        ClientEvent::Disconnected {
+            reason: "gone".into(),
+            ssh: None,
+        },
+        &labels(),
+    );
     assert!(!state.keyboard_report_all);
 }
 
 #[test]
 fn messages_meant_for_the_tui_change_nothing() {
     let mut state = LiveState::default();
-    state.apply(ClientEvent::Snapshot(snapshot()));
+    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
     let before = state.clone();
     state.dirty = false;
     for message in [
@@ -84,7 +91,7 @@ fn messages_meant_for_the_tui_change_nothing() {
             modify_other_keys_level: 2,
         },
     ] {
-        state.apply(ClientEvent::Message(message));
+        state.apply(ClientEvent::Message(message), &labels());
     }
     assert!(!state.dirty);
     assert!(before.only_surface_changed(&state));
@@ -95,12 +102,18 @@ fn messages_meant_for_the_tui_change_nothing() {
 #[test]
 fn daemon_clipboard_payloads_are_decoded_bounded_and_dropped_when_invalid() {
     let mut state = LiveState::default();
-    state.apply(ClientEvent::Message(ServerMessage::Clipboard {
-        data: "aGVsbG8=".into(),
-    }));
-    state.apply(ClientEvent::Message(ServerMessage::Clipboard {
-        data: "not base64!".into(),
-    }));
+    state.apply(
+        ClientEvent::Message(ServerMessage::Clipboard {
+            data: "aGVsbG8=".into(),
+        }),
+        &labels(),
+    );
+    state.apply(
+        ClientEvent::Message(ServerMessage::Clipboard {
+            data: "not base64!".into(),
+        }),
+        &labels(),
+    );
     assert_eq!(
         state
             .clipboard_writes
@@ -112,9 +125,12 @@ fn daemon_clipboard_payloads_are_decoded_bounded_and_dropped_when_invalid() {
     // A pane that spams OSC 52 cannot grow the mailbox without bound, and
     // only the newest writes survive: the seeded "hello" is evicted first.
     for index in 0..spaceport_osc52::MAX_PENDING * 2 {
-        state.apply(ClientEvent::Message(ServerMessage::Clipboard {
-            data: "eA==".into(),
-        }));
+        state.apply(
+            ClientEvent::Message(ServerMessage::Clipboard {
+                data: "eA==".into(),
+            }),
+            &labels(),
+        );
         assert_eq!(
             state.clipboard_writes.len(),
             (index + 2).min(spaceport_osc52::MAX_PENDING)
@@ -132,30 +148,33 @@ fn bells_count_only_while_connected_and_reset_with_the_connection() {
         })
     };
     let mut state = LiveState::default();
-    state.apply(bell(1));
+    state.apply(bell(1), &labels());
     assert_eq!(state.bells, 0, "no bells before the connection is up");
 
     state.status = ConnectionStatus::Connected;
-    state.apply(bell(0));
+    state.apply(bell(0), &labels());
     assert_eq!(state.bells, 0);
-    state.apply(bell(u16::MAX));
-    state.apply(bell(2));
+    state.apply(bell(u16::MAX), &labels());
+    state.apply(bell(2), &labels());
     assert_eq!(state.bells, u16::MAX, "a burst saturates");
     assert!(!state.only_surface_changed(&state.clone()));
 
-    state.apply(title());
-    state.apply(ClientEvent::Disconnected {
-        reason: "gone".into(),
-        ssh: None,
-    });
+    state.apply(title(), &labels());
+    state.apply(
+        ClientEvent::Disconnected {
+            reason: "gone".into(),
+            ssh: None,
+        },
+        &labels(),
+    );
     assert_eq!((state.bells, state.window_title.as_deref()), (0, None));
 
     // A restarted daemon's first snapshot drops the old daemon's title.
-    state.apply(ClientEvent::Snapshot(snapshot()));
-    state.apply(title());
-    state.apply(bell(1));
+    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
+    state.apply(title(), &labels());
+    state.apply(bell(1), &labels());
     let mut restarted = (*snapshot()).clone();
     restarted.boot_id = "restarted".into();
-    state.apply(ClientEvent::Snapshot(Arc::new(restarted)));
+    state.apply(ClientEvent::Snapshot(Arc::new(restarted)), &labels());
     assert_eq!((state.bells, state.window_title.as_deref()), (0, None));
 }

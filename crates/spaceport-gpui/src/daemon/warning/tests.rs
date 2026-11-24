@@ -1,4 +1,6 @@
 use super::*;
+use spaceport_client::{LocalPeerWarning, UntrustedEndpoint};
+use std::path::PathBuf;
 
 mod en_xa;
 mod repair_command;
@@ -9,7 +11,7 @@ fn local_peer_warning_identifies_the_directory_and_quotes_the_remedy() {
         UntrustedEndpoint::DirectoryPermissions,
         "/home/test/it's herdr/herdr-client.sock".into(),
     );
-    let notice = warning.notice(std::time::Instant::now());
+    let notice = notice(&warning, std::time::Instant::now());
     assert_eq!(notice.title, "Local Git and PR details unavailable");
     assert_eq!(
         notice.body.as_deref(),
@@ -24,11 +26,7 @@ fn local_peer_warning_identifies_the_directory_and_quotes_the_remedy() {
         UntrustedEndpoint::SocketPermissions,
         "/home/test/herdr/herdr-client.sock".into(),
     );
-    assert!(
-        socket
-            .body()
-            .contains("chmod -- go-w '/home/test/herdr/herdr-client.sock'")
-    );
+    assert!(body(&socket).contains("chmod -- go-w '/home/test/herdr/herdr-client.sock'"));
 }
 
 #[test]
@@ -45,7 +43,7 @@ fn local_peer_warning_never_suggests_a_sanitized_or_truncated_command() {
                 .join(directory)
                 .join("herdr-client.sock"),
         );
-        assert!(!warning.body().contains("chmod"));
-        assert!(warning.body().contains("remove world-write access"));
+        assert!(!body(&warning).contains("chmod"));
+        assert!(body(&warning).contains("remove world-write access"));
     }
 }

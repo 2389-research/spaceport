@@ -18,31 +18,38 @@ fn a_same_host_reset_keeps_confirmed_idle_without_sharing_the_retired_inbox() {
     let retired = bridge.inbox.clone();
     {
         let mut reader = retired.lock().unwrap();
-        reader.apply(ClientEvent::Snapshot(snapshot(1, AgentStatus::Working)));
-        reader.apply(ClientEvent::Snapshot(snapshot(2, AgentStatus::Idle)));
+        reader.apply(
+            ClientEvent::Snapshot(snapshot(1, AgentStatus::Working)),
+            &crate::state::labels(),
+        );
+        reader.apply(
+            ClientEvent::Snapshot(snapshot(2, AgentStatus::Idle)),
+            &crate::state::labels(),
+        );
     }
     let idle = bridge.take_update().unwrap().agent_idle("p0").unwrap();
     assert!(idle.onset_observed);
     let mut reader = retired.lock().unwrap();
     bridge.detach(true);
-    reader.apply(ClientEvent::Snapshot(snapshot(3, AgentStatus::Working)));
+    reader.apply(
+        ClientEvent::Snapshot(snapshot(3, AgentStatus::Working)),
+        &crate::state::labels(),
+    );
     drop(reader);
 
     bridge.reset(ConnectionStatus::Connecting, true);
-    bridge
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Snapshot(snapshot(2, AgentStatus::Idle)));
+    bridge.inbox.lock().unwrap().apply(
+        ClientEvent::Snapshot(snapshot(2, AgentStatus::Idle)),
+        &crate::state::labels(),
+    );
     assert_eq!(bridge.take_update().unwrap().agent_idle("p0"), Some(idle));
 
     bridge.target = ConnectTarget::Socket("/unrelated-test-client.sock".into());
     bridge.reset(ConnectionStatus::Connecting, true);
-    bridge
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Snapshot(snapshot(2, AgentStatus::Idle)));
+    bridge.inbox.lock().unwrap().apply(
+        ClientEvent::Snapshot(snapshot(2, AgentStatus::Idle)),
+        &crate::state::labels(),
+    );
     assert!(
         !bridge
             .take_update()

@@ -1,0 +1,23 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-live"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde_json.workspace         = true
+spaceport-client.workspace   = true
+spaceport-osc52.workspace    = true
+spaceport-sound.workspace    = true
+# A dropped or oversized OSC 52 payload is logged and ignored.
+tracing.workspace            = true
+
+[features]
+# `Fence::Reset`, `Notices::is_some` and `Notice::set_expires`, for the app's
+# headless tests that drive the state machine and age a toast.
+test-support = []

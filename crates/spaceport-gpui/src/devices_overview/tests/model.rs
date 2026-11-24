@@ -79,10 +79,12 @@ fn only_a_reachable_device_is_counted() {
             enabled,
         )
     };
-    let mut live = crate::state::LiveState::default();
-    live.snapshot = Some(std::sync::Arc::new(crate::sidebar::layout_tests::snapshot(
-        1,
-    )));
+    let mut live = crate::state::LiveState {
+        snapshot: Some(std::sync::Arc::new(crate::sidebar::layout_tests::snapshot(
+            1,
+        ))),
+        ..Default::default()
+    };
     assert_eq!(online_tally(&endpoint(true), &live), None, "not connected");
     live.status = ConnectionStatus::Connected;
     let tally = online_tally(&endpoint(true), &live).unwrap();

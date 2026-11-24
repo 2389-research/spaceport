@@ -78,13 +78,23 @@ fn notices_judge_agents_by_metadata_that_waits_for_its_surface() {
         let mut endpoint = Endpoint::new(LOCAL.into(), "Local".into(), ConnectTarget::Local, true);
         {
             let mut state = endpoint.connection.inbox.lock().unwrap();
-            state.apply(ClientEvent::Snapshot(displayed.clone()));
-            state.apply(ClientEvent::Surface(surface(&displayed)));
-            state.apply(ClientEvent::Snapshot(staged.clone()));
+            state.apply(
+                ClientEvent::Snapshot(displayed.clone()),
+                &crate::state::labels(),
+            );
+            state.apply(
+                ClientEvent::Surface(surface(&displayed)),
+                &crate::state::labels(),
+            );
+            state.apply(
+                ClientEvent::Snapshot(staged.clone()),
+                &crate::state::labels(),
+            );
             assert!(state.pending_snapshot.is_some(), "{pane}: not staged");
-            state.apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-                wire,
-            )));
+            state.apply(
+                ClientEvent::Message(ServerMessage::SemanticNotification(wire)),
+                &crate::state::labels(),
+            );
         }
         let now = Instant::now();
         endpoint.poll(now);
@@ -103,12 +113,10 @@ fn notices_judge_agents_by_metadata_that_waits_for_its_surface() {
             "{kind:?} for {pane} was dropped"
         );
         // The matching surface commits the metadata without another notice.
-        endpoints[0]
-            .connection
-            .inbox
-            .lock()
-            .unwrap()
-            .apply(ClientEvent::Surface(surface(&staged)));
+        endpoints[0].connection.inbox.lock().unwrap().apply(
+            ClientEvent::Surface(surface(&staged)),
+            &crate::state::labels(),
+        );
         endpoints[0].poll(now + Duration::from_secs(1));
         assert!(Arc::ptr_eq(
             endpoints[0].live.snapshot.as_ref().unwrap(),

@@ -68,15 +68,20 @@ pub(crate) fn assert_outcomes(
 }
 
 fn renamed(response: &Value, request: &str) -> String {
-    let mut state = LiveState::default();
-    state.tab_rename = Some(RenameResult {
-        request: "rename".into(),
-        result: None,
-    });
-    state.apply(ClientEvent::Response {
-        request_id: request.into(),
-        response: response.clone(),
-    });
+    let mut state = LiveState {
+        tab_rename: Some(RenameResult {
+            request: "rename".into(),
+            result: None,
+        }),
+        ..LiveState::default()
+    };
+    state.apply(
+        ClientEvent::Response {
+            request_id: request.into(),
+            response: response.clone(),
+        },
+        &crate::state::labels(),
+    );
     let rename = match state.tab_rename.unwrap().result {
         None => "pending".into(),
         Some(Ok(())) => "ok".into(),

@@ -35,15 +35,13 @@ fn redial_waits_for_the_previous_event_reader_to_drain() {
 #[test]
 fn redial_waits_for_the_final_inbox_projection_to_be_consumed() {
     let (_root, endpoint) = waiting_endpoint();
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Disconnected {
+    endpoint.connection.inbox.lock().unwrap().apply(
+        ClientEvent::Disconnected {
             reason: "owned fixture ended".into(),
             ssh: None,
-        });
+        },
+        &crate::state::labels(),
+    );
     assert!(
         !endpoint.may_dial(),
         "the final inbox update is still unread"

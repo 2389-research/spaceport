@@ -15,6 +15,7 @@ fn drawn(id: u64, corner: ToastHerdrPosition) -> Drawn {
             position: None,
         },
         Instant::now(),
+        &crate::state::labels(),
     );
     Drawn {
         key: Key {

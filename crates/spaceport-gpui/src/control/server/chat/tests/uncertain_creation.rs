@@ -20,10 +20,10 @@ fn a_success_without_chat_ids_reports_unknown_outcome_and_inspection_guidance() 
 #[test]
 fn an_explicit_herdr_refusal_keeps_its_known_failure() {
     let error: crate::Error = crate::chat::Error::from(crate::chat::StartError::Request(Arc::new(
-        crate::Error::Client(spaceport_client::Error::Endpoint {
+        spaceport_client::Error::Endpoint {
             code: "denied".to_owned().into(),
             message: "fixture refusal".into(),
-        }),
+        },
     )))
     .into();
     let expected = Response::error(ErrorCode::Failed, error.to_string());
@@ -36,10 +36,8 @@ fn a_lost_answer_to_a_submitted_start_reports_an_unknown_outcome() {
         spaceport_client::Error::RequestTimeout,
         spaceport_client::Error::SocketClosed,
     ] {
-        let error: crate::Error = crate::chat::Error::from(crate::chat::StartError::Request(
-            Arc::new(crate::Error::Client(transport)),
-        ))
-        .into();
+        let error: crate::Error =
+            crate::chat::Error::from(crate::chat::StartError::Request(Arc::new(transport))).into();
         assert_eq!(creation_error(&error), unknown(ErrorCode::Failed));
     }
 }
@@ -105,7 +103,7 @@ fn malformed_success_on_the_daemon_wire_returns_unknown_over_the_control_socket(
             view.update(cx, |view, cx| {
                 {
                     let mut inbox = view.endpoints[0].connection.inbox.lock().unwrap();
-                    inbox.apply(response);
+                    inbox.apply(response, &crate::state::labels());
                     view.live = inbox.clone();
                 }
                 view.poll_chats(window, cx);

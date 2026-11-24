@@ -30,12 +30,10 @@ fn external_popup_at_unchanged_revision_never_receives_earlier_pane_input(
         prepare_mouse(view, endpoint, cx);
         view.send(ClientPaneInputEvent::TextCommit("before".into()), cx);
         let frame = popup_frame(view.live.surface.as_ref().unwrap());
-        view.endpoints[1]
-            .connection
-            .inbox
-            .lock()
-            .unwrap()
-            .apply(ClientEvent::Surface(Arc::new(frame)));
+        view.endpoints[1].connection.inbox.lock().unwrap().apply(
+            ClientEvent::Surface(Arc::new(frame)),
+            &crate::state::labels(),
+        );
         project_until(view, cx, "popup at unchanged revision", |view| {
             view.live.surface.as_ref().unwrap().popup.is_some()
         });
@@ -73,10 +71,10 @@ fn local_popup_command_keeps_its_barrier_across_metadata_staging(cx: &mut gpui::
         let inbox = view.endpoints[1].connection.inbox.clone();
         inbox.lock().unwrap().snapshot = view.live.snapshot.clone();
         next.revision += 1;
-        inbox
-            .lock()
-            .unwrap()
-            .apply(ClientEvent::Snapshot(Arc::new(next)));
+        inbox.lock().unwrap().apply(
+            ClientEvent::Snapshot(Arc::new(next)),
+            &crate::state::labels(),
+        );
         project_until(view, cx, "staged metadata", |view| {
             view.live.pending_snapshot.is_some()
         });
@@ -114,8 +112,14 @@ fn local_popup_command_keeps_its_barrier_across_metadata_staging(cx: &mut gpui::
         let inbox = view.endpoints[1].connection.inbox.clone();
         {
             let mut inbox = inbox.lock().unwrap();
-            inbox.apply(ClientEvent::Snapshot(Arc::new(next.clone())));
-            inbox.apply(ClientEvent::Surface(Arc::new(frame)));
+            inbox.apply(
+                ClientEvent::Snapshot(Arc::new(next.clone())),
+                &crate::state::labels(),
+            );
+            inbox.apply(
+                ClientEvent::Surface(Arc::new(frame)),
+                &crate::state::labels(),
+            );
         }
         project_until(view, cx, "popup before acknowledgement", |view| {
             view.live
@@ -125,13 +129,16 @@ fn local_popup_command_keeps_its_barrier_across_metadata_staging(cx: &mut gpui::
         });
         assert!(!view.input_ready());
         view.send(ClientPaneInputEvent::TextCommit("before floor".into()), cx);
-        inbox.lock().unwrap().apply(ClientEvent::Response {
-            request_id: barrier["id"].as_str().unwrap().into(),
-            response: serde_json::json!({"result": {
-                "type": "client_shell_surface_set", "active": true,
-                "projection_revision": next.revision
-            }}),
-        });
+        inbox.lock().unwrap().apply(
+            ClientEvent::Response {
+                request_id: barrier["id"].as_str().unwrap().into(),
+                response: serde_json::json!({"result": {
+                    "type": "client_shell_surface_set", "active": true,
+                    "projection_revision": next.revision
+                }}),
+            },
+            &crate::state::labels(),
+        );
         project_until(view, cx, "popup barrier", SpaceportWindow::input_ready);
         view.send(ClientPaneInputEvent::TextCommit("after".into()), cx);
     });

@@ -147,7 +147,7 @@ impl SpaceportWindow {
                 spawn,
                 cx,
             )
-            .map_err(|error| super::StartError::Request(std::sync::Arc::new(error)))?;
+            .map_err(|error| super::StartError::Start(std::sync::Arc::new(error)))?;
         self.chats.last_started = Some(agent);
         Ok(receipt)
     }

@@ -376,10 +376,13 @@ impl ConnectionBridge {
                 handle.disconnect();
             }
             if let Ok(mut state) = self.inbox.lock() {
-                state.apply(ClientEvent::Disconnected {
-                    reason: error.to_string(),
-                    ssh: None,
-                });
+                state.apply(
+                    ClientEvent::Disconnected {
+                        reason: error.to_string(),
+                        ssh: None,
+                    },
+                    &crate::state::labels(),
+                );
             }
             // A startup failure ends the wait too, once its state is in place:
             // no reader exists to wake anyone later.

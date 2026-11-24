@@ -43,8 +43,10 @@ fn priority_sections_show_attention_then_timed_and_undated_idle(cx: &mut gpui::T
             }
             listing.revision = previous.revision + 1;
             view.agent_sort = AgentSort::Priority;
-            view.live
-                .apply(spaceport_client::ClientEvent::Snapshot(Arc::new(listing)));
+            view.live.apply(
+                spaceport_client::ClientEvent::Snapshot(Arc::new(listing)),
+                &crate::state::labels(),
+            );
             view
         });
         cx.observe(&view, |_, _, cx| cx.notify()).detach();

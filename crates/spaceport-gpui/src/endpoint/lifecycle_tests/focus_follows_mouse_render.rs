@@ -69,8 +69,14 @@ fn rendered_hover_resumes_typing_in_the_hovered_pane(cx: &mut gpui::TestAppConte
         let next = (**view.live.snapshot.as_ref().unwrap()).clone();
         {
             let mut state = view.endpoints[1].connection.inbox.lock().unwrap();
-            state.apply(ClientEvent::Snapshot(Arc::new(next.clone())));
-            state.apply(ClientEvent::Surface(Arc::new(frame.clone())));
+            state.apply(
+                ClientEvent::Snapshot(Arc::new(next.clone())),
+                &crate::state::labels(),
+            );
+            state.apply(
+                ClientEvent::Surface(Arc::new(frame.clone())),
+                &crate::state::labels(),
+            );
         }
         assert!(view.config.focus_follows_mouse);
         assert!(view.input_ready());
@@ -139,8 +145,14 @@ fn rendered_hover_resumes_typing_in_the_hovered_pane(cx: &mut gpui::TestAppConte
     view.update(cx, |view, cx| {
         {
             let mut state = view.endpoints[1].connection.inbox.lock().unwrap();
-            state.apply(ClientEvent::Snapshot(Arc::new(next.clone())));
-            state.apply(ClientEvent::Surface(Arc::new(frame)));
+            state.apply(
+                ClientEvent::Snapshot(Arc::new(next.clone())),
+                &crate::state::labels(),
+            );
+            state.apply(
+                ClientEvent::Surface(Arc::new(frame)),
+                &crate::state::labels(),
+            );
         }
         project_until(
             view,

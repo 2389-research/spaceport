@@ -145,7 +145,7 @@ pub(crate) use {
     app::open_additional_window,
     constants::{APP_VERSION, TAB_HEIGHT, TAB_WIDTH, WINDOW_TITLE},
     menus::menus,
-    navigation::{NavigationTarget, OwnedNavigationTarget},
+    navigation::NavigationTarget,
     window::SpaceportWindow,
 };
 

@@ -173,11 +173,12 @@ impl SpaceportWindow {
                 position: None,
             },
             Instant::now(),
+            &crate::state::labels(),
         )
         // Previews keep their own text rather than the pane's context.
         .preview()
         .with_message(title, body)
-        .with_snapshot(snapshot.as_deref());
+        .with_snapshot(snapshot.as_deref(), &crate::state::labels());
         // Each QA action immediately presents its own card, even offline.
         for endpoint in &mut self.endpoints {
             endpoint.toasts.entries.retain(|(_, n)| !n.is_visible());

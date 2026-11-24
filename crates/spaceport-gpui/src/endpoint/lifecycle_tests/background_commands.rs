@@ -81,12 +81,15 @@ fn switching_devices_holds_commands_until_the_new_surface_is_activated(
     let release = endpoint_request(&mut source_server);
     assert_eq!(release["method"], Method::ClientShellSurfaceSet.as_str());
     assert_eq!(release["params"]["active"], false);
-    source_inbox.lock().unwrap().apply(ClientEvent::Response {
-        request_id: release["id"].as_str().unwrap().into(),
-        response: serde_json::json!({"result": {
-            "type": "client_shell_surface_set", "active": false, "projection_revision": 7
-        }}),
-    });
+    source_inbox.lock().unwrap().apply(
+        ClientEvent::Response {
+            request_id: release["id"].as_str().unwrap().into(),
+            response: serde_json::json!({"result": {
+                "type": "client_shell_surface_set", "active": false, "projection_revision": 7
+            }}),
+        },
+        &crate::state::labels(),
+    );
     view.update(cx, |view, cx| {
         project_until(view, cx, "target activation", |view| {
             view.endpoints[2].initial_surface

@@ -410,31 +410,43 @@ fn pane_rename_correlates_responses_and_preserves_other_dialogs(cx: &mut TestApp
                     request: outcome.into(),
                     result: None,
                 });
-                v.live.apply(ClientEvent::Response {
-                    request_id: "unrelated".into(),
-                    response: json!({"error":"unrelated"}),
-                });
+                v.live.apply(
+                    ClientEvent::Response {
+                        request_id: "unrelated".into(),
+                        response: json!({"error":"unrelated"}),
+                    },
+                    &crate::state::labels(),
+                );
                 v.poll_pane_rename(window, cx);
                 assert!(v.menu.pane.as_ref().unwrap().pending.is_some());
                 if outcome == "rejected" {
-                    v.live.apply(ClientEvent::CommandRejected {
-                        request_id: Some(outcome.into()),
-                        reason: spaceport_client::Error::UnsupportedMethod,
-                    });
-                } else {
-                    v.live.apply(ClientEvent::Response {
-                        request_id: outcome.into(),
-                        response: if outcome == "success" {
-                            json!({"result":{}})
-                        } else {
-                            json!({"error":{"message":"Invalid label"}})
+                    v.live.apply(
+                        ClientEvent::CommandRejected {
+                            request_id: Some(outcome.into()),
+                            reason: spaceport_client::Error::UnsupportedMethod,
                         },
-                    });
+                        &crate::state::labels(),
+                    );
+                } else {
+                    v.live.apply(
+                        ClientEvent::Response {
+                            request_id: outcome.into(),
+                            response: if outcome == "success" {
+                                json!({"result":{}})
+                            } else {
+                                json!({"error":{"message":"Invalid label"}})
+                            },
+                        },
+                        &crate::state::labels(),
+                    );
                 }
-                v.live.apply(ClientEvent::Response {
-                    request_id: "removal".into(),
-                    response: json!({"result":{}}),
-                });
+                v.live.apply(
+                    ClientEvent::Response {
+                        request_id: "removal".into(),
+                        response: json!({"result":{}}),
+                    },
+                    &crate::state::labels(),
+                );
                 // A rename response must survive an unrelated response and invalidated surface.
                 assert!(!v.input_ready());
                 v.poll_pane_rename(window, cx);

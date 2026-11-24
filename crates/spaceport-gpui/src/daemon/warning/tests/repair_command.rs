@@ -18,8 +18,10 @@ fn displayed_repair_command_targets_the_exact_path() -> anyhow::Result<()> {
             _ => &socket,
         };
         std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o777))?;
-        let notice =
-            LocalPeerWarning::new(reason, socket.clone()).notice(std::time::Instant::now());
+        let notice = notice(
+            &LocalPeerWarning::new(reason, socket.clone()),
+            std::time::Instant::now(),
+        );
         let body = notice
             .body
             .as_deref()

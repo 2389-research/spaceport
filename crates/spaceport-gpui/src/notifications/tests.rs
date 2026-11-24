@@ -1,4 +1,7 @@
 use super::*;
+use spaceport_client::protocol::{
+    ClientShellSnapshot, SemanticNotification, SemanticNotificationKind, ToastHerdrPosition,
+};
 
 mod context;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -38,7 +41,8 @@ fn targets_validate_specificity_membership_and_boot_without_fallback() {
         wire.workspace_id = Some("w1".into());
         wire.tab_id = tab.map(str::to_owned);
         wire.pane_id = pane.map(str::to_owned);
-        let notice = Notice::new(wire, Instant::now()).with_snapshot(Some(&snapshot));
+        let notice = Notice::new(wire, Instant::now(), &crate::state::labels())
+            .with_snapshot(Some(&snapshot), &crate::state::labels());
         assert_eq!(notice.target(&snapshot), Some(expected));
         let mut stale = snapshot.clone();
         stale.boot_id = "new-boot".into();
@@ -60,7 +64,8 @@ fn targets_validate_specificity_membership_and_boot_without_fallback() {
     let mut wire = notification("pane only");
     wire.workspace_id = None;
     wire.pane_id = Some("w1:p1".into());
-    let notice = Notice::new(wire.clone(), Instant::now()).with_snapshot(Some(&snapshot));
+    let notice = Notice::new(wire.clone(), Instant::now(), &crate::state::labels())
+        .with_snapshot(Some(&snapshot), &crate::state::labels());
     assert_eq!(notice.workspace_id.as_deref(), Some("w1"));
     assert_eq!(notice.tab_id.as_deref(), Some("w1:t1"));
     let mut moved = snapshot.clone();
@@ -68,8 +73,8 @@ fn targets_validate_specificity_membership_and_boot_without_fallback() {
     assert!(notice.target(&moved).is_none());
     wire.tab_id = Some("wrong-parent".into());
     assert!(
-        Notice::new(wire, Instant::now())
-            .with_snapshot(Some(&snapshot))
+        Notice::new(wire, Instant::now(), &crate::state::labels())
+            .with_snapshot(Some(&snapshot), &crate::state::labels())
             .target(&snapshot)
             .is_none()
     );
@@ -77,8 +82,8 @@ fn targets_validate_specificity_membership_and_boot_without_fallback() {
     custom.kind = SemanticNotificationKind::Custom;
     custom.workspace_id = None;
     assert!(
-        Notice::new(custom, Instant::now())
-            .with_snapshot(Some(&snapshot))
+        Notice::new(custom, Instant::now(), &crate::state::labels())
+            .with_snapshot(Some(&snapshot), &crate::state::labels())
             .target(&snapshot)
             .is_none()
     );
@@ -88,14 +93,19 @@ fn targets_validate_specificity_membership_and_boot_without_fallback() {
 fn notifications_bound_untrusted_text_and_preserve_position() {
     let mut wire = notification(&"\u{1b}\n\u{202e}\u{2066}界".repeat(1000));
     wire.body = Some("界".repeat(1000));
-    let notice = Notice::new(wire, Instant::now());
+    let notice = Notice::new(wire, Instant::now(), &crate::state::labels());
     assert!(notice.title.chars().count() <= 160);
     assert!(notice.title.chars().all(|c| c == '界'));
     assert_eq!(notice.body.as_ref().map(|b| b.chars().count()), Some(512));
     assert_eq!(notice.position, ToastHerdrPosition::TopLeft);
     assert_eq!(safe_text(&"\0".repeat(10000), 160), "");
     assert_eq!(
-        Notice::new(notification("\n\u{202e}"), Instant::now()).title,
+        Notice::new(
+            notification("\n\u{202e}"),
+            Instant::now(),
+            &crate::state::labels()
+        )
+        .title,
         "Notification"
     );
 }
@@ -104,13 +114,18 @@ fn notifications_bound_untrusted_text_and_preserve_position() {
 fn ingress_is_bounded_and_same_pane_replaces_without_coalescing_targetless() {
     let now = Instant::now();
     let mut toasts = Toasts::default();
-    toasts.receive((0..20).map(|id| Notice::new(notification(&id.to_string()), now)));
+    toasts.receive(
+        (0..20).map(|id| Notice::new(notification(&id.to_string()), now, &crate::state::labels())),
+    );
     assert_eq!(toasts.entries.len(), PENDING_LIMIT * 2 + 1);
     assert_eq!(toasts.entries[0].1.title, "3");
     toasts.dismiss(18);
     assert_eq!(toasts.entries.len(), 16);
     let mut wire = notification("pane");
     wire.pane_id = Some("p".into());
-    toasts.receive([Notice::new(wire.clone(), now), Notice::new(wire, now)]);
+    toasts.receive([
+        Notice::new(wire.clone(), now, &crate::state::labels()),
+        Notice::new(wire, now, &crate::state::labels()),
+    ]);
     assert_eq!(toasts.entries.len(), 17);
 }

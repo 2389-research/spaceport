@@ -11,12 +11,15 @@ fn rejected_dialog_command_preserves_connection_diagnostic() {
     state
         .notices
         .show(crate::notice::Cause::Connection, "socket closed".into());
-    state.apply(ClientEvent::CommandRejected {
-        request_id: Some("create".into()),
-        reason: spaceport_client::Error::Disconnected,
-    });
+    state.apply(
+        ClientEvent::CommandRejected {
+            request_id: Some("create".into()),
+            reason: spaceport_client::Error::Disconnected,
+        },
+        &labels(),
+    );
     assert_eq!(
-        state.status_text(None, Instant::now()),
+        status_text(&state, None, Instant::now()),
         "\u{2068}Disconnected\u{2069}: \u{2068}socket closed\u{2069}"
     );
     assert!(matches!(&state.dialog_response, Some((_, Some(Err(_))))));
@@ -40,12 +43,15 @@ fn untracked_daemon_errors_remain_visible_as_readable_messages() {
             "The daemon refused the request without saying why.",
         ),
     ] {
-        state.apply(ClientEvent::Response {
-            request_id: "input".into(),
-            response: serde_json::json!({"error": payload}),
-        });
+        state.apply(
+            ClientEvent::Response {
+                request_id: "input".into(),
+                response: serde_json::json!({"error": payload}),
+            },
+            &labels(),
+        );
         assert_eq!(
-            state.status_text(None, Instant::now()),
+            status_text(&state, None, Instant::now()),
             format!("\u{2068}Connected\u{2069}: \u{2068}{expected}\u{2069}")
         );
     }
@@ -56,14 +62,17 @@ fn missing_installation_survives_disconnect_but_clears_on_success() {
     let mut state = LiveState::default();
     assert!(!state.missing_installation);
     state.missing_installation = true;
-    state.apply(ClientEvent::Disconnected {
-        reason: "Herdr not found".into(),
-        ssh: None,
-    });
+    state.apply(
+        ClientEvent::Disconnected {
+            reason: "Herdr not found".into(),
+            ssh: None,
+        },
+        &labels(),
+    );
     assert!(state.missing_installation);
     state.set_outer_focus(true);
     assert!(state.missing_installation);
-    state.apply(ClientEvent::Snapshot(snapshot()));
+    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
     assert!(!state.missing_installation);
 }
 
@@ -77,17 +86,20 @@ fn daemon_loader_stops_on_success_or_failure() {
     assert_eq!(state.status, ConnectionStatus::StartingDaemon);
     assert!(!state.status.is_connected());
     assert_eq!(
-        state.status_text(Some("old input error"), Instant::now()),
+        status_text(&state, Some("old input error"), Instant::now()),
         "Starting Herdr server..."
     );
-    state.apply(ClientEvent::Snapshot(snapshot()));
+    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
     assert_eq!(state.status, ConnectionStatus::Connected);
 
     state.daemon_starting();
-    state.apply(ClientEvent::Disconnected {
-        reason: "startup failed".into(),
-        ssh: None,
-    });
+    state.apply(
+        ClientEvent::Disconnected {
+            reason: "startup failed".into(),
+            ssh: None,
+        },
+        &labels(),
+    );
     assert_eq!(state.status, ConnectionStatus::Disconnected);
     assert_eq!(state.notices.text(), Some("startup failed"));
 }
@@ -98,29 +110,32 @@ fn connection_status_and_error_priority_follow_lifecycle() {
     assert_eq!(state.status, ConnectionStatus::Connecting);
     assert!(!state.status.is_connected());
     assert_eq!(
-        state.status_text(Some("old input error"), Instant::now()),
+        status_text(&state, Some("old input error"), Instant::now()),
         "Connecting..."
     );
-    state.apply(ClientEvent::Snapshot(snapshot()));
+    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
     assert!(state.status.is_connected());
     assert_eq!(
-        state.status_text(Some("input error"), Instant::now()),
+        status_text(&state, Some("input error"), Instant::now()),
         "\u{2068}Connected\u{2069}: \u{2068}input error\u{2069}"
     );
-    state.apply(ClientEvent::Disconnected {
-        reason: "socket closed".into(),
-        ssh: None,
-    });
+    state.apply(
+        ClientEvent::Disconnected {
+            reason: "socket closed".into(),
+            ssh: None,
+        },
+        &labels(),
+    );
     assert!(!state.status.is_connected());
     assert_eq!(
-        state.status_text(Some("old input error"), Instant::now()),
+        status_text(&state, Some("old input error"), Instant::now()),
         "\u{2068}Disconnected\u{2069}: \u{2068}socket closed\u{2069}"
     );
     state.status = ConnectionStatus::Detached;
     state.notices.clear();
     assert!(!state.status.is_connected());
     assert_eq!(
-        state.status_text(Some("old input error"), Instant::now()),
+        status_text(&state, Some("old input error"), Instant::now()),
         "Detached (daemon still running)"
     );
     assert!(ConnectionStatus::AwaitingSnapshot.is_connected());
@@ -133,16 +148,22 @@ fn connection_status_and_error_priority_follow_lifecycle() {
 #[test]
 fn late_untracked_refusal_preserves_disconnection_reason() {
     let mut state = LiveState::default();
-    state.apply(ClientEvent::Disconnected {
-        reason: "socket closed".into(),
-        ssh: None,
-    });
-    state.apply(ClientEvent::CommandRejected {
-        request_id: None,
-        reason: spaceport_client::Error::Disconnected,
-    });
+    state.apply(
+        ClientEvent::Disconnected {
+            reason: "socket closed".into(),
+            ssh: None,
+        },
+        &labels(),
+    );
+    state.apply(
+        ClientEvent::CommandRejected {
+            request_id: None,
+            reason: spaceport_client::Error::Disconnected,
+        },
+        &labels(),
+    );
     assert_eq!(
-        state.status_text(None, Instant::now()),
+        status_text(&state, None, Instant::now()),
         "\u{2068}Disconnected\u{2069}: \u{2068}socket closed\u{2069}"
     );
 }

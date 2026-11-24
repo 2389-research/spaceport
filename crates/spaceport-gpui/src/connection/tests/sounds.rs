@@ -37,7 +37,10 @@ fn live(status: AgentStatus) -> LiveState {
     snapshot.focused_workspace_id = Some("workspace".into());
     // A committed snapshot is a connected endpoint.
     let mut live = LiveState::default();
-    live.apply(ClientEvent::Snapshot(Arc::new(snapshot)));
+    live.apply(
+        ClientEvent::Snapshot(Arc::new(snapshot)),
+        &crate::state::labels(),
+    );
     live
 }
 
@@ -64,11 +67,15 @@ fn bridge_moves_bounded_notifications_and_reload_once() {
         for i in 0..spaceport_sound::MAX_PENDING + 5 {
             let mut event = event(Kind::Custom);
             event.title = i.to_string();
-            state.apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-                event,
-            )));
+            state.apply(
+                ClientEvent::Message(ServerMessage::SemanticNotification(event)),
+                &crate::state::labels(),
+            );
         }
-        state.apply(ClientEvent::Message(ServerMessage::ReloadSoundConfig));
+        state.apply(
+            ClientEvent::Message(ServerMessage::ReloadSoundConfig),
+            &crate::state::labels(),
+        );
     }
     let first = bridge.take_update().unwrap();
     assert_eq!(first.sound_events.len(), spaceport_sound::MAX_PENDING);
@@ -100,12 +107,15 @@ fn disconnect_boot_and_detach_cancel_pending_and_queued_generations() {
         if boot_change {
             let mut snapshot = state.snapshot.clone().unwrap();
             Arc::make_mut(&mut snapshot).boot_id = "new-boot".into();
-            state.apply(ClientEvent::Snapshot(snapshot));
+            state.apply(ClientEvent::Snapshot(snapshot), &crate::state::labels());
         } else {
-            state.apply(ClientEvent::Disconnected {
-                reason: "test".into(),
-                ssh: None,
-            });
+            state.apply(
+                ClientEvent::Disconnected {
+                    reason: "test".into(),
+                    ssh: None,
+                },
+                &crate::state::labels(),
+            );
         }
         assert!(token.load(Ordering::Acquire));
         poll_policy(
@@ -123,11 +133,10 @@ fn disconnect_boot_and_detach_cancel_pending_and_queued_generations() {
     let token = old.lock().unwrap().sound_cancel.clone();
     bridge.detach(false);
     assert!(token.load(Ordering::Acquire));
-    old.lock()
-        .unwrap()
-        .apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-            event(Kind::Custom),
-        )));
+    old.lock().unwrap().apply(
+        ClientEvent::Message(ServerMessage::SemanticNotification(event(Kind::Custom))),
+        &crate::state::labels(),
+    );
     assert!(bridge.take_update().unwrap().sound_events.is_empty());
     let token = bridge.inbox.lock().unwrap().sound_cancel.clone();
     drop(bridge);

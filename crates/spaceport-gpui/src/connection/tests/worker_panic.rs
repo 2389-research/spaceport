@@ -50,9 +50,12 @@ fn poisoned_old_inbox_cannot_change_a_replacement() {
 #[test]
 fn poison_does_not_erase_an_explicit_shutdown() {
     let bridge = bridge();
-    bridge.inbox.lock().unwrap().apply(ClientEvent::Message(
-        spaceport_client::protocol::ServerMessage::ServerShutdown { reason: None },
-    ));
+    bridge.inbox.lock().unwrap().apply(
+        ClientEvent::Message(spaceport_client::protocol::ServerMessage::ServerShutdown {
+            reason: None,
+        }),
+        &crate::state::labels(),
+    );
     poison(&bridge.inbox);
     assert!(bridge.take_update().unwrap().server_stopped);
 }

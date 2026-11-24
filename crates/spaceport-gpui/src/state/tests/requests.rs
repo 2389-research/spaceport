@@ -12,22 +12,28 @@ fn worktree_failure_stays_in_dialog_after_snapshots_and_successful_retry() {
         "code": "worktree_create_failed",
         "message": "fatal: 'config reload' is not a valid branch name"
     }});
-    state.apply(ClientEvent::Response {
-        request_id: "create".into(),
-        response: response.clone(),
-    });
-    state.apply(ClientEvent::Snapshot(snapshot()));
-    assert_eq!(state.status_text(None, Instant::now()), "Connected");
+    state.apply(
+        ClientEvent::Response {
+            request_id: "create".into(),
+            response: response.clone(),
+        },
+        &labels(),
+    );
+    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
+    assert_eq!(status_text(&state, None, Instant::now()), "Connected");
     assert!(matches!(&state.dialog_response,
         Some((id, Some(Ok(value)))) if id == "create" && value == &response));
 
     state.dialog_response = Some(("retry".into(), None));
-    state.apply(ClientEvent::Response {
-        request_id: "retry".into(),
-        response: serde_json::json!({"result": {}}),
-    });
+    state.apply(
+        ClientEvent::Response {
+            request_id: "retry".into(),
+            response: serde_json::json!({"result": {}}),
+        },
+        &labels(),
+    );
     state.dialog_response = None;
-    assert_eq!(state.status_text(None, Instant::now()), "Connected");
+    assert_eq!(status_text(&state, None, Instant::now()), "Connected");
 }
 
 #[test]
@@ -36,26 +42,38 @@ fn drag_request_clears_only_on_its_own_answer() {
         drag_request: Some("scroll".into()),
         ..LiveState::default()
     };
-    state.apply(ClientEvent::Response {
-        request_id: "other".into(),
-        response: serde_json::json!({"result": {}}),
-    });
-    state.apply(ClientEvent::CommandRejected {
-        request_id: None,
-        reason: spaceport_client::Error::Disconnected,
-    });
+    state.apply(
+        ClientEvent::Response {
+            request_id: "other".into(),
+            response: serde_json::json!({"result": {}}),
+        },
+        &labels(),
+    );
+    state.apply(
+        ClientEvent::CommandRejected {
+            request_id: None,
+            reason: spaceport_client::Error::Disconnected,
+        },
+        &labels(),
+    );
     assert_eq!(state.drag_request.as_deref(), Some("scroll"));
-    state.apply(ClientEvent::Response {
-        request_id: "scroll".into(),
-        response: serde_json::json!({"result": {}}),
-    });
+    state.apply(
+        ClientEvent::Response {
+            request_id: "scroll".into(),
+            response: serde_json::json!({"result": {}}),
+        },
+        &labels(),
+    );
     assert_eq!(state.drag_request, None);
 
     state.drag_request = Some("scroll".into());
-    state.apply(ClientEvent::CommandRejected {
-        request_id: Some("scroll".into()),
-        reason: spaceport_client::Error::CommandBoot,
-    });
+    state.apply(
+        ClientEvent::CommandRejected {
+            request_id: Some("scroll".into()),
+            reason: spaceport_client::Error::CommandBoot,
+        },
+        &labels(),
+    );
     assert_eq!(state.drag_request, None);
 }
 
@@ -67,30 +85,42 @@ fn dialog_response_is_correlated_and_survives_coalescing() {
     };
     let response =
         serde_json::json!({"error":{"code":"dirty_worktree_requires_force", "message":"dirty"}});
-    state.apply(ClientEvent::Response {
-        request_id: "remove".into(),
-        response: response.clone(),
-    });
-    state.apply(ClientEvent::Response {
-        request_id: "other".into(),
-        response: serde_json::json!({"result":{}}),
-    });
-    state.apply(ClientEvent::Snapshot(snapshot()));
+    state.apply(
+        ClientEvent::Response {
+            request_id: "remove".into(),
+            response: response.clone(),
+        },
+        &labels(),
+    );
+    state.apply(
+        ClientEvent::Response {
+            request_id: "other".into(),
+            response: serde_json::json!({"result":{}}),
+        },
+        &labels(),
+    );
+    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
     assert!(
         matches!(&state.dialog_response, Some((id, Some(Ok(value)))) if id == "remove" && value == &response)
     );
     state.dialog_response = Some(("next".into(), None));
-    state.apply(ClientEvent::CommandRejected {
-        request_id: Some("other".into()),
-        reason: spaceport_client::Error::Disconnected,
-    });
+    state.apply(
+        ClientEvent::CommandRejected {
+            request_id: Some("other".into()),
+            reason: spaceport_client::Error::Disconnected,
+        },
+        &labels(),
+    );
     assert!(matches!(&state.dialog_response, Some((id, None)) if id == "next"));
-    state.apply(ClientEvent::CommandRejected {
-        request_id: Some("next".into()),
-        reason: spaceport_client::Error::CommandBoot,
-    });
+    state.apply(
+        ClientEvent::CommandRejected {
+            request_id: Some("next".into()),
+            reason: spaceport_client::Error::CommandBoot,
+        },
+        &labels(),
+    );
     assert!(
-        matches!(&state.dialog_response, Some((id, Some(Err(error)))) if id == "next" && matches!(error.as_ref(), crate::Error::Client(spaceport_client::Error::CommandBoot)))
+        matches!(&state.dialog_response, Some((id, Some(Err(error)))) if id == "next" && matches!(error.as_ref(), spaceport_client::Error::CommandBoot))
     );
 }
 
@@ -104,17 +134,23 @@ fn rename_failures_stay_typed_and_shared_across_mailbox_clones() {
         ..LiveState::default()
     };
     let payload = serde_json::json!({"code": "invalid_label", "message": "Invalid label"});
-    state.apply(ClientEvent::Response {
-        request_id: "other".into(),
-        response: serde_json::json!({"error": payload}),
-    });
+    state.apply(
+        ClientEvent::Response {
+            request_id: "other".into(),
+            response: serde_json::json!({"error": payload}),
+        },
+        &labels(),
+    );
     assert!(state.tab_rename.as_ref().unwrap().result.is_none());
     assert_eq!(state.notices.text(), Some("Invalid label"));
     state.notices.clear();
-    state.apply(ClientEvent::Response {
-        request_id: "rename".into(),
-        response: serde_json::json!({"error": payload}),
-    });
+    state.apply(
+        ClientEvent::Response {
+            request_id: "rename".into(),
+            response: serde_json::json!({"error": payload}),
+        },
+        &labels(),
+    );
     let cloned = state.clone();
     let error = state
         .tab_rename
@@ -135,17 +171,18 @@ fn rename_failures_stay_typed_and_shared_across_mailbox_clones() {
         .as_ref()
         .unwrap_err();
     assert!(Arc::ptr_eq(error, shared));
-    assert!(
-        matches!(error.as_ref(), crate::Error::Client(spaceport_client::Error::Endpoint {
+    assert!(matches!(error.as_ref(), spaceport_client::Error::Endpoint {
             code: spaceport_client::response::EndpointErrorCode::Other(code),
             message,
-        }) if code == "invalid_label" && message == "Invalid label")
-    );
+        } if code == "invalid_label" && message == "Invalid label"));
     assert_eq!(error.to_string(), "Invalid label");
-    state.apply(ClientEvent::CommandRejected {
-        request_id: Some("rename".into()),
-        reason: spaceport_client::Error::CommandBoot,
-    });
+    state.apply(
+        ClientEvent::CommandRejected {
+            request_id: Some("rename".into()),
+            reason: spaceport_client::Error::CommandBoot,
+        },
+        &labels(),
+    );
     assert!(matches!(
         state
             .tab_rename
@@ -157,13 +194,16 @@ fn rename_failures_stay_typed_and_shared_across_mailbox_clones() {
             .as_ref()
             .unwrap_err()
             .as_ref(),
-        crate::Error::Client(spaceport_client::Error::CommandBoot)
+        spaceport_client::Error::CommandBoot
     ));
     assert!(state.notices.is_none());
-    state.apply(ClientEvent::CommandRejected {
-        request_id: Some("rename".into()),
-        reason: std::io::Error::new(std::io::ErrorKind::PermissionDenied, "denied").into(),
-    });
+    state.apply(
+        ClientEvent::CommandRejected {
+            request_id: Some("rename".into()),
+            reason: std::io::Error::new(std::io::ErrorKind::PermissionDenied, "denied").into(),
+        },
+        &labels(),
+    );
     let cloned = state.clone();
     let error = state
         .tab_rename
@@ -188,7 +228,6 @@ fn rename_failures_stay_typed_and_shared_across_mailbox_clones() {
     assert!(
         error
             .source()
-            .and_then(|source| source.source())
             .and_then(|source| source.downcast_ref::<std::io::Error>())
             .is_some_and(|source| source.kind() == std::io::ErrorKind::PermissionDenied)
     );

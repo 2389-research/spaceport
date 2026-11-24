@@ -63,11 +63,13 @@ pub enum Error {
     #[error("{app} is still looking for {program}", app = crate::constants::WINDOW_TITLE, program = Program::file_name())]
     ProgramUnknown,
     #[error("{0}")]
-    Request(#[source] Arc<crate::Error>),
+    Request(#[source] Arc<spaceport_client::Error>),
     #[error("Herdr's answer did not name the chat's tab")]
     Response,
     #[error("another tab is still opening")]
     SlotBusy,
+    #[error("{0}")]
+    Start(#[source] Arc<crate::Error>),
     #[error("Herdr did not open the chat's tab in time")]
     Timeout,
     // keep-sorted end

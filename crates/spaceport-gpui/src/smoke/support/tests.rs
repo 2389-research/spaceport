@@ -14,8 +14,7 @@ fn live(prompt: &str) -> LiveState {
     snapshot.focused_workspace_id = Some("w0".into());
     snapshot.focused_tab_id = Some("t0".into());
     let width = 80;
-    let mut live = LiveState::default();
-    live.surface = Some(Arc::new(PaneSurfaceFrame {
+    let surface = Arc::new(PaneSurfaceFrame {
         boot_id: snapshot.boot_id.clone(),
         projection_revision: snapshot.revision,
         surface_revision: 1,
@@ -46,7 +45,10 @@ fn live(prompt: &str) -> LiveState {
         splits: vec![],
         popup: None,
         graphics: Default::default(),
-    }));
-    live.snapshot = Some(Arc::new(snapshot));
-    live
+    });
+    LiveState {
+        snapshot: Some(Arc::new(snapshot)),
+        surface: Some(surface),
+        ..LiveState::default()
+    }
 }

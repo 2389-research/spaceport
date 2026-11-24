@@ -18,7 +18,8 @@ fn dismiss_with_another_waiting(
     view.update(cx, |view, _| {
         view.toast_motion.live = true;
         let notices = ["first", "second"].map(|title| {
-            let mut notice = Notice::new(notification(title), Instant::now()).preview();
+            let mut notice =
+                Notice::new(notification(title), Instant::now(), &crate::state::labels()).preview();
             notice.position = corner;
             notice
         });

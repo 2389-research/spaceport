@@ -28,7 +28,10 @@ fn host(agents: &[(&str, AgentStatus)]) -> LiveState {
         .map(|(sequence, &(pane, status))| (pane, status, sequence))
         .collect();
     let mut live = LiveState::default();
-    live.apply(ClientEvent::Snapshot(listing(&agents)));
+    live.apply(
+        ClientEvent::Snapshot(listing(&agents)),
+        &crate::state::labels(),
+    );
     live
 }
 
@@ -75,11 +78,10 @@ fn equal_attention_goes_to_the_latest_change_on_any_host() {
     );
     // The first daemon's own sequence stays below the second's, as it would
     // when the second has simply counted more changes.
-    first.apply(ClientEvent::Snapshot(listing(&[(
-        "a",
-        AgentStatus::Working,
-        2,
-    )])));
+    first.apply(
+        ClientEvent::Snapshot(listing(&[("a", AgentStatus::Working, 2)])),
+        &crate::state::labels(),
+    );
     assert_eq!(
         order(&[&first, &second], AgentSort::Priority),
         [(0, "a"), (1, "b")]

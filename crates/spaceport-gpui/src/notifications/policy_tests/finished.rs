@@ -42,7 +42,7 @@ fn muting_finished_drops_waiting_notices_but_not_previews() {
     preview.title = "preview".into();
     endpoints[0]
         .toasts
-        .receive([Notice::new(preview, now).preview()]);
+        .receive([Notice::new(preview, now, &crate::state::labels()).preview()]);
     // Still waiting out the delay when a reload turns finished notices off.
     tick(&mut endpoints, 0, config(5), false, now);
     assert_eq!(endpoints[1].toasts.entries.len(), 1);

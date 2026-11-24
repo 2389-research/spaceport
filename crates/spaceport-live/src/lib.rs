@@ -1,0 +1,32 @@
+//! A connection's live state, below the window that drives it.
+//!
+//! What one connection to a Herdr daemon last said — its snapshot, its
+//! surface, its notices, the mailboxes the window drains — and the rules over
+//! it: which ordered client events change what, when a snapshot and a surface
+//! belong to each other, and the activation fence that keeps navigation from
+//! acting on a projection the daemon has not acknowledged. The window's own
+//! copy of the selected endpoint's state stays the window's; this crate only
+//! holds the value and the rules, and the app decides which copy a view reads.
+//!
+//! Nothing here paints, opens a socket, or says a word: the words a notice or
+//! a status line needs arrive in [`Labels`], and every effect — the pasteboard,
+//! a bell, a sound, a toast — is the app's.
+
+pub mod activation;
+mod agent_recency;
+mod labels;
+mod navigation;
+pub mod notice;
+pub mod notifications;
+mod projection;
+mod state;
+
+pub use agent_recency::AgentRecency;
+pub use labels::Labels;
+pub use navigation::{NavigationTarget, OwnedNavigationTarget};
+pub use notice::{Cause, HeldNotice, Notices};
+pub use notifications::{Notice, PENDING_LIMIT, Toasts, VISIBLE_LIMIT};
+pub use state::{
+    AnnouncementDismissal, Answer, ConnectionStatus, DialogResponse, LiveState,
+    MAX_DAEMON_VERSION_CHARS, MAX_WINDOW_TITLE_CHARS, RenameResult, SurfaceActivation,
+};

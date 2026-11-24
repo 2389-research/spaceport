@@ -18,10 +18,10 @@ fn releasing_a_surface_publishes_metadata_that_no_longer_needs_matching_cells(
         next.agents[0].title = Some("latest metadata".into());
         let revision = next.revision;
         let inbox = view.endpoints[1].connection.inbox.clone();
-        inbox
-            .lock()
-            .unwrap()
-            .apply(ClientEvent::Snapshot(Arc::new(next)));
+        inbox.lock().unwrap().apply(
+            ClientEvent::Snapshot(Arc::new(next)),
+            &crate::state::labels(),
+        );
         project_until(view, cx, "staged metadata", |view| {
             view.live.pending_snapshot.is_some()
         });

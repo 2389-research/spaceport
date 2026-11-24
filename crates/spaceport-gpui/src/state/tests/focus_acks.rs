@@ -11,26 +11,29 @@ fn previous_pane_follows_focus_within_one_boot() {
         ClientEvent::Snapshot(Arc::new(next))
     };
     let mut state = LiveState::default();
-    state.apply(focus(Some("a"), "boot"));
+    state.apply(focus(Some("a"), "boot"), &labels());
     assert_eq!(state.previous_pane, None);
-    state.apply(focus(Some("a"), "boot"));
+    state.apply(focus(Some("a"), "boot"), &labels());
     assert_eq!(state.previous_pane, None);
-    state.apply(focus(Some("b"), "boot"));
+    state.apply(focus(Some("b"), "boot"), &labels());
     assert_eq!(state.previous_pane.as_deref(), Some("a"));
     // A snapshot that changes something else keeps the last pane.
-    state.apply(focus(Some("b"), "boot"));
+    state.apply(focus(Some("b"), "boot"), &labels());
     assert_eq!(state.previous_pane.as_deref(), Some("a"));
     // Losing focus remembers the pane that had it.
-    state.apply(focus(None, "boot"));
+    state.apply(focus(None, "boot"), &labels());
     assert_eq!(state.previous_pane.as_deref(), Some("b"));
-    state.apply(focus(Some("c"), "reboot"));
+    state.apply(focus(Some("c"), "reboot"), &labels());
     assert_eq!(state.previous_pane, None);
-    state.apply(focus(Some("d"), "reboot"));
-    state.apply(ClientEvent::Disconnected {
-        reason: "gone".into(),
-        ssh: None,
-    });
-    state.apply(focus(Some("e"), "reboot"));
+    state.apply(focus(Some("d"), "reboot"), &labels());
+    state.apply(
+        ClientEvent::Disconnected {
+            reason: "gone".into(),
+            ssh: None,
+        },
+        &labels(),
+    );
+    state.apply(focus(Some("e"), "reboot"), &labels());
     assert_eq!(state.previous_pane, None);
 }
 
@@ -54,7 +57,7 @@ fn completed_navigation_retires_focus_in_inbox_before_later_focus_changes() {
                 _ => snapshot.focused_pane_id.clone().unwrap(),
             };
             let mut state = LiveState::default();
-            state.apply(ClientEvent::Snapshot(snapshot.clone()));
+            state.apply(ClientEvent::Snapshot(snapshot.clone()), &labels());
             state.activation = activation::Fence::for_test(
                 SurfaceActivation {
                     focus: Some(match kind {
@@ -80,7 +83,7 @@ fn completed_navigation_retires_focus_in_inbox_before_later_focus_changes() {
                 [frame, ack]
             };
             for (index, event) in events.into_iter().enumerate() {
-                state.apply(event);
+                state.apply(event, &labels());
                 assert_eq!(state.surface_ready(), index == 1);
                 assert_eq!(
                     state.activation.request().unwrap().focus.is_none(),
@@ -95,9 +98,9 @@ fn completed_navigation_retires_focus_in_inbox_before_later_focus_changes() {
             next_snapshot.focused_pane_id = Some("split-pane".into());
             next_snapshot.focused_tab_id = Some("created-tab".into());
             next_snapshot.focused_workspace_id = Some("created-workspace".into());
-            state.apply(ClientEvent::Snapshot(next.clone()));
+            state.apply(ClientEvent::Snapshot(next.clone()), &labels());
             assert!(!state.surface_ready());
-            state.apply(ClientEvent::Surface(surface(&next)));
+            state.apply(ClientEvent::Surface(surface(&next)), &labels());
             assert!(state.surface_ready());
             let settled = state.activation.request().unwrap();
             assert_eq!(state.activation.revision(), Some(snapshot.revision));
@@ -111,22 +114,28 @@ fn completed_navigation_retires_focus_in_inbox_before_later_focus_changes() {
 fn activation_requires_matching_ack_coherent_revision_and_focus() {
     let snapshot = snapshot();
     let mut state = LiveState::default();
-    state.apply(ClientEvent::Snapshot(snapshot.clone()));
+    state.apply(ClientEvent::Snapshot(snapshot.clone()), &labels());
     state.activation = activation::Fence::for_test(activating(&snapshot), None);
-    state.apply(ClientEvent::Surface(surface(&snapshot)));
+    state.apply(ClientEvent::Surface(surface(&snapshot)), &labels());
     assert!(!state.surface_ready());
     let response = serde_json::json!({"result": {
         "type": "client_shell_surface_set", "active": true, "projection_revision": snapshot.revision
     }});
-    state.apply(ClientEvent::Response {
-        request_id: "stale".into(),
-        response: response.clone(),
-    });
+    state.apply(
+        ClientEvent::Response {
+            request_id: "stale".into(),
+            response: response.clone(),
+        },
+        &labels(),
+    );
     assert!(!state.surface_ready());
-    state.apply(ClientEvent::Response {
-        request_id: "activate-1".into(),
-        response,
-    });
+    state.apply(
+        ClientEvent::Response {
+            request_id: "activate-1".into(),
+            response,
+        },
+        &labels(),
+    );
     assert!(state.surface_ready());
     state.activation = activation::Fence::for_test(
         SurfaceActivation {
@@ -141,8 +150,8 @@ fn activation_requires_matching_ack_coherent_revision_and_focus() {
     assert!(!state.surface_ready());
     let mut reboot = snapshot.clone();
     Arc::make_mut(&mut reboot).boot_id = "reboot".into();
-    state.apply(ClientEvent::Snapshot(reboot.clone()));
-    state.apply(ClientEvent::Surface(surface(&reboot)));
+    state.apply(ClientEvent::Snapshot(reboot.clone()), &labels());
+    state.apply(ClientEvent::Surface(surface(&reboot)), &labels());
     assert!(state.activation.failed());
     assert!(!state.surface_ready());
 }
@@ -156,13 +165,16 @@ fn rejected_malformed_and_wrong_direction_acks_never_enable_input() {
         serde_json::json!({"result": {"type": "client_shell_surface_set", "active": false, "projection_revision": 0}}),
     ] {
         let mut state = LiveState::default();
-        state.apply(ClientEvent::Snapshot(snapshot.clone()));
-        state.apply(ClientEvent::Surface(surface(&snapshot)));
+        state.apply(ClientEvent::Snapshot(snapshot.clone()), &labels());
+        state.apply(ClientEvent::Surface(surface(&snapshot)), &labels());
         state.activation = activation::Fence::for_test(activating(&snapshot), None);
-        state.apply(ClientEvent::Response {
-            request_id: "activate-1".into(),
-            response,
-        });
+        state.apply(
+            ClientEvent::Response {
+                request_id: "activate-1".into(),
+                response,
+            },
+            &labels(),
+        );
         assert!(state.activation.failed());
         assert!(!state.surface_ready());
     }
@@ -170,9 +182,12 @@ fn rejected_malformed_and_wrong_direction_acks_never_enable_input() {
         activation: activation::Fence::for_test(activating(&snapshot), None),
         ..Default::default()
     };
-    state.apply(ClientEvent::CommandRejected {
-        request_id: Some("activate-1".into()),
-        reason: spaceport_client::Error::UnsupportedMethod,
-    });
+    state.apply(
+        ClientEvent::CommandRejected {
+            request_id: Some("activate-1".into()),
+            reason: spaceport_client::Error::UnsupportedMethod,
+        },
+        &labels(),
+    );
     assert!(state.activation.failed());
 }

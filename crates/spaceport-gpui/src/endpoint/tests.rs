@@ -59,15 +59,20 @@ fn notifications_stay_endpoint_owned_and_expire_without_new_updates() {
     );
     for endpoint in [&mut local, &mut remote] {
         let mut state = endpoint.connection.inbox.lock().unwrap();
-        state.apply(ClientEvent::Snapshot(Arc::new(
-            crate::sidebar::layout_tests::snapshot(1),
-        )));
-        state.apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-            notification(&endpoint.label),
-        )));
-        state.apply(ClientEvent::Snapshot(Arc::new(
-            crate::sidebar::layout_tests::snapshot(2),
-        )));
+        state.apply(
+            ClientEvent::Snapshot(Arc::new(crate::sidebar::layout_tests::snapshot(1))),
+            &crate::state::labels(),
+        );
+        state.apply(
+            ClientEvent::Message(ServerMessage::SemanticNotification(notification(
+                &endpoint.label,
+            ))),
+            &crate::state::labels(),
+        );
+        state.apply(
+            ClientEvent::Snapshot(Arc::new(crate::sidebar::layout_tests::snapshot(2))),
+            &crate::state::labels(),
+        );
     }
     let now = Instant::now();
     assert_eq!(local.poll(now), Redraw::Window);
@@ -117,7 +122,7 @@ fn lost_ingress_retires_predecessors_even_when_replacement_was_evicted() {
     let mut endpoint = Endpoint::new(LOCAL.into(), "Local".into(), ConnectTarget::Local, true);
     let mut wire = notification("old attention");
     wire.pane_id = Some("p".into());
-    let mut old = Notice::new(wire.clone(), Instant::now()).preview();
+    let mut old = Notice::new(wire.clone(), Instant::now(), &crate::state::labels()).preview();
     old.promote(Instant::now());
     endpoint.toasts.receive([old]);
     let inbox = endpoint.connection.inbox.clone();
@@ -125,13 +130,17 @@ fn lost_ingress_retires_predecessors_even_when_replacement_was_evicted() {
         let mut state = inbox.lock().unwrap();
         state.status = ConnectionStatus::Connected;
         wire.kind = SemanticNotificationKind::Finished;
-        state.apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-            wire,
-        )));
+        state.apply(
+            ClientEvent::Message(ServerMessage::SemanticNotification(wire)),
+            &crate::state::labels(),
+        );
         for index in 0..PENDING_LIMIT {
-            state.apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-                notification(&index.to_string()),
-            )));
+            state.apply(
+                ClientEvent::Message(ServerMessage::SemanticNotification(notification(
+                    &index.to_string(),
+                ))),
+                &crate::state::labels(),
+            );
         }
         assert!(state.notifications_lost);
         assert_eq!(state.notifications.len(), PENDING_LIMIT);
@@ -163,58 +172,42 @@ fn notifications_clear_on_boot_change_and_disconnect() {
     use spaceport_client::protocol::ServerMessage;
     let mut endpoint = Endpoint::new(LOCAL.into(), "Local".into(), ConnectTarget::Local, true);
     let mut snapshot = crate::sidebar::layout_tests::snapshot(1);
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Snapshot(Arc::new(snapshot.clone())));
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-            notification("old"),
-        )));
+    endpoint.connection.inbox.lock().unwrap().apply(
+        ClientEvent::Snapshot(Arc::new(snapshot.clone())),
+        &crate::state::labels(),
+    );
+    endpoint.connection.inbox.lock().unwrap().apply(
+        ClientEvent::Message(ServerMessage::SemanticNotification(notification("old"))),
+        &crate::state::labels(),
+    );
     endpoint.poll(Instant::now());
     assert_eq!(endpoint.toasts.entries.len(), 1);
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-            notification("pending old"),
-        )));
+    endpoint.connection.inbox.lock().unwrap().apply(
+        ClientEvent::Message(ServerMessage::SemanticNotification(notification(
+            "pending old",
+        ))),
+        &crate::state::labels(),
+    );
     snapshot.boot_id = "replacement-boot".into();
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Snapshot(Arc::new(snapshot)));
+    endpoint.connection.inbox.lock().unwrap().apply(
+        ClientEvent::Snapshot(Arc::new(snapshot)),
+        &crate::state::labels(),
+    );
     endpoint.poll(Instant::now());
     assert!(endpoint.toasts.entries.is_empty());
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Message(ServerMessage::SemanticNotification(
-            notification("new"),
-        )));
+    endpoint.connection.inbox.lock().unwrap().apply(
+        ClientEvent::Message(ServerMessage::SemanticNotification(notification("new"))),
+        &crate::state::labels(),
+    );
     endpoint.poll(Instant::now());
     assert_eq!(endpoint.toasts.entries.len(), 1);
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Disconnected {
+    endpoint.connection.inbox.lock().unwrap().apply(
+        ClientEvent::Disconnected {
             reason: "test".into(),
             ssh: None,
-        });
+        },
+        &crate::state::labels(),
+    );
     endpoint.poll(Instant::now());
     assert!(endpoint.toasts.entries.is_empty());
 }
@@ -226,9 +219,10 @@ fn retired_generation_cannot_publish_into_replacement() {
     let generation = endpoint.generation;
     endpoint.stop();
     assert!(endpoint.generation > generation);
-    old.lock().unwrap().apply(ClientEvent::Snapshot(Arc::new(
-        crate::sidebar::layout_tests::snapshot(1),
-    )));
+    old.lock().unwrap().apply(
+        ClientEvent::Snapshot(Arc::new(crate::sidebar::layout_tests::snapshot(1))),
+        &crate::state::labels(),
+    );
     endpoint.poll(Instant::now());
     assert!(endpoint.live.snapshot.is_none());
     assert!(!Arc::ptr_eq(&old, &endpoint.connection.inbox));
@@ -256,15 +250,21 @@ fn release_waits_for_its_own_successful_inactive_acknowledgement() {
     let response = serde_json::json!({"result": {
         "type": "client_shell_surface_set", "active": false, "projection_revision": 7
     }});
-    inbox.lock().unwrap().apply(ClientEvent::Response {
-        request_id: "old".into(),
-        response: response.clone(),
-    });
+    inbox.lock().unwrap().apply(
+        ClientEvent::Response {
+            request_id: "old".into(),
+            response: response.clone(),
+        },
+        &crate::state::labels(),
+    );
     assert!(!release.resolved());
-    inbox.lock().unwrap().apply(ClientEvent::Response {
-        request_id: "off".into(),
-        response,
-    });
+    inbox.lock().unwrap().apply(
+        ClientEvent::Response {
+            request_id: "off".into(),
+            response,
+        },
+        &crate::state::labels(),
+    );
     assert!(release.resolved());
     inbox
         .lock()

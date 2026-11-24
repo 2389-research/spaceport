@@ -22,15 +22,17 @@ fn idle_read_uses_only_the_agent_in_the_callers_workspace(cx: &mut gpui::TestApp
                 right_click_passthrough: false,
             });
         }
-        view.live
-            .apply(spaceport_client::ClientEvent::Snapshot(Arc::new(
-                snap.clone(),
-            )));
+        view.live.apply(
+            spaceport_client::ClientEvent::Snapshot(Arc::new(snap.clone())),
+            &crate::state::labels(),
+        );
         snap.revision += 1;
         snap.agents[0].agent_status = AgentStatus::Idle;
         snap.agents[0].state_change_seq += 1;
-        view.live
-            .apply(spaceport_client::ClientEvent::Snapshot(Arc::new(snap)));
+        view.live.apply(
+            spaceport_client::ClientEvent::Snapshot(Arc::new(snap)),
+            &crate::state::labels(),
+        );
         view
     });
     cx.cx.update(|cx| {
