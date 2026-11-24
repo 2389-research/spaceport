@@ -6533,6 +6533,7 @@ dependencies = [
  "serde_json",
  "spaceport-chat-protocol",
  "spaceport-client",
+ "spaceport-live",
  "spaceport-release-notes",
  "spaceport-remote",
  "spaceport-settings",

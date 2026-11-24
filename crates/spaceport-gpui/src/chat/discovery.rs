@@ -1,40 +1,12 @@
-//! Which panes run a chat program this window may attach to.
+//! Which panes run a chat program this window may attach to, and how each of
+//! them is reached. The route, and the trust boundary that decides it, are
+//! `spaceport_chat_core::discovery`'s; this module names the panes.
 
 use super::{MAX_CHATS, Route, Source, Surface, Target};
-use crate::state::LiveState;
+pub(crate) use spaceport_chat_core::discovery::route;
 pub(crate) use spaceport_chat_core::endpoint;
-use spaceport_client::{ConnectTarget, protocol::ClientShellSnapshot};
+use spaceport_client::protocol::ClientShellSnapshot;
 use std::collections::HashSet;
-
-/// Whether the daemon behind `target` runs on this machine as this user, so
-/// its panes' chat endpoints are this user's own: the trust boundary local Git
-/// uses too. A socket given by path may be a forward from another
-/// host, and every remote or cloud daemon's programs listen elsewhere.
-///
-/// Windows cannot verify the daemon's peer, so there the check falls to the
-/// chat pipe itself, which is refused unless this user owns it.
-pub(crate) fn local(target: &ConnectTarget, live: &LiveState) -> bool {
-    match target {
-        ConnectTarget::Local | ConnectTarget::Session { .. } => {
-            (live.local_daemon_peer || cfg!(windows)) && live.status.is_connected()
-        }
-        _ => false,
-    }
-}
-
-/// How this window reaches the chat programs of the daemon behind `target`:
-/// on this machine as for [`local`], or over SSH on the host an SSH
-/// connection runs the daemon on. A socket given by path, a WSL
-/// distribution, and a cloud machine have no route yet.
-pub(crate) fn route(target: &ConnectTarget, live: &LiveState) -> Option<Route> {
-    match target {
-        _ if local(target, live) => Some(Route::Local),
-        ConnectTarget::Ssh { target, .. } if live.status.is_connected() => {
-            Some(Route::Ssh(target.clone()))
-        }
-        _ => None,
-    }
-}
 
 /// The chat panes of a reachable daemon's snapshot, in its order, one per
 /// pane and at most [`MAX_CHATS`], each reached by `route`. A daemon with

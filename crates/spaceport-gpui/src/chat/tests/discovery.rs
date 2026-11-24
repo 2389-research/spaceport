@@ -1,6 +1,6 @@
 use super::*;
-use crate::{chat::discovery, state::LiveState};
-use spaceport_client::{ConnectTarget, protocol::ClientShellSnapshot};
+use crate::chat::discovery;
+use spaceport_client::protocol::ClientShellSnapshot;
 
 const ID: &str = "0123456789abcdef0123456789abcdef";
 
@@ -115,14 +115,6 @@ fn snapshot(agents: &[(&str, &str)]) -> ClientShellSnapshot {
     snapshot
 }
 
-fn connected(peer: bool) -> LiveState {
-    LiveState {
-        status: crate::state::ConnectionStatus::Connected,
-        local_daemon_peer: peer,
-        ..LiveState::default()
-    }
-}
-
 #[test]
 fn a_valid_token_names_the_program() {
     assert_eq!(
@@ -167,72 +159,10 @@ fn chat_panes_are_bounded() {
 }
 
 #[test]
-fn only_an_ssh_daemon_is_reached_remotely() {
+fn only_a_routed_daemons_panes_are_targets() {
     assert!(discovery::targets(&snapshot(&[("p1", ID)]), None).is_empty());
-    let live = connected(true);
-    let ssh = ConnectTarget::Ssh {
-        target: "host".into(),
-        session: "default".into(),
-    };
-    assert_eq!(
-        discovery::route(&ssh, &live),
-        Some(Route::Ssh("host".into()))
-    );
     let remote = discovery::targets(&snapshot(&[("p1", ID)]), Some(&Route::Ssh("host".into())));
     assert_eq!(remote[0].route, Route::Ssh("host".into()));
-    assert_eq!(
-        discovery::route(&ConnectTarget::Local, &live),
-        Some(Route::Local)
-    );
-    for target in [
-        ConnectTarget::Wsl {
-            distro: "Ubuntu".into(),
-            session: "default".into(),
-        },
-        ConnectTarget::Socket("/tmp/herdr.sock".into()),
-    ] {
-        assert_eq!(discovery::route(&target, &live), None, "{target:?}");
-    }
-}
-
-#[test]
-fn a_remote_daemon_is_not_local() {
-    let live = connected(true);
-    for target in [
-        ConnectTarget::Ssh {
-            target: "host".into(),
-            session: "default".into(),
-        },
-        ConnectTarget::Wsl {
-            distro: "Ubuntu".into(),
-            session: "default".into(),
-        },
-        // A socket by path may be forwarded from another host.
-        ConnectTarget::Socket("/tmp/herdr.sock".into()),
-    ] {
-        assert!(!discovery::local(&target, &live), "{target:?}");
-    }
-}
-
-#[test]
-fn only_an_owned_connected_local_daemon_is_local() {
-    assert!(discovery::local(&ConnectTarget::Local, &connected(true)));
-    assert!(discovery::local(
-        &ConnectTarget::Session {
-            name: "work".into(),
-            development: false
-        },
-        &connected(true)
-    ));
-    // Windows has no peer check; its chat pipe's owner is checked instead.
-    assert_eq!(
-        discovery::local(&ConnectTarget::Local, &connected(false)),
-        cfg!(windows)
-    );
-    assert!(!discovery::local(
-        &ConnectTarget::Local,
-        &LiveState::default()
-    ));
 }
 
 #[test]

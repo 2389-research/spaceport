@@ -1,5 +1,6 @@
 //! The chat model below the app's views: which existing agent conversations a
-//! window may attach to, the `[chat.env]` table a chat's tab is created with,
+//! window may attach to, which daemon's chat programs it may reach and how,
+//! the `[chat.env]` table a chat's tab is created with,
 //! how the measured entry list follows a transcript, the attach side itself —
 //! the transcript a session holds and the worker that reads it — the syntax
 //! spans of the code a transcript shows, the identity, bounds and diagram theme
@@ -19,6 +20,7 @@
 
 mod error;
 
+pub mod discovery;
 pub mod env;
 pub mod existing;
 pub mod highlight;
