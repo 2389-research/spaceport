@@ -25,6 +25,7 @@ mod keymap;
 #[cfg(windows)]
 mod launch_at_login;
 mod listening_ports;
+mod menu;
 mod notification_mutes;
 mod overview;
 mod palette;

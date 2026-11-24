@@ -1,7 +1,11 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
+use crate::menu::labels;
 use core::prelude::v1::test;
 use gpui::VisualTestContext;
+use serde_json::json;
+use spaceport_client::protocol::ClientShellSnapshot;
+use spaceport_menu::tab::ACTIONS;
 use std::sync::Arc;
 
 mod en_xa;
@@ -31,35 +35,6 @@ fn tab_moves_are_not_offered_on_unsupported_platforms(cx: &mut TestAppContext) {
             assert!(!tab.actions().contains(&Action::MoveToWorkspace));
         })
     });
-}
-
-#[test]
-fn tab_target_retains_membership_and_rejects_stale_snapshots() {
-    let original: ClientShellSnapshot = serde_json::from_str(include_str!(
-        "../../../spaceport-protocol/tests/fixtures/endpoint-snapshot-v1.json"
-    ))
-    .unwrap();
-    let target = Target::capture(&original, &original.tabs[0].tab_id).unwrap();
-    let mut snapshot = original.clone();
-    snapshot.focused_tab_id = None;
-    snapshot.focused_workspace_id = None;
-    assert!(target.validate(&snapshot).is_ok());
-    assert_eq!(
-        target.rename_params("  \u{4e2d}  ").unwrap(),
-        json!({"tab_id": target.tab, "label": "\u{4e2d}"})
-    );
-    assert!(target.rename_params(" \u{2003}\t").is_err());
-    snapshot.boot_id.push_str("-replaced");
-    assert!(target.validate(&snapshot).is_err());
-    snapshot = original.clone();
-    snapshot.tabs[0].workspace_id.push_str("-moved");
-    assert!(target.validate(&snapshot).is_err());
-    snapshot = original.clone();
-    snapshot.workspaces.clear();
-    assert!(target.validate(&snapshot).is_err());
-    snapshot = original;
-    snapshot.tabs.clear();
-    assert!(target.validate(&snapshot).is_err());
 }
 
 #[gpui::test]

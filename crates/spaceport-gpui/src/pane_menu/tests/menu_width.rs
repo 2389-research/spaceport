@@ -54,7 +54,7 @@ fn labels(view: &Entity<SpaceportWindow>, cx: &mut VisualTestContext) -> Vec<Str
         let pane = v.menu.pane.as_ref().unwrap();
         pane.actions()
             .into_iter()
-            .map(|action| action.label(&pane.target))
+            .map(|action| labels::pane_action(action, &pane.target))
             .collect()
     })
 }

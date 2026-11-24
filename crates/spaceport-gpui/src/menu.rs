@@ -7,6 +7,7 @@ mod appear;
 mod chrome;
 mod colors;
 pub(crate) mod devices;
+pub(crate) mod labels;
 mod mute;
 mod open_link;
 mod page;
@@ -47,7 +48,7 @@ pub(crate) mod workspace_tests;
 pub(crate) use state::Cover;
 pub(crate) use {
     colors::{accent, danger, online, tint},
-    page::{Page, WorkspaceAction},
+    page::{Page, WorkspaceAction, icon as workspace_action_icon},
     state::MenuState,
     version_mismatch::Notice as VersionNotice,
 };

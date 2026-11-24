@@ -9,68 +9,67 @@ use super::{Page, WorkspaceAction};
 use crate::i18n::fl;
 use gpui::{Role, SharedString};
 
-impl Page {
-    /// A list of commands is a menu; anything that asks or edits is a dialog.
-    pub(crate) fn accessible_role(self) -> Role {
-        match self {
-            Self::Application
-            | Self::Group
-            | Self::Host
-            | Self::Menu
-            | Self::Pane
-            | Self::Tab
-            | Self::CoreWorkspaceActions
-            | Self::Workspace => Role::Menu,
-            _ => Role::Dialog,
-        }
+/// A list of commands is a menu; anything that asks or edits is a dialog.
+pub(crate) fn role(page: Page) -> Role {
+    match page {
+        Page::Application
+        | Page::Group
+        | Page::Host
+        | Page::Menu
+        | Page::Pane
+        | Page::Tab
+        | Page::CoreWorkspaceActions
+        | Page::Workspace => Role::Menu,
+        _ => Role::Dialog,
     }
+}
 
-    pub(crate) fn accessible_name(self) -> SharedString {
-        SharedString::from(match self {
-            Self::About => fl!("menu-page-about-herdr-ui"),
-            Self::AddDevice => fl!("menu-page-add-device"),
-            Self::AddWsl => fl!("menu-page-add-wsl-distribution"),
-            Self::AgentSkill => fl!("menu-page-install-the-agent-skill"),
-            Self::Application => fl!("menu-page-menu"),
-            Self::Update => fl!("menu-page-update"),
-            Self::CoreWorkspaceActions => fl!("core-workspace-actions"),
-            Self::CoreWorkspaceCreate => fl!("menu-page-new-workspace"),
-            Self::CoreWorkspaceDelete => fl!("core-workspace-delete-title"),
-            Self::CoreWorkspaceRename => fl!("core-workspace-rename-title"),
-            Self::ConfirmClose => fl!("menu-page-close"),
-            Self::Devices => fl!("menu-page-devices"),
-            Self::DeviceTags => fl!("device-tags-page"),
-            Self::DeviceTheme => fl!("menu-page-device-theme"),
-            Self::Dialog(action) => match action {
-                WorkspaceAction::Rename => fl!("menu-page-rename-workspace"),
-                WorkspaceAction::NewTab => fl!("menu-page-new-tab"),
-                WorkspaceAction::NewWorkspace => fl!("menu-page-new-workspace"),
-                WorkspaceAction::Note => fl!("menu-page-worktree-note"),
-            },
-            Self::ForwardPort => fl!("menu-page-forward-port"),
-            Self::Group => fl!("menu-page-tab-actions"),
-            Self::Host => fl!("menu-page-device"),
-            Self::Keybinds => fl!("menu-page-keyboard-shortcuts"),
-            Self::KillProcesses => fl!("menu-page-end-processes"),
-            Self::Menu => fl!("menu-page-menu"),
-            Self::MovePane => fl!("menu-page-move-pane"),
-            Self::MoveTab => fl!("menu-page-move-tab"),
-            Self::OpenLink => fl!("menu-page-open-link"),
-            Self::Palette => fl!("menu-page-command-palette"),
-            Self::Pane => fl!("menu-page-pane"),
-            Self::PaneProcesses => fl!("menu-page-processes"),
-            Self::RemoveDevice => fl!("menu-page-remove-device"),
-            Self::RemoveWsl => fl!("menu-page-remove-wsl-distribution"),
-            Self::RenameDevice => fl!("menu-page-rename-device"),
-            Self::RenamePane => fl!("menu-page-rename-pane"),
-            Self::RenameTab => fl!("menu-page-rename-tab"),
-            Self::Tab => fl!("menu-page-tab"),
-            Self::Themes => fl!("menu-page-themes"),
-            Self::Usage(provider) => fl!("menu-page-usage", provider = provider.name()),
-            Self::VersionMismatch => fl!("menu-page-version-mismatch"),
-            Self::Workspace => fl!("menu-page-workspace"),
-        })
-    }
+/// The page's title, in the current language.
+pub(crate) fn name(page: Page) -> SharedString {
+    SharedString::from(match page {
+        Page::About => fl!("menu-page-about-herdr-ui"),
+        Page::AddDevice => fl!("menu-page-add-device"),
+        Page::AddWsl => fl!("menu-page-add-wsl-distribution"),
+        Page::AgentSkill => fl!("menu-page-install-the-agent-skill"),
+        Page::Application => fl!("menu-page-menu"),
+        Page::Update => fl!("menu-page-update"),
+        Page::CoreWorkspaceActions => fl!("core-workspace-actions"),
+        Page::CoreWorkspaceCreate => fl!("menu-page-new-workspace"),
+        Page::CoreWorkspaceDelete => fl!("core-workspace-delete-title"),
+        Page::CoreWorkspaceRename => fl!("core-workspace-rename-title"),
+        Page::ConfirmClose => fl!("menu-page-close"),
+        Page::Devices => fl!("menu-page-devices"),
+        Page::DeviceTags => fl!("device-tags-page"),
+        Page::DeviceTheme => fl!("menu-page-device-theme"),
+        Page::Dialog(action) => match action {
+            WorkspaceAction::Rename => fl!("menu-page-rename-workspace"),
+            WorkspaceAction::NewTab => fl!("menu-page-new-tab"),
+            WorkspaceAction::NewWorkspace => fl!("menu-page-new-workspace"),
+            WorkspaceAction::Note => fl!("menu-page-worktree-note"),
+        },
+        Page::ForwardPort => fl!("menu-page-forward-port"),
+        Page::Group => fl!("menu-page-tab-actions"),
+        Page::Host => fl!("menu-page-device"),
+        Page::Keybinds => fl!("menu-page-keyboard-shortcuts"),
+        Page::KillProcesses => fl!("menu-page-end-processes"),
+        Page::Menu => fl!("menu-page-menu"),
+        Page::MovePane => fl!("menu-page-move-pane"),
+        Page::MoveTab => fl!("menu-page-move-tab"),
+        Page::OpenLink => fl!("menu-page-open-link"),
+        Page::Palette => fl!("menu-page-command-palette"),
+        Page::Pane => fl!("menu-page-pane"),
+        Page::PaneProcesses => fl!("menu-page-processes"),
+        Page::RemoveDevice => fl!("menu-page-remove-device"),
+        Page::RemoveWsl => fl!("menu-page-remove-wsl-distribution"),
+        Page::RenameDevice => fl!("menu-page-rename-device"),
+        Page::RenamePane => fl!("menu-page-rename-pane"),
+        Page::RenameTab => fl!("menu-page-rename-tab"),
+        Page::Tab => fl!("menu-page-tab"),
+        Page::Themes => fl!("menu-page-themes"),
+        Page::Usage(provider) => fl!("menu-page-usage", provider = provider.name()),
+        Page::VersionMismatch => fl!("menu-page-version-mismatch"),
+        Page::Workspace => fl!("menu-page-workspace"),
+    })
 }
 
 #[cfg(test)]

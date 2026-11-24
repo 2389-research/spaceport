@@ -1,13 +1,14 @@
 // i18n: migrated
 use crate::direction::Logical;
 use crate::i18n::fl;
+use crate::menu::labels;
 use crate::{
     SpaceportWindow, close_modal::CloseConfirmation, menu::Page, pane_move::Destination,
     search_input::SearchInput,
 };
 use gpui::{prelude::*, *};
-use serde_json::{Value, json};
-use spaceport_client::{Method, protocol::ClientShellSnapshot};
+use spaceport_client::Method;
+use spaceport_menu::pane::{Action, Offers, Target};
 
 mod moves;
 mod processes;
@@ -15,195 +16,22 @@ mod processes;
 #[cfg(test)]
 pub(crate) mod tests;
 
-#[derive(Clone)]
-struct Target {
-    boot: String,
-    workspace: String,
-    tab: String,
-    pane: String,
-    label: String,
-    /// Whether the pane's tab was zoomed when the menu opened, so the zoom
-    /// row says what it will do and asks Herdr for exactly that.
-    zoomed: bool,
-    /// The focused pane when it is another one in the same tab, which "Swap
-    /// with focused pane" trades places with.
-    focused: Option<String>,
-    /// Herdr routes this pane's right-clicks to its application, as seen when
-    /// the menu opened; the toggle asks for the other routing.
-    right_click_passthrough: bool,
-    /// Existing tabs, and new tabs in other workspaces, the pane can move to.
-    choices: Vec<crate::pane_move::Choice>,
-}
-
-impl Target {
-    fn capture(snapshot: &ClientShellSnapshot, id: &str) -> Option<Self> {
-        let pane = snapshot.panes.iter().find(|pane| pane.pane_id == id)?;
-        let zoomed = snapshot
-            .tabs
-            .iter()
-            .any(|tab| tab.tab_id == pane.tab_id && tab.zoomed);
-        let focused = snapshot.focused_pane_id.as_ref().filter(|focused| {
-            **focused != pane.pane_id
-                && snapshot.panes.iter().any(|p| {
-                    p.pane_id == **focused
-                        && p.tab_id == pane.tab_id
-                        && p.workspace_id == pane.workspace_id
-                })
-        });
-        let target = Self {
-            boot: snapshot.boot_id.clone(),
-            workspace: pane.workspace_id.clone(),
-            tab: pane.tab_id.clone(),
-            pane: pane.pane_id.clone(),
-            label: pane.label.clone().unwrap_or_default(),
-            zoomed,
-            focused: focused.cloned(),
-            right_click_passthrough: pane.right_click_passthrough,
-            choices: crate::pane_move::choices(snapshot, &pane.tab_id),
-        };
-        target.validate(snapshot).ok()?;
-        Some(target)
-    }
-
-    fn validate(&self, snapshot: &ClientShellSnapshot) -> crate::Result<()> {
-        if snapshot.boot_id != self.boot
-            || !snapshot
-                .workspaces
-                .iter()
-                .any(|w| w.workspace_id == self.workspace)
-            || !snapshot
-                .tabs
-                .iter()
-                .any(|t| t.tab_id == self.tab && t.workspace_id == self.workspace)
-            || !snapshot.panes.iter().any(|p| {
-                p.pane_id == self.pane && p.tab_id == self.tab && p.workspace_id == self.workspace
-            })
-        {
-            return Err(crate::Error::StalePane);
-        }
-        Ok(())
-    }
-
-    fn rename_params(&self, label: &str) -> Value {
-        json!({"pane_id": self.pane, "label": label.trim()})
-    }
-}
-
-#[derive(Clone, Copy)]
-enum Action {
-    Rename,
-    SplitRight,
-    SplitDown,
-    Swap,
-    Zoom,
-    MoveToNewTab,
-    MoveToNewWorkspace,
-    /// Opens the picker of every destination.
-    MoveTo,
-    EditScrollback,
-    RightClick,
-    Processes,
-    Close,
-}
-
-impl Action {
-    fn request(self, target: &Target) -> Option<(Method, Value)> {
-        Some(match self {
-            Self::SplitRight | Self::SplitDown => (
-                Method::PaneSplit,
-                json!({
-                    "target_pane_id": target.pane,
-                    "direction": if matches!(self, Self::SplitRight) { "right" } else { "down" },
-                    "focus": true,
-                }),
-            ),
-            // The focused pane moves to this one's place and keeps focus,
-            // as Herdr's directional swaps move it.
-            Self::Swap => (
-                Method::PaneSwap,
-                json!({"source_pane_id": target.focused.as_ref()?, "target_pane_id": target.pane}),
-            ),
-            // An explicit mode, so a zoom another client changed meanwhile
-            // leaves the pane as the row promised rather than flipping it.
-            Self::Zoom => (
-                Method::PaneZoom,
-                json!({"pane_id": target.pane, "mode": if target.zoomed { "off" } else { "on" }}),
-            ),
-            Self::RightClick => (
-                Method::PaneInputSet,
-                json!({
-                    "pane_id": target.pane,
-                    "right_click": if target.right_click_passthrough { "herdr" } else { "pane" },
-                }),
-            ),
-            Self::Rename
-            | Self::MoveToNewTab
-            | Self::MoveToNewWorkspace
-            | Self::MoveTo
-            | Self::EditScrollback
-            | Self::Processes
-            | Self::Close => return None,
-        })
-    }
-
-    fn label(self, target: &Target) -> String {
-        match self {
-            Self::Rename => fl!("pane-menu-rename"),
-            Self::SplitRight => fl!("pane-menu-split-right"),
-            Self::SplitDown => fl!("pane-menu-split-down"),
-            Self::Swap => fl!("pane-menu-swap"),
-            Self::Zoom if target.zoomed => fl!("pane-menu-unzoom"),
-            Self::Zoom => fl!("pane-menu-zoom"),
-            Self::MoveToNewTab => fl!("pane-menu-move-to-new-tab"),
-            Self::MoveToNewWorkspace => fl!("pane-menu-move-to-new-workspace"),
-            Self::MoveTo => fl!("pane-menu-move-to"),
-            Self::EditScrollback => fl!("pane-menu-edit-scrollback"),
-            Self::RightClick if target.right_click_passthrough => {
-                fl!("pane-menu-right-click-menu")
-            }
-            Self::RightClick => fl!("pane-menu-right-click-pane"),
-            Self::Processes => fl!("pane-menu-processes"),
-            Self::Close => fl!("pane-menu-close"),
-        }
-    }
-}
-
-const ACTIONS: [Action; 12] = [
-    Action::Rename,
-    Action::SplitRight,
-    Action::SplitDown,
-    Action::Swap,
-    Action::Zoom,
-    Action::MoveToNewTab,
-    Action::MoveToNewWorkspace,
-    Action::MoveTo,
-    Action::EditScrollback,
-    Action::RightClick,
-    Action::Processes,
-    Action::Close,
-];
-
 impl PaneMenu {
-    /// The rows this menu offers: a swap needs another pane to trade with,
-    /// moves need a host the `herdr` CLI can run on (and the tab picker
-    /// another tab or workspace), and a process list needs the pane's
-    /// processes on this machine.
+    /// The rows this menu offers, which the pane's own state and what this
+    /// machine can do for it decide.
     fn actions(&self) -> Vec<Action> {
-        ACTIONS
-            .into_iter()
-            .filter(|action| match action {
-                Action::Swap => self.target.focused.is_some(),
-                Action::MoveToNewTab | Action::MoveToNewWorkspace => self.movable,
-                Action::MoveTo => self.movable && !self.target.choices.is_empty(),
-                Action::Processes => self.daemon.is_some(),
-                _ => true,
-            })
-            .collect()
+        self.target.actions(Offers {
+            movable: self.movable,
+            destinations: !self.choices.is_empty(),
+            processes: self.daemon.is_some(),
+        })
     }
 }
 
 pub(super) struct PaneMenu {
     target: Target,
+    /// Existing tabs, and new tabs in other workspaces, the pane can move to.
+    choices: Vec<crate::pane_move::Choice>,
     selected: Option<usize>,
     input: Option<Entity<SearchInput>>,
     pending: Option<String>,
@@ -249,12 +77,11 @@ impl SpaceportWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(target) = self
-            .live
-            .snapshot
-            .as_ref()
-            .and_then(|s| Target::capture(s, id))
-        else {
+        let Some((target, choices)) = self.live.snapshot.as_ref().and_then(|snapshot| {
+            let target = Target::capture(snapshot, id)?;
+            let choices = crate::pane_move::choices(snapshot, &target.tab);
+            Some((target, choices))
+        }) else {
             return;
         };
         if !self.open_menu(window, cx) {
@@ -267,6 +94,7 @@ impl SpaceportWindow {
         self.menu.page = Some(Page::Pane);
         self.menu.pane = Some(PaneMenu {
             target,
+            choices,
             selected: None,
             input: None,
             pending: None,
@@ -683,7 +511,7 @@ impl SpaceportWindow {
                                 .debug_selector(move || format!("pane-menu-label-{index}"))
                                 .min_w_0()
                                 .truncate()
-                                .child(action.label(&pane.target)),
+                                .child(labels::pane_action(action, &pane.target)),
                         )
                         .on_hover(cx.listener(move |this, hovered, _, cx| {
                             if *hovered && let Some(pane) = &mut this.menu.pane {

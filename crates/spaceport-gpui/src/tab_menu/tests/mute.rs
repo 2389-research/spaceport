@@ -49,7 +49,7 @@ fn the_tab_menu_mutes_its_tab_and_lifts_a_workspace_mute_it_falls_under(cx: &mut
             };
             v.open_tab_menu("w1:t2", None, Point::default(), window, cx);
             assert_eq!(mute_row(v), Action::Mute);
-            assert_eq!(Action::Mute.label(), "Mute Notifications");
+            assert_eq!(labels::tab_action(Action::Mute), "Mute Notifications");
             v.activate_tab_menu(Action::Mute, window, cx);
             assert!(v.menu.page.is_none(), "applied at once");
             assert_eq!(silenced(cx), (false, true, false), "only that tab");
@@ -122,7 +122,7 @@ fn the_tab_menu_lifts_the_mute_of_the_device_it_falls_under(cx: &mut TestAppCont
             assert!(Mutes::update(cx, |mutes| mutes.set_host(&id, true)));
             v.open_tab_menu("w1:t2", None, Point::default(), window, cx);
             assert_eq!(mute_row(v), Action::UnmuteDevice);
-            assert_eq!(Action::UnmuteDevice.label(), "Unmute Device");
+            assert_eq!(labels::tab_action(Action::UnmuteDevice), "Unmute Device");
             v.activate_tab_menu(Action::UnmuteDevice, window, cx);
             assert!(v.menu.page.is_none(), "applied at once");
             assert!(Mutes::of(cx).is_some_and(|mutes| !mutes.host(&id)));

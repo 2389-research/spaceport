@@ -4,7 +4,7 @@
 use crate::{
     SpaceportWindow,
     i18n::fl,
-    menu::{WorkspaceAction, WorkspaceMenuAction, danger},
+    menu::{WorkspaceAction, WorkspaceMenuAction, danger, workspace_action_icon},
 };
 use gpui::{prelude::*, *};
 
@@ -100,7 +100,7 @@ impl SpaceportWindow {
                     .border_b_1()
                     .border_color(rgb(theme.active))
                     .when_some(
-                        WorkspaceMenuAction::Dialog(action).icon(),
+                        workspace_action_icon(WorkspaceMenuAction::Dialog(action)),
                         |header, icon| {
                             header.child(
                                 svg()
