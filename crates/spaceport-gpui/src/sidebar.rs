@@ -50,18 +50,12 @@ pub(crate) use {
     workspaces::{workspace_entries, workspace_label},
 };
 
-#[cfg(any(test, feature = "integration-test"))]
-pub(crate) use spaceport_sidebar::metrics::{ARROW_RESERVE, ICON_RESERVE};
-
 pub(crate) use layout::SidebarMetrics;
 pub(crate) use spaceport_sidebar::device_drag::{DeviceDrag, DevicePlan};
 pub(crate) use spaceport_sidebar::hover::{HoverMenu, HoverRest};
 pub(crate) use spaceport_sidebar::order::step as sidebar_step;
 pub(crate) use spaceport_sidebar::reorder::{MoveBlock, Plan, WorkspaceDrag, resolve};
 pub(crate) use spaceport_sidebar::slide::SidebarSlide;
-
-#[cfg(any(test, feature = "integration-test"))]
-pub(crate) use metrics::LABEL_WIDTH;
 
 pub(crate) use view::element as view_element;
 
