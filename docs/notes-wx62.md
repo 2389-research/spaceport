@@ -37,7 +37,7 @@ Two more findings decided the test list. All three files' tests construct
 | `settings_window/scrollbar.rs` | `spaceport-settings-window/src/scrollbar.rs` | 140 → 143 |
 | `settings_window/navigation.rs` (list + footer) | the same crate's `navigation.rs` | 245 → 314 |
 | `settings_window/inputs.rs`'s `NumberPreview`, the dropdown index and the slider preview | the same crate's `inputs.rs` | new, 91 |
-| `browser::Thumb` (`tab_scroll.rs`) | `spaceport-widgets/src/thumb.rs`, re-exported as `spaceport_browser::Thumb` | 46 + 44 tests |
+| `browser::Thumb` (`tab_scroll.rs`) | `spaceport-widgets/src/thumb.rs`, re-exported as `spaceport_browser::Thumb` | 39 + 53 test lines |
 
 The app keeps 449 lines of the same three modules as facades:
 
@@ -157,7 +157,8 @@ ids, debug selectors and geometry, and the tests assert them):
 - `cargo test -p spaceport-settings-window` — 32 passed.
 - `cargo test -p spaceport-gpui --bin spaceport settings` — 278 passed, 0
   failed (was 280; three files moved out and two tests came in).
-- `cargo test -p spaceport-widgets -p spaceport-browser` — 32 and 95 passed.
+- `cargo test -p spaceport-widgets` — 10 passed; `cargo test -p spaceport-browser`
+  — 95 passed.
 - `cargo fmt --all --check`, `just check-file-size`, `just check-sorted` and
   `just check-i18n` — clean.
 - Not run: `just ci`, the Windows and Linux lint legs, `just test-gui`, and any
