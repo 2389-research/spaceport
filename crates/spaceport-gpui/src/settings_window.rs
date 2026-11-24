@@ -628,7 +628,7 @@ impl Render for SettingsWindow {
         let heading = if searching.is_some() {
             fl!("settings-results")
         } else {
-            self.section.label()
+            crate::i18n::message(self.section.message(), &[])
         };
         let content = match &searching {
             Some(_) => self.render_search_results(cx),
@@ -705,17 +705,22 @@ impl Render for SettingsWindow {
                                     .font_weight(FontWeight::SEMIBOLD)
                                     .child(heading),
                             )
-                            .child(div().mb(px(16.)).when_some(
-                                self.section.lead().filter(|_| searching.is_none()),
-                                |header, lead| {
-                                    header.mt(px(2.)).child(
-                                        div()
-                                            .text_size(px(12.))
-                                            .text_color(rgb(theme.subtext()))
-                                            .child(lead),
-                                    )
-                                },
-                            ))
+                            .child(
+                                div().mb(px(16.)).when_some(
+                                    self.section
+                                        .lead()
+                                        .filter(|_| searching.is_none())
+                                        .map(|message| crate::i18n::message(message, &[])),
+                                    |header, lead| {
+                                        header.mt(px(2.)).child(
+                                            div()
+                                                .text_size(px(12.))
+                                                .text_color(rgb(theme.subtext()))
+                                                .child(lead),
+                                        )
+                                    },
+                                ),
+                            )
                             .child(content),
                         cx,
                     ),

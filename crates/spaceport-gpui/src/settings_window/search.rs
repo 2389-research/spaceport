@@ -160,10 +160,10 @@ impl SettingsWindow {
                     let id = format!("settings-search-result-{n}");
                     let title = fl!(
                         "settings-search-result",
-                        section = entry.section.label(),
-                        title = entry.title()
+                        section = crate::i18n::message(entry.section.message(), &[]),
+                        title = catalog::title(entry)
                     );
-                    let description = entry.description();
+                    let description = catalog::description(entry);
                     let mut row = ui::data_row(theme, id.clone(), title.clone());
                     if !description.is_empty() {
                         row = row.description(description.clone());
@@ -172,7 +172,7 @@ impl SettingsWindow {
                         div()
                             .text_size(px(10.))
                             .text_color(rgb(theme.subtext()))
-                            .child(entry.section.label()),
+                            .child(crate::i18n::message(entry.section.message(), &[])),
                     )
                     .into_div()
                     .id(ElementId::Name(id.into()))

@@ -1,5 +1,5 @@
 use super::*;
-use crate::config::SidebarOverrides;
+use spaceport_settings::SidebarOverrides;
 
 /// Where things landed in a two-host sidebar whose first local workspace is
 /// `herdr` and whose worktree group holds `sidebar-child`.

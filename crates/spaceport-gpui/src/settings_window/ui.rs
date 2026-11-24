@@ -1,7 +1,7 @@
 //! Shared row and control builders for the Settings pages. Pure rendering:
 //! they take the theme and return elements; state and saves stay on the view.
 // i18n: migrated
-use super::catalog::Entry;
+use super::catalog::{self, Entry};
 use crate::direction::Logical;
 use crate::{
     config::{Theme, corners},
@@ -80,8 +80,8 @@ pub(in crate::settings_window) struct Row {
 /// A catalogued row: its id, title and description are its entry's, the
 /// ones search matches, so a page states none of them itself.
 pub(in crate::settings_window) fn row(theme: &Theme, entry: &Entry) -> Row {
-    let row = data_row(theme, entry.id, entry.title());
-    let description = entry.description();
+    let row = data_row(theme, entry.id, catalog::title(entry));
+    let description = catalog::description(entry);
     if description.is_empty() {
         row
     } else {

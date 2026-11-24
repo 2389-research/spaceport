@@ -14,11 +14,11 @@ mod window;
 
 use super::{SettingsWindow, catalog, inputs::DropdownField, ui};
 use crate::i18n::{self, fl};
-pub(super) use fonts::size_control;
 use gpui::{prelude::*, *};
 pub(super) use language::language_choices;
-pub(super) use sidebar::Spacing;
-pub(super) use window::padding_ids;
+pub(super) use spaceport_settings::fields::{
+    CLIPBOARD_POSITIONS, Spacing, TOAST_POSITIONS, padding_ids, position_message,
+};
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(in crate::settings_window) use configuration::open_path;
@@ -110,32 +110,8 @@ fn on_value<T: 'static>(
     }
 }
 
-/// The clipboard notification's positions, each with its message.
-pub(super) const CLIPBOARD_POSITIONS: [(crate::config::ClipboardToastPosition, &str); 6] = {
-    use crate::config::ClipboardToastPosition as P;
-    [
-        (P::TopLeft, "settings-position-top-left"),
-        (P::TopCenter, "settings-position-top-center"),
-        (P::TopRight, "settings-position-top-right"),
-        (P::BottomLeft, "settings-position-bottom-left"),
-        (P::BottomCenter, "settings-position-bottom-center"),
-        (P::BottomRight, "settings-position-bottom-right"),
-    ]
-};
-
-/// Herdr's toast positions, each with its message.
-pub(super) const TOAST_POSITIONS: [(spaceport_client::protocol::ToastHerdrPosition, &str); 4] = {
-    use spaceport_client::protocol::ToastHerdrPosition as P;
-    [
-        (P::TopLeft, "settings-position-top-left"),
-        (P::TopRight, "settings-position-top-right"),
-        (P::BottomLeft, "settings-position-bottom-left"),
-        (P::BottomRight, "settings-position-bottom-right"),
-    ]
-};
-
 /// The names of `positions`, in order, for an override dropdown.
-fn position_names<T>(positions: &[(T, &str)]) -> Vec<String> {
+fn position_names<T>(positions: &[(T, &'static str)]) -> Vec<String> {
     positions
         .iter()
         .map(|(_, id)| i18n::message(id, &[]))
@@ -143,24 +119,16 @@ fn position_names<T>(positions: &[(T, &str)]) -> Vec<String> {
 }
 
 /// The name of `position` among `positions`, or nothing when it is missing.
-fn position_name<T: PartialEq>(positions: &[(T, &str)], position: &T) -> String {
-    positions
-        .iter()
-        .find(|(p, _)| p == position)
-        .map(|(_, id)| i18n::message(id, &[]))
-        .unwrap_or_default()
+fn position_name<T: PartialEq>(positions: &[(T, &'static str)], position: &T) -> String {
+    position_message(positions, position).map_or_else(String::new, |id| i18n::message(id, &[]))
 }
 
 /// "On" or "Off" for a boolean override dropdown.
 fn on_off(value: bool) -> String {
-    if value {
-        fl!("settings-on")
-    } else {
-        fl!("settings-off")
-    }
+    i18n::message(spaceport_settings::fields::on_off_message(value), &[])
 }
 
 /// The choices of a boolean override dropdown, on first.
 fn on_off_choices() -> [String; 2] {
-    [on_off(true), on_off(false)]
+    spaceport_settings::fields::on_off_messages().map(|id| i18n::message(id, &[]))
 }

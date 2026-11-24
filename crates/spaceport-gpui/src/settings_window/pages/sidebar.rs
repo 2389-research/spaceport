@@ -3,11 +3,11 @@
 //! Sidebar: layout preset, selection marks, spacing and host colours. Every
 //! change reaches the open windows at once; see `settings_window::sidebar`.
 // i18n: migrated
-use super::{SettingsWindow, catalog, on_value, ui};
+use super::{SettingsWindow, Spacing, catalog, on_value, ui};
 use crate::{
     config::{
         AgentsPlacement, Config, DeviceFooter, Label as _, LayoutMode, SelectMode,
-        SidebarOverrides, preferences::Preference,
+        preferences::Preference,
     },
     i18n::{self, fl},
     settings_window::{
@@ -17,100 +17,28 @@ use crate::{
     sidebar::SidebarMetrics,
 };
 use gpui::{prelude::*, *};
-use std::ops::RangeInclusive;
 
-/// The four spacing numbers the page edits. The old sidebar gap became the
-/// terminal's left padding, on the Theme page.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(in crate::settings_window) enum Spacing {
-    Indent,
-    RowPadding,
-    RowGap,
-    HostGap,
+/// The configured override, or none when the preset applies.
+fn overridden(spacing: Spacing, config: &Config) -> Option<f32> {
+    let mut overrides = config.sidebar_style.overrides;
+    *spacing.slot(&mut overrides)
 }
 
-impl Spacing {
-    pub(in crate::settings_window) const ALL: [Self; 4] =
-        [Self::Indent, Self::RowPadding, Self::RowGap, Self::HostGap];
-
-    /// The catalog entry of the row.
-    pub(in crate::settings_window) const fn entry(self) -> &'static catalog::Entry {
-        match self {
-            Self::Indent => &catalog::SIDEBAR_INDENT,
-            Self::RowPadding => &catalog::SIDEBAR_ROW_PADDING,
-            Self::RowGap => &catalog::SIDEBAR_ROW_GAP,
-            Self::HostGap => &catalog::SIDEBAR_HOST_GAP,
+/// What the sidebar uses now: the override, else the preset's value.
+fn spacing_value(spacing: Spacing, config: &Config) -> f32 {
+    let preset = SidebarMetrics::for_mode(config.layout.mode);
+    overridden(spacing, config).unwrap_or(match spacing {
+        // The card layouts step worktrees by their own padding.
+        Spacing::Indent
+            if matches!(config.layout.mode, LayoutMode::Superset | LayoutMode::Orca) =>
+        {
+            preset.card_indent
         }
-    }
-
-    pub(in crate::settings_window) fn control(self) -> &'static str {
-        match self {
-            Self::Indent => "sidebar-indent-control",
-            Self::RowPadding => "sidebar-row-padding-control",
-            Self::RowGap => "sidebar-row-gap-control",
-            Self::HostGap => "sidebar-host-gap-control",
-        }
-    }
-
-    fn reset(self) -> &'static str {
-        match self {
-            Self::Indent => "sidebar-indent-reset",
-            Self::RowPadding => "sidebar-row-padding-reset",
-            Self::RowGap => "sidebar-row-gap-reset",
-            Self::HostGap => "sidebar-host-gap-reset",
-        }
-    }
-
-    /// The `[sidebar]` key the parser bands.
-    fn band(self) -> &'static str {
-        match self {
-            Self::Indent => "indent",
-            Self::RowPadding => "row_padding",
-            Self::RowGap => "gap",
-            Self::HostGap => "host_gap",
-        }
-    }
-
-    pub(in crate::settings_window) fn range(self) -> RangeInclusive<f32> {
-        let key = self.band();
-        let max = SidebarOverrides::BANDS
-            .iter()
-            .find_map(|(name, max)| (*name == key).then_some(*max))
-            .unwrap_or(0.);
-        0.0..=max
-    }
-
-    fn slot(self, overrides: &mut SidebarOverrides) -> &mut Option<f32> {
-        match self {
-            Self::Indent => &mut overrides.indent,
-            Self::RowPadding => &mut overrides.row_padding,
-            Self::RowGap => &mut overrides.gap,
-            Self::HostGap => &mut overrides.host_gap,
-        }
-    }
-
-    /// The configured override, or none when the preset applies.
-    fn overridden(self, config: &Config) -> Option<f32> {
-        let mut overrides = config.sidebar_style.overrides;
-        *self.slot(&mut overrides)
-    }
-
-    /// What the sidebar uses now: the override, else the preset's value.
-    fn value(self, config: &Config) -> f32 {
-        let preset = SidebarMetrics::for_mode(config.layout.mode);
-        self.overridden(config).unwrap_or(match self {
-            // The card layouts step worktrees by their own padding.
-            Self::Indent
-                if matches!(config.layout.mode, LayoutMode::Superset | LayoutMode::Orca) =>
-            {
-                preset.card_indent
-            }
-            Self::Indent => preset.child_indent,
-            Self::RowPadding => preset.row_padding,
-            Self::RowGap => preset.gap,
-            Self::HostGap => preset.host_gap,
-        })
-    }
+        Spacing::Indent => preset.child_indent,
+        Spacing::RowPadding => preset.row_padding,
+        Spacing::RowGap => preset.gap,
+        Spacing::HostGap => preset.host_gap,
+    })
 }
 
 impl SettingsWindow {
@@ -300,7 +228,7 @@ impl SettingsWindow {
         }
         page = page.child(
             // A heading search opens, so it takes its entry's id and title.
-            ui::section(theme, &catalog::SIDEBAR_HOST_COLOURS.title(), None)
+            ui::section(theme, &catalog::title(&catalog::SIDEBAR_HOST_COLOURS), None)
                 .relative()
                 .debug_selector(|| catalog::SIDEBAR_HOST_COLOURS.id.into())
                 .child(super::super::search::track_bounds(
@@ -408,7 +336,7 @@ impl SettingsWindow {
 
     fn spacing_row(&self, spacing: Spacing, ready: bool, cx: &mut Context<Self>) -> ui::Row {
         let field = NumberField::Spacing(spacing);
-        let value = spacing.value(&self.config);
+        let value = spacing_value(spacing, &self.config);
         let view = cx.entity().downgrade();
         ui::row(&self.theme, spacing.entry())
             .control(ui::number(
@@ -438,7 +366,7 @@ impl SettingsWindow {
     /// keeps the numbers aligned either way.
     fn spacing_reset(&self, spacing: Spacing, ready: bool, cx: &mut Context<Self>) -> Div {
         let slot = div().w(px(16.)).flex_none();
-        if spacing.overridden(&self.config).is_none() {
+        if overridden(spacing, &self.config).is_none() {
             return slot;
         }
         let id = spacing.reset();

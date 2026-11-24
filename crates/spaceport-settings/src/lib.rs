@@ -6,15 +6,18 @@
 //! touch files: callers MUST run them on a background worker, never in render
 //! or input handlers.
 //!
-//! Everything here is a value or its file. The app keeps what acts on one —
-//! spawning a watcher, installing an SSH hook, painting, building the keymap
-//! from the raw tables, wording a diagnostic.
+//! Everything here is a value or its file, and the policy over those values
+//! that needs no window: the Settings pages' sections and rows, the drafts an
+//! unsaved edit lives in, and the bounded queue their saves run through. The
+//! app keeps what acts on one — spawning a watcher, installing an SSH hook,
+//! painting, building the keymap from the raw tables, wording a diagnostic.
 
 pub mod accent;
 pub mod agent_skill;
 pub mod agents_placement;
 pub mod backdrop;
 pub mod bitmap_fonts;
+pub mod catalog;
 pub mod chat;
 pub mod cjk_fonts;
 pub mod config;
@@ -26,6 +29,7 @@ pub mod edit;
 mod error;
 pub mod favorite_themes;
 pub mod features;
+pub mod fields;
 pub mod files;
 pub mod font_weight;
 pub mod fonts;
@@ -40,6 +44,7 @@ pub mod padding;
 pub mod palette;
 pub mod preferences;
 pub mod save_queue;
+pub mod section;
 pub mod sidebar;
 pub mod sidebar_draft;
 pub mod sidebar_style;

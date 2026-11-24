@@ -102,7 +102,7 @@ impl SettingsWindow {
             .pb(px(4.))
             .text_size(px(10.))
             .text_color(rgb(self.theme.subtext()))
-            .child(group.label().to_uppercase())
+            .child(crate::i18n::message(group.message(), &[]).to_uppercase())
     }
 
     fn navigation_row(
@@ -116,7 +116,7 @@ impl SettingsWindow {
         div()
             .id(("settings-section", index))
             .role(Role::Tab)
-            .aria_label(section.label())
+            .aria_label(crate::i18n::message(section.message(), &[]))
             .aria_selected(selected)
             .relative()
             .map(|row| {
@@ -145,7 +145,7 @@ impl SettingsWindow {
                         theme.subtext()
                     })),
             )
-            .child(section.label())
+            .child(crate::i18n::message(section.message(), &[]))
             .on_click(
                 cx.listener(move |this, _, window, cx| this.select_section(section, window, cx)),
             )

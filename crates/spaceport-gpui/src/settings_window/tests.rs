@@ -34,7 +34,6 @@ mod save_intents;
 mod save_now;
 mod scrollbars;
 mod search;
-mod section_order;
 #[cfg(unix)]
 mod shared_save_queue;
 mod sidebar_drafts;
