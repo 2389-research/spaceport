@@ -1,4 +1,6 @@
 use super::*;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 /// Observe presses reaching the bar itself. The headless platform does
 /// not implement compositor moves; button presses must be stopped before the

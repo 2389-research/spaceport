@@ -4,7 +4,7 @@
 //! it was started under.
 
 mod appear;
-mod chrome;
+pub(crate) mod chrome;
 mod colors;
 pub(crate) mod devices;
 pub(crate) mod labels;
@@ -44,7 +44,13 @@ mod version_mismatch_tests;
 #[cfg(test)]
 pub(crate) mod workspace_tests;
 
-#[cfg(any(windows, test, feature = "integration-test"))]
+#[cfg(any(
+    test,
+    all(
+        feature = "integration-test",
+        any(target_os = "macos", target_os = "linux")
+    )
+))]
 pub(crate) use state::Cover;
 pub(crate) use {
     colors::{accent, danger, online, tint},
@@ -85,7 +91,3 @@ fn action_icon(
                 .debug_selector(move || selector.clone()),
         )
 }
-
-/// Breathing room between a popup and the window's edges, so a list that had
-/// to be clamped still shows that it stops short of the frame.
-const MENU_MARGIN: f32 = 8.;

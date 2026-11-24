@@ -1,14 +1,20 @@
 //! The menu model below the app: what a popup is showing, how its layer comes
 //! and goes, the workspace, tab and pane a row targets, the typed request each
-//! row becomes, and the rows the device picker and its sessions offer.
+//! row becomes, and the rows the device picker and its sessions offer — and the
+//! chrome it all draws in, from the panel a page sits in to the in-window menu
+//! bar a Linux or Windows window draws for itself.
 //!
 //! The app keeps the window's aggregate menu state, every word a page says and
-//! the painting, and words an action by matching its variant (`docs/i18n.md`).
-//! Nothing here reads a window, and nothing here says a sentence a person
-//! reads: a target is captured from a snapshot, a row that sends anything names
-//! it explicitly, and a row that paints carries the words the app built.
+//! every page's body, and words an action by matching its variant
+//! (`docs/i18n.md`). Nothing here reads a window, and nothing here says a
+//! sentence a person reads: a target is captured from a snapshot, a row that
+//! sends anything names it explicitly, a row that paints carries the words the
+//! app built, and the chrome around a page takes the page's own element from
+//! the app.
 
 pub mod appear;
+pub mod bar;
+pub mod chrome;
 mod error;
 pub mod page;
 pub mod pane;

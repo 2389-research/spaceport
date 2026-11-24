@@ -6791,10 +6791,13 @@ dependencies = [
 name = "spaceport-menu"
 version = "0.1.0"
 dependencies = [
+ "gpui-pre",
  "serde_json",
  "spaceport-client",
  "spaceport-motion",
+ "spaceport-settings",
  "spaceport-usage",
+ "spaceport-widgets",
  "thiserror 2.0.21",
 ]
 

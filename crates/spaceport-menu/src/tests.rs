@@ -7,6 +7,7 @@ use serde_json::json;
 use spaceport_client::protocol::ClientShellSnapshot;
 
 mod appear;
+mod chrome;
 mod left_checkout;
 mod page_set;
 mod pane_payloads;
