@@ -65,8 +65,8 @@ fn theme_page(view: &SettingsWindow, _: &App) -> Vec<String> {
 }
 
 /// The hosts with a colour row, and the spacing numbers.
-fn sidebar_page(view: &SettingsWindow, cx: &App) -> Vec<String> {
-    let hosts = view.host_rows(cx).into_iter().map(|(host, ..)| host);
+fn sidebar_page(view: &SettingsWindow, _: &App) -> Vec<String> {
+    let hosts = view.host_rows().into_iter().map(|(host, ..)| host);
     hosts.collect()
 }
 

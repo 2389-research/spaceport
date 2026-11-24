@@ -37,6 +37,7 @@ mod search;
 #[cfg(unix)]
 mod shared_save_queue;
 mod sidebar_drafts;
+mod source_snapshot;
 mod tab_layout;
 mod theme_drafts;
 // Saving a shared Herdr theme is Unix-only.
