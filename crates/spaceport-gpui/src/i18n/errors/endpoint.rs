@@ -14,3 +14,16 @@ impl Localize for Error {
         }
     }
 }
+
+/// The endpoint crate's failures, which this window shows as a notice when the
+/// saved devices cannot be read or the choice of one cannot be kept: the
+/// client's own storage step through its mapping, and the system's own words
+/// for a worker that could not start.
+impl Localize for spaceport_endpoint::Error {
+    fn localize(&self) -> String {
+        match self {
+            Self::Client(error) => error.localize(),
+            Self::Worker(error) => error.to_string(),
+        }
+    }
+}
