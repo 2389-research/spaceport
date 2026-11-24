@@ -6701,6 +6701,7 @@ dependencies = [
  "spaceport-truncate",
  "spaceport-usage",
  "spaceport-web-url",
+ "spaceport-widgets",
  "spaceport-words",
  "sparkle-updater",
  "sysinfo 0.39.6",
@@ -6932,6 +6933,17 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
  "url",
+]
+
+[[package]]
+name = "spaceport-widgets"
+version = "0.1.0"
+dependencies = [
+ "gpui-pre",
+ "spaceport-i18n",
+ "spaceport-icons",
+ "spaceport-settings",
+ "spaceport-sidebar",
 ]
 
 [[package]]

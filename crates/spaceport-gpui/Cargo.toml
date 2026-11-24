@@ -49,6 +49,7 @@ spaceport-state-file.workspace    = true
 spaceport-usage.workspace         = true
 spaceport-truncate.workspace      = true
 spaceport-web-url.workspace       = true
+spaceport-widgets.workspace      = true
 spaceport-words.workspace         = true
 image                          = { features = ["bmp", "tiff"], workspace = true }
 keepawake.workspace            = true
@@ -94,6 +95,7 @@ spaceport-client = { features = ["test-support"], workspace = true }
 spaceport-reorder = { features = ["test-support"], workspace = true }
 spaceport-settings = { features = ["test-support"], workspace = true }
 spaceport-sidebar = { features = ["test-support"], workspace = true }
+spaceport-widgets = { features = ["test-support"], workspace = true }
 spaceport-sound = { features = ["test-support"], workspace = true }
 spaceport-commands = { features = ["test-support"], workspace = true }
 spaceport-remote = { features = ["test-support"], workspace = true }

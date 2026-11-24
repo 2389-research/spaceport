@@ -1,10 +1,6 @@
 use super::*;
 use gpui::{Anchor, StyleRefinement, TextAlign, px};
-use spaceport_i18n::{Locale, Pseudo};
-
-fn rtl() {
-    crate::i18n::show(&Pseudo::Bidi.locale());
-}
+use spaceport_sidebar::direction::{DIRECTIONAL_GLYPHS, DIRECTIONAL_ICONS};
 
 /// The style a refinement builds, as the element would carry it.
 fn style(build: impl FnOnce(StyleRefinement) -> StyleRefinement) -> StyleRefinement {
@@ -12,8 +8,8 @@ fn style(build: impl FnOnce(StyleRefinement) -> StyleRefinement) -> StyleRefinem
 }
 
 #[test]
-fn english_lays_out_left_to_right() {
-    crate::i18n::show(&Locale::FALLBACK);
+fn left_to_right_lays_out_every_side_physically() {
+    set(Direction::Ltr);
     assert_eq!(current(), Direction::Ltr);
     assert_eq!(
         style(|s| s.ps(px(4.)).pe(px(9.))),
@@ -26,8 +22,8 @@ fn english_lays_out_left_to_right() {
 }
 
 #[test]
-fn the_bidi_pseudo_locale_mirrors_every_side() {
-    rtl();
+fn right_to_left_mirrors_every_side() {
+    set(Direction::Rtl);
     assert_eq!(current(), Direction::Rtl);
     let pairs: [(StyleRefinement, StyleRefinement); 8] = [
         (style(|s| s.ps(px(4.))), style(|s| s.pr(px(4.)))),
@@ -50,7 +46,7 @@ fn the_bidi_pseudo_locale_mirrors_every_side() {
 
 #[test]
 fn anchors_mirror_across_the_vertical_axis_only() {
-    rtl();
+    set(Direction::Rtl);
     for (written, mirrored) in [
         (Anchor::TopLeft, Anchor::TopRight),
         (Anchor::BottomLeft, Anchor::BottomRight),
@@ -66,7 +62,7 @@ fn anchors_mirror_across_the_vertical_axis_only() {
 
 #[test]
 fn directional_icons_swap_with_an_embedded_mirror() {
-    rtl();
+    set(Direction::Rtl);
     for (icon_path, mirror) in DIRECTIONAL_ICONS {
         assert_eq!(icon(icon_path), *mirror);
         assert_eq!(icon(mirror), *icon_path);
@@ -87,12 +83,12 @@ fn directional_icons_swap_with_an_embedded_mirror() {
 
 #[test]
 fn text_arrows_swap_with_their_mirror() {
-    rtl();
+    set(Direction::Rtl);
     for (glyph_text, mirror) in DIRECTIONAL_GLYPHS {
         assert_eq!(glyph(glyph_text), *mirror);
         assert_eq!(glyph(mirror), *glyph_text);
     }
     assert_eq!(glyph("\u{25be}"), "\u{25be}");
-    crate::i18n::show(&Locale::FALLBACK);
+    set(Direction::Ltr);
     assert_eq!(glyph("\u{25b8}"), "\u{25b8}");
 }

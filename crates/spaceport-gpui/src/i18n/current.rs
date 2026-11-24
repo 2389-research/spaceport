@@ -1,10 +1,11 @@
 //! The catalog the process shows, and the direction its locale lays the
-//! chrome out in. Tests keep one per thread: each GPUI test runs on its own,
-//! and one switching to a pseudo-locale must not change the text or the
-//! layout another test reads.
+//! chrome out in, published to `spaceport-widgets` as the catalog is replaced.
+//! Tests keep one catalog per thread: each GPUI test runs on its own, and one
+//! switching to a pseudo-locale must not change the text or the layout another
+//! test reads.
 
 use super::FILES;
-use spaceport_i18n::{Catalog, Direction, Locale};
+use spaceport_i18n::{Catalog, Locale};
 use std::sync::{Arc, LazyLock};
 
 /// English, until the app picks the setting's locale.
@@ -19,19 +20,6 @@ fn load(locale: &Locale) -> Option<Catalog> {
 
 #[cfg(not(test))]
 static CURRENT: std::sync::RwLock<Option<Arc<Catalog>>> = std::sync::RwLock::new(None);
-
-/// Whether the shown locale runs right to left. Layout reads it for every
-/// element it mirrors, so it is kept apart from the catalog's lock.
-#[cfg(not(test))]
-static RTL: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-
-#[cfg(not(test))]
-pub(super) fn direction() -> Direction {
-    match RTL.load(std::sync::atomic::Ordering::Relaxed) {
-        true => Direction::Rtl,
-        false => Direction::Ltr,
-    }
-}
 
 #[cfg(not(test))]
 pub(super) fn catalog() -> Option<Arc<Catalog>> {
@@ -48,10 +36,7 @@ pub(super) fn replace(locale: &Locale) {
     let Some(catalog) = load(locale) else {
         return;
     };
-    RTL.store(
-        catalog.locale().direction() == Direction::Rtl,
-        std::sync::atomic::Ordering::Relaxed,
-    );
+    spaceport_widgets::direction::set(catalog.locale().direction());
     if let Ok(mut current) = CURRENT.write() {
         *current = Some(Arc::new(catalog));
     }
@@ -70,13 +55,9 @@ pub(super) fn catalog() -> Option<Arc<Catalog>> {
 }
 
 #[cfg(test)]
-pub(super) fn direction() -> Direction {
-    catalog().map_or(Direction::Ltr, |catalog| catalog.locale().direction())
-}
-
-#[cfg(test)]
 pub(super) fn replace(locale: &Locale) {
     if let Some(catalog) = load(locale) {
+        spaceport_widgets::direction::set(catalog.locale().direction());
         CURRENT.set(Some(Arc::new(catalog)));
     }
 }

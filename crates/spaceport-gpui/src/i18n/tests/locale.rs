@@ -15,11 +15,13 @@ fn the_qa_pseudo_locale_switches_text_and_back(cx: &mut TestAppContext) {
         // Another pseudo-locale replaces it; choosing it again turns it off.
         toggle_pseudo(Pseudo::Bidi, cx);
         assert_eq!(cx.global::<CurrentLocale>().direction(), Direction::Rtl);
+        assert_eq!(crate::direction::current(), Direction::Rtl);
         assert_eq!(fl!("palette-filter-all"), "\u{202E}All\u{202C}");
         toggle_pseudo(Pseudo::Bidi, cx);
         assert_eq!(shown_pseudo(), None);
         assert_eq!(fl!("palette-filter-all"), "All");
         assert_eq!(cx.global::<CurrentLocale>().direction(), Direction::Ltr);
+        assert_eq!(crate::direction::current(), Direction::Ltr);
     });
 }
 
