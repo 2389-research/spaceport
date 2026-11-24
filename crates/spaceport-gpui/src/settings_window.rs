@@ -27,7 +27,7 @@ mod remote_history;
 mod scrollbar;
 mod search;
 mod section;
-use section::{Group, Section};
+use section::Section;
 mod sidebar;
 mod source;
 use page_state::PageState;
@@ -44,7 +44,7 @@ pub(crate) use native::verify_native;
 use crate::direction::Logical;
 use crate::{
     SpaceportWindow,
-    config::{Config, Theme, corners, mix},
+    config::{Config, Theme},
     fonts::StyledFont,
     herdr_settings,
     i18n::{Localize, fl},

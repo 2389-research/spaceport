@@ -20,9 +20,8 @@ mod launch_at_login;
 mod layout_drafts;
 mod load_save;
 mod mixed_follow;
-mod navigation_groups;
 mod navigation_resize;
-mod navigation_scroll;
+mod navigation_words;
 mod page_messages;
 mod pages_behaviour;
 mod quit_saves;
@@ -32,7 +31,6 @@ mod removed_worktree_cleanup;
 mod rtl;
 mod save_intents;
 mod save_now;
-mod scrollbars;
 mod search;
 #[cfg(unix)]
 mod shared_save_queue;
