@@ -14,8 +14,10 @@ use spaceport_settings_window::ui::{
     number as kit_number, row as kit_row, section as kit_section, swatch_row as kit_swatch_row,
 };
 
-/// The row height only the native check and the font tests name.
-#[cfg(any(test, feature = "integration-test"))]
+/// The row height only the native check and the font tests name. The
+/// native module is macOS-gated, so this re-export follows it; the font
+/// test reads the crate path directly.
+#[cfg(all(feature = "integration-test", target_os = "macos"))]
 pub(in crate::settings_window) use spaceport_settings_window::ui::ROW_HEIGHT;
 pub(in crate::settings_window) use spaceport_settings_window::ui::{
     Dropdown, HostColorChange, Look, Number, NumberChange, Row, Source, Unit, button,
