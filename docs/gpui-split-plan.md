@@ -37,7 +37,7 @@ stayed on the window, and the two seams the design had to change.
 
 | Before | After |
 | --- | --- |
-| `crates/sheprd-gpui/src/ago.rs`, 32 lines | `crates/spaceport-ago/src/lib.rs`: `Elapsed` and `elapsed(seconds)` |
+| `crates/spaceport-gpui/src/ago.rs`, 32 lines | `crates/spaceport-ago/src/lib.rs`: `Elapsed` and `elapsed(seconds)` |
 | its unit table in `src/ago/tests.rs` | `crates/spaceport-ago/src/tests.rs` |
 | its message table and `text()` | stay in `crates/spaceport-gpui/src/ago.rs`, 34 lines |
 
@@ -74,8 +74,8 @@ already in `src/words/tests.rs`, so they moved as they were:
 
 | Before | After |
 | --- | --- |
-| `crates/sheprd-gpui/src/words.rs`, 35 lines | `crates/spaceport-words/src/lib.rs`: `previous_start(text, offset)` and `next_end(text, offset)` |
-| `crates/sheprd-gpui/src/words/tests.rs`, 41 lines | `crates/spaceport-words/src/tests.rs` |
+| `crates/spaceport-gpui/src/words.rs`, 35 lines | `crates/spaceport-words/src/lib.rs`: `previous_start(text, offset)` and `next_end(text, offset)` |
+| `crates/spaceport-gpui/src/words/tests.rs`, 41 lines | `crates/spaceport-words/src/tests.rs` |
 | `src/multiline_input.rs` (double-click selection) and `src/text_editing/keys.rs` (word movement) | both call `spaceport_words::` |
 
 It carries no messages either: the fields that use it own their own text.
@@ -88,7 +88,7 @@ falls back to its own default: a property of a deserializer, not of the app.
 
 | Before | After |
 | --- | --- |
-| `crates/sheprd-gpui/src/lenient.rs`, 107 lines | `crates/spaceport-lenient/src/lib.rs`, 51 lines: `value`, `or_default`, `or_true`, `entries` |
+| `crates/spaceport-gpui/src/lenient.rs`, 107 lines | `crates/spaceport-lenient/src/lib.rs`, 51 lines: `value`, `or_default`, `or_true`, `entries` |
 | its inline test | `crates/spaceport-lenient/src/tests.rs`, 56 lines |
 | 44 `crate::lenient::` paths in four settings files | the same paths naming `spaceport_lenient` |
 
