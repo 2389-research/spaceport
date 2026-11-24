@@ -1,5 +1,5 @@
 [workspace]
-members  = ["crates/embed-resource", "crates/spaceport-acp", "crates/spaceport-ago", "crates/spaceport-backend", "crates/spaceport-browser", "crates/spaceport-chat-core", "crates/spaceport-chat-protocol", "crates/spaceport-client", "crates/spaceport-commands", "crates/spaceport-control-protocol", "crates/spaceport-core-client", "crates/spaceport-diagnostics", "crates/spaceport-gpui", "crates/spaceport-launcher", "crates/spaceport-i18n", "crates/spaceport-icons", "crates/spaceport-lenient", "crates/spaceport-menu", "crates/spaceport-motion", "crates/spaceport-osc52", "crates/spaceport-panes", "crates/spaceport-protocol", "crates/spaceport-release-notes", "crates/spaceport-remote", "crates/spaceport-reorder", "crates/spaceport-settings", "crates/spaceport-sidebar", "crates/spaceport-sound", "crates/spaceport-state-file", "crates/spaceport-terminal", "crates/spaceport-truncate", "crates/spaceport-usage", "crates/spaceport-widgets", "crates/spaceport-words"]
+members  = ["crates/embed-resource", "crates/spaceport-acp", "crates/spaceport-ago", "crates/spaceport-backend", "crates/spaceport-browser", "crates/spaceport-chat-core", "crates/spaceport-chat-protocol", "crates/spaceport-client", "crates/spaceport-commands", "crates/spaceport-control-protocol", "crates/spaceport-core-client", "crates/spaceport-diagnostics", "crates/spaceport-gpui", "crates/spaceport-launcher", "crates/spaceport-i18n", "crates/spaceport-icons", "crates/spaceport-lenient", "crates/spaceport-motion", "crates/spaceport-osc52", "crates/spaceport-panes", "crates/spaceport-protocol", "crates/spaceport-release-notes", "crates/spaceport-remote", "crates/spaceport-reorder", "crates/spaceport-settings", "crates/spaceport-settings-window", "crates/spaceport-sidebar", "crates/spaceport-sound", "crates/spaceport-state-file", "crates/spaceport-terminal", "crates/spaceport-truncate", "crates/spaceport-usage", "crates/spaceport-widgets", "crates/spaceport-words"]
 resolver = "2"
 
 [workspace.package]
@@ -81,7 +81,6 @@ spaceport-diagnostics   = { path = "crates/spaceport-diagnostics" }
 spaceport-i18n          = { path = "crates/spaceport-i18n" }
 spaceport-icons         = { path = "crates/spaceport-icons" }
 spaceport-lenient       = { path = "crates/spaceport-lenient" }
-spaceport-menu          = { path = "crates/spaceport-menu" }
 spaceport-motion        = { path = "crates/spaceport-motion" }
 spaceport-osc52         = { path = "crates/spaceport-osc52" }
 spaceport-panes         = { path = "crates/spaceport-panes" }
@@ -90,6 +89,7 @@ spaceport-release-notes = { path = "crates/spaceport-release-notes" }
 spaceport-remote        = { default-features = false, path = "crates/spaceport-remote" }
 spaceport-reorder       = { path = "crates/spaceport-reorder" }
 spaceport-settings      = { path = "crates/spaceport-settings" }
+spaceport-settings-window = { path = "crates/spaceport-settings-window" }
 spaceport-sidebar       = { path = "crates/spaceport-sidebar" }
 spaceport-sound         = { path = "crates/spaceport-sound" }
 spaceport-state-file    = { path = "crates/spaceport-state-file" }

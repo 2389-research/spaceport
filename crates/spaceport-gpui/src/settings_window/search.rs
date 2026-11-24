@@ -6,28 +6,10 @@
 use super::{SettingsWindow, catalog, ui};
 use crate::{config::ThemeName, i18n::fl};
 use gpui::{prelude::*, *};
-use std::collections::HashMap;
 
-/// Where each row was last painted, by row id, for scrolling to it.
-#[derive(Default)]
-pub(super) struct RowBounds(pub HashMap<SharedString, Bounds<Pixels>>);
-impl Global for RowBounds {}
-
-/// Records the bounds of the element it is a child of under `id`. Absolute, so
-/// it takes no room in the row's layout.
-pub(super) fn track_bounds(id: SharedString) -> impl IntoElement {
-    canvas(
-        move |bounds, _, cx| {
-            cx.default_global::<RowBounds>().0.insert(id, bounds);
-        },
-        |_, _, _, _| {},
-    )
-    .absolute()
-    .size_full()
-}
-
-/// Space kept above a row that search scrolls to the top of the body.
-const SCROLL_MARGIN: f32 = 12.;
+/// The rows' painted bounds are `spaceport-settings-window`'s, so the kit
+/// records where a row went and search scrolls to it.
+pub(super) use spaceport_settings_window::bounds::{RowBounds, SCROLL_MARGIN, track_bounds};
 
 impl SettingsWindow {
     /// Shows the results for `query`, or the page again when it is empty.

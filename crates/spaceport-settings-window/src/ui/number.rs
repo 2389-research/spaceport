@@ -1,10 +1,9 @@
 //! A number with typed entry, and -/+ steppers and an optional drag slider
 //! unless it is a bare field.
-use crate::config::{Theme, corners};
-use crate::direction::Logical;
-use crate::i18n::fl;
-use crate::search_input::SearchInput;
+use crate::ui::Labels;
 use gpui::{prelude::*, *};
+use spaceport_settings::{Theme, corners};
+use spaceport_widgets::direction::Logical;
 use std::{cell::Cell, ops::RangeInclusive, rc::Rc};
 
 thread_local! {
@@ -30,7 +29,7 @@ fn take_preview(id: &'static str) -> Option<f32> {
     })
 }
 
-pub(in crate::settings_window) struct Number {
+pub struct Number {
     pub id: &'static str,
     pub value: f32,
     pub range: RangeInclusive<f32>,
@@ -41,25 +40,26 @@ pub(in crate::settings_window) struct Number {
 
 /// What the value counts, written after it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(in crate::settings_window) enum Unit {
+pub enum Unit {
     Percent,
     Pixels,
     Seconds,
 }
 
 impl Unit {
-    fn label(self) -> String {
+    /// The message naming what this unit counts.
+    pub const fn label_id(self) -> &'static str {
         match self {
-            Self::Percent => fl!("settings-unit-percent"),
-            Self::Pixels => fl!("settings-unit-pixels"),
-            Self::Seconds => fl!("settings-unit-seconds"),
+            Self::Percent => "settings-unit-percent",
+            Self::Pixels => "settings-unit-pixels",
+            Self::Seconds => "settings-unit-seconds",
         }
     }
 }
 
 /// What surrounds the typed value.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(in crate::settings_window) enum Look {
+pub enum Look {
     /// A drag slider, -/+ steppers, and the range beside them.
     Slider,
     /// -/+ steppers and the range.
@@ -69,25 +69,23 @@ pub(in crate::settings_window) enum Look {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(in crate::settings_window) enum NumberChange {
+pub enum NumberChange {
     Preview(f32),
     Commit(f32),
     /// A release that ends no drag of ours: the preview is dropped unwritten.
     Abandon,
 }
 
-/// The typed-entry state the view keeps while one field is being edited.
-pub(in crate::settings_window) struct NumberEdit {
-    pub field: crate::settings_window::inputs::NumberField,
-    pub input: Entity<SearchInput>,
+/// What the field shows in its value's place while a value is being typed: the
+/// text field's own element, which the view owns, and whether what it holds
+/// does not parse.
+pub struct Editing {
+    pub input: AnyElement,
     pub invalid: bool,
-    pub _blur: Subscription,
 }
 
-pub(in crate::settings_window) fn parse_number(
-    text: &str,
-    range: &RangeInclusive<f32>,
-) -> Option<f32> {
+/// The number a field holds, or `None` when `text` is not one in `range`.
+pub fn parse_number(text: &str, range: &RangeInclusive<f32>) -> Option<f32> {
     let text = text.trim();
     if text.is_empty() || !text.bytes().all(|b| b.is_ascii_digit()) {
         return None;
@@ -96,11 +94,7 @@ pub(in crate::settings_window) fn parse_number(
     range.contains(&value).then_some(value)
 }
 
-pub(in crate::settings_window) fn slider_value(
-    x: Pixels,
-    bounds: Bounds<Pixels>,
-    range: &RangeInclusive<f32>,
-) -> f32 {
+pub fn slider_value(x: Pixels, bounds: Bounds<Pixels>, range: &RangeInclusive<f32>) -> f32 {
     let width = f32::from(bounds.size.width).max(1.);
     let fraction = ((f32::from(x) - f32::from(bounds.left())) / width).clamp(0., 1.);
     (range.start() + fraction * (range.end() - range.start())).round()
@@ -118,10 +112,11 @@ fn stepped_value(value: f32, delta: f32, range: &RangeInclusive<f32>) -> Option<
 #[derive(Clone, Copy, PartialEq)]
 struct SliderDrag(&'static str);
 
-pub(in crate::settings_window) fn number(
+pub fn number(
     theme: &Theme,
     spec: Number,
-    editing: Option<&NumberEdit>,
+    editing: Option<Editing>,
+    labels: &Labels,
     on_change: impl Fn(NumberChange, &mut Window, &mut App) + 'static,
     on_edit: impl Fn(&mut Window, &mut App) + 'static,
 ) -> Div {
@@ -201,15 +196,11 @@ pub(in crate::settings_window) fn number(
     let steppers = spec.look != Look::Field;
     let width = px(if steppers { 44. } else { 56. });
     let border = match editing {
-        Some(edit) if edit.invalid => theme.ink(0xd45b5b),
+        Some(Editing { invalid: true, .. }) => theme.ink(0xd45b5b),
         _ => theme.active,
     };
     let shown = match editing {
-        Some(edit) => div()
-            .w(width)
-            .px(px(6.))
-            .child(edit.input.clone())
-            .into_any_element(),
+        Some(Editing { input, .. }) => div().w(width).px(px(6.)).child(input).into_any_element(),
         None => div()
             .id((ElementId::from(id), "value"))
             .w(width)
@@ -245,7 +236,7 @@ pub(in crate::settings_window) fn number(
             div()
                 .pe(px(6.))
                 .text_color(rgb(theme.muted))
-                .child(spec.unit.label()),
+                .child((labels.message)(spec.unit.label_id())),
         )
         .when(steppers, |field| {
             field
@@ -256,19 +247,13 @@ pub(in crate::settings_window) fn number(
     #[cfg(all(feature = "integration-test", target_os = "macos"))]
     let field = field
         .relative()
-        .child(crate::settings_window::controls::native_probe(format!(
-            "{id}-field"
-        )));
+        .child(crate::native::native_probe(format!("{id}-field")));
     root.child(field).when(steppers, |root| {
         root.child(
             div()
                 .text_size(px(10.))
                 .text_color(rgb(theme.muted))
-                .child(fl!(
-                    "settings-number-range",
-                    min = *range.start() as i32,
-                    max = *range.end() as i32
-                )),
+                .child((labels.number_range)(*range.start(), *range.end())),
         )
     })
 }

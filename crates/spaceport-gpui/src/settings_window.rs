@@ -177,7 +177,7 @@ struct SettingsWindow {
     /// The open override dropdown, if any; its list renders inside its button.
     dropdown: Option<ui::Dropdown>,
     /// The number field being typed into, if any.
-    number_edit: Option<ui::NumberEdit>,
+    number_edit: Option<inputs::NumberEdit>,
     /// A slider being dragged, or released and saving, that writes only on
     /// release.
     number_preview: Option<inputs::NumberPreview>,

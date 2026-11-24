@@ -6696,6 +6696,7 @@ dependencies = [
  "spaceport-remote",
  "spaceport-reorder",
  "spaceport-settings",
+ "spaceport-settings-window",
  "spaceport-sidebar",
  "spaceport-sound",
  "spaceport-state-file",
@@ -6859,6 +6860,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "spaceport-settings-window"
+version = "0.1.0"
+dependencies = [
+ "gpui-pre",
+ "spaceport-settings",
+ "spaceport-widgets",
+]
+
+[[package]]
 name = "spaceport-sidebar"
 version = "0.1.0"
 dependencies = [
@@ -6954,6 +6964,7 @@ dependencies = [
  "gpui-pre",
  "spaceport-i18n",
  "spaceport-icons",
+ "spaceport-motion",
  "spaceport-settings",
  "spaceport-sidebar",
 ]

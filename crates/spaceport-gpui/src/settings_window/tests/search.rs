@@ -185,3 +185,13 @@ fn every_catalog_row_names_english_messages_without_arguments() {
         assert_eq!(crate::i18n::takes(section.message()), Some(none));
     }
 }
+
+/// The row kit names the messages it draws as data too, and this window words
+/// them, so each must be a message in English.
+#[test]
+fn every_id_the_row_kit_names_is_an_english_message() {
+    let none: &[&str] = &[];
+    for id in spaceport_settings_window::ui::MESSAGE_IDS {
+        assert_eq!(crate::i18n::takes(id), Some(none), "{id}");
+    }
+}
