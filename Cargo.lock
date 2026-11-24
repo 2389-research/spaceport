@@ -6776,6 +6776,7 @@ version = "0.1.0"
 dependencies = [
  "serde_json",
  "spaceport-client",
+ "spaceport-motion",
  "spaceport-usage",
  "thiserror 2.0.21",
 ]

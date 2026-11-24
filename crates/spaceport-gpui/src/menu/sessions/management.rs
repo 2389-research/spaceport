@@ -4,12 +4,6 @@ use crate::i18n::fl;
 use crate::search_input::SearchInput;
 use spaceport_client::RemoteHost;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(in crate::menu) enum Target {
-    Local,
-    Device { id: String, host: RemoteHost },
-}
-
 pub(in crate::menu) enum Edit {
     Create {
         target: Target,
@@ -37,8 +31,8 @@ impl SpaceportWindow {
         Entry::Row {
             row: Row::Add(target),
             spec: Spec {
-                label: fl!("sessions-menu-add-session").into(),
-                detail: detail.into(),
+                label: fl!("sessions-menu-add-session"),
+                detail,
                 online: false,
                 checked: false,
                 enabled,

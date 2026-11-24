@@ -60,7 +60,7 @@ impl SpaceportWindow {
         // A page that animates out keeps what it reads from the reset.
         if let Some(page) = self.menu.page.filter(|page| super::appear::leaves(*page)) {
             let kept = super::appear::Kept::take(&mut self.menu);
-            self.menu.appear.keep(page, kept);
+            self.menu.appear.state.keep(page, kept);
         }
         self.menu.reset();
         self.apply_shared_theme(cx);

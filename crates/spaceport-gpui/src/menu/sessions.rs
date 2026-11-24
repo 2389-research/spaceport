@@ -13,53 +13,8 @@ use spaceport_client::{ConnectTarget, LocalSession};
 use spaceport_sidebar::device_scope::DeviceScope;
 mod management;
 
-pub(super) use management::{Edit, Target};
-
-/// A line under an unfolded device, in the order it is painted. Only a row can
-/// be selected, so navigation walks the `Row` entries and skips notes.
-pub(super) enum Entry {
-    /// A muted note, carrying the selector diagnostics and tests look for.
-    Muted {
-        selector: String,
-        text: String,
-    },
-    Error(String),
-    /// A selectable line, carrying what it paints: a row resolved again at paint
-    /// time could describe a session its own scan has already replaced.
-    Row {
-        row: Row,
-        spec: Spec,
-    },
-}
-
-/// What a row attaches to. A device keeps its endpoint id rather than an index,
-/// so a catalog change between paint and click cannot pick the wrong one, and it
-/// names the session itself, because a device has many.
-#[derive(Clone, PartialEq)]
-pub(super) enum Row {
-    Local(String),
-    Device { id: String, session: String },
-    Add(Target),
-}
-
-/// What one row paints. Both kinds share one shape so they cannot drift apart.
-pub(super) struct Spec {
-    label: SharedString,
-    detail: SharedString,
-    /// Running locally, or connected remotely.
-    online: bool,
-    checked: bool,
-    enabled: bool,
-}
-
-impl Entry {
-    pub(super) fn row(&self) -> Option<&Row> {
-        match self {
-            Self::Row { row, .. } => Some(row),
-            _ => None,
-        }
-    }
-}
+pub(super) use management::Edit;
+pub(super) use spaceport_menu::sessions::{Entry, Row, Spec, Target};
 
 /// The session a saved device attaches to. Asking the host what else it runs
 /// would be an SSH round trip this popup does not take.
@@ -202,8 +157,8 @@ impl SpaceportWindow {
                     session: name.clone(),
                 },
                 spec: Spec {
-                    label: name.into(),
-                    detail: detail.into(),
+                    label: name,
+                    detail,
                     online,
                     checked,
                     enabled: endpoint.enabled(),
@@ -259,8 +214,8 @@ impl SpaceportWindow {
 
     fn local_session_spec(&self, session: &LocalSession) -> Spec {
         Spec {
-            label: session.name.clone().into(),
-            detail: state_word(session.state.running()).into(),
+            label: session.name.clone(),
+            detail: state_word(session.state.running()),
             online: session.state.running(),
             checked: self
                 .local_socket()
@@ -360,7 +315,7 @@ impl SpaceportWindow {
                             .text_size(px(font.size * 0.85))
                             .text_color(rgb(theme.muted))
                             .child(if deleting {
-                                fl!("sessions-menu-deleting").into()
+                                fl!("sessions-menu-deleting")
                             } else {
                                 spec.detail.clone()
                             }),
