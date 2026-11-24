@@ -3,7 +3,7 @@
 //! Sidebar: layout preset, selection marks, spacing and host colours. Every
 //! change reaches the open windows at once; see `settings_window::sidebar`.
 // i18n: migrated
-use super::{SettingsWindow, Spacing, catalog, on_value, ui};
+use super::{PageState, SettingsWindow, Spacing, catalog, on_value, ui};
 use crate::{
     config::{
         AgentsPlacement, Config, DeviceFooter, Label as _, LayoutMode, SelectMode,
@@ -59,10 +59,14 @@ impl SettingsWindow {
         }
     }
 
-    pub(in crate::settings_window) fn render_sidebar(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
+    pub(in crate::settings_window) fn render_sidebar(
+        &self,
+        page: &PageState<'_>,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let theme = page.theme;
         let ready = !self.persistence.quitting() && !self.persistence.closing();
-        let mut page = div()
+        let mut rows = div()
             .relative()
             .flex()
             .flex_col()
@@ -74,14 +78,14 @@ impl SettingsWindow {
             .child(
                 ui::row(theme, &catalog::SIDEBAR_LAYOUT)
                     .tag(ui::Source::Spaceport)
-                    .control(self.layout_dropdown(ready, cx)),
+                    .control(self.layout_dropdown(page, ready, cx)),
             )
             .child(
                 ui::row(theme, &catalog::SIDEBAR_ACTIVITY_BAR).switch(
                     ui::toggle(
                         theme,
                         "sidebar-activity-bar-toggle",
-                        self.config.sidebar_style.activity_bar,
+                        page.config.sidebar_style.activity_bar,
                         ready,
                     )
                     .on_click(cx.listener(|this, _, _, cx| {
@@ -92,13 +96,13 @@ impl SettingsWindow {
                 ),
             )
             .children(
-                self.available(catalog::SIDEBAR_AUTOMATIONS.availability, cx)
+                page.available(catalog::SIDEBAR_AUTOMATIONS.availability)
                     .then(|| {
                         ui::row(theme, &catalog::SIDEBAR_AUTOMATIONS).switch(
                             ui::toggle(
                                 theme,
                                 "sidebar-automations-toggle",
-                                self.config.sidebar_style.automations,
+                                page.config.sidebar_style.automations,
                                 ready,
                             )
                             .on_click(cx.listener(|this, _, _, cx| {
@@ -121,7 +125,7 @@ impl SettingsWindow {
                             fl!("settings-sidebar-select-group-dim"),
                         ),
                     ],
-                    Some(self.config.sidebar_style.select),
+                    Some(page.config.sidebar_style.select),
                     ready,
                     on_value(cx, |this, select, _, cx| {
                         let mut intent = SidebarIntent::of(&this.config);
@@ -139,7 +143,7 @@ impl SettingsWindow {
                         (DeviceFooter::Auto, fl!("settings-sidebar-footer-auto")),
                         (DeviceFooter::Never, fl!("settings-sidebar-footer-never")),
                     ],
-                    Some(self.config.sidebar_style.device_footer),
+                    Some(page.config.sidebar_style.device_footer),
                     ready,
                     on_value(cx, |this, footer, _, cx| {
                         let mut intent = SidebarIntent::of(&this.config);
@@ -153,7 +157,7 @@ impl SettingsWindow {
                     ui::toggle(
                         theme,
                         "sidebar-show-agents-toggle",
-                        self.config.show_agents,
+                        page.config.show_agents,
                         true,
                     )
                     .on_click(cx.listener(|this, _, _, cx| {
@@ -167,9 +171,10 @@ impl SettingsWindow {
             )
             .child(ui::row(theme, &catalog::SIDEBAR_SHOW_AGENTS_HEADER).switch(
                 self.preference_toggle(
+                    page.theme,
                     "sidebar-show-agents-header-toggle",
-                    self.config.show_agents_header,
-                    Preference::ShowAgentsHeader(!self.config.show_agents_header),
+                    page.config.show_agents_header,
+                    Preference::ShowAgentsHeader(!page.config.show_agents_header),
                     cx,
                 ),
             ))
@@ -187,8 +192,8 @@ impl SettingsWindow {
                             fl!("settings-sidebar-placement-nested"),
                         ),
                     ],
-                    Some(self.config.agents_placement),
-                    ready && self.config.show_agents,
+                    Some(page.config.agents_placement),
+                    ready && page.config.show_agents,
                     on_value(cx, |this, placement, _, cx| {
                         this.save_preference(Preference::AgentsPlacement(placement), cx);
                     }),
@@ -196,25 +201,28 @@ impl SettingsWindow {
             )
             .child(
                 ui::row(theme, &catalog::SIDEBAR_SHOW_SEARCH).switch(self.preference_toggle(
+                    page.theme,
                     "sidebar-show-search-toggle",
-                    self.config.show_sidebar_search,
-                    Preference::ShowSidebarSearch(!self.config.show_sidebar_search),
+                    page.config.show_sidebar_search,
+                    Preference::ShowSidebarSearch(!page.config.show_sidebar_search),
                     cx,
                 )),
             )
             .child(ui::row(theme, &catalog::SIDEBAR_REPOSITORY_ICONS).switch(
                 self.preference_toggle(
+                    page.theme,
                     "sidebar-repository-icons-toggle",
-                    self.config.show_repository_icons,
-                    Preference::ShowRepositoryIcons(!self.config.show_repository_icons),
+                    page.config.show_repository_icons,
+                    Preference::ShowRepositoryIcons(!page.config.show_repository_icons),
                     cx,
                 ),
             ))
             .child(
                 ui::row(theme, &catalog::SIDEBAR_DEVICE_ICONS).switch(self.preference_toggle(
+                    page.theme,
                     "sidebar-device-icons-toggle",
-                    self.config.show_device_icons,
-                    Preference::ShowDeviceIcons(!self.config.show_device_icons),
+                    page.config.show_device_icons,
+                    Preference::ShowDeviceIcons(!page.config.show_device_icons),
                     cx,
                 )),
             )
@@ -224,9 +232,9 @@ impl SettingsWindow {
                 None,
             ));
         for spacing in Spacing::ALL {
-            page = page.child(self.spacing_row(spacing, ready, cx));
+            rows = rows.child(self.spacing_row(page, spacing, ready, cx));
         }
-        page = page.child(
+        rows = rows.child(
             // A heading search opens, so it takes its entry's id and title.
             ui::section(theme, &catalog::title(&catalog::SIDEBAR_HOST_COLOURS), None)
                 .relative()
@@ -235,9 +243,9 @@ impl SettingsWindow {
                     catalog::SIDEBAR_HOST_COLOURS.id.into(),
                 )),
         );
-        let rows = self.host_rows();
-        if rows.is_empty() {
-            page = page.child(
+        let hosts = self.host_rows();
+        if hosts.is_empty() {
+            rows = rows.child(
                 div()
                     .debug_selector(|| "sidebar-host-colours-empty".into())
                     .py(px(6.))
@@ -247,7 +255,7 @@ impl SettingsWindow {
             );
         }
         let mut tinted = false;
-        for (index, (host, color, hint)) in rows.into_iter().enumerate() {
+        for (index, (host, color, hint)) in hosts.into_iter().enumerate() {
             let hint = if hint.is_empty() && !tinted {
                 tinted = true;
                 "settings-sidebar-host-tint"
@@ -265,12 +273,12 @@ impl SettingsWindow {
                 .filter(|edit| edit.host == host)
                 .map(|edit| (edit.input.clone(), edit.invalid));
             let (changed, editing) = (host.clone(), host.clone());
-            page = page.child(ui::swatch_row(
+            rows = rows.child(ui::swatch_row(
                 theme,
                 &host,
                 index,
                 color,
-                &self.config.terminal,
+                &page.config.terminal,
                 hint,
                 hex,
                 on_value(cx, move |this, change, _, cx| {
@@ -290,15 +298,20 @@ impl SettingsWindow {
             ));
         }
         #[cfg(all(feature = "integration-test", target_os = "macos"))]
-        let page = page.child(super::super::native::probe(
+        let rows = rows.child(super::super::native::probe(
             super::super::native::SIDEBAR_PAGE,
         ));
-        page
+        rows
     }
 
-    fn layout_dropdown(&self, ready: bool, cx: &mut Context<Self>) -> Stateful<Div> {
+    fn layout_dropdown(
+        &self,
+        page: &PageState<'_>,
+        ready: bool,
+        cx: &mut Context<Self>,
+    ) -> Stateful<Div> {
         const FIELD: DropdownField = DropdownField::Layout;
-        let mode = self.config.layout.mode;
+        let mode = page.config.layout.mode;
         let options: Vec<SharedString> = LayoutMode::ALL
             .iter()
             .map(|mode| SharedString::from(mode.label()))
@@ -310,7 +323,7 @@ impl SettingsWindow {
         let view = cx.entity().downgrade();
         let (opener, picker, dismisser) = (view.clone(), view.clone(), view);
         ui::dropdown(
-            &self.theme,
+            page.theme,
             FIELD.selector(),
             mode.label(),
             false,
@@ -334,13 +347,19 @@ impl SettingsWindow {
         )
     }
 
-    fn spacing_row(&self, spacing: Spacing, ready: bool, cx: &mut Context<Self>) -> ui::Row {
+    fn spacing_row(
+        &self,
+        page: &PageState<'_>,
+        spacing: Spacing,
+        ready: bool,
+        cx: &mut Context<Self>,
+    ) -> ui::Row {
         let field = NumberField::Spacing(spacing);
-        let value = spacing_value(spacing, &self.config);
+        let value = spacing_value(spacing, page.config);
         let view = cx.entity().downgrade();
-        ui::row(&self.theme, spacing.entry())
+        ui::row(page.theme, spacing.entry())
             .control(ui::number(
-                &self.theme,
+                page.theme,
                 ui::Number {
                     id: field.selector(),
                     value,
@@ -359,14 +378,20 @@ impl SettingsWindow {
                     });
                 },
             ))
-            .control(self.spacing_reset(spacing, ready, cx))
+            .control(self.spacing_reset(page, spacing, ready, cx))
     }
 
     /// The reset glyph, shown only while an override is set; a fixed slot
     /// keeps the numbers aligned either way.
-    fn spacing_reset(&self, spacing: Spacing, ready: bool, cx: &mut Context<Self>) -> Div {
+    fn spacing_reset(
+        &self,
+        page: &PageState<'_>,
+        spacing: Spacing,
+        ready: bool,
+        cx: &mut Context<Self>,
+    ) -> Div {
         let slot = div().w(px(16.)).flex_none();
-        if overridden(spacing, &self.config).is_none() {
+        if overridden(spacing, page.config).is_none() {
             return slot;
         }
         let id = spacing.reset();
@@ -374,7 +399,7 @@ impl SettingsWindow {
             div()
                 .id(id)
                 .debug_selector(move || id.into())
-                .text_color(rgb(self.theme.muted))
+                .text_color(rgb(page.theme.muted))
                 .when(ready, |reset| {
                     reset.cursor_pointer().on_click(
                         cx.listener(move |this, _, _, cx| {

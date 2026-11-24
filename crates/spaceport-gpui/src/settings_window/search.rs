@@ -3,8 +3,8 @@
 //! Searching the Settings: the query in the section list's box swaps the body
 //! for a list of matching rows, and picking one opens its page at that row.
 // i18n: migrated
-use super::{SettingsWindow, catalog, ui};
-use crate::{config::ThemeName, i18n::fl};
+use super::{PageState, SettingsWindow, catalog, ui};
+use crate::i18n::fl;
 use gpui::{prelude::*, *};
 
 /// The rows' painted bounds are `spaceport-settings-window`'s, so the kit
@@ -26,25 +26,9 @@ impl SettingsWindow {
         }
     }
 
-    /// Whether the page renders a row needing `availability` right now.
-    pub(super) fn available(&self, availability: catalog::Availability, cx: &App) -> bool {
-        match availability {
-            catalog::Availability::Always => true,
-            catalog::Availability::AcpChats => self.config.features.acp_chats,
-            catalog::Availability::Core => crate::core_feature::enabled(cx),
-            catalog::Availability::FollowingSystemTheme => {
-                ThemeName::follows_system(self.drafted_theme())
-            }
-            catalog::Availability::LimitedChatWidth => {
-                self.config.features.acp_chats && self.config.chat.max_width != 0
-            }
-            catalog::Availability::Linux => cfg!(target_os = "linux"),
-            catalog::Availability::Windows => cfg!(windows),
-        }
-    }
-
     /// The current results without rows the pages do not render now.
     pub(super) fn visible_results(&self, cx: &App) -> Vec<usize> {
+        let page = PageState::of(self, cx);
         self.search_results
             .iter()
             .flatten()
@@ -52,7 +36,7 @@ impl SettingsWindow {
             .filter(|index| {
                 catalog::CATALOG
                     .get(*index)
-                    .is_some_and(|entry| self.available(entry.availability, cx))
+                    .is_some_and(|entry| page.available(entry.availability))
             })
             .collect()
     }

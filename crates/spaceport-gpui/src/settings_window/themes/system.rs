@@ -2,6 +2,7 @@
 //! `light:NAME,dark:NAME`: which side the grid edits, turning following on
 //! and off, and showing the side the current appearance calls for.
 use super::{Choice, Scope, SettingsWindow};
+use crate::settings_window::PageState;
 use crate::{
     config::{FOLLOW_HERDR, Theme, ThemeName},
     contrast::{Contrast, luminance},
@@ -104,7 +105,7 @@ impl SettingsWindow {
         let current = self.drafted_theme().to_owned();
         let name = if ThemeName::follows_system(&current) {
             ThemeName::side(&current, light).to_owned()
-        } else if self.drafted_is_light(cx) == light {
+        } else if self.drafted_is_light(&PageState::of(self, cx), cx) == light {
             return;
         } else if light {
             LIGHT_PAIR.to_owned()

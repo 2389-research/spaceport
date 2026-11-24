@@ -28,7 +28,11 @@ fn each_mode_segment_is_a_state_the_user_can_choose(cx: &mut TestAppContext) {
     };
     assert!(!ThemeName::follows_system(&drafted(cx).0));
     assert!(cx.debug_bounds("theme-side").is_none());
-    let lit = |cx: &mut VisualTestContext| view.read_with(cx, |view, cx| view.drafted_is_light(cx));
+    let lit = |cx: &mut VisualTestContext| {
+        view.read_with(cx, |view, cx| {
+            view.drafted_is_light(&PageState::of(view, cx), cx)
+        })
+    };
     assert!(!lit(cx), "the fixture starts on a single dark theme");
 
     // single dark -> Light: the default light theme, shown at once

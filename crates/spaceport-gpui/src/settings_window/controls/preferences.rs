@@ -97,12 +97,13 @@ impl SettingsWindow {
     /// Saves the typed edit in order, including clicks during another write.
     pub(in crate::settings_window) fn preference_toggle(
         &self,
+        theme: &crate::config::Theme,
         id: impl Into<SharedString>,
         checked: bool,
         edit: Preference,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
-        super::super::ui::toggle(&self.theme, id, checked, true)
+        super::super::ui::toggle(theme, id, checked, true)
             .on_click(cx.listener(move |this, _, _, cx| this.save_preference(edit.clone(), cx)))
     }
 }

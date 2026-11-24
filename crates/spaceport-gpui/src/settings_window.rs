@@ -10,6 +10,7 @@ mod inputs;
 mod launch_at_login;
 mod layouts;
 mod navigation;
+mod page_state;
 mod pages;
 pub(crate) use drafts::{
     apply_loaded_layout, apply_loaded_sidebar, apply_loaded_theme, layout_load_revision,
@@ -29,6 +30,7 @@ mod section;
 use section::{Group, Section};
 mod sidebar;
 mod source;
+use page_state::PageState;
 #[cfg(test)]
 use persistence::SizeIo;
 use persistence::{Kind, Lifecycle, Loaded, SaveCompletion};

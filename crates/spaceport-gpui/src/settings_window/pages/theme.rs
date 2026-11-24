@@ -4,7 +4,7 @@
 //! previews the theme in the real Herdr windows, then the window backdrop and
 //! terminal padding.
 // i18n: migrated
-use super::{SettingsWindow, catalog, on_value, ui};
+use super::{PageState, SettingsWindow, catalog, on_value, ui};
 use crate::{
     config::{Config, FOLLOW_HERDR, ThemeName},
     contrast::{Contrast, luminance},
@@ -54,16 +54,19 @@ impl SettingsWindow {
         window: &Window,
         cx: &mut Context<Self>,
     ) -> Div {
-        let mode_row = self.theme_mode_row(cx);
-        let side_row = self.theme_side_row(cx);
-        let follow_row = self.theme_follow_row(cx);
-        let contrast_row = self.theme_contrast_row(cx);
-        let source_row = self.theme_source_row(cx);
-        let search = self.render_theme_search(cx);
-        let open_file = self.theme_open_file(cx);
+        // The grid records the columns it laid out with, so it draws before
+        // the page borrows the values it shows.
         let results = self.render_theme_results(window, cx);
-        let window_rows = self.render_window_rows(cx);
-        let theme = &self.theme;
+        let page = PageState::of(self, cx);
+        let mode_row = self.theme_mode_row(&page, cx);
+        let side_row = self.theme_side_row(&page, cx);
+        let follow_row = self.theme_follow_row(&page, cx);
+        let contrast_row = self.theme_contrast_row(&page, cx);
+        let source_row = self.theme_source_row(&page, cx);
+        let search = self.render_theme_search(cx);
+        let open_file = self.theme_open_file(&page, cx);
+        let window_rows = self.render_window_rows(&page, cx);
+        let theme = page.theme;
         div()
             .debug_selector(|| "settings-appearance".into())
             .w_full()
@@ -101,17 +104,21 @@ impl SettingsWindow {
 
     /// Whether the theme in effect is light, read from the drafted choice
     /// when its colors are at hand.
-    pub(in crate::settings_window) fn drafted_is_light(&self, cx: &App) -> bool {
+    pub(in crate::settings_window) fn drafted_is_light(
+        &self,
+        page: &PageState<'_>,
+        cx: &App,
+    ) -> bool {
         let light = crate::app::light_appearance(cx);
         let background = self
-            .prepared_app_theme(self.drafted_theme(), light)
-            .map_or(self.theme.background, |theme| theme.background);
+            .prepared_app_theme(page.drafted_theme, light)
+            .map_or(page.theme.background, |theme| theme.background);
         luminance(background) > 0.4
     }
 
-    fn theme_mode_row(&self, cx: &mut Context<Self>) -> ui::Row {
-        let following = ThemeName::follows_system(self.drafted_theme());
-        let is_light = self.drafted_is_light(cx);
+    fn theme_mode_row(&self, page: &PageState<'_>, cx: &mut Context<Self>) -> ui::Row {
+        let following = ThemeName::follows_system(page.drafted_theme);
+        let is_light = self.drafted_is_light(page, cx);
         let selected = if following {
             Mode::System
         } else if is_light {
@@ -119,8 +126,8 @@ impl SettingsWindow {
         } else {
             Mode::Dark
         };
-        ui::row(&self.theme, &catalog::THEME_MODE).control(ui::segmented(
-            &self.theme,
+        ui::row(page.theme, &catalog::THEME_MODE).control(ui::segmented(
+            page.theme,
             "theme-mode-control",
             &[
                 (Mode::Light, fl!("settings-theme-light")),
@@ -142,45 +149,44 @@ impl SettingsWindow {
     }
 
     /// Shown while following: which side of the pair the grid changes.
-    fn theme_side_row(&self, cx: &mut Context<Self>) -> Option<ui::Row> {
-        let value = self.drafted_theme();
-        self.available(catalog::THEME_SIDE.availability, cx)
-            .then(|| {
-                ui::row(&self.theme, &catalog::THEME_SIDE)
-                    // The page also names the pair's two themes.
-                    .description(fl!(
-                        "settings-theme-side-hint",
-                        light = display_name(ThemeName::side(value, true)),
-                        dark = display_name(ThemeName::side(value, false)),
-                    ))
-                    .control(ui::segmented(
-                        &self.theme,
-                        "theme-side-control",
-                        &[
-                            (true, fl!("settings-theme-light")),
-                            (false, fl!("settings-theme-dark")),
-                        ],
-                        Some(self.themes.editing_light),
-                        true,
-                        on_value(cx, |this, light, window, cx| {
-                            let focus = this.themes.search.read(cx).focus.clone();
-                            window.focus(&focus, cx);
-                            this.edit_theme_side(light, cx);
-                        }),
-                    ))
-            })
+    fn theme_side_row(&self, page: &PageState<'_>, cx: &mut Context<Self>) -> Option<ui::Row> {
+        let value = page.drafted_theme;
+        page.available(catalog::THEME_SIDE.availability).then(|| {
+            ui::row(page.theme, &catalog::THEME_SIDE)
+                // The page also names the pair's two themes.
+                .description(fl!(
+                    "settings-theme-side-hint",
+                    light = display_name(ThemeName::side(value, true)),
+                    dark = display_name(ThemeName::side(value, false)),
+                ))
+                .control(ui::segmented(
+                    page.theme,
+                    "theme-side-control",
+                    &[
+                        (true, fl!("settings-theme-light")),
+                        (false, fl!("settings-theme-dark")),
+                    ],
+                    Some(self.themes.editing_light),
+                    true,
+                    on_value(cx, |this, light, window, cx| {
+                        let focus = this.themes.search.read(cx).focus.clone();
+                        window.focus(&focus, cx);
+                        this.edit_theme_side(light, cx);
+                    }),
+                ))
+        })
     }
 
-    fn theme_follow_row(&self, cx: &mut Context<Self>) -> ui::Row {
+    fn theme_follow_row(&self, page: &PageState<'_>, cx: &mut Context<Self>) -> ui::Row {
         // The switch speaks for the whole setting: on only when Herdr names
         // the theme in both appearances, and turning it on replaces a pair.
         let following = [true, false]
             .into_iter()
-            .all(|light| ThemeName::follows_herdr(&self.config.theme, light));
-        ui::row(&self.theme, &catalog::THEME_FOLLOW)
+            .all(|light| ThemeName::follows_herdr(&page.config.theme, light));
+        ui::row(page.theme, &catalog::THEME_FOLLOW)
             .tag(ui::Source::Herdr)
             .switch(
-                ui::toggle(&self.theme, "theme-follow-toggle", following, true).on_click(
+                ui::toggle(page.theme, "theme-follow-toggle", following, true).on_click(
                     cx.listener(move |this, _, _, cx| {
                         let name = if following {
                             this.themes
@@ -202,10 +208,10 @@ impl SettingsWindow {
             )
     }
 
-    fn theme_contrast_row(&self, cx: &mut Context<Self>) -> ui::Row {
-        let high = self.config.contrast == Contrast::High;
-        ui::row(&self.theme, &catalog::THEME_CONTRAST).switch(
-            ui::toggle(&self.theme, "theme-contrast-toggle", high, true).on_click(cx.listener(
+    fn theme_contrast_row(&self, page: &PageState<'_>, cx: &mut Context<Self>) -> ui::Row {
+        let high = page.config.contrast == Contrast::High;
+        ui::row(page.theme, &catalog::THEME_CONTRAST).switch(
+            ui::toggle(page.theme, "theme-contrast-toggle", high, true).on_click(cx.listener(
                 move |this, _, _, cx| {
                     let contrast = if high {
                         Contrast::Standard
@@ -221,14 +227,14 @@ impl SettingsWindow {
         )
     }
 
-    fn theme_source_row(&self, cx: &mut Context<Self>) -> ui::Row {
+    fn theme_source_row(&self, page: &PageState<'_>, cx: &mut Context<Self>) -> ui::Row {
         let selected = match (self.themes.ghostty_enabled, self.themes.herdr_enabled) {
             (true, true) => Library::All,
             (true, false) => Library::Ghostty,
             (false, _) => Library::Herdr,
         };
-        ui::row(&self.theme, &catalog::THEME_SOURCE).control(ui::segmented(
-            &self.theme,
+        ui::row(page.theme, &catalog::THEME_SOURCE).control(ui::segmented(
+            page.theme,
             "theme-source-control",
             &[
                 (Library::All, fl!("settings-theme-library-all")),
@@ -252,12 +258,12 @@ impl SettingsWindow {
 
     /// A button that opens the saved theme when it is a file.
     #[cfg(any(target_os = "macos", target_os = "linux"))]
-    fn theme_open_file(&self, cx: &mut Context<Self>) -> Option<Div> {
+    fn theme_open_file(&self, page: &PageState<'_>, cx: &mut Context<Self>) -> Option<Div> {
         let path = theme_file(self.edited_theme())?;
         Some(
             div().mt(px(8.)).flex().child(
                 ui::button(
-                    &self.theme,
+                    page.theme,
                     "theme-open-file",
                     fl!("settings-theme-open-file"),
                     true,
@@ -270,7 +276,7 @@ impl SettingsWindow {
     }
 
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    fn theme_open_file(&self, _: &mut Context<Self>) -> Option<Div> {
+    fn theme_open_file(&self, _: &PageState<'_>, _: &mut Context<Self>) -> Option<Div> {
         None
     }
 }
