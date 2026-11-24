@@ -1,11 +1,41 @@
-#![allow(clippy::unwrap_used)]
-
 use super::*;
-use crate::chat::labels;
-use crate::chat::prepared::{Body, Part, Prepared};
-use crate::chat::rich::{MAX_CODE_LINE_CHARS, MAX_CODE_LINES};
+use crate::{
+    labels::Labels,
+    prepared::{Body, Part, Prepared},
+    rich::{Block, MAX_CODE_LINE_CHARS, MAX_CODE_LINES},
+    visual::VisualId,
+};
 use spaceport_chat_protocol::{Entry, EntryKind, NoticeLevel, QuestionAnswer, Transcript};
-use std::{collections::HashMap, rc::Rc, sync::Arc};
+use std::{collections::HashMap, collections::HashSet, rc::Rc, sync::Arc};
+
+/// The words this crate writes into an entry. A crate below the app has no
+/// messages, so a test names them itself.
+fn labels() -> Labels {
+    Labels {
+        answer_cut: "Copy takes all of it".into(),
+        diff_after: "After".into(),
+        diff_before: "Before".into(),
+        diff_new_file: "New file".into(),
+        question_answer: "Answer".into(),
+        question_number: |number| format!("Question {number}"),
+        question_truncated: "More answers were left out".into(),
+        terminal: |id| format!("Terminal {id}"),
+        tool_ask_user: "Questions".into(),
+        turn: |summary| format!("Worked {}ms", summary.duration_ms),
+    }
+}
+
+/// The destinations these tests' links carry name files on this machine; the
+/// app classifies them with its terminal's path rules.
+fn is_local_path(url: &str) -> bool {
+    url.starts_with("src/")
+}
+
+/// The destination classification a window hands the parse: a path on this
+/// machine, as [`is_local_path`] reads one.
+fn local_destination(url: &str) -> Option<String> {
+    is_local_path(url).then(|| url.to_owned())
+}
 
 fn agent(id: u64, text: &str) -> Entry {
     Entry {
@@ -16,17 +46,63 @@ fn agent(id: u64, text: &str) -> Entry {
     }
 }
 
-fn prepare(entries: Vec<Entry>) -> (Transcript, Prepared, Vec<(EntryId, u64)>) {
-    let mut transcript = Transcript::new("Test agent");
-    transcript.entries = entries;
-    let keys = transcript
-        .entries
-        .iter()
-        .map(|entry| (entry.id, 1))
-        .collect::<Vec<_>>();
-    let mut prepared = Prepared::default();
-    prepared.update(&transcript, &keys, &labels::now());
-    (transcript, prepared, keys)
+/// A prepared model and the selectable projection of it, as a window keeps
+/// them: preparing an entry again re-projects the text the view draws.
+struct Shown {
+    prepared: Prepared,
+    text: Document,
+    transcript: Transcript,
+    keys: Vec<(EntryId, u64)>,
+}
+
+impl Shown {
+    fn new(entries: Vec<Entry>) -> Self {
+        let mut transcript = Transcript::new("Test agent");
+        transcript.entries = entries;
+        let keys = transcript
+            .entries
+            .iter()
+            .map(|entry| (entry.id, 1))
+            .collect::<Vec<_>>();
+        let mut shown = Self {
+            prepared: Prepared::default(),
+            text: Document::default(),
+            transcript,
+            keys,
+        };
+        shown.update();
+        shown
+    }
+
+    fn text(&self) -> &Document {
+        &self.text
+    }
+
+    /// Prepares the entries whose revision moved, then projects them.
+    fn update(&mut self) {
+        let labels = labels();
+        self.prepared
+            .update(&self.transcript, &self.keys, &labels, local_destination);
+        self.text.update(
+            &self.transcript,
+            &self.keys,
+            self.prepared.bodies(),
+            &labels,
+        );
+    }
+
+    fn set_expanded(&mut self, expanded: &HashSet<EntryId>) {
+        self.text.set_expanded(expanded);
+    }
+
+    fn set_remote_links(&mut self, remote: bool) {
+        self.text.set_remote_links(remote, is_local_path);
+    }
+
+    fn clear(&mut self) {
+        self.prepared.clear();
+        self.text.clear();
+    }
 }
 
 fn caret(
@@ -47,8 +123,8 @@ fn caret(
 
 #[test]
 fn unicode_reverse_selection_uses_transcript_order_and_readable_markdown() {
-    let (_, prepared, _) = prepare(vec![agent(90, "**café** 東京"), agent(2, "next 🦀 end")]);
-    let document = prepared.text();
+    let shown = Shown::new(vec![agent(90, "**café** 東京"), agent(2, "next 🦀 end")]);
+    let document = shown.text();
     let start = caret(document, 90, 0, 0, 0, 3);
     let end = caret(document, 2, 0, 0, 0, 9);
     let mut selection = Selection::default();
@@ -66,8 +142,8 @@ fn unicode_reverse_selection_uses_transcript_order_and_readable_markdown() {
 
 #[test]
 fn invalid_utf8_offsets_are_floored_and_word_shift_line_selection_work() {
-    let (_, prepared, _) = prepare(vec![agent(1, "café 東京_test !")]);
-    let document = prepared.text();
+    let shown = Shown::new(vec![agent(1, "café 東京_test !")]);
+    let document = shown.text();
     let mut selection = Selection::default();
     let key = caret(document, 1, 0, 0, 0, 4);
     selection.press(document, key, 2, false);
@@ -86,11 +162,11 @@ fn invalid_utf8_offsets_are_floored_and_word_shift_line_selection_work() {
 
 #[test]
 fn blocks_code_lines_and_table_cells_share_one_selection() {
-    let (_, prepared, _) = prepare(vec![agent(
+    let shown = Shown::new(vec![agent(
         1,
         "Intro\n\n```rust\nlet x = 1;\n\tx\n```\n\n| A | B |\n| - | - |\n| 3 | 4 |",
     )]);
-    let document = prepared.text();
+    let document = shown.text();
     let mut selection = Selection::default();
     selection.press(document, caret(document, 1, 0, 0, 0, 2), 1, false);
     selection.drag(document, caret(document, 1, 2, 1, 1, 1));
@@ -107,8 +183,8 @@ fn blocks_code_lines_and_table_cells_share_one_selection() {
 
 #[test]
 fn code_tab_map_preserves_original_source_and_unicode() {
-    let (_, prepared, _) = prepare(vec![agent(1, "```text\nα\tb\n中\tc\n```")]);
-    let document = prepared.text();
+    let shown = Shown::new(vec![agent(1, "```text\nα\tb\n中\tc\n```")]);
+    let document = shown.text();
     let first = caret(document, 1, 0, 0, 0, 2);
     let segment = document.segment(first.key).unwrap();
     assert_eq!(segment.text(), "α   b");
@@ -124,8 +200,8 @@ fn code_tab_map_preserves_original_source_and_unicode() {
 
 #[test]
 fn inline_math_is_one_atomic_tex_range() {
-    let (_, prepared, _) = prepare(vec![agent(1, "Before $\\alpha+1$ after.\n\n$$\nx^2\n$$")]);
-    let document = prepared.text();
+    let shown = Shown::new(vec![agent(1, "Before $\\alpha+1$ after.\n\n$$\nx^2\n$$")]);
+    let document = shown.text();
     let start = caret(document, 1, 0, 0, 0, 0);
     let segment = document.segment(start.key).unwrap();
     assert_eq!(segment.text(), "Before \\alpha+1 after.");
@@ -165,71 +241,69 @@ fn inline_math_is_one_atomic_tex_range() {
 
 #[test]
 fn unchanged_projection_is_shared_and_append_preserves_selection() {
-    let (mut transcript, mut prepared, mut keys) = prepare(vec![agent(7, "stable")]);
-    let projected = prepared.text().entries[0].clone();
+    let mut shown = Shown::new(vec![agent(7, "stable")]);
+    let projected = shown.text().entries[0].clone();
     let mut selection = Selection::default();
-    selection.select_all(prepared.text());
-    transcript.entries.push(agent(1, "later"));
-    keys.push((EntryId(1), 1));
-    prepared.update(&transcript, &keys, &labels::now());
-    assert!(Rc::ptr_eq(&projected, &prepared.text().entries[0]));
-    assert!(!selection.validate(prepared.text()));
-    assert_eq!(selection.text(prepared.text()).as_deref(), Some("stable"));
-    transcript.entries[1] = agent(1, "later changed");
-    keys[1].1 += 1;
-    prepared.update(&transcript, &keys, &labels::now());
-    assert!(!selection.validate(prepared.text()));
+    selection.select_all(shown.text());
+    shown.transcript.entries.push(agent(1, "later"));
+    shown.keys.push((EntryId(1), 1));
+    shown.update();
+    assert!(Rc::ptr_eq(&projected, &shown.text().entries[0]));
+    assert!(!selection.validate(shown.text()));
+    assert_eq!(selection.text(shown.text()).as_deref(), Some("stable"));
+    shown.transcript.entries[1] = agent(1, "later changed");
+    shown.keys[1].1 += 1;
+    shown.update();
+    assert!(!selection.validate(shown.text()));
 }
 
 #[test]
 fn changing_an_interior_selected_entry_or_reordering_invalidates() {
-    let (mut transcript, mut prepared, mut keys) =
-        prepare(vec![agent(9, "one"), agent(3, "two"), agent(8, "three")]);
+    let mut shown = Shown::new(vec![agent(9, "one"), agent(3, "two"), agent(8, "three")]);
     let mut selection = Selection::default();
-    selection.select_all(prepared.text());
-    transcript.entries[1] = agent(3, "changed");
-    keys[1].1 += 1;
-    prepared.update(&transcript, &keys, &labels::now());
-    assert!(selection.text(prepared.text()).is_none());
-    assert!(selection.validate(prepared.text()));
-    selection.select_all(prepared.text());
-    transcript.entries.swap(0, 1);
-    keys.swap(0, 1);
-    prepared.update(&transcript, &keys, &labels::now());
-    assert!(selection.validate(prepared.text()));
+    selection.select_all(shown.text());
+    shown.transcript.entries[1] = agent(3, "changed");
+    shown.keys[1].1 += 1;
+    shown.update();
+    assert!(selection.text(shown.text()).is_none());
+    assert!(selection.validate(shown.text()));
+    selection.select_all(shown.text());
+    shown.transcript.entries.swap(0, 1);
+    shown.keys.swap(0, 1);
+    shown.update();
+    assert!(selection.validate(shown.text()));
 }
 
 #[test]
 fn snapshot_reset_fences_old_keys_even_when_ids_and_revisions_are_reused() {
-    let (transcript, mut prepared, keys) = prepare(vec![agent(1, "same")]);
-    let old = caret(prepared.text(), 1, 0, 0, 0, 1);
+    let mut shown = Shown::new(vec![agent(1, "same")]);
+    let old = caret(shown.text(), 1, 0, 0, 0, 1);
     let mut selection = Selection::default();
-    selection.select_all(prepared.text());
-    prepared.clear();
-    prepared.update(&transcript, &keys, &labels::now());
-    assert!(selection.validate(prepared.text()));
-    assert!(!selection.press(prepared.text(), old, 1, false));
-    assert_ne!(old.key, caret(prepared.text(), 1, 0, 0, 0, 1).key);
+    selection.select_all(shown.text());
+    shown.clear();
+    shown.update();
+    assert!(selection.validate(shown.text()));
+    assert!(!selection.press(shown.text(), old, 1, false));
+    assert_ne!(old.key, caret(shown.text(), 1, 0, 0, 0, 1).key);
 }
 
 #[test]
 fn remote_file_destinations_match_visible_expanded_labels() {
-    let (transcript, mut prepared, keys) =
-        prepare(vec![agent(1, "Read [**source** file](src/main.rs:5).")]);
-    let old = caret(prepared.text(), 1, 0, 0, 0, 0);
-    prepared.set_remote_links(true);
-    prepared.update(&transcript, &keys, &labels::now());
-    assert!(prepared.text().segment(old.key).is_none());
-    let new = caret(prepared.text(), 1, 0, 0, 0, 0);
+    let mut shown = Shown::new(vec![agent(1, "Read [**source** file](src/main.rs:5).")]);
+    let old = caret(shown.text(), 1, 0, 0, 0, 0);
+    shown.set_remote_links(true);
+    shown.update();
+    assert!(shown.text().segment(old.key).is_none());
+    let new = caret(shown.text(), 1, 0, 0, 0, 0);
     assert_eq!(
-        prepared.text().segment(new.key).unwrap().text(),
+        shown.text().segment(new.key).unwrap().text(),
         "Read source file (src/main.rs:5)."
     );
 }
 
 #[test]
 fn notice_answers_and_inert_source_have_distinct_segments() {
-    let (transcript, mut prepared, keys) = prepare(vec![Entry {
+    let mut shown = Shown::new(vec![Entry {
         id: EntryId(4),
         kind: EntryKind::Notice {
             answers: vec![QuestionAnswer {
@@ -242,17 +316,12 @@ fn notice_answers_and_inert_source_have_distinct_segments() {
         },
     }]);
     let mut selection = Selection::default();
-    selection.select_all(prepared.text());
-    assert!(
-        !selection
-            .text(prepared.text())
-            .unwrap()
-            .contains("<record>")
-    );
-    prepared.set_expanded(&std::collections::HashSet::from([EntryId(4)]));
-    prepared.update(&transcript, &keys, &labels::now());
-    assert!(selection.validate(prepared.text()));
-    let document = prepared.text();
+    selection.select_all(shown.text());
+    assert!(!selection.text(shown.text()).unwrap().contains("<record>"));
+    shown.set_expanded(&HashSet::from([EntryId(4)]));
+    shown.update();
+    assert!(selection.validate(shown.text()));
+    let document = shown.text();
     assert_eq!(
         document
             .segment(
@@ -288,13 +357,13 @@ fn notice_answers_and_inert_source_have_distinct_segments() {
 fn fallback_lines_are_shared_and_keep_their_newlines() {
     let mut transcript = Transcript::new("Test agent");
     transcript.entries.push(agent(1, "ignored"));
-    let lines = Rc::from(crate::release_notes::parse("plain\n\n```\nx\ny\n```"));
+    let lines = Rc::from(spaceport_release_notes::parse("plain\n\n```\nx\ny\n```"));
     let bodies = HashMap::from([(
         EntryId(1),
         (1, Rc::new(Body::Message(vec![Part::Text(lines)]))),
     )]);
     let mut document = Document::default();
-    document.update(&transcript, &[(EntryId(1), 1)], &bodies, &labels::now());
+    document.update(&transcript, &[(EntryId(1), 1)], &bodies, &labels());
     let mut selection = Selection::default();
     selection.select_all(&document);
     assert_eq!(selection.text(&document).as_deref(), Some("plain\n\nx\ny"));
@@ -302,7 +371,6 @@ fn fallback_lines_are_shared_and_keep_their_newlines() {
 
 #[test]
 fn code_projection_obeys_preview_bounds_without_copying_full_source() {
-    use crate::chat::{rich::Block, visual::VisualId};
     let source: Arc<str> = format!(
         "{}\n{}",
         "é".repeat(MAX_CODE_LINE_CHARS + 1),
@@ -326,7 +394,7 @@ fn code_projection_obeys_preview_bounds_without_copying_full_source() {
         ),
     )]);
     let mut document = Document::default();
-    document.update(&transcript, &[(EntryId(1), 1)], &bodies, &labels::now());
+    document.update(&transcript, &[(EntryId(1), 1)], &bodies, &labels());
     let key = document
         .key(EntryId(1), Region::Body(0), Cell::default())
         .unwrap();
@@ -344,7 +412,7 @@ fn code_projection_obeys_preview_bounds_without_copying_full_source() {
 #[test]
 fn folded_thoughts_and_tools_never_leak_hidden_text_across_messages() {
     use spaceport_chat_protocol::{Tool, ToolContent, ToolKind, ToolStatus};
-    let (transcript, mut prepared, keys) = prepare(vec![
+    let mut shown = Shown::new(vec![
         agent(5, "before"),
         Entry {
             id: EntryId(2),
@@ -370,23 +438,23 @@ fn folded_thoughts_and_tools_never_leak_hidden_text_across_messages() {
         agent(1, "after"),
     ]);
     let mut selection = Selection::default();
-    selection.select_all(prepared.text());
+    selection.select_all(shown.text());
     assert_eq!(
-        selection.text(prepared.text()).as_deref(),
+        selection.text(shown.text()).as_deref(),
         Some("before\n\nvisible thought\n\nRead file\n\nafter")
     );
-    prepared.set_expanded(&std::collections::HashSet::from([EntryId(2), EntryId(3)]));
-    prepared.update(&transcript, &keys, &labels::now());
-    assert!(selection.validate(prepared.text()));
-    selection.select_all(prepared.text());
-    let text = selection.text(prepared.text()).unwrap();
+    shown.set_expanded(&HashSet::from([EntryId(2), EntryId(3)]));
+    shown.update();
+    assert!(selection.validate(shown.text()));
+    selection.select_all(shown.text());
+    let text = selection.text(shown.text()).unwrap();
     assert!(text.contains("visible thought\nhidden thought"));
     assert!(text.contains("Read file\nRead file\nsrc/test.rs\nhidden tool source"));
 }
 
 #[test]
 fn toggling_an_unselected_record_preserves_existing_selection() {
-    let (transcript, mut prepared, keys) = prepare(vec![
+    let mut shown = Shown::new(vec![
         agent(1, "stable"),
         Entry {
             id: EntryId(2),
@@ -399,19 +467,19 @@ fn toggling_an_unselected_record_preserves_existing_selection() {
         },
     ]);
     let mut selection = Selection::default();
-    let start = caret(prepared.text(), 1, 0, 0, 0, 0);
-    selection.press(prepared.text(), start, 3, false);
-    prepared.set_expanded(&std::collections::HashSet::from([EntryId(2)]));
-    prepared.update(&transcript, &keys, &labels::now());
-    assert!(!selection.validate(prepared.text()));
-    assert_eq!(selection.text(prepared.text()).as_deref(), Some("stable"));
+    let start = caret(shown.text(), 1, 0, 0, 0, 0);
+    selection.press(shown.text(), start, 3, false);
+    shown.set_expanded(&HashSet::from([EntryId(2)]));
+    shown.update();
+    assert!(!selection.validate(shown.text()));
+    assert_eq!(selection.text(shown.text()).as_deref(), Some("stable"));
 }
 
 #[test]
 fn oversized_selection_is_refused_instead_of_silently_truncated() {
     let mut transcript = Transcript::new("Test agent");
     let entry_bytes = 256 * 1024;
-    transcript.entries = (0..=crate::terminal::MAX_SELECTION_BYTES / entry_bytes)
+    transcript.entries = (0..=MAX_COPY_BYTES / entry_bytes)
         .map(|id| Entry {
             id: EntryId(id as u64),
             kind: EntryKind::Notice {
@@ -428,7 +496,7 @@ fn oversized_selection_is_refused_instead_of_silently_truncated() {
         .map(|entry| (entry.id, 1))
         .collect::<Vec<_>>();
     let mut document = Document::default();
-    document.update(&transcript, &keys, &HashMap::new(), &labels::now());
+    document.update(&transcript, &keys, &HashMap::new(), &labels());
     let mut selection = Selection::default();
     selection.select_all(&document);
     assert!(selection.text(&document).is_none());
@@ -436,7 +504,7 @@ fn oversized_selection_is_refused_instead_of_silently_truncated() {
 
 #[test]
 fn ranges_never_include_hidden_preview_or_widget_sources() {
-    let (_, prepared, _) = prepare(vec![agent(
+    let shown = Shown::new(vec![agent(
         1,
         concat!(
             "before\n\n",
@@ -447,17 +515,17 @@ fn ranges_never_include_hidden_preview_or_widget_sources() {
         ),
     )]);
     let mut selection = Selection::default();
-    selection.select_all(prepared.text());
+    selection.select_all(shown.text());
     assert_eq!(
-        selection.text(prepared.text()).as_deref(),
+        selection.text(shown.text()).as_deref(),
         Some("before\n\nafter")
     );
 }
 
 #[test]
 fn empty_code_ranges_with_removed_controls_do_not_copy_or_panic() {
-    let (_, prepared, _) = prepare(vec![agent(1, "before\n\n```text\n\u{1b}a\u{1b}\n```")]);
-    let document = prepared.text();
+    let shown = Shown::new(vec![agent(1, "before\n\n```text\n\u{1b}a\u{1b}\n```")]);
+    let document = shown.text();
     let code = caret(document, 1, 1, 0, 0, 0);
     let segment = document.segment(code.key).unwrap();
     assert_eq!(segment.text(), "a");

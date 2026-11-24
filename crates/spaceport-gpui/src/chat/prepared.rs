@@ -15,7 +15,6 @@ use std::{collections::HashSet, rc::Rc};
 // The prepared entry model at the paths the rest of the chat reads it at.
 pub(crate) use spaceport_chat_core::prepared::{
     Body, DiffSummary, Part, ToolSummary, folded_thought, notice_label, shown_text, tool_header,
-    tool_text,
 };
 
 /// Bodies by entry, the pictures those bodies draw, and the selectable text of
@@ -57,7 +56,8 @@ impl Prepared {
     /// Remote links display their destination beside the label. Keep the
     /// cached selection projection in the same coordinate system as the view.
     pub(crate) fn set_remote_links(&mut self, remote: bool) {
-        self.text.set_remote_links(remote);
+        self.text
+            .set_remote_links(remote, super::rich::is_local_path);
     }
 
     /// Apply before `update`: folded records contribute only their visible

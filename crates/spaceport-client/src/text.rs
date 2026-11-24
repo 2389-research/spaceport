@@ -82,6 +82,12 @@ pub fn tab_label<'a>(snapshot: &'a ClientShellSnapshot, tab: &'a ClientShellTab)
         .unwrap_or("Terminal")
 }
 
+/// Bytes of clipboard payload this client will produce. Terminal content is
+/// untrusted and one cell's symbol carries as many bytes as it likes, so a
+/// copy of it — or of the transcript drawn above it — is bounded rather than
+/// trusted to be screen-sized.
+pub const MAX_COPY_BYTES: usize = 4 << 20;
+
 /// A control or direction-override character, which untrusted text loses.
 pub fn unsafe_char(c: char) -> bool {
     c.is_control()

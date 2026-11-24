@@ -21,9 +21,9 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use std::ops::Range;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
-/// Terminal content is untrusted and one cell's symbol carries as many bytes as
-/// it likes, so a copy is bounded rather than trusted to be screen-sized.
-pub(crate) const MAX_SELECTION_BYTES: usize = 4 << 20;
+/// Terminal selection copies under the client's one clipboard bound, which the
+/// transcript drawn above the cells uses as well.
+pub(crate) use spaceport_client::text::MAX_COPY_BYTES as MAX_SELECTION_BYTES;
 
 /// Which half of a cell the pointer sat in. Anchoring on the half, as terminal
 /// emulators do, is what makes a single cell selectable while a plain click,

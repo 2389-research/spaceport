@@ -2,14 +2,12 @@
 
 use super::{Caret, Cell, Key, Position, Region};
 use crate::{
-    chat::{
-        labels::Labels,
-        prepared::{Body, Part, folded_thought, notice_label, shown_text, tool_header, tool_text},
-        rich::{Block, CodeText, Inline, Kind, MAX_CODE_LINES, remote_content},
-    },
-    release_notes::Line,
+    labels::Labels,
+    prepared::{Body, Part, folded_thought, notice_label, shown_text, tool_header, tool_text},
+    rich::{Block, CodeText, Inline, Kind, MAX_CODE_LINES, remote_content},
 };
 use spaceport_chat_protocol::{Entry, EntryId, EntryKind, Transcript};
+use spaceport_release_notes::Line;
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
@@ -30,7 +28,8 @@ enum Text {
     },
 }
 
-pub(crate) struct Segment {
+/// One stretch of an entry's readable text, as drawn and as copied.
+pub struct Segment {
     position: Position,
     text: Text,
     atoms: Vec<Range<usize>>,
@@ -38,7 +37,7 @@ pub(crate) struct Segment {
 }
 
 impl Segment {
-    pub(crate) fn text(&self) -> &str {
+    pub fn text(&self) -> &str {
         match &self.text {
             Text::Shared(text) => text,
             Text::Lines(lines, index) => &lines[*index].text,
@@ -48,7 +47,7 @@ impl Segment {
 
     /// The text for the view to draw. Plain entry text and prose are shared
     /// with the document rather than copied each frame.
-    pub(in crate::chat) fn shared(&self) -> Arc<str> {
+    pub fn shared(&self) -> Arc<str> {
         match &self.text {
             Text::Shared(text) => text.clone(),
             Text::Lines(..) | Text::Code { .. } => self.text().into(),
@@ -56,20 +55,20 @@ impl Segment {
     }
 
     /// The drawn code line this segment selects, when it is one.
-    pub(in crate::chat) fn code(&self) -> Option<&CodeText> {
+    pub fn code(&self) -> Option<&CodeText> {
         match &self.text {
             Text::Code { line, .. } => Some(line),
             _ => None,
         }
     }
 
-    pub(crate) fn atomic(&self) -> &[Range<usize>] {
+    pub fn atomic(&self) -> &[Range<usize>] {
         &self.atoms
     }
 
     /// Original byte offset relative to this code line; ordinary prose is an
     /// identity map. A caret inside expanded tab spaces maps to the tab start.
-    pub(crate) fn source_offset(&self, offset: usize) -> usize {
+    pub fn source_offset(&self, offset: usize) -> usize {
         let offset = self
             .text()
             .floor_char_boundary(offset.min(self.text().len()));
@@ -127,18 +126,24 @@ pub(super) struct Order {
     pub(super) segment: usize,
 }
 
+/// The selectable text of a transcript, in reading order: the projection of
+/// its prepared bodies that the view draws its segments from too.
 #[derive(Default)]
-pub(crate) struct Document {
+pub struct Document {
     pub(super) entries: Vec<Rc<EntryText>>,
     positions: HashMap<EntryId, usize>,
     epoch: u64,
-    remote_links: bool,
+    /// The app's test for a link naming a file on this machine, while the
+    /// conversation is on another host: its links then show their destination
+    /// instead of reading as links. `None` for a conversation on this machine.
+    remote: Option<fn(&str) -> bool>,
     expanded: HashSet<EntryId>,
     version: u64,
 }
 
 impl Document {
-    pub(crate) fn key(&self, entry: EntryId, region: Region, cell: Cell) -> Option<Key> {
+    /// The caret at `cell` of `region` in `entry`, in this document's revision.
+    pub fn key(&self, entry: EntryId, region: Region, cell: Cell) -> Option<Key> {
         let projection = self.entries.get(*self.positions.get(&entry)?)?;
         let position = Position { region, cell };
         projection.positions.get(&position)?;
@@ -152,11 +157,7 @@ impl Document {
 
     /// The cells of `region` that hold text, in order. An expanded tool
     /// call lists its locations and output by them.
-    pub(in crate::chat) fn cells(
-        &self,
-        entry: EntryId,
-        region: Region,
-    ) -> impl Iterator<Item = Cell> + '_ {
+    pub fn cells(&self, entry: EntryId, region: Region) -> impl Iterator<Item = Cell> + '_ {
         self.positions
             .get(&entry)
             .and_then(|index| self.entries.get(*index))
@@ -166,7 +167,7 @@ impl Document {
             .map(|segment| segment.position.cell)
     }
 
-    pub(crate) fn segment(&self, key: Key) -> Option<&Segment> {
+    pub fn segment(&self, key: Key) -> Option<&Segment> {
         let order = self.order(key)?;
         self.entries.get(order.entry)?.segments.get(order.segment)
     }
@@ -213,24 +214,31 @@ impl Document {
         ))
     }
 
-    pub(in crate::chat) fn set_remote_links(&mut self, remote: bool) {
-        if self.remote_links != remote {
+    /// Remote links display their destination beside the label, so the
+    /// projection is kept in the same coordinate system as the view.
+    /// `is_local_path` is the app's test for a destination naming a file on
+    /// the machine it runs on.
+    pub fn set_remote_links(&mut self, remote: bool, is_local_path: fn(&str) -> bool) {
+        let remote = remote.then_some(is_local_path);
+        if self.remote.is_some() != remote.is_some() {
             self.clear();
-            self.remote_links = remote;
+            self.remote = remote;
         }
     }
 
-    pub(in crate::chat) fn clear(&mut self) {
+    pub fn clear(&mut self) {
         self.entries.clear();
         self.positions.clear();
         self.epoch = self.epoch.wrapping_add(1);
     }
 
-    pub(in crate::chat) fn set_expanded(&mut self, expanded: &HashSet<EntryId>) {
+    pub fn set_expanded(&mut self, expanded: &HashSet<EntryId>) {
         self.expanded.clone_from(expanded);
     }
 
-    pub(in crate::chat) fn update(
+    /// Projects the entries whose revision moved, keeping the projection of
+    /// every entry that did not.
+    pub fn update(
         &mut self,
         transcript: &Transcript,
         keys: &[(EntryId, u64)],
@@ -261,7 +269,7 @@ impl Document {
                         revision,
                         self.version,
                         bodies.get(&id).map(|(_, body)| body.as_ref()),
-                        self.remote_links,
+                        self.remote,
                         expanded,
                         labels,
                     ))
@@ -278,7 +286,7 @@ fn project(
     revision: u64,
     version: u64,
     body: Option<&Body>,
-    remote: bool,
+    remote: Option<fn(&str) -> bool>,
     expanded: bool,
     labels: &Labels,
 ) -> EntryText {
@@ -343,11 +351,9 @@ fn project(
                     shown_text(text).to_owned(),
                 );
             }
-            EntryKind::Turn(turn) => builder.plain(
-                Region::Body(0),
-                Cell::default(),
-                crate::chat::text::turn(turn),
-            ),
+            EntryKind::Turn(turn) => {
+                builder.plain(Region::Body(0), Cell::default(), (labels.turn)(turn));
+            }
             EntryKind::Tool(_) | EntryKind::Image { .. } => {}
         },
     }
@@ -381,7 +387,7 @@ fn project(
 
 struct Builder {
     segments: Vec<Segment>,
-    remote: bool,
+    remote: Option<fn(&str) -> bool>,
 }
 
 impl Builder {
@@ -517,10 +523,9 @@ impl Builder {
     }
 
     fn inline(&mut self, position: Position, content: &[Inline], separator: &'static str) {
-        let content = if self.remote {
-            remote_content(content)
-        } else {
-            Cow::Borrowed(content)
+        let content = match self.remote {
+            Some(is_local_path) => remote_content(content, is_local_path),
+            None => Cow::Borrowed(content),
         };
         let mut text = String::new();
         let mut atoms = Vec::new();

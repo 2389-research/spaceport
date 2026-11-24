@@ -4,9 +4,9 @@
 use super::*;
 use crate::chat::{
     labels::Labels,
-    prepared::{Body, Part, Prepared, tool_header, tool_text},
+    prepared::{Body, Part, Prepared, tool_header},
 };
-use spaceport_chat_core::prepared::answers_text;
+use spaceport_chat_core::prepared::{answers_text, tool_text};
 use spaceport_chat_protocol::{MAX_QUESTION_ANSWERS, QuestionAnswer, ToolContent};
 
 /// Labels nothing else would write, so a place that kept reading the language
@@ -22,6 +22,7 @@ fn marked() -> Labels {
         question_truncated: "truncated-label".into(),
         terminal: |id| format!("terminal-{id}"),
         tool_ask_user: "ask-user-label".into(),
+        turn: |_| "turn-label".into(),
     }
 }
 

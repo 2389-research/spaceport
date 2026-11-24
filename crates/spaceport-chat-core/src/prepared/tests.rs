@@ -15,6 +15,7 @@ fn labels() -> Labels {
         question_truncated: "More answers were left out".into(),
         terminal: |id| format!("Terminal {id}"),
         tool_ask_user: "Questions".into(),
+        turn: |summary| format!("Worked {}ms", summary.duration_ms),
     }
 }
 
