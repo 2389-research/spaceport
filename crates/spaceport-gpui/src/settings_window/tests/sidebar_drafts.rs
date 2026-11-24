@@ -192,10 +192,13 @@ fn host_rows_merge_configured_and_connected_hosts(cx: &mut TestAppContext) {
     let (source, view, cx, _) = settings_with_source(cx);
     let label = cx.update(|_, cx| {
         source
-            .update(cx, |window, _, _| {
+            .update(cx, |window, _, cx| {
                 let endpoint = &mut window.endpoints[0];
                 endpoint.live.status = crate::state::ConnectionStatus::Connected;
-                endpoint.label.clone()
+                let label = endpoint.label.clone();
+                // Settings follows the source's own notifications.
+                cx.notify();
+                label
             })
             .unwrap()
     });
@@ -209,7 +212,7 @@ fn host_rows_merge_configured_and_connected_hosts(cx: &mut TestAppContext) {
             .hosts
             .insert("Archive".into(), 0x112233);
     });
-    let rows = view.update(cx, |view, cx| view.host_rows(cx));
+    let rows = view.update(cx, |view, _| view.host_rows());
     assert_eq!(
         rows,
         vec![
@@ -545,7 +548,7 @@ fn a_hex_edit_lands_on_its_host_when_rows_reorder(cx: &mut TestAppContext) {
         for config in [&mut view.config, &mut view.loaded_config] {
             config.sidebar_style.hosts.insert("Alpha".into(), 0x445566);
         }
-        let rows = view.host_rows(cx);
+        let rows = view.host_rows();
         assert_eq!(rows[0].0, "Alpha");
         assert_eq!(rows[1].0, "Work");
         cx.notify();

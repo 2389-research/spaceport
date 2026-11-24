@@ -171,17 +171,13 @@ impl RemoteHistory {
 impl SettingsWindow {
     /// Connected SSH endpoints as (label, target), one per host: sessions on
     /// one host share its config.
-    fn connected_ssh_hosts(&self, cx: &Context<Self>) -> Vec<(String, String)> {
-        let Some(source) = self.source.upgrade() else {
-            return Vec::new();
-        };
+    fn connected_ssh_hosts(&self) -> Vec<(String, String)> {
         let mut hosts: Vec<(String, String)> = Vec::new();
-        for endpoint in &source.read(cx).endpoints {
-            if let ConnectTarget::Ssh { target, .. } = &endpoint.connection.target
-                && endpoint.live.status.is_connected()
+        for host in &self.source_window.hosts {
+            if let ConnectTarget::Ssh { target, .. } = &host.target
                 && !hosts.iter().any(|(_, known)| known == target)
             {
-                hosts.push((endpoint.label.clone(), target.clone()));
+                hosts.push((host.label.clone(), target.clone()));
             }
         }
         hosts
@@ -190,7 +186,7 @@ impl SettingsWindow {
     /// Cheap when nothing changed: the source notifies on every update, and
     /// this repaints Settings only when its host list does.
     pub(super) fn sync_remote_history(&mut self, reload: bool, cx: &mut Context<Self>) {
-        let hosts = self.connected_ssh_hosts(cx);
+        let hosts = self.connected_ssh_hosts();
         let unchanged = !reload
             && hosts.len() == self.remote_history.hosts.len()
             && hosts

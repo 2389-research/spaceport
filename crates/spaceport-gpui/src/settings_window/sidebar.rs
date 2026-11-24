@@ -210,24 +210,20 @@ impl SettingsWindow {
     /// One row per host: connected endpoints first in window order, then
     /// configured hosts that are not connected, alphabetically. Each names
     /// the message hinting at its state, or is empty.
-    pub(super) fn host_rows(&self, cx: &App) -> Vec<(String, Option<u32>, &'static str)> {
+    pub(super) fn host_rows(&self) -> Vec<(String, Option<u32>, &'static str)> {
         let hosts = &self.config.sidebar_style.hosts;
         let mut rows: Vec<(String, Option<u32>, &'static str)> = Vec::new();
-        if let Some(source) = self.source.upgrade() {
-            for endpoint in &source.read(cx).endpoints {
-                if !endpoint.live.status.is_connected()
-                    || rows.iter().any(|(label, ..)| *label == endpoint.label)
-                {
-                    continue;
-                }
-                let color = hosts.get(&endpoint.label).copied();
-                let hint = if color.is_some() {
-                    ""
-                } else {
-                    "settings-sidebar-host-uncoloured"
-                };
-                rows.push((endpoint.label.clone(), color, hint));
+        for host in &self.source_window.hosts {
+            if rows.iter().any(|(label, ..)| *label == host.label) {
+                continue;
             }
+            let color = hosts.get(&host.label).copied();
+            let hint = if color.is_some() {
+                ""
+            } else {
+                "settings-sidebar-host-uncoloured"
+            };
+            rows.push((host.label.clone(), color, hint));
         }
         // The map is sorted, so configured-only hosts come alphabetically.
         for (host, color) in hosts {
@@ -265,7 +261,7 @@ impl SettingsWindow {
             self.finish_hex_edit(false, cx);
         }
         let current = self
-            .host_rows(cx)
+            .host_rows()
             .into_iter()
             .find(|(label, ..)| label == host)
             .and_then(|(_, color, _)| color)

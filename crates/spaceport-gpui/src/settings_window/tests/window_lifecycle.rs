@@ -108,14 +108,24 @@ fn explicit_open_retargets_after_source_closes_but_not_during_integration_work(
 ) {
     let first = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let second = cx.add_window(crate::sidebar::layout_tests::fixture_window);
-    let (settings, next) = cx.update(|cx| {
+    let (settings, next, original) = cx.update(|cx| {
         let original = first.update(cx, |_, _, cx| cx.weak_entity()).unwrap();
         let next = second.update(cx, |_, _, cx| cx.weak_entity()).unwrap();
         open_fixture(original.clone(), cx);
         let settings = cx.global::<SettingsWindowHandle>().window.unwrap();
+        (settings, next, original)
+    });
+    // A listing in flight, as `load_integrations` reports one: Settings learns
+    // of it from the source's own notification, which the next turn flushes.
+    cx.update(|cx| {
         first
-            .update(cx, |source, _, _| source.integrations.busy = true)
+            .update(cx, |source, _, cx| {
+                source.integrations.busy = true;
+                cx.notify();
+            })
             .unwrap();
+    });
+    cx.update(|cx| {
         open_fixture(next.clone(), cx);
         assert_eq!(
             settings.read(cx).unwrap().source.entity_id(),
@@ -124,7 +134,6 @@ fn explicit_open_retargets_after_source_closes_but_not_during_integration_work(
         first
             .update(cx, |_, window, _| window.remove_window())
             .unwrap();
-        (settings, next)
     });
     cx.run_until_parked();
     cx.update(|cx| {

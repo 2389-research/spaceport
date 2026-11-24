@@ -28,10 +28,12 @@ mod search;
 mod section;
 use section::{Group, Section};
 mod sidebar;
+mod source;
 #[cfg(test)]
 use persistence::SizeIo;
 use persistence::{Kind, Lifecycle, Loaded, SaveCompletion};
 use sidebar::SidebarIntent;
+use source::SourceWindow;
 mod themes;
 mod ui;
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
@@ -160,6 +162,10 @@ struct SettingsWindow {
     theme: Theme,
     shared: Option<herdr_settings::Settings>,
     source: WeakEntity<SpaceportWindow>,
+    /// What this window reads of `source`. The app follows the window through
+    /// the subscription below, so no page or control upgrades it to read a
+    /// field; the calls that change the source still use `source` itself.
+    source_window: SourceWindow,
     section: Section,
     /// Catalog indices matching the query in `nav_search`; the body shows
     /// them in place of `section` while it is `Some`.
@@ -197,10 +203,10 @@ struct SettingsWindow {
     save_completion: Option<std::sync::mpsc::Receiver<SaveCompletion>>,
     _quit: Subscription,
     _search: Subscription,
-    new_window_target: Option<spaceport_client::ConnectTarget>,
     #[cfg(test)]
     size_io: Option<SizeIo>,
     _source: Option<Subscription>,
+    _source_released: Option<Subscription>,
     _appearance: Option<Subscription>,
     _watch: Option<Task<()>>,
     /// The config files as our last save left them, for the watcher to accept
@@ -233,28 +239,18 @@ impl SettingsWindow {
             .try_global::<crate::app::InitialAppearance>()
             .cloned()
             .unwrap_or_default();
-        let (config, keymap, theme, shared) = source.upgrade().map_or(
-            (appearance.config, appearance.keymap, appearance.theme, None),
-            |source| {
-                let source = source.read(cx);
-                (
-                    source.config.clone(),
-                    source.keymap.clone(),
-                    source.theme.clone(),
-                    source.settings.shared.clone(),
-                )
-            },
+        let upgraded = source.upgrade();
+        let source_window = upgraded.as_ref().map_or_else(
+            || SourceWindow::from_appearance(&appearance),
+            |source| SourceWindow::of(source.read(cx)),
         );
-        let subscription = source
-            .upgrade()
-            .map(|source| cx.observe(&source, Self::source_changed));
-        let new_window_target = source.upgrade().and_then(|source| {
-            source
-                .read(cx)
-                .endpoints
-                .first()
-                .map(|endpoint| endpoint.connection.target.clone())
-        });
+        // The window this one reads: observed so the snapshot follows it, and
+        // released so the facts that described a live connection go with it.
+        let source_changes = upgraded
+            .as_ref()
+            .map(|source| cx.observe(source, Self::source_changed));
+        let source_released =
+            upgraded.map(|source| cx.observe_release(&source, Self::source_released));
         let quit = cx.on_app_quit(|this, cx| {
             let task = this.shutdown(cx);
             async move {
@@ -276,12 +272,13 @@ impl SettingsWindow {
         );
         Self {
             caption: Default::default(),
-            loaded_config: config.clone(),
-            config,
-            keymap,
-            theme,
-            shared,
+            loaded_config: source_window.config.clone(),
+            config: source_window.config.clone(),
+            keymap: source_window.keymap.clone(),
+            theme: source_window.theme.clone(),
+            shared: source_window.shared.clone(),
             source,
+            source_window,
             section: Section::Theme,
             search_results: None,
             _search: search_changed,
@@ -307,10 +304,10 @@ impl SettingsWindow {
             close_when_idle: None,
             save_completion: None,
             _quit: quit,
-            new_window_target,
             #[cfg(test)]
             size_io: None,
-            _source: subscription,
+            _source: source_changes,
+            _source_released: source_released,
             _appearance: None,
             _watch: None,
             saved_sample: None,
@@ -366,7 +363,7 @@ impl SettingsWindow {
     }
 
     fn source_changed(&mut self, source: Entity<SpaceportWindow>, cx: &mut Context<Self>) {
-        let _ = source;
+        self.source_window.follow(source.read(cx));
         if self.section == Section::Integrations {
             cx.notify();
         }
@@ -375,25 +372,24 @@ impl SettingsWindow {
         }
     }
 
+    /// The window Settings read is gone: the facts that described a live
+    /// connection go with it, and what it opened with stays.
+    fn source_released(&mut self, _: &mut SpaceportWindow, cx: &mut Context<Self>) {
+        self.source_window.release();
+        cx.notify();
+    }
+
     fn retarget_source(&mut self, source: WeakEntity<SpaceportWindow>, cx: &mut Context<Self>) {
-        if source.entity_id() == self.source.entity_id()
-            || self
-                .source
-                .upgrade()
-                .is_some_and(|source| source.read(cx).integrations.busy)
-        {
+        if source.entity_id() == self.source.entity_id() || self.source_window.integrations_busy {
             return;
         }
         let Some(owner) = source.upgrade() else {
             return;
         };
         self._source = Some(cx.observe(&owner, Self::source_changed));
+        self._source_released = Some(cx.observe_release(&owner, Self::source_released));
         self.source = source;
-        self.new_window_target = owner
-            .read(cx)
-            .endpoints
-            .first()
-            .map(|endpoint| endpoint.connection.target.clone());
+        self.source_window.follow(owner.read(cx));
         if self.section == Section::Integrations {
             owner.update(cx, |source, cx| source.load_integrations(cx));
         }
@@ -443,16 +439,9 @@ impl SettingsWindow {
         let keys_changed = previous.is_none_or(|previous| previous.keymap != self.keymap);
         let menus_changed =
             previous.is_some_and(|previous| crate::menus::changed(&previous.config, &self.config));
-        // Future windows inherit an explicit Settings draft, but not a main
-        // picker's cancellable hover preview. Logs follow live appearance.
-        let previewing = cx.windows().into_iter().any(|window| {
-            window.downcast::<SpaceportWindow>().is_some_and(|window| {
-                window.read(cx).map_or(true, |source| {
-                    source.menu.page == Some(crate::menu::Page::Themes)
-                        || source.theme_save_in_flight()
-                })
-            })
-        });
+        // Future windows inherit an explicit Settings draft, but not the source
+        // window's cancellable hover preview. Logs follow live appearance.
+        let previewing = self.source_window.theme_page_open;
         let mut appearance = crate::app::InitialAppearance {
             config: self.config.clone(),
             keymap: self.keymap.clone(),
@@ -571,6 +560,9 @@ impl SettingsWindow {
         }
     }
 
+    /// Where "New window" connects: the source's first endpoint as it is now,
+    /// since a new window belongs where the source is, or the target this
+    /// window's source snapshot kept once that window closed.
     fn additional_window_target(&self, cx: &App) -> Option<spaceport_client::ConnectTarget> {
         self.source
             .upgrade()
@@ -581,7 +573,7 @@ impl SettingsWindow {
                     .first()
                     .map(|endpoint| endpoint.connection.target.clone())
             })
-            .or_else(|| self.new_window_target.clone())
+            .or_else(|| self.source_window.target.clone())
     }
 
     pub(super) fn select_section(

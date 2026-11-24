@@ -235,7 +235,7 @@ impl SettingsWindow {
                     catalog::SIDEBAR_HOST_COLOURS.id.into(),
                 )),
         );
-        let rows = self.host_rows(cx);
+        let rows = self.host_rows();
         if rows.is_empty() {
             page = page.child(
                 div()
