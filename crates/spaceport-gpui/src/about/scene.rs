@@ -151,6 +151,20 @@ fn scene(ink: Ink, id: &'static str) -> impl IntoElement {
     })
 }
 
+/// The glyphs of the marquee's line, without the characters that take no room
+/// on screen. Fluent isolates the greeting's placeables in U+2068/U+2069 and a
+/// pseudo-locale wraps the line again, so the line arrives carrying bidi
+/// controls: given a slot each, they would leave gaps in the wave. They go by
+/// the campaign's own class of untrusted characters, which `spaceport_truncate`
+/// drops from every other line the app shows, so what a line loses is one
+/// answer and not a second list here.
+pub(super) fn letters(greeting: &str) -> Vec<char> {
+    greeting
+        .chars()
+        .filter(|letter| !spaceport_client::text::unsafe_char(*letter))
+        .collect()
+}
+
 /// The marquee riding the top band: the greeting as one element a glyph, so
 /// each can take its own height from the wave. Nothing here carries a name of
 /// its own, so a screen reader reads the credits below instead.
@@ -158,6 +172,8 @@ fn marquee(greeting: String, ink: u32, text: f32, id: &'static str) -> impl Into
     // A larger UI font keeps the line inside its band, so the crest of the
     // wave is never cut off.
     let size = (text * GLYPH).min(BAND - 2. * scroller::LIFT);
+    let glyphs = letters(&greeting);
+    let count = glyphs.len();
     div()
         .debug_selector(|| "about-marquee".into())
         .absolute()
@@ -167,13 +183,15 @@ fn marquee(greeting: String, ink: u32, text: f32, id: &'static str) -> impl Into
         .h(px(BAND))
         .overflow_hidden()
         .text_size(px(size))
+        // A glyph's line box is its own size, so the panel's inherited line
+        // height cannot push the baseline below the band and clip the crest.
+        .line_height(px(size))
         .text_color(rgb(ink))
         .with_animation(id, animation(), move |band, delta| {
             let t = time(delta);
-            let count = greeting.chars().count();
             band.children(
-                greeting
-                    .chars()
+                glyphs
+                    .iter()
                     .enumerate()
                     .filter_map(move |(index, letter)| {
                         let (x, lift) = scroller::glyph(index, count, t);

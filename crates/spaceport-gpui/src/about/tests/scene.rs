@@ -123,3 +123,15 @@ fn the_scene_keeps_frames_coming_unless_motion_is_reduced(cx: &mut TestAppContex
         }
     }
 }
+
+/// A bidi control takes no room on the greeting's line, so the marquee must
+/// give it no glyph slot either: Fluent isolates the placeables in U+2068 and
+/// U+2069, and a pseudo-locale wraps the line again, and either would leave a
+/// gap in the wave if the control took a slot.
+#[test]
+fn the_marquee_gives_bidi_controls_no_glyph_slot() {
+    let plain = "2389 Research, Inc. presents Spaceport";
+    let wrapped = "\u{2067}2389 Research, Inc.\u{200e} presents Spaceport\u{2069}";
+    assert_eq!(scene::letters(wrapped), scene::letters(plain));
+    assert_eq!(scene::letters(wrapped).len(), plain.chars().count());
+}

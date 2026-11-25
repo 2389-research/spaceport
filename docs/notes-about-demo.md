@@ -121,3 +121,31 @@ column, laid out by the same code, with no canvas and no marquee behind it.
   from the native About smoke, which is the check to run on a desktop.
 
 [#245]: https://github.com/2389-research/spaceport/issues/245
+
+## Review fixes
+
+Three findings from the review of this change, each fixed where it was named
+and pinned by a test:
+
+| Finding | File | What changed |
+| --- | --- | --- |
+| Bidi controls took glyph slots in the marquee | `about/scene.rs` | `scene::letters` drops the campaign's untrusted characters — `spaceport_client::text::unsafe_char`, the same class `spaceport_truncate` drops from every other line the app shows — before the marquee counts or indexes anything. Fluent's default isolation wraps the placeables in U+2068/U+2069 and a pseudo-locale wraps the line again in U+202E/U+202C, so the greeting arrives carrying controls; each would have taken a slot and left a gap in the wave. The control set is reused rather than restated, so the marquee cannot drift from what the rest of the app refuses. |
+| The starfield's repetition test could pass on two `None`s | `about/effects/tests/starfield.rs` | The old star sat past the edge at both sampled times, so `assert_eq!(None, None)` proved nothing. The test now finds a star the field holds on the stage a whole loop apart, requires both projections, and compares `x`, `y` and `brightness` (to a thousandth of the stage's half-width and a millionth of the brightness: the phase repeats exactly and only the two times' rounding differs). A brightness that stopped repeating now fails. |
+| The marquee set a font size but no line height | `about/scene.rs` | `.line_height(px(size))` beside `.text_size(px(size))`. Each glyph's line box is now its own size, so the panel's inherited line height cannot push the baseline below the 18 px band and let `overflow_hidden` clip the crest at large UI font sizes. The band's height, the vertical offset that centres a glyph and the clipping are untouched. |
+
+One thing deliberately not widened: the marquee still keeps U+200B (zero-width
+space) and the U+200C/U+200D joiners. The campaign's class drops the bidi
+formatting controls — the embedding, override and isolate codes, and the
+deprecated U+200E/U+200F marks — and those three have no bidi power, so
+dropping them here would be a second, marquee-local class saying something the
+rest of the app does not. Text carrying a joiner would show one zero-width
+element slot; that is cosmetic, and it is not what the review asked about.
+
+What was run for these three fixes:
+
+| Check | Result |
+| --- | --- |
+| `cargo test -p spaceport-gpui --bin spaceport about` | 46 passed: the 45 the change had, plus `the_marquee_gives_bidi_controls_no_glyph_slot` (`the_field_repeats_with_the_loop` was rewritten in place) |
+| `cargo check -p spaceport-gpui --all-targets` | clean |
+| `SPARKLE_FRAMEWORK_PATH=$PWD/target/sparkle-sdk cargo clippy -p spaceport-gpui --all-targets --all-features` | clean, no warnings from this crate (SDK acquired with `bash scripts/release/prepare-sparkle-sdk.sh target/sparkle-sdk`) |
+| `cargo fmt --check` | clean |
