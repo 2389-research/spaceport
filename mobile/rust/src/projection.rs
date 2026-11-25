@@ -105,41 +105,14 @@ pub struct MobileView {
     pub go_to_arrival: Option<u64>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) enum Navigation {
-    Workspace(String),
-    Tab(String),
-    Pane(String),
-}
-
-impl Navigation {
-    fn matches(&self, snapshot: &ClientShellSnapshot) -> bool {
-        match self {
-            Self::Workspace(id) => snapshot.focused_workspace_id.as_ref() == Some(id),
-            Self::Tab(id) => snapshot.focused_tab_id.as_ref() == Some(id),
-            Self::Pane(id) => snapshot.focused_pane_id.as_ref() == Some(id),
-        }
-    }
-
-    pub(crate) fn present(&self, snapshot: &ClientShellSnapshot) -> bool {
-        match self {
-            Self::Workspace(id) => snapshot.workspaces.iter().any(|w| &w.workspace_id == id),
-            Self::Tab(id) => snapshot.tabs.iter().any(|t| {
-                &t.tab_id == id && Some(&t.workspace_id) == snapshot.focused_workspace_id.as_ref()
-            }),
-            Self::Pane(id) => snapshot.panes.iter().any(|p| {
-                &p.pane_id == id
-                    && Some(&p.tab_id) == snapshot.focused_tab_id.as_ref()
-                    && Some(&p.workspace_id) == snapshot.focused_workspace_id.as_ref()
-            }),
-        }
-    }
-}
+/// Where a focus request is aimed: the shared set, whose rules over a
+/// snapshot this projection reads the same way the window does.
+pub(crate) use spaceport_client::navigation::NavigationTarget;
 
 #[derive(Clone)]
 struct FocusFence {
     request: String,
-    destination: Option<Navigation>,
+    destination: Option<NavigationTarget<String>>,
     barrier: String,
     minimum_revision: Option<u64>,
     deadline: Instant,
@@ -336,7 +309,7 @@ impl Projection {
     pub(crate) fn start_fence(
         &mut self,
         request: String,
-        destination: Navigation,
+        destination: NavigationTarget<String>,
         barrier: String,
     ) {
         self.surface = None;
@@ -361,7 +334,7 @@ impl Projection {
             && fence
                 .destination
                 .as_ref()
-                .is_none_or(|target| target.matches(snapshot))
+                .is_none_or(|target| target.is_focused_in(snapshot))
         {
             self.fence = None;
         }

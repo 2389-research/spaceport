@@ -4,7 +4,10 @@
 
 use super::{Action, Entry, Error, Source, frecency, projects};
 use crate::{NavigationTarget, Result, i18n::fl};
-use spaceport_client::protocol::{AgentStatus, ClientShellSnapshot};
+use spaceport_client::{
+    navigation::Missing,
+    protocol::{AgentStatus, ClientShellSnapshot},
+};
 
 /// Whether a Go To destination listed from `boot` still exists in `snapshot`.
 pub(super) fn destination_exists(
@@ -12,28 +15,12 @@ pub(super) fn destination_exists(
     boot: &str,
     target: NavigationTarget<&str>,
 ) -> Result<()> {
-    if boot.is_empty() || boot != snapshot.boot_id {
-        return Err(Error::SessionChanged.into());
-    }
-    match target {
-        NavigationTarget::Workspace(id) => snapshot
-            .workspaces
-            .iter()
-            .any(|w| w.workspace_id == id)
-            .then_some(())
-            .ok_or(Error::WorkspaceRemoved.into()),
-        NavigationTarget::Tab(id) => snapshot
-            .tabs
-            .iter()
-            .any(|t| t.tab_id == id)
-            .then_some(())
-            .ok_or(Error::TabRemoved.into()),
-        NavigationTarget::Pane(id) => snapshot
-            .panes
-            .iter()
-            .any(|p| p.pane_id == id)
-            .then_some(())
-            .ok_or(Error::DestinationRemoved.into()),
+    match target.exists_in(snapshot, boot) {
+        Ok(()) => Ok(()),
+        Err(Missing::Session) => Err(Error::SessionChanged.into()),
+        Err(Missing::Workspace) => Err(Error::WorkspaceRemoved.into()),
+        Err(Missing::Tab) => Err(Error::TabRemoved.into()),
+        Err(Missing::Pane) => Err(Error::DestinationRemoved.into()),
     }
 }
 

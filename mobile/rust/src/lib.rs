@@ -19,7 +19,7 @@ uniffi::setup_scaffolding!();
 #[cfg(test)]
 use {
     controller::geometry,
-    projection::{Navigation, Projection},
+    projection::{NavigationTarget, Projection},
 };
 #[cfg(test)]
 mod tests;

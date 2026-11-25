@@ -28,6 +28,7 @@ pub mod local_path;
 mod local_peer;
 pub mod login_env;
 mod method;
+pub mod navigation;
 mod options;
 pub mod private_endpoint;
 mod process;

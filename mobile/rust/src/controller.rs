@@ -3,7 +3,7 @@
 #[path = "history.rs"]
 pub(crate) mod history;
 use crate::{
-    projection::{HostChallenge, InputTarget, MobileView, Navigation, Projection},
+    projection::{HostChallenge, InputTarget, MobileView, NavigationTarget, Projection},
     ssh::{
         EnclaveSigner, EnrollmentRequest, MobilePty, PtyRoutes, SshAuth, SshError, SshHost,
         open_bridge,
@@ -286,13 +286,13 @@ impl MobileSession {
     }
 
     pub fn focus_workspace(&self, boot_id: String, id: String) -> Result<(), MobileError> {
-        self.navigate(&boot_id, Navigation::Workspace(id))
+        self.navigate(&boot_id, NavigationTarget::Workspace(id))
     }
     pub fn focus_tab(&self, boot_id: String, id: String) -> Result<(), MobileError> {
-        self.navigate(&boot_id, Navigation::Tab(id))
+        self.navigate(&boot_id, NavigationTarget::Tab(id))
     }
     pub fn focus_pane(&self, boot_id: String, id: String) -> Result<(), MobileError> {
-        self.navigate(&boot_id, Navigation::Pane(id))
+        self.navigate(&boot_id, NavigationTarget::Pane(id))
     }
 
     /// Run on a background thread. Swift rechecks the original input route before pasting.
@@ -485,7 +485,7 @@ impl MobileSession {
         Ok(())
     }
 
-    fn navigate(&self, boot: &str, target: Navigation) -> Result<(), MobileError> {
+    fn navigate(&self, boot: &str, target: NavigationTarget<String>) -> Result<(), MobileError> {
         let mut state = self.active(boot)?;
         if state.navigating() || state.go_to_pending() {
             return Err(MobileError::NavigationPending);
@@ -518,15 +518,19 @@ impl MobileSession {
         handle: &ClientHandle,
         state: &mut Projection,
         boot: &str,
-        target: Navigation,
+        target: NavigationTarget<String>,
     ) -> Result<(), MobileError> {
-        if state.snapshot.as_deref().is_none_or(|s| !target.present(s)) {
+        if state
+            .snapshot
+            .as_deref()
+            .is_none_or(|s| !target.reachable_in(s))
+        {
             return Err(MobileError::StaleView);
         }
         let navigation = match &target {
-            Navigation::Workspace(id) => handle.focus_workspace(boot, id),
-            Navigation::Tab(id) => handle.focus_tab(boot, id),
-            Navigation::Pane(id) => handle.focus_pane(boot, id),
+            NavigationTarget::Workspace(id) => handle.focus_workspace(boot, id),
+            NavigationTarget::Tab(id) => handle.focus_tab(boot, id),
+            NavigationTarget::Pane(id) => handle.focus_pane(boot, id),
         }?;
         state.note_input(Instant::now());
         state.version += 1;

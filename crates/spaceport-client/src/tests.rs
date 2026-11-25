@@ -39,6 +39,7 @@ mod host_themes;
 mod idle_wait;
 mod input_pane;
 mod liveness;
+mod navigation;
 #[cfg(unix)]
 mod partial_input;
 #[cfg(windows)]

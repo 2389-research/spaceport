@@ -299,17 +299,10 @@ impl Fence {
                 request.active
                     && request.boot == snapshot.boot_id
                     && surface.projection_revision >= *revision
-                    && request.focus.as_ref().is_none_or(|target| match target {
-                        crate::navigation::NavigationTarget::Workspace(id) => {
-                            snapshot.focused_workspace_id.as_ref() == Some(id)
-                        }
-                        crate::navigation::NavigationTarget::Tab(id) => {
-                            snapshot.focused_tab_id.as_ref() == Some(id)
-                        }
-                        crate::navigation::NavigationTarget::Pane(id) => {
-                            snapshot.focused_pane_id.as_ref() == Some(id)
-                        }
-                    })
+                    && request
+                        .focus
+                        .as_ref()
+                        .is_none_or(|target| target.is_focused_in(snapshot))
             }
             _ => false,
         }

@@ -12,8 +12,8 @@
 //! the app builds every entry from its own catalog and its daemon state, words
 //! every label and badge (`docs/i18n.md`), keeps the palette entity, the
 //! frecency history, the project scan and the paint. The navigation target a
-//! Go To row aims at is `spaceport-live`'s, re-exported here for the rows that
-//! carry one.
+//! Go To row aims at is `spaceport-client`'s, re-exported here for the rows
+//! that carry one.
 
 mod action;
 mod agent_filter;

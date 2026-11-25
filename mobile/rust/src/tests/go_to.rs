@@ -6,7 +6,7 @@ use super::*;
 fn a_single_pane_focus_rejects_a_pane_outside_the_selected_tab() {
     let mut snap = snapshot();
     snap.panes[0].tab_id = "other-tab".into();
-    assert!(!Navigation::Pane("w1:p1".into()).present(&snap));
+    assert!(!NavigationTarget::Pane("w1:p1".to_owned()).reachable_in(&snap));
 }
 
 fn route_fixture() -> (Projection, ClientShellSnapshot, PaneSurfaceFrame) {
@@ -49,9 +49,9 @@ fn a_jump_fences_every_step_and_only_exposes_the_final_input_target() {
     let (mut state, mut snap, mut frame) = route_fixture();
     let request_version = state.version;
     let steps = [
-        Navigation::Workspace("infra".into()),
-        Navigation::Tab("deploy".into()),
-        Navigation::Pane("watch".into()),
+        NavigationTarget::Workspace("infra".into()),
+        NavigationTarget::Tab("deploy".into()),
+        NavigationTarget::Pane("watch".into()),
     ];
     for step in steps {
         let issued = state.go_to_step().unwrap().unwrap();
@@ -61,9 +61,9 @@ fn a_jump_fences_every_step_and_only_exposes_the_final_input_target() {
         snap.revision += 1;
         frame.projection_revision = snap.revision;
         match &step {
-            Navigation::Workspace(id) => snap.focused_workspace_id = Some(id.clone()),
-            Navigation::Tab(id) => snap.focused_tab_id = Some(id.clone()),
-            Navigation::Pane(id) => {
+            NavigationTarget::Workspace(id) => snap.focused_workspace_id = Some(id.clone()),
+            NavigationTarget::Tab(id) => snap.focused_tab_id = Some(id.clone()),
+            NavigationTarget::Pane(id) => {
                 snap.focused_pane_id = Some(id.clone());
                 frame.panes[0].pane_id = id.clone();
             }

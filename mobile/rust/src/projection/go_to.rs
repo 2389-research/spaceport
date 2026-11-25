@@ -1,6 +1,6 @@
 // ABOUTME: Resolves a selected pane through its authoritative Herdr workspace and tab.
 // ABOUTME: Waits for ordered focus receipts and a coherent surface between requests.
-use super::{Navigation, Projection};
+use super::{NavigationTarget, Projection};
 use crate::MobileError;
 use spaceport_client::protocol::ClientShellSnapshot;
 use std::time::{Duration, Instant};
@@ -12,7 +12,7 @@ pub(super) struct Route {
     tab: String,
     pane: String,
     expected_agent: Option<String>,
-    last_step: Option<Navigation>,
+    last_step: Option<NavigationTarget<String>>,
     deadline: Instant,
 }
 
@@ -37,13 +37,13 @@ impl Route {
             })
     }
 
-    fn next(&self, s: &ClientShellSnapshot) -> Option<Navigation> {
+    fn next(&self, s: &ClientShellSnapshot) -> Option<NavigationTarget<String>> {
         if s.focused_workspace_id.as_ref() != Some(&self.workspace) {
-            Some(Navigation::Workspace(self.workspace.clone()))
+            Some(NavigationTarget::Workspace(self.workspace.clone()))
         } else if s.focused_tab_id.as_ref() != Some(&self.tab) {
-            Some(Navigation::Tab(self.tab.clone()))
+            Some(NavigationTarget::Tab(self.tab.clone()))
         } else if s.focused_pane_id.as_ref() != Some(&self.pane) {
-            Some(Navigation::Pane(self.pane.clone()))
+            Some(NavigationTarget::Pane(self.pane.clone()))
         } else {
             None
         }
@@ -98,7 +98,7 @@ impl Projection {
         self.route.is_some()
     }
 
-    pub(crate) fn go_to_step(&mut self) -> Result<Option<Navigation>, MobileError> {
+    pub(crate) fn go_to_step(&mut self) -> Result<Option<NavigationTarget<String>>, MobileError> {
         let Some(route) = &self.route else {
             return Ok(None);
         };
@@ -118,7 +118,7 @@ impl Projection {
         let step = route.next(snapshot);
         // A concurrent focus change must never replay a previous step.
         if let Some(last) = &route.last_step
-            && (!last.matches(snapshot) || !last.present(snapshot))
+            && (!last.is_focused_in(snapshot) || !last.reachable_in(snapshot))
         {
             return Err(MobileError::StaleView);
         }
