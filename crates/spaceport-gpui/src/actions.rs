@@ -176,7 +176,7 @@ pub(crate) fn edit_modifiers(modifiers: Modifiers) -> bool {
 // system keys — spelled by `spaceport-keymap`, where a daemon custom command
 // is kept off them. `bind_keys` above binds them to this app's actions.
 pub use spaceport_keymap::EDIT_KEYS;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", test))]
 pub use spaceport_keymap::SYSTEM_KEYS;
 #[cfg(any(target_os = "macos", test))]
 pub use spaceport_keymap::free_system_keys;
