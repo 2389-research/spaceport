@@ -39,6 +39,12 @@ preview. Two fixes from sharing rules with them are worth recording anyway:
   tries once more after a refusal. Before, it asked against whatever frame it
   had and reported a timeout for a search it never sent.
 
+- A full queue no longer hangs up the phone's session. When the desktop's
+  daemon queue was busy, the phone used to end the connection and give up on
+  the focus request. Now it waits and tries again, exactly like the desktop.
+- Terminal links and scroll position survive the trip to the phone, so the
+  next cell change can't quietly drop them again.
+
 ### One rule for scrolling
 
 The phone had its own copy of the rule that turns finger and wheel motion into
