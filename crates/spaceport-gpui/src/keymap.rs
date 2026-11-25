@@ -6,27 +6,30 @@
 //! shortcuts arrive with each snapshot instead, so they are matched against
 //! this answer when typed rather than resolved into it; one bound to a
 //! catalog default's keystroke takes it over, as a daemon `[keys]` entry does.
+//!
+//! The daemon's `[keys]` table and the host's keystroke text live in
+//! `spaceport-keymap`; the re-exports below keep the paths the app has always
+//! used, and each stage of `docs/notes-keymap-extraction.md` leaves fewer here.
 
 mod custom;
-pub(crate) mod daemon;
 mod error;
-mod host;
 
 pub(crate) use custom::Reach;
 pub(crate) use custom::available_commands;
-pub(crate) use daemon::DaemonKeys;
 pub(crate) use error::Error;
+pub(crate) use spaceport_keymap::daemon;
+pub(crate) use spaceport_keymap::daemon::DaemonKeys;
 #[cfg(test)]
-pub(crate) use host::secondary_key;
-pub(crate) use host::{HOST_OS, parse_keystroke, secondary};
+pub(crate) use spaceport_keymap::secondary_key;
+pub(crate) use spaceport_keymap::{HOST_OS, parse_keystroke, secondary};
 pub(crate) use spaceport_settings::keys::{Binding, PaneKeys};
 
 use crate::{
     Result,
     controls::{COMMANDS, Command},
 };
-use daemon::Trigger;
 use gpui::{KeybindingKeystroke, Keystroke, Modifiers};
+use spaceport_keymap::daemon::Trigger;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// A command may carry an alias or two, never an unbounded list.

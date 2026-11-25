@@ -16,18 +16,10 @@ fn detach_uses_herdr_default_and_honors_custom_or_empty_bindings() {
 }
 
 #[test]
-fn detach_reads_the_remote_profile_and_does_not_override_configured_chords() {
+fn detach_reads_the_remote_profile_like_the_local_table() {
     let profile = "[keys]\nprefix = 'ctrl+a'\ndetach = 'alt+d'";
     assert_eq!(
         DaemonKeys::from_profile(Some(profile)).unwrap(),
         keys(profile)
     );
-    let configured = keys("[keys]\nnew_tab = 'prefix+q'");
-    let keymap = super::super::super::Keymap::with_overrides(
-        &Default::default(),
-        &Default::default(),
-        &configured,
-    )
-    .unwrap();
-    assert_eq!(keymap.chord(&parsed("q")), Some(Command::Tab));
 }

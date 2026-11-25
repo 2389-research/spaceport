@@ -9,10 +9,11 @@
 
 mod error;
 
-pub(crate) use error::Error;
+pub use error::Error;
 
-use crate::{Result, controls::Command};
+use crate::Result;
 use gpui::{Keystroke, Modifiers};
+use spaceport_commands::Command;
 
 /// Herdr's own fallback when `prefix` is missing or names no usable key.
 const DEFAULT_PREFIX: &str = "ctrl+b";
@@ -242,7 +243,7 @@ const ACTIONS: &[(&str, Target, &str)] = &[
 
 /// How a daemon binding is typed.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) enum Trigger {
+pub enum Trigger {
     /// The keystroke alone runs the command.
     Direct(Keystroke),
     /// The prefix, then this keystroke.
@@ -254,15 +255,15 @@ pub(crate) enum Trigger {
 /// that collides with a binding the user wrote, and the keymap keeps the
 /// first binding for a keystroke, so the same one wins here.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct DaemonKeys {
+pub struct DaemonKeys {
     /// Every prefix key, never empty and without duplicates. Each one arms
     /// prefix mode; the first is the one shown in chord labels.
-    pub(super) prefixes: Vec<Keystroke>,
-    pub(super) bindings: Vec<(Command, Trigger)>,
+    pub prefixes: Vec<Keystroke>,
+    pub bindings: Vec<(Command, Trigger)>,
     /// `navigate_workspace_up` and `_down`: the keys that move the workspace
     /// picker's selection, besides its own arrows.
-    pub(super) navigate_up: Vec<Keystroke>,
-    pub(super) navigate_down: Vec<Keystroke>,
+    pub navigate_up: Vec<Keystroke>,
+    pub navigate_down: Vec<Keystroke>,
 }
 
 impl Default for DaemonKeys {
@@ -279,7 +280,7 @@ impl DaemonKeys {
     /// and indexed keys mean the same thing on either side. Like Herdr, a
     /// profile that is missing or unreadable as a whole is an error, which
     /// leaves the caller on its local keybindings.
-    pub(crate) fn from_profile(profile: Option<&str>) -> Result<Self> {
+    pub fn from_profile(profile: Option<&str>) -> Result<Self> {
         let profile = profile.ok_or(Error::Missing)?;
         if profile.len() > MAX_PROFILE_BYTES {
             return Err(Error::TooLarge {
@@ -297,7 +298,7 @@ impl DaemonKeys {
 
     /// Reads the daemon config's `[keys]` table; each action it leaves out,
     /// or gives a value of the wrong type, keeps Herdr's default.
-    pub(crate) fn from_table(keys: Option<&toml::Table>) -> Self {
+    pub fn from_table(keys: Option<&toml::Table>) -> Self {
         let prefixes = prefixes(keys);
         let legacy = |indexed: Indexed| {
             keys.and_then(|keys| keys.get("indexed")?.get(indexed.legacy_key())?.as_str())
@@ -398,7 +399,7 @@ fn prefixes(keys: Option<&toml::Table>) -> Vec<Keystroke> {
 
 /// Each binding one entry spells, with the digit it types, if any. `1..9`
 /// stands for the nine digit keys; an unparseable entry yields nothing.
-pub(super) fn triggers(entry: &str) -> Vec<(Option<u8>, Trigger)> {
+pub fn triggers(entry: &str) -> Vec<(Option<u8>, Trigger)> {
     let entry = entry.trim();
     let (prefixed, body) = match entry.strip_prefix("prefix+") {
         Some(body) => (true, body),

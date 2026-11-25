@@ -9,7 +9,7 @@ fn keys(text: &str) -> DaemonKeys {
 }
 
 fn parsed(text: &str) -> Keystroke {
-    crate::keymap::parse_keystroke(text).unwrap()
+    crate::parse_keystroke(text).unwrap()
 }
 
 fn prefixed(key: &str) -> Trigger {
@@ -141,17 +141,17 @@ fn a_server_profile_reads_like_the_local_table() {
 fn an_unusable_server_profile_is_an_error() {
     assert!(matches!(
         DaemonKeys::from_profile(None),
-        Err(crate::Error::ServerKeybindings(Error::Missing))
+        Err(crate::Error::Daemon(Error::Missing))
     ));
     assert!(matches!(
         DaemonKeys::from_profile(Some("[keys\n")),
-        Err(crate::Error::ServerKeybindings(Error::Parse(_)))
+        Err(crate::Error::Daemon(Error::Parse(_)))
     ));
     for profile in ["", "prefix = 'ctrl+a'", "keys = 'ctrl+a'"] {
         assert!(
             matches!(
                 DaemonKeys::from_profile(Some(profile)),
-                Err(crate::Error::ServerKeybindings(Error::NoKeys))
+                Err(crate::Error::Daemon(Error::NoKeys))
             ),
             "{profile:?}"
         );
@@ -159,7 +159,7 @@ fn an_unusable_server_profile_is_an_error() {
     let oversized = format!("[keys]\n{}", "# pad\n".repeat(MAX_PROFILE_BYTES / 6 + 1));
     assert!(matches!(
         DaemonKeys::from_profile(Some(&oversized)),
-        Err(crate::Error::ServerKeybindings(Error::TooLarge {
+        Err(crate::Error::Daemon(Error::TooLarge {
             max: MAX_PROFILE_BYTES
         }))
     ));
@@ -342,10 +342,6 @@ fn user_bindings_precede_defaults() {
         .unwrap();
     assert_eq!(keys.bindings[first].0, Command::ReloadConfig);
     assert_eq!(bound(&keys, Command::ResizeMode), [prefixed("r")]);
-    let keymap =
-        super::super::Keymap::with_overrides(&Default::default(), &Default::default(), &keys)
-            .unwrap();
-    assert_eq!(keymap.chord(&parsed("r")), Some(Command::ReloadConfig));
 }
 
 #[test]

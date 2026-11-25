@@ -1,0 +1,22 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-keymap"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[features]
+# `secondary_key`, for the app's own tests that hold the platform's primary
+# modifier while clicking a link. A cargo feature, not `cfg(test)`, because a
+# dependency's own `cfg(test)` is false inside its consumers' test builds.
+test-support = []
+
+[dependencies]
+gpui.workspace               = true
+spaceport-commands.workspace = true
+thiserror.workspace          = true
+toml.workspace               = true
