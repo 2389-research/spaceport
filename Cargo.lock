@@ -6668,7 +6668,6 @@ dependencies = [
  "config",
  "core-graphics 0.25.0",
  "flate2",
- "fluent-syntax",
  "foreign-types",
  "futures-channel",
  "futures-lite",
@@ -6762,11 +6761,14 @@ version = "0.1.0"
 dependencies = [
  "fluent",
  "fluent-langneg 0.14.2",
+ "fluent-syntax",
  "i18n-embed",
  "serde",
  "serde_json",
  "sys-locale",
+ "tempfile",
  "thiserror 2.0.21",
+ "tracing",
  "unic-langid",
 ]
 

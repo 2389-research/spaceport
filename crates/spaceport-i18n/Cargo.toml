@@ -9,6 +9,13 @@ version.workspace      = true
 [lints]
 workspace = true
 
+[features]
+# The GPUI test harness enables this so the catalog a test switches is its
+# own thread's, and not the one another test reads; a normal build keeps one
+# catalog for the process. A cargo feature, not `cfg(test)`, because a
+# dependency's own `cfg(test)` is false inside its consumers' test builds.
+test-support = []
+
 [dependencies]
 fluent.workspace         = true
 fluent-langneg.workspace = true
@@ -16,7 +23,15 @@ i18n-embed.workspace     = true
 serde.workspace          = true
 sys-locale.workspace     = true
 thiserror.workspace      = true
+tracing.workspace        = true
 unic-langid.workspace    = true
 
+[build-dependencies]
+# Parses the `.ftl` files so `fl!` calls are checked against them.
+fluent-syntax.workspace = true
+
 [dev-dependencies]
-serde_json.workspace = true
+# `tests/locales.rs` runs the build script's message checks.
+fluent-syntax.workspace = true
+serde_json.workspace    = true
+tempfile.workspace      = true

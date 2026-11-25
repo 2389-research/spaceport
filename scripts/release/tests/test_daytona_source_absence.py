@@ -28,8 +28,8 @@ class DaytonaSourceAbsence(unittest.TestCase):
 
     def test_provider_assets_are_absent_but_core_onboarding_remains(self):
         self.assertFalse((ROOT / "assets/icons/cloud/daytona.svg").exists())
-        self.assertFalse((ROOT / "crates/spaceport-gpui/locales/en-US/settings-cloud-daytona.ftl").exists())
-        self.assertFalse((ROOT / "crates/spaceport-gpui/locales/en-US/error-remote-daytona.ftl").exists())
+        self.assertFalse((ROOT / "crates/spaceport-i18n/locales/en-US/settings-cloud-daytona.ftl").exists())
+        self.assertFalse((ROOT / "crates/spaceport-i18n/locales/en-US/error-remote-daytona.ftl").exists())
         self.assertTrue((ROOT / "crates/spaceport-gpui/src/menu/devices/add_device/core.rs").exists())
         self.assertTrue((ROOT / "crates/spaceport-gpui/src/menu/devices/core_catalog.rs").exists())
 

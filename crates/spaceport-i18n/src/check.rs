@@ -2,10 +2,12 @@
 //! English files lack, an argument the message does not take, or leaving
 //! out one it does, stops the build at that call.
 
-use super::MESSAGES;
+use crate::__private::MESSAGES;
 use std::cmp::Ordering;
 
-pub(crate) const fn check(id: &str, args: &[&str]) {
+/// Run by [`fl!`](crate::fl) in the crate that calls it, so it is reachable
+/// outside this one as `__private::check`.
+pub const fn check(id: &str, args: &[&str]) {
     let Some(index) = find(id) else {
         panic!("fl!: no message has this ID in locales/en-US");
     };

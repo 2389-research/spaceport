@@ -17,7 +17,7 @@ fn fl_formats_a_message_with_and_without_arguments() {
 #[test]
 fn the_compile_time_check_refuses_unknown_ids_and_mismatched_arguments() {
     let refused = |id: &'static str, args: &'static [&'static str]| {
-        std::panic::catch_unwind(|| check(id, args)).is_err()
+        std::panic::catch_unwind(|| __private::check(id, args)).is_err()
     };
     assert!(!refused("palette-hints", &[]));
     assert!(!refused("commands-focus-tab", &["number"]));

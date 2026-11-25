@@ -24,7 +24,7 @@ class OpenSandboxSourceAbsence(unittest.TestCase):
 
     def test_provider_assets_and_claims_are_absent_but_shared_routes_remain(self):
         for name in ("settings-cloud-opensandbox", "error-remote-opensandbox"):
-            self.assertFalse((ROOT / f"crates/spaceport-gpui/locales/en-US/{name}.ftl").exists())
+            self.assertFalse((ROOT / f"crates/spaceport-i18n/locales/en-US/{name}.ftl").exists())
         self.assertFalse((ROOT / "assets/icons/cloud/opensandbox.svg").exists())
         for path in (ROOT / "website/site/index.html", ROOT / "website/site/assets/features.js"):
             self.assertFalse("OpenSandbox" in path.read_text(), str(path))

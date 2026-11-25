@@ -32,7 +32,7 @@ class CoderSourceAbsence(unittest.TestCase):
     def test_provider_assets_are_absent_but_shared_routes_remain(self):
         self.assertFalse((ROOT / "assets/icons/cloud/coder.svg").exists())
         for name in ("devices-coder", "settings-cloud-coder", "error-remote-coder"):
-            self.assertFalse((ROOT / f"crates/spaceport-gpui/locales/en-US/{name}.ftl").exists())
+            self.assertFalse((ROOT / f"crates/spaceport-i18n/locales/en-US/{name}.ftl").exists())
         self.assertTrue((ROOT / "crates/spaceport-gpui/src/menu/devices/add_device/core.rs").exists())
 
 

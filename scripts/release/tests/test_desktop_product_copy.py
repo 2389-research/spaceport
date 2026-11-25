@@ -7,7 +7,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[3]
-ENGLISH = ROOT / "crates/spaceport-gpui/locales/en-US"
+ENGLISH = ROOT / "crates/spaceport-i18n/locales/en-US"
 LABELS = {
     "commands.ftl": ("commands-about",),
     "config-diagnostic.ftl": (

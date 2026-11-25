@@ -1,17 +1,16 @@
-//! The text the app shows, from Fluent messages (docs/i18n.md). Each feature
-//! keeps its English in `locales/en-US/<feature>.ftl`, which the build script
-//! embeds and checks. [`fl!`] formats a message in the current locale and
-//! fails to compile when its ID or arguments do not match the English file.
+//! The text the app shows, from Fluent messages (docs/i18n.md). The words and
+//! the lookup are `spaceport-i18n`'s: [`fl!`] formats a message in the locale
+//! shown and fails to compile when its ID or arguments do not match the
+//! English file.
 //!
-//! The locale is a GPUI global, [`CurrentLocale`], chosen by the `language`
-//! setting or a QA pseudo-locale. Its catalog is also kept process-wide, as
-//! `motion`'s slow switch is, so text is found where there is no app
-//! context, and the direction its locale lays the chrome out in is published to
-//! `spaceport-widgets` there, which mirrors every element by it. Changing the
+//! What stays here is the app's own: the locale every window shows, as a GPUI
+//! global, [`CurrentLocale`], chosen by the `language` setting or a QA
+//! pseudo-locale, and the one thing loading a catalog does to the chrome
+//! besides the text: it publishes the direction the locale lays the chrome out
+//! in to `spaceport-widgets`, which mirrors every element by it. Changing the
 //! locale reinstalls the menus and redraws every window; text a view already
 //! built keeps its language until it is built again.
 
-mod check;
 mod current;
 pub(crate) mod errors;
 #[cfg(test)]
@@ -19,79 +18,15 @@ pub(crate) mod leak_tests;
 #[cfg(test)]
 mod tests;
 
-pub(crate) use check::check;
 pub(crate) use errors::Localize;
+// The check `fl!` runs while compiling, for a `const fn` that names a message
+// by constant rather than by literal.
+pub(crate) use spaceport_i18n::__private::check;
 pub(crate) use spaceport_i18n::FluentValue;
-use spaceport_i18n::{Catalog, Direction, FluentArgs, Language, Locale, Pseudo};
-use std::sync::LazyLock;
-
-include!(concat!(env!("OUT_DIR"), "/messages.rs"));
-
-/// A message in the current locale. `fl!("id")`, or with named arguments
-/// `fl!("id", name = value)`; a value is anything Fluent takes, such as a
-/// string or a number.
-macro_rules! fl {
-    ($id:literal $(,)?) => {{
-        const _: () = $crate::i18n::check($id, &[]);
-        $crate::i18n::text($id, &[])
-    }};
-    ($id:literal, $($name:ident = $value:expr),+ $(,)?) => {{
-        const _: () = $crate::i18n::check($id, &[$(stringify!($name)),+]);
-        $crate::i18n::text(
-            $id,
-            &[$((stringify!($name), $crate::i18n::FluentValue::from($value))),+],
-        )
-    }};
-}
-pub(crate) use fl;
-
-/// English without isolation marks, for text that leaves the window.
-static ENGLISH: LazyLock<Option<Catalog>> = LazyLock::new(|| Catalog::english(FILES).ok());
-
-/// `id` in the current locale. Only `fl!` names a message by literal, so
-/// its ID is checked; [`message`] takes one chosen at run time.
-pub(crate) fn text(id: &'static str, args: &[(&str, FluentValue<'_>)]) -> String {
-    message(id, args)
-}
-
-/// A message whose ID is data, such as a catalog command's. Tests check
-/// each such table against the English files.
-pub(crate) fn message(id: &str, args: &[(&str, FluentValue<'_>)]) -> String {
-    match current::catalog() {
-        Some(catalog) => format(&catalog, id, args),
-        None => id.to_owned(),
-    }
-}
-
-/// A message in English, for command line output and searches that match
-/// the English name of a translated label.
-pub(crate) fn english(id: &str, args: &[(&str, FluentValue<'_>)]) -> String {
-    match ENGLISH.as_ref() {
-        Some(catalog) => format(catalog, id, args),
-        None => id.to_owned(),
-    }
-}
-
-fn format(catalog: &Catalog, id: &str, args: &[(&str, FluentValue<'_>)]) -> String {
-    if args.is_empty() {
-        return catalog.text(id);
-    }
-    let mut fluent = FluentArgs::with_capacity(args.len());
-    for (name, value) in args {
-        fluent.set(*name, value.clone());
-    }
-    catalog.text_with(id, &fluent)
-}
-
-/// The variables English message `id` takes, or `None` when there is no
-/// such message, for tests of tables that name messages as data.
 #[cfg(test)]
-pub(crate) fn takes(id: &str) -> Option<&'static [&'static str]> {
-    MESSAGES
-        .iter()
-        .find(|(message, _)| *message == id)
-        .map(|(_, variables)| *variables)
-}
+pub(crate) use spaceport_i18n::takes;
+use spaceport_i18n::{Direction, Language, Locale, Pseudo};
+pub(crate) use spaceport_i18n::{available, endonym, english, fl, message, shown_locale};
 
 /// A catalog command's name in the current locale.
 pub(crate) fn command(info: &crate::controls::CommandInfo) -> String {
@@ -109,23 +44,6 @@ fn command_args(command: crate::Command) -> Vec<(&'static str, FluentValue<'stat
         .map(|number| ("number", FluentValue::from(number)))
         .into_iter()
         .collect()
-}
-
-/// The languages with messages; pseudo-locales are not among them.
-pub(crate) fn available() -> Vec<Locale> {
-    Catalog::available(FILES)
-}
-
-/// Each language with messages, named in itself, as [`available`] orders them.
-static ENDONYMS: LazyLock<Vec<(Locale, String)>> = LazyLock::new(|| Catalog::endonyms(FILES));
-
-/// What `locale` calls itself (`English`, `עברית`), or its tag when it has
-/// no messages of its own, whatever language the windows show.
-pub(crate) fn endonym(locale: &Locale) -> String {
-    ENDONYMS
-        .iter()
-        .find(|(candidate, _)| candidate == locale)
-        .map_or_else(|| locale.to_string(), |(_, name)| name.clone())
 }
 
 /// The locale every window shows, and what chose it.
@@ -182,13 +100,7 @@ impl CurrentLocale {
 /// The pseudo-locale the windows show, if they show one, for the QA menu
 /// to check. Like Slow Animations, it is read where there is no app context.
 pub(crate) fn shown_pseudo() -> Option<Pseudo> {
-    current::catalog()?.locale().pseudo()
-}
-
-/// The locale the windows show, for caches of text written in it to
-/// notice a switch. Read where there is no app context, as [`shown_pseudo`] is.
-pub(crate) fn shown_locale() -> Option<Locale> {
-    current::catalog().map(|catalog| catalog.locale().clone())
+    shown_locale()?.pseudo()
 }
 
 /// Shows `locale` on this test's thread with no app, for tests of text and

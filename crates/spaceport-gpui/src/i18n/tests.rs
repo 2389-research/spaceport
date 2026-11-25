@@ -4,5 +4,4 @@ use super::*;
 mod desktop_identity;
 mod leak;
 mod locale;
-mod macros;
 mod messages;

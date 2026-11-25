@@ -30,7 +30,7 @@ class AzureCloudSourceAbsence(unittest.TestCase):
             path = ROOT / name
             self.assertNotIn("Host::Azure", path.read_text(), name)
         for name in ("settings-cloud-azure", "error-remote-azure", "azure-sizes"):
-            self.assertFalse((ROOT / f"crates/spaceport-gpui/locales/en-US/{name}.ftl").exists())
+            self.assertFalse((ROOT / f"crates/spaceport-i18n/locales/en-US/{name}.ftl").exists())
         for name in ("index.html", "assets/features.js"):
             self.assertNotIn("Azure", (ROOT / "website/site" / name).read_text(), name)
         self.assertTrue((ROOT / "crates/spaceport-gpui/src/menu/devices/add_device/core.rs").exists())
