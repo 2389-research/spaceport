@@ -19,16 +19,20 @@ SPEC.loader.exec_module(CI)
 
 class SpaceportReleaseTransition(unittest.TestCase):
     def test_new_repository_runs_windows_checks_with_performance_disabled(self):
-        context = policy.CiPolicy().context(**{
-            "github.repository": REPO, "github.event_name": "push",
-            "github.ref": "refs/heads/main", "github.actor": "harperreed",
-            "github.triggering_actor": "harperreed",
-        })
-        for job in ("zizmor", "commits", "checks", "checks-passed", "build"):
-            self.assertTrue(condition_matches(job, context), job)
-        for event in ("push", "pull_request", "workflow_dispatch"):
-            for job in ("windows", "windows-native", "windows-package"):
-                self.assertTrue(condition_matches(job, {**context, "github.event_name": event}), job)
+        # A collaborator's push of main runs every job; the CI policy names no
+        # login, so the same push from any of them qualifies.
+        for actor in ("harperreed", "clintecker"):
+            context = policy.CiPolicy().context(**{
+                "github.repository": REPO, "github.event_name": "push",
+                "github.ref": "refs/heads/main", "github.actor": actor,
+                "github.triggering_actor": actor,
+            })
+            for job in ("zizmor", "commits", "checks", "checks-passed", "build"):
+                self.assertTrue(condition_matches(job, context), (job, actor))
+            for event in ("push", "pull_request", "workflow_dispatch"):
+                for job in ("windows", "windows-native", "windows-package"):
+                    self.assertTrue(condition_matches(job, {**context, "github.event_name": event}),
+                                    (job, event, actor))
 
     def test_restored_windows_gate_requires_success_and_preserves_other_failures(self):
         context = policy.CiPolicy().context(**{
@@ -66,5 +70,6 @@ class SpaceportReleaseTransition(unittest.TestCase):
                          f"https://github.com/{REPO}/releases/download/macos-preview-feed/appcast.xml")
         workflow = (ROOT / ".github/workflows/macos-preview.yml").read_text()
         self.assertIn(f"github.repository == '{REPO}'", workflow)
-        self.assertIn(f"--repo {REPO} --actor harperreed", workflow)
+        self.assertIn(f"--wait --repo {REPO}\n", workflow)
+        self.assertNotIn("--actor", workflow)
         self.assertNotIn("harperreed/spaceport", workflow)
