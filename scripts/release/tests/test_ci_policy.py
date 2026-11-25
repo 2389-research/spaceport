@@ -141,7 +141,8 @@ class CiPolicy(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertEqual(runs, value == "true")
 
-    def test_non_pr_events_require_owner_main_and_expected_event(self):
+    def test_non_pr_events_require_main_and_expected_event(self):
+        # Every collaborator's push or dispatch of main runs CI; no login gates it.
         for event, ref, actor, triggering_actor in itertools.product(
                 ("push", "workflow_dispatch", "pull_request_target", "workflow_run"),
                 ("refs/heads/main", "refs/heads/topic", "refs/tags/v1"),
@@ -150,12 +151,19 @@ class CiPolicy(unittest.TestCase):
                 "github.event_name": event, "github.ref": ref,
                 "github.actor": actor, "github.triggering_actor": triggering_actor,
             })
-            allowed = (event in ("push", "workflow_dispatch") and ref == "refs/heads/main"
-                       and actor == OWNER and triggering_actor == OWNER)
+            allowed = event in ("push", "workflow_dispatch") and ref == "refs/heads/main"
             for job in JOBS:
                 with self.subTest(job=job, context=context):
                     self.assertEqual(self.runs(job, context),
                                      allowed and job not in PR_ONLY_JOBS)
+
+    def test_no_job_gates_on_a_trusted_login(self):
+        # Signing authority is the protected environment's, not a login's.
+        for workflow in sorted((ROOT / ".github/workflows").glob("*.yml")):
+            with self.subTest(workflow=workflow.name):
+                text = workflow.read_text()
+                self.assertNotIn("github.actor", text)
+                self.assertNotIn("github.triggering_actor", text)
 
     def test_other_repositories_cannot_run_jobs(self):
         for repository, event, actor in itertools.product(
@@ -186,12 +194,12 @@ class CiPolicy(unittest.TestCase):
                 "github.ref": ref, "github.actor": actor, "github.triggering_actor": actor,
             })
             # The scheduled scan has no meaningful actor: GitHub reports
-            # whoever last edited the cron line.
+            # whoever last edited the cron line, and any collaborator may
+            # push or dispatch as well.
             expected = repository == spaceport and (
                 event == "pull_request"
                 or (event == "schedule" and ref == "refs/heads/main")
-                or (event in ("push", "workflow_dispatch") and ref == "refs/heads/main"
-                    and actor == "harperreed"))
+                or (event in ("push", "workflow_dispatch") and ref == "refs/heads/main"))
             for job in jobs:
                 with self.subTest(job=job, context=context):
                     self.assertEqual(condition_matches(job, context, jobs), expected)

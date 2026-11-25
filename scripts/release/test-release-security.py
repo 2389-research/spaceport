@@ -21,10 +21,10 @@ class ReleaseTargets(unittest.TestCase):
         for name, job in jobs.items():
             self.assertIn("github.repository == '2389-research/spaceport'", job)
             self.assertNotIn("sheprd-labs/sheprd", job, name)
+            self.assertNotIn("github.actor", job, name)
             if name != "build-macos":
                 condition = " ".join(re.search(r"^    if: >-\n((?:      .*\n)+)", job, re.M)[1].split())
-                self.assertIn("github.actor == 'harperreed' && github.triggering_actor == 'harperreed'",
-                              condition, name)
+                self.assertIn("github.ref == 'refs/heads/main'", condition, name)
             self.assertNotIn("secrets.", job, name)
         # Keeps every main cache inside the repository's 10 GB cache budget.
         self.assertIn("\nenv:\n  CARGO_PROFILE_DEV_DEBUG: '0'\n\njobs:\n", workflow)
@@ -60,7 +60,12 @@ class ReleaseTargets(unittest.TestCase):
                       jobs["checks-passed"])
         warmer = (ROOT / ".github/workflows/cache-macos.yml").read_text()
         self.assertRegex(warmer, r"\n  schedule:\n    - cron: '\d+ \d+ \* \* \*'\n")
-        self.assertEqual(warmer.count("(github.event_name == 'schedule' ||"), 2)
+        # A collaborator's push, a dispatch and the nightly cron share the one
+        # condition: this repository, from the default branch.
+        main_only = ("    if: >-\n"
+                     "      github.repository == '2389-research/spaceport' && github.ref == 'refs/heads/main'\n")
+        self.assertEqual(warmer.count(main_only), 2)
+        self.assertNotIn("github.actor", warmer)
         for command in ('cargo build --locked --release -p spaceport-gpui --target "$TARGET"',
                         'cargo test --locked --release -p spaceport-gpui --test cli --target "$TARGET"\n'):
             self.assertIn(command, warmer)

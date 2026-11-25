@@ -38,7 +38,7 @@ class CheckCi(unittest.TestCase):
             self.assertEqual(api.call_args, mock.call(
                 "actions/runs/123/jobs?filter=latest&per_page=100", repo=CI.REPO, paginate=True))
 
-    def test_spaceport_requires_selected_actor_and_exact_main_commit(self):
+    def test_explicit_actor_pin_requires_both_ci_actors_and_exact_main_commit(self):
         candidate = {**run(), "actor": {"login": "harperreed"},
                      "triggering_actor": {"login": "harperreed"}}
         for changes, accepted in (({}, True), ({"actor": {"login": "penso"}}, False),
@@ -48,6 +48,17 @@ class CheckCi(unittest.TestCase):
                                   ({"event": "pull_request"}, False)):
             with self.subTest(changes=changes):
                 self.assertEqual(CI.eligible({**candidate, **changes}, SHA, "harperreed"), accepted)
+
+    def test_any_collaborator_qualifies_without_an_actor_pin(self):
+        # The default accepts whoever a collaborator's run reports, including
+        # an owner rerun, which changes the triggering actor only.
+        for actor, triggering_actor in (("harperreed", "harperreed"), ("penso", "penso"),
+                                        ("larry0x", "harperreed"), ("some-newcomer", "ci-bot")):
+            candidate = {**run(), "actor": {"login": actor},
+                         "triggering_actor": {"login": triggering_actor}}
+            with self.subTest(actor=actor, triggering_actor=triggering_actor):
+                self.assertTrue(CI.eligible(candidate, SHA))
+                self.check([candidate], [{"jobs": jobs()}])
 
     def test_spaceport_selection_survives_wait_and_job_recheck(self):
         candidate = {**run(), "actor": {"login": "harperreed"},
@@ -73,6 +84,14 @@ class CheckCi(unittest.TestCase):
                 mock.patch.object(CI, "require_ci") as check:
             self.assertEqual(CI.main(), 0)
             check.assert_called_once_with(SHA, True, repo="2389-research/spaceport", actor="harperreed")
+
+    def test_cli_accepts_any_login_by_default(self):
+        # No --actor is the normal release path: any collaborator's main run
+        # counts, so the argument may not reach the login check as None.
+        with mock.patch("sys.argv", ["check-ci.py", SHA]), \
+                mock.patch.object(CI, "require_ci") as check:
+            self.assertEqual(CI.main(), 0)
+            check.assert_called_once_with(SHA, False, repo="2389-research/spaceport", actor=None)
 
     def test_cli_rejects_malformed_repository_and_actor_before_api(self):
         for option, value in (("--repo", "a/b/../c"), ("--repo", "a/b?x=y"),
@@ -110,10 +129,9 @@ class CheckCi(unittest.TestCase):
             with self.subTest(missing=job["name"]), self.assertRaises(CI.CiError):
                 self.check([run()], [{"jobs": others}])
 
-    def test_other_commits_branches_events_and_actors_do_not_qualify(self):
+    def test_other_commits_branches_and_events_do_not_qualify(self):
         for changes in ({"head_sha": "b" * 40}, {"head_branch": "topic"},
-                        {"event": "pull_request"}, {"actor": {"login": "other"}},
-                        {"triggering_actor": {"login": "other"}},
+                        {"event": "pull_request"},
                         {"conclusion": "failure"}, {"status": "in_progress"}):
             with self.subTest(changes=changes), mock.patch.object(
                     CI, "api", return_value={"workflow_runs": [{**run(), **changes}]}) as api:

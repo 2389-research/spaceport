@@ -27,10 +27,10 @@ Never push a release tag that the owner did not ask for.
 | The commit belongs to `main` | `git merge-base --is-ancestor <sha> origin/main` |
 | Main CI completed successfully on that exact commit | `gh run list --repo 2389-research/spaceport --workflow ci.yml --commit <sha>` |
 | The version is unused, even by a failed run | `gh run list --repo 2389-research/spaceport --workflow macos-preview.yml` |
-| The tag is pushed as `harperreed` | `gh api user --jq .login` |
+| You can push to the repository: any collaborator may cut a preview | `gh api repos/2389-research/spaceport --jq .permissions.push` |
 
-The workflow enforces each of these and refuses otherwise. A failed check is a
-stop, not something to work around.
+The workflow enforces every check it can see and refuses otherwise; GitHub
+enforces write access. A failed check is a stop, not something to work around.
 
 ## Show what will ship
 

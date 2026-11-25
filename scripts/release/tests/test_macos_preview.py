@@ -250,10 +250,13 @@ class PreviewRoute(unittest.TestCase):
     def test_manual_artifacts_and_tagged_prereleases_keep_signing_isolated(self):
         workflow = (ROOT / '.github/workflows/macos-preview.yml').read_text()
         for text in ('workflow_dispatch:', 'push:', "tags: ['v*']", "github.repository == '2389-research/spaceport'",
-                     "github.actor == 'harperreed'", "github.triggering_actor == 'harperreed'",
                      'environment: macos-preview', 'contents: read', 'smoke-cli.py',
                      'actions/upload-artifact@', 'actions/download-artifact@'):
             self.assertIn(text, workflow)
+        # Any collaborator may dispatch or tag a preview; no login gates the
+        # run, and the ci-gate step pins no actor.
+        for text in ('harperreed', 'github.actor', 'github.triggering_actor', '--actor'):
+            self.assertNotIn(text, workflow)
         for text in ('pull_request:', 'update-homebrew', 'windows-',
                      'HERDR_RELEASE_VERSION:'):
             self.assertNotIn(text, workflow)
@@ -266,7 +269,7 @@ class PreviewRoute(unittest.TestCase):
             if name != 'sign':
                 self.assertNotIn('secrets.', job)
         self.assertIn('needs: [validate, build, ci-gate]', jobs['sign'])
-        self.assertIn('--repo 2389-research/spaceport --actor harperreed', jobs['ci-gate'])
+        self.assertIn('--wait --repo 2389-research/spaceport\n', jobs['ci-gate'])
         self.assertIn("github.event_name == 'push'", jobs['publish'])
         self.assertIn("needs.validate.outputs.tag != ''", jobs['publish'])
         self.assertIn('--verify-tag --prerelease', jobs['publish'])

@@ -132,3 +132,30 @@ artifact is ready for Doctor Biz's native test; it does not prove workspace,
 chat, input, notification, side-by-side install or update acceptance. Hosted
 signing and Intel/Windows/Linux native qualification remain unrun. T12,
 G-RELEASE and G-PLATFORM remain blocked/open as recorded in their registries.
+
+## Amendment 2026-11-25: the actor gate is gone
+
+The "protected signing environment" this record relies on used to be paired with
+a login gate: every `macos-preview.yml` job required
+`github.actor == 'harperreed' && github.triggering_actor == 'harperreed'`, and
+the `ci-gate` step passed `--actor harperreed`. The owner has since opened both
+CI and previews to any collaborator. The workflow `if:` conditions now name the
+repository, the event and the `main` branch or `v*` tag only, and
+`scripts/release/check-ci.py` accepts whoever ran the main CI unless a caller
+pins `--actor`.
+
+Nothing above changes: the inputs, the artifact bytes, the submission UUIDs and
+the local receipt layout are the record of what was signed on 2026-11-09. What
+changes is the trust story around them. The environment was queried on
+2026-11-25 and holds one protection rule, a branch policy allowing `main` and
+`v*` tags, and no required reviewers, with `can_admins_bypass: true`. The
+repository has no branch protection and no rulesets. So the six environment
+signing secrets are reachable by any of the repository's seven collaborators who
+can push a tag or dispatch the workflow, with no review.
+
+That is a finding, recorded with the exact API output and the suggested settings
+change in `docs/notes-ci-open-gates.md`, not a
+qualification result. This record's own limits stand: hosted signing and the
+hosted workflow remain unproven here, T12, G-RELEASE and G-PLATFORM stay
+open/blocked, and the gate that decides signing authority is now the
+`macos-preview` environment's reviewers rather than a login name.
