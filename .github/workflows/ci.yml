@@ -36,7 +36,6 @@ jobs:
       github.repository == '2389-research/spaceport' &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
         github.ref == 'refs/heads/main'))
     name: Workflow Security
     runs-on: ubuntu-latest
@@ -59,7 +58,6 @@ jobs:
       github.repository == '2389-research/spaceport' &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
         github.ref == 'refs/heads/main'))
     name: Commit messages
     needs: zizmor
@@ -107,7 +105,6 @@ jobs:
       github.repository == '2389-research/spaceport' &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
         github.ref == 'refs/heads/main'))
     name: Format, lint, and test (${{ matrix.runner }}, ${{ matrix.features }})
     needs: [zizmor, commits]
@@ -277,7 +274,6 @@ jobs:
       github.repository == '2389-research/spaceport' &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
         github.ref == 'refs/heads/main'))
     name: Windows check (${{ matrix.runner }}, ${{ matrix.features }})
     needs: [zizmor, commits]
@@ -328,7 +324,6 @@ jobs:
       github.repository == '2389-research/spaceport' &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
         github.ref == 'refs/heads/main'))
     name: Windows native GUI (${{ matrix.runner }})
     needs: [zizmor, commits]
@@ -389,7 +384,6 @@ jobs:
       github.repository == '2389-research/spaceport' &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
         github.ref == 'refs/heads/main'))
     name: Windows package and installer
     needs: [zizmor, commits]
@@ -445,7 +439,6 @@ jobs:
       github.repository == '2389-research/spaceport' &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
         github.ref == 'refs/heads/main'))
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -500,8 +493,7 @@ jobs:
       needs.commits.outputs.code == 'true' &&
       github.repository == '2389-research/spaceport' &&
       github.ref == 'refs/heads/main' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      github.actor == 'harperreed' && github.triggering_actor == 'harperreed'
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     name: Release (${{ matrix.target }})
     needs: [zizmor, commits]
     strategy:

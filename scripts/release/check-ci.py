@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """ABOUTME: Require a complete, successful main-branch CI run for a release commit.
-ABOUTME: Select the repository and trusted CI actor explicitly for fork releases.
+ABOUTME: Select the repository explicitly, and a CI actor only to pin one login.
 """
 import argparse
 import json
@@ -10,7 +10,7 @@ import subprocess
 import sys
 
 REPO = "2389-research/spaceport"
-ACTOR = "harperreed"
+ACTOR = None  # any collaborator may run CI; --actor narrows it to one login
 LOGIN = r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?"
 # Job names are the API contract with ci.yml. Missing/renamed jobs fail closed.
 # Windows packaging is path-selected; the macOS release builds run on pull
@@ -43,11 +43,11 @@ def api(path, *, repo=REPO, paginate=False):
                          check=True, stdout=subprocess.PIPE).stdout)
 
 
-def eligible(run, sha, actor=ACTOR):
+def eligible(run, sha, actor=None):
+    actors = (run["actor"]["login"], run["triggering_actor"]["login"])
     return (run["head_sha"] == sha and run["head_branch"] == "main"
             and run["event"] in ("push", "workflow_dispatch")
-            and run["actor"]["login"] == actor
-            and run["triggering_actor"]["login"] == actor)
+            and (actor is None or all(a == actor for a in actors)))
 
 
 def missing_jobs(jobs):
@@ -89,14 +89,15 @@ def main():
     parser.add_argument("sha")
     parser.add_argument("--wait", action="store_true")
     parser.add_argument("--repo", default=REPO, help="GitHub owner/repository whose CI must pass")
-    parser.add_argument("--actor", default=ACTOR, help="GitHub login required for both CI actors")
+    parser.add_argument("--actor", default=ACTOR,
+                        help="GitHub login required for both CI actors; unset accepts any collaborator")
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.sha):
         parser.error("sha must be a full lowercase commit SHA")
     if (not re.fullmatch(rf"{LOGIN}/[A-Za-z0-9_.-]+", args.repo)
             or args.repo.split("/")[-1] in (".", "..")):
         parser.error("repo must be a GitHub owner/repository")
-    if not re.fullmatch(LOGIN, args.actor):
+    if args.actor is not None and not re.fullmatch(LOGIN, args.actor):
         parser.error("actor must be a GitHub login")
     try:
         require_ci(args.sha, args.wait, repo=args.repo, actor=args.actor)
