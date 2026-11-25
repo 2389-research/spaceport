@@ -4,6 +4,7 @@ use spaceport_client::protocol::ClientShellCommand;
 
 mod custom_defaults;
 mod custom_reference;
+mod daemon_layering;
 mod literal_plus;
 mod pane_keys;
 mod platform_defaults;

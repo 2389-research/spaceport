@@ -33,7 +33,11 @@ impl ServerKeymap {
         overrides: &BTreeMap<String, Binding>,
         pane_keys: &PaneKeys,
     ) -> Self {
+        // The crate reads the profile; this GUI's own overrides are still the
+        // app's, so its failure becomes the app's error here and the chain
+        // below stays in one `Result`.
         let keymap = DaemonKeys::from_profile(profile)
+            .map_err(crate::Error::from)
             .and_then(|keys| Keymap::with_overrides(overrides, pane_keys, &keys));
         if let Err(error) = &keymap {
             tracing::warn!(endpoint, %error, "Using local keybindings for this device");

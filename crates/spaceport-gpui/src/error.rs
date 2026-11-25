@@ -183,7 +183,7 @@ pub enum Error {
     #[error("The selected pane is no longer on screen.")]
     SelectionStale,
     #[error(transparent)]
-    ServerKeybindings(#[from] crate::keymap::daemon::Error),
+    ServerKeybindings(#[from] spaceport_keymap::Error),
     #[error(transparent)]
     Settings(#[from] spaceport_settings::Error),
     #[error("Could not finish saving Settings: {0}")]

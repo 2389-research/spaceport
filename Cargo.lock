@@ -6705,6 +6705,7 @@ dependencies = [
  "spaceport-endpoint",
  "spaceport-i18n",
  "spaceport-icons",
+ "spaceport-keymap",
  "spaceport-live",
  "spaceport-menu",
  "spaceport-motion",
@@ -6770,6 +6771,16 @@ dependencies = [
  "sha2 0.11.1",
  "spaceport-protocol",
  "spaceport-settings",
+]
+
+[[package]]
+name = "spaceport-keymap"
+version = "0.1.0"
+dependencies = [
+ "gpui-pre",
+ "spaceport-commands",
+ "thiserror 2.0.21",
+ "toml 1.1.6+spec-1.1.0",
 ]
 
 [[package]]
