@@ -6999,6 +6999,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "spaceport-textfield"
+version = "0.1.0"
+dependencies = [
+ "gpui-pre",
+ "spaceport-commands",
+ "spaceport-settings",
+ "spaceport-widgets",
+ "spaceport-words",
+ "unicode-bidi",
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "spaceport-truncate"
 version = "0.1.0"
 dependencies = [
