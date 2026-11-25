@@ -10,7 +10,6 @@
 //! nothing new.
 
 use crate::{
-    labels::Labels,
     rich::{Fence, Want},
     summary::Summary,
     visual::{MAX_DIAGRAM_SOURCE, Source, VisualId},
@@ -21,6 +20,7 @@ use spaceport_chat_protocol::{
     ToolContent, Transcript,
 };
 use spaceport_client::text::safe_text;
+use spaceport_i18n::fl;
 use spaceport_release_notes::{self as release_notes, Line};
 use spaceport_web_url::WebUrl;
 use std::{
@@ -44,30 +44,25 @@ pub const MESSAGE: release_notes::Limits = release_notes::Limits {
 };
 
 /// What ends an answer cut at [`MESSAGE`].
-fn cut_note(labels: &Labels) -> String {
-    labels.answer_cut.clone()
+fn cut_note() -> String {
+    fl!("chat-answer-cut")
 }
 
 /// Markdown prose as rich blocks, or as lines when it is too large to be
 /// rich.
-fn prose(
-    text: &str,
-    wants: &mut Vec<Want>,
-    labels: &Labels,
-    destination: fn(&str) -> Option<String>,
-) -> Part {
+fn prose(text: &str, wants: &mut Vec<Want>, destination: fn(&str) -> Option<String>) -> Part {
     match crate::rich::parse(text, wants, destination) {
         Some(blocks) => Part::Rich(blocks.into()),
-        None => Part::Text(message_lines(text, labels)),
+        None => Part::Text(message_lines(text)),
     }
 }
 
 /// An answer's Markdown lines, ending with a note when some are not shown;
 /// Copy still takes the whole answer.
-fn message_lines(text: &str, labels: &Labels) -> Rc<[Line]> {
+fn message_lines(text: &str) -> Rc<[Line]> {
     let (mut lines, cut) = release_notes::parse_within(text, MESSAGE);
     if cut {
-        lines.push(release_notes::note(&cut_note(labels)));
+        lines.push(release_notes::note(&cut_note()));
     }
     lines.into()
 }
@@ -92,11 +87,9 @@ const NOTICE_LABEL: usize = 240;
 const FOLDED_THOUGHT: usize = 120;
 
 /// What a tool call's title reads as, before it is cut to a header.
-fn tool_label<'a>(title: &'a str, labels: &Labels) -> Cow<'a, str> {
+fn tool_label(title: &str) -> Cow<'_, str> {
     match title {
-        "request_user_input" | "request_user_input_async" => {
-            Cow::Owned(labels.tool_ask_user.clone())
-        }
+        "request_user_input" | "request_user_input_async" => Cow::Owned(fl!("chat-tool-ask-user")),
         _ => Cow::Borrowed(title),
     }
 }
@@ -111,8 +104,8 @@ pub fn shown_text(text: &str) -> &str {
 }
 
 /// A tool call's header.
-pub fn tool_header(title: &str, labels: &Labels) -> String {
-    safe_text(&tool_label(title, labels), TOOL_HEADER)
+pub fn tool_header(title: &str) -> String {
+    safe_text(&tool_label(title), TOOL_HEADER)
 }
 
 /// A notice's folded line, or the label above its answers.
@@ -131,18 +124,19 @@ pub fn folded_thought(text: &str) -> String {
 
 /// Expanded tool output comes from the retained transcript, not its preview.
 /// [`crate::selection`] holds it; the view draws it from there.
-pub fn tool_text(content: &ToolContent, labels: &Labels) -> Option<String> {
+pub fn tool_text(content: &ToolContent) -> Option<String> {
     match content {
         ToolContent::Text { text } => Some(text.clone()),
         ToolContent::Diff { old, new, path } => Some(match old {
             // Each label is a line of its own, between the file's text.
             Some(old) => format!(
                 "{path}\n{}\n{old}\n{}\n{new}",
-                labels.diff_before, labels.diff_after
+                fl!("chat-diff-before"),
+                fl!("chat-diff-after")
             ),
-            None => format!("{path}\n{}\n{new}", labels.diff_new_file),
+            None => format!("{path}\n{}\n{new}", fl!("chat-diff-new-file")),
         }),
-        ToolContent::Terminal { id } => Some((labels.terminal)(&id.to_string())),
+        ToolContent::Terminal { id } => Some(fl!("chat-tool-terminal", id = id.to_string())),
         ToolContent::Image { .. } => None,
     }
 }
@@ -296,7 +290,6 @@ impl Prepared {
         &mut self,
         transcript: &Transcript,
         keys: &[(EntryId, u64)],
-        labels: &Labels,
         destination: fn(&str) -> Option<String>,
     ) {
         self.wants.clear();
@@ -313,11 +306,11 @@ impl Prepared {
             let wants = &mut self.wants;
             let body = match &entry.kind {
                 EntryKind::User { text, .. } => {
-                    Body::Message(message(text, Author::User, wants, labels, destination))
+                    Body::Message(message(text, Author::User, wants, destination))
                 }
                 EntryKind::Notice { answers, .. } if !answers.is_empty() => {
-                    let text: Rc<str> = answers_text(answers, labels).into();
-                    let parts = vec![prose(&text, wants, labels, destination)];
+                    let text: Rc<str> = answers_text(answers).into();
+                    let parts = vec![prose(&text, wants, destination)];
                     Body::Answers { text, parts }
                 }
                 EntryKind::Agent { text } => {
@@ -325,13 +318,11 @@ impl Prepared {
                     match crate::summary::summary(&lines) {
                         Some(mut summary) => {
                             if cut {
-                                summary.lines.push(release_notes::note(&cut_note(labels)));
+                                summary.lines.push(release_notes::note(&cut_note()));
                             }
                             Body::Summary(summary)
                         }
-                        None => {
-                            Body::Message(message(text, Author::Agent, wants, labels, destination))
-                        }
+                        None => Body::Message(message(text, Author::Agent, wants, destination)),
                     }
                 }
                 EntryKind::Image { image, .. } => {
@@ -396,7 +387,7 @@ impl Prepared {
 
 /// Readable history and its copy payload share the same bounded Markdown.
 /// Only rich Markdown parses this text; HTML/widget fences remain code.
-pub fn answers_text(answers: &[QuestionAnswer], labels: &Labels) -> String {
+pub fn answers_text(answers: &[QuestionAnswer]) -> String {
     let mut source = String::new();
     let mut remaining = MAX_QUESTION_TEXT;
     let mut truncated = answers.len() > MAX_QUESTION_ANSWERS;
@@ -404,8 +395,12 @@ pub fn answers_text(answers: &[QuestionAnswer], labels: &Labels) -> String {
         if index > 0 {
             source.push_str("\n\n");
         }
-        let _ = write!(source, "**{}**\n\n", (labels.question_number)(index + 1));
-        let answer_label = format!("\n\n**{}**\n\n", labels.question_answer);
+        let _ = write!(
+            source,
+            "**{}**\n\n",
+            fl!("chat-question-number", number = index + 1)
+        );
+        let answer_label = format!("\n\n**{}**\n\n", fl!("chat-question-answer"));
         for (label, text) in [
             ("", &answer.question),
             (answer_label.as_str(), &answer.answer),
@@ -421,7 +416,7 @@ pub fn answers_text(answers: &[QuestionAnswer], labels: &Labels) -> String {
         }
     }
     if truncated {
-        let _ = write!(source, "\n\n{}", labels.question_truncated);
+        let _ = write!(source, "\n\n{}", fl!("chat-question-truncated"));
     }
     source
 }
@@ -436,7 +431,6 @@ fn message(
     text: &str,
     author: Author,
     wants: &mut Vec<Want>,
-    labels: &Labels,
     destination: fn(&str) -> Option<String>,
 ) -> Vec<Part> {
     let end = MESSAGE
@@ -451,7 +445,7 @@ fn message(
     let mut markdown = String::new();
     let flush = |text: &mut String, parts: &mut Vec<Part>, wants: &mut Vec<Want>| {
         if !text.trim().is_empty() {
-            parts.push(prose(text, wants, labels, destination));
+            parts.push(prose(text, wants, destination));
         }
         text.clear();
     };
@@ -536,10 +530,10 @@ fn message(
         }
     }
     if !markdown.trim().is_empty() || parts.is_empty() {
-        parts.push(prose(&markdown, wants, labels, destination));
+        parts.push(prose(&markdown, wants, destination));
     }
     if cut {
-        let note = release_notes::note(&cut_note(labels));
+        let note = release_notes::note(&cut_note());
         match parts.last_mut() {
             // Lines cut for their own length already end with the note.
             Some(Part::Text(lines)) if lines.last() == Some(&note) => {}

@@ -36,22 +36,14 @@ fn a_partial_update_keeps_the_pictures_the_other_entries_draw() {
         diagram(2, "flowchart LR\n  C --> D\n"),
     ];
     let mut prepared = Prepared::default();
-    prepared.update(
-        &transcript,
-        &[(EntryId(1), 1), (EntryId(2), 1)],
-        &crate::chat::labels::now(),
-    );
+    prepared.update(&transcript, &[(EntryId(1), 1), (EntryId(2), 1)]);
     let kept = visual_of(&prepared, EntryId(1));
     let replaced = visual_of(&prepared, EntryId(2));
     assert!(prepared.visuals.wants(kept));
     assert!(prepared.visuals.wants(replaced));
 
     transcript.entries[1] = diagram(2, "flowchart LR\n  C --> E\n");
-    prepared.update(
-        &transcript,
-        &[(EntryId(1), 1), (EntryId(2), 2)],
-        &crate::chat::labels::now(),
-    );
+    prepared.update(&transcript, &[(EntryId(1), 1), (EntryId(2), 2)]);
 
     let current = visual_of(&prepared, EntryId(2));
     assert_ne!(current, replaced, "the fence changed");

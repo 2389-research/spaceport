@@ -1,29 +1,11 @@
 use super::*;
 use crate::{
-    labels::Labels,
     prepared::{Body, Part, Prepared},
     rich::{Block, MAX_CODE_LINE_CHARS, MAX_CODE_LINES},
     visual::VisualId,
 };
 use spaceport_chat_protocol::{Entry, EntryKind, NoticeLevel, QuestionAnswer, Transcript};
 use std::{collections::HashMap, collections::HashSet, rc::Rc, sync::Arc};
-
-/// The words this crate writes into an entry. A crate below the app has no
-/// messages, so a test names them itself.
-fn labels() -> Labels {
-    Labels {
-        answer_cut: "Copy takes all of it".into(),
-        diff_after: "After".into(),
-        diff_before: "Before".into(),
-        diff_new_file: "New file".into(),
-        question_answer: "Answer".into(),
-        question_number: |number| format!("Question {number}"),
-        question_truncated: "More answers were left out".into(),
-        terminal: |id| format!("Terminal {id}"),
-        tool_ask_user: "Questions".into(),
-        turn: |summary| format!("Worked {}ms", summary.duration_ms),
-    }
-}
 
 /// The destinations these tests' links carry name files on this machine; the
 /// app classifies them with its terminal's path rules.
@@ -80,15 +62,10 @@ impl Shown {
 
     /// Prepares the entries whose revision moved, then projects them.
     fn update(&mut self) {
-        let labels = labels();
         self.prepared
-            .update(&self.transcript, &self.keys, &labels, local_destination);
-        self.text.update(
-            &self.transcript,
-            &self.keys,
-            self.prepared.bodies(),
-            &labels,
-        );
+            .update(&self.transcript, &self.keys, local_destination);
+        self.text
+            .update(&self.transcript, &self.keys, self.prepared.bodies());
     }
 
     fn set_expanded(&mut self, expanded: &HashSet<EntryId>) {
@@ -363,7 +340,7 @@ fn fallback_lines_are_shared_and_keep_their_newlines() {
         (1, Rc::new(Body::Message(vec![Part::Text(lines)]))),
     )]);
     let mut document = Document::default();
-    document.update(&transcript, &[(EntryId(1), 1)], &bodies, &labels());
+    document.update(&transcript, &[(EntryId(1), 1)], &bodies);
     let mut selection = Selection::default();
     selection.select_all(&document);
     assert_eq!(selection.text(&document).as_deref(), Some("plain\n\nx\ny"));
@@ -394,7 +371,7 @@ fn code_projection_obeys_preview_bounds_without_copying_full_source() {
         ),
     )]);
     let mut document = Document::default();
-    document.update(&transcript, &[(EntryId(1), 1)], &bodies, &labels());
+    document.update(&transcript, &[(EntryId(1), 1)], &bodies);
     let key = document
         .key(EntryId(1), Region::Body(0), Cell::default())
         .unwrap();
@@ -496,7 +473,7 @@ fn oversized_selection_is_refused_instead_of_silently_truncated() {
         .map(|entry| (entry.id, 1))
         .collect::<Vec<_>>();
     let mut document = Document::default();
-    document.update(&transcript, &keys, &HashMap::new(), &labels());
+    document.update(&transcript, &keys, &HashMap::new());
     let mut selection = Selection::default();
     selection.select_all(&document);
     assert!(selection.text(&document).is_none());

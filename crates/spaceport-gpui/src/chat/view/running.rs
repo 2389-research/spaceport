@@ -52,7 +52,7 @@ impl Running {
         .join(" \u{b7} ");
         let row = |activity: &Activity| RunningRow {
             detail: activity.detail.clone(),
-            elapsed: crate::chat::text::duration(
+            elapsed: spaceport_chat_core::text::duration(
                 activity
                     .finished_ms
                     .unwrap_or(now_ms)

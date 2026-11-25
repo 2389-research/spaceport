@@ -5,7 +5,6 @@
 //! wants.
 
 use super::{
-    labels::Labels,
     selection::Document,
     visual::{VisualId, Visuals},
 };
@@ -72,14 +71,8 @@ impl Prepared {
     }
 
     /// Prepares the entries whose revision moved and forgets those gone.
-    pub(crate) fn update(
-        &mut self,
-        transcript: &Transcript,
-        keys: &[(EntryId, u64)],
-        labels: &Labels,
-    ) {
-        self.core
-            .update(transcript, keys, labels, super::rich::destination);
+    pub(crate) fn update(&mut self, transcript: &Transcript, keys: &[(EntryId, u64)]) {
+        self.core.update(transcript, keys, super::rich::destination);
         // Wants before the retain, not after: a want over the picture budget is
         // staged while the pass is still discovering pictures, and only the
         // retain that follows frees the slots it is re-offered in. Reversing
@@ -88,8 +81,7 @@ impl Prepared {
             self.visuals.want(want.id(), want.into_source());
         }
         self.visuals.retain(&self.core.drawn());
-        self.text
-            .update(transcript, keys, self.core.bodies(), labels);
+        self.text.update(transcript, keys, self.core.bodies());
     }
 
     /// Drops the prepared bodies and their selectable text, keeping the

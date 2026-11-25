@@ -88,7 +88,7 @@ impl Steps {
 fn since(started_ms: u64, now_ms: u64) -> Option<String> {
     Some(now_ms.saturating_sub(started_ms))
         .filter(|elapsed| *elapsed >= 1000)
-        .map(crate::chat::text::duration)
+        .map(spaceport_chat_core::text::duration)
 }
 
 impl Working {

@@ -5,7 +5,6 @@
 
 use super::{
     Error, MAX_FAILURES, Result, Route, Source, Target,
-    labels::{self, Labels},
     link::{Dial, Link},
     list::{self, Splice},
     prepared::Prepared,
@@ -168,8 +167,6 @@ pub(crate) struct ChatPane {
     generation: u64,
     /// How the list follows a streaming reply.
     pub(crate) glide: super::glide::Glide,
-    /// The words `prepared` writes into its entries, in the language now shown.
-    pub(crate) labels: Labels,
     pub(crate) list: ListState,
     list_keys: Vec<(EntryId, u64)>,
     list_snapshots: u64,
@@ -307,7 +304,6 @@ impl ChatPane {
             generation: 0,
             glide,
             history: Default::default(),
-            labels: labels::now(),
             list,
             list_keys: Vec::new(),
             list_snapshots: 0,
@@ -573,7 +569,7 @@ impl ChatPane {
     pub(crate) fn refresh_text(&mut self) {
         self.prepared.set_expanded(&self.expanded);
         self.prepared
-            .update(self.session.transcript(), &self.list_keys, &self.labels);
+            .update(self.session.transcript(), &self.list_keys);
         self.selection.validate(self.prepared.text());
     }
 }
@@ -695,7 +691,6 @@ impl Chats {
             return false;
         }
         for pane in &mut self.panes {
-            pane.labels = labels::now();
             pane.prepared.forget_text();
             pane.refresh_text();
             pane.list.remeasure();
