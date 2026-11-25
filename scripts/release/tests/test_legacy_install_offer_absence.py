@@ -32,7 +32,7 @@ class LegacyInstallOfferAbsenceTests(unittest.TestCase):
             'id("menu-install")',
         ):
             self.assertFalse(route in text, f"{route} remains")
-        locale = (ROOT / "crates/spaceport-gpui/locales/en-US/menu-chrome.ftl").read_text()
+        locale = (ROOT / "crates/spaceport-i18n/locales/en-US/menu-chrome.ftl").read_text()
         self.assertNotIn("Install Herdr", locale)
         self.assertNotIn("menu-chrome-install-", locale)
 

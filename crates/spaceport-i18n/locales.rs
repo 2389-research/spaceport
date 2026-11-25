@@ -4,7 +4,9 @@
 //! This is the only definition of a valid file: `scripts/check-i18n.py`
 //! reads message IDs from files this accepted. Writes `$OUT_DIR/messages.rs` with the files
 //! and the `en-US` messages with the variables each takes, which `fl!`
-//! checks its calls against while compiling.
+//! checks its calls against while compiling. The crate includes that file in
+//! its hidden `__private` module: it names `crate::File`, since a crate cannot
+//! name itself.
 
 use fluent_syntax::ast;
 use std::{
@@ -133,17 +135,17 @@ pub fn generate(manifest: &Path, out: &Path) -> Result<(), Error> {
             id: id.clone(),
         });
     }
-    let mut code = String::from("pub(crate) const FILES: &[spaceport_i18n::File] = &[\n");
+    let mut code = String::from("pub const FILES: &[crate::File] = &[\n");
     for file in &files {
         code.push_str(&format!(
-            "    spaceport_i18n::File {{ language: {:?}, feature: {:?}, source: include_str!({:?}) }},\n",
+            "    crate::File {{ language: {:?}, feature: {:?}, source: include_str!({:?}) }},\n",
             file.language,
             file.feature,
             file.path.display().to_string(),
         ));
     }
     code.push_str("];\n\n/// Every `en-US` message, sorted by ID, with the variables it takes.\n");
-    code.push_str("pub(crate) const MESSAGES: &[(&str, &[&str])] = &[\n");
+    code.push_str("pub const MESSAGES: &[(&str, &[&str])] = &[\n");
     for id in fallback.keys() {
         let variables = variables(id, &fallback, &mut BTreeSet::new());
         let variables: Vec<String> = variables.iter().map(|name| format!("{name:?}")).collect();

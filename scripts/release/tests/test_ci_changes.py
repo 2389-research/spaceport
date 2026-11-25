@@ -141,7 +141,7 @@ class MacosReleaseChanges(GitFixture):
 
     def test_other_changes_skip_the_macos_release_builds(self):
         for path in ("crates/spaceport-gpui/src/app.rs", "crates/spaceport-client/src/lib.rs",
-                     "crates/spaceport-gpui/tests/live_gui.rs", "crates/spaceport-gpui/locales/en-US/app.ftl",
+                     "crates/spaceport-gpui/tests/live_gui.rs", "crates/spaceport-i18n/locales/en-US/app.ftl",
                      "README.md", "scripts/release/package-windows.py"):
             self.base = self.git("rev-parse", "HEAD").strip()
             self.commit_path(path)

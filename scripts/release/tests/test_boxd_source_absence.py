@@ -28,8 +28,8 @@ class BoxdSourceAbsence(unittest.TestCase):
 
     def test_provider_ui_assets_are_absent_but_core_onboarding_remains(self):
         self.assertFalse((ROOT / "assets/icons/cloud/boxd.svg").exists())
-        self.assertFalse((ROOT / "crates/spaceport-gpui/locales/en-US/settings-cloud-boxd.ftl").exists())
-        self.assertFalse((ROOT / "crates/spaceport-gpui/locales/en-US/error-remote-boxd.ftl").exists())
+        self.assertFalse((ROOT / "crates/spaceport-i18n/locales/en-US/settings-cloud-boxd.ftl").exists())
+        self.assertFalse((ROOT / "crates/spaceport-i18n/locales/en-US/error-remote-boxd.ftl").exists())
         self.assertTrue((ROOT / "crates/spaceport-gpui/src/menu/devices/add_device/core.rs").exists())
         self.assertTrue((ROOT / "crates/spaceport-gpui/src/menu/devices/core_catalog.rs").exists())
 

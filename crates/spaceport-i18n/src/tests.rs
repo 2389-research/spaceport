@@ -3,7 +3,10 @@ use super::*;
 
 mod catalog;
 mod cjk;
+mod current;
 mod locale;
+mod macros;
+mod messages;
 mod negotiate;
 mod transforms;
 

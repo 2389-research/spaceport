@@ -82,13 +82,9 @@ ureq.workspace                 = true
 uuid.workspace                 = true
 
 [build-dependencies]
-# Parses the `.ftl` files so `fl!` calls are checked against them.
-fluent-syntax.workspace = true
 winresource.workspace = true
 
 [dev-dependencies]
-# `tests/locales.rs` runs the build script's message checks.
-fluent-syntax.workspace    = true
 # `window/image_source/tests.rs` builds the checksums of a PNG fixture.
 flate2.workspace = true
 # `tests/live_gui/shutdown.rs` and `saved_state.rs` hash the sandbox state.
@@ -107,6 +103,7 @@ spaceport-commands = { features = ["test-support"], workspace = true }
 spaceport-remote = { features = ["test-support"], workspace = true }
 spaceport-control-protocol = { features = ["test-support"], workspace = true }
 spaceport-diagnostics = { features = ["test-support"], workspace = true }
+spaceport-i18n = { features = ["test-support"], workspace = true }
 spaceport-usage = { features = ["test-support"], workspace = true }
 spaceport-endpoint = { features = ["test-support"], workspace = true }
 spaceport-keymap = { features = ["test-support"], workspace = true }

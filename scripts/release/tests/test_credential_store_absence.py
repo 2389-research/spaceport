@@ -22,7 +22,7 @@ class CredentialStoreAbsence(unittest.TestCase):
         for file in source.rglob("*.rs"):
             with self.subTest(source=file.relative_to(ROOT)):
                 self.assertNotIn("sheprd_credentials", file.read_text())
-        for file in (ROOT / "crates/spaceport-gpui/locales").rglob("*.ftl"):
+        for file in (ROOT / "crates/spaceport-i18n/locales").rglob("*.ftl"):
             with self.subTest(locale=file.relative_to(ROOT)):
                 self.assertNotIn("error-credentials-", file.read_text())
 
