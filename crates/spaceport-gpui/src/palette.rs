@@ -285,6 +285,8 @@ impl SpaceportWindow {
             });
         search.update(cx, |input, cx| {
             input.set_placeholder(&fl!("palette-placeholder"), cx);
+            // The sidebar's search field is in the same window.
+            input.set_debug_selector("palette-search", cx);
             input.set_frameless(cx);
             input.set_appearance(render::search_font(&self.config.ui), self.theme.clone(), cx);
             window.focus(&input.focus, cx);

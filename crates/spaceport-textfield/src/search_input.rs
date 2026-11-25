@@ -67,7 +67,7 @@ impl SearchInput {
     pub fn new(cx: &mut Context<Self>) -> Self {
         Self {
             focus: cx.focus_handle(),
-            debug: "theme-search".into(),
+            debug: "search-input".into(),
             placeholder: String::new(),
             localized: None,
             _locale: cx.observe_global::<crate::locale::LocaleChanged>(|this, cx| {

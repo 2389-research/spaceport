@@ -110,11 +110,21 @@ pub(crate) fn show(locale: &Locale) {
     current::replace(locale);
 }
 
+/// Shows `locale`'s catalog and direction, and tells the text fields already
+/// built to format their placeholders again: a field holds the closure that
+/// words its hint, so it hears of a switch rather than reading the catalog.
+/// [`show`] above replaces the catalog with no app to publish to.
+fn publish(locale: &Locale, cx: &mut gpui::App) {
+    if current::replace(locale) {
+        spaceport_textfield::locale::LocaleChanged::set(cx);
+    }
+}
+
 /// Picks the locale the setting asks for when the app starts, before any
 /// window or menu is built.
 pub(crate) fn install(language: &Language, cx: &mut gpui::App) {
     let state = CurrentLocale::resolve(language.clone(), None);
-    current::replace(&state.locale);
+    publish(&state.locale, cx);
     cx.set_global(state);
 }
 
@@ -150,7 +160,7 @@ fn switch(state: CurrentLocale, cx: &mut gpui::App) {
         .try_global::<CurrentLocale>()
         .is_none_or(|current| current.pseudo != state.pseudo);
     if changed {
-        current::replace(&state.locale);
+        publish(&state.locale, cx);
     }
     cx.set_global(state);
     if changed || menus {

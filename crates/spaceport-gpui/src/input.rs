@@ -6,15 +6,14 @@ use gpui::*;
 use spaceport_client::protocol::ClientPaneInputEvent;
 use std::ops::Range;
 
-#[cfg(any(target_os = "linux", windows))]
-mod weak;
-// The platform input handler for every view-backed text field. It is not named
-// ElementInputHandler, so a `gpui::*` glob cannot silently replace it with
-// GPUI's strong handler on Linux or Windows.
-#[cfg(not(any(target_os = "linux", windows)))]
-pub(crate) use gpui::ElementInputHandler as ViewInputHandler;
-#[cfg(any(target_os = "linux", windows))]
-pub(crate) use weak::WeakInputHandler as ViewInputHandler;
+// The platform input handler for every view-backed text field, from
+// `spaceport-textfield`: it is not named ElementInputHandler, so a `gpui::*`
+// glob cannot silently replace it with GPUI's strong handler on Linux or
+// Windows, where a field's own weak handler is the one the platform keeps.
+pub(crate) use spaceport_textfield::input::ViewInputHandler;
+
+#[cfg(all(test, any(target_os = "linux", windows)))]
+mod tests;
 
 /// Which Option keys the keystroke being handled was made with. GPUI's
 /// modifiers merge the two, so macOS's event in progress is asked; a key

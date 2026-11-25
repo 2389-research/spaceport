@@ -4,7 +4,7 @@
 //! and the overlay's key handler, which routes each key to the page that owns
 //! it and leaves text editing and composition to the native input handler.
 
-use crate::{SpaceportWindow, actions, menu::Page};
+use crate::{SpaceportWindow, menu::Page};
 use gpui::*;
 
 impl SpaceportWindow {
@@ -15,7 +15,7 @@ impl SpaceportWindow {
     /// without stopping propagation are never called, so a shortcut the
     /// overlay leaves unhandled cannot run twice through the menu bar.
     pub(super) fn menu_edit(&mut self, key: &str, _window: &mut Window, cx: &mut Context<Self>) {
-        let event = actions::edit_key(key);
+        let event = spaceport_textfield::actions::edit_key(key);
         if let Some(input) = self.menu.input.as_mut()
             && input.key(&event.keystroke, cx)
         {

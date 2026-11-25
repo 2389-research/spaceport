@@ -2,6 +2,7 @@
 use super::*;
 
 mod desktop_identity;
+mod field_placeholder;
 mod leak;
 mod locale;
 mod messages;

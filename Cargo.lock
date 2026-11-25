@@ -6727,6 +6727,7 @@ dependencies = [
  "spaceport-sidebar",
  "spaceport-sound",
  "spaceport-state-file",
+ "spaceport-textfield",
  "spaceport-truncate",
  "spaceport-usage",
  "spaceport-web-url",
