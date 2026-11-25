@@ -498,6 +498,13 @@
       "decision": "The gaps G-CHAT, G-MACHINE, G-PORT and G-FILE describe Herdr Core routes that Herdr does not offer yet. D69 keeps Core behind a disabled-by-default setting, so these gaps no longer gate the Spaceport fork tasks. Remove them from must_close_gaps on T02, T06, T07 and T11. Keep them open in gaps.json and listed in each task's gaps, with their required evidence and forbidden workarounds unchanged. They now gate one later step: enabling Herdr Core by default. Kata rnbn tracks that step. Where Herdr 1 has a route for the same retained behavior, its acceptance scenario must still pass on that route for the fork. A Core leg runs only with Core enabled and is recorded as Core evidence. G-LINK, G-OBS, G-RELEASE and G-PLATFORM are unchanged. This decision invents no Core capability and does not authorize a Spaceport-owned substitute.",
       "status": "active",
       "source": "Doctor Biz, 2026-11-17: after the registry reconciliation showed four of eight gaps waiting on Herdr changes Spaceport cannot make, approved moving them out of the fork's mandatory scope into a separate Core graduation track."
+    },
+    {
+      "id": "D72",
+      "title": "Terminal links open read-only; the plugin link handler stays removed",
+      "decision": "PR #142 removed the client's last live plugin-execution path reachable from an ordinary click: pane.link.activate could answer handled:true, meaning a [[link_handlers]] plugin had already run and claimed the click. Links now open read-only - Spaceport reads the target itself (URL to the browser, file to the default app) and no Herdr plugin handler runs, ever, from a link click. The removal is deliberate fork scope, not an incidental simplification, and matches the upstream no-surprise daemon lifecycle rule. It was never given a decision number; D72 records it.",
+      "status": "active",
+      "source": "Crew task apwa, Doctor Biz decision 2026-11-18; PR #142 merged. D-number assigned 2026-11-25 when the register reconciliation (crew task p3es) found the narrowing unrecorded."
     }
   ]
 }
