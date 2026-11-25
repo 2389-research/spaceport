@@ -81,7 +81,7 @@ fn fresh_resume_ack_does_not_cancel_an_unsettled_focus_fence() {
     let now = Instant::now();
     state.start_fence(
         "choose".into(),
-        Navigation::Pane("not-here-yet".into()),
+        NavigationTarget::Pane("not-here-yet".into()),
         "focus-barrier".into(),
     );
     state.park();

@@ -15,10 +15,10 @@ fn split() -> (ClientShellSnapshot, PaneSurfaceFrame) {
     let mut right = frame.panes[0].clone();
     right.pane_id = "w1:p2".into();
     right.rect = SurfaceRect {
-        x: 6,
-        y: 1,
-        width: 2,
-        height: 2,
+        x: 5,
+        y: 0,
+        width: 3,
+        height: 3,
     };
     right.inner_rect = right.rect;
     let mut second = snapshot.panes[0].clone();
@@ -48,7 +48,7 @@ fn pane_map_uses_outer_rectangles_from_the_matching_surface() {
         .iter()
         .map(|p| (p.id.as_str(), p.x, p.y, p.width, p.height))
         .collect();
-    assert_eq!(geometry, [("w1:p2", 6, 1, 2, 2), ("w1:p1", 0, 0, 5, 3)]);
+    assert_eq!(geometry, [("w1:p2", 5, 0, 3, 3), ("w1:p1", 0, 0, 5, 3)]);
 }
 
 #[test]
@@ -66,6 +66,8 @@ fn pane_map_requires_complete_valid_geometry_for_the_split_tab() {
         |f: &mut PaneSurfaceFrame| f.panes[0].rect.y = u16::MAX,
         |f: &mut PaneSurfaceFrame| f.panes[0].rect.x = 7,
         |f: &mut PaneSurfaceFrame| f.panes[0].rect.x = 4,
+        // A rectangle that leaves a column of the frame to no pane.
+        |f: &mut PaneSurfaceFrame| f.panes[0].rect.width = 2,
     ] {
         let mut bad = frame.clone();
         edit(&mut bad);

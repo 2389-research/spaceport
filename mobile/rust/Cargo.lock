@@ -1640,43 +1640,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "spaceport-client"
-version = "0.1.0"
-dependencies = [
- "base64",
- "crossbeam-channel",
- "interprocess",
- "rustix",
- "serde",
- "serde_json",
- "spaceport-protocol",
- "tempfile",
- "thiserror",
- "tracing",
- "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "spaceport-protocol"
-version = "0.1.0"
-dependencies = [
- "base64",
- "bincode",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "spaceport-truncate"
-version = "0.1.0"
-dependencies = [
- "spaceport-client",
- "unicode-segmentation",
- "unicode-width",
-]
-
-[[package]]
 name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1721,6 +1684,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "spaceport-backend"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "spaceport-protocol",
+ "thiserror",
+]
+
+[[package]]
+name = "spaceport-client"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "crossbeam-channel",
+ "interprocess",
+ "rustix",
+ "serde",
+ "serde_json",
+ "spaceport-protocol",
+ "tempfile",
+ "thiserror",
+ "tracing",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "spaceport-mobile"
 version = "0.1.0"
 dependencies = [
@@ -1728,11 +1717,42 @@ dependencies = [
  "rand",
  "russh",
  "serde_json",
+ "spaceport-backend",
  "spaceport-client",
+ "spaceport-panes",
  "spaceport-truncate",
  "thiserror",
  "tokio",
  "uniffi",
+]
+
+[[package]]
+name = "spaceport-panes"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "spaceport-backend",
+ "thiserror",
+]
+
+[[package]]
+name = "spaceport-protocol"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "bincode",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "spaceport-truncate"
+version = "0.1.0"
+dependencies = [
+ "spaceport-client",
+ "unicode-segmentation",
+ "unicode-width",
 ]
 
 [[package]]

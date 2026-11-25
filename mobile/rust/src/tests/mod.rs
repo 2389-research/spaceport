@@ -135,7 +135,7 @@ fn barrier_needs_the_acknowledged_revision_and_requested_pane() {
     state.surface(Arc::new(surface()));
     state.start_fence(
         "choose".into(),
-        Navigation::Pane("other".into()),
+        NavigationTarget::Pane("other".into()),
         "fence".into(),
     );
     assert!(state.target().is_none());
