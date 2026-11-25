@@ -427,6 +427,13 @@ no desktop).
 
 ### Stage 4 — flatten the façade (~0 lines moved, ~185 renames)
 
+**Landed as wx81 (PR #249).** It was not one string swap: the façade
+re-exported three different sources under one path (`DaemonKeys` from the
+crate's daemon module; `Binding`/`PaneKeys` from spaceport-settings; the rest
+from the crate), and 194 direct `spaceport_keymap::` paths in 87 files replaced
+the 163 `crate::keymap` lines and 15 in-brace imports. No load-bearing
+re-export remains — the app has no lib target. This summary paragraph:
+
 Optional, and deliberately last: `crate::keymap::X` → `spaceport_keymap::X` in ~70
 files, deleting the re-export block. `spaceport-settings` and `spaceport-endpoint`
 both kept their façade and flattened later as a readability commit, and the same is
