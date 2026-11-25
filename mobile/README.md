@@ -245,6 +245,8 @@ For the fold test, open an iPhone Duo simulator in Device Hub and unfold it.
 Run `just test-ios-duo SIMULATOR_UDID` with the five SSH fixture variables and the Duo session set.
 Close the Duo when XCTest requests it, then open it at the next prompt.
 The test sends a single reply to the fixture’s Reviewer pane across both transitions.
+Close and reopen the Duo again when XCTest prompts with an unsent draft in the composer.
+The test checks that the draft text and recipient survive both transitions.
 
 Remove the disposable host after testing.
 
@@ -272,3 +274,4 @@ The original terminal continued accepting input. A second process reopened the s
 
 Build 12’s iPhone Duo simulator on iOS 27.2 folded and unfolded while Ghostty held a partially typed reply.
 The selected agent received one complete reply. The keyboard stayed open and the SSH server recorded no new login.
+A second fold and unfold preserved the unsent composer draft and its destination.

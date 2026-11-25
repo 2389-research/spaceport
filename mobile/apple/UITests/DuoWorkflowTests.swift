@@ -50,5 +50,28 @@ extension SessionWorkflowTests {
         XCTAssertTrue(keyboard.exists)
         app.typeText("-open\n")
         try await waitForText("accepted-" + prefix + "-folded-open", in: surface)
+
+        app.buttons["session.compose"].tap()
+        let editor = app.textViews["draft.editor"]
+        let destination = app.buttons["draft.destination"]
+        editor.tap()
+        let draft = "Unsent " + prefix
+        editor.typeText(draft)
+        let recipient = destination.label
+        let innerWidth = app.frame.width
+        for open in [false, true] {
+            let activity = open ? "Reopen iPhone Duo with draft" : "Close iPhone Duo with draft"
+            XCTContext.runActivity(named: activity) { _ in
+                let transition = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                    (app.frame.width == innerWidth) == open
+                }, object: app)
+                XCTAssertEqual(XCTWaiter.wait(for: [transition], timeout: 45), .completed)
+            }
+            XCTAssertEqual(editor.value as? String, draft)
+            XCTAssertEqual(destination.label, recipient)
+        }
+        app.buttons["draft.done"].tap()
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 5))
+        XCTAssertFalse((surface.value as? String ?? "").contains(draft))
     }
 }
