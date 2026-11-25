@@ -42,6 +42,8 @@ User decisions outrank implementation convenience. Source establishes what exist
 
 D58 permits Herdr 1 alongside Core and supersedes D55. Preserve the working desktop UX and exact runtime ownership. The Core-specific corrections below still apply to Core routes; they do not require removal of Herdr 1. See [decision reconciliation](docs/07-reconciliation.md).
 
+Terminal links open read-only (D72). Spaceport reads the target itself — a URL to the browser, a file to the default app — and no Herdr `[[link_handlers]]` plugin runs from a click. The inherited plugin link handler stays removed as deliberate fork scope, not as an incidental simplification.
+
 ## Three corrections carried into the plan
 
 **Remote Core support exists.** Current Core documentation assigns SSH connections, reconnects, and terminal/event aggregation to the local Core. The old “Core is local-only” premise described Sheprd's integration, not Core's actual capability. [S01, S02]
