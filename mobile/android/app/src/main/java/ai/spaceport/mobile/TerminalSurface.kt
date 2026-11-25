@@ -30,20 +30,33 @@ internal class TerminalSurface(
     context: Context,
     private val route: (InputTarget, (MobileSession) -> Unit) -> Boolean,
     private val onViewport: () -> Unit,
-    private val claimSize: () -> Unit
+    private val claimSize: () -> Unit,
+    private val onHold: (row: Int) -> Unit,
+    fontSize: Int,
 ) : View(context) {
     var target: InputTarget? = null
         private set
     var terminal: MobileTerminal? = null
         private set
-    var ctrl = false
+    /** Toolbar modifiers held for the next key: 1 Shift, 2 Control, 4 Alt. */
+    var armed = 0
+        private set
     var onModifierUsed: () -> Unit = {}
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = Typeface.MONOSPACE }
-    private val pointSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13f, resources.displayMetrics)
+    private val pointSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, fontSize.toFloat(), resources.displayMetrics)
     private val cellWidth = ceil(paint.apply { textSize = pointSize }.measureText("M"))
     private val cellHeight = ceil(paint.fontSpacing)
     private val slop = ViewConfiguration.get(context).scaledTouchSlop
+    private var downX = 0f
     private var downY = 0f
+    private var trackpad: TerminalTrackpad? = null
+    private val hold = Runnable {
+        val destination = gestureTarget
+        if (destination != null && destination == target && !dragged) {
+            trackpad = TerminalTrackpad(downX, downY, 10 * resources.displayMetrics.density)
+            performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+        }
+    }
     private var scrollYPosition = 0f
     private var dragged = false
     private var gestureTarget: InputTarget? = null
@@ -75,13 +88,18 @@ internal class TerminalSurface(
         }
     }
 
+    fun toggleModifier(flag: Int) {
+        armed = armed xor flag
+        onModifierUsed()
+    }
+
     private fun clearModifier() {
-        if (ctrl) { ctrl = false; onModifierUsed() }
+        if (armed != 0) { armed = 0; onModifierUsed() }
     }
 
     fun key(destination: InputTarget, name: String, modifiers: Int = 0): Boolean {
         if (destination != target) return false
-        val flags = modifiers or if (ctrl) 2 else 0
+        val flags = modifiers or armed
         val sent = route(destination) { it.sendKey(destination, name, flags.toUByte()) }
         if (sent) clearModifier()
         return sent
@@ -93,7 +111,7 @@ internal class TerminalSurface(
             value.isEmpty() -> true
             value == "\n" || value == "\r" || value == "\r\n" -> key(destination, "Enter")
             value == "\t" -> key(destination, "Tab")
-            ctrl && value.codePointCount(0, value.length) == 1 -> key(destination, value)
+            armed != 0 && value.codePointCount(0, value.length) == 1 -> key(destination, value)
             else -> route(destination) { it.sendText(destination, value) }.also { if (it) clearModifier() }
         }
     }
@@ -151,13 +169,25 @@ internal class TerminalSurface(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                downX = event.x
                 downY = event.y
+                trackpad = null
+                postDelayed(hold, ViewConfiguration.getLongPressTimeout().toLong())
                 scrollYPosition = event.y
                 dragged = false
                 gestureTarget = target
             }
             MotionEvent.ACTION_MOVE -> {
-                if (abs(event.y - downY) > slop) dragged = true
+                trackpad?.let { pad ->
+                    val destination = gestureTarget
+                    if (destination == null || destination != target) return true
+                    pad.move(event.x, event.y).forEach { key(destination, it) }
+                    return true
+                }
+                if (abs(event.y - downY) > slop || abs(event.x - downX) > slop) {
+                    dragged = true
+                    removeCallbacks(hold)
+                }
                 val grid = terminal ?: return true
                 val h = minOf(cellHeight, height.toFloat() / grid.height.toInt().coerceAtLeast(1)).coerceAtLeast(1f)
                 val lines = ((event.y - scrollYPosition) / h).toInt()
@@ -167,10 +197,20 @@ internal class TerminalSurface(
                 }
             }
             MotionEvent.ACTION_UP -> {
-                if (!dragged && gestureTarget == target) performClick()
+                removeCallbacks(hold)
+                val pad = trackpad
+                trackpad = null
+                if (gestureTarget == target) {
+                    if (pad != null && !pad.moved) cellAt(downX, downY)?.let { (_, row) -> onHold(row) }
+                    else if (pad == null && !dragged) performClick()
+                }
                 gestureTarget = null
             }
-            MotionEvent.ACTION_CANCEL -> gestureTarget = null
+            MotionEvent.ACTION_CANCEL -> {
+                removeCallbacks(hold)
+                trackpad = null
+                gestureTarget = null
+            }
         }
         return true
     }
@@ -182,17 +222,29 @@ internal class TerminalSurface(
         return super.onGenericMotionEvent(event)
     }
 
-    private fun scroll(destination: InputTarget?, lines: Int, x: Float, y: Float): Boolean {
-        val grid = terminal ?: return false
-        if (destination == null || destination != target || lines == 0) return false
+    /** The painted cell under a point, using the same cell size [onDraw] uses. */
+    private fun cellAt(x: Float, y: Float): Pair<Int, Int>? {
+        val grid = terminal ?: return null
         val columns = grid.width.toInt().coerceAtLeast(1)
         val rows = grid.height.toInt().coerceAtLeast(1)
         val col = (x / minOf(cellWidth, width.coerceAtLeast(1) / columns.toFloat())).toInt().coerceIn(0, columns - 1)
         val row = (y / minOf(cellHeight, height.coerceAtLeast(1) / rows.toFloat())).toInt().coerceIn(0, rows - 1)
+        return col to row
+    }
+
+    private fun scroll(destination: InputTarget?, lines: Int, x: Float, y: Float): Boolean {
+        if (destination == null || destination != target || lines == 0) return false
+        val (col, row) = cellAt(x, y) ?: return false
         return route(destination) { it.scroll(destination, lines.coerceIn(-64, 64).toShort(), col.toUShort(), row.toUShort()) }
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) = onViewport()
+
+    override fun onDetachedFromWindow() {
+        removeCallbacks(hold)
+        trackpad = null
+        super.onDetachedFromWindow()
+    }
 
     override fun onDraw(canvas: Canvas) {
         val grid = terminal ?: return
@@ -272,3 +324,14 @@ internal class TerminalSurface(
         else -> super.performAccessibilityAction(action, arguments)
     }
 }
+
+/** One row's visible text without trailing blanks, for copying. */
+internal fun MobileTerminal.rowText(row: Int): String {
+    val columns = width.toInt()
+    if (columns == 0 || row !in 0 until height.toInt()) return ""
+    val start = row * columns
+    return (start until minOf(start + columns, cells.size)).joinToString("") { cells[it].displayText() }.trimEnd()
+}
+
+internal fun MobileTerminal.screenText(): String =
+    (0 until height.toInt()).joinToString("\n") { rowText(it) }.trimEnd()

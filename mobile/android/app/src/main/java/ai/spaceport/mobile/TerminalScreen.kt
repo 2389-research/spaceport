@@ -28,7 +28,8 @@ internal class TerminalScreen(
     private val onGoTo: () -> Unit
 ) : LinearLayout(activity) {
     private val executor = Executors.newFixedThreadPool(2)
-    private val surface = TerminalSurface(context, ::route, ::resize, ::claimSize)
+    private val preferences = TerminalPreferences(activity)
+    private val surface = TerminalSurface(context, ::route, ::resize, ::claimSize, ::holdMenu, preferences.textSize)
     private val draft = TerminalDraftDialog(activity, connection, executor, ::restoreKeyboard)
     private val history = TerminalHistoryDialog(activity, connection, executor, ::restoreKeyboard)
     private var currentView: MobileView? = null
@@ -68,15 +69,46 @@ internal class TerminalScreen(
         action("Keys", "Keyboard") {
             if (keyboardVisible()) imm().hideSoftInputFromWindow(surface.windowToken, 0) else surface.performClick()
         }
-        val control = action("Ctrl", "Control") { surface.ctrl = !surface.ctrl; surface.onModifierUsed() }
+        val modifiers = mutableListOf<Pair<Button, Int>>()
+        for (key in preferences.keys.keys) {
+            when (val act = key.action) {
+                is KeyAction.Arm -> modifiers += action(key.keycap, key.title) { surface.toggleModifier(act.flag) } to act.flag
+                is KeyAction.Send -> action(key.keycap, key.title) {
+                    surface.target?.let { surface.key(it, act.name, act.modifiers) }
+                }
+            }
+        }
         surface.onModifierUsed = {
-            control.setTextColor(if (surface.ctrl) 0xff82e3c6.toInt() else 0xffeeeeee.toInt())
-            control.isSelected = surface.ctrl
+            for ((button, flag) in modifiers) {
+                val on = surface.armed and flag != 0
+                button.setTextColor(if (on) 0xff82e3c6.toInt() else 0xffeeeeee.toInt())
+                button.isSelected = on
+            }
         }
-        for ((title, name) in listOf("Esc" to "Esc", "Tab" to "Tab", "←" to "Left", "↑" to "Up",
-            "↓" to "Down", "→" to "Right", "↵" to "Enter")) {
-            action(title, if (name == "Esc") "Escape" else name) { surface.target?.let { surface.key(it, name) } }
+    }
+
+    /** A stationary hold on the terminal offers copying its text or pasting into it. */
+    private fun holdMenu(row: Int) {
+        val grid = surface.terminal ?: return
+        val destination = surface.target ?: return
+        val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
+        val pasted = clipboard.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(context)?.toString()
+        val choices = buildList {
+            add("Copy line" to { copy(clipboard, grid.rowText(row)) })
+            add("Copy screen" to { copy(clipboard, grid.screenText()) })
+            if (!pasted.isNullOrEmpty()) add("Paste" to {
+                if (surface.target == destination) route(destination) { it.sendPaste(destination, pasted, false) }
+            })
         }
+        android.app.AlertDialog.Builder(activity)
+            .setItems(choices.map { it.first }.toTypedArray()) { _, i -> choices[i].second() }
+            .show()
+    }
+
+    private fun copy(clipboard: android.content.ClipboardManager, text: String) {
+        if (text.isEmpty()) return message("Nothing to copy")
+        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Terminal text", text))
+        message("Copied")
     }
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density).roundToInt()
