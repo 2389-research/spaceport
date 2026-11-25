@@ -2,8 +2,6 @@
 
 use super::WeakInputHandler;
 use crate::search_input::SearchInput;
-use gpui::{
-    Bounds, ClipboardItem, InputHandler, TestAppContext, TextInputConfiguration, point, px, size,
-};
+use gpui::{Bounds, ClipboardItem, InputHandler, TestAppContext, point, px, size};
 
 mod lifecycle;

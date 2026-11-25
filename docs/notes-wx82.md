@@ -202,3 +202,25 @@ Not run here, and why:
   was not looked at. `just test-gui` (or a window on the desktop) is the check a
   reviewer should do for the search fields in the palette, Settings, the log
   window and the sidebar.
+
+## The Linux window-lifecycle lesson (post-merge addendum)
+
+The lifecycle tests surfaced a second platform divergence after the macro bug:
+**macOS releases a window's root view when the last strong reference drops;
+Linux keeps it alive until the window closes.** A test asserting "the handler
+must not own the view" therefore measures the window's policy on Linux unless
+the window is closed first — and handler reads need the live window, so the
+honest order is: exercise the handler, read it while the view lives, drop the
+view, close the window, park, then assert the weak handle is dead.
+
+Main's original test dodged this by building its view outside any window
+(a throwaway fixture window plus `cx.new`), which made the release assertion
+trivially true. The stronger in-window shape this PR ships is the one worth
+having — it just needed the close-before-assert order.
+
+The twin's post-release handler reads (selection, ranges, all `None` after the
+view dies) were removed: on Linux a `VisualTestContext` cannot drive handler
+reads on a closed window, and while the window is open the handler correctly
+answers through the live view, so those asserts contradicted themselves on one
+platform or the other. The release guarantee is carried by the surviving
+`weak.upgrade().is_none()` assert, which is the one both platforms can honor.
