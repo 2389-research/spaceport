@@ -252,8 +252,8 @@ final class MobileConnection: ObservableObject {
         }
         let previousError = view?.error
         if let target = update.inputTarget { editorTarget = target }
-        let changedPane = view?.previewTarget?.paneId != update.previewTarget?.paneId
-        if changedPane, let outgoing = view, let target = outgoing.previewTarget,
+        let changedPane = view?.focusedPaneTarget?.paneId != update.focusedPaneTarget?.paneId
+        if changedPane, let outgoing = view, let target = outgoing.focusedPaneTarget,
            let terminal = outgoing.terminal, outgoing.bootId == update.bootId {
             panePreviews.record(terminal.visibleText, pane: target.paneId, boot: target.bootId)
         }
@@ -265,7 +265,7 @@ final class MobileConnection: ObservableObject {
             if let arrival, !locate(arrival, in: update) { return }
             phase = .ready
             syncDirectPane()
-            if changedPane, let target = update.previewTarget { panePreviews.visit(target.paneId, boot: target.bootId) }
+            if changedPane, let target = update.focusedPaneTarget { panePreviews.visit(target.paneId, boot: target.bootId) }
             if appliedViewport != viewport { resize(viewport) }
         }
         if update.error != previousError, let failure = update.error { message = failure }
@@ -284,8 +284,8 @@ final class MobileConnection: ObservableObject {
             }
         case let .moving(agent, revision):
             guard update.version >= revision, !update.goToPending else { return false }
-            if update.goToArrival == revision, update.bootId == agent.bootId, update.focusedWorkspace == agent.workspaceId,
-               update.focusedTab == agent.tabId, update.inputTarget?.paneId == agent.paneId,
+            if update.confirmsInput(to: agent.paneId, revision: revision), update.bootId == agent.bootId, update.focusedWorkspace == agent.workspaceId,
+               update.focusedTab == agent.tabId,
                update.panes.contains(where: { $0.id == agent.paneId && $0.tabId == agent.tabId && $0.agentName == agent.name }) {
                 arrival = nil
                 return true

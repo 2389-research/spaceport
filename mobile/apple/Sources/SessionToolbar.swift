@@ -5,6 +5,8 @@ import SwiftUI
 struct SessionToolbar: View {
     let view: MobileView?
     let location: String
+    let compactKeys: Bool
+    let offersSidebar: Bool
     let keyboard: Bool
     @Binding var modifiers: UInt8
     let sendKey: (String, UInt8) -> Void
@@ -17,7 +19,7 @@ struct SessionToolbar: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            keyStrip
+            if compactKeys { compactKeyStrip } else { keyStrip }
             locationButton
             HStack(spacing: 1) {
                 let needsYou = view?.panes.contains { $0.agentName != nil && $0.status == "blocked" && $0.id != view?.focusedPane } == true
@@ -66,15 +68,36 @@ struct SessionToolbar: View {
                 }
                 .lineLimit(1).truncationMode(.tail)
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
+                Image(systemName: offersSidebar ? "sidebar.leading" : "chevron.down").font(.system(size: 9, weight: .semibold))
             }
             .padding(.horizontal, 9).frame(maxWidth: .infinity).frame(height: 46)
             .terminalCapsule().contentShape(Capsule())
         }
         .accessibilityLabel("Agents")
         .accessibilityValue([name, path].filter { !$0.isEmpty }.joined(separator: ", "))
-        .accessibilityHint("Opens Go To.")
+        .accessibilityHint(offersSidebar ? "Toggles the agents sidebar." : "Opens Go To.")
         .accessibilityIdentifier("session.navigation")
+    }
+
+    private var compactKeyStrip: some View {
+        HStack(spacing: 0) {
+            keycap(.esc)
+            if !keys.compactMenuKeys.isEmpty {
+                Menu {
+                    ForEach(keys.compactMenuKeys, id: \.self) { key in
+                        Button { activate(key) } label: {
+                            if isArmed(key) { Label(key.title, systemImage: "checkmark") }
+                            else { Text(key.title) }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis").frame(width: 32, height: 44)
+                }
+                .accessibilityLabel("More terminal keys")
+                .accessibilityIdentifier("terminal.keys.more")
+            }
+        }
+        .terminalCapsule()
     }
 
     private var keyStrip: some View {
@@ -106,14 +129,16 @@ struct SessionToolbar: View {
         return false
     }
 
+    private func activate(_ key: TerminalKey) {
+        switch key.action {
+        case let .arm(flag): modifiers ^= flag
+        case let .key(name, flags): sendKey(name, flags)
+        }
+    }
+
     private func keycap(_ key: TerminalKey) -> some View {
         let armed = isArmed(key)
-        return Button {
-            switch key.action {
-            case let .arm(flag): modifiers ^= flag
-            case let .key(name, flags): sendKey(name, flags)
-            }
-        } label: {
+        return Button { activate(key) } label: {
             Text(key.keycap.lowercased().replacingOccurrences(of: "⇧ ", with: "⇧"))
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                 .minimumScaleFactor(0.7)

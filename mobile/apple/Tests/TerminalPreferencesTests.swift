@@ -7,13 +7,16 @@ import XCTest
 final class TerminalPreferencesTests: XCTestCase {
     @MainActor
     func testToolbarUsesOneRowAtPhoneAndTabletWidths() {
-        let toolbar = SessionToolbar(view: nil, location: "Mission", keyboard: true, modifiers: .constant(0),
-                                     sendKey: { _, _ in }, navigate: { _ in }, home: {}, compose: {}, toggleKeyboard: {})
-        let host = UIHostingController(rootView: toolbar)
-        for width in [320, 375, 768] {
-            let size = host.sizeThatFits(in: CGSize(width: width, height: 500))
+        for width: CGFloat in [320, 375, 669, 951] {
+            let sidebar = SessionLayout.sidebarWidth(in: width, regular: width >= 600)
+            let terminalWidth = width - (sidebar ?? 0)
+            let toolbar = SessionToolbar(view: nil, location: "Mission", compactKeys: SessionLayout.usesCompactKeys(width: terminalWidth),
+                                         offersSidebar: sidebar != nil, keyboard: true, modifiers: .constant(0),
+                                         sendKey: { _, _ in }, navigate: { _ in }, home: {}, compose: {}, toggleKeyboard: {})
+            let host = UIHostingController(rootView: toolbar)
+            let size = host.sizeThatFits(in: CGSize(width: terminalWidth, height: 500))
             XCTAssertLessThanOrEqual(size.height, 48, "Toolbar height at width \(width)")
-            XCTAssertLessThanOrEqual(size.width, CGFloat(width))
+            XCTAssertLessThanOrEqual(size.width, terminalWidth)
         }
     }
 

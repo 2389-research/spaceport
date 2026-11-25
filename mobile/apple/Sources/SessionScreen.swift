@@ -11,6 +11,9 @@ struct SessionScreen: View {
     private let disconnect: () -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var sidebarHidden = false
+    @State private var sidebarRequest: GoToSheet.Jump?
     @Environment(\.displayScale) private var displayScale
     @State private var keyboard = false
     @State private var measured = false
@@ -185,6 +188,30 @@ struct SessionScreen: View {
     private var metrics: TerminalMetrics { TerminalMetrics(textSize: TerminalPreferences.textSize(saved: savedTextSize, ghostty: ghostty)) }
 
     private var terminal: some View {
+        GeometryReader { geometry in
+            let sidebarWidth = SessionLayout.sidebarWidth(in: geometry.size.width, regular: horizontalSizeClass == .regular)
+            let visibleWidth = sidebarHidden ? nil : sidebarWidth
+            HStack(spacing: 0) {
+                // Keep an outstanding selection alive while folding removes its column.
+                if visibleWidth != nil || sidebarRequest != nil {
+                    GoToSheet(connection: connection, presentation: presentation, initialSection: .agents,
+                              disconnect: disconnect, sidebar: .init(hide: { sidebarHidden = true },
+                                                                    openPicker: { openNavigation(.agents) }, keyboard: $keyboard,
+                                                                    request: $sidebarRequest, isVisible: visibleWidth != nil))
+                        .frame(width: visibleWidth ?? 248)
+                        .frame(width: visibleWidth ?? 0, alignment: .leading)
+                        .clipped()
+                        .accessibilityHidden(visibleWidth == nil)
+                        .allowsHitTesting(visibleWidth != nil)
+                        .disabled(connection.phase != .ready)
+                    if visibleWidth != nil { Divider() }
+                }
+                terminalContent(width: geometry.size.width - (visibleWidth ?? 0), offersSidebar: sidebarWidth != nil)
+            }
+        }
+    }
+
+    private func terminalContent(width: CGFloat, offersSidebar: Bool) -> some View {
         VStack(spacing: 0) {
             GeometryReader { proxy in
                 ZStack(alignment: .topLeading) {
@@ -282,11 +309,15 @@ struct SessionScreen: View {
                     .accessibilityHidden(!keyboard || connection.phase != .ready)
             }
             SessionToolbar(view: connection.view, location: connection.openingAgent?.name ?? connection.draftDestination?.label ?? connection.profile.session,
+                           compactKeys: SessionLayout.usesCompactKeys(width: width), offersSidebar: offersSidebar,
                            keyboard: keyboard, modifiers: $modifiers, sendKey: { key, flags in
                 guard connection.acceptsInput(from: presentation) else { return }
                 guard let target = connection.view?.inputTarget else { connection.inputUnavailable(); return }
                 send(.key(key, flags), target: target)
-            }, navigate: openNavigation, home: home, compose: {
+            }, navigate: { section in
+                if offersSidebar { sidebarHidden.toggle() }
+                else { openNavigation(section) }
+            }, home: home, compose: {
                 keyboard = false
                 modifiers = 0
                 connection.draft.open(at: connection.draftDestination)

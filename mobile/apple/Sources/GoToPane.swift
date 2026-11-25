@@ -112,3 +112,15 @@ struct GoToPane: Identifiable {
         workspace.id == view.focusedWorkspace && tab.id == view.focusedTab && pane.id == view.focusedPane
     }
 }
+
+extension MobileView {
+    var focusedPaneTarget: InputTarget? {
+        guard !goToPending, let target = inputTarget, target.popupId == nil,
+              target.bootId == bootId, target.paneId == focusedPane else { return nil }
+        return target
+    }
+
+    func confirmsInput(to pane: String, revision: UInt64) -> Bool {
+        goToArrival == revision && focusedPaneTarget?.paneId == pane
+    }
+}

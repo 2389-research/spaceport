@@ -524,7 +524,7 @@ final class SessionWorkflowTests: XCTestCase {
     @MainActor
     private func addHost(in app: XCUIApplication, hostname: String, port: String, user: String, session: String, password: Bool = false) {
         let destination = "\(user)@\(hostname)" + (port == "22" ? "" : ":\(port)")
-        app.navigationBars.buttons["Add Host"].tap()
+        app.buttons.matching(identifier: "Add Host").firstMatch.tap()
         let address = app.textFields["Address"]
         XCTAssertTrue(address.waitForExistence(timeout: 5))
         attachScreen("Add Host form", in: app)

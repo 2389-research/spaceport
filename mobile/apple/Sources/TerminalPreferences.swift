@@ -82,6 +82,11 @@ struct TerminalKeyPages: RawRepresentable, Equatable {
         self.pages = pages
     }
 
+    var compactMenuKeys: [TerminalKey] {
+        var seen: Set<TerminalKey> = [.esc]
+        return pages.joined().filter { seen.insert($0).inserted }
+    }
+
     var rawValue: String {
         pages.map { $0.map(\.rawValue).joined(separator: ",") }.joined(separator: "|")
     }

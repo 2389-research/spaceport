@@ -39,6 +39,7 @@ recipe rather than a note.
 
 | Recipe | What it does |
 | --- | --- |
+| `just test-ios-duo device` | fold and unfold a selected iPhone Duo simulator while typing into a disposable SSH session; see [mobile setup](../mobile/README.md) |
 | `just test-live binary` | live Herdr 1 daemon tests; requires an explicit `HERDR_TEST_BINARY` |
 | `just test-core binary` | herdr-core tests; ends the core's terminals on exit |
 | `just test-gui binary` | real native window tests; needs an active desktop |

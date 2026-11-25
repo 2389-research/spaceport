@@ -47,14 +47,6 @@ struct PanePreviewCache {
     }
 }
 
-extension MobileView {
-    var previewTarget: InputTarget? {
-        guard !goToPending, let target = inputTarget, target.popupId == nil,
-              target.bootId == bootId, target.paneId == focusedPane else { return nil }
-        return target
-    }
-}
-
 enum PaneExcerpt {
     case visible(String)
     case lastSeen(PanePreviewCache.Entry)
@@ -64,7 +56,7 @@ extension MobileConnection {
     func preview(pane: String, boot: String) -> PaneExcerpt? {
         guard phase == .ready, let view, view.bootId == boot,
               view.panes.contains(where: { $0.id == pane }) else { return nil }
-        if let target = view.previewTarget, target.paneId == pane {
+        if let target = view.focusedPaneTarget, target.paneId == pane {
             let screen = directPane.flatMap { $0.target == target && $0.failure == nil ? $0.surface?.visibleText : nil }
                 ?? view.terminal?.visibleText
             if let screen { return PanePreviewCache.excerpt(screen).map(PaneExcerpt.visible) }

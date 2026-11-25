@@ -29,6 +29,17 @@ final class GoToTests: XCTestCase {
         XCTAssertEqual(rows.first?.pane.agentName, "Codex")
     }
 
+    func testGoToConfirmationRequiresThePaneToOwnInput() {
+        var view = MobileView(version: 8, bootId: "boot", workspaces: [], tabs: [], panes: [],
+                              paneMap: nil, focusedWorkspace: "w", focusedTab: "t", focusedPane: "p",
+                              terminal: nil, inputTarget: InputTarget(connection: 1, bootId: "boot", paneId: "p", popupId: nil),
+                              error: nil, disconnected: false, hostChallenge: nil, goToPending: false, goToArrival: 7)
+        XCTAssertTrue(view.confirmsInput(to: "p", revision: 7))
+        XCTAssertFalse(view.confirmsInput(to: "p", revision: 6))
+        view.inputTarget?.popupId = "overlay"
+        XCTAssertFalse(view.confirmsInput(to: "p", revision: 7))
+    }
+
     func testStatusUsesReportedActivityOnly() {
         XCTAssertEqual(PaneActivity("blocked")?.title, "Needs you")
         XCTAssertEqual(PaneActivity("done"), .idle)

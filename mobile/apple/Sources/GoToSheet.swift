@@ -13,6 +13,16 @@ struct GoToSheet: View {
     let presentation: UUID
     let initialSection: GoToSection
     var disconnect: (() -> Void)?
+    struct Sidebar {
+        let hide: () -> Void
+        let openPicker: () -> Void
+        let keyboard: Binding<Bool>
+        let request: Binding<Jump?>
+        let isVisible: Bool
+    }
+
+    var sidebar: Sidebar?
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var peek: Peek?
@@ -22,71 +32,39 @@ struct GoToSheet: View {
         var id: String { row.id }
     }
     @State private var historyTarget: InputTarget?
-    @State private var request: Jump?
+    @State private var sheetRequest: Jump?
+    private var request: Jump? {
+        get { if let sidebar { return sidebar.request.wrappedValue }; return sheetRequest }
+        nonmutating set {
+            if let sidebar { sidebar.request.wrappedValue = newValue } else { sheetRequest = newValue }
+        }
+    }
     @State private var issue: String?
     @State private var showsProgress = false
 
-    private struct Jump {
+    struct Jump {
         let started: ContinuousClock.Instant
         let pane: GoToPane
         let expectedAgent: String?
         let boot: String
         let generation: UUID
         let revision: UInt64
+        let restoreKeyboard: Bool
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollViewReader { reader in
-                List {
-                    if let view = connection.view {
-                        let token = connection.generation
-                        if isSearching {
-                            let rows = GoToPane.search(query, workspaces: view.workspaces, tabs: view.tabs, panes: view.panes,
-                                                       recent: connection.panePreviews.recent)
-                            if rows.isEmpty {
-                                ContentUnavailableView.search(text: query)
-                            } else {
-                                Section("Matching panes") {
-                                    ForEach(rows) { row in destinationRow(row, in: view, token: token) }
-                                }
-                            }
-                        } else {
-                            browse(view, token: token)
-                        }
-                    }
-                    if let disconnect, !isSearching {
-                        Section {
-                            Button("Disconnect", systemImage: "power", role: .destructive) {
-                                if connection.presentationID == presentation { disconnect() }
-                            }.accessibilityIdentifier("session.disconnect")
-                        }
-                    }
-                }
-                .disabled(request != nil)
-                .onAppear {
-                    if initialSection != .agents { reader.scrollTo(initialSection, anchor: .top) }
-                }
+        picker
+            .task(id: request?.revision) {
+                showsProgress = false
+                guard request != nil else { return }
+                do { try await Task.sleep(for: .milliseconds(180)) } catch { return }
+                showsProgress = true
             }
-            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always),
-                        prompt: "Search agents, titles, workspaces, tabs")
-            .navigationDestination(item: $historyTarget) { target in
-                TerminalHistoryView(connection: connection, presentation: presentation, target: target, done: { dismiss() })
-            }
-            .navigationTitle("Go To")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        historyTarget = connection.view?.inputTarget
-                    } label: {
-                        Label("Find in Terminal", systemImage: "text.magnifyingglass")
-                    }
-                    .disabled(request != nil || connection.view?.inputTarget == nil || connection.view?.inputTarget?.popupId != nil)
-                    .accessibilityIdentifier("session.find")
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }.accessibilityIdentifier("goTo.done")
+            .onChange(of: connection.view?.version) { _, _ in checkArrival() }
+            .onDisappear {
+                if connection.presentationID == presentation, let request {
+                    self.request = nil
+                    connection.cancelGoTo(generation: request.generation)
                 }
             }
             .overlay(alignment: .bottom) {
@@ -108,18 +86,90 @@ struct GoToSheet: View {
             .alert("Go To", isPresented: Binding(get: { issue != nil }, set: { if !$0 { issue = nil } })) {
                 Button("OK") { issue = nil }
             } message: { Text(issue ?? "") }
+    }
+
+    @ViewBuilder private var picker: some View {
+        if let sidebar {
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Agents").font(.title2.bold())
+                    Spacer()
+                    Button(action: sidebar.openPicker) { Image(systemName: "magnifyingglass") }
+                        .accessibilityLabel("Search panes and terminal history")
+                        .frame(minWidth: 44, minHeight: 44)
+                    Button(action: sidebar.hide) { Image(systemName: "sidebar.leading") }
+                        .accessibilityLabel("Hide agents sidebar")
+                        .accessibilityIdentifier("session.sidebar.hide")
+                        .frame(minWidth: 44, minHeight: 44)
+                }.padding(.leading, 16)
+                choices.listStyle(.sidebar)
+            }
+            .background(Color(uiColor: .secondarySystemBackground))
+        } else {
+            NavigationStack { sheetContent }
+                .preferredColorScheme(.dark)
+                .presentationCornerRadius(34)
+                .presentationDragIndicator(.visible)
         }
-        .task(id: request?.revision) {
-            showsProgress = false
-            guard request != nil else { return }
-            do { try await Task.sleep(for: .milliseconds(180)) } catch { return }
-            showsProgress = true
+    }
+
+    private var sheetContent: some View {
+        choices
+            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always),
+                        prompt: "Search agents, titles, workspaces, tabs")
+            .navigationDestination(item: $historyTarget) { target in
+                TerminalHistoryView(connection: connection, presentation: presentation, target: target, done: { dismiss() })
+            }
+            .navigationTitle("Go To")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        historyTarget = connection.view?.inputTarget
+                    } label: {
+                        Label("Find in Terminal", systemImage: "text.magnifyingglass")
+                    }
+                    .disabled(request != nil || connection.view?.inputTarget == nil || connection.view?.inputTarget?.popupId != nil)
+                    .accessibilityIdentifier("session.find")
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }.accessibilityIdentifier("goTo.done")
+                }
+            }
+    }
+
+    private var choices: some View {
+        ScrollViewReader { reader in
+            List {
+                if let view = connection.view {
+                    let token = connection.generation
+                    if isSearching {
+                        let rows = GoToPane.search(query, workspaces: view.workspaces, tabs: view.tabs, panes: view.panes,
+                                                   recent: connection.panePreviews.recent)
+                        if rows.isEmpty {
+                            ContentUnavailableView.search(text: query)
+                        } else {
+                            Section("Matching panes") {
+                                ForEach(rows) { row in destinationRow(row, in: view, token: token) }
+                            }
+                        }
+                    } else {
+                        browse(view, token: token)
+                    }
+                }
+                if let disconnect, !isSearching {
+                    Section {
+                        Button("Disconnect", systemImage: "power", role: .destructive) {
+                            if connection.presentationID == presentation { disconnect() }
+                        }.accessibilityIdentifier("session.disconnect")
+                    }
+                }
+            }
+            .disabled(request != nil)
+            .onAppear {
+                if initialSection != .agents { reader.scrollTo(initialSection, anchor: .top) }
+            }
         }
-        .preferredColorScheme(.dark)
-        .presentationCornerRadius(34)
-        .presentationDragIndicator(.visible)
-        .onChange(of: connection.view?.version) { _, _ in checkArrival() }
-        .onDisappear { if connection.presentationID == presentation, let request { connection.cancelGoTo(generation: request.generation) } }
     }
 
     private var isSearching: Bool { query.contains { !$0.isWhitespace } }
@@ -129,12 +179,28 @@ struct GoToSheet: View {
         let tabs = view.tabs.filter { $0.workspaceId == workspace?.id }
         let tab = tabs.first { $0.id == view.focusedTab }
         let agents = GoToPane.agents(workspaces: view.workspaces, tabs: view.tabs, panes: view.panes)
-        Section("Agents") {
-            if agents.isEmpty { Text("No agents in this session.").foregroundStyle(.secondary) }
-            ForEach(agents) { row in
-                destinationRow(row, in: view, token: token)
+        if sidebar != nil && !agents.isEmpty {
+            ForEach([HomeAgentSection.waiting, .working, .idle, .other], id: \.self) { section in
+                let rows = agents.filter { row in
+                    switch PaneActivity(row.pane.status) {
+                    case .blocked: section == .waiting
+                    case .working: section == .working
+                    case .idle: section == .idle
+                    case nil: section == .other
+                    }
+                }
+                if !rows.isEmpty {
+                    Section(section.title) {
+                        ForEach(rows) { row in destinationRow(row, in: view, token: token) }
+                    }
+                }
             }
-        }.id(GoToSection.agents)
+        } else {
+            Section("Agents") {
+                if agents.isEmpty { Text("No agents in this session.").foregroundStyle(.secondary) }
+                ForEach(agents) { row in destinationRow(row, in: view, token: token) }
+            }.id(GoToSection.agents)
+        }
         Section("Workspaces") {
             workspaceSegments(view, token: token)
         }.id(GoToSection.workspaces)
@@ -142,6 +208,7 @@ struct GoToSheet: View {
             ForEach(tabs, id: \.id) { item in
                 choice(item.label, status: item.status, selected: item.id == tab?.id) {
                     guard connection.acceptsInput(from: presentation), token == connection.generation, item.id != tab?.id else { return }
+                    sidebar?.keyboard.wrappedValue = false
                     connection.focus(.tab, id: item.id, boot: view.bootId)
                 }.accessibilityIdentifier("goTo.tab.\(item.id)")
             }
@@ -182,7 +249,10 @@ struct GoToSheet: View {
             connection.message = nil
             return
         }
-        request = Jump(started: started, pane: pane, expectedAgent: expectedAgent, boot: view.bootId, generation: token, revision: revision)
+        let restoreKeyboard = sidebar?.keyboard.wrappedValue == true
+        sidebar?.keyboard.wrappedValue = false
+        request = Jump(started: started, pane: pane, expectedAgent: expectedAgent, boot: view.bootId,
+                       generation: token, revision: revision, restoreKeyboard: restoreKeyboard)
         checkArrival()
     }
 
@@ -190,7 +260,7 @@ struct GoToSheet: View {
         guard let request else { return }
         guard let view = connection.view, view.bootId == request.boot, connection.generation == request.generation else {
             self.request = nil
-            dismiss()
+            if sidebar == nil { dismiss() }
             return
         }
         guard view.version >= request.revision, !view.goToPending else { return }
@@ -198,16 +268,25 @@ struct GoToSheet: View {
         let agentMatches = request.expectedAgent.map { expected in
             view.panes.contains { $0.id == request.pane.id && $0.agentName == expected }
         } ?? true
-        if view.goToArrival == request.revision, agentMatches, request.pane.isFocused(in: view), view.inputTarget?.paneId == request.pane.id {
+        if view.confirmsInput(to: request.pane.id, revision: request.revision), agentMatches, request.pane.isFocused(in: view) {
             #if DEBUG
             let elapsed = request.started.duration(to: .now)
             Logger(subsystem: "ai.2389.spaceport.mobile", category: "Navigation")
                 .notice("Go To input ready after \(elapsed.formatted(.units(allowed: [.milliseconds])), privacy: .public)")
             #endif
-            dismiss()
+            if let sidebar {
+                if request.restoreKeyboard, scenePhase == .active, connection.acceptsInput(from: presentation) {
+                    sidebar.keyboard.wrappedValue = true
+                }
+            } else { dismiss() }
         } else {
-            issue = view.error ?? "The selected pane changed before Herdr confirmed focus."
-            connection.message = nil
+            let failure = view.error ?? "The selected pane changed before Herdr confirmed focus."
+            if sidebar?.isVisible == false {
+                connection.message = failure
+            } else {
+                connection.message = nil
+                issue = failure
+            }
         }
     }
 
@@ -249,6 +328,7 @@ struct GoToSheet: View {
                     let selected = item.id == view.focusedWorkspace
                     Button {
                         guard connection.acceptsInput(from: presentation), token == connection.generation, !selected else { return }
+                        sidebar?.keyboard.wrappedValue = false
                         connection.focus(.workspace, id: item.id, boot: view.bootId)
                     } label: {
                         HStack(spacing: 5) {

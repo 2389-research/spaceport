@@ -156,8 +156,15 @@ Pinned agents lead the list. Snoozed agents appear at the bottom until the deadl
 or until Spaceport observes them change to working or waiting for you.
 These settings stay on this phone and belong to the observed agent in its current Herdr boot.
 
-Tap the location in the middle of the terminal toolbar to see every agent Herdr reports in the connected session.
-Working agents appear first, followed by agents that need you. Idle and done agents follow, most recently changed first.
+On the open iPhone Duo, a wide session shows an agent sidebar beside the terminal.
+**Waiting for you** comes first, then working and idle agents. Workspaces follow the agents.
+Use the sidebar button to hide the list, or tap the terminal’s location to bring it back.
+Use the magnifying glass to search panes or open terminal history.
+A narrow window gives the terminal the full width. Folding or resizing keeps the selected pane and font size.
+On the narrowest layouts, Escape stays visible and **More terminal keys** holds the other controls.
+
+In the compact layout, tap the location in the terminal toolbar to open Go To.
+In the Go To sheet, working agents appear first, followed by agents that need you. Idle and done agents follow, most recently changed first.
 Go To uses Herdr’s own change order within the connected session. Workspace, tab, and pane navigation follow the list.
 Search Go To by agent, terminal title, pane, workspace, or tab. Words can match across fields.
 The search uses the connected session’s roster. Recent visits break ties between equally strong matches.
@@ -220,6 +227,7 @@ Configure the following test environment variables explicitly.
 | `SPACEPORT_TEST_SSH_WITNESS` | Set to `1` when running the fixture monitor `mobile/test-support/watch-ssh-continuity` |
 | `SPACEPORT_TEST_GHOSTTY_SESSION` | Fresh disposable session from `mobile/test-support/seed-attention` for the Ghostty agent-switching test |
 | `SPACEPORT_TEST_ORDER_SESSION` | Separate session created by `mobile/test-support/seed-agent-order` for the live and saved agent ordering test |
+| `SPACEPORT_TEST_DUO_SESSION` | Fresh session created by `mobile/test-support/seed-agent-order` for the iPhone Duo fold test |
 | `SPACEPORT_TEST_PICKER_SESSION` | Fresh session from `mobile/test-support/seed-agent-order` for Go To search and Ghostty pane preview |
 | `SPACEPORT_UI_IMAGE_SESSION` | Fresh disposable session with a POSIX shell for the screenshot paste workflow |
 | `SPACEPORT_TEST_MARKS_SESSION` | Separate session from `mobile/test-support/seed-agent-order` for Home pin and snooze actions |
@@ -233,6 +241,11 @@ Give the UI test runner these same variables and a separate session for its keyb
 To exercise **Agents**, run `mobile/test-support/seed-attention NEW_DISPOSABLE_SESSION` on the disposable host with Herdr and jq installed.
 Set `SPACEPORT_TEST_ATTENTION_SESSION` to that name. The test starts in Mission and replies to Review in Flight.
 When running xcodebuild from a shell, prefix the variables with `TEST_RUNNER_`.
+For the fold test, open an iPhone Duo simulator in Device Hub and unfold it.
+Run `just test-ios-duo SIMULATOR_UDID` with the five SSH fixture variables and the Duo session set.
+Close the Duo when XCTest requests it, then open it at the next prompt.
+The test sends a single reply to the fixture’s Reviewer pane across both transitions.
+
 Remove the disposable host after testing.
 
 To check a changed SSH host key on the iOS simulator, start `mobile/test-support/serve-rotating-host` on the Mac.
@@ -256,3 +269,6 @@ A separate OpenSSH fixture verified public-key installation without Herdr.
 Build 8’s iPhone SE simulator switched agents with the keyboard open and delivered input over the same SSH connection.
 A Mac Secure Enclave signed a fresh key-only login after enrollment on the open password connection.
 The original terminal continued accepting input. A second process reopened the same device key and rejoined Herdr.
+
+Build 12’s iPhone Duo simulator on iOS 27.2 folded and unfolded while Ghostty held a partially typed reply.
+The selected agent received one complete reply. The keyboard stayed open and the SSH server recorded no new login.
