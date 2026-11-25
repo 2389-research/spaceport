@@ -175,11 +175,13 @@ pub(crate) fn edit_modifiers(modifiers: Modifiers) -> bool {
 // The keystrokes the app itself holds — the Edit menu's four and macOS's
 // system keys — spelled by `spaceport-keymap`, where a daemon custom command
 // is kept off them. `bind_keys` above binds them to this app's actions.
+pub use spaceport_keymap::EDIT_KEYS;
+#[cfg(target_os = "macos")]
+pub use spaceport_keymap::SYSTEM_KEYS;
 #[cfg(any(target_os = "macos", test))]
 pub use spaceport_keymap::free_system_keys;
 #[cfg(test)]
 pub use spaceport_keymap::reserved_keystrokes;
-pub use spaceport_keymap::{EDIT_KEYS, SYSTEM_KEYS};
 
 /// Replaces every binding after a config reload. The menu bar reads its
 /// shortcut labels from the keymap when it is installed, so it is rebuilt too.
