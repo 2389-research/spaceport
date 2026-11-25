@@ -54,8 +54,8 @@ both (§1.4, §4 stage 1) and asked for the evidence; the evidence says keep:
   definition of the same failure — a `Daemon(#[from] spaceport_keymap::Error)`
   arm on the app's 13-variant `keymap::Error`, which stage 2 deletes again — or a
   `match` where the chain is. Keeping the root variant is one `map_err`
-  (§3 below), one changed line in `error.rs`, and one changed line in
-  `root.rs:126`, which keeps reading `Self::ServerKeybindings(error) =>
+  (§3 below) and one retargeted line in `error.rs`; `root.rs:126` does not
+  change, and keeps reading `Self::ServerKeybindings(error) =>
   error.localize()`.
 - **It is the app's own convention.** `Sound(#[from] spaceport_sound::Error)`,
   `Menu(#[from] spaceport_menu::Error)` and `Settings(#[from]
