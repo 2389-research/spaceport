@@ -8,6 +8,7 @@ pub mod display;
 mod endpoint;
 mod error;
 mod frame;
+mod localize;
 mod media;
 mod model;
 mod replica;

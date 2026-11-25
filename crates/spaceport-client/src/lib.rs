@@ -26,6 +26,7 @@ mod local_network;
 pub mod local_path;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod local_peer;
+mod localize;
 pub mod login_env;
 mod method;
 pub mod navigation;

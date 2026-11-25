@@ -10,7 +10,11 @@ version.workspace      = true
 workspace = true
 
 [dependencies]
-serde.workspace      = true
-serde_json.workspace = true
-thiserror.workspace  = true
-uuid.workspace       = true
+serde.workspace          = true
+serde_json.workspace     = true
+spaceport-i18n.workspace = true
+thiserror.workspace      = true
+uuid.workspace           = true
+
+[dev-dependencies]
+spaceport-i18n = { features = ["test-support"], workspace = true }

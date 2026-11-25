@@ -21,6 +21,7 @@ mod entry;
 mod error;
 mod filter;
 mod frecency;
+mod localize;
 mod project;
 mod rank;
 pub mod search;

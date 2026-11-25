@@ -1,74 +1,36 @@
-//! Errors as the person using the app reads them (docs/i18n.md). Every error
-//! enum that reaches a window keeps its `thiserror` English `Display` for
-//! logs, and [`Localize`] picks its message by variant where it is shown.
-//! An enum wrapping another crate's error delegates to that error's own
-//! mapping, so each failure has one message, as it has one definition.
+//! The app's own errors as the person using the app reads them
+//! (docs/i18n.md). Every error enum that reaches a window keeps its
+//! `thiserror` English `Display` for logs, and [`Localize`] picks its message
+//! by variant where it is shown. An enum wrapping another crate's error
+//! delegates to that error's own mapping, so each failure has one message, as
+//! it has one definition.
 //!
-//! The mappings live here, one file and one `error-<name>.ftl` per crate or
-//! feature, rather than beside each enum: crates below the app have no
-//! messages, and the app's feature modules are migrated on their own.
+//! A crate words its own errors, so each mapping lives in the crate that owns
+//! the `Error` and its `error-<name>.ftl` stays in the one i18n tree. What is
+//! here words the app's own errors, one file per feature module.
 // i18n: migrated
 
 mod backdrop;
-mod browser;
 mod caffeine;
 mod chat;
-mod chat_protocol;
-mod client;
 mod clipboard;
-mod config;
-mod control;
 mod daemon;
-mod devices;
 mod endpoint;
 mod file_drop;
-mod keymap;
 #[cfg(windows)]
 mod launch_at_login;
 mod listening_ports;
-mod menu;
 mod notification_mutes;
 mod overview;
-mod palette;
 mod pane_move;
 mod port_forward;
 mod processes;
-mod protocol;
-mod remote;
 mod root;
-mod shell;
-mod sound;
-mod state_file;
 #[cfg(test)]
 pub(crate) mod tests;
-mod usage;
 mod wsl_drop;
 
-use std::sync::Arc;
-
-/// An error's message in the current locale, for a window, a notification,
-/// or an `$error` placeable. Logs keep `Display`.
-pub(crate) trait Localize {
-    fn localize(&self) -> String;
-}
-
-impl<T: Localize + ?Sized> Localize for &T {
-    fn localize(&self) -> String {
-        (**self).localize()
-    }
-}
-
-impl<T: Localize + ?Sized> Localize for Box<T> {
-    fn localize(&self) -> String {
-        (**self).localize()
-    }
-}
-
-impl<T: Localize + ?Sized> Localize for Arc<T> {
-    fn localize(&self) -> String {
-        (**self).localize()
-    }
-}
+pub(crate) use spaceport_i18n::Localize;
 
 /// `error`'s message followed by each cause's, for a line that names what
 /// went wrong on a host as well as what failed. A cause from the app is

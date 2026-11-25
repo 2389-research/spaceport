@@ -20,6 +20,7 @@ gpui.workspace                 = true
 serde.workspace                = true
 serde_json.workspace           = true
 spaceport-client.workspace     = true
+spaceport-i18n.workspace       = true
 spaceport-motion.workspace     = true
 spaceport-panes.workspace      = true
 spaceport-reorder.workspace    = true
@@ -33,5 +34,6 @@ uuid.workspace                 = true
 
 [dev-dependencies]
 gpui = { features = ["test-support"], workspace = true }
+spaceport-i18n = { features = ["test-support"], workspace = true }
 spaceport-backend.workspace = true
 tempfile.workspace          = true

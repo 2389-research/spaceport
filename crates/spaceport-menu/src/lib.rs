@@ -16,6 +16,7 @@ pub mod appear;
 pub mod bar;
 pub mod chrome;
 mod error;
+mod localize;
 pub mod page;
 pub mod pane;
 pub mod picker;

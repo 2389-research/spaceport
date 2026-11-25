@@ -4,6 +4,7 @@
 
 pub mod details;
 mod error;
+mod localize;
 pub mod model;
 pub mod registry;
 pub mod settings;

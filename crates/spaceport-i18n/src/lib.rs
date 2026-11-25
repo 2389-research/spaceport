@@ -6,11 +6,12 @@
 //! names its words through: [`fl!`], [`text`], [`message`], [`english`].
 //!
 //! The published, translated words are here (`locales/<tag>/<feature>.ftl`),
-//! and a crate that shows text calls [`fl!`] itself, naming its own keys. No
-//! GPUI: which locale a window shows is the app's, and this crate only
-//! reports and replaces the catalog shown. A crate that words text adds this
-//! crate's `test-support` feature to its dev-dependencies, so a test that
-//! switches locale switches only its own thread's catalog.
+//! and a crate that shows text calls [`fl!`] itself, naming its own keys, an
+//! error through [`Localize`] beside its own `Error`. No GPUI: which locale a
+//! window shows is the app's, and this crate only reports and replaces the
+//! catalog shown. A crate that words text adds this crate's `test-support`
+//! feature to its dev-dependencies, so a test that switches locale switches
+//! only its own thread's catalog.
 // i18n: migrated
 
 mod catalog;
@@ -19,6 +20,7 @@ mod cjk;
 mod current;
 mod error;
 mod locale;
+mod localize;
 mod lookup;
 mod negotiate;
 pub mod pseudo;
@@ -28,6 +30,9 @@ pub use cjk::CjkScript;
 pub use error::{Error, Result};
 pub use fluent::{FluentArgs, FluentValue};
 pub use locale::{Direction, Language, Locale, Pseudo};
+pub use localize::Localize;
+#[cfg(any(test, feature = "test-support"))]
+pub use localize::assertions;
 #[cfg(any(test, feature = "test-support"))]
 pub use lookup::takes;
 pub use lookup::{available, endonym, english, message, text};

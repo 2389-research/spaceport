@@ -4,6 +4,7 @@
 //! takes from a [`socket::Server`] on its UI thread.
 
 mod error;
+mod localize;
 pub mod protocol;
 pub mod socket;
 

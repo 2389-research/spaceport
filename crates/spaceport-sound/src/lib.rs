@@ -7,6 +7,7 @@
 
 mod config;
 mod error;
+mod localize;
 mod playback;
 mod policy;
 mod service;

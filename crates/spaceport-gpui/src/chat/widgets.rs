@@ -10,10 +10,12 @@
 mod state;
 
 pub(crate) use spaceport_chat_core::widgets::{
-    ActionMode, Component, Document, Error, Key, MAX_INPUT, Point, Value, Values, slider_value,
-    snap,
+    ActionMode, Component, Document, Key, MAX_INPUT, Point, Value, Values, slider_value, snap,
 };
 pub(crate) use state::{Form, Input, State, bounded_input};
+// The catalog's own failures word themselves; only the parse tests name the type.
+#[cfg(test)]
+pub(crate) use spaceport_chat_core::widgets::Error;
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]

@@ -20,11 +20,13 @@ test-support = []
 gpui.workspace               = true
 spaceport-client.workspace   = true
 spaceport-commands.workspace = true
+spaceport-i18n.workspace     = true
 spaceport-settings.workspace = true
 thiserror.workspace          = true
 toml.workspace               = true
 
 [dev-dependencies]
+spaceport-i18n = { features = ["test-support"], workspace = true }
 # The platform's spelling of a catalog shortcut, for the tests that compare a
 # resolved keymap against the catalog's own defaults.
 spaceport-commands = { features = ["test-support"], workspace = true }

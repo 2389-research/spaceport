@@ -37,6 +37,7 @@ pub mod herdr_settings;
 pub mod keybindings;
 pub mod keys;
 pub mod layout;
+mod localize;
 pub mod notifications;
 pub mod omarchy;
 pub mod option_as_alt;
