@@ -9,10 +9,8 @@ struct MobileSettings: View {
     @AppStorage(TerminalPreferences.toolbarKeys) private var keys = TerminalKeyPages.standard
     @AppStorage(TerminalPreferences.composeReturn) private var pressReturn = TerminalPreferences.defaultComposeReturn
 
-    @AppStorage(TerminalPreferences.ghostty) private var ghostty = false
-
     private var textSize: Binding<Int> {
-        Binding(get: { TerminalPreferences.textSize(saved: savedTextSize, ghostty: ghostty) },
+        Binding(get: { savedTextSize ?? TerminalPreferences.defaultTextSize },
                 set: { savedTextSize = $0 })
     }
 
@@ -37,14 +35,6 @@ struct MobileSettings: View {
                 Text("Terminal")
             } footer: {
                 Text("Swipe the terminal keys to change pages. Hold the space bar and drag to move the cursor.")
-            }
-            Section {
-                Toggle("Use Ghostty", isOn: $ghostty)
-                    .accessibilityIdentifier("settings.ghostty")
-            } header: {
-                Text("Terminal Experiment")
-            } footer: {
-                Text("Use Ghostty to attach directly to the selected terminal over your SSH connection.")
             }
             Section {
                 LabeledContent("Version", value: version)

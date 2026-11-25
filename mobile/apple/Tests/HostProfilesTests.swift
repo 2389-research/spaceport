@@ -204,9 +204,10 @@ final class HostProfilesTests: XCTestCase {
         XCTAssertEqual(snapshot.location, ["Dev", "Build", "Shell"])
         XCTAssertEqual(snapshot.agents, [
             SeenAgent(bootId: "boot", workspaceId: "two", tabId: "tab2", paneId: "review", name: "Reviewer",
-                      status: "blocked", location: "Ops › Watch", changeObservedAt: seen, terminalTitle: "Verify the release"),
+                      status: "blocked", location: "Ops › Watch", changeObservedAt: seen, terminalTitle: "Verify the release",
+                      workspaceLabelBytes: "Ops".utf8.count),
             SeenAgent(bootId: "boot", workspaceId: "one", tabId: "tab1", paneId: "phone", name: "Builder",
-                      status: "working", location: "Dev › Build", changeObservedAt: seen)
+                      status: "working", location: "Dev › Build", changeObservedAt: seen, workspaceLabelBytes: "Dev".utf8.count)
         ])
     }
 

@@ -120,8 +120,24 @@ struct SeenAgent: Hashable, Codable {
     var changeObservedAt: Date?
     var idleOnsetObserved: Bool?
     var terminalTitle: String?
+    var agentIdentity: String?
+    var workspaceLabelBytes: Int?
 
     var marks: AgentMarks?
+
+    var locationLabels: (workspace: String, tab: String) {
+        let separator = " › "
+        let bytes = location.utf8
+        if let length = workspaceLabelBytes, length >= 0,
+           let end = bytes.index(bytes.startIndex, offsetBy: length, limitedBy: bytes.endIndex),
+           bytes[end...].starts(with: separator.utf8) {
+            return (String(decoding: bytes[..<end], as: UTF8.self),
+                    String(decoding: bytes[end...].dropFirst(separator.utf8.count), as: UTF8.self))
+        }
+        // Older observations only stored the joined path. Preserve ambiguous labels verbatim.
+        let parts = location.components(separatedBy: separator)
+        return parts.count == 2 ? (parts[0], parts[1]) : (location, "")
+    }
 
     static let cacheLimit = 32
     static let markLimit = 512

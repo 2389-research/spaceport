@@ -7,7 +7,10 @@ import UIKit
 @MainActor
 final class GhosttyPaneSurface: TerminalSurfaceOpenURLHandlingDelegate {
     // Each attachment owns a separate terminal grid. The font and Metal runtime are shared.
-    private static let controller = TerminalController { config in
+    static let controller = TerminalController { config in
+        config.withBackground("#0E0E10")
+        config.withWindowPaddingX(0)
+        config.withWindowPaddingY(0)
         config.withCustom("clipboard-read", "deny")
         config.withCustom("clipboard-write", "deny")
         config.withCustom("desktop-notifications", "false")
@@ -29,7 +32,7 @@ final class GhosttyPaneSurface: TerminalSurfaceOpenURLHandlingDelegate {
     init(write: @escaping @Sendable (Data) -> Bool, resize: @escaping @Sendable (Viewport) -> Void,
          textSize: Int? = nil) {
         self.write = write
-        self.textSize = TerminalPreferences.textSize(saved: textSize, ghostty: true)
+        self.textSize = textSize ?? TerminalPreferences.defaultTextSize
         session = InMemoryTerminalSession(write: { _ = write($0) }, resize: { grid in
             guard grid.columns > 0, grid.rows > 0 else { return }
             resize(Viewport(columns: grid.columns, rows: grid.rows,

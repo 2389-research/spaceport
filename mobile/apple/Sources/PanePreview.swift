@@ -73,7 +73,8 @@ struct AgentPeek: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             AgentSelectorLabel(name: row.pane.agentName ?? row.pane.label, terminalTitle: row.pane.terminalTitle,
-                               location: row.location, font: .headline)
+                               workspace: row.workspace.label, tab: row.tab.label, font: .headline,
+                               isAgent: row.pane.agentName != nil)
             if let activity = PaneActivity(row.pane.status) {
                 HStack { activity.dot; Text(activity.title).font(.subheadline) }
             }

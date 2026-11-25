@@ -25,7 +25,7 @@ final class SessionWorkflowTests: XCTestCase {
         attachScreen("Live agent order", in: app)
         app.buttons["goTo.done"].tap()
         XCTAssertFalse(keyboard.exists)
-        app.buttons["session.home"].tap()
+        openSessionHome(in: app)
         let session = try XCTUnwrap(ProcessInfo.processInfo.environment["SPACEPORT_TEST_ORDER_SESSION"])
         let saved = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@",
                                                      "home.agent.", session))
@@ -58,21 +58,20 @@ final class SessionWorkflowTests: XCTestCase {
         try await waitForText("Atlas", in: location)
         attachElapsed("Live agent tap to verified location", since: switchStart)
         XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
-        let input = app.textViews["Terminal input"]
         let marker = "quick-" + String(UUID().uuidString.prefix(5)).lowercased()
-        input.typeText(marker)
+        app.typeText(marker)
         try await waitForText(marker, in: terminal)
         app.buttons["terminal.key.ctrl"].tap()
-        input.typeText("u")
+        app.typeText("u")
         let locationFrame = location.frame
-        XCTAssertEqual(locationFrame.midY, app.buttons["terminal.key.esc"].frame.midY, accuracy: 2)
+        XCTAssertLessThan(locationFrame.maxY, app.buttons["terminal.key.esc"].frame.minY)
         XCTAssertEqual(locationFrame.midY, app.buttons["session.compose"].frame.midY, accuracy: 2)
         attachScreen("Keyboard after switching agents", in: app)
         if let authenticated {
             let after = try await sshWitness("sample")
             XCTAssertEqual(after, authenticated, "Choosing two agents in this session must reuse its SSH login.")
         }
-        app.buttons["session.home"].tap()
+        openSessionHome(in: app)
         app.terminate()
         app.launch()
         XCTAssertEqual(names(in: saved), homeOrder)
@@ -84,15 +83,14 @@ final class SessionWorkflowTests: XCTestCase {
         let app = XCUIApplication()
         let (terminal, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_HERDR_SESSION", suffix: "-menu")
         terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.02)).press(forDuration: 0.8)
-        let copy = app.menuItems["Copy"]
-        XCTAssertTrue(copy.waitForExistence(timeout: 4))
-        XCTAssertTrue(app.menuItems["Paste"].exists)
         let selectAll = app.menuItems["Select All"]
-        XCTAssertTrue(selectAll.exists)
-        attachScreen("Terminal text edit menu", in: app)
+        XCTAssertTrue(selectAll.waitForExistence(timeout: 5))
         selectAll.tap()
-        XCTAssertTrue(app.navigationBars["Terminal text"].waitForExistence(timeout: 4))
-        XCTAssertFalse((app.textViews.firstMatch.value as? String ?? "").isEmpty)
+        let copy = app.menuItems["Copy"]
+        XCTAssertTrue(copy.waitForExistence(timeout: 5))
+        attachScreen("Ghostty selection menu", in: app)
+        copy.tap()
+        XCTAssertTrue(terminal.exists)
     }
 
     @MainActor
@@ -151,14 +149,12 @@ final class SessionWorkflowTests: XCTestCase {
         let saved = app.buttons.matching(identifier: "\(destination), \(session)").firstMatch
         reveal(saved, in: app)
         saved.tap()
-        let terminal = app.descendants(matching: .any)["Terminal display"].firstMatch
+        let terminal = app.descendants(matching: .any)["terminal.ghostty"].firstMatch
         XCTAssertTrue(terminal.waitForExistence(timeout: 20))
         app.buttons["terminal.keyboard.toggle"].tap()
-        let input = app.textViews["Terminal input"]
-        let writable = expectation(for: NSPredicate(format: "value == 'Ready'"), evaluatedWith: input)
-        await fulfillment(of: [writable], timeout: 10)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         let nonce = UUID().uuidString.prefix(8)
-        input.typeText("printf '%s%s\\n' enclave- " + nonce + "\n")
+        app.typeText("printf '%s%s\\n' enclave- " + nonce + "\n")
         try await waitForText("enclave-" + nonce, in: terminal)
     }
 
@@ -178,7 +174,7 @@ final class SessionWorkflowTests: XCTestCase {
         attachScreen("Agents with a blocked reviewer", in: app)
         app.buttons["goTo.done"].tap()
         XCTAssertEqual(goTo.value as? String, origin)
-        app.buttons["session.home"].tap()
+        openSessionHome(in: app)
         let session = try XCTUnwrap(ProcessInfo.processInfo.environment["SPACEPORT_TEST_ATTENTION_SESSION"])
         let homeAgent = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@ AND label CONTAINS %@",
                                                          "home.agent.", "Review", session)).firstMatch
@@ -201,7 +197,7 @@ final class SessionWorkflowTests: XCTestCase {
         attachScreen("Workspaces from Home", in: app)
         app.buttons["goTo.done"].tap()
         XCTAssertEqual(goTo.value as? String, origin)
-        app.buttons["session.home"].tap()
+        openSessionHome(in: app)
         reveal(homeAgent, in: app, towardTop: true)
         homeAgent.tap()
         guard terminal.waitForExistence(timeout: 15) else {
@@ -256,7 +252,7 @@ final class SessionWorkflowTests: XCTestCase {
         sibling.tap()
         try await waitForText("Log stream connected.", in: terminal)
         XCTAssertFalse((terminal.value as? String ?? "").contains(reply))
-        app.buttons["session.home"].tap()
+        openSessionHome(in: app)
         let recentlyIdle = app.staticTexts["Idle · under 1 hour"]
         reveal(recentlyIdle, in: app)
         XCTAssertTrue(recentlyIdle.exists)
@@ -329,13 +325,7 @@ final class SessionWorkflowTests: XCTestCase {
         attachScreen("Toolbar keys", in: app)
         app.terminate()
         let (terminal, row) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_HERDR_SESSION")
-        let left = app.buttons["terminal.key.ctrl"].coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
-        let right = app.buttons["terminal.key.tab"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))
-        right.press(forDuration: 0.08, thenDragTo: left)
-        XCTAssertTrue(app.buttons["terminal.key.up"].waitForExistence(timeout: 3))
-        let start = app.buttons["terminal.key.up"].coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
-        let end = app.buttons["terminal.key.alt"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))
-        start.press(forDuration: 0.08, thenDragTo: end)
+        XCTAssertTrue(app.buttons["terminal.key.up"].waitForExistence(timeout: 5))
         try await exercisePaneNavigation(in: app)
         let marker = UUID().uuidString.prefix(8)
         let compose = app.buttons["session.compose"]
@@ -355,17 +345,15 @@ final class SessionWorkflowTests: XCTestCase {
         app.buttons["draft.send"].tap()
         XCTAssertTrue(compose.waitForExistence(timeout: 5))
         app.buttons["terminal.keyboard.toggle"].tap()
-        let input = app.textViews["Terminal input"]
-        let ready = expectation(for: NSPredicate(format: "value == 'Ready'"), evaluatedWith: input)
-        await fulfillment(of: [ready], timeout: 10)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         // The shell can only join this suffix if Send left the command unsubmitted.
-        input.typeText("-done\n")
+        app.typeText("-done\n")
         let output = NSPredicate(format: "value CONTAINS %@", "pasted-\(marker)-done")
         let observed = expectation(for: output, evaluatedWith: terminal)
         await fulfillment(of: [observed], timeout: 10)
         attachScreen("Connected Herdr terminal", in: app)
         app.buttons["terminal.keyboard.toggle"].tap()
-        app.buttons["session.home"].tap()
+        openSessionHome(in: app)
         reveal(row, in: app)
         attachScreen("Home with last session", in: app)
         app.terminate()
@@ -382,16 +370,21 @@ final class SessionWorkflowTests: XCTestCase {
         app.activate()
         XCTAssertTrue(terminal.waitForExistence(timeout: 20))
         app.buttons["terminal.keyboard.toggle"].tap()
-        let writable = expectation(for: NSPredicate(format: "value == 'Ready'"), evaluatedWith: input)
-        await fulfillment(of: [writable], timeout: 10)
-        input.typeText("printf '%s%s\\n' resumed- \"$IOS_WITNESS\"\n")
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        app.typeText("printf '%s%s\\n' resumed- \"$IOS_WITNESS\"\n")
         let restored = expectation(for: NSPredicate(format: "value CONTAINS %@", "resumed-\(marker)"), evaluatedWith: terminal)
         await fulfillment(of: [restored], timeout: 10)
-        app.buttons["session.home"].tap()
+        openSessionHome(in: app)
         app.buttons["Settings"].tap()
         app.buttons["settings.toolbarKeys"].tap()
         secondPageKey.tap()
         app.buttons["Shift Tab"].tap()
+    }
+
+    @MainActor
+    func openSessionHome(in app: XCUIApplication) {
+        app.buttons["session.navigation"].tap()
+        app.buttons["session.home"].tap()
     }
 
     private func requireHardwareKey() throws {
@@ -408,7 +401,7 @@ final class SessionWorkflowTests: XCTestCase {
     }
 
     @MainActor
-    func connect(in app: XCUIApplication, sessionVariable: String, suffix: String = "", launch: Bool = true, terminalIdentifier: String = "Terminal display") throws -> (XCUIElement, XCUIElement) {
+    func connect(in app: XCUIApplication, sessionVariable: String, suffix: String = "", launch: Bool = true) throws -> (XCUIElement, XCUIElement) {
         let env = ProcessInfo.processInfo.environment
         guard let host = env["SPACEPORT_TEST_SSH_HOST"],
               let port = env["SPACEPORT_TEST_SSH_PORT"],
@@ -436,7 +429,7 @@ final class SessionWorkflowTests: XCTestCase {
         passwordField.tap()
         passwordField.typeText(password)
         app.buttons["Sign In"].tap()
-        let terminal = app.descendants(matching: .any)[terminalIdentifier].firstMatch
+        let terminal = app.descendants(matching: .any)["terminal.ghostty"].firstMatch
         guard terminal.waitForExistence(timeout: 30) else {
             throw FixtureError.terminalUnavailable
         }
@@ -483,10 +476,8 @@ final class SessionWorkflowTests: XCTestCase {
         if needsSplit {
             let keyboard = app.buttons["terminal.keyboard.toggle"]
             keyboard.tap()
-            let input = app.textViews["Terminal input"]
-            let ready = expectation(for: NSPredicate(format: "value == 'Ready'"), evaluatedWith: input)
-            await fulfillment(of: [ready], timeout: 10)
-            input.typeText("herdr pane split --current --direction down --no-focus\n")
+            XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+            app.typeText("herdr pane split --current --direction down --no-focus\n")
             keyboard.tap()
         }
         app.buttons["session.navigation"].tap()
@@ -538,7 +529,11 @@ final class SessionWorkflowTests: XCTestCase {
         name.typeText(session)
         if password { app.buttons["Password"].tap() }
         attachScreen("Add Host", in: app)
-        app.buttons["Connect"].tap()
+        let connect = app.buttons["Connect"]
+        if !connect.isHittable && app.keyboards.firstMatch.exists {
+            name.typeText("\n")
+        }
+        connect.tap()
     }
 }
 
@@ -556,7 +551,7 @@ extension SessionWorkflowTests {
         editor.typeText(text)
         let originalDestination = destination.label
         done.tap()
-        app.buttons["session.home"].tap()
+        openSessionHome(in: app)
         _ = try connect(in: app, sessionVariable: "SPACEPORT_TEST_LIFECYCLE_SESSION", suffix: "-b", launch: false)
         var bothLogins: SSHWitness?
         if let firstLogin {
@@ -569,7 +564,7 @@ extension SessionWorkflowTests {
         compose.tap()
         XCTAssertEqual(editor.value as? String ?? "", "")
         done.tap()
-        app.buttons["session.home"].tap()
+        openSessionHome(in: app)
         reveal(firstRow, in: app)
         firstRow.tap()
         guard terminal.waitForExistence(timeout: 10) else {
@@ -687,11 +682,9 @@ extension SessionWorkflowTests {
         XCTAssertTrue(app.buttons["draft.retarget"].exists)
         app.buttons["draft.done"].tap()
         app.buttons["terminal.keyboard.toggle"].tap()
-        let input = app.textViews["Terminal input"]
-        let ready = expectation(for: NSPredicate(format: "value == 'Ready'"), evaluatedWith: input)
-        await fulfillment(of: [ready], timeout: 10)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         let nonce = UUID().uuidString.prefix(8)
-        input.typeText("printf '%s%s\\n' restored- " + nonce + "\n")
+        app.typeText("printf '%s%s\\n' restored- " + nonce + "\n")
         try await waitForText("restored-" + nonce, in: terminal)
         XCTAssertFalse((terminal.value as? String ?? "").contains(draft))
     }
@@ -701,12 +694,13 @@ extension SessionWorkflowTests {
     @MainActor
     func testGhosttySettingsShowTheChosenTextSize() {
         let app = XCUIApplication()
-        app.launchArguments += ["-useGhosttyTerminal", "YES", "-terminalTextSize", "17"]
+        app.launchArguments += ["-terminalTextSize", "17"]
         app.launch()
         app.buttons["Settings"].tap()
         let size = app.descendants(matching: .any).matching(identifier: "settings.textSize").firstMatch
         XCTAssertTrue(size.waitForExistence(timeout: 5))
         XCTAssertTrue(size.label.contains("17 pt") || (size.value as? String)?.contains("17 pt") == true, size.debugDescription)
+        XCTAssertFalse(app.switches["settings.ghostty"].exists)
     }
 
     @MainActor
@@ -774,28 +768,9 @@ extension SessionWorkflowTests {
         try XCTSkipUnless(ProcessInfo.processInfo.environment["SPACEPORT_TEST_GHOSTTY_SESSION"] != nil,
                           "Seed a fresh disposable reviewer with mobile/test-support/seed-attention.")
         let app = XCUIApplication()
-        app.launch()
-        app.buttons["Settings"].tap()
-        let toggle = app.switches["settings.ghostty"]
-        guard toggle.waitForExistence(timeout: 5) else {
-            XCTFail("Settings must offer the Ghostty terminal experiment.")
-            return
-        }
-        let wasEnabled = toggle.value as? String == "1"
-        if !wasEnabled {
-            toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.94, dy: 0.5)).tap()
-            addTeardownBlock { @MainActor in
-                app.terminate()
-                app.launch()
-                app.buttons["Settings"].tap()
-                if toggle.value as? String == "1" {
-                    toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.94, dy: 0.5)).tap()
-                }
-            }
-        }
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        let (surface, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_GHOSTTY_SESSION",
-                                       launch: false, terminalIdentifier: "terminal.ghostty")
+        // Model an upgraded install which used the old cell display.
+        app.launchArguments += ["-useGhosttyTerminal", "NO"]
+        let (surface, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_GHOSTTY_SESSION")
         let firstFrame = expectation(for: NSPredicate(format: "value MATCHES %@", #"(?s).*\S.*"#), evaluatedWith: surface)
         await fulfillment(of: [firstFrame], timeout: 10)
         let navigation = app.buttons["session.navigation"]

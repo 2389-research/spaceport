@@ -4,48 +4,143 @@ import XCTest
 
 extension SessionWorkflowTests {
     @MainActor
+    func testHeaderHomeReturnsToSessionList() throws {
+        let app = XCUIApplication()
+        let (terminal, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_DUO_SESSION")
+        let home = app.buttons["session.header.home"]
+        let compose = app.buttons["session.compose"]
+        guard home.waitForExistence(timeout: 5) else {
+            XCTFail("The terminal header needs a Home button beside Compose.")
+            return
+        }
+        XCTAssertEqual(home.label, "Home")
+        XCTAssertGreaterThanOrEqual(home.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(home.frame.height, 44)
+        XCTAssertLessThanOrEqual(home.frame.maxX, compose.frame.minX)
+        XCTAssertEqual(home.frame.midY, compose.frame.midY, accuracy: 1)
+        attachScreen("Home beside Compose", in: app)
+        app.buttons["terminal.keyboard.toggle"].tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        home.tap()
+        XCTAssertTrue(app.buttons["Settings"].waitForExistence(timeout: 5))
+        XCTAssertFalse(terminal.exists)
+        XCTAssertFalse(app.keyboards.firstMatch.exists)
+    }
+
+    @MainActor
+    func testDuoTerminalControlsUseAvailableHeight() throws {
+        let app = XCUIApplication()
+        let (surface, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_DUO_SESSION")
+        let sidebar = app.buttons["session.sidebar.hide"]
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 8), "Run on the unfolded Duo.")
+        let toggle = app.buttons["terminal.keyboard.toggle"]
+        let details = app.buttons["session.hostDetails"]
+        let navigation = app.buttons["session.navigation"]
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertFalse(keyboard.exists)
+        // XCTest reports the Duo's app frame in portrait even when its inner display is landscape.
+        let displayHeight = min(app.frame.width, app.frame.height)
+        XCTAssertGreaterThan(toggle.frame.maxX, displayHeight, "Run on the landscape inner display.")
+        let gap = (displayHeight - toggle.frame.maxY).rounded()
+        print("Duo spacing app=\(app.frame) terminal=\(surface.frame) toggle=\(toggle.frame) details=\(details.frame) navigation=\(navigation.frame) gap=\(gap)")
+        attachScreen("Duo unfolded toolbar spacing", in: app)
+        XCTAssertLessThanOrEqual(gap, 12)
+        XCTAssertGreaterThanOrEqual(gap, 0)
+        XCTAssertEqual(details.frame.midY, toggle.frame.midY, accuracy: 2)
+        for button in [navigation, app.buttons["session.header.find"], app.buttons["session.compose"], sidebar, details, toggle] {
+            XCTAssertGreaterThanOrEqual(button.frame.width, 44)
+            XCTAssertGreaterThanOrEqual(button.frame.height, 44)
+            XCTAssertTrue(button.isHittable)
+        }
+        toggle.tap()
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+        let dockGap = keyboard.frame.minY - toggle.frame.maxY
+        print("Duo spacing keyboard=\(keyboard.frame) dockedToggle=\(toggle.frame) gap=\(dockGap)")
+        XCTAssertGreaterThanOrEqual(dockGap, 0)
+        XCTAssertLessThanOrEqual(dockGap, 8, "Allow the system keyboard’s own top inset.")
+        XCTAssertTrue(app.buttons["session.rail.expand"].isHittable)
+    }
+
+    @MainActor
     func testDuoKeepsReviewerInputWhenFolding() async throws {
         try XCTSkipUnless(ProcessInfo.processInfo.environment["SPACEPORT_TEST_DUO_SESSION"] != nil,
                           "Open the Duo simulator and select a disposable seed-agent-order session.")
         let app = XCUIApplication()
-        app.launchArguments += ["-useGhosttyTerminal", "YES"]
-        let (surface, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_DUO_SESSION",
-                                       terminalIdentifier: "terminal.ghostty")
+        let (surface, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_DUO_SESSION")
         let sidebar = app.buttons["session.sidebar.hide"]
         guard sidebar.waitForExistence(timeout: 8) else {
             XCTFail("The open display must show the agent sidebar beside the terminal.")
             return
         }
-        let reviewer = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "goTo.needsYou.")).firstMatch
-        XCTAssertTrue(reviewer.waitForExistence(timeout: 5))
-        reviewer.tap()
-        try await waitForText("Review is ready.", in: surface)
-        XCTAssertTrue(sidebar.exists)
+        let navigation = app.buttons["session.navigation"]
+        let expand = app.buttons["session.rail.expand"]
+        XCTAssertTrue(app.buttons["session.header.find"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["session.sidebar.search"].firstMatch.exists)
+        sidebar.tap()
+        XCTAssertTrue(expand.waitForExistence(timeout: 5))
+        expand.tap()
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 5))
         attachScreen("Duo inner display with agent sidebar", in: app)
         app.buttons["terminal.keyboard.toggle"].tap()
         let keyboard = app.keyboards.firstMatch
         XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+        XCTAssertTrue(expand.waitForExistence(timeout: 5))
+        XCTAssertFalse(sidebar.exists)
+        let rail = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "session.rail.agent."))
+        let scout = rail.matching(NSPredicate(format: "label BEGINSWITH %@", "Scout")).firstMatch
+        let reviewer = rail.matching(NSPredicate(format: "label BEGINSWITH %@", "Reviewer")).firstMatch
+        let later = app.buttons["session.interrupt.later"]
+        let jump = app.buttons["session.interrupt.jump"]
+        let originalLine = "mission-" + UUID().uuidString.prefix(8)
+        app.typeText(originalLine)
+        try await waitForText(originalLine, in: surface)
+        XCTContext.runActivity(named: "Report Scout blocked with sequence 2 on the fixture") { _ in
+            XCTAssertTrue(later.waitForExistence(timeout: 45))
+        }
+        try await waitForText("Mission", in: navigation)
+        attachScreen("Duo typing with a waiting agent", in: app)
+        later.tap()
+        XCTAssertTrue(later.waitForNonExistence(timeout: 5))
+        app.typeText("-stayed")
+        try await waitForText(originalLine + "-stayed", in: surface)
+        XCTContext.runActivity(named: "Report Scout working with sequence 3 on the fixture") { _ in
+            let working = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS[c] %@", "working"), object: scout)
+            XCTAssertEqual(XCTWaiter.wait(for: [working], timeout: 45), .completed)
+        }
+        XCTContext.runActivity(named: "Report Scout blocked with sequence 4 on the fixture") { _ in
+            XCTAssertTrue(jump.waitForExistence(timeout: 45))
+        }
+        jump.tap()
+        try await waitForText("Scout", in: navigation)
+        XCTAssertFalse((surface.value as? String ?? "").contains(originalLine))
+        XCTAssertTrue(keyboard.exists)
+        reviewer.tap()
+        try await waitForText("Review is ready.", in: surface)
         let prefix = "duo-" + String(UUID().uuidString.prefix(6)).lowercased()
         app.typeText(prefix)
         try await waitForText(prefix, in: surface)
-        sidebar.tap()
-        XCTAssertTrue(sidebar.waitForNonExistence(timeout: 5))
-        XCTAssertTrue(keyboard.exists)
-        app.buttons["session.navigation"].tap()
-        XCTAssertTrue(sidebar.waitForExistence(timeout: 5))
-        XCTAssertTrue(keyboard.exists)
+        attachScreen("Duo inner display typing with agent rail", in: app)
 
         XCTContext.runActivity(named: "Close iPhone Duo in Device Hub") { _ in
-            XCTAssertTrue(sidebar.waitForNonExistence(timeout: 45))
+            XCTAssertTrue(expand.waitForNonExistence(timeout: 45))
         }
         XCTAssertTrue(keyboard.exists)
         XCTAssertTrue((surface.value as? String ?? "").contains(prefix))
         XCTAssertFalse((surface.value as? String ?? "").contains("accepted-" + prefix))
         attachScreen("Duo outer display with pending input", in: app)
         app.typeText("-folded")
+        try await waitForText(prefix + "-folded", in: surface)
+        let waiting = app.buttons["session.header.waiting"]
+        XCTAssertTrue(waiting.label.contains("Scout"))
+        waiting.tap()
+        try await waitForText("Scout", in: navigation)
+        XCTAssertTrue(keyboard.exists)
+        XCTAssertTrue(waiting.label.contains("Reviewer"))
+        waiting.tap()
+        try await waitForText(prefix + "-folded", in: surface)
 
         XCTContext.runActivity(named: "Open iPhone Duo in Device Hub") { _ in
-            XCTAssertTrue(sidebar.waitForExistence(timeout: 45))
+            XCTAssertTrue(expand.waitForExistence(timeout: 45))
         }
         XCTAssertTrue(keyboard.exists)
         app.typeText("-open\n")
@@ -57,6 +152,8 @@ extension SessionWorkflowTests {
         editor.tap()
         let draft = "Unsent " + prefix
         editor.typeText(draft)
+        XCTAssertLessThanOrEqual(editor.frame.maxX, surface.frame.minX)
+        attachScreen("Duo inline draft with live terminal", in: app)
         let recipient = destination.label
         let innerWidth = app.frame.width
         for open in [false, true] {
@@ -71,7 +168,7 @@ extension SessionWorkflowTests {
             XCTAssertEqual(destination.label, recipient)
         }
         app.buttons["draft.done"].tap()
-        XCTAssertTrue(sidebar.waitForExistence(timeout: 5))
+        XCTAssertTrue(surface.waitForExistence(timeout: 5))
         XCTAssertFalse((surface.value as? String ?? "").contains(draft))
     }
 }

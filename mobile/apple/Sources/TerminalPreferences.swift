@@ -3,13 +3,10 @@
 import Foundation
 
 enum TerminalPreferences {
-    static let ghostty = "useGhosttyTerminal"
     static let toolbarKeys = "terminalToolbarKeys"
     static let textSize = "terminalTextSize"
     static let textRange = 9...24
-    static func textSize(saved: Int?, ghostty: Bool) -> Int {
-        saved ?? (ghostty ? 12 : 13)
-    }
+    static let defaultTextSize = 12
     static let composeReturn = "composePressReturn"
     static let defaultComposeReturn = true
     static let pressReturnLabel = "Press Return After Pasting"

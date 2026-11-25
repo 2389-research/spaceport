@@ -27,6 +27,10 @@ final class GoToTests: XCTestCase {
         XCTAssertEqual(rows.first?.location, "Agents › Build")
         XCTAssertEqual(rows.first?.tab.id, "build")
         XCTAssertEqual(rows.first?.pane.agentName, "Codex")
+        let groups = AgentRail.groups(rows)
+        XCTAssertEqual(groups.flatMap(\.rows).map(\.id), ["waiting", "working", "recent-idle", "done", "unknown"])
+        XCTAssertEqual(TerminalHeader.nextWaiting(rows, focused: "working")?.id, "waiting")
+        XCTAssertNil(TerminalHeader.nextWaiting(rows, focused: "waiting"))
     }
 
     func testGoToConfirmationRequiresThePaneToOwnInput() {

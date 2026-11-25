@@ -6,24 +6,11 @@ import XCTest
 extension SessionWorkflowTests {
     @MainActor
     func testScreenshotAndNoteReachGhosttyOverSSH() async throws {
-        try await pasteScreenshot(usingGhostty: true)
-    }
-
-    @MainActor
-    func testScreenshotAndNoteReachHerdrSurfaceOverSSH() async throws {
-        try await pasteScreenshot(usingGhostty: false)
-    }
-
-    @MainActor
-    private func pasteScreenshot(usingGhostty: Bool) async throws {
         guard ProcessInfo.processInfo.environment["SPACEPORT_UI_IMAGE_SESSION"] != nil else {
             throw XCTSkip("Select a disposable Herdr session with a shell pane.")
         }
         let app = XCUIApplication()
-        app.launchArguments += ["-useGhosttyTerminal", usingGhostty ? "YES" : "NO"]
-        let (terminal, _) = try connect(in: app, sessionVariable: "SPACEPORT_UI_IMAGE_SESSION",
-                                         suffix: usingGhostty ? "" : "-surface",
-                                         terminalIdentifier: usingGhostty ? "terminal.ghostty" : "Terminal display")
+        let (terminal, _) = try connect(in: app, sessionVariable: "SPACEPORT_UI_IMAGE_SESSION")
         let firstFrame = expectation(for: NSPredicate(format: "value MATCHES %@", #"(?s).*\S.*"#), evaluatedWith: terminal)
         await fulfillment(of: [firstFrame], timeout: 10)
         app.buttons["terminal.keyboard.toggle"].tap()

@@ -31,7 +31,6 @@ The APK uses Android debug signing. `./mobile/build-android --release` builds an
    Key login requires Android 9 or later and secure hardware. The phone must be unlocked to sign.
    Android 8 and devices without a hardware-backed key support password sign-in.
 5. Tap **Go To** to select an agent or workspace. Android draws Herdr’s terminal cells on a native Canvas.
-   The iOS Ghostty experiment uses a separate renderer.
 
 On Android 12–14, set a PIN, password, or pattern before creating a phone key.
 Removing the screen lock can delete that key. If it does, install the replacement key on the host.
@@ -93,7 +92,7 @@ For an existing upload, use **Manage** on the build in TestFlight.
 1. Open **Add Host** and enter `user@host[:port]`. Choose Password or Phone Key and name the first Herdr session.
 2. Tap **Connect**. Compare the complete SHA-256 fingerprint with the host administrator’s copy before granting trust.
 3. For password sign-in, leave **Authorize This Phone** on to install the phone key, or turn it off for password-only access.
-4. Sign in. Tap the current location in the bottom toolbar to browse workspaces, tabs, and panes.
+4. Sign in. Tap the pane name in the terminal header to browse workspaces, tabs, and panes.
 5. Tap the terminal to type. Input goes to the displayed pane or popup.
 
 Home puts pinned agents first, followed by **Waiting for you** and **Working**. Idle agents follow in three approximate age bands: under an hour, one to five hours, and five hours or longer.
@@ -110,13 +109,15 @@ Opening a named session runs the installed Herdr bridge. Herdr starts the sessio
 Disconnecting closes the client's SSH channel. Herdr continues to own its terminals and agents.
 Native chat is deferred. Agent prompts and approvals use their original terminal.
 
-## Try Ghostty on iOS
+## Terminal rendering on iOS
 
-Turn on **Settings → Terminal Experiment → Use Ghostty**, then open an agent or terminal.
+On iOS, Ghostty renders every terminal pane.
 The native Agents and Workspaces lists still use the existing session connection.
 Spaceport resolves the selected pane in that named session and runs Herdr’s direct attach on a second SSH channel.
+Herdr 0.9.5 gives its startup terminal probe 250 ms. Spaceport lets that probe expire because late replies can land in the shell.
+This uses Herdr’s cell-based mouse coordinates for that attachment. Queries from programs in the pane still reach Ghostty.
 Switching panes releases the old channel. Herdr handles input ownership without a forced takeover.
-Popups keep the existing cell display. Turn off the setting to use that display for every pane.
+Herdr supplies popups as cell snapshots. Spaceport draws them in a separate Ghostty surface and sends popup input to Herdr.
 
 The app embeds the pinned Ghostty Apple package from [libghostty-spm](https://github.com/Lakr233/libghostty-spm).
 Xcode resolves its Swift sources and binary framework when building the app. The remote host still needs only SSH and Herdr.
@@ -158,12 +159,19 @@ These settings stay on this phone and belong to the observed agent in its curren
 
 On the open iPhone Duo, a wide session shows an agent sidebar beside the terminal.
 **Waiting for you** comes first, then working and idle agents. Workspaces follow the agents.
-Use the sidebar button to hide the list, or tap the terminal’s location to bring it back.
-Use the magnifying glass to search panes or open terminal history.
+Agent rows show the same agent artwork as the desktop app. Read the teal workspace, gold tab, and purple agent name in order.
+When Home needs to distinguish sessions or hosts, it shows the session in blue and the host in rose.
+Working dots pulse slowly. Waiting dots pulse twice, then pause. Idle dots stay still. Reduce Motion keeps every dot still.
+Search the sidebar by agent, pane, or workspace. Expand Workspaces to browse by location.
+Typing collapses the list to a rail. Tap an initial to switch agents or expand the rail to see names.
+If another agent starts waiting while you type, **Later** dismisses the notice and **Jump** switches to that agent.
+Your half-typed line stays in the original pane.
+Use the terminal header to identify the current pane, find text in its history, or compose a draft beside it.
+On either display, tap the house beside Compose to return to Home.
 A narrow window gives the terminal the full width. Folding or resizing keeps the selected pane and font size.
 On the narrowest layouts, Escape stays visible and **More terminal keys** holds the other controls.
 
-In the compact layout, tap the location in the terminal toolbar to open Go To.
+In the compact layout, tap the pane name in the header to open Go To. Tap the waiting agent’s name to jump directly.
 In the Go To sheet, working agents appear first, followed by agents that need you. Idle and done agents follow, most recently changed first.
 Go To uses Herdr’s own change order within the connected session. Workspace, tab, and pane navigation follow the list.
 Search Go To by agent, terminal title, pane, workspace, or tab. Words can match across fields.
@@ -179,7 +187,6 @@ Clients on the destination tab share its selected pane.
 In Go To, tap **Find in Terminal** to search the focused pane’s retained Herdr history.
 Find opens the newest match with its surrounding text. **Older** and **Newer** wrap between matches.
 **Copy match** copies the terminal’s original text. **Done** returns to the live terminal at its current position.
-Ghostty and the cell renderer use the same host history.
 
 Tap **Compose** to edit a multiline draft on the phone. Paste it into the named terminal when ready.
 Copy a screenshot, then tap **Paste** beside **Screenshot**. Review its thumbnail, add an optional note, and confirm the destination.
@@ -243,6 +250,19 @@ Set `SPACEPORT_TEST_ATTENTION_SESSION` to that name. The test starts in Mission 
 When running xcodebuild from a shell, prefix the variables with `TEST_RUNNER_`.
 For the fold test, open an iPhone Duo simulator in Device Hub and unfold it.
 Run `just test-ios-duo SIMULATOR_UDID` with the five SSH fixture variables and the Duo session set.
+At the three Scout prompts, report the requested state from a second shell on the fixture host.
+Set `session` to the disposable Duo session. Run one report per prompt, in the order shown:
+
+```sh
+scout=$(herdr --session "$session" agent list | jq -er '.result.agents[] | select(.agent == "Scout") | .pane_id')
+report_scout() {
+    herdr --session "$session" pane report-agent "$scout" --source mobile-qa --agent Scout --state "$1" --seq "$2"
+}
+report_scout blocked 2
+report_scout working 3
+report_scout blocked 4
+```
+
 Close the Duo when XCTest requests it, then open it at the next prompt.
 The test sends a single reply to the fixture’s Reviewer pane across both transitions.
 Close and reopen the Duo again when XCTest prompts with an unsent draft in the composer.

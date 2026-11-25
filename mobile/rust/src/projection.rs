@@ -77,6 +77,8 @@ pub struct MobilePane {
     pub idle_onset_observed: bool,
     #[uniffi(default = None)]
     pub terminal_title: Option<String>,
+    #[uniffi(default = None)]
+    pub agent_identity: Option<String>,
 }
 
 #[derive(Clone, uniffi::Record)]
@@ -564,6 +566,10 @@ impl Projection {
                         .and_then(|a| self.idle.get(&a.pane_id))
                         .filter(|_| self.is_active());
                     MobilePane {
+                        agent_identity: agent
+                            .and_then(|a| a.agent.as_ref())
+                            .filter(|identity| identity.len() <= 256)
+                            .cloned(),
                         terminal_title: agent.and_then(spaceport_truncate::agent_terminal_title),
                         idle_first_observed_ms: idle.map(|age| age.first_observed_ms),
                         idle_onset_observed: idle.is_some_and(|age| age.onset_observed),

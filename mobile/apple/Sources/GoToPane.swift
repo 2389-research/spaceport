@@ -43,10 +43,25 @@ enum PaneActivity {
         }
     }
 
-    var dot: some View {
+    var dot: some View { dot(in: color) }
+
+    private func dot(in color: Color) -> some View {
         Circle().fill(self == .idle ? Color.clear : color)
             .overlay { if self == .idle { Circle().strokeBorder(color, lineWidth: 1.5) } }
             .frame(width: 9, height: 9).accessibilityHidden(true)
+    }
+
+    func agentDot(in color: Color) -> some View {
+        dot(in: color).modifier(AgentDotMotion(activity: self))
+    }
+
+    func pulse(reduceMotion: Bool, scene: ScenePhase) -> AgentPulse? {
+        guard !reduceMotion, scene == .active else { return nil }
+        switch self {
+        case .working: return .working
+        case .blocked: return .waiting
+        case .idle: return nil
+        }
     }
 
     var textColor: Color {
@@ -59,12 +74,60 @@ enum PaneActivity {
     }
 }
 
+enum AgentPulse {
+    case working, waiting
+
+    @KeyframesBuilder<Double> var opacity: some Keyframes<Double> {
+        if self == .working {
+            LinearKeyframe(0.52, duration: 1.2, timingCurve: .easeInOut)
+            LinearKeyframe(1, duration: 1.2, timingCurve: .easeInOut)
+        } else {
+            LinearKeyframe(0.58, duration: 0.22, timingCurve: .easeInOut)
+            LinearKeyframe(1, duration: 0.22, timingCurve: .easeInOut)
+            LinearKeyframe(0.58, duration: 0.28, timingCurve: .easeInOut)
+            LinearKeyframe(1, duration: 0.22, timingCurve: .easeInOut)
+            LinearKeyframe(1, duration: 2.5)
+        }
+    }
+}
+
+private struct AgentDotMotion: ViewModifier {
+    let activity: PaneActivity
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scene
+
+    func body(content: Content) -> some View {
+        if let pulse = activity.pulse(reduceMotion: reduceMotion, scene: scene) {
+            content.keyframeAnimator(initialValue: 1.0) { dot, opacity in
+                dot.opacity(opacity)
+            } keyframes: { _ in pulse.opacity }
+            .id(pulse)
+        } else {
+            content
+        }
+    }
+}
+
 struct GoToPane: Identifiable {
     let workspace: MobileWorkspace
     let tab: MobileTab
     let pane: MobilePane
     var id: String { pane.id }
     var location: String { [workspace.label, tab.label].joined(separator: " › ") }
+
+    var sidebarAge: String? {
+        switch PaneActivity(pane.status) {
+        case .blocked: return "now"
+        case .working: return "live"
+        case .idle:
+            let now = HomeAgent.milliseconds(.now)
+            guard let first = pane.idleFirstObservedMs,
+                  idleAgeGroup(firstObservedMs: first, onsetObserved: pane.idleOnsetObserved, confirmedAtMs: now) != .unplaced
+            else { return nil }
+            return HomeAgent.idleLabel(elapsedMs: now >= first ? now - first : 0, observedOnset: pane.idleOnsetObserved)
+        case nil: return nil
+        }
+    }
 
     static func agents(workspaces: [MobileWorkspace], tabs: [MobileTab], panes: [MobilePane]) -> [Self] {
         destinations(workspaces: workspaces, tabs: tabs, panes: panes).filter { $0.pane.agentName != nil }.sorted { lhs, rhs in

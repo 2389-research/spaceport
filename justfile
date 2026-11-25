@@ -70,7 +70,9 @@ test-ios-duo $device:
     ./mobile/build-apple --release
     xcodebuild test -project mobile/apple/SpaceportMobile.xcodeproj -scheme SpaceportMobile \
         -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO \
-        -only-testing:SpaceportMobileUITests/SessionWorkflowTests/testDuoKeepsReviewerInputWhenFolding
+        -only-testing:SpaceportMobileUITests/SessionWorkflowTests/testDuoKeepsReviewerInputWhenFolding \
+        -only-testing:SpaceportMobileUITests/SessionWorkflowTests/testDuoTerminalControlsUseAvailableHeight \
+        -only-testing:SpaceportMobileUITests/SessionWorkflowTests/testHeaderHomeReturnsToSessionList
 
 # Explicit opt-in: launches and cleans up its own isolated daemon only.
 test-live binary:

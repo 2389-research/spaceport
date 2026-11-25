@@ -1,25 +1,12 @@
 // ABOUTME: Finds old shell output through the iOS UI against a disposable SSH host.
-// ABOUTME: Exercises both renderers, wrapped traversal, match copying, and return to live input.
+// ABOUTME: Checks wrapped traversal, match copying and return to live Ghostty input.
 import XCTest
 
 extension SessionWorkflowTests {
     @MainActor
-    func testFindInRetainedTerminalHistory() async throws {
-        try await exerciseTerminalHistory(ghostty: false)
-    }
-
-    @MainActor
     func testFindInGhosttyTerminalHistory() async throws {
-        try await exerciseTerminalHistory(ghostty: true)
-    }
-
-    @MainActor
-    private func exerciseTerminalHistory(ghostty: Bool) async throws {
         let app = XCUIApplication()
-        app.launchArguments += ["-useGhosttyTerminal", ghostty ? "YES" : "NO"]
-        let (terminal, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_HERDR_SESSION",
-                                        suffix: ghostty ? "-find-g" : "-find-c",
-                                        terminalIdentifier: ghostty ? "terminal.ghostty" : "Terminal display")
+        let (terminal, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_HERDR_SESSION", suffix: "-find-g")
         app.buttons["terminal.keyboard.toggle"].tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         let nonce = String(UUID().uuidString.prefix(5)).lowercased()
@@ -53,7 +40,7 @@ extension SessionWorkflowTests {
         await waitForSnippet("older-" + query)
         app.buttons["history.copy"].tap()
         XCTAssertTrue(app.buttons["history.copy"].label.contains("Copied"))
-        attachScreen(ghostty ? "Ghostty history match" : "Terminal history match", in: app)
+        attachScreen("Ghostty history match", in: app)
         app.buttons["history.done"].tap()
         XCTAssertTrue(app.buttons["session.navigation"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.navigationBars["Go To"].exists)

@@ -18,6 +18,7 @@ final class MobileConnection: ObservableObject {
     @Published var authorizeThisPhone = SecurePhoneKey.isAvailable
     @Published var enrollmentNotice: String?
     @Published var method: LoginMethod
+    private(set) var connectedUsing: LoginMethod?
     @Published var draft = TerminalDraft()
     @Published var password = ""
     @Published private(set) var phase: Phase = .credentials
@@ -165,6 +166,7 @@ final class MobileConnection: ObservableObject {
                 }.value
                 guard token == generation else { handle.disconnect(); return }
                 session = handle
+                connectedUsing = method
                 appliedViewport = size
                 pollUpdates(handle, token: token)
                 if authorizePhone { enroll(on: handle) }
@@ -224,8 +226,7 @@ final class MobileConnection: ObservableObject {
         polling = Task.detached(priority: .userInitiated) { [weak self] in
             var version = initialVersion
             while !Task.isCancelled {
-                let direct = UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty)
-                if let update = direct ? handle.pollForAttach(after: version) : handle.poll(after: version) {
+                if let update = handle.pollForAttach(after: version) {
                     version = update.version
                     await self?.receive(update, token: token)
                     if update.disconnected { break }
@@ -328,8 +329,7 @@ final class MobileConnection: ObservableObject {
     }
 
     func syncDirectPane() {
-        guard UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty),
-              phase == .ready, presentationID != nil, let view, let session,
+        guard phase == .ready, presentationID != nil, let view, let session,
               !view.goToPending, view.terminal == nil else { endDirectPane(); return }
         if let attached = directPane,
            attached.target.bootId != view.bootId || attached.target.paneId != view.focusedPane {
@@ -421,15 +421,13 @@ final class MobileConnection: ObservableObject {
         guard let image = draft.image, let target = draft.destination?.target,
               let session, acceptsInput(from: presentation), view?.inputTarget == target else { throw MobileError.StaleView }
         let direct = directPane
-        let useDirect = UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty) && target.popupId == nil
-        if useDirect && (direct?.target != target || direct?.failure != nil) { throw MobileError.TerminalUnavailable }
+        if target.popupId == nil && (direct?.target != target || direct?.failure != nil) { throw MobileError.TerminalUnavailable }
         let note = draft.text
         let staged = try await Task.detached(priority: .userInitiated) {
             try session.stageDraftImage(target: target, png: image.png)
         }.value
         try Task.checkCancellation()
         guard self.session === session, directPane === direct,
-              useDirect == (UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty) && target.popupId == nil),
               draft.image?.id == image.id, draft.text == note, draft.destination?.target == target,
               UIApplication.shared.applicationState == .active else { throw MobileError.StaleView }
         let path = staged.path()
@@ -447,7 +445,7 @@ final class MobileConnection: ObservableObject {
         guard acceptsInput(from: presentation) else { return false }
         guard let session, target == view?.inputTarget else { inputUnavailable(); return false }
         inputStatus = nil
-        if UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty), target.popupId == nil {
+        if target.popupId == nil {
             guard let directPane, directPane.target == target,
                   directPane.send(input) else { return false }
             recovery.allowRetry()
@@ -529,8 +527,7 @@ final class MobileConnection: ObservableObject {
                     do {
                         while !Task.isCancelled {
                             if try session.checkResume(bootId: parkedBoot, request: request) {
-                                let direct = UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty)
-                                let update = direct ? session.pollForAttach(after: 0) : session.poll(after: 0)
+                                let update = session.pollForAttach(after: 0)
                                 if let latest = update, !latest.disconnected, latest.bootId == parkedBoot {
                                     await self?.resumeVerified(session, latest: latest, token: token)
                                 } else {

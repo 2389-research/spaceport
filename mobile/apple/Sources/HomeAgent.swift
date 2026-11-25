@@ -59,14 +59,7 @@ struct HomeAgent: Identifiable {
             }
             if section != .idle, let first {
                 let elapsed = confirmed >= first ? confirmed - first : 0
-                let seconds = elapsed / 1_000
-                let value: String
-                switch seconds {
-                case ..<60: value = "<1m"
-                case ..<3_600: value = "\(seconds / 60)m"
-                default: value = "\(seconds / 3_600)h"
-                }
-                ageLabel = agent.idleOnsetObserved == true ? value : value + "+"
+                ageLabel = Self.idleLabel(elapsedMs: elapsed, observedOnset: agent.idleOnsetObserved == true)
                 sortValue = -Double(elapsed)
                 return
             }
@@ -75,7 +68,18 @@ struct HomeAgent: Identifiable {
         ageLabel = nil
     }
 
-    private static func milliseconds(_ date: Date) -> UInt64 {
+    static func idleLabel(elapsedMs: UInt64, observedOnset: Bool) -> String {
+        let seconds = elapsedMs / 1_000
+        let value: String
+        switch seconds {
+        case ..<60: value = "<1m"
+        case ..<3_600: value = "\(seconds / 60)m"
+        default: value = "\(seconds / 3_600)h"
+        }
+        return observedOnset ? value : value + "+"
+    }
+
+    static func milliseconds(_ date: Date) -> UInt64 {
         let ms = (date.timeIntervalSince1970 * 1_000).rounded()
         guard ms > 0, ms < Double(UInt64.max) else { return 0 }
         return UInt64(ms)

@@ -15,7 +15,8 @@ extension SessionStatusSnapshot {
                              paneId: row.id, name: name, status: row.pane.status, location: row.location,
                              stateChangeSeq: row.pane.stateChangeSeq, changeObservedAt: firstSeen ?? seenAt,
                              idleOnsetObserved: PaneActivity(row.pane.status) == .idle ? row.pane.idleOnsetObserved : nil,
-                             terminalTitle: row.pane.terminalTitle)
+                             terminalTitle: row.pane.terminalTitle, agentIdentity: row.pane.agentIdentity,
+                             workspaceLabelBytes: row.workspace.label.utf8.count)
         }
         // Save attention requests before applying the per-session cache limit.
         let ordered = rows.filter { $0.status == "blocked" } + rows.filter { $0.status != "blocked" }
