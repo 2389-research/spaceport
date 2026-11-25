@@ -12,10 +12,8 @@
 //! a status line needs arrive in [`Labels`], and every effect — the pasteboard,
 //! a bell, a sound, a toast — is the app's.
 
-pub mod activation;
 mod agent_recency;
 mod labels;
-mod navigation;
 pub mod notice;
 pub mod notifications;
 mod projection;
@@ -23,10 +21,11 @@ mod state;
 
 pub use agent_recency::AgentRecency;
 pub use labels::Labels;
-pub use navigation::{NavigationTarget, OwnedNavigationTarget};
 pub use notice::{Cause, HeldNotice, Notices};
 pub use notifications::{Notice, PENDING_LIMIT, Toasts, VISIBLE_LIMIT};
-pub use spaceport_activation::SurfaceActivation;
+pub use spaceport_activation as activation;
+pub use spaceport_activation::{Failure, Fence, SurfaceActivation, TIMEOUT, Transition};
+pub use spaceport_activation::{NavigationTarget, OwnedNavigationTarget};
 pub use state::{
     AnnouncementDismissal, Answer, ConnectionStatus, DialogResponse, LiveState,
     MAX_DAEMON_VERSION_CHARS, MAX_WINDOW_TITLE_CHARS, RenameResult,

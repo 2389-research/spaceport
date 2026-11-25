@@ -26,12 +26,11 @@
 //! means in its own language to its own user.
 
 mod fence;
-mod navigation;
 mod route;
 
 pub use fence::{Failure, Fence, SurfaceActivation, TIMEOUT, Transition};
-pub use navigation::{NavigationTarget, OwnedNavigationTarget};
 pub use route::{ROUTE_BUDGET, Route, Step};
+pub use spaceport_client::navigation::{NavigationTarget, OwnedNavigationTarget};
 
 #[cfg(test)]
 mod tests;
