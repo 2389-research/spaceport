@@ -18,7 +18,8 @@ fn catalog_retarget_forgets_the_previous_targets_failure(cx: &mut gpui::TestAppC
                         ClientEvent::VersionMismatch(VersionMismatch::DaemonOutdated {
                             server_version: None,
                         }),
-                        &crate::state::labels(),
+                        crate::state::describe,
+                        crate::state::localize,
                     );
                 }
                 state.missing_installation = failure == "missing";
@@ -27,7 +28,8 @@ fn catalog_retarget_forgets_the_previous_targets_failure(cx: &mut gpui::TestAppC
                         reason: "old target failed".into(),
                         ssh: None,
                     },
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
             }
             endpoint.poll(Instant::now());
@@ -68,7 +70,8 @@ fn stopping_a_worker_diagnostic_without_an_outage_starts_fresh() {
             reason: "attempt failed".into(),
             ssh: None,
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     endpoint.poll(Instant::now());
     assert_eq!(endpoint.phase(), Phase::Reconnecting);

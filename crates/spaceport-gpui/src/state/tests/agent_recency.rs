@@ -25,13 +25,19 @@ fn changes_on_different_daemons_order_as_they_arrive() {
     // says nothing about which of their agents changed last.
     first.apply(
         ClientEvent::Snapshot(agents("one", &[("a", 50)])),
-        &labels(),
+        describe,
+        localize,
     );
-    second.apply(ClientEvent::Snapshot(agents("two", &[("b", 2)])), &labels());
+    second.apply(
+        ClientEvent::Snapshot(agents("two", &[("b", 2)])),
+        describe,
+        localize,
+    );
     assert!(second.agent_recency.of("b") > first.agent_recency.of("a"));
     first.apply(
         ClientEvent::Snapshot(agents("one", &[("a", 51)])),
-        &labels(),
+        describe,
+        localize,
     );
     assert!(first.agent_recency.of("a") > second.agent_recency.of("b"));
 }
@@ -41,13 +47,15 @@ fn only_a_changed_agent_is_restamped_and_older_changes_stamp_first() {
     let mut state = LiveState::default();
     state.apply(
         ClientEvent::Snapshot(agents("boot", &[("late", 7), ("early", 3)])),
-        &labels(),
+        describe,
+        localize,
     );
     let late = state.agent_recency.of("late");
     assert!(late > state.agent_recency.of("early"));
     state.apply(
         ClientEvent::Snapshot(agents("boot", &[("late", 7), ("early", 8)])),
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!(state.agent_recency.of("late"), late);
     assert!(state.agent_recency.of("early") > late);
@@ -58,11 +66,13 @@ fn history_ends_with_its_pane_boot_or_connection() {
     let mut state = LiveState::default();
     state.apply(
         ClientEvent::Snapshot(agents("boot", &[("kept", 1), ("closed", 2)])),
-        &labels(),
+        describe,
+        localize,
     );
     state.apply(
         ClientEvent::Snapshot(agents("boot", &[("kept", 1)])),
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!(state.agent_recency.of("closed"), 0);
     let kept = state.agent_recency.of("kept");
@@ -70,7 +80,8 @@ fn history_ends_with_its_pane_boot_or_connection() {
     // A restarted daemon reuses pane IDs for unrelated panes.
     state.apply(
         ClientEvent::Snapshot(agents("rebooted", &[("kept", 1)])),
-        &labels(),
+        describe,
+        localize,
     );
     assert!(state.agent_recency.of("kept") > kept);
     state.apply(
@@ -78,7 +89,8 @@ fn history_ends_with_its_pane_boot_or_connection() {
             reason: "gone".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!(state.agent_recency, AgentRecency::default());
 }

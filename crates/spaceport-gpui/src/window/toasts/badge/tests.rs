@@ -6,7 +6,7 @@ fn notice(title: &str, agent: Option<&str>, kind: SemanticNotificationKind) -> N
     let mut wire = notification(title);
     wire.agent = agent.map(Into::into);
     wire.kind = kind;
-    Notice::new(wire, Instant::now(), &crate::state::labels())
+    Notice::new(wire, Instant::now())
 }
 
 #[test]

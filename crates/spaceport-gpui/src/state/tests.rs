@@ -2,7 +2,6 @@
 // ABOUTME: Shares snapshots and surfaces across focused state regression topics.
 use super::*;
 use crate::i18n::fl;
-use crate::state::labels;
 use spaceport_client::{
     ClientEvent, SurfaceImages,
     protocol::{ClientShellSnapshot, FrameData, PaneSurfaceFrame, ServerMessage},

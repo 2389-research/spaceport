@@ -93,10 +93,11 @@ fn activation_recovers(cx: &mut gpui::TestAppContext, initial: bool) {
                     assert_eq!(request["method"], Method::ClientShellSurfaceSet.as_str());
                     // Deposit the surface and release its lock before the
                     // acknowledgement wakes the reader-driven projection wait.
-                    inbox
-                        .lock()
-                        .unwrap()
-                        .apply(ClientEvent::Surface(frame), &crate::state::labels());
+                    inbox.lock().unwrap().apply(
+                        ClientEvent::Surface(frame),
+                        crate::state::describe,
+                        crate::state::localize,
+                    );
                     background_commands::acknowledge_activation(&mut server, &request);
                     return server;
                 }

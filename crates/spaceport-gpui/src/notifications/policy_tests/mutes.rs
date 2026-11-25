@@ -58,9 +58,7 @@ fn a_notice_naming_only_its_pane_follows_the_pane_into_a_muted_tab() {
     event.workspace_id = None;
     event.tab_id = None;
     // Sent before the snapshot lists its parents to the notice.
-    endpoints[1]
-        .toasts
-        .receive([Notice::new(event, now, &crate::state::labels())]);
+    endpoints[1].toasts.receive([Notice::new(event, now)]);
     tick_muted(&mut endpoints, config(0), &mutes, now);
     assert!(endpoints[1].toasts.entries.is_empty());
 }
@@ -157,7 +155,7 @@ fn previews_and_local_feedback_show_whatever_is_muted() {
     preview.title = "preview".into();
     endpoints[1]
         .toasts
-        .receive([Notice::new(preview, now, &crate::state::labels()).preview()]);
+        .receive([Notice::new(preview, now).preview()]);
     tick_muted(&mut endpoints, config(0), &mutes, now);
     assert_eq!(visible(&endpoints), ["preview"]);
 }

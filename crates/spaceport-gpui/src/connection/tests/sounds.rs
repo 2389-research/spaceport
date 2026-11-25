@@ -39,7 +39,8 @@ fn live(status: AgentStatus) -> LiveState {
     let mut live = LiveState::default();
     live.apply(
         ClientEvent::Snapshot(Arc::new(snapshot)),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     live
 }
@@ -69,12 +70,14 @@ fn bridge_moves_bounded_notifications_and_reload_once() {
             event.title = i.to_string();
             state.apply(
                 ClientEvent::Message(ServerMessage::SemanticNotification(event)),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
         }
         state.apply(
             ClientEvent::Message(ServerMessage::ReloadSoundConfig),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
     }
     let first = bridge.take_update().unwrap();
@@ -107,14 +110,19 @@ fn disconnect_boot_and_detach_cancel_pending_and_queued_generations() {
         if boot_change {
             let mut snapshot = state.snapshot.clone().unwrap();
             Arc::make_mut(&mut snapshot).boot_id = "new-boot".into();
-            state.apply(ClientEvent::Snapshot(snapshot), &crate::state::labels());
+            state.apply(
+                ClientEvent::Snapshot(snapshot),
+                crate::state::describe,
+                crate::state::localize,
+            );
         } else {
             state.apply(
                 ClientEvent::Disconnected {
                     reason: "test".into(),
                     ssh: None,
                 },
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
         }
         assert!(token.load(Ordering::Acquire));
@@ -135,7 +143,8 @@ fn disconnect_boot_and_detach_cancel_pending_and_queued_generations() {
     assert!(token.load(Ordering::Acquire));
     old.lock().unwrap().apply(
         ClientEvent::Message(ServerMessage::SemanticNotification(event(Kind::Custom))),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert!(bridge.take_update().unwrap().sound_events.is_empty());
     let token = bridge.inbox.lock().unwrap().sound_cancel.clone();

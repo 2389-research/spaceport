@@ -42,8 +42,6 @@ pub(crate) fn tick(
     use spaceport_client::protocol::{AgentStatus, SemanticNotificationKind as Kind};
     let delivery = config.delivery();
     let system = delivery == Delivery::System;
-    // The words a notice resolves itself with, read once for the whole pass.
-    let words = crate::state::labels();
     let mut changed = false;
     for (index, endpoint) in endpoints.iter_mut().enumerate() {
         // Resolved before the toasts are mutated: `Host::live` borrows the whole
@@ -78,7 +76,7 @@ pub(crate) fn tick(
                         return false;
                     }
                     if !n.initialized && now <= n.arrived + GRACE {
-                        n.initialize(s, &words);
+                        n.initialize(s, crate::state::describe);
                     }
                 }
                 // A posted notice is past muting: it only answers its click.

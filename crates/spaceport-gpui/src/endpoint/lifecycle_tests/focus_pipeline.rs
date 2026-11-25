@@ -73,11 +73,13 @@ fn navigate_with_early_activation(
             let mut inbox = view.endpoints[0].connection.inbox.lock().unwrap();
             inbox.apply(
                 ClientEvent::Snapshot(Arc::new(next.clone())),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
             inbox.apply(
                 ClientEvent::Surface(surface(&next)),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
         }
         project_until(view, cx, "projection at the activation floor", |view| {

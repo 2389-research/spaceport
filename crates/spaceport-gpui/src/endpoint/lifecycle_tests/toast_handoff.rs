@@ -11,13 +11,11 @@ fn newer_same_endpoint_navigation_cannot_replay_a_pending_toast(cx: &mut gpui::T
     let mut wire = crate::notifications::tests::notification("older intent");
     wire.workspace_id = Some("w1".into());
     wire.pane_id = Some("w1:p1".into());
-    endpoint.toasts.receive([crate::notifications::Notice::new(
-        wire,
-        Instant::now(),
-        &crate::state::labels(),
-    )
-    .with_snapshot(endpoint.live().snapshot.as_deref(), &crate::state::labels())
-    .preview()]);
+    endpoint
+        .toasts
+        .receive([crate::notifications::Notice::new(wire, Instant::now())
+            .with_snapshot(endpoint.live().snapshot.as_deref(), crate::state::describe)
+            .preview()]);
     view.update(cx, |view, cx| {
         view.endpoints[0].detach_for_test();
         view.endpoints.push(endpoint);
@@ -75,11 +73,13 @@ fn newer_same_endpoint_navigation_cannot_replay_a_pending_toast(cx: &mut gpui::T
         let mut state = inbox.lock().unwrap();
         state.apply(
             ClientEvent::Snapshot(Arc::new(next.clone())),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         state.apply(
             ClientEvent::Surface(surface(&next)),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
     }
     view.update(cx, |view, cx| {
@@ -133,13 +133,11 @@ fn toast_handoff_retains_busy_validation_and_revalidates_before_queueing(
         endpoint.initial_surface = already_active;
         let mut wire = crate::notifications::tests::notification("handoff");
         wire.workspace_id = Some("w1".into());
-        endpoint.toasts.receive([crate::notifications::Notice::new(
-            wire,
-            Instant::now(),
-            &crate::state::labels(),
-        )
-        .with_snapshot(endpoint.live().snapshot.as_deref(), &crate::state::labels())
-        .preview()]);
+        endpoint
+            .toasts
+            .receive([crate::notifications::Notice::new(wire, Instant::now())
+                .with_snapshot(endpoint.live().snapshot.as_deref(), crate::state::describe)
+                .preview()]);
         view.update(cx, |view, cx| {
             view.selected_endpoint = 0;
             view.endpoints.truncate(1);
@@ -248,13 +246,11 @@ fn accepted_toast_survives_expiry_but_not_invalidation(cx: &mut gpui::TestAppCon
         let mut wire = crate::notifications::tests::notification("accepted");
         wire.workspace_id = Some("w1".into());
         wire.pane_id = Some("w1:p1".into());
-        endpoint.toasts.receive([crate::notifications::Notice::new(
-            wire.clone(),
-            Instant::now(),
-            &crate::state::labels(),
-        )
-        .with_snapshot(endpoint.live().snapshot.as_deref(), &crate::state::labels())
-        .preview()]);
+        endpoint.toasts.receive([
+            crate::notifications::Notice::new(wire.clone(), Instant::now())
+                .with_snapshot(endpoint.live().snapshot.as_deref(), crate::state::describe)
+                .preview(),
+        ]);
         view.update(cx, |view, cx| {
             view.selected_endpoint = 0;
             view.endpoints.truncate(1);
@@ -288,7 +284,8 @@ fn accepted_toast_survives_expiry_but_not_invalidation(cx: &mut gpui::TestAppCon
                     // Revalidate against an undrained replacement, not just the UI queue.
                     inbox.lock().unwrap().apply(
                         ClientEvent::Message(ServerMessage::SemanticNotification(wire)),
-                        &crate::state::labels(),
+                        crate::state::describe,
+                        crate::state::localize,
                     );
                 }
                 "boot" => {
@@ -303,14 +300,16 @@ fn accepted_toast_survives_expiry_but_not_invalidation(cx: &mut gpui::TestAppCon
                     let mut state = inbox.lock().unwrap();
                     state.apply(
                         ClientEvent::Message(ServerMessage::SemanticNotification(wire)),
-                        &crate::state::labels(),
+                        crate::state::describe,
+                        crate::state::localize,
                     );
                     for _ in 0..crate::notifications::PENDING_LIMIT {
                         state.apply(
                             ClientEvent::Message(ServerMessage::SemanticNotification(
                                 crate::notifications::tests::notification("other"),
                             )),
-                            &crate::state::labels(),
+                            crate::state::describe,
+                            crate::state::localize,
                         );
                     }
                 }
@@ -376,13 +375,11 @@ fn toast_handoff_defers_a_contended_source_without_activating_destination(
     let target_handle = target.connection.handle.clone().unwrap();
     let mut wire = crate::notifications::tests::notification("target");
     wire.workspace_id = Some("w1".into());
-    target.toasts.receive([crate::notifications::Notice::new(
-        wire,
-        Instant::now(),
-        &crate::state::labels(),
-    )
-    .with_snapshot(target.live().snapshot.as_deref(), &crate::state::labels())
-    .preview()]);
+    target
+        .toasts
+        .receive([crate::notifications::Notice::new(wire, Instant::now())
+            .with_snapshot(target.live().snapshot.as_deref(), crate::state::describe)
+            .preview()]);
     let held = source_inbox.lock().unwrap();
     view.update(cx, |view, cx| {
         view.endpoints[0].detach_for_test();
@@ -437,7 +434,7 @@ fn toast_handoff_defers_a_contended_source_without_activating_destination(
     source_inbox.lock().unwrap().apply(ClientEvent::Response {
         request_id: request["id"].as_str().unwrap().into(),
         response: serde_json::json!({"result": {"type": "client_shell_surface_set", "active": false, "projection_revision": 7}}),
-    }, &crate::state::labels());
+    }, crate::state::describe, crate::state::localize);
     view.update(cx, |view, cx| {
         project_until(view, cx, "source release acknowledged", |view| {
             view.endpoints[2].initial_surface

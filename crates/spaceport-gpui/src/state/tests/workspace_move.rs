@@ -20,10 +20,11 @@ fn the_single_workspace_move_follows_each_welcome() {
     let mut state = LiveState::default();
     state.apply(
         welcome(&["workspace.move_block", "workspace.move"]),
-        &labels(),
+        describe,
+        localize,
     );
     assert!(state.supports_workspace_move);
     // A reconnect to a daemon without it forgets the previous answer.
-    state.apply(welcome(&["workspace.move_block"]), &labels());
+    state.apply(welcome(&["workspace.move_block"]), describe, localize);
     assert!(!state.supports_workspace_move);
 }

@@ -38,7 +38,8 @@ fn first_snapshot_counts_existing_attention_without_surface_or_notifications(
             initial.agents[1].agent_status = AgentStatus::Blocked;
             view.endpoints[0].live_mut().apply(
                 spaceport_client::ClientEvent::Snapshot(Arc::new(initial.clone())),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
             assert!(view.endpoints[0].live().surface.is_none());
             assert!(view.endpoints[0].live().notifications.is_empty());
@@ -49,7 +50,8 @@ fn first_snapshot_counts_existing_attention_without_surface_or_notifications(
             initial.agents[0].agent_status = AgentStatus::Idle;
             view.endpoints[0].live_mut().apply(
                 spaceport_client::ClientEvent::Snapshot(Arc::new(initial)),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
             sync(id, &view.endpoints, cx);
             assert_eq!(cx.global::<Badge>().published, Some(1));

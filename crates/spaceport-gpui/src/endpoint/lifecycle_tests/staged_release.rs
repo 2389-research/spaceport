@@ -20,7 +20,8 @@ fn releasing_a_surface_publishes_metadata_that_no_longer_needs_matching_cells(
         let inbox = view.endpoints[1].connection.inbox.clone();
         inbox.lock().unwrap().apply(
             ClientEvent::Snapshot(Arc::new(next)),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         project_until(view, cx, "staged metadata", |view| {
             view.live.pending_snapshot.is_some()

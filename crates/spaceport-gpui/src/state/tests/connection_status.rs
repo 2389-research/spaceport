@@ -16,7 +16,8 @@ fn rejected_dialog_command_preserves_connection_diagnostic() {
             request_id: Some("create".into()),
             reason: spaceport_client::Error::Disconnected,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!(
         status_text(&state, None, Instant::now()),
@@ -48,7 +49,8 @@ fn untracked_daemon_errors_remain_visible_as_readable_messages() {
                 request_id: "input".into(),
                 response: serde_json::json!({"error": payload}),
             },
-            &labels(),
+            describe,
+            localize,
         );
         assert_eq!(
             status_text(&state, None, Instant::now()),
@@ -67,12 +69,13 @@ fn missing_installation_survives_disconnect_but_clears_on_success() {
             reason: "Herdr not found".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert!(state.missing_installation);
     state.set_outer_focus(true);
     assert!(state.missing_installation);
-    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot()), describe, localize);
     assert!(!state.missing_installation);
 }
 
@@ -89,7 +92,7 @@ fn daemon_loader_stops_on_success_or_failure() {
         status_text(&state, Some("old input error"), Instant::now()),
         "Starting Herdr server..."
     );
-    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot()), describe, localize);
     assert_eq!(state.status, ConnectionStatus::Connected);
 
     state.daemon_starting();
@@ -98,7 +101,8 @@ fn daemon_loader_stops_on_success_or_failure() {
             reason: "startup failed".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!(state.status, ConnectionStatus::Disconnected);
     assert_eq!(state.notices.text(), Some("startup failed"));
@@ -113,7 +117,7 @@ fn connection_status_and_error_priority_follow_lifecycle() {
         status_text(&state, Some("old input error"), Instant::now()),
         "Connecting..."
     );
-    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot()), describe, localize);
     assert!(state.status.is_connected());
     assert_eq!(
         status_text(&state, Some("input error"), Instant::now()),
@@ -124,7 +128,8 @@ fn connection_status_and_error_priority_follow_lifecycle() {
             reason: "socket closed".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert!(!state.status.is_connected());
     assert_eq!(
@@ -153,14 +158,16 @@ fn late_untracked_refusal_preserves_disconnection_reason() {
             reason: "socket closed".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
     state.apply(
         ClientEvent::CommandRejected {
             request_id: None,
             reason: spaceport_client::Error::Disconnected,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!(
         status_text(&state, None, Instant::now()),

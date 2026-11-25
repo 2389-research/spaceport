@@ -50,24 +50,30 @@ fn daemon_status_reaches_the_sidebar_unchanged() {
         AgentStatus::Blocked,
     ] {
         let snapshot = agent_snapshot(status, 10);
-        state.apply(ClientEvent::Snapshot(snapshot.clone()), &labels());
-        state.apply(ClientEvent::Surface(agent_surface(&snapshot)), &labels());
+        state.apply(ClientEvent::Snapshot(snapshot.clone()), describe, localize);
+        state.apply(
+            ClientEvent::Surface(agent_surface(&snapshot)),
+            describe,
+            localize,
+        );
         assert_status(&state, status);
     }
     let mut reboot = agent_snapshot(AgentStatus::Done, 100);
     Arc::make_mut(&mut reboot).boot_id = "new-boot".into();
-    state.apply(ClientEvent::Snapshot(reboot), &labels());
+    state.apply(ClientEvent::Snapshot(reboot), describe, localize);
     assert_status(&state, AgentStatus::Done);
     state.apply(
         ClientEvent::Disconnected {
             reason: "test".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
     state.apply(
         ClientEvent::Snapshot(agent_snapshot(AgentStatus::Done, 200)),
-        &labels(),
+        describe,
+        localize,
     );
     assert_status(&state, AgentStatus::Done);
 }
@@ -79,7 +85,8 @@ fn agent_view_projection_is_a_query_not_an_activity_override() {
     let mut state = LiveState::default();
     state.apply(
         ClientEvent::Snapshot(agent_snapshot(AgentStatus::Idle, 7)),
-        &labels(),
+        describe,
+        localize,
     );
     state.apply(
         ClientEvent::Message(ServerMessage::EndpointControl {
@@ -89,7 +96,8 @@ fn agent_view_projection_is_a_query_not_an_activity_override() {
             )
             .into(),
         }),
-        &labels(),
+        describe,
+        localize,
     );
     assert_status(&state, AgentStatus::Idle);
 }

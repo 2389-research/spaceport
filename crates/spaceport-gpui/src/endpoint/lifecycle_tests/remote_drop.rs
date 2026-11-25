@@ -105,7 +105,8 @@ fn a_refusal_only_the_user_can_fix_waits_the_longest_retry_delay() {
                 reason: error.clone(),
                 ssh: Some(failure),
             },
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         endpoint.connection.handle.as_ref().unwrap().disconnect();
         let now = Instant::now();
@@ -212,7 +213,8 @@ fn a_refusal_that_arrives_after_its_stop_still_waits_the_longest_delay() {
             reason: error.clone(),
             ssh: Some(SshFailure::HostKey),
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     let arrived = dropped + Duration::from_millis(16);
     endpoint.poll(arrived);

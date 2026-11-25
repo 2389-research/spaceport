@@ -70,12 +70,11 @@ fn connected_split_drag_sends_coalesced_ratios_and_stops_on_layout_change(
             }];
             // Projections of later answers must keep presenting this layout.
             let surface = view.live.surface.clone().unwrap();
-            view.endpoints[1]
-                .connection
-                .inbox
-                .lock()
-                .unwrap()
-                .apply(ClientEvent::Surface(surface), &crate::state::labels());
+            view.endpoints[1].connection.inbox.lock().unwrap().apply(
+                ClientEvent::Surface(surface),
+                crate::state::describe,
+                crate::state::localize,
+            );
             // Beside the border the pane keeps the pointer, even one that
             // reports mouse input; on it, the border wins.
             assert_eq!(view.split_cursor_at(mouse_position(view, 39.9, 5.)), None);

@@ -149,7 +149,8 @@ fn endpoint_status_replaces_and_disconnect_clears() {
     }];
     live.apply(
         spaceport_client::ClientEvent::Snapshot(std::sync::Arc::new(remote)),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert_eq!(StatusText::live(&live).text, "Remote usage");
     live.apply(
@@ -157,7 +158,8 @@ fn endpoint_status_replaces_and_disconnect_clears() {
             reason: spaceport_client::Error::Disconnected.to_string(),
             ssh: None,
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert!(StatusText::live(&live).text.is_empty());
 }

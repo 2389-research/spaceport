@@ -16,13 +16,11 @@ fn noticed(
     let mut wire = crate::notifications::tests::notification("fenced");
     wire.workspace_id = Some("w1".into());
     wire.pane_id = Some("w1:p1".into());
-    endpoint.toasts.receive([crate::notifications::Notice::new(
-        wire,
-        Instant::now(),
-        &crate::state::labels(),
-    )
-    .with_snapshot(endpoint.live().snapshot.as_deref(), &crate::state::labels())
-    .preview()]);
+    endpoint
+        .toasts
+        .receive([crate::notifications::Notice::new(wire, Instant::now())
+            .with_snapshot(endpoint.live().snapshot.as_deref(), crate::state::describe)
+            .preview()]);
     let inbox = endpoint.connection.inbox.clone();
     let generation = view.update(cx, |view, cx| {
         view.endpoints.truncate(1);

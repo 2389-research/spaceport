@@ -15,7 +15,8 @@ fn lose_herdr(endpoint: &mut Endpoint) {
             reason: MISSING.into(),
             ssh: None,
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
 }
 

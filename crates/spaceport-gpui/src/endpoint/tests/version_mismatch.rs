@@ -5,14 +5,16 @@ fn refuse(endpoint: &mut Endpoint, mismatch: VersionMismatch) {
     let mut inbox = endpoint.connection.inbox.lock().unwrap();
     inbox.apply(
         ClientEvent::VersionMismatch(mismatch),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     inbox.apply(
         ClientEvent::Disconnected {
             reason: "Herdr server 0.8.2 is too old".into(),
             ssh: None,
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
 }
 
@@ -37,12 +39,11 @@ fn refusal_survives_retries_until_a_handshake_is_accepted() {
         "../../../../spaceport-protocol/tests/fixtures/endpoint-welcome-v1.json"
     ))
     .unwrap();
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Connected(welcome), &crate::state::labels());
+    endpoint.connection.inbox.lock().unwrap().apply(
+        ClientEvent::Connected(welcome),
+        crate::state::describe,
+        crate::state::localize,
+    );
     endpoint.poll(Instant::now());
     assert_eq!(endpoint.version_mismatch().cloned(), None);
     assert_eq!(endpoint.status(), "online");

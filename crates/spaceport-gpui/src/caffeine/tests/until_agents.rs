@@ -120,7 +120,8 @@ fn a_window_reports_its_working_agents(cx: &mut gpui::TestAppContext) {
             busy.agents[0].agent_status = AgentStatus::Working;
             view.endpoints[0].live_mut().apply(
                 spaceport_client::ClientEvent::Snapshot(Arc::new(busy.clone())),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
             view.observe_agent_work(window, cx);
             assert!(working(cx));
@@ -131,7 +132,8 @@ fn a_window_reports_its_working_agents(cx: &mut gpui::TestAppContext) {
             }
             view.endpoints[0].live_mut().apply(
                 spaceport_client::ClientEvent::Snapshot(Arc::new(busy)),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
             view.observe_agent_work(window, cx);
             assert!(!working(cx));

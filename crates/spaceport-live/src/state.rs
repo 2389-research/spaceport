@@ -1,17 +1,20 @@
 // ABOUTME: Reduces ordered connection events into the window's displayed state.
 // ABOUTME: Keeps snapshot and surface revisions coherent for rendering.
 //! A connection's live state, as the window reads it: what the daemon last
-//! said, the fences over it, and the mailboxes the window drains. Every word a
-//! notice says arrives in [`Labels`]; nothing here reads a message catalog.
+//! said, the fences over it, and the mailboxes the window drains. The notices
+//! it raises word themselves; the two things they cannot — a client error's
+//! wording, and what an agent notice is about — arrive as [`Describe`] and
+//! [`Localize`].
 use crate::{
-    Labels,
     activation::{self, Fence},
     agent_recency::AgentRecency,
+    words::{Describe, Localize},
 };
 use spaceport_client::{
     ClientEvent, Method, SurfaceImages,
     protocol::{ClientShellSnapshot, PaneSurfaceFrame, ServerMessage},
 };
+use spaceport_i18n::fl;
 use std::sync::Arc;
 
 /// A command's answer: the response body, or the daemon error that refused it.
@@ -476,7 +479,7 @@ impl LiveState {
         self.outer_focused = Some(focused);
     }
 
-    pub fn apply(&mut self, event: ClientEvent, labels: &Labels) {
+    pub fn apply(&mut self, event: ClientEvent, describe: Describe, localize: Localize) {
         match event {
             // Ahead of the handshake it belongs to, which is what shows the
             // notice; a connection refused before it marks nothing.
@@ -514,10 +517,8 @@ impl LiveState {
                 self.status = ConnectionStatus::AwaitingSnapshot;
                 self.notices.clear();
                 if self.host_keys_unverified {
-                    self.notices.show(
-                        crate::notice::Cause::HostKey,
-                        labels.host_key_unverified.clone(),
-                    );
+                    self.notices
+                        .show(crate::notice::Cause::HostKey, fl!("state-host-key-unverified"));
                 }
             }
             ClientEvent::Snapshot(snapshot) => self.receive_snapshot(snapshot),
@@ -558,7 +559,7 @@ impl LiveState {
                     .is_some_and(|id| self.has_operation_result(id))
                 {
                     self.notices
-                        .show(crate::notice::Cause::Daemon, (labels.localize)(&reason));
+                        .show(crate::notice::Cause::Daemon, localize(&reason));
                 }
                 let reason = Arc::new(reason);
                 for (id, result) in [&mut self.dialog_response, &mut self.script_response]
@@ -616,16 +617,14 @@ impl LiveState {
                 if matches!(self.activation, Fence::Failed { cause: activation::Failure::InvalidResponse, .. })
                     && self.activation.request().is_some_and(|request| request.request == request_id)
                 {
-                    self.notices.show(
-                        crate::notice::Cause::Activation,
-                        labels.activation_invalid.clone(),
-                    );
+                    self.notices
+                        .show(crate::notice::Cause::Activation, fl!("state-activation-invalid"));
                 }
                 if let Some(refusal) = &refusal
                     && !self.has_operation_result(&request_id)
                 {
                     self.notices
-                        .show(crate::notice::Cause::Daemon, (labels.localize)(refusal));
+                        .show(crate::notice::Cause::Daemon, localize(refusal));
                 }
                 if self.dismissal_request(&request_id) && refusal.is_some() {
                     self.announcement_dismissal = None;
@@ -663,8 +662,8 @@ impl LiveState {
                     // A dropped event may have invalidated an already displayed pane.
                     self.notifications_lost = true;
                 }
-                let notice = crate::notifications::Notice::new(notification, received, labels)
-                    .with_snapshot(self.latest_snapshot().map(Arc::as_ref), labels);
+                let notice = crate::notifications::Notice::new(notification, received)
+                    .with_snapshot(self.latest_snapshot().map(Arc::as_ref), describe);
                 self.notifications.push_back(notice);
             }
             ClientEvent::Message(ServerMessage::ReloadSoundConfig) => {

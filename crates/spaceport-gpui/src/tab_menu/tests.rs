@@ -314,13 +314,13 @@ fn rename_response_is_correlated_and_survives_surface_invalidation(cx: &mut Test
             view.live.apply(ClientEvent::Response {
                 request_id: "unrelated".into(),
                 response: json!({"error":"unrelated failure"}),
-            }, &crate::state::labels());
+            }, crate::state::describe, crate::state::localize);
             view.poll_tab_rename(window, cx);
             assert!(view.menu.tab.as_ref().unwrap().pending.is_some());
             view.live.apply(ClientEvent::CommandRejected {
                 request_id: Some("rename-1".into()),
                 reason: spaceport_client::Error::UnsupportedMethod,
-            }, &crate::state::labels());
+            }, crate::state::describe, crate::state::localize);
             view.poll_tab_rename(window, cx);
             assert_eq!(
                 view.menu.tab.as_ref().unwrap().error.as_deref(),
@@ -335,12 +335,12 @@ fn rename_response_is_correlated_and_survives_surface_invalidation(cx: &mut Test
             view.live.apply(ClientEvent::Response {
                 request_id: "rename-error".into(),
                 response: json!({"error":{"message":"Invalid label"}}),
-            }, &crate::state::labels());
+            }, crate::state::describe, crate::state::localize);
             // A later, unrelated response must not overwrite the modal's result.
             view.live.apply(ClientEvent::Response {
                 request_id: "other".into(),
                 response: json!({"result":{}}),
-            }, &crate::state::labels());
+            }, crate::state::describe, crate::state::localize);
             view.poll_tab_rename(window, cx);
             assert!(
                 view.menu
@@ -360,7 +360,7 @@ fn rename_response_is_correlated_and_survives_surface_invalidation(cx: &mut Test
             view.live.apply(ClientEvent::Response {
                 request_id: "rename-2".into(),
                 response: json!({"result":{}}),
-            }, &crate::state::labels());
+            }, crate::state::describe, crate::state::localize);
             assert!(!view.input_ready());
             view.poll_tab_rename(window, cx);
             assert!(view.menu.page.is_none());

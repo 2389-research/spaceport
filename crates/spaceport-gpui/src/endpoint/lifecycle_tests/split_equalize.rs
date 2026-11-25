@@ -58,12 +58,11 @@ fn with_borders<'a>(
             prepare_mouse(view, endpoint, cx);
             Arc::make_mut(view.live.surface.as_mut().unwrap()).splits = borders();
             let surface = view.live.surface.clone().unwrap();
-            view.endpoints[1]
-                .connection
-                .inbox
-                .lock()
-                .unwrap()
-                .apply(ClientEvent::Surface(surface), &crate::state::labels());
+            view.endpoints[1].connection.inbox.lock().unwrap().apply(
+                ClientEvent::Surface(surface),
+                crate::state::describe,
+                crate::state::localize,
+            );
         });
     });
     (view, server, cx)

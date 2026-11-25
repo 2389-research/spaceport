@@ -72,11 +72,13 @@ fn newer_choice(cx: &mut gpui::TestAppContext, choice: Choice) {
                 let mut state = view.endpoints[0].connection.inbox.lock().unwrap();
                 state.apply(
                     ClientEvent::Snapshot(Arc::new(shown.clone())),
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
                 state.apply(
                     ClientEvent::Surface(surface(&shown)),
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
             }
             project_until(view, cx, "surface after newer choice", |view| {

@@ -415,7 +415,8 @@ fn pane_rename_correlates_responses_and_preserves_other_dialogs(cx: &mut TestApp
                         request_id: "unrelated".into(),
                         response: json!({"error":"unrelated"}),
                     },
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
                 v.poll_pane_rename(window, cx);
                 assert!(v.menu.pane.as_ref().unwrap().pending.is_some());
@@ -425,7 +426,8 @@ fn pane_rename_correlates_responses_and_preserves_other_dialogs(cx: &mut TestApp
                             request_id: Some(outcome.into()),
                             reason: spaceport_client::Error::UnsupportedMethod,
                         },
-                        &crate::state::labels(),
+                        crate::state::describe,
+                        crate::state::localize,
                     );
                 } else {
                     v.live.apply(
@@ -437,7 +439,8 @@ fn pane_rename_correlates_responses_and_preserves_other_dialogs(cx: &mut TestApp
                                 json!({"error":{"message":"Invalid label"}})
                             },
                         },
-                        &crate::state::labels(),
+                        crate::state::describe,
+                        crate::state::localize,
                     );
                 }
                 v.live.apply(
@@ -445,7 +448,8 @@ fn pane_rename_correlates_responses_and_preserves_other_dialogs(cx: &mut TestApp
                         request_id: "removal".into(),
                         response: json!({"result":{}}),
                     },
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
                 // A rename response must survive an unrelated response and invalidated surface.
                 assert!(!v.input_ready());

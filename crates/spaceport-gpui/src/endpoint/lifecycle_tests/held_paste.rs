@@ -40,7 +40,8 @@ fn open_gap(
     frame.projection_revision = next.revision;
     view.endpoints[1].connection.inbox.lock().unwrap().apply(
         ClientEvent::Snapshot(Arc::new(next)),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     project_until(view, cx, "newer snapshot", |view| !view.input_ready());
     Arc::new(frame)
@@ -51,12 +52,11 @@ fn close_gap(
     cx: &mut Context<SpaceportWindow>,
     frame: Arc<PaneSurfaceFrame>,
 ) {
-    view.endpoints[1]
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Surface(frame), &crate::state::labels());
+    view.endpoints[1].connection.inbox.lock().unwrap().apply(
+        ClientEvent::Surface(frame),
+        crate::state::describe,
+        crate::state::localize,
+    );
     project_until(view, cx, "matching surface", SpaceportWindow::input_ready);
 }
 

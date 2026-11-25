@@ -37,7 +37,8 @@ fn receive(endpoint: &mut Endpoint, snapshot: ClientShellSnapshot) {
 fn receive_at(endpoint: &mut Endpoint, snapshot: ClientShellSnapshot, now: Instant) {
     endpoint.connection.inbox.lock().unwrap().apply(
         ClientEvent::Snapshot(Arc::new(snapshot)),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     endpoint.poll(now);
 }

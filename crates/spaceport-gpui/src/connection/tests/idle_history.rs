@@ -20,11 +20,13 @@ fn a_same_host_reset_keeps_confirmed_idle_without_sharing_the_retired_inbox() {
         let mut reader = retired.lock().unwrap();
         reader.apply(
             ClientEvent::Snapshot(snapshot(1, AgentStatus::Working)),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         reader.apply(
             ClientEvent::Snapshot(snapshot(2, AgentStatus::Idle)),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
     }
     let idle = bridge.take_update().unwrap().agent_idle("p0").unwrap();
@@ -33,14 +35,16 @@ fn a_same_host_reset_keeps_confirmed_idle_without_sharing_the_retired_inbox() {
     bridge.detach(true);
     reader.apply(
         ClientEvent::Snapshot(snapshot(3, AgentStatus::Working)),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     drop(reader);
 
     bridge.reset(ConnectionStatus::Connecting, true);
     bridge.inbox.lock().unwrap().apply(
         ClientEvent::Snapshot(snapshot(2, AgentStatus::Idle)),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert_eq!(bridge.take_update().unwrap().agent_idle("p0"), Some(idle));
 
@@ -48,7 +52,8 @@ fn a_same_host_reset_keeps_confirmed_idle_without_sharing_the_retired_inbox() {
     bridge.reset(ConnectionStatus::Connecting, true);
     bridge.inbox.lock().unwrap().apply(
         ClientEvent::Snapshot(snapshot(2, AgentStatus::Idle)),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert!(
         !bridge

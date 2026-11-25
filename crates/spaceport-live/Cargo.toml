@@ -13,6 +13,7 @@ workspace = true
 serde_json.workspace         = true
 spaceport-activation.workspace = true
 spaceport-client.workspace   = true
+spaceport-i18n.workspace     = true
 spaceport-osc52.workspace    = true
 spaceport-sound.workspace    = true
 # A dropped or oversized OSC 52 payload is logged and ignored.

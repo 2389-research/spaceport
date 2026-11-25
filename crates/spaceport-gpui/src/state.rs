@@ -3,8 +3,8 @@
 //! A connection's live state, as the window reads it. The value and the rules
 //! over it are `spaceport-live`'s (`docs/notes-endpoint-extraction.md`); this
 //! module is the path the rest of the window has always named them by, plus the
-//! words a crate below the app cannot read: the status bar's line, and the
-//! [`Labels`] every applied event writes its notices from.
+//! two words a crate below the app cannot read — what an agent notice is about,
+//! and a client error's wording — and the status bar's line.
 // i18n: migrated
 use crate::i18n::{Localize, fl};
 use std::time::Instant;
@@ -48,16 +48,13 @@ pub(crate) fn status_text(live: &LiveState, local_error: Option<&str>, now: Inst
     }
 }
 
-/// The words the live state writes into itself, in the language this window
-/// shows: read once for each event the reducer applies.
-pub(crate) fn labels() -> spaceport_live::Labels {
-    spaceport_live::Labels {
-        activation_invalid: fl!("state-activation-invalid"),
-        describe: crate::notifications::context::describe,
-        host_key_unverified: fl!("state-host-key-unverified"),
-        localize: |error: &spaceport_client::Error| error.localize(),
-        notification_untitled: fl!("notifications-untitled"),
-    }
+/// What an agent notice is about: its task and the place the sidebar names, read
+/// from the snapshot the window already holds.
+pub(crate) use crate::notifications::context::describe;
+
+/// A refused command as the person reading it sees it, by the error's variant.
+pub(crate) fn localize(error: &spaceport_client::Error) -> String {
+    error.localize()
 }
 
 #[cfg(test)]

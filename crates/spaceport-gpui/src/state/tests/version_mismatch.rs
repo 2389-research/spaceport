@@ -7,13 +7,18 @@ fn refusal_outlives_its_disconnect_and_clears_on_the_next_welcome() {
     let mismatch = VersionMismatch::DaemonOutdated {
         server_version: Some("0.8.2".into()),
     };
-    state.apply(ClientEvent::VersionMismatch(mismatch.clone()), &labels());
+    state.apply(
+        ClientEvent::VersionMismatch(mismatch.clone()),
+        describe,
+        localize,
+    );
     state.apply(
         ClientEvent::Disconnected {
             reason: "Herdr server 0.8.2 is too old".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!(state.version_mismatch, Some(mismatch));
     assert_eq!(state.status, ConnectionStatus::Disconnected);
@@ -26,6 +31,6 @@ fn refusal_outlives_its_disconnect_and_clears_on_the_next_welcome() {
         "../../../../spaceport-protocol/tests/fixtures/endpoint-welcome-v1.json"
     ))
     .unwrap();
-    state.apply(ClientEvent::Connected(welcome), &labels());
+    state.apply(ClientEvent::Connected(welcome), describe, localize);
     assert_eq!(state.version_mismatch, None);
 }

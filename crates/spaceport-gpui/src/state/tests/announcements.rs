@@ -2,7 +2,7 @@ use super::*;
 
 fn dismissed(request: &str) -> LiveState {
     let mut state = LiveState::default();
-    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot()), describe, localize);
     assert_eq!(
         state.product_announcement().map(|a| a.id.as_str()),
         Some("announcement-v1")
@@ -24,17 +24,18 @@ fn dismissed_announcement_stays_hidden_until_the_daemon_drops_it() {
             request_id: "dismiss-1".into(),
             response: serde_json::json!({"result": {"type": "ok"}}),
         },
-        &labels(),
+        describe,
+        localize,
     );
     // A snapshot that still carries it, sent before the daemon handled
     // the request, must not bring the card back.
-    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot()), describe, localize);
     assert!(state.product_announcement().is_none());
     assert!(state.notices.is_none());
 
     let mut dropped = (*snapshot()).clone();
     dropped.product_announcement = None;
-    state.apply(ClientEvent::Snapshot(Arc::new(dropped)), &labels());
+    state.apply(ClientEvent::Snapshot(Arc::new(dropped)), describe, localize);
     assert!(state.announcement_dismissal.is_none());
 
     // A new announcement is never covered by an old dismissal.
@@ -43,7 +44,7 @@ fn dismissed_announcement_stays_hidden_until_the_daemon_drops_it() {
         announcement.id = "announcement-v2".into();
     }
     let mut state = dismissed("dismiss-2");
-    state.apply(ClientEvent::Snapshot(Arc::new(next)), &labels());
+    state.apply(ClientEvent::Snapshot(Arc::new(next)), describe, localize);
     assert_eq!(
         state.product_announcement().map(|a| a.id.as_str()),
         Some("announcement-v2")
@@ -58,7 +59,8 @@ fn rejected_dismissal_shows_the_announcement_again() {
             request_id: "other".into(),
             response: serde_json::json!({"error": {"code": "x", "message": "y"}}),
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert!(state.product_announcement().is_none());
     state.notices.clear();
@@ -70,7 +72,8 @@ fn rejected_dismissal_shows_the_announcement_again() {
                 "message": "the product announcement is no longer current"
             }}),
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert!(state.product_announcement().is_some());
     // The card coming back is the feedback; the status line stays quiet.
@@ -82,7 +85,8 @@ fn rejected_dismissal_shows_the_announcement_again() {
             request_id: Some("dismiss-2".into()),
             reason: spaceport_client::Error::Disconnected,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert!(state.product_announcement().is_some());
 }

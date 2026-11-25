@@ -1,13 +1,15 @@
 //! The notices a connection's daemon sends, as bounded presentation data
 //! validated against a snapshot before anything acts on one: a click resolves
 //! its target through the same boot fence a toast uses. Which notice is shown
-//! when, and every word in it, are the app's.
+//! when is the app's.
 
-use crate::{Labels, NavigationTarget, OwnedNavigationTarget};
+use crate::words::Describe;
+use crate::{NavigationTarget, OwnedNavigationTarget};
 use spaceport_client::protocol::{
     ClientShellSnapshot, SemanticNotification, SemanticNotificationKind, ToastHerdrPosition,
 };
 use spaceport_client::text::safe_text;
+use spaceport_i18n::fl;
 use std::{
     collections::VecDeque,
     time::{Duration, Instant},
@@ -93,22 +95,14 @@ impl Notice {
 
     /// Feedback for a user action is not governed by daemon notification mutes,
     /// activity evidence, or focused-pane suppression. It still uses the queue.
-    pub fn local_feedback(
-        notification: SemanticNotification,
-        now: Instant,
-        labels: &Labels,
-    ) -> Self {
-        let mut notice = Self::new(notification, now, labels);
+    pub fn local_feedback(notification: SemanticNotification, now: Instant) -> Self {
+        let mut notice = Self::new(notification, now);
         notice.client_local = true;
         notice
     }
 
     #[cfg(any(target_os = "macos", target_os = "linux"))]
-    pub fn local_feedback_multiline(
-        mut notification: SemanticNotification,
-        now: Instant,
-        labels: &Labels,
-    ) -> Self {
+    pub fn local_feedback_multiline(mut notification: SemanticNotification, now: Instant) -> Self {
         // Local recovery instructions may put a copyable command on its own
         // line. Keep those line breaks, with the same scan bound and all other
         // control/direction characters removed as for daemon notifications.
@@ -122,7 +116,7 @@ impl Notice {
                     .collect::<String>()
             })
             .filter(|body| !body.trim().is_empty());
-        let mut notice = Self::local_feedback(notification, now, labels);
+        let mut notice = Self::local_feedback(notification, now);
         notice.body = body;
         notice
     }
@@ -184,7 +178,7 @@ impl Notice {
         }
     }
 
-    pub fn new(notification: SemanticNotification, now: Instant, labels: &Labels) -> Self {
+    pub fn new(notification: SemanticNotification, now: Instant) -> Self {
         let title = safe_text(&notification.title, 160);
         let suppression_target = notification
             .tab_id
@@ -198,7 +192,7 @@ impl Notice {
             });
         Self {
             title: if title.trim().is_empty() {
-                labels.notification_untitled.clone()
+                fl!("notifications-untitled")
             } else {
                 title
             },
@@ -234,17 +228,17 @@ impl Notice {
     pub fn with_snapshot(
         mut self,
         snapshot: Option<&ClientShellSnapshot>,
-        labels: &Labels,
+        describe: Describe,
     ) -> Self {
         if let Some(snapshot) = snapshot {
-            self.initialize(snapshot, labels);
+            self.initialize(snapshot, describe);
         }
         self
     }
 
     /// Resolves this notice against `snapshot`, retaining inferred parents too,
     /// so a later reparenting cannot retarget a click.
-    pub fn initialize(&mut self, snapshot: &ClientShellSnapshot, labels: &Labels) {
+    pub fn initialize(&mut self, snapshot: &ClientShellSnapshot, describe: Describe) {
         if self.initialized
             || self
                 .boot
@@ -280,7 +274,7 @@ impl Notice {
                 SemanticNotificationKind::NeedsAttention | SemanticNotificationKind::Finished
             )
             && let Some(pane) = self.pane_id.as_deref()
-            && let Some(body) = (labels.describe)(snapshot, pane)
+            && let Some(body) = describe(snapshot, pane)
         {
             self.body = Some(body);
             self.described = true;

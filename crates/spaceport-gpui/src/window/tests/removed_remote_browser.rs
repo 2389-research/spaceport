@@ -13,7 +13,8 @@ fn stale_remote_page_tokens_do_not_open_a_tab(cx: &mut gpui::TestAppContext) {
         view.endpoints[0].never_connect();
         view.endpoints[0].connection.inbox.lock().unwrap().apply(
             spaceport_client::ClientEvent::Snapshot(Arc::new(shown)),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
     });
     cx.update(|window, cx| view.update(cx, |view, cx| view.tick(window, cx)));

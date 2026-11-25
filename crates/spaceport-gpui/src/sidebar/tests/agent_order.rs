@@ -30,7 +30,8 @@ fn host(agents: &[(&str, AgentStatus)]) -> LiveState {
     let mut live = LiveState::default();
     live.apply(
         ClientEvent::Snapshot(listing(&agents)),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     live
 }
@@ -80,7 +81,8 @@ fn equal_attention_goes_to_the_latest_change_on_any_host() {
     // when the second has simply counted more changes.
     first.apply(
         ClientEvent::Snapshot(listing(&[("a", AgentStatus::Working, 2)])),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert_eq!(
         order(&[&first, &second], AgentSort::Priority),

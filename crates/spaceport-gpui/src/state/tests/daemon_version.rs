@@ -10,7 +10,7 @@ fn connected_event_records_and_sanitizes_daemon_version() {
         "../../../../spaceport-protocol/tests/fixtures/endpoint-welcome-v1.json"
     ))
     .unwrap();
-    state.apply(ClientEvent::Connected(welcome), &labels());
+    state.apply(ClientEvent::Connected(welcome), describe, localize);
     assert_eq!(state.daemon_version(), Some("0.8.2"));
 
     // Dirty controls and excess length get sanitized
@@ -20,7 +20,7 @@ fn connected_event_records_and_sanitizes_daemon_version() {
         ))
         .unwrap();
     dirty_welcome.server_version = format!(" \u{1b}[31m{}\n", "1".repeat(200));
-    state.apply(ClientEvent::Connected(dirty_welcome), &labels());
+    state.apply(ClientEvent::Connected(dirty_welcome), describe, localize);
     let version = state.daemon_version().unwrap();
     assert!(!version.contains('\u{1b}'));
     assert!(version.len() <= MAX_DAEMON_VERSION_CHARS);
@@ -32,7 +32,7 @@ fn mismatch_event_records_daemon_version() {
     let mismatch = VersionMismatch::DaemonOutdated {
         server_version: Some("0.7.9".into()),
     };
-    state.apply(ClientEvent::VersionMismatch(mismatch), &labels());
+    state.apply(ClientEvent::VersionMismatch(mismatch), describe, localize);
     assert_eq!(state.daemon_version(), Some("0.7.9"));
 }
 
@@ -43,7 +43,7 @@ fn disconnect_preserves_last_known_daemon_version() {
         "../../../../spaceport-protocol/tests/fixtures/endpoint-welcome-v1.json"
     ))
     .unwrap();
-    state.apply(ClientEvent::Connected(welcome), &labels());
+    state.apply(ClientEvent::Connected(welcome), describe, localize);
     assert_eq!(state.daemon_version(), Some("0.8.2"));
 
     state.apply(
@@ -51,7 +51,8 @@ fn disconnect_preserves_last_known_daemon_version() {
             reason: "Connection reset by peer".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
     // Still preserved after disconnection for report-issue
     assert_eq!(state.daemon_version(), Some("0.8.2"));

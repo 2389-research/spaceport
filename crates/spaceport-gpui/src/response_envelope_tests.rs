@@ -80,7 +80,8 @@ fn renamed(response: &Value, request: &str) -> String {
             request_id: request.into(),
             response: response.clone(),
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     let rename = match state.tab_rename.unwrap().result {
         None => "pending".into(),

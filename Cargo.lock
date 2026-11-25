@@ -6821,6 +6821,7 @@ dependencies = [
  "serde_json",
  "spaceport-activation",
  "spaceport-client",
+ "spaceport-i18n",
  "spaceport-osc52",
  "spaceport-sound",
  "tracing",
