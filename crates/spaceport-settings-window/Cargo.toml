@@ -16,7 +16,9 @@ spaceport-settings.workspace = true
 spaceport-widgets.workspace  = true
 
 [dev-dependencies]
-gpui               = { features = ["test-support"], workspace = true }
+gpui           = { features = ["test-support"], workspace = true }
+# `takes` checks the ids this crate names against the English messages.
+spaceport-i18n = { features = ["test-support"], workspace = true }
 spaceport-settings = { features = ["test-support"], workspace = true }
 # The kit's popovers report in place to a test build, as the app's tests see them.
 spaceport-widgets  = { features = ["test-support"], workspace = true }

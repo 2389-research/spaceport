@@ -2,10 +2,10 @@
 //! the way the app does.
 use super::*;
 use crate::scrollbar::{self, Pane};
-use crate::tests::navigation_labels;
 use core::prelude::v1::test;
 
 mod groups;
+mod ids;
 mod scroll;
 
 /// What the footer is told the window is doing.
@@ -41,12 +41,10 @@ impl Harness {
 impl Render for Harness {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = Theme::default();
-        let labels = navigation_labels();
         let view = cx.entity().downgrade();
         let select = view.clone();
         let column = sections(
             &theme,
-            labels,
             self.selected,
             &self.scroll,
             |_| None,
@@ -79,7 +77,6 @@ impl Render for Harness {
         );
         let nav = panel(
             &theme,
-            labels,
             px(184.),
             div().into_any_element(),
             div().into_any_element(),
@@ -91,14 +88,7 @@ impl Render for Harness {
             .flex()
             .flex_col()
             .child(div().flex_1().min_h_0().row().child(nav))
-            .child(footer(
-                &theme,
-                &status,
-                false,
-                labels,
-                |_, _, _| {},
-                |_, _, _| {},
-            ))
+            .child(footer(&theme, &status, false, |_, _, _| {}, |_, _, _| {}))
     }
 }
 

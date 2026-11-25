@@ -1,6 +1,5 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 use super::*;
-use crate::tests::labels;
 use core::prelude::v1::test;
 use spaceport_settings::Theme;
 use std::{
@@ -52,7 +51,6 @@ impl Render for Harness {
                 self.open
                     .as_ref()
                     .filter(|open| open.field == DropdownField::ToastPosition),
-                &labels(),
                 move |window, cx| {
                     opens.set(opens.get() + 1);
                     let _ = opener.update(cx, |this, cx| {
@@ -206,13 +204,13 @@ fn dropdown_opens_picks_and_dismisses(cx: &mut TestAppContext) {
     assert!(cx.debug_bounds("notif-position-control-option-0").is_none());
 }
 
-/// The words around Herdr's value are found from the app's template, so the
-/// value alone is what the button mutes.
+/// The words around Herdr's value are found from the message the kit uses, so
+/// the value alone is what the button mutes.
 #[test]
 fn follow_herdr_value_finds_the_value_in_the_message() {
-    let labels = labels();
-    let label = (labels.follow_herdr)().replace(VALUE_MARK, "Top left");
-    let value = follow_herdr_value(&labels, &label).unwrap();
+    let label = spaceport_i18n::fl!("settings-use-herdr", value = VALUE_MARK)
+        .replace(VALUE_MARK, "Top left");
+    let value = follow_herdr_value(&label).unwrap();
     assert_eq!(&label[value], "Top left");
-    assert_eq!(follow_herdr_value(&labels, "Top left"), None);
+    assert_eq!(follow_herdr_value("Top left"), None);
 }

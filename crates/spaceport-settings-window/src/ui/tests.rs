@@ -1,6 +1,5 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
-use crate::tests::labels;
 use core::prelude::v1::test;
 use spaceport_settings::Theme;
 use std::{cell::Cell, rc::Rc};
@@ -20,19 +19,15 @@ impl Render for Harness {
         let off_picked = self.off_picked.clone();
         div()
             .size_full()
-            .child(section(
-                &theme,
-                "Layout",
-                Some((Source::Herdr, "Herdr".into())),
-            ))
+            .child(section(&theme, "Layout", Some(Source::Herdr)))
             .child(
-                data_row(&theme, "row-a", "Indent", &labels())
+                data_row(&theme, "row-a", "Indent")
                     .description("Pixels per level")
                     .tag(Source::Spaceport)
                     .control(toggle(&theme, "toggle-a", self.checked, true)),
             )
             .child(
-                data_row(&theme, "row-b", "Off", &labels())
+                data_row(&theme, "row-b", "Off")
                     .description("Original")
                     .disabled("Read-only here")
                     .control(toggle(&theme, "toggle-b", false, false)),
@@ -115,16 +110,16 @@ fn rows_render_their_parts_and_segments_report_picks(cx: &mut TestAppContext) {
     assert_eq!(element_picked.get(), Some(2));
 }
 
-/// A tag is drawn from the app's word for the app that holds the setting.
+/// A tag is drawn from the crate's word for the app that holds the setting.
 #[gpui::test]
-fn a_tagged_row_draws_the_word_it_was_given(cx: &mut TestAppContext) {
+fn a_tagged_row_draws_the_tag_of_its_source(cx: &mut TestAppContext) {
     struct Tagged;
     impl Render for Tagged {
         fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
             let theme = Theme::default();
             div()
                 .size_full()
-                .child(data_row(&theme, "row-c", "Indent", &labels()).tag(Source::Herdr))
+                .child(data_row(&theme, "row-c", "Indent").tag(Source::Herdr))
         }
     }
     let (_, cx) = cx.add_window_view(|_, _| Tagged);

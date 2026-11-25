@@ -1,17 +1,17 @@
 //! Dropdown: a button that opens a floating option list beneath itself. The
 //! list renders inside the button's subtree via `deferred(anchored(..))`, so
 //! no bounds are passed around and it paints above the page.
-use crate::ui::Labels;
 use gpui::{prelude::*, *};
+use spaceport_i18n::fl;
 use spaceport_settings::fields::DropdownField;
 use spaceport_settings::{Theme, corners};
 use spaceport_widgets::direction::Logical;
 use spaceport_widgets::motion::pop_in;
 use std::{cell::RefCell, collections::HashSet, ops::Range, rc::Rc};
 
-/// Where Herdr's value goes in [`Labels::follow_herdr`]. Formatted around a
-/// character no value holds, so the message shows where the value sits in any
-/// language.
+/// Where Herdr's value goes in the message the kit uses for a label that
+/// follows Herdr. Formatted around a character no value holds, so the message
+/// shows where the value sits in any language.
 pub const VALUE_MARK: &str = "\u{0}";
 
 thread_local! {
@@ -74,7 +74,6 @@ pub fn dropdown(
     shared_prefix: bool,
     enabled: bool,
     open: Option<&Dropdown>,
-    labels: &Labels,
     on_open: impl Fn(&mut Window, &mut App) + 'static,
     on_pick: impl Fn(usize, &mut Window, &mut App) + 'static,
     on_dismiss: impl Fn(&mut Window, &mut App) + 'static,
@@ -85,7 +84,7 @@ pub fn dropdown(
     let on_dismiss = Rc::new(on_dismiss);
     let dismiss_button = on_dismiss.clone();
     let dismiss_list = on_dismiss;
-    let label_el = match follow_herdr_value(labels, &label).filter(|_| shared_prefix) {
+    let label_el = match follow_herdr_value(&label).filter(|_| shared_prefix) {
         // One line, so the words around Herdr's value stay a single message.
         Some(value) => {
             let muted = HighlightStyle {
@@ -202,8 +201,8 @@ pub fn popover_list(
 
 /// Where Herdr's value sits in a label that follows Herdr, so the button can
 /// mute the words around it.
-pub fn follow_herdr_value(labels: &Labels, label: &str) -> Option<Range<usize>> {
-    let template = (labels.follow_herdr)();
+pub fn follow_herdr_value(label: &str) -> Option<Range<usize>> {
+    let template = fl!("settings-use-herdr", value = VALUE_MARK);
     let (before, after) = template.split_once(VALUE_MARK)?;
     label.strip_prefix(before)?.strip_suffix(after)?;
     Some(before.len()..label.len() - after.len())

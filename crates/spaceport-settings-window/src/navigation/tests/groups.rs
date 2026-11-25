@@ -52,30 +52,7 @@ fn a_waiting_draft_offers_save_now_and_the_status_names_it(cx: &mut TestAppConte
     let reload = bounds(cx, "settings-footer-reload");
     assert!(save.right() <= reload.left(), "{save:?} before {reload:?}");
     assert_eq!(
-        view.read_with(cx, |harness, _| status_text(
-            &harness.drawn(),
-            navigation_labels()
-        )),
-        "settings-draft-theme unsaved"
+        view.read_with(cx, |harness, _| status_text(&harness.drawn())),
+        spaceport_i18n::fl!("settings-unsaved", drafts = "theme")
     );
-}
-
-/// An id this module draws but does not list would go unwritten in a language,
-/// so every one of them is listed.
-#[test]
-fn every_id_the_list_and_footer_name_is_listed_for_the_app() {
-    for id in [
-        SECTIONS,
-        SECTIONS_LABEL,
-        "settings-draft-theme",
-        "settings-draft-layout",
-        "settings-draft-sidebar",
-        "settings-loading",
-        "settings-saved",
-        "settings-unsaved",
-        "settings-save-now",
-        "settings-reload",
-    ] {
-        assert!(MESSAGE_IDS.contains(&id), "{id} is not in MESSAGE_IDS");
-    }
 }

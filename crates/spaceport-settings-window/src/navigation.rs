@@ -2,9 +2,10 @@
 //! the status line that says what is saved and what is not.
 //!
 //! The window keeps the state these draw — its chosen section, its scroll
-//! position, its drafts — and the app keeps every word they show.
+//! position, its drafts — and this crate words them, naming its own messages.
 
 use gpui::{prelude::*, *};
+use spaceport_i18n::{FluentValue, message};
 use spaceport_settings::section::{Group, Section};
 use spaceport_settings::{Theme, corners, mix};
 use spaceport_widgets::direction::Logical;
@@ -23,8 +24,9 @@ const UNSAVED: &str = "settings-unsaved";
 const SAVE_NOW: &str = "settings-save-now";
 const RELOAD: &str = "settings-reload";
 
-/// Every id this module names, for the app to word and to check.
-pub const MESSAGE_IDS: &[&str] = &[
+/// Every id this module names, so a test can check each is a message.
+#[cfg(test)]
+pub(crate) const MESSAGE_IDS: &[&str] = &[
     DRAFT_LAYOUT,
     DRAFT_SIDEBAR,
     DRAFT_THEME,
@@ -36,15 +38,6 @@ pub const MESSAGE_IDS: &[&str] = &[
     SECTIONS_LABEL,
     UNSAVED,
 ];
-
-/// The app's words: a message by id, and the message naming the drafts waiting.
-#[derive(Clone, Copy)]
-pub struct Labels {
-    /// A message by id, in the language the window shows.
-    pub message: fn(&'static str) -> String,
-    /// The message saying which drafts are waiting, around their names.
-    pub unsaved: fn(&str) -> String,
-}
 
 /// Which of the window's drafts are waiting to be written.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -68,10 +61,10 @@ impl Drafts {
 }
 
 /// The drafts waiting, named as the footer names them; empty when none are.
-fn pending(drafts: Drafts, labels: Labels) -> String {
+fn pending(drafts: Drafts) -> String {
     drafts
         .names()
-        .map(labels.message)
+        .map(|id| message(id, &[]))
         .collect::<Vec<_>>()
         .join(", ")
 }
@@ -86,20 +79,20 @@ pub struct Status<'a> {
 }
 
 /// What the status line says.
-pub fn status_text(status: &Status<'_>, labels: Labels) -> String {
+pub fn status_text(status: &Status<'_>) -> String {
     if let Some(error) = status.error {
         return error.to_owned();
     }
     if status.loading {
-        return (labels.message)(LOADING);
+        return message(LOADING, &[]);
     }
     if let Some(message) = status.message {
         return message.to_owned();
     }
-    let pending = pending(status.drafts, labels);
+    let pending = pending(status.drafts);
     match pending.is_empty() {
-        true => (labels.message)(SAVED),
-        false => (labels.unsaved)(&pending),
+        true => message(SAVED, &[]),
+        false => message(UNSAVED, &[("drafts", FluentValue::from(pending))]),
     }
 }
 
@@ -109,12 +102,11 @@ pub fn footer(
     theme: &Theme,
     status: &Status<'_>,
     busy: bool,
-    labels: Labels,
     on_save: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
     on_reload: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> Div {
-    let pending = pending(status.drafts, labels);
-    let text = status_text(status, labels);
+    let pending = pending(status.drafts);
+    let text = status_text(status);
     div()
         .flex_none()
         .min_h(px(36.))
@@ -145,23 +137,13 @@ pub fn footer(
         )
         .when(!pending.is_empty(), |footer| {
             footer.child(
-                footer_button(
-                    theme,
-                    "settings-footer-save",
-                    (labels.message)(SAVE_NOW),
-                    !busy,
-                )
-                .on_click(on_save),
+                footer_button(theme, "settings-footer-save", message(SAVE_NOW, &[]), !busy)
+                    .on_click(on_save),
             )
         })
         .child(
-            footer_button(
-                theme,
-                "settings-footer-reload",
-                (labels.message)(RELOAD),
-                true,
-            )
-            .on_click(on_reload),
+            footer_button(theme, "settings-footer-reload", message(RELOAD, &[]), true)
+                .on_click(on_reload),
         )
 }
 
@@ -177,7 +159,6 @@ fn footer_button(theme: &Theme, id: &'static str, label: String, enabled: bool) 
 /// elements.
 pub fn panel(
     theme: &Theme,
-    labels: Labels,
     width: Pixels,
     resize: AnyElement,
     search: AnyElement,
@@ -186,7 +167,7 @@ pub fn panel(
     div()
         .id("settings-navigation")
         .role(Role::Navigation)
-        .aria_label((labels.message)(SECTIONS_LABEL))
+        .aria_label(message(SECTIONS_LABEL, &[]))
         .relative()
         .w(width)
         .child(resize)
@@ -213,7 +194,6 @@ pub fn panel(
 /// where it painted; a build without those passes none.
 pub fn sections(
     theme: &Theme,
-    labels: Labels,
     selected: Section,
     handle: &ScrollHandle,
     probe: impl Fn(usize) -> Option<AnyElement>,
@@ -223,13 +203,13 @@ pub fn sections(
     let mut rows = Vec::new();
     for group in std::iter::once(None).chain(Group::ALL.map(Some)) {
         if let Some(group) = group {
-            rows.push(group_label(theme, labels, group).into_any_element());
+            rows.push(group_label(theme, group).into_any_element());
         }
         for (index, section) in Section::ALL.iter().copied().enumerate() {
             if section.group() != group {
                 continue;
             }
-            let mut row = section_row(theme, labels, index, section, section == selected);
+            let mut row = section_row(theme, index, section, section == selected);
             if let Some(probe) = probe(index) {
                 row = row.child(probe);
             }
@@ -245,7 +225,7 @@ pub fn sections(
         .debug_selector(|| "settings-sections".into())
         // Picking a section swaps the page beside it, as a tab does.
         .role(Role::TabList)
-        .aria_label((labels.message)(SECTIONS))
+        .aria_label(message(SECTIONS, &[]))
         .aria_orientation(Orientation::Vertical)
         .flex_1()
         .min_h_0()
@@ -259,14 +239,8 @@ pub fn sections(
 }
 
 /// One page's row: its mark and its name.
-fn section_row(
-    theme: &Theme,
-    labels: Labels,
-    index: usize,
-    section: Section,
-    selected: bool,
-) -> Stateful<Div> {
-    let name = (labels.message)(section.message());
+fn section_row(theme: &Theme, index: usize, section: Section, selected: bool) -> Stateful<Div> {
+    let name = message(section.message(), &[]);
     div()
         .id(("settings-section", index))
         .role(Role::Tab)
@@ -298,7 +272,7 @@ fn section_row(
 }
 
 /// A group's label, above its pages.
-fn group_label(theme: &Theme, labels: Labels, group: Group) -> Div {
+fn group_label(theme: &Theme, group: Group) -> Div {
     div()
         .debug_selector(move || format!("settings-group-{}", group.slug()))
         .px(px(10.))
@@ -306,7 +280,7 @@ fn group_label(theme: &Theme, labels: Labels, group: Group) -> Div {
         .pb(px(4.))
         .text_size(px(10.))
         .text_color(rgb(theme.subtext()))
-        .child((labels.message)(group.message()).to_uppercase())
+        .child(message(group.message(), &[]).to_uppercase())
 }
 
 #[cfg(test)]

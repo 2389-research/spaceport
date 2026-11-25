@@ -9,10 +9,10 @@
 //! shows, the scroll position and the saves stay on the window, which is the
 //! app's.
 //!
-//! No words: [`ui::Labels`] is the app's, so a row, a number's unit and a
-//! dropdown's label are drawn in the language the window shows without this
-//! crate naming one. [`ui::MESSAGE_IDS`] lists the ids it names for the app to
-//! word and to check.
+//! The words are this crate's: each builder names its own messages and reads
+//! them in the language the window shows, through `spaceport-i18n`. An id that
+//! arrives as data, such as a catalogued row's title, is read through
+//! `spaceport_i18n::message`.
 
 pub mod bounds;
 pub mod forms;
@@ -22,6 +22,3 @@ pub mod native;
 pub mod navigation;
 pub mod scrollbar;
 pub mod ui;
-
-#[cfg(test)]
-mod tests;
