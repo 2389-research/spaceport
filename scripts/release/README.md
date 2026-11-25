@@ -26,10 +26,11 @@ prerelease/build suffixes, or leading zeros.
 ## Spaceport macOS previews
 
 The separate `macos-preview.yml` workflow builds and signs **macOS arm64 previews only**.
-Pushing `vYYYYMMDD.COUNTER` as `harperreed` to `2389-research/spaceport` builds an
-optimized app, signs and notarizes it, and publishes a GitHub **prerelease** with
-the DMG and `SHA256SUMS`. Manual runs on main accept an exact commit SHA and an
-explicit version; they upload workflow artifacts without publishing a release.
+Any collaborator with write access to `2389-research/spaceport` may push
+`vYYYYMMDD.COUNTER`; the tag builds an optimized app, signs and notarizes it, and
+publishes a GitHub **prerelease** with the DMG and `SHA256SUMS`. Manual runs on
+main accept an exact commit SHA and an explicit version; they upload workflow
+artifacts without publishing a release.
 The [20261117.1 prerelease](https://github.com/2389-research/spaceport/releases/tag/v20261117.1)
 completed this route with Sparkle enabled.
 Its [qualification record](../../docs/spaceport/evidence/t12-macos-preview-20261117.1-signed.md)
@@ -70,8 +71,10 @@ branches and `v*` tags through its selected deployment rules. Restrict who can
 create or update those tags with repository access rules. The activated repository
 now belongs to `2389-research`; organization members inherit its repository
 permissions. The move retains the existing signing environment and its main/tag
-rules. Workflow eligibility still requires `harperreed` as both initiating and
-triggering actor. Review environment protection before expanding signing authority. Add these
+rules. Workflow eligibility names no login: any collaborator with write access
+may push a `v*` tag or dispatch the workflow on main. That access is the
+signing boundary, so required reviewers belong on the `macos-preview`
+environment in repository Settings. Add these
 **environment** values, never repository source files:
 
 | Kind | Name | Value |
@@ -471,7 +474,8 @@ write access also gives them that authority.
 The CI workflow accepts `pull_request` runs without requiring the PR author,
 original actor, or source repository to be the owner. An owner rerun only changes
 `github.triggering_actor`; approval does not change the other identities.
-Pushes and manual dispatches remain restricted to owner-triggered `main` runs.
+Pushes and manual dispatches name no login either: any collaborator's push or
+dispatch of `main` runs the full CI, and `check-ci.py` accepts whoever ran it.
 The final **Format, lint, and test** gate requires successful platform checks for
 code changes, and the macOS optimized builds on pull requests, and permits
 skipped platform jobs only for confirmed non-code edits.
@@ -483,7 +487,8 @@ must not persist credentials. Do not switch to `pull_request_target` to run PR
 code or add a privileged `workflow_run` consumer of PR artifacts. CI caches are
 public data: never place credentials in them. Release builds use their own
 workflow and must not consume fork-produced artifacts or caches; signing and
-publication retain their owner/main restrictions and protected environments.
+publication retain their main-only restrictions and the protected signing
+environment.
 
 After changing this policy, validate with a real external fork: confirm its run
 waits for approval, approve it and confirm the platform jobs execute, then push
