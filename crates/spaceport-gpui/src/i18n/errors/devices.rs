@@ -1,13 +1,16 @@
 //! Device menu failures, from `error-devices.ftl`.
 
 use super::Localize;
-use crate::{i18n::fl, menu::devices::Error};
+use crate::i18n::fl;
+use spaceport_remote::setup::Error;
 
 impl Localize for Error {
     fn localize(&self) -> String {
         match self {
             Self::Busy => fl!("error-devices-busy"),
+            Self::Client(error) => error.localize(),
             Self::InvalidLabel => fl!("error-devices-setup-label"),
+            Self::Io(error) => error.to_string(),
             Self::NoProfile => fl!("error-devices-setup-no-profile"),
             Self::Remove { status, detail } if detail.is_empty() => {
                 fl!("error-devices-remove", status = status.to_string())

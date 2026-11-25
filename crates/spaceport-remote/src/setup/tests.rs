@@ -13,7 +13,7 @@ fn a_claim_blocks_a_second_claim_until_released() -> Result<()> {
     let first = Claim::acquire(destination("claim.test"), "default")?;
     assert!(matches!(
         Claim::acquire(destination("claim.test"), "default"),
-        Err(crate::Error::Devices(Error::Busy))
+        Err(Error::Busy)
     ));
     // Another session on the same host is a different device.
     drop(Claim::acquire(destination("claim.test"), "work")?);
@@ -52,14 +52,14 @@ fn rename_passes_the_label_as_one_value_even_when_it_looks_like_a_flag() -> Resu
         0o700,
     )?;
     let id = "0123456789abcdef0123456789abcdef";
-    rename_with(binary.as_os_str(), id, "--work = box")?;
+    rename(binary.as_os_str(), id, "--work = box")?;
     assert_eq!(
         std::fs::read_to_string(&log)?,
         format!("machine|rename|{id}|--label=--work = box|")
     );
     assert!(matches!(
-        rename_with(binary.as_os_str(), "../x", "x"),
-        Err(crate::Error::Devices(Error::NoProfile))
+        rename(binary.as_os_str(), "../x", "x"),
+        Err(Error::NoProfile)
     ));
     std::fs::remove_dir_all(&root)?;
     Ok(())

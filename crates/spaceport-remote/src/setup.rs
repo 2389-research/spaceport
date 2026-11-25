@@ -1,9 +1,11 @@
 //! Edits to the saved device catalog, delegated to the installed Herdr CLI:
 //! removing and renaming a saved device, and the label a device is saved with.
-use super::Error;
-use crate::Result;
+mod error;
+
+pub use error::{Error, Result};
 use spaceport_client::Destination;
 use std::{
+    ffi::OsStr,
     io::Read,
     process::{Command, ExitStatus, Stdio},
     sync::Mutex,
@@ -22,7 +24,7 @@ static CLAIMS: Mutex<Vec<(Destination, String)>> = Mutex::new(Vec::new());
 /// This process is removing one host and session. Dropping it releases the
 /// host.
 #[derive(Debug)]
-pub(super) struct Claim {
+pub struct Claim {
     destination: Destination,
     session: String,
 }
@@ -39,7 +41,7 @@ impl Claim {
                 claims = claims.len(),
                 "Host is already claimed by this process"
             );
-            return Err(Error::Busy.into());
+            return Err(Error::Busy);
         }
         tracing::debug!(category = "device_claim", "Host claimed");
         claims.push((destination.clone(), session.to_owned()));
@@ -65,22 +67,19 @@ impl Drop for Claim {
 
 /// Claim a saved host while it is removed, so a second removal of the same
 /// host from this process cannot run at the same time. Blocks on `ssh -G`.
-pub(super) fn claim_saved(target: &str, session: &str) -> Result<Claim> {
+pub fn claim_saved(target: &str, session: &str) -> Result<Claim> {
     let destination = spaceport_client::resolve_destination(target)?;
     Claim::acquire(destination, session)
 }
 
-/// Forget a saved device with `herdr machine remove`. The CLI only edits the
-/// local catalog; it never connects, so the host's own Herdr keeps running.
-/// Blocks on a process: call it from the background executor.
-pub(super) fn remove(id: &str) -> Result<()> {
-    remove_with(crate::daemon::executable()?.as_os_str(), id)
-}
-
-fn remove_with(executable: &std::ffi::OsStr, id: &str) -> Result<()> {
+/// Forget a saved device with `herdr machine remove`, which only edits the
+/// local catalog: it never connects, so the host's own Herdr keeps running.
+/// `executable` is the installed CLI. Blocks on a process: call it from the
+/// background executor.
+pub fn remove(executable: &OsStr, id: &str) -> Result<()> {
     if !spaceport_client::valid_profile_id(id) {
         tracing::warn!(category = "device_remove", "Invalid profile ID");
-        return Err(Error::NoProfile.into());
+        return Err(Error::NoProfile);
     }
     let (status, _, stderr) = run_cli(executable, &["machine", "remove", id], REMOVE_TIMEOUT)?;
     if status.success() {
@@ -89,19 +88,14 @@ fn remove_with(executable: &std::ffi::OsStr, id: &str) -> Result<()> {
     Err(Error::Remove {
         status,
         detail: last_line(&stderr),
-    }
-    .into())
+    })
 }
 
 /// Rename a saved device with `herdr machine rename`, which edits only the
 /// local catalog. Blocks on a process: call it from the background executor.
-pub(super) fn rename(id: &str, label: &str) -> Result<()> {
-    rename_with(crate::daemon::executable()?.as_os_str(), id, label)
-}
-
-fn rename_with(executable: &std::ffi::OsStr, id: &str, label: &str) -> Result<()> {
+pub fn rename(executable: &OsStr, id: &str, label: &str) -> Result<()> {
     if !spaceport_client::valid_profile_id(id) {
-        return Err(Error::NoProfile.into());
+        return Err(Error::NoProfile);
     }
     // The `=` form keeps a label that starts with `-` from reading as a flag.
     let (status, _, stderr) = run_cli(
@@ -115,8 +109,7 @@ fn rename_with(executable: &std::ffi::OsStr, id: &str, label: &str) -> Result<()
     Err(Error::Rename {
         status,
         detail: last_line(&stderr),
-    }
-    .into())
+    })
 }
 
 /// Herdr caps device labels at this many bytes.
@@ -124,7 +117,7 @@ const LABEL_LIMIT: usize = 128;
 
 /// The label a device is saved or renamed with. An empty one names the device
 /// after its SSH target as typed, such as `user@host` or an address.
-pub(super) fn device_label(label: &str, target: &str) -> Result<String> {
+pub fn device_label(label: &str, target: &str) -> Result<String> {
     let label = label.trim();
     let label = if label.is_empty() {
         let target = target.trim();
@@ -139,7 +132,7 @@ pub(super) fn device_label(label: &str, target: &str) -> Result<String> {
         label
     };
     if label.is_empty() || label.len() > LABEL_LIMIT || label.chars().any(char::is_control) {
-        return Err(Error::InvalidLabel.into());
+        return Err(Error::InvalidLabel);
     }
     Ok(label.to_owned())
 }
@@ -152,7 +145,7 @@ const CATALOG_ROOTS: [&str; 3] = ["HERDR_CONFIG_PATH", "XDG_STATE_HOME", "XDG_CO
 /// environment, not launchd's, and this window's catalog. Blocks the first time the
 /// login environment is read: call it off the UI thread.
 fn cli_environment(command: &mut Command) {
-    crate::login_env::apply(command);
+    spaceport_client::login_env::apply(command);
     for key in CATALOG_ROOTS {
         match std::env::var_os(key) {
             Some(value) => command.env(key, value),
@@ -164,7 +157,7 @@ fn cli_environment(command: &mut Command) {
 /// Runs the CLI with closed stdin and a deadline, keeping bounded stdout and
 /// stderr.
 fn run_cli(
-    executable: &std::ffi::OsStr,
+    executable: &OsStr,
     args: &[&str],
     timeout: Duration,
 ) -> Result<(ExitStatus, Vec<u8>, Vec<u8>)> {
@@ -177,7 +170,7 @@ fn run_cli(
 /// returns `Error::SetupTimeout`. Blocks, also on the first login-environment
 /// lookup: call it from the background executor.
 fn run_bounded(
-    executable: &std::ffi::OsStr,
+    executable: &OsStr,
     args: &[&str],
     timeout: Duration,
     limit: u64,
@@ -207,7 +200,7 @@ fn run_bounded(
 }
 
 fn run_bounded_untraced(
-    executable: &std::ffi::OsStr,
+    executable: &OsStr,
     args: &[&str],
     timeout: Duration,
     limit: u64,
@@ -247,7 +240,7 @@ fn run_bounded_untraced(
     let status = match spaceport_client::wait::exit(&mut child, Instant::now() + timeout, || false)?
     {
         spaceport_client::wait::Exit::Exited(status) => status,
-        spaceport_client::wait::Exit::Stopped(_) => return Err(Error::SetupTimeout.into()),
+        spaceport_client::wait::Exit::Stopped(_) => return Err(Error::SetupTimeout),
     };
     let stdout = stdout.join().unwrap_or_default();
     let stderr = stderr.join().unwrap_or_default();

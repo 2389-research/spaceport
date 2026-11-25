@@ -13,6 +13,7 @@ workspace = true
 spaceport-client.workspace        = true
 serde.workspace                  = true
 thiserror.workspace              = true
+tracing.workspace                = true
 
 [dev-dependencies]
 spaceport-client = { features = ["test-support"], workspace = true }

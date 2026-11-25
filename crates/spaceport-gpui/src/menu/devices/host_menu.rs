@@ -4,7 +4,6 @@
 //! distribution's only offers its removal (see `wsl`). Local is always
 //! present, so it offers only its grouping and mute, and an explicit socket is
 //! not in the catalog.
-use super::setup;
 use crate::i18n::fl;
 use crate::{
     SpaceportWindow,
@@ -15,6 +14,7 @@ use crate::{
 use actions::{Action, LOCAL_ACTIONS, SSH_ACTIONS};
 use gpui::{prelude::*, *};
 use spaceport_client::ConnectTarget;
+use spaceport_remote::setup;
 
 /// The saved entry the menu acts on.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -324,8 +324,9 @@ impl SpaceportWindow {
                 // Offers no Remove.
                 Saved::Local => Ok(()),
                 Saved::Ssh { profile } => {
+                    let executable = crate::daemon::executable()?;
                     let _claim = setup::claim_saved(&target, &session)?;
-                    setup::remove(&profile)?;
+                    setup::remove(executable.as_os_str(), &profile)?;
                     Ok::<_, crate::Error>(())
                 } // Forget only the exact saved row; leave the machine running.
             }
@@ -654,7 +655,10 @@ fn rename(saved: &Saved, label: &str) -> crate::Result<()> {
     match saved {
         // Offers no Rename.
         Saved::Local => Ok(()),
-        Saved::Ssh { profile } => setup::rename(profile, label),
+        Saved::Ssh { profile } => {
+            setup::rename(crate::daemon::executable()?.as_os_str(), profile, label)?;
+            Ok(())
+        }
     }
 }
 
