@@ -3,6 +3,7 @@
 use super::transport::{HostKey, exec};
 use crate::MobileError;
 use russh::{ChannelMsg, client};
+use spaceport_client::staging::{DISCARD, RETAIN, RETAINED, is_staged_file, retain_script};
 use std::{
     sync::{Arc, Mutex, OnceLock, Weak},
     time::Duration,
@@ -16,28 +17,11 @@ use tokio::{
 const LIMIT: Duration = Duration::from_secs(45);
 const UNAVAILABLE: MobileError = MobileError::ImageTransfer;
 
+/// The name the staged file keeps inside its staging directory.
+const NAME: &str = "screenshot.png";
+
 fn command(size: usize) -> String {
-    // The acknowledgement arrives only after head exits. No read-ahead can consume it.
-    let script = format!(
-        r#"set -eu
-umask 077
-dir=$(mktemp -d /tmp/herdr-upload.XXXXXXXXXXXX)
-file="$dir/screenshot.png"
-trap 'rm -f "$file"; rmdir "$dir"' EXIT
-trap 'exit 1' HUP INT TERM
-head -c {size} > "$file"
-[ "$(wc -c < "$file")" -eq {size} ]
-printf '%s\n' "$file"
-IFS= read -r decision
-[ "$decision" = retain ]
-trap - EXIT
-printf 'retained\n'
-if IFS= read -r decision && [ "$decision" = discard ]; then
-    rm -f "$file"
-    rmdir "$dir"
-fi
-"#
-    );
+    let script = retain_script(NAME, size as u64);
     format!("exec /bin/sh -c {}", spaceport_client::shell_quote(&script))
 }
 
@@ -60,9 +44,7 @@ async fn read_line(channel: &mut russh::Channel<client::Msg>) -> Option<String> 
 }
 
 fn valid_path(path: &str) -> bool {
-    path.strip_prefix("/tmp/herdr-upload.")
-        .and_then(|s| s.strip_suffix("/screenshot.png"))
-        .is_some_and(|s| s.len() == 12 && s.bytes().all(|b| b.is_ascii_alphanumeric()))
+    is_staged_file(path, NAME)
 }
 
 #[derive(uniffi::Object)]
@@ -136,11 +118,14 @@ impl ImageStager {
                 Ok(Some(path)) => {
                     // If the SSH connection closes after this acknowledgement the path survives.
                     let retain = async {
-                        channel.data_bytes(b"retain\n".as_slice()).await.ok()?;
+                        channel
+                            .data_bytes(format!("{RETAIN}\n").into_bytes())
+                            .await
+                            .ok()?;
                         read_line(&mut channel).await
                     };
                     match timeout(LIMIT, retain).await {
-                        Ok(Some(ack)) if ack == "retained" => Ok(path),
+                        Ok(Some(ack)) if ack == RETAINED => Ok(path),
                         _ => Err(MobileError::ImageRetentionUnconfirmed),
                     }
                 }
@@ -161,7 +146,8 @@ impl ImageStager {
                 }
             };
             if !accepted {
-                let _ = timeout(LIMIT, channel.data_bytes(b"discard\n".as_slice())).await;
+                let discard = format!("{DISCARD}\n").into_bytes();
+                let _ = timeout(LIMIT, channel.data_bytes(discard)).await;
             }
             // Let the shell keep or clean up before closing the SSH channel.
             let _ = timeout(LIMIT, async {

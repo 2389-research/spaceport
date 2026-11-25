@@ -65,10 +65,18 @@ fn partial_transfer_is_never_offered_for_paste() {
 fn only_generated_absolute_screenshot_paths_can_reach_the_terminal() {
     let valid = "/tmp/herdr-upload.AbcD12345678/screenshot.png";
     assert!(valid_path(valid));
+    // The host resolves its own temporary directory, which macOS spells through
+    // the /private/tmp link, so the staging prefix is not a `/tmp` one.
+    assert!(valid_path(
+        "/private/tmp/herdr-upload.AbcD12345678/screenshot.png"
+    ));
     for path in [
         valid.replace("AbcD12345678", "../123456789"),
         valid.replace("AbcD12345678", "abc;rm -rf ~"),
-        valid.replace("/tmp/", "/private/"),
+        valid.replace("screenshot.png", "other.png"),
+        valid.replace("screenshot.png", "sub/screenshot.png"),
+        valid.replace("AbcD12345678", "short"),
+        valid.replace("AbcD12345678", "AbcD123456789"),
         format!("{valid}\nwhoami"),
         format!("{valid} extra"),
     ] {
