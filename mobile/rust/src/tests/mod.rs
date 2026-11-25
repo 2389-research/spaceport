@@ -265,3 +265,5 @@ mod resume;
 mod idle_evidence;
 
 mod direct_terminal;
+
+mod cell_fields;
