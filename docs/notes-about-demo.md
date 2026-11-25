@@ -15,9 +15,9 @@ is in release builds, and nothing in it makes a noise.
 always built — icon, name, version, publisher, repository link, summary,
 upstream credits, the unaffiliated line, a worktree build's branch and PR, the
 team links, the modifications and original-copyright lines, the license and
-notices links, OK — with every word unchanged. `render_about` now lays that
-column over `scene::stage`, which paints the scene behind it, and the plain
-panel is one environment variable away.
+notices links, OK — with every word unchanged. `render_about` hands that
+column to `scene::panel`, which lays it over `scene::stage` so the scene paints
+behind it, and hands it back untouched when the plain panel is asked for.
 
 The credits are ordinary text elements, laid out exactly as before: the scene
 paints under them and never stands in for them. Nothing in the scene carries an
@@ -98,9 +98,10 @@ SPACEPORT_ABOUT_CLASSIC=1 just run-debug
 
 `scene::classic()` honours the variable in development and test builds
 (`cfg!(debug_assertions)`) only, so every shipped build shows the scene and no
-user finds a second About box behind a variable. The plain panel keeps the same
-credits column, laid out by the same code, with no canvas and no marquee behind
-it.
+user finds a second About box behind a variable. `scene::panel` is the branch
+itself, so a test draws both panels through it and finds the stage and marquee
+only in the one that is shipped. The plain panel keeps the same credits
+column, laid out by the same code, with no canvas and no marquee behind it.
 
 ## What this change does not do
 

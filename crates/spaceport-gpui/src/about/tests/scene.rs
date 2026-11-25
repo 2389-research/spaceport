@@ -4,6 +4,7 @@
 use super::*;
 use crate::about::effects::LOOP;
 use crate::about::scene;
+use crate::config::Theme;
 use crate::sidebar::layout_tests::run_frames;
 use std::cell::Cell;
 use std::ffi::OsStr;
@@ -53,6 +54,39 @@ fn the_scene_reads_its_time_from_the_animation() {
         spaceport_motion::duration(Duration::from_secs_f32(LOOP)),
         Duration::from_secs_f32(LOOP)
     );
+}
+
+/// The panel the debug route asks for is the credits alone — no stage, no
+/// marquee — while the shipped panel keeps both behind the same column.
+#[gpui::test]
+fn the_plain_panel_draws_the_credits_without_a_stage(cx: &mut TestAppContext) {
+    for classic in [true, false] {
+        let (_, cx) = cx.add_window_view(|_, _| CreditsPanel { classic });
+        cx.simulate_resize(size(px(360.), px(600.)));
+        cx.update(|window, cx| window.draw(cx).clear(cx));
+        assert!(
+            cx.debug_bounds("about-credits").is_some(),
+            "the credits are drawn either way"
+        );
+        assert_eq!(cx.debug_bounds("about-scene").is_some(), !classic);
+        assert_eq!(cx.debug_bounds("about-marquee").is_some(), !classic);
+    }
+}
+
+/// The credits column a test lays out through the route the About box uses,
+/// with a marked placeholder standing in for the panel's own words.
+struct CreditsPanel {
+    classic: bool,
+}
+
+impl Render for CreditsPanel {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        let credits = div()
+            .debug_selector(|| "about-credits".into())
+            .w(px(320.))
+            .h(px(480.));
+        scene::panel(credits, &Theme::default(), 13., self.classic)
+    }
 }
 
 #[test]

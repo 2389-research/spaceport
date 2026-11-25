@@ -103,6 +103,15 @@ fn animation() -> Animation {
         .with_max_fps(FPS)
 }
 
+/// The box's panel: the credits alone when the plain panel was asked for,
+/// and the credits over the scene otherwise.
+pub(super) fn panel(credits: Div, theme: &Theme, text: f32, classic: bool) -> Div {
+    if classic {
+        return credits;
+    }
+    stage(credits, theme, text)
+}
+
 /// The credits laid over the scene, which paints behind them as decoration.
 pub(super) fn stage(credits: Div, theme: &Theme, text: f32) -> Div {
     let ink = Ink::of(theme);

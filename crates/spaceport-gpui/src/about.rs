@@ -46,10 +46,7 @@ impl SpaceportWindow {
 
     pub(super) fn render_about(&self, cx: &mut Context<Self>) -> Div {
         let credits = self.render_about_credits(cx);
-        if scene::classic() {
-            return credits;
-        }
-        scene::stage(credits, &self.theme, self.config.ui.size)
+        scene::panel(credits, &self.theme, self.config.ui.size, scene::classic())
     }
 
     /// The panel's own column: everything the box says. The stage's room
@@ -72,7 +69,7 @@ impl SpaceportWindow {
             .child(
                 div()
                     .debug_selector(|| "about-icon".into())
-                    .size(px(96.))
+                    .size(px(scene::MARK_SIZE))
                     .child(img(ICON.clone()).size_full()),
             )
             .child(
