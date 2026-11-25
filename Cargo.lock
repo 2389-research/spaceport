@@ -6953,6 +6953,7 @@ dependencies = [
  "serde_json",
  "spaceport-client",
  "spaceport-commands",
+ "spaceport-i18n",
  "spaceport-icons",
  "spaceport-motion",
  "spaceport-reorder",

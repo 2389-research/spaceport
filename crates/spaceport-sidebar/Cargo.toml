@@ -22,6 +22,7 @@ serde.workspace              = true
 serde_json.workspace         = true
 spaceport-client.workspace   = true
 spaceport-commands.workspace = true
+spaceport-i18n.workspace     = true
 spaceport-icons.workspace    = true
 spaceport-motion.workspace   = true
 spaceport-reorder.workspace  = true

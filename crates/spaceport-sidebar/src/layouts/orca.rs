@@ -8,7 +8,6 @@ use super::{
     super::{
         cell::{AgentRow, RowLayout, WorkspaceRow},
         metrics::{line_height, scaled},
-        paint::Word,
         row::{Elbow, RowContext, RowKind, RowState, RowTree, TokenLook, guide, token_column},
         tokens::ResolvedToken,
         wash::HostMark,
@@ -18,6 +17,7 @@ use super::{
 use crate::direction::Logical;
 use gpui::{prelude::*, *};
 use spaceport_client::protocol::AgentStatus;
+use spaceport_i18n::fl;
 use spaceport_settings::Theme;
 
 pub struct Orca;
@@ -193,7 +193,7 @@ impl RowLayout for Orca {
                 .bg(wash(theme.foreground, 0x0f))
                 .text_size(px(small))
                 .text_color(rgb(theme.subtext()))
-                .child(cx.painters.label(cx.painters.word(Word::Primary)))
+                .child(cx.painters.label(fl!("sidebar-primary")))
         });
         if !lines.is_empty() {
             let (mark, room) = configured_status(&lines, status, removing, cx);
