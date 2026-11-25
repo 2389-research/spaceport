@@ -2,9 +2,10 @@
 //! `spaceport-keymap`: the keys it reserves for its own menus, and how a
 //! `[pane_keys]` target reaches a pane.
 
-use super::*;
 use gpui::Keystroke;
-use spaceport_keymap::PaneKey;
+use spaceport_keymap::daemon::DaemonKeys;
+use spaceport_keymap::{Keymap, PaneKey, identity, parse_keystroke, typed_matches};
+use spaceport_settings::keys::{Binding, PaneKeys};
 use std::collections::{BTreeMap, HashMap};
 
 mod platform_defaults;

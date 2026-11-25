@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn alt_and_a_navigator_letter_choose_a_filter() {
-    let parse = |text| from_keystroke(&crate::keymap::parse_keystroke(text).unwrap());
+    let parse = |text| from_keystroke(&spaceport_keymap::parse_keystroke(text).unwrap());
     for (text, expected) in [
         ("alt-a", AgentFilter::All),
         ("alt-b", AgentFilter::Blocked),

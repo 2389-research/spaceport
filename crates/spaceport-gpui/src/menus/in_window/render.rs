@@ -164,7 +164,7 @@ impl SpaceportWindow {
                 binding
                     .keystrokes()
                     .iter()
-                    .map(|keystroke| keystroke.unparse(crate::keymap::HOST_OS))
+                    .map(|keystroke| keystroke.unparse(spaceport_keymap::HOST_OS))
                     .collect::<Vec<_>>()
                     .join(" ")
             })

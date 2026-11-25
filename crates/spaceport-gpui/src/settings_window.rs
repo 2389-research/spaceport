@@ -157,7 +157,7 @@ struct SettingsWindow {
     config: Config,
     /// The keymap `config` resolves into, so a published appearance carries a
     /// settings and keymap pair that always agree.
-    keymap: crate::keymap::Keymap,
+    keymap: spaceport_keymap::Keymap,
     /// The config as the last successful load read it, which sidebar saves
     /// diff against; previews change only `config`.
     loaded_config: Config,

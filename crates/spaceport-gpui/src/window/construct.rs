@@ -350,7 +350,7 @@ struct Startup {
     config: Config,
     error: Option<String>,
     indicators: sidebar::Indicators,
-    keymap: crate::keymap::Keymap,
+    keymap: spaceport_keymap::Keymap,
     theme: Theme,
 }
 

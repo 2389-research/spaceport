@@ -97,7 +97,7 @@ fn search_composition_enter_and_escape_cannot_save_or_discard_a_draft(cx: &mut T
         for key in ["enter", "escape"] {
             window.dispatch_event(
                 PlatformInput::KeyDown(KeyDownEvent {
-                    keystroke: crate::keymap::parse_keystroke(key).unwrap(),
+                    keystroke: spaceport_keymap::parse_keystroke(key).unwrap(),
                     is_held: false,
                     prefer_character_input: false,
                 }),

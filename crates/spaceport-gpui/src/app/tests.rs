@@ -4,9 +4,9 @@ use super::{Config, InitialAppearance, StartupAppearance, Theme};
 #[cfg(feature = "integration-test")]
 use super::{ConnectTarget, SpaceportWindow};
 use crate::config::LayoutMode;
-use crate::keymap::Keymap;
 #[cfg(feature = "integration-test")]
 use gpui::px;
+use spaceport_keymap::Keymap;
 
 #[cfg(feature = "integration-test")]
 mod core_window;

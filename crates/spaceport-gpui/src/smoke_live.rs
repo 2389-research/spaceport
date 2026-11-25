@@ -236,7 +236,7 @@ pub(crate) fn start(handle: WindowHandle<SpaceportWindow>, cx: &mut App) {
                         Key::Terminal(name) => name,
                     };
                     let before = view.read(cx).input_probe;
-                    let key = crate::keymap::parse_keystroke(name).with_context(|| format!("parsing keystroke {name}"))?;
+                    let key = spaceport_keymap::parse_keystroke(name).with_context(|| format!("parsing keystroke {name}"))?;
                     if !window.dispatch_keystroke(key, cx) { bail!("unhandled keystroke {name}"); }
                     let after = view.read(cx).input_probe;
                     let delivered = if matches!(input, Key::Command(_)) {

@@ -80,7 +80,7 @@ pub(super) async fn verify(handle: WindowHandle<SpaceportWindow>, cx: &mut Async
                     .map(|_| window.render_to_image())
                     .transpose()?;
                 let before = view.read(cx).input_probe;
-                window.dispatch_keystroke(crate::keymap::parse_keystroke("escape")?, cx);
+                window.dispatch_keystroke(spaceport_keymap::parse_keystroke("escape")?, cx);
                 let state = view.read(cx);
                 if state.menu.page == Some(Page::About)
                     || state.input_probe.text != before.text

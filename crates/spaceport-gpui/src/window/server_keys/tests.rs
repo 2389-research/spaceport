@@ -1,7 +1,7 @@
 use super::*;
-use crate::{Command, Error, keymap::Binding};
+use crate::{Command, Error};
 use gpui::{Entity, Keystroke, TestAppContext, VisualTestContext};
-use spaceport_settings::DeviceSettings;
+use spaceport_settings::{DeviceSettings, keys::Binding};
 use std::sync::Arc;
 
 const ID: &str = "0123456789abcdef0123456789abcdef";
@@ -9,7 +9,7 @@ const HOST: &str = "ssh:0123456789abcdef0123456789abcdef";
 const PROFILE: &str = "[keys]\nprefix = \"cmd+j\"\ntoggle_sidebar = \"prefix+cmd+b\"\n";
 
 fn key(text: &str) -> Keystroke {
-    crate::keymap::parse_keystroke(text).unwrap()
+    spaceport_keymap::parse_keystroke(text).unwrap()
 }
 
 /// A window with Local and one saved device, which is not enabled so the
@@ -132,9 +132,9 @@ fn an_unusable_profile_falls_back_to_local_and_says_why(cx: &mut TestAppContext)
             assert!(matches!(
                 view.server_keys.as_ref().unwrap().keymap,
                 Err(Error::Keymap(spaceport_keymap::Error::Daemon(
-                    crate::keymap::daemon::Error::Missing
-                        | crate::keymap::daemon::Error::Parse(_)
-                        | crate::keymap::daemon::Error::NoKeys
+                    spaceport_keymap::daemon::Error::Missing
+                        | spaceport_keymap::daemon::Error::Parse(_)
+                        | spaceport_keymap::daemon::Error::NoKeys
                 )))
             ));
         }

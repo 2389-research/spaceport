@@ -163,8 +163,8 @@ fn a_wrapped_link_is_resolved_and_underlined_without_a_click_leaving(
 
     // Movement within the delay leaves one request, for the latest cell.
     let elsewhere = at(&view, cx, 9, 2);
-    cx.simulate_mouse_move(elsewhere, None, crate::keymap::secondary_key());
-    cx.simulate_mouse_move(continuation, None, crate::keymap::secondary_key());
+    cx.simulate_mouse_move(elsewhere, None, spaceport_keymap::secondary_key());
+    cx.simulate_mouse_move(continuation, None, spaceport_keymap::secondary_key());
     resolve_after_delay(cx);
     let request = peer.request();
     assert_eq!(request["method"], "pane.link.resolve");
@@ -192,19 +192,19 @@ fn a_wrapped_link_is_resolved_and_underlined_without_a_click_leaving(
             vec![(0, 0..20), (1, 0..12)]
         );
         // The whole link is underlined, and a click would open nothing.
-        assert!(!view.terminal_link_hovered(continuation, crate::keymap::secondary_key()));
-        assert!(!view.link_modifier_held(continuation, crate::keymap::secondary_key()));
+        assert!(!view.terminal_link_hovered(continuation, spaceport_keymap::secondary_key()));
+        assert!(!view.link_modifier_held(continuation, spaceport_keymap::secondary_key()));
         assert!(
-            view.terminal_link_press(continuation, crate::keymap::secondary_key())
+            view.terminal_link_press(continuation, spaceport_keymap::secondary_key())
                 .is_none()
         );
     });
 
     // Moving along the link asks nothing new, and a click sends nothing.
     let first_row = at(&view, cx, 5, 0);
-    cx.simulate_mouse_move(first_row, None, crate::keymap::secondary_key());
+    cx.simulate_mouse_move(first_row, None, spaceport_keymap::secondary_key());
     resolve_after_delay(cx);
-    cx.simulate_click(continuation, crate::keymap::secondary_key());
+    cx.simulate_click(continuation, spaceport_keymap::secondary_key());
     cx.run_until_parked();
     assert!(cx.opened_url().is_none());
     view.read_with(cx, |view, _| assert!(view.links.resolving.is_none()));
@@ -243,7 +243,7 @@ fn a_daemon_without_link_methods_keeps_the_local_detector(cx: &mut gpui::TestApp
     let peer = MockPeer::new();
     let (view, cx) = window(&peer, false, cx);
     let link = at(&view, cx, 2, 0);
-    cx.simulate_mouse_move(link, None, crate::keymap::secondary_key());
+    cx.simulate_mouse_move(link, None, spaceport_keymap::secondary_key());
     resolve_after_delay(cx);
     view.read_with(cx, |view, _| {
         assert!(view.links.hover.is_none() && view.links.resolving.is_none());
@@ -253,13 +253,13 @@ fn a_daemon_without_link_methods_keeps_the_local_detector(cx: &mut gpui::TestApp
     let continuation = at(&view, cx, 2, 1);
     for position in [link, continuation] {
         view.read_with(cx, |view, _| {
-            assert!(!view.terminal_link_hovered(position, crate::keymap::secondary_key()));
+            assert!(!view.terminal_link_hovered(position, spaceport_keymap::secondary_key()));
             assert!(
                 view.terminal_link_press(position, Modifiers::default())
                     .is_none()
             );
         });
-        cx.simulate_click(position, crate::keymap::secondary_key());
+        cx.simulate_click(position, spaceport_keymap::secondary_key());
     }
     assert!(cx.opened_url().is_none());
 }
@@ -269,7 +269,7 @@ fn a_replaced_connection_retires_a_link_resolve_unanswered(cx: &mut gpui::TestAp
     let mut peer = MockPeer::advertising(&["pane.link.resolve"]);
     let (view, cx) = window(&peer, true, cx);
     let continuation = at(&view, cx, 2, 1);
-    cx.simulate_mouse_move(continuation, None, crate::keymap::secondary_key());
+    cx.simulate_mouse_move(continuation, None, spaceport_keymap::secondary_key());
     resolve_after_delay(cx);
     assert_eq!(peer.request()["method"], "pane.link.resolve");
     view.update(cx, |view, _| {

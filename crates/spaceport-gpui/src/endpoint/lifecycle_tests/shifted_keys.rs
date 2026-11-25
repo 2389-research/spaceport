@@ -36,10 +36,10 @@ fn connect(
                 .iter()
                 .map(|(typed, sent)| ((*typed).to_owned(), (*sent).to_owned()))
                 .collect();
-            view.keymap = crate::keymap::Keymap::with_overrides(
+            view.keymap = spaceport_keymap::Keymap::with_overrides(
                 &Default::default(),
                 &pane_keys,
-                &crate::keymap::DaemonKeys::from_table(Some(&keys)),
+                &spaceport_keymap::daemon::DaemonKeys::from_table(Some(&keys)),
             )
             .unwrap();
             view.key_press = || Some((18, true));
@@ -62,7 +62,7 @@ fn window(
 fn press(keys: &[&str], cx: &mut gpui::VisualTestContext) {
     for key in keys {
         cx.update(|window, cx| {
-            window.dispatch_keystroke(crate::keymap::parse_keystroke(key).unwrap(), cx)
+            window.dispatch_keystroke(spaceport_keymap::parse_keystroke(key).unwrap(), cx)
         });
     }
 }

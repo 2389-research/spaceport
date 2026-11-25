@@ -3,14 +3,11 @@
 // i18n: migrated
 use super::Page;
 use crate::i18n::fl;
-use crate::{
-    SpaceportWindow,
-    config::Config,
-    controls::CommandInfo,
-    keymap::{Binding, DaemonKeys, Keymap},
-    search_input::SearchInput,
-};
+use crate::{SpaceportWindow, config::Config, controls::CommandInfo, search_input::SearchInput};
 use gpui::{Context, Div, Entity, FontWeight, KeyDownEvent, Window, div, prelude::*, px, rgb};
+use spaceport_keymap::Keymap;
+use spaceport_keymap::daemon::DaemonKeys;
+use spaceport_settings::keys::Binding;
 
 pub(super) struct Editor {
     info: &'static CommandInfo,

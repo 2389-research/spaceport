@@ -480,7 +480,7 @@ fn held_keys_release_what_was_pressed_only_under_report_all() {
     let press = |s: &str| {
         key_input(
             &KeyDownEvent {
-                keystroke: crate::keymap::parse_keystroke(s).unwrap(),
+                keystroke: spaceport_keymap::parse_keystroke(s).unwrap(),
                 is_held: true,
                 prefer_character_input: false,
             },
@@ -561,7 +561,7 @@ fn alt_characters_reach_the_pane_as_shortcuts() {
     let alt = |s| {
         key_input(
             &KeyDownEvent {
-                keystroke: crate::keymap::parse_keystroke(s).unwrap(),
+                keystroke: spaceport_keymap::parse_keystroke(s).unwrap(),
                 is_held: false,
                 prefer_character_input: false,
             },

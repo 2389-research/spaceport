@@ -83,7 +83,7 @@ fn resize_mode_claims_keys_until_it_ends(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(connected);
     let press = |key: &str, cx: &mut VisualTestContext| {
         cx.update(|window, cx| {
-            window.dispatch_keystroke(crate::keymap::parse_keystroke(key).unwrap(), cx)
+            window.dispatch_keystroke(spaceport_keymap::parse_keystroke(key).unwrap(), cx)
         })
     };
     cx.update(|window, cx| {

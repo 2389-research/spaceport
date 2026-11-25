@@ -155,7 +155,7 @@ fn keybindings_override_defaults_and_reject_bad_entries() -> anyhow::Result<()> 
     assert!(matches!(
         Config::parse("[keybindings]\nnew_tab = \"t\""),
         Err(crate::Error::Keymap(
-            crate::keymap::Error::KeystrokeWithoutModifier { .. }
+            spaceport_keymap::Error::KeystrokeWithoutModifier { .. }
         ))
     ));
     assert!(Config::parse("[keybindings]\nnew_tab = 5").is_err());
@@ -237,10 +237,10 @@ fn pane_keys_reach_the_keymap_as_written() -> anyhow::Result<()> {
     let keymap = &config.keybindings;
     let sent = |typed| {
         keymap
-            .pane_key(&crate::keymap::parse_keystroke(typed).unwrap_or_default())
+            .pane_key(&spaceport_keymap::parse_keystroke(typed).unwrap_or_default())
             .and_then(|sent| match sent {
-                crate::keymap::PaneKey::Key(key) => Some(key.unparse(crate::keymap::HOST_OS)),
-                crate::keymap::PaneKey::Text(_) => None,
+                spaceport_keymap::PaneKey::Key(key) => Some(key.unparse(spaceport_keymap::HOST_OS)),
+                spaceport_keymap::PaneKey::Text(_) => None,
             })
     };
     assert_eq!(sent("cmd-k").as_deref(), Some("ctrl-l"));
@@ -260,7 +260,7 @@ fn pane_keys_reach_the_keymap_as_written() -> anyhow::Result<()> {
         Config::parse(
             "[pane_keys]\n\"cmd-k\" = \"ctrl-l\"\n[keybindings]\nclear_pane = \"cmd-k\"\n"
         ),
-        Err(crate::Error::Keymap(crate::keymap::Error::PaneKeyBound {
+        Err(crate::Error::Keymap(spaceport_keymap::Error::PaneKeyBound {
             command: "clear_pane",
             ..
         }))

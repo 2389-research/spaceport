@@ -8,10 +8,9 @@
 //! The values and their loading live in `spaceport-settings`; every name below is
 //! re-exported so the app keeps one path for them.
 // i18n: migrated
-use crate::{
-    i18n::fl,
-    keymap::{DaemonKeys, Keymap},
-};
+use crate::i18n::fl;
+use spaceport_keymap::Keymap;
+use spaceport_keymap::daemon::DaemonKeys;
 
 pub(crate) mod ssh_hosts;
 pub(crate) mod watch;

@@ -175,7 +175,7 @@ pub(super) async fn dialogs(handle: WindowHandle<SpaceportWindow>, cx: &mut Asyn
                     .native_workspace_dialog_steps(action)
                     .context("workspace dialog is absent from its menu")?;
                 for key in std::iter::repeat_n("down", steps).chain(std::iter::once("enter")) {
-                    window.dispatch_keystroke(crate::keymap::parse_keystroke(key)?, cx);
+                    window.dispatch_keystroke(spaceport_keymap::parse_keystroke(key)?, cx);
                 }
                 window.draw(cx).clear(cx);
                 if view.read(cx).menu.page != Some(menu::Page::Dialog(action)) {
@@ -191,7 +191,7 @@ pub(super) async fn dialogs(handle: WindowHandle<SpaceportWindow>, cx: &mut Asyn
                 if action == menu::WorkspaceAction::Rename {
                     window.dispatch_keystroke(Keystroke::parse("cmd-a")?, cx);
                     for ch in "long-label-\u{65e5}\u{672c}-\u{1f600}".repeat(4).chars() {
-                        window.dispatch_keystroke(crate::keymap::parse_keystroke(&ch.to_string())?, cx);
+                        window.dispatch_keystroke(spaceport_keymap::parse_keystroke(&ch.to_string())?, cx);
                     }
                     window.draw(cx).clear(cx);
                     view.update(cx, |view, cx| -> Result<()> {

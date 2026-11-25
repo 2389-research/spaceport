@@ -148,7 +148,11 @@ fn theme_draft_paints_all_windows_and_allows_non_theme_reload(cx: &mut TestAppCo
                     || {
                         let mut config = Config::default();
                         config.ui.size = 21.;
-                        Ok((config, crate::keymap::Keymap::default(), Theme::default()))
+                        Ok((
+                            config,
+                            spaceport_keymap::Keymap::default(),
+                            Theme::default(),
+                        ))
                     },
                     cx,
                 );

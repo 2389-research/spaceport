@@ -242,7 +242,7 @@ pub(super) async fn verify_fonts(
             AnyWindowHandle::from(settings).update(cx, |_, window, cx| -> Result<()> {
                 for key in ["m", "e", "n", "l", "o"] {
                     ensure!(
-                        window.dispatch_keystroke(crate::keymap::parse_keystroke(key)?, cx),
+                        window.dispatch_keystroke(spaceport_keymap::parse_keystroke(key)?, cx),
                         "font query key not handled"
                     );
                 }
@@ -308,7 +308,7 @@ pub(super) async fn verify_fonts(
     AnyWindowHandle::from(settings).update(cx, |root, window, cx| -> Result<()> {
         window.draw(cx).clear(cx);
         for key in ["1", "8"] {
-            window.dispatch_keystroke(crate::keymap::parse_keystroke(key)?, cx);
+            window.dispatch_keystroke(spaceport_keymap::parse_keystroke(key)?, cx);
         }
         let view = root
             .downcast::<SettingsWindow>()

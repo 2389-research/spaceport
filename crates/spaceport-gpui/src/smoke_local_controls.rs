@@ -68,7 +68,7 @@ pub(super) async fn verify(handle: WindowHandle<SpaceportWindow>, cx: &mut Async
                     bail!("native local action {command:?} did not open {expected:?}");
                 }
                 view.update(cx, |view, cx| view.command(Command::Tab, window, cx));
-                window.dispatch_keystroke(crate::keymap::parse_keystroke("escape")?, cx);
+                window.dispatch_keystroke(spaceport_keymap::parse_keystroke("escape")?, cx);
                 let state = view.read(cx);
                 if state.menu.page.is_some()
                     || state.input_probe.text != before.text

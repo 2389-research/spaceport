@@ -283,13 +283,13 @@ fn reload_publishes_baseline_and_rebinds_only_changed_keys(cx: &mut TestAppConte
                 let keys = cx.key_bindings();
                 assert_eq!(keys.borrow().bindings_for_action(&Close).count(), 1);
                 let mut loaded = fixture();
-                loaded.keymap = crate::keymap::Keymap::with_overrides(
+                loaded.keymap = spaceport_keymap::Keymap::with_overrides(
                     &std::collections::BTreeMap::from([(
                         "settings".into(),
-                        crate::keymap::Binding::One("ctrl-alt-p".into()),
+                        spaceport_settings::keys::Binding::One("ctrl-alt-p".into()),
                     )]),
                     &Default::default(),
-                    &crate::keymap::DaemonKeys::default(),
+                    &spaceport_keymap::daemon::DaemonKeys::default(),
                 )
                 .unwrap();
                 view.apply_loaded(Ok(loaded), cx);

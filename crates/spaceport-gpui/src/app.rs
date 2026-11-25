@@ -13,15 +13,14 @@ use crate::{
     cli,
     config::{Config, Theme},
     core_terminals::Start,
-    diagnostics,
-    keymap::Keymap,
-    log_window, menus, titlebar,
+    diagnostics, log_window, menus, titlebar,
 };
 #[cfg(feature = "integration-test")]
 use crate::{performance, smoke};
 use anyhow::Result;
 use gpui::{prelude::*, *};
 use spaceport_client::ConnectTarget;
+use spaceport_keymap::Keymap;
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum WindowLaunch {

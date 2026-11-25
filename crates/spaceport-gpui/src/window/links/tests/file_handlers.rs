@@ -73,7 +73,7 @@ fn a_file_hyperlink_opens_here_without_asking_the_daemon(cx: &mut gpui::TestAppC
     });
 
     // The click opens the file and queues no request; only a hover would.
-    cx.simulate_click(link, crate::keymap::secondary_key());
+    cx.simulate_click(link, spaceport_keymap::secondary_key());
     let opened = cx.opened_url().unwrap();
     assert!(
         opened.starts_with("file://") && opened.ends_with("/notes.md"),
@@ -94,7 +94,7 @@ fn a_resolved_file_hyperlink_still_opens_here(cx: &mut gpui::TestAppContext) {
     let (view, cx) = window(&peer, true, cx);
     view.update(cx, |view, _| show(view, &document));
     let link = at(&view, cx, 3, 0);
-    cx.simulate_mouse_move(link, None, crate::keymap::secondary_key());
+    cx.simulate_mouse_move(link, None, spaceport_keymap::secondary_key());
     resolve_after_delay(cx);
     let request = peer.request();
     assert_eq!(request["method"], "pane.link.resolve");
@@ -109,7 +109,7 @@ fn a_resolved_file_hyperlink_still_opens_here(cx: &mut gpui::TestAppContext) {
     );
     view.read_with(cx, |view, _| assert!(view.hovered_daemon_link().is_some()));
 
-    cx.simulate_click(link, crate::keymap::secondary_key());
+    cx.simulate_click(link, spaceport_keymap::secondary_key());
     let opened = cx.opened_url().unwrap();
     assert!(opened.ends_with("/notes.md"), "{opened}");
     view.read_with(cx, |view, _| assert!(view.links.resolving.is_none()));
@@ -138,7 +138,7 @@ fn a_remote_file_hyperlink_says_why_it_opens_nothing(cx: &mut gpui::TestAppConte
         assert!(view.hovered_daemon_link().is_none());
     });
 
-    cx.simulate_click(link, crate::keymap::secondary_key());
+    cx.simulate_click(link, spaceport_keymap::secondary_key());
     assert!(cx.opened_url().is_none());
     view.read_with(cx, |view, _| {
         assert_eq!(

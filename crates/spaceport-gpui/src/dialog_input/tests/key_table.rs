@@ -23,7 +23,12 @@ fn ends(input: &DialogInput) -> (usize, usize) {
 fn press(input: &mut DialogInput, keys: &str, cx: &mut gpui::App) -> usize {
     key_matrix::keystrokes(keys)
         .split(' ')
-        .filter(|key| !input.key(&crate::keymap::parse_keystroke(key).unwrap_or_default(), cx))
+        .filter(|key| {
+            !input.key(
+                &spaceport_keymap::parse_keystroke(key).unwrap_or_default(),
+                cx,
+            )
+        })
         .count()
 }
 

@@ -1,7 +1,7 @@
 use super::{Direction, PaletteKey};
 
 fn key(text: &str) -> Option<PaletteKey> {
-    PaletteKey::of(&crate::keymap::parse_keystroke(text).unwrap())
+    PaletteKey::of(&spaceport_keymap::parse_keystroke(text).unwrap())
 }
 
 #[test]

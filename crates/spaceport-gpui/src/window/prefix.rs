@@ -203,19 +203,18 @@ impl SpaceportWindow {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use crate::{
-        keymap::{DaemonKeys, Keymap},
-        state::ConnectionStatus,
-    };
+    use crate::state::ConnectionStatus;
     use gpui::{Keystroke, TestAppContext, VisualTestContext};
     use spaceport_client::protocol::{ClientShellCommand, ClientShellCommandAction};
+    use spaceport_keymap::Keymap;
+    use spaceport_keymap::daemon::DaemonKeys;
     use std::sync::Arc;
 
     /// Whether something handled the keystroke. Nothing binds `cmd-y` and
     /// the terminal ignores cmd keys, so only the prefix can claim it.
     fn press(keystroke: &str, cx: &mut VisualTestContext) -> bool {
         let handled = cx.update(|window, cx| {
-            window.dispatch_keystroke(crate::keymap::parse_keystroke(keystroke).unwrap(), cx)
+            window.dispatch_keystroke(spaceport_keymap::parse_keystroke(keystroke).unwrap(), cx)
         });
         cx.run_until_parked();
         handled

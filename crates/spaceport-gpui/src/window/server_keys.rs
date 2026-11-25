@@ -5,12 +5,11 @@
 //! themes and sidebar included, stays local by upstream design.
 
 use super::SpaceportWindow;
-use crate::{
-    Result,
-    config::KeybindingSource,
-    keymap::{Binding, DaemonKeys, Keymap, PaneKeys},
-};
+use crate::{Result, config::KeybindingSource};
 use gpui::{App, Context, Global};
+use spaceport_keymap::Keymap;
+use spaceport_keymap::daemon::DaemonKeys;
+use spaceport_settings::keys::{Binding, PaneKeys};
 use std::collections::BTreeMap;
 
 /// The keymap a window built from its selected endpoint's server profile, and

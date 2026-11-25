@@ -90,10 +90,10 @@ fn only_a_keystroke_without_a_name_is_looked_up() {
     assert!(unnamed(&typed("", Modifiers::default())));
     assert!(unnamed(&typed(DATA_LINK_ESCAPE, Modifiers::default())));
     for key in ["f20", "p", "escape"] {
-        assert!(!unnamed(&crate::keymap::parse_keystroke(key).unwrap()));
+        assert!(!unnamed(&spaceport_keymap::parse_keystroke(key).unwrap()));
         let press = || unreachable!("{key} has a name, so no event is read for it");
         assert_eq!(
-            named(&crate::keymap::parse_keystroke(key).unwrap(), press),
+            named(&spaceport_keymap::parse_keystroke(key).unwrap(), press),
             None
         );
     }

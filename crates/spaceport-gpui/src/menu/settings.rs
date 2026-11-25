@@ -11,10 +11,10 @@ use crate::{
     SpaceportWindow,
     config::{Config, FontConfig, ThemeName},
     controls::{COMMANDS, Command, CommandInfo},
-    keymap::Reach,
 };
 use gpui::{prelude::*, *};
 use spaceport_client::protocol::ClientShellCommand;
+use spaceport_keymap::Reach;
 use std::borrow::Cow;
 
 /// The semantic paste row, which no keymap command holds.
@@ -166,7 +166,7 @@ impl SpaceportWindow {
 
     pub(crate) fn load_gui_config_with(
         &mut self,
-        load: impl FnOnce() -> crate::Result<(Config, crate::keymap::Keymap, crate::config::Theme)>
+        load: impl FnOnce() -> crate::Result<(Config, spaceport_keymap::Keymap, crate::config::Theme)>
         + Send
         + 'static,
         cx: &mut Context<Self>,
@@ -346,7 +346,8 @@ impl SpaceportWindow {
             .as_ref()
             .filter(|_| self.live.status.is_connected())
         {
-            let commands: Vec<_> = crate::keymap::available_commands(&snapshot.commands).collect();
+            let commands: Vec<_> =
+                spaceport_keymap::available_commands(&snapshot.commands).collect();
             let bindings = self.keymap().custom_bindings(commands.iter().copied());
             groups[3]
                 .1
