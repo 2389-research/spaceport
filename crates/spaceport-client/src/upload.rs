@@ -1,7 +1,9 @@
-use crate::{Error, Result, catalog::validate_target};
+use crate::{
+    Error, Result,
+    catalog::validate_target,
+    staging::{self, LINE_LIMIT},
+};
 use std::{path::PathBuf, sync::atomic::AtomicBool};
-
-const LINE_LIMIT: usize = 4096;
 
 /// Stage regular files on a POSIX SSH host, preserving each basename.
 ///
@@ -79,11 +81,10 @@ struct StagedUpload {
 
 impl StagedUpload {
     fn validate(&self) -> Result<()> {
-        if !valid_directory(&self.directory)
-            || self
-                .file
-                .as_ref()
-                .is_some_and(|file| uploaded_directory(file) != Some(self.directory.as_str()))
+        if !staging::valid_directory(&self.directory)
+            || self.file.as_ref().is_some_and(|file| {
+                staging::staged_directory_of(file) != Some(self.directory.as_str())
+            })
         {
             return Err(Error::UploadCleanupPath);
         }
@@ -110,29 +111,6 @@ fn cleanup_paths(paths: &[String]) -> Result<Vec<StagedUpload>> {
             Ok(staged)
         })
         .collect()
-}
-
-fn uploaded_directory(path: &str) -> Option<&str> {
-    if path.len() > LINE_LIMIT || path.chars().any(char::is_control) {
-        return None;
-    }
-    // Split the raw POSIX spelling, not Path::components which normalizes away
-    // repeated separators and '.', and has host-specific behavior on Windows.
-    let (dir, name) = path.rsplit_once('/')?;
-    (valid_directory(dir) && !matches!(name, "" | "." | "..")).then_some(dir)
-}
-
-fn valid_directory(dir: &str) -> bool {
-    if !dir.starts_with('/') || dir.len() > LINE_LIMIT || dir.chars().any(char::is_control) {
-        return false;
-    }
-    if dir[1..].split('/').any(|s| matches!(s, "" | "." | "..")) {
-        return false;
-    }
-    dir.rsplit('/')
-        .next()
-        .and_then(|s| s.strip_prefix("herdr-upload."))
-        .is_some_and(|s| s.len() == 12 && s.bytes().all(|b| b.is_ascii_alphanumeric()))
 }
 
 #[cfg(test)]
@@ -215,6 +193,7 @@ mod posix {
     use crate::{
         StorageOperation,
         ssh::{ChildGuard, quote},
+        staging,
     };
     use std::{
         fs::File,
@@ -295,32 +274,7 @@ mod posix {
     }
 
     fn receive_command(name: &str, len: u64) -> String {
-        shell(&format!(
-            r#"umask 077
-dir=
-file=
-complete=0
-trap 'if [ "$complete" != 1 ] && [ -n "$dir" ]; then if [ -n "$file" ]; then rm -f -- "$file"; fi; rmdir -- "$dir"; fi' 0
-trap 'exit 1' HUP INT TERM
-base=$(CDPATH= cd -P -- "${{TMPDIR:-/tmp}}" && pwd -P) || exit 1
-dir=$(mktemp -d "${{base%/}}/herdr-upload.XXXXXXXXXXXX") || exit 1
-printf 'herdr-upload-ready:1\n%s\n' "$dir" || exit 1
-IFS= read -r accept || exit 1
-[ "$accept" = accept ] || exit 1
-destination="$dir/"{name}
-set -C
-exec 3> "$destination" || exit 1
-file=$destination
-printf 'herdr-upload-created:1\n%s\n' "$file" || exit 1
-cat >&3 || exit 1
-exec 3>&-
-bytes=$(wc -c < "$file" | tr -d '[:space:]') || exit 1
-[ "$bytes" = {len} ] || exit 1
-printf 'herdr-upload-complete:1\n%s\n' "$file" || exit 1
-complete=1
-"#,
-            name = quote(name)
-        ))
+        shell(&staging::receive_script(name, len))
     }
 
     fn shell(script: &str) -> String {
@@ -485,7 +439,7 @@ complete=1
                     return Err(Error::UploadResponse);
                 }
                 let dir = line(&mut stream, cancelled, &mut last)?;
-                if !valid_directory(&dir) {
+                if !staging::valid_directory(&dir) {
                     return Err(Error::UploadResponse);
                 }
                 let remote = format!("{dir}/{}", source.name);

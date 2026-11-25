@@ -42,6 +42,7 @@ mod session;
 pub mod sessions;
 pub mod settings_files;
 pub mod ssh;
+pub mod staging;
 mod surface_images;
 pub mod terminal_attach;
 pub mod text;

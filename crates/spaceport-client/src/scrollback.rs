@@ -58,6 +58,22 @@ pub struct CopySearchParams {
     pub previous: Option<TextRange>,
 }
 
+/// Whether `content_revision` names content a scrollback request can read.
+/// The daemon bumps a pane's revision twice per write, so an odd revision is
+/// a write in progress and it answers `stale_content` for a request that
+/// names one. Both clients refuse the request before sending it and wait for
+/// a frame that shows the settled revision instead.
+pub fn content_settled(content_revision: u64) -> bool {
+    content_revision.is_multiple_of(2)
+}
+
+/// Whether a request the daemon refused at `refused` may be asked again
+/// against `content_revision`: the pane must show content newer than the
+/// refusal that is not mid-write, so a retry never repeats what was refused.
+pub fn retryable_after(refused: u64, content_revision: u64) -> bool {
+    content_revision != refused && content_settled(content_revision)
+}
+
 /// `pane.copy_search` result. `matches` is a bounded window around the
 /// current match; `total` counts every match in the pane.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -52,7 +52,9 @@ pub(crate) fn surface() -> PaneSurfaceFrame {
         frame: cells("abcdef", 3),
         panes: vec![PaneSurfacePane {
             pane_id: "w1:p1".into(),
-            content_revision: 1,
+            // Settled: an odd revision is a write in progress, which no
+            // scrollback request may name.
+            content_revision: 2,
             rect,
             inner_rect: rect,
             scrollbar_rect: None,

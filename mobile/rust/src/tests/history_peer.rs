@@ -25,13 +25,13 @@ fn history_match_reads_original_text_and_context_at_one_revision() {
             .find("needle".into(), false, None)
     });
     let (id, params) = endpoint(&mut peer, "pane.copy_search");
-    assert_eq!(params["content_revision"], 1);
+    assert_eq!(params["content_revision"], 2);
     assert_eq!(params["direction"], "backward");
     let span = json!({"start":{"row":7,"col":2},"end":{"row":7,"col":7}});
     reply(
         &mut peer,
         &id,
-        json!({"type":"pane_copy_search","pane_id":"w1:p1","content_revision":1,
+        json!({"type":"pane_copy_search","pane_id":"w1:p1","content_revision":2,
         "matches":[span],"total":2,"current":0,"current_global":1}),
     );
     for (start, end, text) in [
@@ -42,17 +42,17 @@ fn history_match_reads_original_text_and_context_at_one_revision() {
         if end == 71 {
             let (id, motion) = endpoint(&mut peer, "pane.copy_motion");
             assert_eq!(motion["motion"], "line_end");
-            assert_eq!(motion["content_revision"], 1);
+            assert_eq!(motion["content_revision"], 2);
             reply(
                 &mut peer,
                 &id,
-                json!({"type":"pane_copy_motion","pane_id":"w1:p1","content_revision":1,"cursor":{"row":7,"col":77}}),
+                json!({"type":"pane_copy_motion","pane_id":"w1:p1","content_revision":2,"cursor":{"row":7,"col":77}}),
             );
         }
         let (id, params) = endpoint(&mut peer, "pane.selection.read");
         assert_eq!(params["anchor"], json!({"row":7,"col":start}));
         assert_eq!(params["cursor"], json!({"row":7,"col":end}));
-        assert_eq!(params["content_revision"], 1);
+        assert_eq!(params["content_revision"], 2);
         reply(
             &mut peer,
             &id,
@@ -83,6 +83,33 @@ fn history_search_rejects_target_from_another_connection() {
 }
 
 #[test]
+fn a_search_waits_for_a_settled_frame_instead_of_asking_about_a_write_in_progress() {
+    let mut writing = surface();
+    // An odd revision is a write in progress, which the daemon would refuse:
+    // the window never sends such a request, and neither does the phone.
+    writing.panes[0].content_revision = 3;
+    let (session, mut peer) = peer_with_surface(writing);
+    let target = session.poll(0).unwrap().input_target.unwrap();
+    let task = std::thread::spawn(move || {
+        session
+            .history_search(target)?
+            .find("needle".into(), false, None)
+    });
+    let mut settled = surface();
+    settled.surface_revision += 1;
+    settled.panes[0].content_revision = 4;
+    send(&mut peer, ServerMessage::PaneSurface(settled));
+    let (id, params) = endpoint(&mut peer, "pane.copy_search");
+    assert_eq!(params["content_revision"], 4);
+    reply(
+        &mut peer,
+        &id,
+        json!({"type":"pane_copy_search","pane_id":"w1:p1","content_revision":4,"matches":[],"total":0}),
+    );
+    assert!(task.join().unwrap().unwrap().is_none());
+}
+
+#[test]
 fn history_retries_moved_content_using_the_next_surface_revision() {
     let (session, mut peer) = peer();
     let target = session.poll(0).unwrap().input_target.unwrap();
@@ -94,7 +121,7 @@ fn history_retries_moved_content_using_the_next_surface_revision() {
     let (id, _) = endpoint(&mut peer, "pane.copy_search");
     let mut frame = surface();
     frame.surface_revision += 1;
-    frame.panes[0].content_revision = 2;
+    frame.panes[0].content_revision = 4;
     send(&mut peer, ServerMessage::PaneSurface(frame));
     send(
         &mut peer,
@@ -109,12 +136,12 @@ fn history_retries_moved_content_using_the_next_surface_revision() {
         },
     );
     let (id, params) = endpoint(&mut peer, "pane.copy_search");
-    assert_eq!(params["content_revision"], 2);
+    assert_eq!(params["content_revision"], 4);
     assert!(params.get("previous").is_none());
     reply(
         &mut peer,
         &id,
-        json!({"type":"pane_copy_search","pane_id":"w1:p1","content_revision":2,"matches":[],"total":0}),
+        json!({"type":"pane_copy_search","pane_id":"w1:p1","content_revision":4,"matches":[],"total":0}),
     );
     assert!(task.join().unwrap().unwrap().is_none());
 }
@@ -137,14 +164,14 @@ fn superseding_history_drops_old_waiter_and_ignores_its_late_reply() {
         &mut peer,
         &old,
         json!({"type":"pane_copy_search","pane_id":"w1:p1",
-        "content_revision":1,"matches":[span],"total":1,"current":0,"current_global":0}),
+        "content_revision":2,"matches":[span],"total":1,"current":0,"current_global":0}),
     );
     let (new, params) = endpoint(&mut peer, "pane.copy_search");
     assert_eq!(params["query"], "two");
     reply(
         &mut peer,
         &new,
-        json!({"type":"pane_copy_search","pane_id":"w1:p1","content_revision":1,"matches":[],"total":0}),
+        json!({"type":"pane_copy_search","pane_id":"w1:p1","content_revision":2,"matches":[],"total":0}),
     );
     assert!(second.join().unwrap().unwrap().is_none());
     assert!(session.poll(0).unwrap().error.is_none());
@@ -180,7 +207,7 @@ fn timed_out_history_allows_a_new_query_and_absorbs_the_late_host_error() {
     reply(
         &mut peer,
         &new,
-        json!({"type":"pane_copy_search","pane_id":"w1:p1","content_revision":1,"matches":[],"total":0}),
+        json!({"type":"pane_copy_search","pane_id":"w1:p1","content_revision":2,"matches":[],"total":0}),
     );
     assert!(second.join().unwrap().unwrap().is_none());
     assert!(session.poll(0).unwrap().error.is_none());

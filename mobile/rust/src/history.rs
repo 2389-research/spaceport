@@ -5,13 +5,17 @@ use crate::InputTarget;
 use spaceport_client::response::EndpointErrorCode;
 use spaceport_client::scrollback::{
     CopyMotion, CopyMotionParams, CopySearchParams, ScrollbackResponse, SearchDirection,
-    SelectionReadParams, TextPoint, TextRange,
+    SelectionReadParams, TextPoint, TextRange, content_settled, retryable_after,
 };
 use std::{
     collections::HashMap,
-    sync::{Arc, mpsc},
-    time::Duration,
+    sync::{Arc, PoisonError, mpsc},
+    time::{Duration, Instant},
 };
+
+/// How long a search waits for the pane's content to settle before it gives up
+/// and asks the user to look at the current view.
+const SETTLE: Duration = Duration::from_secs(5);
 
 type Reply = mpsc::Sender<spaceport_client::Result<ScrollbackResponse>>;
 
@@ -113,6 +117,47 @@ impl MobileSession {
     }
 }
 
+impl MobileSession {
+    /// The pane's content revision this search may name, waiting for the next
+    /// frame while the pane is mid-write or still shows a revision the daemon
+    /// already refused. The desktop window refuses the same two cases before
+    /// sending; the daemon answers `stale_content` for either.
+    ///
+    /// Blocking: run on a background thread. The drain signals `frames` for
+    /// every event it takes in, so this waits on a frame rather than polling.
+    fn settled_revision(
+        &self,
+        target: &InputTarget,
+        refused: Option<u64>,
+    ) -> Result<u64, MobileError> {
+        let started = Instant::now();
+        let mut state = self.current(&target.boot_id)?;
+        loop {
+            if state.disconnected || self.handle.is_disconnected() {
+                return Err(MobileError::Disconnected);
+            }
+            let revision = state.history_pane(target)?.content_revision;
+            let ready = match refused {
+                Some(refused) => retryable_after(refused, revision),
+                None => content_settled(revision),
+            };
+            if ready {
+                return Ok(revision);
+            }
+            let waited = SETTLE.saturating_sub(started.elapsed());
+            if waited.is_zero() {
+                // Nothing settled: the phone's view keeps changing under it.
+                return Err(MobileError::StaleView);
+            }
+            let (released, _) = self
+                .frames
+                .wait_timeout(state, waited)
+                .unwrap_or_else(PoisonError::into_inner);
+            state = released;
+        }
+    }
+}
+
 #[derive(uniffi::Object)]
 pub struct HistorySearch {
     session: Arc<MobileSession>,
@@ -139,19 +184,15 @@ impl HistorySearch {
         if query.is_empty() {
             return Ok(None);
         }
-        let state = self.session.current(&self.target.boot_id)?;
-        let pane = state.history_pane(&self.target)?;
-        let revision = pane.content_revision;
-        drop(state);
+        let revision = self.session.settled_revision(&self.target, None)?;
         match self.find_at(&query, newer, previous.as_ref(), revision) {
             Err(Error::Changed) => {
-                let state = self.session.current(&self.target.boot_id)?;
-                let pane = state.history_pane(&self.target)?;
-                let next = pane.content_revision;
-                drop(state);
-                if next == revision {
-                    return Err(Error::Changed.into());
-                }
+                // The daemon moved on between the frame read here and the
+                // request: wait for a frame the daemon has moved on to, then ask
+                // once more, as the window does.
+                let next = self
+                    .session
+                    .settled_revision(&self.target, Some(revision))?;
                 self.find_at(&query, newer, None, next).map_err(Into::into)
             }
             result => result.map_err(Into::into),

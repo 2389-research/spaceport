@@ -14,6 +14,7 @@ use spaceport_client::{
     ClientEvent, Method,
     protocol::{PaneSurfaceFrame, SurfaceRect},
     response,
+    scrollback::content_settled,
 };
 
 /// The resolve request in flight on one connection. Its response stops here
@@ -130,9 +131,8 @@ impl LinkCell {
             return None;
         };
         let pane = surface.panes.iter().find(|pane| pane.pane_id == pane_id)?;
-        // An odd revision is the daemon's write-in-progress marker, which it
-        // would refuse as stale.
-        if pane.content_revision % 2 != 0 {
+        // The daemon would refuse a revision that is a write in progress.
+        if !content_settled(pane.content_revision) {
             return None;
         }
         let rect = pane.inner_rect;
