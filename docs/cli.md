@@ -134,7 +134,7 @@ Legacy windows keep their existing launch target.
 | Command | What it does |
 | --- | --- |
 | `notes [list]` | Every worktree note |
-| `notes get\|clear`, `notes set TEXT` | The note on your checkout (its repository and branch): one line of at most 500 characters, refused over 16 KiB. `list` and `get` exit 4 when there is none |
+| `notes get\|clear`, `notes set TEXT...` | The note on your checkout (its repository and branch): one line of at most 500 characters, refused over 16 KiB. `list` and `get` exit 4 when there is none |
 | `worktree [status]`, `worktree mute\|unmute` | Whether your worktree's notifications are muted; silence them or let them through again |
 | `chat [status]`, `chat list` | The `sheprd-acp` chat panes of the window's host, this machine or an SSH host: agent, status, model, context window use, and whether the chat view or the terminal shows |
 | `chat show\|hide\|toggle [--pane ID]` | Show the native chat view over your pane (or ID, else the focused one), or its terminal |
@@ -173,10 +173,10 @@ not take it either.
 | `config get\|set\|unset KEY [VALUE]` | Read a key's effective value (your override, else the default), or change `spaceport/config.local.toml`, keeping its comments. A value that would not load, or an unknown key, is refused and nothing is written; most changes apply at once; `herdr_core_enabled` requires restart (no app needed) |
 | `config check` | Report settings that do not load and unknown keys, and, when the app runs, configured fonts that are not installed; exits 1 if there are any. Without a running app it says the fonts were not checked |
 | `config reload` | Reread Spaceport's settings files |
-| `theme [list]`, `theme set NAME` | The app theme, or `light:NAME,dark:NAME` to follow the system appearance. A device's terminal theme is `config set devices.ID.theme NAME`, with the ID from `host list` minus its `ssh:` prefix. `list` needs no app; `set` saves the setting whether or not the app runs |
-| `font [list]`, `font set NAME`, `font reset` | The terminal font of every face, or back to the default. Needs the running app, which knows the installed fonts |
+| `theme [list]`, `theme set NAME...` | The app theme, or `light:NAME,dark:NAME` to follow the system appearance. A device's terminal theme is `config set devices.ID.theme NAME`, with the ID from `host list` minus its `ssh:` prefix. `list` needs no app; `set` saves the setting whether or not the app runs |
+| `font [list]`, `font set NAME...`, `font reset` | The terminal font of every face, or back to the default. Needs the running app, which knows the installed fonts |
 | `language [status]`, `language list`, `language set system\|TAG` | The language set and the locale Spaceport shows, the languages there are, each with its name in itself as Settings > General lists it, or save the `language` setting (a BCP 47 tag; `en-XA` and `en-XB` are pseudo-locales). Only `status` asks the app, and without it reports what it would show |
-| `keybinds [list]`, `keybinds check` | Shortcuts and reachable non-plugin custom Herdr commands |
+| `keybinds [list]`, `keybinds check` | This window's shortcuts, and Herdr's custom commands other than a plugin's, each with whether its keys reach this window; `check` says which do not and exits 1 if any |
 | `caffeine [status]`, `caffeine on\|off\|toggle [--for 30m]` | Keep the machine awake. `status` reports `off`, `pending`, `on`, or `until_agents_finish` (the status bar cup's agents mode, which no command sets); `--for` takes `90s`, `30m`, or `2h`, from 1 second to 24 hours, and turns it off then |
 | `sound [list]`, `sound play [done\|request]`, `bell` | Sounds play at `sound.volume` percent (`config set sound.volume 30`) |
 | `integrations [list]` | What Herdr offers the selected host |
@@ -219,7 +219,10 @@ gaining focus; the app's tabs opening and closing; a worktree note changing;
 and a host's connection status changing. Each event has a sequence
 number; pass back the `INSTANCE:SEQ` cursor a call prints with `--after` to
 get only newer events. A cursor from an earlier run of the app gets every
-event the new run has kept, so a restart never hides events.
+event the new run has kept, so a restart never hides events. `--wait SECONDS`
+holds the call until an event arrives or the wait runs out (at most 600), so
+a poll can ask for the next event rather than ask again in a loop; an empty
+answer then exits 4, as it does without `--wait`.
 
 | Command | What it does |
 | --- | --- |
