@@ -1,5 +1,5 @@
 use super::*;
-use spaceport_client::protocol::ClientMousePosition;
+use spaceport_client::protocol::{ClientKeyCode, ClientMousePosition};
 
 mod bold_color;
 mod layout_chords;
@@ -529,24 +529,6 @@ fn held_keys_release_what_was_pressed_only_under_report_all() {
 }
 
 #[test]
-fn special_keys_and_text_are_separate() {
-    let key = |s| crate::keymap::parse_keystroke(s).unwrap();
-    for alt_keys in [false, true] {
-        let code = |s| key_code(&key(s), alt_keys);
-        assert_eq!(code("ctrl-c"), Some(ClientKeyCode::Char('c')));
-        assert_eq!(code("shift-tab"), Some(ClientKeyCode::BackTab));
-        assert_eq!(code("alt-left"), Some(ClientKeyCode::Left));
-        assert_eq!(code("f12"), Some(ClientKeyCode::F(12)));
-        assert_eq!(code("a"), None);
-        assert_eq!(code("shift-a"), None);
-        assert_eq!(code("cmd-q"), None);
-        assert_eq!(code("cmd-alt-p"), None);
-    }
-    assert_eq!(key_code(&key("alt-e"), false), None);
-    assert_eq!(key_code(&key("alt-space"), false), None);
-}
-
-#[test]
 fn a_pane_key_sends_its_target_held_as_typed() {
     let typed = KeyDownEvent {
         keystroke: Keystroke::parse("cmd-left").unwrap(),
@@ -572,14 +554,6 @@ fn a_pane_key_sends_its_target_held_as_typed() {
         pane_key_input(&typed, &PaneKey::Text("|".into())),
         Some(ClientPaneInputEvent::TextCommit("|".into()))
     );
-    // Alt-modified targets are sent whatever option_as_alt says.
-    assert!(reaches_pane(&Keystroke::parse("alt-b").unwrap()));
-    for unsendable in ["cmd-a", "a", "shift-a"] {
-        assert!(
-            !reaches_pane(&crate::keymap::parse_keystroke(unsendable).unwrap()),
-            "{unsendable}"
-        );
-    }
 }
 
 #[test]

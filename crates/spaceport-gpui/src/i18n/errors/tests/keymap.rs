@@ -67,3 +67,11 @@ fn every_keymap_daemon_variant_has_a_message() {
         daemon::Error::TooLarge { max: 65536 },
     ]);
 }
+
+/// A host's published profile is the crate root's one wrapped failure, and it
+/// reads as the daemon error behind it.
+#[test]
+fn a_wrapped_profile_failure_reads_as_its_own() {
+    let wrapped = Error::Daemon(daemon::Error::NoKeys);
+    assert_eq!(wrapped.localize(), daemon::Error::NoKeys.localize());
+}

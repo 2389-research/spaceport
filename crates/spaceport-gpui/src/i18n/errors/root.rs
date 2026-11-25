@@ -123,7 +123,6 @@ impl Localize for Error {
             Self::SelectionOffscreen => fl!("error-selection-offscreen"),
             Self::SelectionSize => fl!("error-selection-size"),
             Self::SelectionStale => fl!("error-selection-stale"),
-            Self::ServerKeybindings(error) => error.localize(),
             Self::Settings(error) => error.localize(),
             Self::SettingsSave(source) => fl!("error-settings-save", error = source.localize()),
             Self::SkillInstall { path: dir, source } => fl!(

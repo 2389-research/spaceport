@@ -123,7 +123,7 @@ fn a_system_key_never_reaches_a_custom_command_whoever_holds_it() {
 #[test]
 fn reserved_and_keymap_keystrokes_never_reach_a_custom_command() {
     let keymap = Keymap::default();
-    let [_, _, paste_key, select_all_key] = crate::actions::EDIT_KEYS;
+    let [_, _, paste_key, select_all_key] = crate::reserved::EDIT_KEYS;
     let commands = [custom(
         "conflicts",
         &[

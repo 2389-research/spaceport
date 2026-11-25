@@ -9,7 +9,6 @@
 //! re-exported so the app keeps one path for them.
 // i18n: migrated
 use crate::{
-    Result,
     i18n::fl,
     keymap::{DaemonKeys, Keymap},
 };
@@ -116,7 +115,7 @@ impl Label for TabLayoutMode {
 /// The keymap the app's keys and labels follow: the private view settings'
 /// `[keys]` with this config's `[keybindings]` and `[pane_keys]` layered over
 /// them. Built once per load, beside the settings it came from.
-pub(crate) fn keymap(config: &Config) -> Result<Keymap> {
+pub(crate) fn keymap(config: &Config) -> spaceport_keymap::Result<Keymap> {
     let keys = DaemonKeys::from_table(config.view_keys.as_ref());
     Keymap::with_overrides(&config.keybinding_overrides, &config.pane_keys, &keys)
 }

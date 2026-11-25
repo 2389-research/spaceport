@@ -11,16 +11,17 @@ pub(crate) use links::{
 pub(crate) use metrics::CellMetrics;
 pub(crate) use selection::{MAX_SELECTION_BYTES, Selection};
 
-use crate::{config::Theme, keymap::PaneKey};
+use crate::config::Theme;
 use gpui::{
     Bounds, KeyDownEvent, Keystroke, Modifiers, Pixels, Point, ScrollDelta, ScrollEvent,
     TouchPhase, point, px, size,
 };
 use spaceport_backend::{WheelGrid, WheelHit};
 use spaceport_client::protocol::{
-    CellData, ClientKeyCode, ClientKeyKind, ClientMouseKind, ClientPaneInputEvent,
-    ClientSurfaceSize, FrameData, PaneSurfaceFrame, PaneSurfacePane, SurfaceRect,
+    CellData, ClientKeyKind, ClientMouseKind, ClientPaneInputEvent, ClientSurfaceSize, FrameData,
+    PaneSurfaceFrame, PaneSurfacePane, SurfaceRect,
 };
+use spaceport_keymap::{PaneKey, key_code};
 use std::num::NonZeroU16;
 
 #[cfg(test)]
@@ -439,12 +440,6 @@ pub fn pane_key_input(event: &KeyDownEvent, sent: &PaneKey) -> Option<ClientPane
     }
 }
 
-/// Whether a pane can receive `keystroke` as a key event, so `[pane_keys]`
-/// never names one that would silently send nothing.
-pub(crate) fn reaches_pane(keystroke: &Keystroke) -> bool {
-    key_code(keystroke, true).is_some()
-}
-
 fn keystroke_input(
     keystroke: &Keystroke,
     is_held: bool,
@@ -520,49 +515,6 @@ impl HeldKeys {
         let index = self.0.iter().position(|(held, _)| held == key)?;
         Some(self.0.remove(index).1)
     }
-}
-
-fn key_code(key: &Keystroke, alt_keys: bool) -> Option<ClientKeyCode> {
-    use ClientKeyCode::*;
-    if key.modifiers.platform {
-        return None;
-    }
-    Some(match key.key.as_str() {
-        "enter" => Enter,
-        "backspace" | "back" => Backspace,
-        "escape" => Esc,
-        "tab" if key.modifiers.shift => BackTab,
-        "tab" => Tab,
-        "up" => Up,
-        "down" => Down,
-        "left" => Left,
-        "right" => Right,
-        "home" => Home,
-        "end" => End,
-        "pageup" => PageUp,
-        "pagedown" => PageDown,
-        "delete" => Delete,
-        "insert" => Insert,
-        name if name.starts_with('f')
-            && name[1..].parse::<u8>().is_ok_and(|n| (1..=24).contains(&n)) =>
-        {
-            F(name[1..].parse().ok()?)
-        }
-        "space" if key.modifiers.control => Char(' '),
-        name if key.modifiers.control && name.chars().count() == 1 => Char(name.chars().next()?),
-        "space" if key.modifiers.alt && alt_keys => Char(' '),
-        // GPUI reports Shift-letter as the lowercase key plus Shift; a shifted
-        // symbol arrives as the symbol itself. Herdr expects the typed letter.
-        name if key.modifiers.alt && alt_keys && name.chars().count() == 1 => {
-            let ch = name.chars().next()?;
-            Char(if key.modifiers.shift {
-                ch.to_ascii_uppercase()
-            } else {
-                ch
-            })
-        }
-        _ => return None,
-    })
 }
 
 const MIN_THUMB: f32 = 24.;

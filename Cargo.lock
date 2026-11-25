@@ -6778,7 +6778,9 @@ name = "spaceport-keymap"
 version = "0.1.0"
 dependencies = [
  "gpui-pre",
+ "spaceport-client",
  "spaceport-commands",
+ "spaceport-settings",
  "thiserror 2.0.21",
  "toml 1.1.6+spec-1.1.0",
 ]
