@@ -10,8 +10,8 @@ pub use controller::{MobileError, MobileSession};
 pub use history::{HistoryCursor, HistoryMatch, HistorySearch};
 pub use idle::{IdleAgeGroup, idle_age_group};
 pub use projection::{
-    HostChallenge, InputTarget, MobileCell, MobilePane, MobilePaneMap, MobilePaneRect, MobileTab,
-    MobileTerminal, MobileView, MobileWorkspace,
+    HostChallenge, InputTarget, MobileCell, MobilePane, MobilePaneMap, MobilePaneRect,
+    MobileScroll, MobileTab, MobileTerminal, MobileView, MobileWorkspace,
 };
 pub use ssh::*;
 uniffi::setup_scaffolding!();

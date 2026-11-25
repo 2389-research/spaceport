@@ -39,6 +39,20 @@ pub struct MobileCell {
     pub bg: u32,
     pub modifier: u16,
     pub skip: bool,
+    /// Index into `MobileTerminal::hyperlinks`, numbered by the frame rather
+    /// than the sliced window, so a link's cells share one index with the
+    /// pane beside them.
+    #[uniffi(default = None)]
+    pub hyperlink: Option<u32>,
+}
+
+/// How far a pane's viewport sits above its newest row, and the furthest the
+/// daemon lets it go, in rows of the pane's own grid.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Record)]
+pub struct MobileScroll {
+    pub offset_from_bottom: u64,
+    pub max_offset_from_bottom: u64,
+    pub viewport_rows: u64,
 }
 
 #[derive(uniffi::Record)]
@@ -48,6 +62,13 @@ pub struct MobileTerminal {
     pub cells: Vec<MobileCell>,
     pub cursor_x: Option<u16>,
     pub cursor_y: Option<u16>,
+    /// The hyperlink targets the cells index, as the frame spells them: a
+    /// `mailto:` link is carried unchanged and left for the reader to judge.
+    #[uniffi(default = [])]
+    pub hyperlinks: Vec<String>,
+    /// The focused pane's history position; a popup keeps none.
+    #[uniffi(default = None)]
+    pub scroll: Option<MobileScroll>,
 }
 
 #[derive(uniffi::Record)]
@@ -631,7 +652,7 @@ fn status(agent: Option<AgentStatus>) -> &'static str {
 }
 
 fn terminal(snapshot: &ClientShellSnapshot, surface: &PaneSurfaceFrame) -> Option<MobileTerminal> {
-    let (frame, rect) = if let Some(popup) = &surface.popup {
+    let (frame, rect, scroll) = if let Some(popup) = &surface.popup {
         let frame = &popup.frame;
         (
             frame,
@@ -641,11 +662,17 @@ fn terminal(snapshot: &ClientShellSnapshot, surface: &PaneSurfaceFrame) -> Optio
                 width: frame.width,
                 height: frame.height,
             },
+            None,
         )
     } else {
         let focused = snapshot.focused_pane_id.as_ref()?;
         let pane = surface.panes.iter().find(|p| &p.pane_id == focused)?;
-        (&surface.frame, pane.inner_rect)
+        let scroll = pane.scroll.map(|scroll| MobileScroll {
+            offset_from_bottom: scroll.offset_from_bottom,
+            max_offset_from_bottom: scroll.max_offset_from_bottom,
+            viewport_rows: scroll.viewport_rows,
+        });
+        (&surface.frame, pane.inner_rect, scroll)
     };
     let right = rect.x.checked_add(rect.width)?;
     let bottom = rect.y.checked_add(rect.height)?;
@@ -662,6 +689,7 @@ fn terminal(snapshot: &ClientShellSnapshot, surface: &PaneSurfaceFrame) -> Optio
                 bg: cell.bg,
                 modifier: cell.modifier,
                 skip: cell.skip,
+                hyperlink: cell.hyperlink,
             });
         }
     }
@@ -675,6 +703,8 @@ fn terminal(snapshot: &ClientShellSnapshot, surface: &PaneSurfaceFrame) -> Optio
         cells,
         cursor_x: cursor.map(|c| c.x - rect.x),
         cursor_y: cursor.map(|c| c.y - rect.y),
+        hyperlinks: frame.hyperlinks.clone(),
+        scroll,
     })
 }
 
