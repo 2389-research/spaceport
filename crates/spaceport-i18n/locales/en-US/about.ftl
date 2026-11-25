@@ -15,4 +15,7 @@ about-unaffiliated = An independent fork, not affiliated with or endorsed by the
 about-upstream-team = { $name } team
 # A worktree build's pull request: $number is its number.
 about-pull-request = PR #{ $number }
+# The greeting that rides the sine wave across the top of the About box's
+# stage, as a demo scene announces itself. $publisher and $name stay verbatim.
+about-marquee = { $publisher } presents { $name }
 about-ok = OK

@@ -1,11 +1,20 @@
-//! Classic macOS-style About box: build identity and attribution. It reads embedded
-//! constants, never the daemon or the network; links open in the browser.
+//! The About box: build identity and attribution, over a demoscene stage. It
+//! reads embedded constants, never the daemon or the network; links open in
+//! the browser.
+//!
+//! The words are the panel's own — the version, the publisher, the links and
+//! the credits — and the scene behind them is decoration: [`scene`] paints it
+//! and [`effects`] is its layers. `SPACEPORT_ABOUT_CLASSIC` asks for the same
+//! column without the scene, for QA.
 // i18n: migrated
 use crate::i18n::fl;
 use crate::sidebar::label_text;
 use crate::{SpaceportWindow, constants::HERDR_NAME, menu::Page};
 use gpui::{prelude::*, *};
 use std::sync::{Arc, LazyLock};
+
+mod effects;
+mod scene;
 
 pub(super) const WEBSITE: &str = "https://herdr.dev/";
 pub(super) const REPOSITORY: &str = "https://github.com/2389-research/spaceport";
@@ -36,6 +45,17 @@ impl SpaceportWindow {
     }
 
     pub(super) fn render_about(&self, cx: &mut Context<Self>) -> Div {
+        let credits = self.render_about_credits(cx);
+        if scene::classic() {
+            return credits;
+        }
+        scene::stage(credits, &self.theme, self.config.ui.size)
+    }
+
+    /// The panel's own column: everything the box says. The stage's room
+    /// above the mark is where the marquee rides, so the scene and the
+    /// column lay out the same with or without it.
+    fn render_about_credits(&self, cx: &mut Context<Self>) -> Div {
         let font = &self.config.ui;
         let theme = &self.theme;
         let muted = rgb(theme.muted);
@@ -46,7 +66,8 @@ impl SpaceportWindow {
             .items_center()
             .gap(px(4.))
             .px(px(24.))
-            .py(px(16.))
+            .pt(px(scene::MARK_TOP))
+            .pb(px(scene::ROOM_BOTTOM))
             .text_center()
             .child(
                 div()
