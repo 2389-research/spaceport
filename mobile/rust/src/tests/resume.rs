@@ -81,8 +81,8 @@ fn fresh_resume_ack_does_not_cancel_an_unsettled_focus_fence() {
     let now = Instant::now();
     state.start_fence(
         "choose".into(),
-        NavigationTarget::Pane("not-here-yet".into()),
-        "focus-barrier".into(),
+        OwnedNavigationTarget::Pane("not-here-yet".into()),
+        Ok("focus-barrier".into()),
     );
     state.park();
     state.start_resume("check".into(), now);
@@ -125,5 +125,24 @@ fn a_peer_that_answered_is_not_a_missing_transport_even_if_its_view_stays_stale(
     assert!(matches!(
         state.finish_resume("new", now + Duration::from_secs(5)),
         Err(MobileError::ResumeUnconfirmed)
+    ));
+}
+
+#[test]
+fn a_resume_waits_as_long_as_any_other_barrier() {
+    use spaceport_activation::TIMEOUT;
+    let mut state = ready();
+    let now = Instant::now();
+    state.park();
+    state.start_resume("request".into(), now);
+    assert!(
+        state
+            .finish_resume("request", now + TIMEOUT - Duration::from_millis(1))
+            .is_ok(),
+        "still inside the shared budget, so it keeps waiting"
+    );
+    assert!(matches!(
+        state.finish_resume("request", now + TIMEOUT),
+        Err(MobileError::ResumeTimeout)
     ));
 }

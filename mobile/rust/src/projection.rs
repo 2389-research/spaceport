@@ -5,6 +5,8 @@ mod pane_map;
 mod resume;
 mod wheel;
 pub use pane_map::{MobilePaneMap, MobilePaneRect};
+pub(crate) use spaceport_activation::OwnedNavigationTarget;
+use spaceport_activation::{Failure, Fence, Transition};
 use spaceport_client::{
     ConnectOptions,
     agent_idle::{IdleTracker, now_ms},
@@ -17,7 +19,7 @@ use std::{
         Arc,
         atomic::{AtomicU64, Ordering},
     },
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
@@ -105,19 +107,6 @@ pub struct MobileView {
     pub go_to_arrival: Option<u64>,
 }
 
-/// Where a focus request is aimed: the shared set, whose rules over a
-/// snapshot this projection reads the same way the window does.
-pub(crate) use spaceport_client::navigation::NavigationTarget;
-
-#[derive(Clone)]
-struct FocusFence {
-    request: String,
-    destination: Option<NavigationTarget<String>>,
-    barrier: String,
-    minimum_revision: Option<u64>,
-    deadline: Instant,
-}
-
 #[derive(Clone)]
 pub(crate) struct Projection {
     pub(crate) direct_attach: bool,
@@ -133,8 +122,12 @@ pub(crate) struct Projection {
     pending: Option<Arc<ClientShellSnapshot>>,
     surface: Option<Arc<PaneSurfaceFrame>>,
     focus_interrupted: bool,
-    fence: Option<FocusFence>,
-    route: Option<go_to::Route>,
+    fence: Fence,
+    /// The focus request's own id, so its refusal can drop the destination
+    /// while the ordered barrier still establishes which pane owns input. The
+    /// shared fence records only the barrier.
+    focus_request: Option<String>,
+    route: Option<go_to::Walk>,
     go_to_arrival: Option<u64>,
     last_input: Option<Instant>,
     reassert_since: Option<Instant>,
@@ -161,7 +154,8 @@ impl Projection {
             pending: None,
             surface: None,
             focus_interrupted: false,
-            fence: None,
+            fence: Fence::Open,
+            focus_request: None,
             route: None,
             go_to_arrival: None,
             last_input: None,
@@ -264,7 +258,7 @@ impl Projection {
     }
 
     pub(crate) fn navigating(&self) -> bool {
-        self.fence.is_some()
+        self.fence.fenced()
     }
 
     pub(crate) fn initial_focus(&self) -> Option<&str> {
@@ -300,43 +294,78 @@ impl Projection {
         true
     }
 
-    pub(crate) fn expired(&self) -> bool {
-        self.fence
-            .as_ref()
-            .is_some_and(|f| Instant::now() >= f.deadline)
+    /// The failure that ended this barrier, once it has one, folding in the
+    /// deadline the fence itself carries.
+    pub(crate) fn fence_failure(&mut self) -> Option<Failure> {
+        self.fence.transition(Transition::Expire(Instant::now()));
+        match &self.fence {
+            Fence::Failed { cause, .. } => Some(*cause),
+            _ => None,
+        }
     }
 
+    /// Registers the ordered barrier an accepted focus request is waiting on.
     pub(crate) fn start_fence(
         &mut self,
         request: String,
-        destination: NavigationTarget<String>,
-        barrier: String,
+        destination: OwnedNavigationTarget,
+        barrier: Result<String, spaceport_client::SendError>,
     ) {
         self.surface = None;
         if let Some(pending) = self.pending.take() {
             self.adopt_snapshot(pending)
         }
-        self.fence = Some(FocusFence {
-            request,
-            destination: Some(destination),
-            barrier,
-            minimum_revision: None,
-            deadline: Instant::now() + Duration::from_secs(5),
+        self.focus_request = Some(request);
+        let boot = self.boot_id();
+        self.barrier_queued(barrier, boot, Some(destination));
+    }
+
+    /// The barrier the queue refused, waiting to be offered again.
+    pub(crate) fn retry_barrier(&self) -> Option<(String, Option<OwnedNavigationTarget>)> {
+        match &self.fence {
+            Fence::Retry { boot, focus } => Some((boot.clone(), focus.clone())),
+            _ => None,
+        }
+    }
+
+    /// Records where an offered barrier went. A queue that refused it as full
+    /// proves it never entered the ordered queue, so the fence keeps the
+    /// destination and offers it again rather than ending the session.
+    pub(crate) fn barrier_queued(
+        &mut self,
+        result: Result<String, spaceport_client::SendError>,
+        boot: String,
+        focus: Option<OwnedNavigationTarget>,
+    ) {
+        if let Err(error) = &result
+            && !matches!(error, spaceport_client::Error::Full)
+        {
+            self.error = Some(error.to_string());
+        }
+        self.fence.transition(Transition::Queued {
+            result,
+            boot,
+            focus,
+            active: true,
+            now: Instant::now(),
         });
     }
 
+    fn boot_id(&self) -> String {
+        self.snapshot
+            .as_ref()
+            .map(|snapshot| snapshot.boot_id.clone())
+            .unwrap_or_default()
+    }
+
+    /// Opens the activation's surface once the projection both halves agree on
+    /// is the one the barrier was acknowledged at, and holds the destination it
+    /// was aimed at.
     fn settle(&mut self) {
-        if let Some(fence) = &self.fence
-            && let Some((snapshot, surface)) = self.coherent()
-            && fence
-                .minimum_revision
-                .is_some_and(|min| surface.projection_revision >= min)
-            && fence
-                .destination
-                .as_ref()
-                .is_none_or(|target| target.is_focused_in(snapshot))
+        if let Some((snapshot, surface)) = self.coherent()
+            && self.fence.ready(snapshot, surface)
         {
-            self.fence = None;
+            self.fence.transition(Transition::Opened);
         }
     }
 
@@ -362,21 +391,37 @@ impl Projection {
         if let Err(error) = &result {
             self.error = Some(error.to_string());
         }
-        let Some(fence) = &mut self.fence else { return };
-        if fence.request == id && result.is_err() {
-            // The requested pane did not acquire focus. The ordered barrier still
-            // establishes which pane actually owns subsequent input.
-            self.route = None;
-            fence.destination = None;
-        }
-        if fence.barrier == id {
-            fence.minimum_revision = result.ok().and_then(|r| surface_revision(r, true));
-            if fence.minimum_revision.is_none() {
-                self.end(
-                    "Herdr could not confirm the selected terminal. Reconnect to continue.".into(),
-                );
-                return;
+        if self.focus_request.as_deref() == Some(id) {
+            // The requested pane did not acquire focus. The ordered barrier
+            // still establishes which pane actually owns subsequent input, so
+            // the fence keeps waiting for the barrier alone.
+            self.focus_request = None;
+            if result.is_err() {
+                self.route = None;
+                self.fence.transition(Transition::Settled);
             }
+            self.settle();
+            return;
+        }
+        self.fence.transition(Transition::Response {
+            request: id,
+            result: result.ok(),
+        });
+        if matches!(
+            self.fence,
+            Fence::Failed {
+                cause: Failure::InvalidResponse,
+                ..
+            }
+        ) && self
+            .fence
+            .request()
+            .is_some_and(|request| request.request == id)
+        {
+            self.end(
+                "Herdr could not confirm the selected terminal. Reconnect to continue.".into(),
+            );
+            return;
         }
         self.settle();
     }
@@ -389,15 +434,19 @@ impl Projection {
         if id.is_some_and(|id| self.resume_reply(id, None)) {
             return;
         }
-        if let Some(fence) = &mut self.fence {
-            if id == Some(&fence.barrier) {
-                self.end(message);
-                return;
-            }
-            if id == Some(&fence.request) {
-                self.route = None;
-                fence.destination = None;
-            }
+        if let Some(id) = id {
+            self.fence.transition(Transition::Rejected(id));
+        }
+        if self.fence.failed() {
+            // The barrier the daemon refused ends the session: nothing is left
+            // to establish which pane owns input.
+            self.end(message);
+            return;
+        }
+        if id.is_some() && id == self.focus_request.as_deref() {
+            self.focus_request = None;
+            self.route = None;
+            self.fence.transition(Transition::Settled);
         }
         self.error = Some(message);
         self.settle();
@@ -407,7 +456,8 @@ impl Projection {
         self.focus_interrupted = self.focus_interrupted();
         self.disconnected = true;
         self.history = Default::default();
-        self.fence = None;
+        self.fence = Fence::Open;
+        self.focus_request = None;
         self.route = None;
         self.error = Some(reason);
     }
