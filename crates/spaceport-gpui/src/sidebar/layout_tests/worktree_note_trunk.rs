@@ -19,7 +19,7 @@ fn a_childs_trunk_runs_on_past_its_note_to_the_next_sibling(cx: &mut gpui::TestA
         view.live.snapshot = Some(Arc::new(snapshot(6)));
         view.live.status = crate::state::ConnectionStatus::Connected;
         view.live.supports_surface = true;
-        view.endpoints[0].live = view.live.clone();
+        *view.endpoints[0].live_mut() = view.live.clone();
         view
     });
     cx.simulate_resize(size(px(800.), px(900.)));

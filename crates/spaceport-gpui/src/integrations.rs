@@ -195,9 +195,9 @@ impl SpaceportWindow {
                     && endpoint.generation == scope.generation
                     && self.selection_epoch == scope.epoch
                     && Arc::ptr_eq(&endpoint.connection.integrations, &scope.inbox)
-                    && endpoint.live.status.is_connected()
+                    && endpoint.live().status.is_connected()
                     && endpoint
-                        .live
+                        .live()
                         .snapshot
                         .as_ref()
                         .is_some_and(|snapshot| snapshot.boot_id == scope.boot)
@@ -224,11 +224,11 @@ impl SpaceportWindow {
                 .endpoints
                 .get(self.selected_endpoint)
                 .ok_or(crate::Error::NotConnected)?;
-            if !endpoint.live.status.is_connected() {
+            if !endpoint.live().status.is_connected() {
                 return Err(crate::Error::NotConnected);
             }
             let snapshot = endpoint
-                .live
+                .live()
                 .snapshot
                 .as_ref()
                 .ok_or(crate::Error::NoSnapshot)?;

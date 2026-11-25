@@ -3,46 +3,50 @@
 // i18n: migrated
 use super::{
     LiveState, NavigationTarget, SpaceportWindow, WheelAccumulator, connection::ConnectionBridge,
-    state::ConnectionStatus,
 };
 use crate::i18n::{Localize, fl};
 use crate::state::activation::TIMEOUT as ACTIVATION_TIMEOUT;
 use gpui::Context;
-use spaceport_client::{ClientHandle, ConnectOptions, ConnectTarget, SshFailure, VersionMismatch};
+use spaceport_client::{ClientHandle, ConnectOptions, ConnectTarget, VersionMismatch};
 use std::{
     collections::HashSet,
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
     },
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 mod catalog;
 mod config_reload;
 mod error;
 pub(crate) mod fence;
+#[cfg(test)]
+mod fixtures;
 mod follow;
-mod link;
 mod order;
 pub(crate) mod origin;
-mod phase;
 mod polling;
 mod wake;
 
 pub use error::Error;
-use link::{Link, Transition};
-pub(crate) use phase::Phase;
-// The endpoint policy below GPUI, reached through the paths this module has
-// always named it by.
+// What only the socket-driving fixtures below name: the daemon's status and SSH
+// refusal they install, and the link curve's own bounds they time against.
+#[cfg(test)]
+pub(crate) use crate::state::ConnectionStatus;
+#[cfg(all(test, unix))]
+pub(crate) use spaceport_client::SshFailure;
+#[cfg(all(test, unix))]
+pub(crate) use spaceport_endpoint::{MAX_RETRY_DELAY, STABLE_CONNECTION_PERIOD};
+#[cfg(test)]
+pub(crate) use std::time::Duration;
+// The endpoint program below GPUI, reached through the paths this module has
+// always named it by: the policy stage 1 and 2 lowered, and the host the link
+// machine and the live state live in.
 pub(crate) use spaceport_endpoint::{
-    Catalog, History, LOCAL, Step, WSL_PREFIX, WakeClock, focus_requested, saved_profile_id,
-    watch_network,
+    Action, Catalog, History, Host, LOCAL, Phase, Step, Transition, Transport, WSL_PREFIX,
+    WakeClock, focus_requested, saved_profile_id, watch_network,
 };
-const STABLE_CONNECTION_PERIOD: Duration = Duration::from_secs(60);
-/// Upstream rechecks failed SSH machines every 30 seconds, so authentication
-/// repaired outside the app (a new master, a loaded key) is picked up promptly.
-const MAX_RETRY_DELAY: Duration = Duration::from_secs(30);
 
 /// How much of the window an update changes. Ordered, so several updates
 /// combine into the widest.
@@ -139,7 +143,9 @@ pub(super) struct Endpoint {
     pub id: String,
     pub label: String,
     pub connection: ConnectionBridge,
-    link: Link,
+    /// The link machine and the live state it is read from, below GPUI: seen
+    /// through the readings and performers below, and never entering a view.
+    pub(crate) host: Host,
     /// The target the saved entry named when this endpoint was last reconciled
     /// against it. Its own session may have been picked in the sessions list
     /// since, so a catalog change can only be told from such a pick by
@@ -147,18 +153,17 @@ pub(super) struct Endpoint {
     saved: Option<ConnectTarget>,
     pub collapsed: bool,
     pub collapsed_repos: HashSet<String>,
-    pub live: LiveState,
-    /// Each tab's last frame before `live` moved on, for Go To's preview.
+    /// Each tab's last frame before `live()` moved on, for Go To's preview.
     pub(crate) last_seen: crate::palette::LastSeen,
-    /// Back and Forward through the panes `live` has focused.
+    /// Back and Forward through the panes `live()` has focused.
     pub(crate) history: History,
     pub generation: u64,
     pub(crate) toasts: crate::notifications::Toasts,
-    /// Derived from `live.snapshot`; refreshed by `sync_live` whenever `live` changes.
+    /// Derived from `live().snapshot`; refreshed by `sync_live` whenever
+    /// `live()` changes.
     pub(crate) config_diagnostic: crate::config_diagnostic::ConfigDiagnostic,
-    attempts: u32,
     /// A sleep or network change this endpoint has not yet recovered from;
-    /// see [`Self::recover`].
+    /// see [`SpaceportWindow::recover_connections`].
     recovery: Option<wake::Trigger>,
     initial_surface: bool,
     /// A `server.reload_config` waiting for this connection's surface; see
@@ -173,9 +178,145 @@ pub(super) struct Endpoint {
     sounds: spaceport_sound::Policy,
 }
 
+// The rules below are the crate host's: the app reads them through the endpoint
+// it holds, so no caller spells a path into the link machine.
 impl Endpoint {
+    pub(crate) fn live(&self) -> &LiveState {
+        self.host.live()
+    }
+
+    pub(crate) fn live_mut(&mut self) -> &mut LiveState {
+        self.host.live_mut()
+    }
+
+    /// The stored lifecycle, independent of a window's older worker projection.
+    pub(crate) fn phase(&self) -> Phase {
+        self.host.phase()
+    }
+
+    /// The endpoint's state as `herdr-gpui` commands report it, in English.
+    pub fn status(&self) -> &'static str {
+        self.phase().status()
+    }
+
+    /// The endpoint's state as the device picker shows it.
+    pub fn status_label(&self) -> String {
+        fl!("endpoint-status", state = self.phase().as_str())
+    }
+
+    pub(crate) fn enabled(&self) -> bool {
+        self.host.enabled()
+    }
+
+    pub(super) fn detached(&self) -> bool {
+        self.host.detached()
+    }
+
+    pub(super) fn retry_at(&self) -> Instant {
+        self.host.retry_at()
+    }
+
+    pub(crate) fn herdr_missing(&self) -> bool {
+        self.host.herdr_missing()
+    }
+
+    pub(crate) fn herdr_stopped(&self) -> bool {
+        self.host.herdr_stopped()
+    }
+
+    pub(crate) fn version_mismatch(&self) -> Option<&VersionMismatch> {
+        self.host.version_mismatch()
+    }
+
+    pub(crate) fn outage(&self) -> Option<&str> {
+        self.host.outage()
+    }
+
+    #[cfg(all(test, unix))]
+    pub(super) fn retry_delay(&self) -> Duration {
+        self.host.retry_delay()
+    }
+
+    /// Whether a live transport has delivered a snapshot.
+    pub(crate) fn serving(&self) -> bool {
+        self.host.serving(self.transport())
+    }
+
+    /// Whether the endpoint wants a connection and has no transport.
+    pub(super) fn may_dial(&self) -> bool {
+        self.host.may_dial(self.connection.retry_ready())
+    }
+
     pub fn surface_requested(&self) -> bool {
         self.initial_surface
+    }
+
+    /// What the link machine needs of this endpoint's socket, which it does not
+    /// hold: whether an attempt has a handle, whether that handle's worker is
+    /// still there, and whether this host's daemon could be asked again.
+    fn transport(&self) -> Transport {
+        Transport {
+            handled: self.connection.handle.is_some(),
+            alive: self
+                .connection
+                .handle
+                .as_ref()
+                .is_some_and(|handle| !handle.is_disconnected()),
+            can_restart: crate::daemon::may_start(&self.connection.target)
+                || matches!(
+                    self.connection.target,
+                    ConnectTarget::Ssh { .. } | ConnectTarget::Wsl { .. }
+                ),
+        }
+    }
+
+    /// Enters `transition` on the host and performs what it comes back with.
+    fn enter(&mut self, transition: Transition<'_>) {
+        let action = self.host.enter(transition);
+        self.perform(action);
+    }
+
+    /// Performs what the link machine asked of this endpoint's socket. The
+    /// window owns the transport, the toasts and the connection identity, so
+    /// each of those is done here and nowhere below GPUI.
+    fn perform(&mut self, action: Action) {
+        match action {
+            Action::None => {}
+            Action::CheckLiveness => {
+                if let Some(handle) = &self.connection.handle {
+                    handle.check_liveness();
+                }
+            }
+            Action::Detach => self.retire_transport(),
+            Action::Retire { target } => {
+                self.retire_transport();
+                *self.host.live_mut() = LiveState::default();
+                self.connection = ConnectionBridge::new(target);
+                self.recovery = None;
+            }
+        }
+    }
+
+    /// What stopping an attempt leaves of the window's own facts: nothing queued
+    /// for the toast list, no surface asked for, and a new connection identity.
+    fn stop_side(&mut self) {
+        self.toasts.entries.clear();
+        self.initial_surface = false;
+        self.focus_requested = false;
+        self.generation += 1;
+    }
+
+    /// Retires the transport and takes the state it left.
+    fn retire_transport(&mut self) {
+        self.stop_side();
+        self.connection.detach(false);
+        self.take_live();
+        self.host.retired();
+    }
+
+    /// Takes whatever the bridge holds, which a retirement has just replaced.
+    fn take_live(&mut self) {
+        *self.host.live_mut() = self.connection.take_update().unwrap_or_default();
     }
 
     /// Trades this endpoint's connection, and its projection, for another
@@ -187,51 +328,57 @@ impl Endpoint {
         connection: &mut ConnectionBridge,
         live: &mut LiveState,
     ) {
-        self.enter(Transition::Trade(connection, live));
+        std::mem::swap(&mut self.connection, connection);
+        std::mem::swap(self.host.live_mut(), live);
+        self.initial_surface = true;
+        self.enter(Transition::Trade(self.transport()));
         self.sync_live();
     }
 
     /// Refreshes state derived from `live` after it is replaced.
     pub(crate) fn sync_live(&mut self) {
-        self.enter(Transition::Observe(Instant::now()));
+        self.enter(Transition::Observe {
+            now: Instant::now(),
+            transport: self.transport(),
+        });
         self.sync_live_projection();
     }
 
     fn sync_live_projection(&mut self) {
         #[cfg(any(target_os = "macos", target_os = "linux"))]
-        if let Some(warning) = self.live.local_peer_warning.take() {
+        if let Some(warning) = self.host.live_mut().local_peer_warning.take() {
             self.toasts
                 .receive([crate::daemon::warning::notice(&warning, Instant::now())]);
         }
         // Without surface support there is no navigation fence to watch, so
         // a travel waits for the next focus change instead.
-        let navigating = self.live.snapshot.is_some()
-            && (self.live.activation_pending() || !self.live.supports_surface);
+        let navigating = self.host.live().snapshot.is_some()
+            && (self.host.live().activation_pending() || !self.host.live().supports_surface);
         self.history
-            .observe(self.live.snapshot.as_deref(), navigating);
+            .observe(self.host.live().snapshot.as_deref(), navigating);
         self.config_diagnostic.sync(
-            self.live
+            self.host
+                .live()
                 .snapshot
                 .as_deref()
                 .and_then(|snapshot| snapshot.config_diagnostic.as_deref()),
         );
     }
+
     pub fn new(id: String, label: String, target: ConnectTarget, enabled: bool) -> Self {
         Self {
             id,
             label,
             connection: ConnectionBridge::new(target),
-            link: Link::initial(enabled),
+            host: Host::new(enabled),
             saved: None,
             collapsed: false,
             collapsed_repos: HashSet::new(),
-            live: LiveState::default(),
             last_seen: Default::default(),
             history: Default::default(),
             generation: 0,
             toasts: Default::default(),
             config_diagnostic: Default::default(),
-            attempts: 0,
             recovery: None,
             initial_surface: false,
             config_reload_pending: false,
@@ -267,24 +414,29 @@ impl Endpoint {
     /// Point this endpoint at another target, retiring the old transport. The
     /// endpoint keeps its identity, label, and sidebar state; nothing the old
     /// connection produced survives it.
-    fn retarget(&mut self, target: ConnectTarget) {
-        self.enter(Transition::Retarget {
-            target,
-            enabled: self.enabled(),
-        });
+    fn retarget(&mut self, target: ConnectTarget, enabled: bool) {
+        self.enter(Transition::Retarget { target, enabled });
         self.sync_live();
     }
 
     fn connect(&mut self, options: ConnectOptions, active: bool) {
-        self.enter(Transition::Connect { options, active });
+        // The link machine records the attempt and the backoff it earns; the
+        // dial itself belongs to the window that holds the options.
+        self.enter(Transition::Connect);
+        self.stop_side();
+        self.initial_surface = active;
+        self.connection
+            .reconnect(options, false, active, crate::daemon::Start::WhenMissing);
+        self.take_live();
         self.sync_live();
-        self.toasts.receive(self.live.notifications.drain(..));
+        self.toasts
+            .receive(self.host.live_mut().notifications.drain(..));
     }
 
     fn poll(&mut self, now: Instant) -> Redraw {
         let mut changed = Redraw::None;
         if let Some(mut state) = self.connection.take_update() {
-            changed = if self.live.only_surface_changed(&state) {
+            changed = if self.host.live().only_surface_changed(&state) {
                 Redraw::Terminal
             } else {
                 Redraw::Window
@@ -292,7 +444,8 @@ impl Endpoint {
             if state.notifications_lost
                 || !state.status.is_connected()
                 || self
-                    .live
+                    .host
+                    .live()
                     .snapshot
                     .as_ref()
                     .zip(state.snapshot.as_ref())
@@ -302,7 +455,10 @@ impl Endpoint {
             }
             self.toasts.receive(state.notifications.drain(..));
             self.last_seen.observe(
-                (self.live.snapshot.as_deref(), self.live.surface.as_ref()),
+                (
+                    self.host.live().snapshot.as_deref(),
+                    self.host.live().surface.as_ref(),
+                ),
                 (state.snapshot.as_deref(), state.surface.as_ref()),
                 crate::palette::unix_now(),
             );
@@ -310,6 +466,7 @@ impl Endpoint {
             self.enter(Transition::Update {
                 state: &mut state,
                 now,
+                transport: self.transport(),
             });
             self.sync_live_projection();
         }
@@ -319,7 +476,11 @@ impl Endpoint {
             .as_ref()
             .is_some_and(ClientHandle::is_disconnected)
         {
-            self.enter(Transition::Lost(now));
+            self.connection.handle = None;
+            self.enter(Transition::Lost {
+                now,
+                lost: fl!("endpoint-connection-lost"),
+            });
             changed = Redraw::Window;
         }
         if let Some(trigger) = self.recovery
@@ -327,60 +488,33 @@ impl Endpoint {
         {
             self.recovery = None;
         }
-        self.enter(Transition::Observe(now));
+        self.enter(Transition::Observe {
+            now,
+            transport: self.transport(),
+        });
         changed
     }
 
     /// After a sleep or a network change, once this poll has taken what the
-    /// worker reported. A live link is asked to prove itself, which a healthy
-    /// one does in a round trip; a changed path does nothing more, since such
-    /// reports also come for changes no connection minds.
-    ///
-    /// After a sleep or a network coming back, failures before it, often from
-    /// dark wakes with no network, say nothing about the network now, so the
-    /// backoff starts over. A remote attempt still dialing was started with
-    /// no usable path and may hang until its timeout, so it is abandoned and
-    /// dialed again, unless the worker has reported it up since the update
-    /// was taken. A dropped endpoint is dialed at once, except one refused
-    /// for a reason only the user can fix. Detached and disabled endpoints
-    /// stay as they are.
-    ///
-    /// Returns false, to be called again next poll, when the worker's report
-    /// cannot be read without blocking.
+    /// worker reported; see [`Host::recover`] for the rules. Returns false, to
+    /// be called again next poll, when the worker's report cannot be read
+    /// without blocking.
     fn recover(&mut self, trigger: wake::Trigger, now: Instant) -> bool {
-        let thorough = trigger >= wake::Trigger::NetworkRestored;
-        let networked = self.connection.target.is_remote()
-            && !matches!(self.connection.target, ConnectTarget::Wsl { .. });
-        if thorough
-            && networked
-            && self.connection.handle.is_some()
-            && !self.live.status.is_connected()
-        {
-            match self.connection.reports_connected() {
-                None => return false,
-                Some(true) => {}
-                Some(false) => {
-                    self.enter(Transition::Stop);
-                }
+        let action = self.host.recover(
+            trigger,
+            now,
+            &self.connection.target,
+            self.transport(),
+            || self.connection.reports_connected(),
+        );
+        match action {
+            None => false,
+            Some(action) => {
+                self.perform(action);
+                true
             }
         }
-        if thorough {
-            self.enter(Transition::ResetAttempts);
-        }
-        match &self.connection.handle {
-            Some(handle) => handle.check_liveness(),
-            None if thorough && !self.waits_for_user() => {
-                self.enter(Transition::RetryAt(self.retry_at().min(now)));
-            }
-            None => {}
-        }
-        true
     }
-}
-
-/// Whether `live` ended for a reason only the user can fix.
-fn needs_user(live: &LiveState) -> bool {
-    live.missing_installation || live.ssh_failure.is_some_and(SshFailure::needs_user)
 }
 
 impl Drop for Endpoint {
@@ -421,7 +555,8 @@ impl SpaceportWindow {
                 _ => None,
             };
             if let Some(replacement) = replacement {
-                endpoint.retarget(replacement);
+                let enabled = endpoint.enabled();
+                endpoint.retarget(replacement, enabled);
                 selected_changed |= index == self.selected_endpoint;
             }
         }
@@ -453,11 +588,9 @@ impl SpaceportWindow {
     ///
     /// Panics when `index` is not an endpoint, as indexing `endpoints` does.
     pub(crate) fn live_of(&self, index: usize) -> &LiveState {
-        if index == self.selected_endpoint {
-            &self.live
-        } else {
-            &self.endpoints[index].live
-        }
+        spaceport_endpoint::live_of(self.selected_endpoint, &self.live, index, |index| {
+            &self.endpoints[index].host
+        })
     }
 
     /// Every endpoint with its current state, in `self.endpoints` order.
@@ -480,7 +613,7 @@ impl SpaceportWindow {
         self.discard_composition(cx);
         let endpoint = &self.endpoints[self.selected_endpoint];
         self.selected_generation = endpoint.generation;
-        self.live = endpoint.live.clone();
+        self.live = endpoint.live().clone();
         if !endpoint.initial_surface {
             self.live.invalidate_surface();
         }
@@ -558,7 +691,8 @@ impl SpaceportWindow {
         // Retarget before selecting: the poll loop reconnects endpoint zero, so
         // it must never still name the session it is leaving.
         if self.endpoints[0].connection.target != target {
-            self.endpoints[0].retarget(target);
+            let enabled = self.endpoints[0].enabled();
+            self.endpoints[0].retarget(target, enabled);
         }
         if self.selected_endpoint != 0 && self.switch_endpoint(LOCAL, cx).is_err() {
             return;
@@ -607,7 +741,8 @@ impl SpaceportWindow {
         // name the session the window is leaving.
         let retargeted = self.endpoints[index].connection.target != target;
         if retargeted {
-            self.endpoints[index].retarget(target);
+            let enabled = self.endpoints[index].enabled();
+            self.endpoints[index].retarget(target, enabled);
         }
         if self.selected_endpoint != index && self.switch_endpoint(id, cx).is_err() {
             return;
@@ -643,10 +778,12 @@ impl SpaceportWindow {
         }
         if index != 0
             && self.endpoints[self.selected_endpoint]
-                .live
+                .live()
                 .status
                 .is_connected()
-            && !self.endpoints[self.selected_endpoint].live.supports_surface
+            && !self.endpoints[self.selected_endpoint]
+                .live()
+                .supports_surface
         {
             let error = Error::SurfaceSwitchingUnsupported;
             self.notices
@@ -680,7 +817,7 @@ impl SpaceportWindow {
         // A handshake started with an active surface cannot be demoted without
         // its boot ID. Retire that attempt rather than let it finish in background.
         if endpoint.initial_surface
-            && (endpoint.connection.handle.is_none() || endpoint.live.snapshot.is_none())
+            && (endpoint.connection.handle.is_none() || endpoint.live().snapshot.is_none())
         {
             endpoint.stop();
             endpoint.enter(Transition::RetryAt(Instant::now()));
@@ -688,7 +825,7 @@ impl SpaceportWindow {
         }
         if endpoint.initial_surface
             && let (Some(handle), Some(snapshot)) =
-                (&endpoint.connection.handle, &endpoint.live.snapshot)
+                (&endpoint.connection.handle, &endpoint.live().snapshot)
         {
             let mut release = Release {
                 inbox: endpoint.connection.inbox.clone(),
@@ -704,7 +841,7 @@ impl SpaceportWindow {
             state.invalidate_surface();
         }
         endpoint.initial_surface = false;
-        endpoint.live.invalidate_surface();
+        endpoint.live_mut().invalidate_surface();
     }
 
     pub(super) fn navigate_endpoint(

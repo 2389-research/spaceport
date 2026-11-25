@@ -381,7 +381,7 @@ impl SpaceportWindow {
                     connected = self
                         .endpoints
                         .iter()
-                        .filter(|e| e.live.status.is_connected())
+                        .filter(|e| e.live().status.is_connected())
                         .count()
                 ),
                 self.device_filter == DeviceScope::All,
@@ -477,7 +477,7 @@ impl SpaceportWindow {
                         .size(px(7.))
                         .flex_none()
                         .rounded_full()
-                        .bg(rgb(if endpoint.live.status.is_connected() {
+                        .bg(rgb(if endpoint.live().status.is_connected() {
                             colors::online(&self.theme)
                         } else {
                             self.theme.muted

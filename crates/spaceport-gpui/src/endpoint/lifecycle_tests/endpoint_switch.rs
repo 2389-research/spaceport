@@ -9,8 +9,8 @@ fn saved_selection_waits_for_snapshot_without_overwriting_preference(
     });
     let view = fixture.update(cx, |fixture, _| fixture.0.clone());
     let (mut remote, _server) = connected_endpoint("ssh:saved");
-    let ready = remote.live.clone();
-    remote.live.snapshot = None;
+    let ready = remote.live().clone();
+    remote.live_mut().snapshot = None;
     remote.initial_surface = false;
     view.update(cx, |view, cx| {
         view.catalog.desired = Some("ssh:saved".into());
@@ -25,7 +25,7 @@ fn saved_selection_waits_for_snapshot_without_overwriting_preference(
             assert_eq!(view.selected_endpoint, 0);
             assert!(view.live.activation.deadline().is_none());
         }
-        view.endpoints[1].live = ready;
+        *view.endpoints[1].live_mut() = ready;
         view.restore_selection(cx);
         assert_eq!(view.selected_endpoint, 1);
         assert!(!view.catalog.restore_pending);

@@ -11,6 +11,8 @@ workspace = true
 
 [dependencies]
 spaceport-client.workspace  = true
+# The live state a host's link is read from.
+spaceport-live.workspace    = true
 spaceport-reorder.workspace = true
 thiserror.workspace         = true
 tracing.workspace           = true
@@ -19,6 +21,11 @@ tracing.workspace           = true
 # The network path monitor: a block on its own queue, which only counts.
 block2.workspace    = true
 dispatch2.workspace = true
+
+[features]
+# `Link`, `Failure` and the fixture writes the app's headless tests install a
+# link with, and `ConnectionRef::for_test`.
+test-support = []
 
 [dev-dependencies]
 # The history and focus tests read the protocol's own endpoint snapshot

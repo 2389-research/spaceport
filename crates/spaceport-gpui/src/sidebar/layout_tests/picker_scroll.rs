@@ -25,7 +25,7 @@ fn the_wheel_does_not_move_a_device_picker_that_fits(cx: &mut gpui::TestAppConte
                 },
                 true,
             );
-            remote.live.snapshot = view.live.snapshot.clone();
+            remote.live_mut().snapshot = view.live.snapshot.clone();
             view.endpoints.push(remote);
         })
     });
@@ -73,7 +73,7 @@ fn a_device_picker_that_overflows_scrolls_its_list(cx: &mut gpui::TestAppContext
                     },
                     true,
                 );
-                remote.live.snapshot = view.live.snapshot.clone();
+                remote.live_mut().snapshot = view.live.snapshot.clone();
                 view.endpoints.push(remote);
             }
         })

@@ -11,7 +11,7 @@ fn reselection_keeps_its_budget_across_an_old_inactive_receipt(cx: &mut gpui::Te
     let view = fixture.update(cx, |fixture, _| fixture.0.clone());
     let (source, mut source_server) = connected_endpoint("ssh:source");
     let (mut target, mut target_server) = connected_endpoint("ssh:target");
-    let previous = target.live.snapshot.as_ref().unwrap();
+    let previous = target.live().snapshot.as_ref().unwrap();
     let mut old = Fence::Open;
     old.transition(Transition::Queued {
         result: Ok("previous-release".into()),
@@ -27,7 +27,7 @@ fn reselection_keeps_its_budget_across_an_old_inactive_receipt(cx: &mut gpui::Te
         })),
     });
     target.connection.inbox.lock().unwrap().activation = old.clone();
-    target.live.activation = old;
+    target.live_mut().activation = old;
     target.initial_surface = false;
     let inbox = target.connection.inbox.clone();
     view.update(cx, |view, cx| {

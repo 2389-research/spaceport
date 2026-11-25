@@ -107,6 +107,7 @@ spaceport-remote = { features = ["test-support"], workspace = true }
 spaceport-control-protocol = { features = ["test-support"], workspace = true }
 spaceport-diagnostics = { features = ["test-support"], workspace = true }
 spaceport-usage = { features = ["test-support"], workspace = true }
+spaceport-endpoint = { features = ["test-support"], workspace = true }
 spaceport-live = { features = ["test-support"], workspace = true }
 socket2.workspace = true
 test-case.workspace = true

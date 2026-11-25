@@ -111,8 +111,8 @@ fn resume_reopens_on_a_clicked_row(cx: &mut TestAppContext) {
             },
             true,
         );
-        remote.live.snapshot = Some(Arc::new(snapshot()));
-        remote.live.status = crate::state::ConnectionStatus::Connected;
+        remote.live_mut().snapshot = Some(Arc::new(snapshot()));
+        remote.live_mut().status = crate::state::ConnectionStatus::Connected;
         view.endpoints.push(remote);
         view
     });

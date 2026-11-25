@@ -7,7 +7,7 @@ fn mute(view: &Entity<SpaceportWindow>, cx: &mut VisualTestContext, endpoint: us
         let snapshot = if endpoint == view.selected_endpoint {
             view.live.snapshot.clone()
         } else {
-            view.endpoints[endpoint].live.snapshot.clone()
+            view.endpoints[endpoint].live().snapshot.clone()
         }
         .unwrap();
         assert!(Mutes::update(cx, |mutes| {

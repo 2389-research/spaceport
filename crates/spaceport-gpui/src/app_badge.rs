@@ -172,7 +172,7 @@ pub(super) fn install(cx: &mut App) {
 pub(super) fn sync(window: WindowId, endpoints: &[Endpoint], cx: &mut App) {
     let shown = endpoints
         .iter()
-        .filter(|endpoint| endpoint.enabled() && endpoint.live.status.is_connected())
+        .filter(|endpoint| endpoint.enabled() && endpoint.live().status.is_connected())
         .filter_map(|endpoint| {
             let host = match &endpoint.connection.target {
                 ConnectTarget::Ssh { target, .. } => Some(target.as_str()),
@@ -180,7 +180,7 @@ pub(super) fn sync(window: WindowId, endpoints: &[Endpoint], cx: &mut App) {
                 _ => None,
             };
             endpoint
-                .live
+                .live()
                 .snapshot
                 .as_ref()
                 .map(|snapshot| (host, snapshot, endpoint))

@@ -95,7 +95,7 @@ fn the_card_stacks_below_a_config_diagnostic(cx: &mut TestAppContext) {
     warned.config_diagnostic = Some("config.toml invalid; using defaults".into());
     let (view, cx) = connected(cx, &peer, warned);
     view.update(cx, |view, cx| {
-        view.endpoints[0].live = view.live.clone();
+        *view.endpoints[0].live_mut() = view.live.clone();
         view.endpoints[0].sync_live();
         cx.notify();
     });

@@ -77,7 +77,7 @@ impl SpaceportWindow {
         let removing = self.device_removing(endpoint);
         let endpoint_collapsed = endpoint.collapsed;
         let endpoint_label = endpoint.label.clone();
-        let connected = endpoint.live.status.is_connected();
+        let connected = endpoint.live().status.is_connected();
         // The Devices layout counts the agents listed under the header.
         let working = (!self.config.layout.mode.lists_workspaces())
             .then(|| self.working_summary(endpoint))
@@ -280,7 +280,7 @@ impl SpaceportWindow {
                             .size(px(dot))
                             .flex_none()
                             .rounded_full()
-                            .bg(rgb(if endpoint.live.status.is_connected() {
+                            .bg(rgb(if endpoint.live().status.is_connected() {
                                 crate::menu::online(theme)
                             } else {
                                 theme.muted

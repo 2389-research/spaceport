@@ -236,7 +236,7 @@ fn window(cx: &mut TestAppContext) -> (Entity<SpaceportWindow>, &mut VisualTestC
         view.live.snapshot = Some(Arc::new(shown));
         view.live.status = ConnectionStatus::Connected;
         // A connected endpoint's projection is what the window copied.
-        view.endpoints[0].live = view.live.clone();
+        *view.endpoints[0].live_mut() = view.live.clone();
         view
     })
 }
@@ -333,7 +333,7 @@ fn using_a_parked_group_swaps_its_connection_in(cx: &mut TestAppContext) {
         assert_eq!(view.focused_herdr_tab(), Some("t1"));
         assert_eq!(
             view.endpoints[0]
-                .live
+                .live()
                 .snapshot
                 .as_ref()
                 .and_then(|s| s.focused_tab_id.as_deref()),

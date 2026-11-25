@@ -8,7 +8,7 @@ fn a_session_form_taller_than_the_window_still_scrolls(cx: &mut TestAppContext) 
     let (view, cx) =
         on_the_first_device(cx, Some(reported(&[("default", true), ("agents", false)])));
     view.update(cx, |view, cx| {
-        view.endpoints[1].live.status = crate::state::ConnectionStatus::Connected;
+        view.endpoints[1].live_mut().status = crate::state::ConnectionStatus::Connected;
         cx.notify();
     });
     draw(cx);

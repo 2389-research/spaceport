@@ -15,7 +15,7 @@ pub(super) fn prepare_groups(
     let mut connection = ConnectionBridge::new(ConnectTarget::Socket(socket.into()));
     connection.handle = Some(peer.client.handle.clone());
     view.endpoints[0].connection = connection;
-    view.endpoints[0].live = view.live.clone();
+    *view.endpoints[0].live_mut() = view.live.clone();
     view.command(Command::SplitEditor, window, cx);
     let slots = view.group_slots();
     assert_eq!(slots.len(), 2, "the fixture must show two terminal groups");
@@ -47,7 +47,7 @@ fn new_parked_connections_wait_for_the_primary_snapshot(cx: &mut TestAppContext)
             let left = prepare_groups(view, window, cx, &socket, &peer);
             let key = view.browser_key().unwrap();
 
-            let snapshot = view.endpoints[0].live.snapshot.take().unwrap();
+            let snapshot = view.endpoints[0].live_mut().snapshot.take().unwrap();
             assert!(view.live.snapshot.is_some(), "the layout still needs t1");
             view.reconcile_group_terminals(cx);
             let created_before_snapshot = view
@@ -56,7 +56,7 @@ fn new_parked_connections_wait_for_the_primary_snapshot(cx: &mut TestAppContext)
                 .iter()
                 .any(|parked| parked.group == left);
 
-            view.endpoints[0].live.snapshot = Some(snapshot);
+            view.endpoints[0].live_mut().snapshot = Some(snapshot);
             view.reconcile_group_terminals(cx);
             let parked = view
                 .group_terminals

@@ -28,7 +28,7 @@ impl Endpoint {
             return;
         }
         self.focus_requested |= self
-            .live
+            .live()
             .latest_snapshot()
             .zip(new.latest_snapshot())
             .is_some_and(|(old, new)| focus_requested(old, new));

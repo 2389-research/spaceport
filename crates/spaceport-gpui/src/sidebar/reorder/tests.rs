@@ -14,8 +14,8 @@ fn remote(id: &str) -> crate::endpoint::Endpoint {
         },
         true,
     );
-    endpoint.live.snapshot = Some(std::sync::Arc::new(crate::sidebar::layout_tests::snapshot(
-        3,
-    )));
+    endpoint.live_mut().snapshot = Some(std::sync::Arc::new(
+        crate::sidebar::layout_tests::snapshot(3),
+    ));
     endpoint
 }

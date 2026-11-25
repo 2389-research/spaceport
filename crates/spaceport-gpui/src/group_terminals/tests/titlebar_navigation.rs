@@ -78,7 +78,7 @@ fn split_history<'a>(
         let frame = &mut Arc::make_mut(view.live.surface.as_mut().unwrap()).frame;
         frame.width = view.options.surface_size.cols;
         frame.height = view.options.surface_size.rows;
-        view.endpoints[0].live = view.live.clone();
+        *view.endpoints[0].live_mut() = view.live.clone();
         assert!(view.input_ready());
     });
     (view, cx, active_peer, parked_peer)

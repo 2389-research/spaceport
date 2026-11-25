@@ -16,7 +16,7 @@ fn open(cx: &mut gpui::TestAppContext) -> (Entity<SpaceportWindow>, &mut VisualT
             },
             true,
         );
-        remote.live.snapshot = Some(Arc::new(snapshot(1)));
+        remote.live_mut().snapshot = Some(Arc::new(snapshot(1)));
         view.endpoints.push(remote);
         view
     });

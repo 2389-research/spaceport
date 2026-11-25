@@ -63,7 +63,7 @@ fn reporting_pane(view: &mut SpaceportWindow, peer: &MockPeer) -> Point<Pixels> 
     let mut connection = ConnectionBridge::new(endpoint.connection.target.clone());
     connection.handle = Some(peer.client.handle.clone());
     endpoint.trade_connection(&mut connection, &mut view.live.clone());
-    view.endpoints[0].live = view.live.clone();
+    *view.endpoints[0].live_mut() = view.live.clone();
     view.cell_width = 10.;
     let line = view.config.terminal.line_height();
     view.bounds = Bounds::new(point(px(0.), px(0.)), size(px(800.), px(24. * line)));

@@ -44,7 +44,7 @@ fn visit(view: &Entity<SpaceportWindow>, cx: &mut VisualTestContext, panes: &[&s
                 let snapshot = Arc::new(snapshot.clone());
                 view.live.snapshot = Some(snapshot.clone());
                 let endpoint = &mut view.endpoints[view.selected_endpoint];
-                endpoint.live.snapshot = Some(snapshot);
+                endpoint.live_mut().snapshot = Some(snapshot);
                 endpoint.sync_live();
             }
             cx.notify();

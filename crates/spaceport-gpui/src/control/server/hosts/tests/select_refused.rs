@@ -19,8 +19,8 @@ fn stuck_on_local(view: &mut SpaceportWindow) {
     devbox.set_enabled_for_test(true);
     view.endpoints.push(devbox);
     view.selected_endpoint = 0;
-    view.endpoints[0].live.status = ConnectionStatus::Connected;
-    view.endpoints[0].live.supports_surface = false;
+    view.endpoints[0].live_mut().status = ConnectionStatus::Connected;
+    view.endpoints[0].live_mut().supports_surface = false;
 }
 
 #[gpui::test]

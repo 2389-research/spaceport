@@ -169,8 +169,8 @@ impl SpaceportWindow {
         let updated = endpoint.poll(Instant::now());
         // Nothing to keep current, or to silence, while nothing is muted.
         let muted = Mutes::any(cx)
-            .and(endpoint.live.latest_snapshot())
-            .filter(|_| endpoint.live.status.is_connected())
+            .and(endpoint.live().latest_snapshot())
+            .filter(|_| endpoint.live().status.is_connected())
             .cloned()
             .map(|snapshot| (Daemon::of(endpoint), snapshot));
         // Only a change touches the global, which every window observes.
@@ -184,10 +184,10 @@ impl SpaceportWindow {
         }
         polled
             .clipboard_writes
-            .append(&mut endpoint.live.clipboard_writes);
+            .append(&mut endpoint.live_mut().clipboard_writes);
         // Bells are a presentation effect: only the selected endpoint's
         // ring, as the TUI drops them from inactive endpoints.
-        let bells = std::mem::take(&mut endpoint.live.bells);
+        let bells = std::mem::take(&mut endpoint.live_mut().bells);
         let host_muted = Mutes::any(cx).is_some_and(|mutes| mutes.host(&endpoint.id));
         if index == self.selected_endpoint && !host_muted {
             self.bell.queue(bells);
@@ -201,8 +201,10 @@ impl SpaceportWindow {
             .unwrap_or_default();
         // `latest_snapshot` borrows `&self`, so resolve it before the
         // `&mut` borrows; the clone is the one `Service::poll` already made.
-        let snapshot = endpoint.live.latest_snapshot().cloned();
-        let live = endpoint.live.sound_live(snapshot.as_deref());
+        let snapshot = endpoint.live().latest_snapshot().cloned();
+        // The policy borrows the host's state and the sound policy's own field,
+        // which a whole-endpoint borrow through `live_mut` could not split.
+        let live = endpoint.host.live_mut().sound_live(snapshot.as_deref());
         self.sound.poll(
             &mut endpoint.sounds,
             live,
@@ -248,7 +250,7 @@ impl SpaceportWindow {
                 .activation
                 .deadline()
                 .filter(|_| !endpoint.initial_surface);
-            self.live = endpoint.live.clone();
+            self.live = endpoint.live().clone();
             if let Some(deadline) = budget {
                 self.live
                     .activation
@@ -319,7 +321,7 @@ impl SpaceportWindow {
         if (!endpoint.initial_surface || retry.is_some())
             && self.pending_releases.is_empty()
             && let (Some(handle), Some(snapshot)) =
-                (&endpoint.connection.handle, &endpoint.live.snapshot)
+                (&endpoint.connection.handle, &endpoint.live().snapshot)
             && let Ok(mut state) = endpoint.connection.inbox.try_lock()
         {
             // A newer inbox transition can supersede this window's retry.
@@ -371,7 +373,7 @@ impl SpaceportWindow {
             state.dirty = true;
             self.live = state.clone();
             // take_update already moved this response out of the inbox.
-            self.live.dialog_response = endpoint.live.dialog_response.clone();
+            self.live.dialog_response = endpoint.live().dialog_response.clone();
             return true;
         }
         false

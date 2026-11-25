@@ -19,7 +19,7 @@ fn system_notification_click_opens_its_origin_and_rejects_a_reconnect(
     wire.pane_id = Some("w1:p1".into());
     let notice = || {
         crate::notifications::Notice::new(wire.clone(), Instant::now(), &crate::state::labels())
-            .with_snapshot(remote.live.snapshot.as_deref(), &crate::state::labels())
+            .with_snapshot(remote.live().snapshot.as_deref(), &crate::state::labels())
     };
     let (first, second) = (notice(), notice());
     view.update(cx, |view, _| {
@@ -129,13 +129,13 @@ fn bell_and_window_title_follow_the_selected_endpoint(cx: &mut gpui::TestAppCont
         view.update(cx, |view, cx| {
             project_until(view, cx, "both titles", |view| {
                 view.live.window_title.as_deref() == Some("local")
-                    && view.endpoints[1].live.window_title.is_some()
+                    && view.endpoints[1].live().window_title.is_some()
             });
             // The remote bell was drained without ringing this window.
-            assert_eq!(view.endpoints[1].live.bells, 0);
+            assert_eq!(view.endpoints[1].live().bells, 0);
             assert_eq!(view.bell.take(ring_both, false, Instant::now()), None);
             assert_eq!(
-                view.endpoints[1].live.window_title.as_deref(),
+                view.endpoints[1].live().window_title.as_deref(),
                 Some("remote]0;x host")
             );
             view.sync_window_title(window, cx);
@@ -158,7 +158,7 @@ fn bell_and_window_title_follow_the_selected_endpoint(cx: &mut gpui::TestAppCont
             // Switching endpoints takes that endpoint's title with it.
             view.selected_endpoint = 1;
             view.reset_selected(cx);
-            view.live = view.endpoints[1].live.clone();
+            view.live = view.endpoints[1].live().clone();
             view.sync_window_title(window, cx);
             assert_eq!(view.title, "remote]0;x host");
         });

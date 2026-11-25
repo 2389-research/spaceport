@@ -32,7 +32,7 @@ fn reload_on_tabs_rereads_a_failed_host(cx: &mut TestAppContext) {
                     target: "box".into(),
                     session: "default".into(),
                 };
-                endpoint.live.status = crate::state::ConnectionStatus::Connected;
+                endpoint.live_mut().status = crate::state::ConnectionStatus::Connected;
                 cx.notify();
             })
             .unwrap()

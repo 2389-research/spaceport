@@ -16,7 +16,7 @@ fn remote(id: &str, view: &SpaceportWindow) -> crate::endpoint::Endpoint {
         },
         true,
     );
-    endpoint.live.snapshot = view.live.snapshot.clone();
+    endpoint.live_mut().snapshot = view.live.snapshot.clone();
     endpoint
 }
 

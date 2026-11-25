@@ -25,7 +25,7 @@ mod stages;
 fn endpoints() -> [Endpoint; 2] {
     ["local", "remote"].map(|id| {
         let mut endpoint = Endpoint::new(id.into(), id.into(), ConnectTarget::Local, true);
-        endpoint.live.snapshot = Some(Arc::new(
+        endpoint.live_mut().snapshot = Some(Arc::new(
             serde_json::from_str(include_str!(
                 "../../../spaceport-protocol/tests/fixtures/endpoint-snapshot-v1.json"
             ))
@@ -56,7 +56,7 @@ fn receive(endpoint: &mut Endpoint, wire: SemanticNotification, now: Instant) {
     endpoint
         .toasts
         .receive([Notice::new(wire, now, &crate::state::labels())
-            .with_snapshot(endpoint.live.snapshot.as_deref(), &crate::state::labels())]);
+            .with_snapshot(endpoint.live().snapshot.as_deref(), &crate::state::labels())]);
 }
 
 /// The stage `notice` is in, by name.
@@ -142,7 +142,7 @@ fn evidence_matrix_including_finished_zero_delay_and_delayed_attention() {
             ] {
                 let now = Instant::now();
                 let mut endpoints = endpoints();
-                Arc::make_mut(endpoints[1].live.snapshot.as_mut().unwrap()).agents[0]
+                Arc::make_mut(endpoints[1].live_mut().snapshot.as_mut().unwrap()).agents[0]
                     .agent_status = status;
                 receive(&mut endpoints[1], wire(kind), now);
                 tick(
@@ -180,7 +180,7 @@ fn evidence_rechecks_at_fifty_ms_and_grace_is_bounded_from_arrival() {
         let now = Instant::now();
         let mut endpoints = endpoints();
         let mut snapshot = endpoints[1]
-            .live
+            .live()
             .snapshot
             .as_ref()
             .unwrap()
@@ -188,15 +188,15 @@ fn evidence_rechecks_at_fifty_ms_and_grace_is_bounded_from_arrival() {
             .clone();
         snapshot.agents[0].agent_status = AgentStatus::Done;
         if missing {
-            endpoints[1].live.snapshot = None;
+            endpoints[1].live_mut().snapshot = None;
         } else {
-            Arc::make_mut(endpoints[1].live.snapshot.as_mut().unwrap()).agents[0].agent_status =
-                AgentStatus::Working;
+            Arc::make_mut(endpoints[1].live_mut().snapshot.as_mut().unwrap()).agents[0]
+                .agent_status = AgentStatus::Working;
         }
         receive(&mut endpoints[1], wire(Kind::Finished), now);
         tick(&mut endpoints, 0, config(0), false, now);
         assert!(visible(&endpoints).is_empty());
-        endpoints[1].live.snapshot = Some(Arc::new(snapshot));
+        endpoints[1].live_mut().snapshot = Some(Arc::new(snapshot));
         tick(
             &mut endpoints,
             0,
@@ -210,14 +210,14 @@ fn evidence_rechecks_at_fifty_ms_and_grace_is_bounded_from_arrival() {
         assert!(
             endpoints[1].toasts.entries[0]
                 .1
-                .target(endpoints[1].live.snapshot.as_ref().unwrap())
+                .target(endpoints[1].live().snapshot.as_ref().unwrap())
                 .is_some()
         );
     }
     for delay in [0, 1, 2] {
         let now = Instant::now();
         let mut endpoints = endpoints();
-        endpoints[1].live.snapshot = None;
+        endpoints[1].live_mut().snapshot = None;
         receive(&mut endpoints[1], wire(Kind::Finished), now);
         tick(&mut endpoints, 0, config(delay), false, now);
         tick(
@@ -386,8 +386,8 @@ fn late_target_initialization_is_bounded_and_boot_fenced() {
     {
         let now = Instant::now();
         let mut endpoints = endpoints();
-        let snapshot = endpoints[1].live.snapshot.clone().unwrap();
-        Arc::make_mut(endpoints[1].live.snapshot.as_mut().unwrap())
+        let snapshot = endpoints[1].live().snapshot.clone().unwrap();
+        Arc::make_mut(endpoints[1].live_mut().snapshot.as_mut().unwrap())
             .panes
             .clear();
         let mut event = wire(Kind::Custom);
@@ -395,9 +395,10 @@ fn late_target_initialization_is_bounded_and_boot_fenced() {
         event.tab_id = None;
         receive(&mut endpoints[1], event, now);
         tick(&mut endpoints, 0, config(0), false, now);
-        endpoints[1].live.snapshot = Some(snapshot.clone());
+        endpoints[1].live_mut().snapshot = Some(snapshot.clone());
         if change_boot {
-            Arc::make_mut(endpoints[1].live.snapshot.as_mut().unwrap()).boot_id = "new".into();
+            Arc::make_mut(endpoints[1].live_mut().snapshot.as_mut().unwrap()).boot_id =
+                "new".into();
         }
         tick(
             &mut endpoints,
@@ -510,7 +511,7 @@ fn system_delivery_posts_once_with_a_pane_tag_instead_of_a_toast() {
     tick(&mut endpoints, 0, system(1), false, now);
     assert!(take_system(&mut endpoints, system(1)).is_empty());
     let later = now + Duration::from_secs(1);
-    Arc::make_mut(endpoints[1].live.snapshot.as_mut().unwrap()).agents[0].agent_status =
+    Arc::make_mut(endpoints[1].live_mut().snapshot.as_mut().unwrap()).agents[0].agent_status =
         AgentStatus::Blocked;
     tick(&mut endpoints, 0, system(1), false, later);
     // Client-local feedback still uses the in-app card.
@@ -538,7 +539,7 @@ fn system_delivery_posts_once_with_a_pane_tag_instead_of_a_toast() {
     assert_eq!(
         endpoints[1].toasts.entries[0]
             .1
-            .target(endpoints[1].live.snapshot.as_deref().unwrap()),
+            .target(endpoints[1].live().snapshot.as_deref().unwrap()),
         Some(NavigationTarget::Pane("w1:p1"))
     );
     // Turning delivery off drops the record; in-app delivery never posts.

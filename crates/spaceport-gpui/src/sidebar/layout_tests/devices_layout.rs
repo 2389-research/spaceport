@@ -24,8 +24,8 @@ fn devices_window(
             listing.agents.truncate(1);
             listing.agents[0].pane_id = "remote-pane".into();
             listing.agents[0].agent_status = AgentStatus::Blocked;
-            remote.live.snapshot = Some(Arc::new(listing));
-            remote.live.status = ConnectionStatus::Connected;
+            remote.live_mut().snapshot = Some(Arc::new(listing));
+            remote.live_mut().status = ConnectionStatus::Connected;
             view.endpoints.push(remote);
             view
         });

@@ -67,7 +67,7 @@ pub(crate) fn apply(
 fn replace_connection(view: &mut SpaceportWindow, index: usize) {
     let endpoint = &mut view.endpoints[index];
     endpoint.generation += 1;
-    endpoint.connection.inbox = Arc::new(Mutex::new(endpoint.live.clone()));
+    endpoint.connection.inbox = Arc::new(Mutex::new(endpoint.live().clone()));
 }
 
 /// A change as a click on a notice sees it. A notice names the connection
@@ -119,7 +119,7 @@ pub(crate) fn apply_click(
         ClickChange::GenerationOnly => view.endpoints[index].generation += 1,
         ClickChange::InboxOnly => {
             let endpoint = &mut view.endpoints[index];
-            endpoint.connection.inbox = Arc::new(Mutex::new(endpoint.live.clone()));
+            endpoint.connection.inbox = Arc::new(Mutex::new(endpoint.live().clone()));
         }
     }
 }

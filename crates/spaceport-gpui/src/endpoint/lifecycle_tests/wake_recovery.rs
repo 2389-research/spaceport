@@ -23,15 +23,15 @@ fn recovering_starts_the_backoff_over_and_keeps_a_live_link() {
     let (mut endpoint, _server) = connected_endpoint("ssh:test");
     endpoint.connection.target = ssh();
     endpoint.poll(Instant::now());
-    assert!(endpoint.live.status.is_connected());
+    assert!(endpoint.live().status.is_connected());
     // Earned across dark wakes, each too short to count as a stable connection.
-    endpoint.attempts = 8;
+    endpoint.set_attempts_for_test(8);
     let later = Instant::now() + Duration::from_secs(30);
     endpoint.set_retry_at_for_test(later);
 
     assert!(endpoint.recover(Trigger::Sleep, Instant::now()));
 
-    assert_eq!(endpoint.attempts, 0);
+    assert_eq!(endpoint.attempts_for_test(), 0);
     assert_eq!(endpoint.retry_delay(), Duration::from_millis(500));
     // The link is asked to prove itself, not dropped.
     assert!(
@@ -63,14 +63,14 @@ fn recovering_redials_a_remote_attempt_still_dialing_but_not_a_local_one() {
         );
         endpoint.connect(ConnectOptions::default(), false);
         endpoint.connection.target = target;
-        assert!(!endpoint.live.status.is_connected());
+        assert!(!endpoint.live().status.is_connected());
         let handle = endpoint.connection.handle.clone().unwrap();
-        endpoint.attempts = 8;
+        endpoint.set_attempts_for_test(8);
         let now = Instant::now();
 
         recover_when_readable(&mut endpoint, Trigger::NetworkRestored, now);
 
-        assert_eq!(endpoint.attempts, 0);
+        assert_eq!(endpoint.attempts_for_test(), 0);
         assert_eq!(handle.is_disconnected(), redialed);
         assert_eq!(endpoint.connection.handle.is_none(), redialed);
         if redialed {
@@ -83,14 +83,14 @@ fn recovering_redials_a_remote_attempt_still_dialing_but_not_a_local_one() {
 #[test]
 fn recovering_dials_a_dropped_endpoint_at_once() {
     let mut endpoint = Endpoint::new("ssh:test".into(), "test".into(), ssh(), true);
-    endpoint.attempts = 8;
+    endpoint.set_attempts_for_test(8);
     let now = Instant::now();
     endpoint.set_retry_at_for_test(now + Duration::from_secs(30));
 
     assert!(endpoint.recover(Trigger::NetworkRestored, now));
 
     assert_eq!(endpoint.retry_at(), now);
-    assert_eq!(endpoint.attempts, 0);
+    assert_eq!(endpoint.attempts_for_test(), 0);
 }
 
 /// The worker can report a link up just before a recovery, in the same poll
@@ -101,7 +101,7 @@ fn recovering_keeps_a_link_whose_connection_is_not_yet_polled() {
     let (mut endpoint, _server) = connected_endpoint("ssh:test");
     endpoint.connection.target = ssh();
     // As before the poll that takes the worker's Connected update.
-    endpoint.live.status = ConnectionStatus::Connecting;
+    endpoint.live_mut().status = ConnectionStatus::Connecting;
     endpoint.connection.inbox.lock().unwrap().dirty = true;
     assert_eq!(endpoint.connection.reports_connected(), Some(true));
     let handle = endpoint.connection.handle.clone().unwrap();
@@ -114,7 +114,7 @@ fn recovering_keeps_a_link_whose_connection_is_not_yet_polled() {
     assert!(endpoint.connection.handle.is_some());
     assert_eq!(endpoint.retry_at(), later);
     endpoint.poll(Instant::now());
-    assert!(endpoint.live.status.is_connected());
+    assert!(endpoint.live().status.is_connected());
 }
 
 fn dialing_ssh_endpoint() -> (Endpoint, PathBuf, UnixListener) {
@@ -134,7 +134,7 @@ fn dialing_ssh_endpoint() -> (Endpoint, PathBuf, UnixListener) {
     );
     endpoint.connect(ConnectOptions::default(), false);
     endpoint.connection.target = ssh();
-    assert!(!endpoint.live.status.is_connected());
+    assert!(!endpoint.live().status.is_connected());
     (endpoint, path, listener)
 }
 
@@ -172,13 +172,13 @@ fn recovering_waits_while_the_worker_report_cannot_be_read() {
 fn a_path_change_keeps_a_dial_and_its_backoff() {
     let (mut endpoint, path, _listener) = dialing_ssh_endpoint();
     let handle = endpoint.connection.handle.clone().unwrap();
-    endpoint.attempts = 8;
+    endpoint.set_attempts_for_test(8);
 
     assert!(endpoint.recover(Trigger::PathChanged, Instant::now()));
 
     assert!(!handle.is_disconnected());
     assert!(endpoint.connection.handle.is_some());
-    assert_eq!(endpoint.attempts, 8);
+    assert_eq!(endpoint.attempts_for_test(), 8);
     std::fs::remove_file(path).unwrap();
 
     let mut dropped = Endpoint::new("ssh:test".into(), "test".into(), ssh(), true);

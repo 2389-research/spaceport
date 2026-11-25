@@ -28,6 +28,6 @@ fn changing_a_saved_host_clears_a_real_transports_outage(cx: &mut gpui::TestAppC
         );
         endpoint.poll(Instant::now());
         assert_eq!(endpoint.phase(), Phase::Connecting);
-        assert!(endpoint.live.snapshot.is_none());
+        assert!(endpoint.live().snapshot.is_none());
     });
 }

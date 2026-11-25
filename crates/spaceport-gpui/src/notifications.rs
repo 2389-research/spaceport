@@ -46,7 +46,10 @@ pub(crate) fn tick(
     let words = crate::state::labels();
     let mut changed = false;
     for (index, endpoint) in endpoints.iter_mut().enumerate() {
-        let snapshot = endpoint.live.latest_snapshot().map(std::sync::Arc::as_ref);
+        // Resolved before the toasts are mutated: `Host::live` borrows the whole
+        // endpoint, where the field could be split.
+        let snapshot = endpoint.live().latest_snapshot().cloned();
+        let snapshot = snapshot.as_deref();
         let silenced = mutes
             .map(|mutes| match snapshot {
                 Some(snapshot) => {

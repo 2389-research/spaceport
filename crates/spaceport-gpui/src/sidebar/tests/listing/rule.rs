@@ -48,7 +48,7 @@ fn unconfigured_agent(
         let mut listing = snapshot(6);
         listing.agents[1].workspace_id = "gone".into();
         view.live.snapshot = Some(Arc::new(listing));
-        view.endpoints[0].live = view.live.clone();
+        *view.endpoints[0].live_mut() = view.live.clone();
     })
 }
 

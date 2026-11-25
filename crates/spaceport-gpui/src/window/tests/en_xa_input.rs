@@ -16,7 +16,7 @@ fn undelivered_input_draws_only_messages() {
             let mut view = fixture_window(window, cx);
             view.live.snapshot = Some(Arc::new(snapshot(2)));
             view.live.status = ConnectionStatus::Disconnected;
-            view.endpoints[0].live = view.live.clone();
+            *view.endpoints[0].live_mut() = view.live.clone();
             view
         });
         cx.simulate_resize(size(px(1200.), px(800.)));
@@ -27,7 +27,7 @@ fn undelivered_input_draws_only_messages() {
 
         view.update(cx, |view, cx| {
             view.live.status = ConnectionStatus::Connected;
-            view.endpoints[0].live = view.live.clone();
+            *view.endpoints[0].live_mut() = view.live.clone();
             view.menu.page = Some(crate::menu::Page::AgentSkill);
             assert!(view.refuse_paste(cx).is_some());
             view.menu.page = None;

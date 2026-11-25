@@ -210,8 +210,8 @@ fn go_to_lists_the_selected_host_first_and_switches_host_for_a_remote_row(cx: &m
             },
             true,
         );
-        remote.live.snapshot = Some(Arc::new(snapshot()));
-        remote.live.status = crate::state::ConnectionStatus::Connected;
+        remote.live_mut().snapshot = Some(Arc::new(snapshot()));
+        remote.live_mut().status = crate::state::ConnectionStatus::Connected;
         view.endpoints.push(remote);
         view
     });

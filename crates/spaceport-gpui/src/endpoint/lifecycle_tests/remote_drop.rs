@@ -45,7 +45,7 @@ fn a_dropped_remote_stays_selected_with_its_last_picture_dimmed(cx: &mut gpui::T
         // seen one poll before its state arrives when the inbox is busy.
         project_until(view, cx, "the drop's disconnect state", |view| {
             let endpoint = &view.endpoints[1];
-            endpoint.connection.handle.is_none() && !endpoint.live.status.is_connected()
+            endpoint.connection.handle.is_none() && !endpoint.live().status.is_connected()
         });
         // An expired activation budget is renewed while there is no snapshot.
         view.live
@@ -112,7 +112,7 @@ fn a_refusal_only_the_user_can_fix_waits_the_longest_retry_delay() {
         // The inbox may be busy for a poll; the state still lands on a later one.
         wait_until(|| {
             endpoint.poll(now);
-            endpoint.live.ssh_failure.is_some()
+            endpoint.live().ssh_failure.is_some()
         });
         let expected = if waits_longest {
             MAX_RETRY_DELAY
@@ -152,7 +152,7 @@ fn a_drop_seen_before_its_state_arrives_does_not_fall_back_to_local(cx: &mut gpu
         let inbox = view.endpoints[1].connection.inbox.clone();
         let mut pending = inbox.lock().unwrap();
         pending.activation = activation.clone();
-        view.endpoints[1].live.activation = activation.clone();
+        view.endpoints[1].live_mut().activation = activation.clone();
         view.live.activation = activation;
         // Hold the reader's disconnect back to establish the gap before it lands.
         view.endpoints[1]
@@ -187,7 +187,7 @@ fn a_stopped_handle_reads_as_reconnecting_before_its_state_arrives() {
     // Hold the reader's disconnect back while the stopped handle is visible.
     endpoint.connection.handle.as_ref().unwrap().disconnect();
     endpoint.poll(Instant::now());
-    assert!(endpoint.live.status.is_connected(), "the gap under test");
+    assert!(endpoint.live().status.is_connected(), "the gap under test");
     assert_eq!(endpoint.outage(), Some("connection lost"));
     assert_eq!(endpoint.status(), "reconnecting");
     drop(pending);

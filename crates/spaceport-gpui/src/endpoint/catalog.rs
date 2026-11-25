@@ -100,11 +100,7 @@ impl SpaceportWindow {
             let changed = endpoint.enabled() != device.enabled
                 || entry_changed(endpoint.saved_target(), &device.target);
             if changed {
-                endpoint.enter(super::Transition::Retarget {
-                    target: device.target.clone(),
-                    enabled: device.enabled,
-                });
-                endpoint.sync_live();
+                endpoint.retarget(device.target.clone(), device.enabled);
             }
             endpoint.label = device.label;
             endpoint.saved = Some(device.target);

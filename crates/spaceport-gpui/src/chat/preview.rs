@@ -402,7 +402,7 @@ fn install(
         .activation
         .transition(crate::state::activation::Transition::Reset(None));
     view.live.supports_surface = true;
-    view.endpoints[0].live = view.live.clone();
+    *view.endpoints[0].live_mut() = view.live.clone();
     let widget = format!(
         "## Interactive analysis\n\n```herdr-ui\n{}\n```\n", // i18n: data
         include_str!("widgets/example.json")

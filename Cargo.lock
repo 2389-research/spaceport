@@ -6640,6 +6640,7 @@ dependencies = [
  "dispatch2",
  "serde_json",
  "spaceport-client",
+ "spaceport-live",
  "spaceport-reorder",
  "tempfile",
  "thiserror 2.0.21",

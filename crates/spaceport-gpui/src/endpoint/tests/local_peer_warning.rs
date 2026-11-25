@@ -18,9 +18,9 @@ fn local_peer_warning_becomes_a_toast_even_when_notifications_are_off() {
         state.dirty = true;
     }
     endpoint.poll(Instant::now());
-    assert!(endpoint.live.status.is_connected());
+    assert!(endpoint.live().status.is_connected());
     assert_eq!(endpoint.toasts.entries.len(), 1);
-    assert!(endpoint.live.local_peer_warning.is_none());
+    assert!(endpoint.live().local_peer_warning.is_none());
     endpoint.connection.inbox.lock().unwrap().dirty = true;
     endpoint.poll(Instant::now());
     assert_eq!(endpoint.toasts.entries.len(), 1);

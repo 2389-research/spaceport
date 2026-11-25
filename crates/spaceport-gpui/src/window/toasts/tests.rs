@@ -21,7 +21,7 @@ fn targeted_previews_use_only_current_snapshot_ids(cx: &mut TestAppContext) {
     ))
     .unwrap();
     view.update(cx, |view, cx| {
-        view.endpoints[0].live.snapshot = Some(std::sync::Arc::new(snapshot.clone()));
+        view.endpoints[0].live_mut().snapshot = Some(std::sync::Arc::new(snapshot.clone()));
         view.config.notifications.delay_seconds = 3600;
         for kind in [
             SemanticNotificationKind::NeedsAttention,

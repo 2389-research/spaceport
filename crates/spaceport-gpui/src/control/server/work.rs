@@ -56,7 +56,7 @@ pub(super) fn find<'a>(view: &'a SpaceportWindow, caller: &Caller) -> Result<Fou
     let live = if index == view.selected_endpoint {
         &view.live
     } else {
-        &view.endpoints[index].live
+        view.endpoints[index].live()
     };
     let snapshot = live
         .snapshot

@@ -18,7 +18,7 @@ fn the_main_windows_notices_draw_only_messages() {
             let mut view = fixture_window(window, cx);
             view.live.snapshot = Some(Arc::new(snapshot(2)));
             view.live.status = ConnectionStatus::Connected;
-            view.endpoints[0].live = view.live.clone();
+            *view.endpoints[0].live_mut() = view.live.clone();
             view
         });
         cx.simulate_resize(size(px(1200.), px(800.)));

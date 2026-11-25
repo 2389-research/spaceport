@@ -402,8 +402,8 @@ fn hiding_agents_preserves_scrolled_multi_endpoint_lists(cx: &mut gpui::TestAppC
             ConnectTarget::Socket("/unused-remote-layout-test.sock".into()),
             true,
         );
-        remote.live.snapshot = view.live.snapshot.clone();
-        for agent in &mut Arc::make_mut(remote.live.snapshot.as_mut().unwrap()).agents {
+        remote.live_mut().snapshot = view.live.snapshot.clone();
+        for agent in &mut Arc::make_mut(remote.live_mut().snapshot.as_mut().unwrap()).agents {
             agent.display_agent = Some("Remote Agent".into());
         }
         view.endpoints.push(remote);
@@ -444,7 +444,7 @@ fn hiding_agents_preserves_scrolled_multi_endpoint_lists(cx: &mut gpui::TestAppC
                 assert_eq!(view.live.snapshot.as_ref().unwrap().agents.len(), 8);
                 assert_eq!(
                     view.endpoints[1]
-                        .live
+                        .live()
                         .snapshot
                         .as_ref()
                         .unwrap()

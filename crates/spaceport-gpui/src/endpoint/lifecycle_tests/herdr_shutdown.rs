@@ -22,8 +22,8 @@ fn finish_peer(endpoint: &mut Endpoint, server: &mut Server, shutdown: bool) {
     // Raw polling never starts transport, including when the policy identity changes.
     endpoint.poll(Instant::now());
     assert!(endpoint.connection.handle.is_none());
-    assert!(!endpoint.live.status.is_connected());
-    assert!(endpoint.live.snapshot.is_none());
+    assert!(!endpoint.live().status.is_connected());
+    assert!(endpoint.live().snapshot.is_none());
     assert!(!endpoint.connection.inbox.lock().unwrap().dirty);
     assert!(endpoint.outage().is_some());
 }
@@ -146,7 +146,7 @@ fn explicit_reconnect_recovers_a_stopped_endpoint_through_a_new_handshake(
         assert!(endpoint.serving(), "the replacement handshake must succeed");
         assert_eq!(endpoint.status(), "online");
         assert_eq!(
-            endpoint.live.snapshot.as_ref().unwrap().boot_id,
+            endpoint.live().snapshot.as_ref().unwrap().boot_id,
             replacement.boot_id
         );
         assert_eq!(endpoint.outage(), None);

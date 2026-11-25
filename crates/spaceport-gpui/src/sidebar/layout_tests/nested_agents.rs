@@ -17,8 +17,8 @@ fn two_hosts(window: &mut Window, cx: &mut Context<SpaceportWindow>) -> Spacepor
         },
         true,
     );
-    remote.live.snapshot = Some(Arc::new(listing));
-    remote.live.status = ConnectionStatus::Connected;
+    remote.live_mut().snapshot = Some(Arc::new(listing));
+    remote.live_mut().status = ConnectionStatus::Connected;
     view.endpoints.push(remote);
     view
 }
@@ -249,7 +249,7 @@ fn a_childs_trunk_runs_past_its_nested_agents(cx: &mut gpui::TestAppContext) {
         view.live.snapshot = Some(Arc::new(listing));
         view.live.status = ConnectionStatus::Connected;
         view.live.supports_surface = true;
-        view.endpoints[0].live = view.live.clone();
+        *view.endpoints[0].live_mut() = view.live.clone();
         view
     });
     cx.simulate_resize(size(px(800.), px(900.)));

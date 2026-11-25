@@ -18,7 +18,7 @@ fn new_chat_waits_for_the_exact_created_tab_and_pane(cx: &mut gpui::TestAppConte
             view.config.features.acp_chats = true;
             view.live.local_daemon_peer = true;
             view.endpoints[0].connection.target = spaceport_client::ConnectTarget::Local;
-            view.endpoints[0].live = view.live.clone();
+            *view.endpoints[0].live_mut() = view.live.clone();
             view.chats.program =
                 crate::chat::Program::Found(PathBuf::from("/fixture/spaceport-acp"));
         })

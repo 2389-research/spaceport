@@ -43,8 +43,8 @@ fn the_notes_filter_lists_open_noted_checkouts_and_goes_to_them(cx: &mut TestApp
             },
             true,
         );
-        remote.live.snapshot = Some(Arc::new(snapshot()));
-        remote.live.status = crate::state::ConnectionStatus::Connected;
+        remote.live_mut().snapshot = Some(Arc::new(snapshot()));
+        remote.live_mut().status = crate::state::ConnectionStatus::Connected;
         view.endpoints.push(remote);
         view
     });

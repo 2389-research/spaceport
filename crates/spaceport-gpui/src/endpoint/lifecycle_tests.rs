@@ -250,10 +250,10 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
     welcome_peer(&mut server, &snapshot(), server_version);
     wait_until(|| {
         endpoint.poll(Instant::now());
-        endpoint.connection.handle.is_some() && endpoint.live.snapshot.is_some()
+        endpoint.connection.handle.is_some() && endpoint.live().snapshot.is_some()
     });
-    assert!(endpoint.live.supports_surface);
-    let frame = surface(endpoint.live.snapshot.as_ref().unwrap());
+    assert!(endpoint.live().supports_surface);
+    let frame = surface(endpoint.live().snapshot.as_ref().unwrap());
     endpoint
         .connection
         .inbox

@@ -111,7 +111,7 @@ fn the_main_window_draws_only_messages() {
                 let mut view = fixture_window(window, cx);
                 view.live.snapshot = Some(Arc::new(snapshot(6)));
                 view.live.status = ConnectionStatus::Connected;
-                view.endpoints[0].live = view.live.clone();
+                *view.endpoints[0].live_mut() = view.live.clone();
                 view
             });
             SidebarFixture(view)
@@ -143,7 +143,7 @@ fn the_main_window_draws_only_messages() {
         view.update(cx, |view, cx| {
             view.live.snapshot = None;
             view.live.status = ConnectionStatus::Disconnected;
-            view.endpoints[0].live = view.live.clone();
+            *view.endpoints[0].live_mut() = view.live.clone();
             cx.notify();
         });
         check("Disconnected", &view, cx, recorder);

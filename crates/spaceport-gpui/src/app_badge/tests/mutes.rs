@@ -13,8 +13,8 @@ fn muted_agents_leave_the_badge_and_unmuting_counts_them_again(cx: &mut gpui::Te
             state.agents[0].agent_status = AgentStatus::Done;
             state.agents[1].agent_status = AgentStatus::Blocked;
             let state = Arc::new(state);
-            view.endpoints[0].live.snapshot = Some(state.clone());
-            view.endpoints[0].live.status = ConnectionStatus::Connected;
+            view.endpoints[0].live_mut().snapshot = Some(state.clone());
+            view.endpoints[0].live_mut().status = ConnectionStatus::Connected;
             sync(id, &view.endpoints, cx);
             assert_eq!(cx.global::<Badge>().published, Some(2));
 
@@ -60,8 +60,8 @@ fn a_mute_on_one_host_does_not_quiet_the_same_ids_on_another(cx: &mut gpui::Test
             let mut state = snapshot(2);
             state.agents[0].agent_status = AgentStatus::Done;
             let state = Arc::new(state);
-            view.endpoints[0].live.snapshot = Some(state.clone());
-            view.endpoints[0].live.status = ConnectionStatus::Connected;
+            view.endpoints[0].live_mut().snapshot = Some(state.clone());
+            view.endpoints[0].live_mut().status = ConnectionStatus::Connected;
             let mut remote = Endpoint::new(
                 "remote".into(),
                 "Remote".into(),
@@ -71,8 +71,8 @@ fn a_mute_on_one_host_does_not_quiet_the_same_ids_on_another(cx: &mut gpui::Test
                 },
                 true,
             );
-            remote.live.snapshot = Some(state.clone());
-            remote.live.status = ConnectionStatus::Connected;
+            remote.live_mut().snapshot = Some(state.clone());
+            remote.live_mut().status = ConnectionStatus::Connected;
             view.endpoints.push(remote);
             sync(id, &view.endpoints, cx);
             assert_eq!(cx.global::<Badge>().published, Some(2), "one per host");
@@ -106,8 +106,8 @@ fn unmuting_the_last_mute_read_at_launch_counts_its_agents_again(cx: &mut gpui::
             state.agents[0].agent_status = AgentStatus::Done;
             state.agents[1].agent_status = AgentStatus::Blocked;
             let state = Arc::new(state);
-            view.endpoints[0].live.snapshot = Some(state.clone());
-            view.endpoints[0].live.status = ConnectionStatus::Connected;
+            view.endpoints[0].live_mut().snapshot = Some(state.clone());
+            view.endpoints[0].live_mut().status = ConnectionStatus::Connected;
             let daemon = Daemon::of(&view.endpoints[0]);
             let now = std::time::SystemTime::now();
             Mutes::update(cx, |mutes| {

@@ -1,8 +1,10 @@
 // ABOUTME: Names the connection a deferred action started on, and checks it still holds.
 // ABOUTME: One predicate per kind of fence, so each action adds only its own readiness terms.
 //! An action that starts on one connection and finishes later must not act
-//! on another. Three kinds of action ask three different questions, so there
-//! are three values, each with one predicate:
+//! on another. The values that name a connection are the crate's
+//! (`spaceport_endpoint`'s `fence`), and so is the comparison that says whether
+//! one [`ConnectionRef`] still names another; the predicates below ask a
+//! *window*, because only a window has an endpoint list and a selection.
 //!
 //! - [`InputFence`]: input for the selected connection (a file transfer, a
 //!   WSL drop, an image paste). It holds while the same endpoint is selected
@@ -14,86 +16,17 @@
 //!   from, selected or not, and reaches it for as long as it exists.
 
 use super::Endpoint;
-use crate::{SpaceportWindow, state::LiveState};
-use std::sync::{Arc, Mutex, Weak};
-
-/// The selected connection that input was meant for.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct InputFence {
-    /// The daemon boot the input is addressed to.
-    pub(crate) boot: String,
-    endpoint: String,
-    epoch: u64,
-    generation: u64,
-}
-
-/// The selection a held mouse gesture began in, as the window recorded it.
-/// It has no endpoint term and reads `selected_generation`, which trails the
-/// endpoint's generation until polling resets the window onto a replaced
-/// connection.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct SelectionFence {
-    /// The daemon boot the gesture's input is addressed to.
-    pub(crate) boot: String,
-    epoch: u64,
-    generation: u64,
-}
-
-/// One endpoint's connection, whether or not it is selected.
-#[derive(Clone)]
-pub(crate) struct ConnectionRef {
-    endpoint: String,
-    generation: u64,
-    inbox: Arc<Mutex<LiveState>>,
-}
-
-/// A [`ConnectionRef`] that does not keep the connection's state alive.
-#[derive(Clone)]
-pub(crate) struct WeakConnectionRef {
-    endpoint: String,
-    generation: u64,
-    inbox: Weak<Mutex<LiveState>>,
-}
-
-impl ConnectionRef {
-    pub(crate) fn downgrade(&self) -> WeakConnectionRef {
-        WeakConnectionRef {
-            endpoint: self.endpoint.clone(),
-            generation: self.generation,
-            inbox: Arc::downgrade(&self.inbox),
-        }
-    }
-
-    /// A reference with terms a test chose, such as a retired generation.
-    #[cfg(test)]
-    pub(crate) fn for_test(endpoint: &str, generation: u64, inbox: &Arc<Mutex<LiveState>>) -> Self {
-        Self {
-            endpoint: endpoint.to_owned(),
-            generation,
-            inbox: inbox.clone(),
-        }
-    }
-}
-
-impl WeakConnectionRef {
-    /// The reference, while the connection's state is still alive.
-    pub(crate) fn upgrade(&self) -> Option<ConnectionRef> {
-        Some(ConnectionRef {
-            endpoint: self.endpoint.clone(),
-            generation: self.generation,
-            inbox: self.inbox.upgrade()?,
-        })
-    }
-}
+use crate::SpaceportWindow;
+pub(crate) use spaceport_endpoint::{ConnectionRef, InputFence, SelectionFence, WeakConnectionRef};
 
 impl Endpoint {
     /// This endpoint's current connection.
     pub(crate) fn connection_ref(&self) -> ConnectionRef {
-        ConnectionRef {
-            endpoint: self.id.clone(),
-            generation: self.generation,
-            inbox: self.connection.inbox.clone(),
-        }
+        ConnectionRef::new(
+            self.id.clone(),
+            self.generation,
+            self.connection.inbox.clone(),
+        )
     }
 }
 
@@ -149,9 +82,11 @@ impl SpaceportWindow {
     /// The endpoint whose current connection is `source`, selected or not.
     pub(crate) fn endpoint_for(&self, source: &ConnectionRef) -> Option<usize> {
         self.endpoints.iter().position(|endpoint| {
-            endpoint.id == source.endpoint
-                && endpoint.generation == source.generation
-                && Arc::ptr_eq(&endpoint.connection.inbox, &source.inbox)
+            source.names(
+                &endpoint.id,
+                endpoint.generation,
+                &endpoint.connection.inbox,
+            )
         })
     }
 }

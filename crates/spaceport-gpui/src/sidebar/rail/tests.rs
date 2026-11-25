@@ -26,7 +26,7 @@ fn rail_window(
         let view = cx.new(|cx| {
             let mut view = fixture_window(window, cx);
             view.live.snapshot = Some(Arc::new(snapshot(6)));
-            view.endpoints[0].live = view.live.clone();
+            *view.endpoints[0].live_mut() = view.live.clone();
             for host in 1..hosts {
                 let mut remote = crate::endpoint::Endpoint::new(
                     format!("ssh:host{host}"),
@@ -37,7 +37,7 @@ fn rail_window(
                     },
                     true,
                 );
-                remote.live.snapshot = Some(Arc::new(snapshot(2)));
+                remote.live_mut().snapshot = Some(Arc::new(snapshot(2)));
                 remote.never_connect();
                 view.endpoints.push(remote);
             }

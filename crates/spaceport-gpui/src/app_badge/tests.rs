@@ -36,18 +36,18 @@ fn first_snapshot_counts_existing_attention_without_surface_or_notifications(
             let mut initial = snapshot(2);
             initial.agents[0].agent_status = AgentStatus::Done;
             initial.agents[1].agent_status = AgentStatus::Blocked;
-            view.endpoints[0].live.apply(
+            view.endpoints[0].live_mut().apply(
                 spaceport_client::ClientEvent::Snapshot(Arc::new(initial.clone())),
                 &crate::state::labels(),
             );
-            assert!(view.endpoints[0].live.surface.is_none());
-            assert!(view.endpoints[0].live.notifications.is_empty());
+            assert!(view.endpoints[0].live().surface.is_none());
+            assert!(view.endpoints[0].live().notifications.is_empty());
             sync(id, &view.endpoints, cx);
             assert_eq!(cx.global::<Badge>().published, Some(2));
 
             initial.revision += 1;
             initial.agents[0].agent_status = AgentStatus::Idle;
-            view.endpoints[0].live.apply(
+            view.endpoints[0].live_mut().apply(
                 spaceport_client::ClientEvent::Snapshot(Arc::new(initial)),
                 &crate::state::labels(),
             );
@@ -82,8 +82,8 @@ fn qa_preview_survives_polling_and_restores_daemon_attention(cx: &mut gpui::Test
         .update(cx, |view, window, cx| {
             let mut state = snapshot(2);
             state.agents[0].agent_status = AgentStatus::Done;
-            view.endpoints[0].live.snapshot = Some(Arc::new(state));
-            view.endpoints[0].live.status = ConnectionStatus::Connected;
+            view.endpoints[0].live_mut().snapshot = Some(Arc::new(state));
+            view.endpoints[0].live_mut().status = ConnectionStatus::Connected;
             sync(window.window_handle().window_id(), &view.endpoints, cx);
         })
         .unwrap();
@@ -230,8 +230,8 @@ fn hosts_disconnect_reconnect_and_disable_without_local_acknowledgement(
             );
             let mut state = snapshot(2);
             state.agents[0].agent_status = AgentStatus::Blocked;
-            remote.live.snapshot = Some(Arc::new(state));
-            remote.live.status = ConnectionStatus::Connected;
+            remote.live_mut().snapshot = Some(Arc::new(state));
+            remote.live_mut().status = ConnectionStatus::Connected;
             remote.collapsed = true;
             view.endpoints.push(remote);
             view.sidebar_visible = false;
@@ -242,10 +242,10 @@ fn hosts_disconnect_reconnect_and_disable_without_local_acknowledgement(
             assert_eq!(cx.global::<Badge>().published, Some(1));
 
             for status in [ConnectionStatus::Disconnected, ConnectionStatus::Detached] {
-                view.endpoints[1].live.status = status;
+                view.endpoints[1].live_mut().status = status;
                 sync(id, &view.endpoints, cx);
                 assert_eq!(cx.global::<Badge>().published, Some(0));
-                view.endpoints[1].live.status = ConnectionStatus::Connected;
+                view.endpoints[1].live_mut().status = ConnectionStatus::Connected;
                 sync(id, &view.endpoints, cx);
                 assert_eq!(cx.global::<Badge>().published, Some(1));
             }
@@ -273,8 +273,8 @@ fn closing_windows_removes_only_their_contribution(cx: &mut gpui::TestAppContext
             .update(cx, |view, window, cx| {
                 let mut state = snapshot(2);
                 state.agents[0].agent_status = AgentStatus::Done;
-                view.endpoints[0].live.snapshot = Some(Arc::new(state));
-                view.endpoints[0].live.status = ConnectionStatus::Connected;
+                view.endpoints[0].live_mut().snapshot = Some(Arc::new(state));
+                view.endpoints[0].live_mut().status = ConnectionStatus::Connected;
                 sync(window.window_handle().window_id(), &view.endpoints, cx);
                 assert_eq!(cx.global::<Badge>().published, Some(1));
             })

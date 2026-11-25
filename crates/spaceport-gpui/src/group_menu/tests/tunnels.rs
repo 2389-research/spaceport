@@ -16,7 +16,7 @@ fn remote_menu(view: &Entity<SpaceportWindow>, cx: &mut VisualTestContext) -> Gr
                 },
                 true,
             );
-            remote.live.snapshot = view.live.snapshot.clone();
+            remote.live_mut().snapshot = view.live.snapshot.clone();
             view.endpoints = vec![remote];
             view.selected_endpoint = 0;
             view.listening_ports.seed(

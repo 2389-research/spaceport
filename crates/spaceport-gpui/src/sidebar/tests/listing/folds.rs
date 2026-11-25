@@ -56,7 +56,7 @@ fn each_host_keeps_its_own_repository_folds(cx: &mut TestAppContext) {
     // The folds stay with their hosts when the selection moves.
     view.update(cx, |view, cx| {
         view.selected_endpoint = 1;
-        view.live = view.endpoints[1].live.clone();
+        view.live = view.endpoints[1].live().clone();
         cx.notify();
     });
     assert_eq!(folded_hosts(&view, cx), [REMOTE]);
@@ -66,7 +66,7 @@ fn each_host_keeps_its_own_repository_folds(cx: &mut TestAppContext) {
     assert_eq!(folded_hosts(&view, cx), ["local"]);
     view.update(cx, |view, cx| {
         view.selected_endpoint = 0;
-        view.live = view.endpoints[0].live.clone();
+        view.live = view.endpoints[0].live().clone();
         cx.notify();
     });
     assert_eq!(folded_hosts(&view, cx), ["local"]);

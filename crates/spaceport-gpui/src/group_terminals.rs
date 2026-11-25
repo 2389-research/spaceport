@@ -425,7 +425,7 @@ impl SpaceportWindow {
             parked.asked = None;
             self.group_terminals.parked.push(parked);
         }
-        self.live = self.endpoints[self.selected_endpoint].live.clone();
+        self.live = self.endpoints[self.selected_endpoint].live().clone();
         self.cancel_file_transfer(cx);
         for image in &self.pending_images {
             image.cancel();
@@ -691,7 +691,7 @@ mod mirror_tests {
             view.update(cx, |view, _| {
                 let snapshot = view.live.snapshot.clone().unwrap();
                 view.live.surface = Some(surface(&snapshot, "p0"));
-                view.endpoints[0].live = view.live.clone();
+                *view.endpoints[0].live_mut() = view.live.clone();
             })
         });
         cx.update(|window, cx| full_draw(window, cx).clear(cx));

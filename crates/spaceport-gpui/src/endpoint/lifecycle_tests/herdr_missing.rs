@@ -28,7 +28,7 @@ fn a_missing_herdr_waits_the_longest_retry_delay() {
     // The inbox may be busy for a poll; the state still lands on a later one.
     wait_until(|| {
         endpoint.poll(now);
-        endpoint.live.missing_installation
+        endpoint.live().missing_installation
     });
     assert_eq!(endpoint.retry_at(), now + MAX_RETRY_DELAY);
     assert_eq!(endpoint.outage(), Some(MISSING));
@@ -62,10 +62,10 @@ fn a_missing_herdr_outlives_retries_until_a_connection_succeeds() {
     endpoint.connection.handle.as_ref().unwrap().disconnect();
     wait_until(|| {
         endpoint.poll(Instant::now());
-        endpoint.live.missing_installation
+        endpoint.live().missing_installation
     });
     endpoint.connect(ConnectOptions::default(), false);
-    assert!(!endpoint.live.missing_installation, "the fresh attempt");
+    assert!(!endpoint.live().missing_installation, "the fresh attempt");
     assert!(endpoint.herdr_missing());
     assert_eq!(endpoint.status(), "Herdr not installed");
 
@@ -79,7 +79,7 @@ fn a_missing_herdr_outlives_retries_until_a_connection_succeeds() {
     }
     wait_until(|| {
         endpoint.poll(Instant::now());
-        endpoint.live.status.is_connected()
+        endpoint.live().status.is_connected()
     });
     assert!(!endpoint.herdr_missing());
     assert_ne!(endpoint.status(), "Herdr not installed");
@@ -94,7 +94,7 @@ fn a_version_refusal_replaces_a_missing_herdr() {
     endpoint.connection.handle.as_ref().unwrap().disconnect();
     wait_until(|| {
         endpoint.poll(Instant::now());
-        endpoint.live.missing_installation
+        endpoint.live().missing_installation
     });
     assert!(endpoint.herdr_missing());
 
@@ -109,7 +109,7 @@ fn a_version_refusal_replaces_a_missing_herdr() {
     }
     wait_until(|| {
         endpoint.poll(Instant::now());
-        endpoint.live.version_mismatch.is_some()
+        endpoint.live().version_mismatch.is_some()
     });
     assert!(!endpoint.herdr_missing(), "an outdated Herdr is installed");
     assert_eq!(endpoint.status(), "Herdr update needed");

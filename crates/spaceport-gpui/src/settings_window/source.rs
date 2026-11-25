@@ -116,7 +116,7 @@ fn hosts(window: &SpaceportWindow) -> Vec<SourceHost> {
     window
         .endpoints
         .iter()
-        .filter(|endpoint| endpoint.live.status.is_connected())
+        .filter(|endpoint| endpoint.live().status.is_connected())
         .map(|endpoint| SourceHost {
             label: endpoint.label.clone(),
             target: endpoint.connection.target.clone(),
