@@ -5,15 +5,7 @@ use crate::device_tags::Tags;
 use std::sync::Arc;
 
 fn remote(id: &str, view: &SpaceportWindow) -> crate::endpoint::Endpoint {
-    let mut endpoint = crate::endpoint::Endpoint::new(
-        id.into(),
-        id.into(),
-        ConnectTarget::Ssh {
-            target: "example.invalid".into(),
-            session: "default".into(),
-        },
-        true,
-    );
+    let mut endpoint = layout_host(id, id, ssh("example.invalid"));
     endpoint.live_mut().snapshot = view.live.snapshot.clone();
     endpoint
 }

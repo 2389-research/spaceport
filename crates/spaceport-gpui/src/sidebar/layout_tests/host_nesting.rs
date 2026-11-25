@@ -11,15 +11,7 @@ fn name_left(cx: &mut gpui::VisualTestContext, selector: &'static str) -> Pixels
 }
 
 fn remote_endpoint(view: &SpaceportWindow) -> crate::endpoint::Endpoint {
-    let mut remote = crate::endpoint::Endpoint::new(
-        "ssh:test".into(),
-        "Remote".into(),
-        ConnectTarget::Ssh {
-            target: "unused".into(),
-            session: "default".into(),
-        },
-        true,
-    );
+    let mut remote = layout_host("ssh:test", "Remote", ssh("unused"));
     remote.live_mut().snapshot = view.live.snapshot.clone();
     let snapshot = Arc::make_mut(remote.live_mut().snapshot.as_mut().unwrap());
     snapshot.workspaces[0].label = "remote workspace".into();

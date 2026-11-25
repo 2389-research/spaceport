@@ -21,13 +21,17 @@ use gpui::{prelude::*, *};
 use spaceport_client::protocol::ClientShellSnapshot;
 use spaceport_reorder::preview;
 
-/// One listed host's workspace rows: the host they belong to and the snapshot
-/// they read.
+/// One listed host's workspace rows: the host they belong to, the snapshot they
+/// read, and the two daemon keys their mutes and listening ports answer to —
+/// the one thing a row needs that the host's view does not carry, since only
+/// the connection's target names a daemon.
 pub(super) struct HostRows<'a> {
-    pub(super) endpoint: &'a crate::endpoint::Endpoint,
+    pub(super) view: crate::endpoint::HostView<'a>,
     pub(super) index: usize,
     pub(super) selected: bool,
     pub(super) snapshot: &'a ClientShellSnapshot,
+    pub(super) mutes: crate::notification_mutes::Daemon,
+    pub(super) ports: Option<crate::listening_ports::Daemon>,
 }
 
 impl SpaceportWindow {
@@ -51,15 +55,16 @@ impl SpaceportWindow {
         let menu_target = m.menu_target;
         let worktree_glyph = crate::worktree_identity::glyph(&self.config.worktrees, theme);
         let HostRows {
-            endpoint,
+            view,
             index: endpoint_index,
             selected,
             snapshot,
+            mutes,
+            ports,
         } = host;
-        let endpoint_id = endpoint.id.clone();
-        let daemon = crate::listening_ports::Daemon::of(&endpoint.connection.target);
-        let silenced = crate::notification_mutes::Mutes::silenced_in(cx, endpoint, snapshot);
-        let collapsed_repos = &endpoint.collapsed_repos;
+        let endpoint_id = view.id.to_owned();
+        let silenced = crate::notification_mutes::Mutes::silenced_in(cx, &mutes, snapshot);
+        let collapsed_repos = view.collapsed_repos;
         let entries = visible_workspace_entries(&snapshot.workspaces, collapsed_repos);
         let drag = self
             .workspace_drag
@@ -104,7 +109,7 @@ impl SpaceportWindow {
         let mut previous_indented = None;
         let mut nested_focus = None;
         for (position, (index, indented, group)) in entries.into_iter().enumerate() {
-            if self.host_folded(endpoint) {
+            if self.host_folded(&view) {
                 break;
             }
             let workspace = &snapshot.workspaces[index];
@@ -198,12 +203,8 @@ impl SpaceportWindow {
                 }
                 + row_cx.indicators.width(font)
                 + layout.gap();
-            let note = workspace_note(
-                workspace,
-                crate::worktree_notes::Notes::of(cx),
-                &endpoint.id,
-            )
-            .map(SharedString::from);
+            let note = workspace_note(workspace, crate::worktree_notes::Notes::of(cx), view.id)
+                .map(SharedString::from);
             let note_line = note.clone().map(|note| {
                 let endpoint = endpoint_id.clone();
                 let workspace = id.clone();
@@ -233,9 +234,9 @@ impl SpaceportWindow {
             let ports = self
                 .config
                 .show_listening_ports
-                .then_some(daemon.as_ref())
+                .then_some(ports.as_ref())
                 .flatten()
-                .and_then(|daemon| self.listening_ports.get(daemon, &workspace.workspace_id))
+                .and_then(|ports| self.listening_ports.get(ports, &workspace.workspace_id))
                 .map(|listed| {
                     div()
                         .debug_selector(|| format!("ports-{endpoint_id}-{id}"))

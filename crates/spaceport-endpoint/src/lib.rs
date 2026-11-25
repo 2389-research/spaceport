@@ -3,8 +3,8 @@
 //! catalog and the device list it describes, the Back and Forward trail through
 //! the panes a host has focused, when the machine slept or its network changed,
 //! where a dragged device lands in the user's own order, whose focus a
-//! background host may take, the connection a deferred action started on, and
-//! the IDs saved hosts are keyed by.
+//! background host may take, the connection a deferred action started on, the
+//! IDs saved hosts are keyed by, and one host as a row paints it.
 //!
 //! Nothing here holds a window, a connection or a message, and no line of it is
 //! a word: the app keeps every view, every socket and every `fl!` site, and
@@ -36,8 +36,8 @@ pub use history::{History, Step};
 pub use host::link::{Failure, Link};
 pub use host::link::{MAX_RETRY_DELAY, STABLE_CONNECTION_PERIOD};
 pub use host::{
-    Action, ConnectionRef, Host, InputFence, Phase, SelectionFence, Transition, Transport,
-    WeakConnectionRef, live_of,
+    Action, ConnectionRef, Host, HostView, InputFence, Phase, SelectionFence, Transition,
+    Transport, WeakConnectionRef, live_of,
 };
 pub use ids::{LOCAL, SAVED_PREFIX, WSL_PREFIX, saved_profile_id};
 pub use order::{moved, rank};

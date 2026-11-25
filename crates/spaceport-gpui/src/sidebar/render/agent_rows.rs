@@ -38,6 +38,7 @@ impl SpaceportWindow {
             let Some(endpoint) = self.endpoints.get(index) else {
                 continue;
             };
+            let host = endpoint.view();
             let selected = index == self.selected_endpoint;
             let live = self.live_of(index);
             let Some(snapshot) = live.snapshot.as_deref() else {
@@ -54,11 +55,11 @@ impl SpaceportWindow {
                 nest: 0.,
                 mark: wash::HostMark::resolve(
                     &self.config.sidebar_style,
-                    &endpoint.label,
+                    host.label,
                     selected,
                     theme,
                 ),
-                host: self.agent_host(endpoint),
+                host: self.agent_host(&host),
                 right_to_left: crate::direction::is_rtl(),
                 painters: crate::sidebar::paint::PAINTERS,
             };
@@ -99,9 +100,8 @@ impl SpaceportWindow {
     }
 
     /// The host an agent's row names: a remote's label, among several hosts.
-    fn agent_host<'a>(&self, endpoint: &'a crate::endpoint::Endpoint) -> Option<&'a str> {
-        (self.endpoints.len() > 1 && endpoint.id != crate::endpoint::LOCAL)
-            .then_some(endpoint.label.as_str())
+    fn agent_host<'a>(&self, host: &'a spaceport_endpoint::HostView<'a>) -> Option<&'a str> {
+        (self.endpoints.len() > 1 && host.id != crate::endpoint::LOCAL).then_some(host.label)
     }
 
     /// The lines the expanded panel paints for host `index`'s agent, or None
@@ -113,8 +113,9 @@ impl SpaceportWindow {
         agent: &ClientShellAgent,
     ) -> Option<Vec<Vec<tokens::ResolvedToken>>> {
         let endpoint = self.endpoints.get(index)?;
+        let host = endpoint.view();
         let snapshot = self.live_of(index).snapshot.as_deref()?;
-        self.configured_agent_lines(agent, snapshot, self.agent_host(endpoint))
+        self.configured_agent_lines(agent, snapshot, self.agent_host(&host))
     }
 
     /// The lines a configured agent row shows, empty for Herdr's own row, or

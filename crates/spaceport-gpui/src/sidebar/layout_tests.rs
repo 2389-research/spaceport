@@ -469,6 +469,29 @@ pub(crate) const REPO_KEY: &str = if cfg!(windows) {
     "/fixture/agent-launcher/.git"
 };
 
+/// One host a layout test's window lists beside the fixture's own: `id` keys
+/// it, `label` is what its rows say, and `target` names the daemon it would
+/// dial, which no test opens. Every host these tests add is made here, so what
+/// a host is made of is written once.
+#[cfg(test)]
+pub(crate) fn layout_host(
+    id: impl Into<String>,
+    label: impl Into<String>,
+    target: ConnectTarget,
+) -> crate::endpoint::Endpoint {
+    crate::endpoint::Endpoint::new(id.into(), label.into(), target, true)
+}
+
+/// The target a layout test's host dials when the test is about the sidebar and
+/// not about where the host is.
+#[cfg(test)]
+pub(crate) fn ssh(host: &str) -> ConnectTarget {
+    ConnectTarget::Ssh {
+        target: host.into(),
+        session: "default".into(),
+    }
+}
+
 pub(crate) fn snapshot(workspace_count: usize) -> ClientShellSnapshot {
     snapshot_with_repo_key(workspace_count, REPO_KEY)
 }

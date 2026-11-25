@@ -59,8 +59,9 @@ impl SpaceportWindow {
         let silenced = shown
             .as_deref()
             .map(|snapshot| {
-                let endpoint = &self.endpoints[self.selected_endpoint];
-                crate::notification_mutes::Mutes::silenced_in(cx, endpoint, snapshot)
+                let daemon =
+                    crate::notification_mutes::Daemon::of(&self.endpoints[self.selected_endpoint]);
+                crate::notification_mutes::Mutes::silenced_in(cx, &daemon, snapshot)
             })
             .unwrap_or_default();
         // Resolved once: both phases ask the same question of every tab.

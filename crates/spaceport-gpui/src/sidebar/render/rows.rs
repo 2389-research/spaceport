@@ -124,8 +124,9 @@ impl SpaceportWindow {
             if m.devices && !self.device_listed(endpoint_index, &m.query) {
                 continue;
             }
+            let view = endpoint.view();
             if m.grouped {
-                let own = self.device_tags.section(&endpoint.id, tag_filter);
+                let own = self.device_tags.section(view.id, tag_filter);
                 if !section.is_some_and(|last| super::super::tag_groups::same_section(last, own)) {
                     section = Some(own);
                     let count = self.tag_section_count(own);
@@ -135,17 +136,13 @@ impl SpaceportWindow {
                             .child(self.tag_section(own, count, m.heading_look, cx));
                     spaces.rows += 1;
                 }
-                if self.device_tag_folded(&endpoint.id) {
+                if self.device_tag_folded(view.id) {
                     continue;
                 }
             }
             let selected = endpoint_index == self.selected_endpoint;
-            let mark = wash::HostMark::resolve(
-                &self.config.sidebar_style,
-                &endpoint.label,
-                selected,
-                theme,
-            );
+            let mark =
+                wash::HostMark::resolve(&self.config.sidebar_style, view.label, selected, theme);
             if m.headed {
                 spaces.host_rows.push((endpoint_index, spaces.rows));
                 let header = self.host_row(endpoint, selected, m.look, m.width, false, cx);
@@ -185,8 +182,7 @@ impl SpaceportWindow {
                 width: m.width,
                 nest: if m.multi { m.look.nest_indent() } else { 0. },
                 mark,
-                host: (m.multi && endpoint.id != crate::endpoint::LOCAL)
-                    .then_some(endpoint.label.as_str()),
+                host: (m.multi && view.id != crate::endpoint::LOCAL).then_some(view.label),
                 right_to_left: crate::direction::is_rtl(),
                 painters: crate::sidebar::paint::PAINTERS,
             };
@@ -196,10 +192,12 @@ impl SpaceportWindow {
             let (next, focused) = self.append_workspace_rows(
                 spaces,
                 HostRows {
-                    endpoint,
+                    view,
                     index: endpoint_index,
                     selected,
                     snapshot,
+                    mutes: crate::notification_mutes::Daemon::of(endpoint),
+                    ports: crate::listening_ports::Daemon::of(&endpoint.connection.target),
                 },
                 &row_cx,
                 m,
@@ -209,7 +207,7 @@ impl SpaceportWindow {
             nested_focus = nested_focus.or(focused);
             // Agent rows come after every host: the panel interleaves them.
             // Only a host the panel lists can make the view a filtered one.
-            if self.config.show_agents && endpoint.enabled() {
+            if self.config.show_agents && view.phase.enabled() {
                 filtered |= snapshot.agent_view_label.is_some();
             }
         }

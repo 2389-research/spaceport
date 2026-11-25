@@ -31,6 +31,24 @@ fn connected(host: &mut Host) {
 }
 
 #[test]
+fn only_a_disabled_phase_is_not_enabled() {
+    // A row reads whether a host wants a connection off the phase it holds, so
+    // every phase but `Disabled` must answer as the link does.
+    let phases = [
+        Phase::Detached,
+        Phase::DaemonOutdated,
+        Phase::ClientOutdated,
+        Phase::HerdrMissing,
+        Phase::HerdrStopped,
+        Phase::Reconnecting,
+        Phase::Connecting,
+        Phase::Online,
+    ];
+    assert!(phases.iter().all(|phase| phase.enabled()));
+    assert!(!Phase::Disabled.enabled());
+}
+
+#[test]
 fn a_disabled_host_is_disabled_and_wants_nothing() {
     let host = Host::new(false);
     assert!(!host.enabled());

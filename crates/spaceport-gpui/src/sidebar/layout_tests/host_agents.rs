@@ -15,15 +15,7 @@ fn priority_paints_every_hosts_agents_in_one_order(cx: &mut gpui::TestAppContext
             listing.agents[0].agent_status = AgentStatus::Idle;
             view.live.snapshot = Some(Arc::new(listing.clone()));
             view.live.status = ConnectionStatus::Connected;
-            let mut remote = crate::endpoint::Endpoint::new(
-                "ssh:test".into(),
-                "Remote".into(),
-                ConnectTarget::Ssh {
-                    target: "unused".into(),
-                    session: "default".into(),
-                },
-                true,
-            );
+            let mut remote = layout_host("ssh:test", "Remote", ssh("unused"));
             listing.agents[0].agent_status = AgentStatus::Blocked;
             remote.live_mut().snapshot = Some(Arc::new(listing));
             remote.live_mut().status = ConnectionStatus::Connected;

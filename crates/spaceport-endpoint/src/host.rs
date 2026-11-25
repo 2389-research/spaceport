@@ -17,11 +17,13 @@ mod fence;
 pub(crate) mod link;
 mod live_of;
 mod phase;
+mod view;
 
 pub use fence::{ConnectionRef, InputFence, SelectionFence, WeakConnectionRef};
 pub use link::Transition;
 pub use live_of::live_of;
 pub use phase::Phase;
+pub use view::HostView;
 
 #[cfg(any(test, feature = "test-support"))]
 mod fixtures;
@@ -92,8 +94,11 @@ impl Host {
         phase::of(&self.link)
     }
 
+    /// Whether this host wants a connection. Only a disabled one does not, so
+    /// this reading is the phase's; it stays here because the link's other
+    /// rules ask a host rather than a phase.
     pub fn enabled(&self) -> bool {
-        !matches!(self.link, link::Link::Disabled)
+        self.phase().enabled()
     }
 
     pub fn detached(&self) -> bool {

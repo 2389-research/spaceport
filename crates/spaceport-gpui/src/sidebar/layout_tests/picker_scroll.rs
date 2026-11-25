@@ -16,15 +16,7 @@ fn the_wheel_does_not_move_a_device_picker_that_fits(cx: &mut gpui::TestAppConte
     let view = cx.update(|_, cx| fixture.read(cx).0.clone());
     cx.update(|_, cx| {
         view.update(cx, |view, _| {
-            let mut remote = crate::endpoint::Endpoint::new(
-                "ssh:fixture".into(),
-                "m4max".into(),
-                ConnectTarget::Ssh {
-                    target: "m4max".into(),
-                    session: "default".into(),
-                },
-                true,
-            );
+            let mut remote = layout_host("ssh:fixture", "m4max", ssh("m4max"));
             remote.live_mut().snapshot = view.live.snapshot.clone();
             view.endpoints.push(remote);
         })
@@ -64,14 +56,10 @@ fn a_device_picker_that_overflows_scrolls_its_list(cx: &mut gpui::TestAppContext
     cx.update(|_, cx| {
         view.update(cx, |view, _| {
             for index in 0..12 {
-                let mut remote = crate::endpoint::Endpoint::new(
+                let mut remote = layout_host(
                     format!("ssh:fixture{index}"),
                     format!("host{index}"),
-                    ConnectTarget::Ssh {
-                        target: format!("host{index}"),
-                        session: "default".into(),
-                    },
-                    true,
+                    ssh(&format!("host{index}")),
                 );
                 remote.live_mut().snapshot = view.live.snapshot.clone();
                 view.endpoints.push(remote);

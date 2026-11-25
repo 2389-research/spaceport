@@ -11,15 +11,7 @@ fn devices_window(
             let mut view = fixture_window(window, cx);
             view.config.layout.mode = LayoutMode::Devices;
             view.live.status = ConnectionStatus::Connected;
-            let mut remote = crate::endpoint::Endpoint::new(
-                "ssh:test".into(),
-                "Build box".into(),
-                ConnectTarget::Ssh {
-                    target: "unused".into(),
-                    session: "default".into(),
-                },
-                true,
-            );
+            let mut remote = layout_host("ssh:test", "Build box", ssh("unused"));
             let mut listing = snapshot(1);
             listing.agents.truncate(1);
             listing.agents[0].pane_id = "remote-pane".into();

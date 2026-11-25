@@ -52,11 +52,10 @@ fn a_plugin_agent_view_on_another_host_keeps_the_hidden_header(cx: &mut gpui::Te
     let (view, cx) = cx.add_window_view(|window, cx| {
         let mut view = fixture_window(window, cx);
         view.config.show_agents_header = false;
-        let mut remote = crate::endpoint::Endpoint::new(
-            "ssh:test".into(),
-            "Remote".into(),
+        let mut remote = layout_host(
+            "ssh:test",
+            "Remote",
             ConnectTarget::Socket("/unused-agents-header-test.sock".into()),
-            true,
         );
         remote.live_mut().snapshot = view.live.snapshot.clone();
         view.endpoints.push(remote);

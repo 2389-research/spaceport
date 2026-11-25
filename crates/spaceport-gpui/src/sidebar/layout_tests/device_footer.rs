@@ -14,14 +14,10 @@ fn device_footer_filters_both_lists_and_keeps_settings_visible(cx: &mut gpui::Te
     let view = cx.update(|_, cx| fixture.read(cx).0.clone());
     cx.update(|_, cx| {
         view.update(cx, |view, _| {
-            let mut remote = crate::endpoint::Endpoint::new(
-                "ssh:fixture".into(),
-                "A very long remote device label that must fit".into(),
-                ConnectTarget::Ssh {
-                    target: "example.invalid".into(),
-                    session: "default".into(),
-                },
-                true,
+            let mut remote = layout_host(
+                "ssh:fixture",
+                "A very long remote device label that must fit",
+                ssh("example.invalid"),
             );
             remote.live_mut().snapshot = view.live.snapshot.clone();
             view.endpoints.push(remote);

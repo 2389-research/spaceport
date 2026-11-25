@@ -7,15 +7,7 @@ fn host_headers_lead_with_the_device_origin_mark(cx: &mut gpui::TestAppContext) 
     let (_view, cx) = cx.add_window_view(|window, cx| {
         let mut view = fixture_window(window, cx);
         view.live.snapshot = Some(Arc::new(snapshot(1)));
-        let mut remote = crate::endpoint::Endpoint::new(
-            "ssh:test".into(),
-            "Remote".into(),
-            ConnectTarget::Ssh {
-                target: "me@100.84.59.116".into(),
-                session: "default".into(),
-            },
-            true,
-        );
+        let mut remote = layout_host("ssh:test", "Remote", ssh("me@100.84.59.116"));
         remote.live_mut().snapshot = view.live.snapshot.clone();
         view.endpoints.push(remote);
         view
@@ -64,15 +56,7 @@ fn host_headers_lead_with_the_device_origin_mark(cx: &mut gpui::TestAppContext) 
 fn remote_fixture(window: &mut Window, cx: &mut Context<SpaceportWindow>) -> SpaceportWindow {
     let mut view = fixture_window(window, cx);
     view.live.snapshot = Some(Arc::new(snapshot(1)));
-    let mut remote = crate::endpoint::Endpoint::new(
-        "ssh:test".into(),
-        "Remote".into(),
-        ConnectTarget::Ssh {
-            target: "me@100.84.59.116".into(),
-            session: "default".into(),
-        },
-        true,
-    );
+    let mut remote = layout_host("ssh:test", "Remote", ssh("me@100.84.59.116"));
     remote.live_mut().snapshot = view.live.snapshot.clone();
     view.endpoints.push(remote);
     view
