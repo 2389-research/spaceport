@@ -14,6 +14,7 @@ publish = false
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]
+spaceport-activation = { path = "../../crates/spaceport-activation" }
 spaceport-backend = { path = "../../crates/spaceport-backend" }
 spaceport-client = { path = "../../crates/spaceport-client" }
 spaceport-panes = { path = "../../crates/spaceport-panes" }

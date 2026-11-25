@@ -6489,6 +6489,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "spaceport-activation"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "spaceport-client",
+]
+
+[[package]]
 name = "spaceport-ago"
 version = "0.1.0"
 
@@ -6808,6 +6816,7 @@ name = "spaceport-live"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+ "spaceport-activation",
  "spaceport-client",
  "spaceport-osc52",
  "spaceport-sound",

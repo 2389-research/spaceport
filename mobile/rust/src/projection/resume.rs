@@ -2,7 +2,8 @@
 // ABOUTME: Prevents old keyboard targets and replies from affecting a new presentation.
 use super::Projection;
 use crate::MobileError;
-use std::time::{Duration, Instant};
+use spaceport_activation::TIMEOUT;
+use std::time::Instant;
 
 #[derive(Clone)]
 pub(super) enum Visibility {
@@ -41,10 +42,12 @@ impl Projection {
         self.version += 1;
     }
 
+    /// Begins proving a retained session. The budget is the one barrier any
+    /// activation gets: this is the same acknowledgement, asked again.
     pub(crate) fn start_resume(&mut self, request: String, now: Instant) {
         self.visibility = Visibility::Checking {
             request,
-            deadline: now + Duration::from_secs(4),
+            deadline: now + TIMEOUT,
             revision: None,
         };
     }

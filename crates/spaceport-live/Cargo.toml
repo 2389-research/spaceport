@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 serde_json.workspace         = true
+spaceport-activation.workspace = true
 spaceport-client.workspace   = true
 spaceport-osc52.workspace    = true
 spaceport-sound.workspace    = true
@@ -18,6 +19,7 @@ spaceport-sound.workspace    = true
 tracing.workspace            = true
 
 [features]
-# `Fence::Reset`, `Notices::is_some` and `Notice::set_expires`, for the app's
-# headless tests that drive the state machine and age a toast.
-test-support = []
+# `Notices::is_some` and `Notice::set_expires`, for the app's headless tests
+# that drive the state machine and age a toast; the fence's own test hooks come
+# from `spaceport-activation`.
+test-support = ["spaceport-activation/test-support"]

@@ -26,7 +26,8 @@ pub use labels::Labels;
 pub use navigation::{NavigationTarget, OwnedNavigationTarget};
 pub use notice::{Cause, HeldNotice, Notices};
 pub use notifications::{Notice, PENDING_LIMIT, Toasts, VISIBLE_LIMIT};
+pub use spaceport_activation::SurfaceActivation;
 pub use state::{
     AnnouncementDismissal, Answer, ConnectionStatus, DialogResponse, LiveState,
-    MAX_DAEMON_VERSION_CHARS, MAX_WINDOW_TITLE_CHARS, RenameResult, SurfaceActivation,
+    MAX_DAEMON_VERSION_CHARS, MAX_WINDOW_TITLE_CHARS, RenameResult,
 };
