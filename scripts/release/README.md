@@ -32,9 +32,11 @@ publishes a GitHub **prerelease** with the DMG and `SHA256SUMS`. Manual runs on
 main accept an exact commit SHA and an explicit version; they upload workflow
 artifacts without publishing a release.
 The [20261117.1 prerelease](https://github.com/2389-research/spaceport/releases/tag/v20261117.1)
-completed this route with Sparkle enabled.
-Its [qualification record](../../docs/spaceport/evidence/t12-macos-preview-20261117.1-signed.md)
-covers the public DMG and signed feed; the old feed URL redirect was not rerun.
+first completed this route with Sparkle enabled, and
+[20261125.1](https://github.com/2389-research/spaceport/releases/tag/v20261125.1) is the
+newest published one.
+The [qualification record for 20261117.1](../../docs/spaceport/evidence/t12-macos-preview-20261117.1-signed.md)
+covers that public DMG and signed feed; the old feed URL redirect was not rerun.
 Both routes require the selected commit to belong to main and have a complete,
 successful main CI run. D66 temporarily pauses Spaceport Windows CI until
 Kata `h8g5` fixes native performance; macOS/Linux checks remain mandatory,
