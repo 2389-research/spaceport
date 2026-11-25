@@ -1684,6 +1684,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "spaceport-activation"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "spaceport-client",
+]
+
+[[package]]
 name = "spaceport-backend"
 version = "0.1.0"
 dependencies = [
@@ -1717,6 +1725,7 @@ dependencies = [
  "rand",
  "russh",
  "serde_json",
+ "spaceport-activation",
  "spaceport-backend",
  "spaceport-client",
  "spaceport-panes",

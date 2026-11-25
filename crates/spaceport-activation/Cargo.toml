@@ -1,0 +1,19 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-activation"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde_json.workspace       = true
+spaceport-client.workspace = true
+
+[features]
+# `Fence::for_test` and `Transition::Reset`, for the app's headless tests that
+# drive the fence without a daemon.
+test-support = []

@@ -1,53 +1,16 @@
-// ABOUTME: Resolves a selected pane through its authoritative Herdr workspace and tab.
-// ABOUTME: Waits for ordered focus receipts and a coherent surface between requests.
-use super::{NavigationTarget, Projection};
+// ABOUTME: Walks a selected pane through its Herdr workspace and tab on the phone.
+// ABOUTME: Keeps the projection's side of the walk; which level comes next is shared.
+use super::{OwnedNavigationTarget, Projection};
 use crate::MobileError;
-use spaceport_client::protocol::ClientShellSnapshot;
-use std::time::{Duration, Instant};
+use spaceport_activation::{Route, Step};
+use std::time::Instant;
 
-#[derive(Clone)]
-pub(super) struct Route {
-    request_version: u64,
-    workspace: String,
-    tab: String,
-    pane: String,
-    expected_agent: Option<String>,
-    last_step: Option<NavigationTarget<String>>,
-    deadline: Instant,
-}
-
-impl Route {
-    fn present(&self, s: &ClientShellSnapshot) -> bool {
-        self.expected_agent.as_ref().is_none_or(|name| {
-            s.agents.iter().any(|a| {
-                a.pane_id == self.pane
-                    && a.workspace_id == self.workspace
-                    && a.tab_id == self.tab
-                    && spaceport_client::text::agent_name(a) == name
-            })
-        }) && s
-            .workspaces
-            .iter()
-            .any(|w| w.workspace_id == self.workspace)
-            && s.tabs
-                .iter()
-                .any(|t| t.tab_id == self.tab && t.workspace_id == self.workspace)
-            && s.panes.iter().any(|p| {
-                p.pane_id == self.pane && p.tab_id == self.tab && p.workspace_id == self.workspace
-            })
-    }
-
-    fn next(&self, s: &ClientShellSnapshot) -> Option<NavigationTarget<String>> {
-        if s.focused_workspace_id.as_ref() != Some(&self.workspace) {
-            Some(NavigationTarget::Workspace(self.workspace.clone()))
-        } else if s.focused_tab_id.as_ref() != Some(&self.tab) {
-            Some(NavigationTarget::Tab(self.tab.clone()))
-        } else if s.focused_pane_id.as_ref() != Some(&self.pane) {
-            Some(NavigationTarget::Pane(self.pane.clone()))
-        } else {
-            None
-        }
-    }
+/// One Go To request: the projection version it belongs to, and the walk the
+/// shared crate sequences.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) struct Walk {
+    pub(super) request_version: u64,
+    pub(super) route: Route,
 }
 
 impl Projection {
@@ -62,26 +25,22 @@ impl Projection {
         if self.navigating() || self.route.is_some() {
             return Err(MobileError::NavigationPending);
         }
+        let now = Instant::now();
         let request_version = self.version + 1;
-        let route = Route {
+        let walk = Walk {
             request_version,
-            workspace,
-            tab,
-            pane,
-            expected_agent,
-            last_step: None,
-            deadline: Instant::now() + Duration::from_secs(16),
+            route: Route::new(workspace, tab, pane, expected_agent, now),
         };
         if self
             .pending
             .as_deref()
             .or(self.snapshot.as_deref())
-            .is_none_or(|s| s.boot_id != boot || !route.present(s))
+            .is_none_or(|s| s.boot_id != boot || !walk.route.present(s))
         {
             return Err(MobileError::StaleView);
         }
-        self.note_input(Instant::now());
-        self.route = Some(route);
+        self.note_input(now);
+        self.route = Some(walk);
         self.go_to_arrival = None;
         self.version = request_version;
         Ok(request_version)
@@ -98,43 +57,45 @@ impl Projection {
         self.route.is_some()
     }
 
-    pub(crate) fn go_to_step(&mut self) -> Result<Option<NavigationTarget<String>>, MobileError> {
-        let Some(route) = &self.route else {
+    pub(crate) fn go_to_step(&mut self) -> Result<Option<OwnedNavigationTarget>, MobileError> {
+        let Some(walk) = &self.route else {
             return Ok(None);
         };
+        let now = Instant::now();
         let latest = self.pending.as_deref().or(self.snapshot.as_deref());
         if self.disconnected
-            || latest.is_none_or(|s| !route.present(s))
-            || Instant::now() >= route.deadline
+            || latest.is_none_or(|snapshot| !walk.route.present(snapshot))
+            || walk.route.expired(now)
         {
             return Err(MobileError::StaleView);
         }
         if self.navigating() || self.pending.is_some() {
             return Ok(None);
         }
-        let Some((snapshot, _)) = self.coherent() else {
+        // A step is issued against the projection both halves agree on, so the
+        // snapshot is cloned out before the walk records issuing it.
+        if self.coherent().is_none() {
+            return Ok(None);
+        }
+        let Some(snapshot) = self.pending.clone().or_else(|| self.snapshot.clone()) else {
             return Ok(None);
         };
-        let step = route.next(snapshot);
-        // A concurrent focus change must never replay a previous step.
-        if let Some(last) = &route.last_step
-            && (!last.is_focused_in(snapshot) || !last.reachable_in(snapshot))
-        {
-            return Err(MobileError::StaleView);
-        }
-        if let Some(step) = step {
-            if let Some(route) = &mut self.route {
-                route.last_step = Some(step.clone());
+        let arrived = self.focused_target().is_some()
+            || (self.direct_attach && self.coherent_target().is_some_and(|t| t.popup_id.is_none()));
+        let Some(walk) = self.route.as_mut() else {
+            return Ok(None);
+        };
+        let request_version = walk.request_version;
+        match walk.route.step(&snapshot) {
+            Step::Stale => Err(MobileError::StaleView),
+            Step::Focus(step) => Ok(Some(step)),
+            Step::Arrived if arrived => {
+                self.go_to_arrival = Some(request_version);
+                self.route = None;
+                self.version += 1;
+                Ok(None)
             }
-            return Ok(Some(step));
+            Step::Arrived => Ok(None),
         }
-        if self.focused_target().is_some()
-            || (self.direct_attach && self.coherent_target().is_some_and(|t| t.popup_id.is_none()))
-        {
-            self.go_to_arrival = Some(route.request_version);
-            self.route = None;
-            self.version += 1;
-        }
-        Ok(None)
     }
 }

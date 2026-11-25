@@ -137,8 +137,8 @@ fn barrier_needs_the_acknowledged_revision_and_requested_pane() {
     state.surface(Arc::new(surface()));
     state.start_fence(
         "choose".into(),
-        NavigationTarget::Pane("other".into()),
-        "fence".into(),
+        OwnedNavigationTarget::Pane("other".into()),
+        Ok("fence".into()),
     );
     assert!(state.target().is_none());
     state.receipt("choose", &serde_json::json!({"result": {}}));
@@ -257,6 +257,7 @@ fn initial_window_focus_waits_for_herdr_surface_but_accepts_its_existing_size() 
 
 mod pane_map;
 
+mod fence;
 mod go_to;
 
 mod park_peer;

@@ -180,14 +180,6 @@ pub struct RenameResult {
     pub result: Option<Result<(), Arc<spaceport_client::Error>>>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SurfaceActivation {
-    pub request: String,
-    pub boot: String,
-    pub focus: Option<crate::navigation::OwnedNavigationTarget>,
-    pub active: bool,
-}
-
 impl Default for LiveState {
     fn default() -> Self {
         Self {

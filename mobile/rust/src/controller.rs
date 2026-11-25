@@ -3,12 +3,13 @@
 #[path = "history.rs"]
 pub(crate) mod history;
 use crate::{
-    projection::{HostChallenge, InputTarget, MobileView, NavigationTarget, Projection},
+    projection::{HostChallenge, InputTarget, MobileView, OwnedNavigationTarget, Projection},
     ssh::{
         EnclaveSigner, EnrollmentRequest, MobilePty, PtyRoutes, SshAuth, SshError, SshHost,
         open_bridge,
     },
 };
+use spaceport_activation::Failure;
 use spaceport_client::{
     Client, ClientEvent, ClientHandle, ConnectOptions,
     protocol::{ClientKeyCode, ClientKeyKind, ClientPaneInputEvent, ClientSurfaceSize},
@@ -290,13 +291,13 @@ impl MobileSession {
     }
 
     pub fn focus_workspace(&self, boot_id: String, id: String) -> Result<(), MobileError> {
-        self.navigate(&boot_id, NavigationTarget::Workspace(id))
+        self.navigate(&boot_id, OwnedNavigationTarget::Workspace(id))
     }
     pub fn focus_tab(&self, boot_id: String, id: String) -> Result<(), MobileError> {
-        self.navigate(&boot_id, NavigationTarget::Tab(id))
+        self.navigate(&boot_id, OwnedNavigationTarget::Tab(id))
     }
     pub fn focus_pane(&self, boot_id: String, id: String) -> Result<(), MobileError> {
-        self.navigate(&boot_id, NavigationTarget::Pane(id))
+        self.navigate(&boot_id, OwnedNavigationTarget::Pane(id))
     }
 
     /// Run on a background thread. Swift rechecks the original input route before pasting.
@@ -491,7 +492,7 @@ impl MobileSession {
         Ok(())
     }
 
-    fn navigate(&self, boot: &str, target: NavigationTarget<String>) -> Result<(), MobileError> {
+    fn navigate(&self, boot: &str, target: OwnedNavigationTarget) -> Result<(), MobileError> {
         let mut state = self.active(boot)?;
         if state.navigating() || state.go_to_pending() {
             return Err(MobileError::NavigationPending);
@@ -524,7 +525,7 @@ impl MobileSession {
         handle: &ClientHandle,
         state: &mut Projection,
         boot: &str,
-        target: NavigationTarget<String>,
+        target: OwnedNavigationTarget,
     ) -> Result<(), MobileError> {
         if state
             .snapshot
@@ -534,22 +535,17 @@ impl MobileSession {
             return Err(MobileError::StaleView);
         }
         let navigation = match &target {
-            NavigationTarget::Workspace(id) => handle.focus_workspace(boot, id),
-            NavigationTarget::Tab(id) => handle.focus_tab(boot, id),
-            NavigationTarget::Pane(id) => handle.focus_pane(boot, id),
+            OwnedNavigationTarget::Workspace(id) => handle.focus_workspace(boot, id),
+            OwnedNavigationTarget::Tab(id) => handle.focus_tab(boot, id),
+            OwnedNavigationTarget::Pane(id) => handle.focus_pane(boot, id),
         }?;
         state.note_input(Instant::now());
         state.version += 1;
-        match handle.set_surface_active(boot, true) {
-            Ok(id) => state.start_fence(navigation, target, id),
-            Err(error) => {
-                // The focus might already be on the wire. End this connection
-                // rather than enabling input against an unconfirmed target.
-                state.end(error.to_string());
-                handle.disconnect();
-                return Err(error.into());
-            }
-        }
+        // The barrier is what establishes which pane owns input. A queue that
+        // refused it as full proves it never entered the ordered queue, so the
+        // fence keeps the destination and offers it again; the connection is
+        // never dropped for a barrier that was simply not taken yet.
+        state.start_fence(navigation, target, handle.set_surface_active(boot, true));
         Ok(())
     }
 
@@ -596,6 +592,29 @@ fn key_press(code: ClientKeyCode, modifiers: u8) -> ClientPaneInputEvent {
     }
 }
 
+/// What a barrier that never completed is reported as. Only the words live
+/// here: which cause it was is `spaceport-activation`'s.
+fn fence_failure_reason(cause: Failure) -> String {
+    match cause {
+        Failure::Timeout => {
+            "Herdr did not confirm the selected terminal. Reconnect to continue.".into()
+        }
+        Failure::InvalidResponse => {
+            "Herdr could not confirm the selected terminal. Reconnect to continue.".into()
+        }
+        Failure::Rejected => {
+            "Herdr refused to activate the selected terminal. Reconnect to continue.".into()
+        }
+        Failure::Queue => {
+            "The phone could not ask Herdr to activate the selected terminal. Reconnect to continue."
+                .into()
+        }
+        Failure::BootChanged => {
+            "Herdr restarted while switching panes. Reconnect to continue.".into()
+        }
+    }
+}
+
 fn lock<T>(state: &Mutex<T>) -> MutexGuard<'_, T> {
     state.lock().unwrap_or_else(PoisonError::into_inner)
 }
@@ -615,8 +634,8 @@ fn drain(
         // Process incoming snapshots before claiming their tab. A queued focus
         // change must never cause a claim for the tab being left.
         let mut received = true;
-        if state.expired() {
-            state.end("Herdr did not confirm the selected terminal. Reconnect to continue.".into());
+        if let Some(cause) = state.fence_failure() {
+            state.end(fence_failure_reason(cause));
         } else {
             match event {
                 Ok(ClientEvent::Snapshot(s)) => state.snapshot(s),
@@ -652,6 +671,14 @@ fn drain(
                 Err(error) if error.is_disconnected() => state.end("Herdr disconnected.".into()),
                 _ => received = false,
             }
+        }
+        // A barrier the ordered queue refused never entered it, so it is
+        // offered again rather than leaving input fenced on a request that was
+        // never sent.
+        if let Some((boot, focus)) = state.retry_barrier() {
+            let result = client.handle.set_surface_active(&boot, true);
+            state.barrier_queued(result, boot, focus);
+            received = true;
         }
         if let Err(error) = MobileSession::advance_go_to(&client.handle, &mut state) {
             state.error = Some(error.to_string());
