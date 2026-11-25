@@ -2,6 +2,7 @@
 
 mod error;
 mod terminal;
+mod wheel;
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
@@ -11,13 +12,15 @@ use std::time::Duration;
 
 pub use error::{Error, Result};
 pub use spaceport_protocol::{
-    AgentStatus, ClientKeyCode, ClientKeyKind, ClientMouseButton, ClientMouseKind,
-    ClientMousePosition, ClientPaneInputEvent, CursorState, FrameData, PaneSurfacePatchRow,
+    AgentStatus, ClientKeyCode, ClientKeyKind, ClientMouseButton, ClientMouseGeometry,
+    ClientMouseKind, ClientMousePosition, ClientPaneInputEvent, CursorState, FrameData,
+    PaneSurfacePatchRow,
 };
 pub use terminal::{
     Change, Exit, KeyReporting, MAX_CELLS, MAX_SIDE, MAX_TERMINAL_ID, Role, RunState, Size, Spawn,
     SurfaceUpdate, TerminalId, TerminalInfo,
 };
+pub use wheel::{WheelGrid, WheelHit};
 
 /// What attaches one host's terminals.
 ///
