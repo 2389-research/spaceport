@@ -18,8 +18,8 @@ fn system_notification_click_opens_its_origin_and_rejects_a_reconnect(
     wire.workspace_id = Some("w1".into());
     wire.pane_id = Some("w1:p1".into());
     let notice = || {
-        crate::notifications::Notice::new(wire.clone(), Instant::now(), &crate::state::labels())
-            .with_snapshot(remote.live().snapshot.as_deref(), &crate::state::labels())
+        crate::notifications::Notice::new(wire.clone(), Instant::now())
+            .with_snapshot(remote.live().snapshot.as_deref(), crate::state::describe)
     };
     let (first, second) = (notice(), notice());
     view.update(cx, |view, _| {

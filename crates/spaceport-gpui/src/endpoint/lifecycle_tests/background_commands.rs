@@ -88,7 +88,8 @@ fn switching_devices_holds_commands_until_the_new_surface_is_activated(
                 "type": "client_shell_surface_set", "active": false, "projection_revision": 7
             }}),
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     view.update(cx, |view, cx| {
         project_until(view, cx, "target activation", |view| {

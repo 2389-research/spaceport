@@ -1,23 +1,5 @@
 use super::*;
-use crate::labels::Labels;
 use spaceport_chat_protocol::{Entry, Image, Tool, ToolKind, ToolStatus};
-
-/// The words this model writes into an entry. A crate below the app has no
-/// messages, so a test names them itself.
-fn labels() -> Labels {
-    Labels {
-        answer_cut: "Copy takes all of it".into(),
-        diff_after: "After".into(),
-        diff_before: "Before".into(),
-        diff_new_file: "New file".into(),
-        question_answer: "Answer".into(),
-        question_number: |number| format!("Question {number}"),
-        question_truncated: "More answers were left out".into(),
-        terminal: |id| format!("Terminal {id}"),
-        tool_ask_user: "Questions".into(),
-        turn: |summary| format!("Worked {}ms", summary.duration_ms),
-    }
-}
 
 /// No link in these tests names a destination the window may act on.
 fn no_destination(_: &str) -> Option<String> {
@@ -33,13 +15,7 @@ fn agent(id: u64, text: &str) -> Entry {
 
 /// The parts of an agent's message, as a test reads them.
 fn message_parts(text: &str) -> Vec<Part> {
-    message(
-        text,
-        Author::Agent,
-        &mut Vec::new(),
-        &labels(),
-        no_destination,
-    )
+    message(text, Author::Agent, &mut Vec::new(), no_destination)
 }
 
 #[test]
@@ -99,7 +75,7 @@ fn an_entrys_pictures_are_asked_for_once_each_in_order() {
     ];
     let keys = vec![(EntryId(1), 1), (EntryId(2), 1)];
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &keys, &labels(), no_destination);
+    prepared.update(&transcript, &keys, no_destination);
     let asked: Vec<_> = prepared
         .take_wants()
         .into_iter()
@@ -124,7 +100,7 @@ fn an_entrys_pictures_are_asked_for_once_each_in_order() {
         asked.iter().copied().collect::<HashSet<_>>()
     );
     // A pass that prepares nothing asks for nothing.
-    prepared.update(&transcript, &keys, &labels(), no_destination);
+    prepared.update(&transcript, &keys, no_destination);
     assert!(prepared.take_wants().is_empty());
 }
 
@@ -156,7 +132,7 @@ fn bodies_are_prepared_once_per_revision() {
     ];
     let keys = vec![(EntryId(1), 1), (EntryId(2), 1), (EntryId(3), 1)];
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &keys, &labels(), no_destination);
+    prepared.update(&transcript, &keys, no_destination);
     let first = prepared.body(EntryId(1)).unwrap();
     assert!(matches!(&*first, Body::Message(parts)
         if matches!(&parts[..], [Part::Rich(blocks)]
@@ -170,10 +146,10 @@ fn bodies_are_prepared_once_per_revision() {
         &*prepared.body(EntryId(3)).unwrap(),
         Body::Message(_)
     ));
-    prepared.update(&transcript, &keys, &labels(), no_destination);
+    prepared.update(&transcript, &keys, no_destination);
     assert!(Rc::ptr_eq(&first, &prepared.body(EntryId(1)).unwrap()));
     transcript.entries.remove(0);
-    prepared.update(&transcript, &keys[1..], &labels(), no_destination);
+    prepared.update(&transcript, &keys[1..], no_destination);
     assert!(prepared.body(EntryId(1)).is_none());
 }
 
@@ -186,7 +162,7 @@ fn an_answer_too_long_to_show_ends_with_a_note() {
     let mut transcript = Transcript::new("Claude");
     transcript.entries = vec![agent(1, &text)];
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &[(EntryId(1), 1)], &labels(), no_destination);
+    prepared.update(&transcript, &[(EntryId(1), 1)], no_destination);
     let Body::Message(parts) = &*prepared.body(EntryId(1)).unwrap() else {
         panic!("not a message");
     };
@@ -202,10 +178,10 @@ fn an_answer_too_long_to_show_ends_with_a_note() {
             if text.contains("line 1999")))),
         "chat shows more than release notes do"
     );
-    assert!(lines.last().unwrap().text.contains(&labels().answer_cut));
+    assert!(lines.last().unwrap().text.contains(&cut_note()));
     // A short answer has no note.
     transcript.entries = vec![agent(2, "short")];
-    prepared.update(&transcript, &[(EntryId(2), 1)], &labels(), no_destination);
+    prepared.update(&transcript, &[(EntryId(2), 1)], no_destination);
     let Body::Message(parts) = &*prepared.body(EntryId(2)).unwrap() else {
         panic!("not a message");
     };
@@ -223,7 +199,7 @@ fn an_answer_cut_twice_ends_with_one_note() {
     };
     let note = lines.last().unwrap();
     assert_eq!(lines.iter().filter(|line| *line == note).count(), 1);
-    assert!(note.text.contains(&labels().answer_cut));
+    assert!(note.text.contains(&cut_note()));
 }
 
 const CARD: &str = r#"{"components":[{"type":"text","text":"Example"}]}"#;

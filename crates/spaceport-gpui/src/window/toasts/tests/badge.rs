@@ -9,7 +9,6 @@ fn the_badge_leads_the_card_and_an_emoji_leaves_the_title(cx: &mut TestAppContex
             view.endpoints[0].toasts.receive([Notice::new(
                 notification("🚀 Deployed"),
                 Instant::now(),
-                &crate::state::labels(),
             )
             .preview()]);
         });

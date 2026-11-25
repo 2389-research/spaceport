@@ -17,9 +17,10 @@ fn worktree_failure_stays_in_dialog_after_snapshots_and_successful_retry() {
             request_id: "create".into(),
             response: response.clone(),
         },
-        &labels(),
+        describe,
+        localize,
     );
-    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot()), describe, localize);
     assert_eq!(status_text(&state, None, Instant::now()), "Connected");
     assert!(matches!(&state.dialog_response,
         Some((id, Some(Ok(value)))) if id == "create" && value == &response));
@@ -30,7 +31,8 @@ fn worktree_failure_stays_in_dialog_after_snapshots_and_successful_retry() {
             request_id: "retry".into(),
             response: serde_json::json!({"result": {}}),
         },
-        &labels(),
+        describe,
+        localize,
     );
     state.dialog_response = None;
     assert_eq!(status_text(&state, None, Instant::now()), "Connected");
@@ -47,14 +49,16 @@ fn drag_request_clears_only_on_its_own_answer() {
             request_id: "other".into(),
             response: serde_json::json!({"result": {}}),
         },
-        &labels(),
+        describe,
+        localize,
     );
     state.apply(
         ClientEvent::CommandRejected {
             request_id: None,
             reason: spaceport_client::Error::Disconnected,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!(state.drag_request.as_deref(), Some("scroll"));
     state.apply(
@@ -62,7 +66,8 @@ fn drag_request_clears_only_on_its_own_answer() {
             request_id: "scroll".into(),
             response: serde_json::json!({"result": {}}),
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!(state.drag_request, None);
 
@@ -72,7 +77,8 @@ fn drag_request_clears_only_on_its_own_answer() {
             request_id: Some("scroll".into()),
             reason: spaceport_client::Error::CommandBoot,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!(state.drag_request, None);
 }
@@ -90,16 +96,18 @@ fn dialog_response_is_correlated_and_survives_coalescing() {
             request_id: "remove".into(),
             response: response.clone(),
         },
-        &labels(),
+        describe,
+        localize,
     );
     state.apply(
         ClientEvent::Response {
             request_id: "other".into(),
             response: serde_json::json!({"result":{}}),
         },
-        &labels(),
+        describe,
+        localize,
     );
-    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot()), describe, localize);
     assert!(
         matches!(&state.dialog_response, Some((id, Some(Ok(value)))) if id == "remove" && value == &response)
     );
@@ -109,7 +117,8 @@ fn dialog_response_is_correlated_and_survives_coalescing() {
             request_id: Some("other".into()),
             reason: spaceport_client::Error::Disconnected,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert!(matches!(&state.dialog_response, Some((id, None)) if id == "next"));
     state.apply(
@@ -117,7 +126,8 @@ fn dialog_response_is_correlated_and_survives_coalescing() {
             request_id: Some("next".into()),
             reason: spaceport_client::Error::CommandBoot,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert!(
         matches!(&state.dialog_response, Some((id, Some(Err(error)))) if id == "next" && matches!(error.as_ref(), spaceport_client::Error::CommandBoot))
@@ -139,7 +149,8 @@ fn rename_failures_stay_typed_and_shared_across_mailbox_clones() {
             request_id: "other".into(),
             response: serde_json::json!({"error": payload}),
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert!(state.tab_rename.as_ref().unwrap().result.is_none());
     assert_eq!(state.notices.text(), Some("Invalid label"));
@@ -149,7 +160,8 @@ fn rename_failures_stay_typed_and_shared_across_mailbox_clones() {
             request_id: "rename".into(),
             response: serde_json::json!({"error": payload}),
         },
-        &labels(),
+        describe,
+        localize,
     );
     let cloned = state.clone();
     let error = state
@@ -181,7 +193,8 @@ fn rename_failures_stay_typed_and_shared_across_mailbox_clones() {
             request_id: Some("rename".into()),
             reason: spaceport_client::Error::CommandBoot,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert!(matches!(
         state
@@ -202,7 +215,8 @@ fn rename_failures_stay_typed_and_shared_across_mailbox_clones() {
             request_id: Some("rename".into()),
             reason: std::io::Error::new(std::io::ErrorKind::PermissionDenied, "denied").into(),
         },
-        &labels(),
+        describe,
+        localize,
     );
     let cloned = state.clone();
     let error = state

@@ -78,7 +78,8 @@ fn startup_focus_waits_for_the_first_surface_without_flapping_on_later_updates(
 
     inbox.lock().unwrap().apply(
         ClientEvent::Surface(surface(&snapshot())),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     view.update(cx, |view, cx| {
         project_until(
@@ -269,11 +270,13 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
                 // A fresh frame alone must not open input before the ordered ack.
                 state.apply(
                     ClientEvent::Snapshot(Arc::new(next.clone())),
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
                 state.apply(
                     ClientEvent::Surface(surface(&next)),
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
             }
             project_until(view, cx, "fresh frame", |view| {
@@ -295,7 +298,8 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
                             "projection_revision": next.revision + 1
                         }}),
                     },
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
             }
             project_until(view, cx, "ack ahead of the frame", |view| {
@@ -314,11 +318,13 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
                     .unwrap();
                 state.apply(
                     ClientEvent::Snapshot(Arc::new(next.clone())),
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
                 state.apply(
                     ClientEvent::Surface(surface(&next)),
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
             }
             project_until(view, cx, "frame matching the ack", |view| {

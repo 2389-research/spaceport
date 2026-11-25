@@ -36,7 +36,11 @@ fn live(status: AgentStatus) -> LiveState {
     snapshot.focused_workspace_id = Some("workspace".into());
     // A committed snapshot is a connected endpoint.
     let mut live = LiveState::default();
-    live.apply(ClientEvent::Snapshot(Arc::new(snapshot)), &labels());
+    live.apply(
+        ClientEvent::Snapshot(Arc::new(snapshot)),
+        describe,
+        localize,
+    );
     live
 }
 
@@ -65,12 +69,16 @@ fn staged_agent_status_validates_delayed_sounds_once() {
         let now = Instant::now();
         let mut state = live(AgentStatus::Working);
         let displayed = state.snapshot.clone().unwrap();
-        state.apply(ClientEvent::Surface(surface(&displayed)), &labels());
+        state.apply(
+            ClientEvent::Surface(surface(&displayed)),
+            describe,
+            localize,
+        );
         let mut staged = (*displayed).clone();
         staged.revision += 1;
         staged.agents[0].agent_status = status;
         let staged = Arc::new(staged);
-        state.apply(ClientEvent::Snapshot(staged.clone()), &labels());
+        state.apply(ClientEvent::Snapshot(staged.clone()), describe, localize);
         assert!(Arc::ptr_eq(state.snapshot.as_ref().unwrap(), &displayed));
         state.sound_events.push_back((now, event(kind)));
         let mut policy = Policy::default();
@@ -79,7 +87,7 @@ fn staged_agent_status_validates_delayed_sounds_once() {
             poll_policy(&mut policy, &mut state, Some(1), false, at, |_| sounds += 1);
         }
         assert_eq!(sounds, 1, "{kind:?}");
-        state.apply(ClientEvent::Surface(surface(&staged)), &labels());
+        state.apply(ClientEvent::Surface(surface(&staged)), describe, localize);
         assert!(Arc::ptr_eq(state.snapshot.as_ref().unwrap(), &staged));
         poll_policy(
             &mut policy,

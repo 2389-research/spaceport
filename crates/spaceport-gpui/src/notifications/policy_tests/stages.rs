@@ -30,7 +30,7 @@ fn confirm_blocked(endpoints: &mut [Endpoint]) {
 fn targetless(title: &str, now: Instant) -> Notice {
     let mut event = tests::notification(title);
     event.kind = Kind::Custom;
-    Notice::new(event, now, &crate::state::labels())
+    Notice::new(event, now)
 }
 
 #[test]
@@ -206,11 +206,11 @@ fn a_preview_promoted_before_it_is_received_shows_at_once() {
     let mut endpoints = endpoints();
     // Notifications are off; a preview shows anyway.
     let off = NotificationConfig::default();
-    let mut notice = Notice::new(wire(Kind::NeedsAttention), now, &crate::state::labels())
+    let mut notice = Notice::new(wire(Kind::NeedsAttention), now)
         .preview()
         .with_snapshot(
             endpoints[0].live().snapshot.as_deref(),
-            &crate::state::labels(),
+            crate::state::describe,
         );
     notice.promote(now);
     endpoints[0].toasts.receive([notice]);

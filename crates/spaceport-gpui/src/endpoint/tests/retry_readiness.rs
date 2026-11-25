@@ -40,7 +40,8 @@ fn redial_waits_for_the_final_inbox_projection_to_be_consumed() {
             reason: "owned fixture ended".into(),
             ssh: None,
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert!(
         !endpoint.may_dial(),

@@ -9,7 +9,8 @@ fn shutdown_requests_a_window_update_before_disconnect() {
     stopped.dirty = false;
     stopped.apply(
         ClientEvent::Message(ServerMessage::ServerShutdown { reason: None }),
-        &labels(),
+        describe,
+        localize,
     );
     assert!(stopped.dirty, "the shutdown message must reach the UI");
     assert!(

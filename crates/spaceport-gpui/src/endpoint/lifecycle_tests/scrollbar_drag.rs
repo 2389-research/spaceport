@@ -44,12 +44,11 @@ fn scrollbar_drag_survives_a_snapshot_ahead_of_its_surface(cx: &mut gpui::TestAp
             });
             // Projections of later answers must keep presenting this bar.
             let surface = view.live.surface.clone().unwrap();
-            view.endpoints[1]
-                .connection
-                .inbox
-                .lock()
-                .unwrap()
-                .apply(ClientEvent::Surface(surface), &crate::state::labels());
+            view.endpoints[1].connection.inbox.lock().unwrap().apply(
+                ClientEvent::Surface(surface),
+                crate::state::describe,
+                crate::state::localize,
+            );
             // Grab the thumb, at rest at the bottom of the track.
             assert!(view.scrollbar_mouse_down(
                 &MouseDownEvent {

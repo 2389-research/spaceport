@@ -1,7 +1,7 @@
 //! Host colour row: a curated swatch strip, a "none" swatch, a hex field and
 //! a reset glyph. Pure rendering; the page owns the colour and the saves.
-use crate::ui::Labels;
 use gpui::{prelude::*, *};
+use spaceport_i18n::fl;
 use spaceport_settings::{FontConfig, Theme, corners, parse_hex};
 use spaceport_widgets::direction::Logical;
 use spaceport_widgets::fonts::StyledFont;
@@ -14,9 +14,6 @@ pub(crate) const SWATCHES: [u32; 11] = [
 ];
 
 const SWATCH_SIZE: f32 = 18.;
-
-/// The message naming the swatch that gives a host no colour of its own.
-pub const SWATCH_NONE: &str = "settings-swatch-none";
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum HostColorChange {
@@ -46,7 +43,6 @@ pub fn swatch_row(
     mono: &FontConfig,
     hint: SharedString,
     hex_input: Option<(AnyElement, bool)>,
-    labels: &Labels,
     on_change: impl Fn(HostColorChange, &mut Window, &mut App) + 'static,
     on_edit_hex: impl Fn(&mut Window, &mut App) + 'static,
 ) -> Div {
@@ -119,7 +115,7 @@ pub fn swatch_row(
             None => {
                 let (label, color) = match current {
                     Some(color) => (format!("#{color:06x}"), theme.foreground),
-                    None => ((labels.message)(SWATCH_NONE), theme.muted),
+                    None => (fl!("settings-swatch-none"), theme.muted),
                 };
                 hex.text_font(mono)
                     .text_color(rgb(color))

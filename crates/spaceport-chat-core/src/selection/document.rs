@@ -2,7 +2,6 @@
 
 use super::{Caret, Cell, Key, Position, Region};
 use crate::{
-    labels::Labels,
     prepared::{Body, Part, folded_thought, notice_label, shown_text, tool_header, tool_text},
     rich::{Block, CodeText, Inline, Kind, MAX_CODE_LINES, remote_content},
 };
@@ -243,7 +242,6 @@ impl Document {
         transcript: &Transcript,
         keys: &[(EntryId, u64)],
         bodies: &HashMap<EntryId, (u64, Rc<Body>)>,
-        labels: &Labels,
     ) {
         let mut cached: HashMap<_, _> = self
             .entries
@@ -271,7 +269,6 @@ impl Document {
                         bodies.get(&id).map(|(_, body)| body.as_ref()),
                         self.remote,
                         expanded,
-                        labels,
                     ))
                 }
             };
@@ -288,7 +285,6 @@ fn project(
     body: Option<&Body>,
     remote: Option<fn(&str) -> bool>,
     expanded: bool,
-    labels: &Labels,
 ) -> EntryText {
     let mut builder = Builder {
         segments: Vec::new(),
@@ -313,18 +309,14 @@ fn project(
         }
         Some(Body::Tool(_)) => {
             if let EntryKind::Tool(tool) = &entry.kind {
-                builder.plain(
-                    Region::Label,
-                    Cell::default(),
-                    tool_header(&tool.title, labels),
-                );
+                builder.plain(Region::Label, Cell::default(), tool_header(&tool.title));
                 if expanded {
                     builder.plain(Region::ToolTitle, Cell::default(), tool.title.clone());
                     for (row, location) in tool.locations.iter().enumerate() {
                         builder.plain(Region::ToolLocations, Cell::row(row), location.clone());
                     }
                     for (block, content) in tool.content.iter().enumerate() {
-                        if let Some(text) = tool_text(content, labels) {
+                        if let Some(text) = tool_text(content) {
                             builder.plain(Region::ToolContent, Cell::block(block), text);
                         }
                     }
@@ -352,7 +344,7 @@ fn project(
                 );
             }
             EntryKind::Turn(turn) => {
-                builder.plain(Region::Body(0), Cell::default(), (labels.turn)(turn));
+                builder.plain(Region::Body(0), Cell::default(), crate::text::turn(turn));
             }
             EntryKind::Tool(_) | EntryKind::Image { .. } => {}
         },

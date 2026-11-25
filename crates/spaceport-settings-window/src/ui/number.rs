@@ -1,7 +1,7 @@
 //! A number with typed entry, and -/+ steppers and an optional drag slider
 //! unless it is a bare field.
-use crate::ui::Labels;
 use gpui::{prelude::*, *};
+use spaceport_i18n::fl;
 use spaceport_settings::{Theme, corners};
 use spaceport_widgets::direction::Logical;
 use std::{cell::Cell, ops::RangeInclusive, rc::Rc};
@@ -48,11 +48,11 @@ pub enum Unit {
 
 impl Unit {
     /// The message naming what this unit counts.
-    pub const fn label_id(self) -> &'static str {
+    fn words(self) -> String {
         match self {
-            Self::Percent => "settings-unit-percent",
-            Self::Pixels => "settings-unit-pixels",
-            Self::Seconds => "settings-unit-seconds",
+            Self::Percent => fl!("settings-unit-percent"),
+            Self::Pixels => fl!("settings-unit-pixels"),
+            Self::Seconds => fl!("settings-unit-seconds"),
         }
     }
 }
@@ -116,7 +116,6 @@ pub fn number(
     theme: &Theme,
     spec: Number,
     editing: Option<Editing>,
-    labels: &Labels,
     on_change: impl Fn(NumberChange, &mut Window, &mut App) + 'static,
     on_edit: impl Fn(&mut Window, &mut App) + 'static,
 ) -> Div {
@@ -236,7 +235,7 @@ pub fn number(
             div()
                 .pe(px(6.))
                 .text_color(rgb(theme.muted))
-                .child((labels.message)(spec.unit.label_id())),
+                .child(spec.unit.words()),
         )
         .when(steppers, |field| {
             field
@@ -253,7 +252,11 @@ pub fn number(
             div()
                 .text_size(px(10.))
                 .text_color(rgb(theme.muted))
-                .child((labels.number_range)(*range.start(), *range.end())),
+                .child(fl!(
+                    "settings-number-range",
+                    min = *range.start() as i32,
+                    max = *range.end() as i32
+                )),
         )
     })
 }

@@ -381,7 +381,8 @@ impl ConnectionBridge {
                         reason: error.to_string(),
                         ssh: None,
                     },
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
             }
             // A startup failure ends the wait too, once its state is in place:

@@ -53,10 +53,8 @@ fn wire(kind: Kind) -> SemanticNotification {
 }
 
 fn receive(endpoint: &mut Endpoint, wire: SemanticNotification, now: Instant) {
-    endpoint
-        .toasts
-        .receive([Notice::new(wire, now, &crate::state::labels())
-            .with_snapshot(endpoint.live().snapshot.as_deref(), &crate::state::labels())]);
+    endpoint.toasts.receive([Notice::new(wire, now)
+        .with_snapshot(endpoint.live().snapshot.as_deref(), crate::state::describe)]);
 }
 
 /// The stage `notice` is in, by name.
@@ -99,16 +97,11 @@ fn enable_cutoff_rejects_equal_time_ingress_and_keeps_previews() {
     let toasts = &mut endpoints[1].toasts;
     toasts.enabled_since = Some(now);
     toasts.receive([
-        Notice::new(
-            tests::notification("disabled"),
-            now,
-            &crate::state::labels(),
-        ),
-        Notice::new(tests::notification("preview"), now, &crate::state::labels()).preview(),
+        Notice::new(tests::notification("disabled"), now),
+        Notice::new(tests::notification("preview"), now).preview(),
         Notice::new(
             tests::notification("enabled"),
             now + Duration::from_nanos(1),
-            &crate::state::labels(),
         ),
     ]);
     assert_eq!(
@@ -267,7 +260,7 @@ fn global_order_survives_coalesced_host_polling_and_queue_overflow() {
         .map(|i| {
             let mut event = tests::notification(&i.to_string());
             event.kind = Kind::Custom;
-            Notice::new(event, now, &crate::state::labels())
+            Notice::new(event, now)
         })
         .collect();
     // Remote received first, although Local's coalesced inbox is polled first.
@@ -313,7 +306,7 @@ fn lifetimes_start_at_promotion_and_pause_while_hidden() {
         event.kind = kind;
         endpoints[1]
             .toasts
-            .receive([Notice::new(event, now, &crate::state::labels()).preview()]);
+            .receive([Notice::new(event, now).preview()]);
     }
     let mut time = now;
     for (title, seconds) in [
@@ -457,7 +450,7 @@ fn settings_changes_bound_pending_and_preserve_explicit_corners_and_previews() {
         event.position = explicit.then_some(ToastHerdrPosition::TopLeft);
         endpoints[1]
             .toasts
-            .receive([Notice::new(event, now, &crate::state::labels()).preview()]);
+            .receive([Notice::new(event, now).preview()]);
         let config = NotificationConfig {
             delay_seconds: 3600,
             position: ToastHerdrPosition::BottomLeft,
@@ -500,12 +493,9 @@ fn system_delivery_posts_once_with_a_pane_tag_instead_of_a_toast() {
     let now = Instant::now();
     let mut endpoints = endpoints();
     receive(&mut endpoints[1], wire(Kind::NeedsAttention), now);
-    endpoints[0].toasts.receive([Notice::new(
-        tests::notification("preview"),
-        now,
-        &crate::state::labels(),
-    )
-    .preview()]);
+    endpoints[0]
+        .toasts
+        .receive([Notice::new(tests::notification("preview"), now).preview()]);
     // Waiting for the delay is the same as for a toast.
     assert!(take_system(&mut endpoints, system(1)).is_empty());
     tick(&mut endpoints, 0, system(1), false, now);

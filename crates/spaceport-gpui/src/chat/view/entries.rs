@@ -211,7 +211,7 @@ impl SpaceportWindow {
                     entry.id,
                     Region::Body(0),
                     Cell::default(),
-                    || crate::chat::text::turn(summary),
+                    || spaceport_chat_core::text::turn(summary),
                     cx,
                 );
                 layout_for(self.config.chat.layout).turn(text.into_any_element(), &self.chat_look())
@@ -395,7 +395,7 @@ impl SpaceportWindow {
                         entry,
                         Region::Label,
                         Cell::default(),
-                        || tool_header(&tool.title, &chat.labels),
+                        || tool_header(&tool.title),
                         cx,
                     )),
             )

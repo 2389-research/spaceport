@@ -5,16 +5,16 @@ fn focus_snapshot_change_invalidates_cells_until_matching_surface() {
     let mut state = LiveState::default();
     let mut snapshot = snapshot();
     let old = surface(&snapshot);
-    state.apply(ClientEvent::Snapshot(snapshot.clone()), &labels());
-    state.apply(ClientEvent::Surface(old.clone()), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot.clone()), describe, localize);
+    state.apply(ClientEvent::Surface(old.clone()), describe, localize);
     assert!(state.surface.is_some());
     Arc::make_mut(&mut snapshot).revision += 1;
     Arc::make_mut(&mut snapshot).focused_pane_id = Some("different".into());
-    state.apply(ClientEvent::Snapshot(snapshot.clone()), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot.clone()), describe, localize);
     assert!(state.surface.is_none());
-    state.apply(ClientEvent::Surface(old), &labels());
+    state.apply(ClientEvent::Surface(old), describe, localize);
     assert!(state.surface.is_none());
-    state.apply(ClientEvent::Surface(surface(&snapshot)), &labels());
+    state.apply(ClientEvent::Surface(surface(&snapshot)), describe, localize);
     assert!(state.surface.is_some());
 }
 
@@ -23,11 +23,11 @@ fn surface_before_snapshot_is_not_retained_or_replayed() {
     let mut state = LiveState::default();
     let snapshot = snapshot();
     let frame = surface(&snapshot);
-    state.apply(ClientEvent::Surface(frame.clone()), &labels());
+    state.apply(ClientEvent::Surface(frame.clone()), describe, localize);
     assert!(state.surface.is_none());
-    state.apply(ClientEvent::Snapshot(snapshot), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot), describe, localize);
     assert!(state.surface.is_none());
-    state.apply(ClientEvent::Surface(frame.clone()), &labels());
+    state.apply(ClientEvent::Surface(frame.clone()), describe, localize);
     assert!(Arc::ptr_eq(state.surface.as_ref().unwrap(), &frame));
 
     state.apply(
@@ -35,9 +35,10 @@ fn surface_before_snapshot_is_not_retained_or_replayed() {
             reason: "closed".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
-    state.apply(ClientEvent::Surface(frame), &labels());
+    state.apply(ClientEvent::Surface(frame), describe, localize);
     assert!(state.snapshot.is_none());
     assert!(state.surface.is_none());
     assert_eq!(state.status, ConnectionStatus::Disconnected);
@@ -50,16 +51,17 @@ fn different_boot_and_disconnect_cannot_retain_old_cells() {
     let snapshot = snapshot();
     let mut wrong_boot = surface(&snapshot);
     Arc::make_mut(&mut wrong_boot).boot_id = "old-boot".into();
-    state.apply(ClientEvent::Snapshot(snapshot.clone()), &labels());
-    state.apply(ClientEvent::Surface(wrong_boot), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot.clone()), describe, localize);
+    state.apply(ClientEvent::Surface(wrong_boot), describe, localize);
     assert!(state.surface.is_none());
-    state.apply(ClientEvent::Surface(surface(&snapshot)), &labels());
+    state.apply(ClientEvent::Surface(surface(&snapshot)), describe, localize);
     state.apply(
         ClientEvent::Disconnected {
             reason: "closed".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert!(state.snapshot.is_none() && state.surface.is_none());
     assert!(!state.status.is_connected());
@@ -70,8 +72,8 @@ fn different_boot_and_disconnect_cannot_retain_old_cells() {
 fn only_a_new_surface_spares_the_chrome() {
     let snapshot = snapshot();
     let mut old = LiveState::default();
-    old.apply(ClientEvent::Snapshot(snapshot.clone()), &labels());
-    old.apply(ClientEvent::Surface(surface(&snapshot)), &labels());
+    old.apply(ClientEvent::Snapshot(snapshot.clone()), describe, localize);
+    old.apply(ClientEvent::Surface(surface(&snapshot)), describe, localize);
     // The mailbox hands the window clones: shared snapshot, new surface.
     let mut next = old.clone();
     next.apply(
@@ -79,7 +81,8 @@ fn only_a_new_surface_spares_the_chrome() {
             surface_revision: 2,
             ..(*surface(&snapshot)).clone()
         })),
-        &labels(),
+        describe,
+        localize,
     );
     assert!(old.only_surface_changed(&next));
     assert!(old.only_surface_changed(&old.clone()));
@@ -146,7 +149,11 @@ fn surface_images_follow_the_connection_and_file_paths_stay_ignored() {
     .into_iter()
     .collect();
     let mut state = LiveState::default();
-    state.apply(ClientEvent::SurfaceImages(Arc::new(images)), &labels());
+    state.apply(
+        ClientEvent::SurfaceImages(Arc::new(images)),
+        describe,
+        localize,
+    );
     assert!(state.surface_images.get(&key).is_some());
     // A daemon naming a file for this client is never followed.
     let before = state.surface_images.clone();
@@ -160,7 +167,8 @@ fn surface_images_follow_the_connection_and_file_paths_stay_ignored() {
             control: String::new(),
             surface_asset: Some(key.clone()),
         }),
-        &labels(),
+        describe,
+        localize,
     );
     assert!(Arc::ptr_eq(&before, &state.surface_images));
     state.apply(
@@ -168,7 +176,8 @@ fn surface_images_follow_the_connection_and_file_paths_stay_ignored() {
             reason: "test".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert!(state.surface_images.is_empty());
 }

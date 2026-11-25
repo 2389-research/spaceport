@@ -1,10 +1,12 @@
 //! Shared row and control builders for the Settings pages. Pure rendering:
-//! they take the theme and the app's [`Labels`] and return elements; state and
-//! saves stay on the view.
+//! they take the theme and return elements; state and saves stay on the view.
 //!
-//! No word is spelled here: what the kit shows comes from [`Labels`], and the
-//! ids it names itself are [`MESSAGE_IDS`].
+//! The words are this crate's: it names its own messages and reads them in the
+//! language the window shows. The one word it does not name is a catalogued
+//! row's title or description, which arrives as an id and is read through
+//! `message`.
 use gpui::{prelude::*, *};
+use spaceport_i18n::{fl, message};
 use spaceport_settings::catalog::Entry;
 use spaceport_settings::{Theme, corners};
 use spaceport_widgets::direction::Logical;
@@ -17,7 +19,7 @@ pub mod swatches;
 
 pub use number::{Editing, Look, Number, NumberChange, Unit, number, parse_number};
 pub use popover::{Dropdown, VALUE_MARK, dropdown};
-pub use swatches::{HostColorChange, SWATCH_NONE, parse_hex_input, swatch_row};
+pub use swatches::{HostColorChange, parse_hex_input, swatch_row};
 
 pub const ROW_HEIGHT: f32 = 38.;
 
@@ -30,38 +32,12 @@ pub enum Source {
     Spaceport,
 }
 
-/// The messages this crate names, so the app can word them and check that each
-/// is a message in its English files. Nothing here holds a word: the app passes
-/// its own through [`Labels`]. Each id is declared once, where it is used.
-pub const MESSAGE_IDS: &[&str] = &[
-    SWATCH_NONE,
-    Source::Herdr.label_id(),
-    Source::Spaceport.label_id(),
-    Unit::Percent.label_id(),
-    Unit::Pixels.label_id(),
-    Unit::Seconds.label_id(),
-];
-
-/// The app's words, worded in the language the window shows. The kit draws
-/// them; it names none itself.
-#[derive(Clone, Copy, Debug)]
-pub struct Labels {
-    /// Message `id` as the window shows it, which the ids this crate names and
-    /// a catalogued row's own are read through.
-    pub message: fn(&'static str) -> String,
-    /// The band a number field accepts, from its low end to its high.
-    pub number_range: fn(f32, f32) -> String,
-    /// How a label that follows Herdr's value is worded, with [`VALUE_MARK`]
-    /// where the value goes.
-    pub follow_herdr: fn() -> String,
-}
-
 impl Source {
     /// The message naming the app that holds this setting.
-    pub const fn label_id(self) -> &'static str {
+    fn words(self) -> String {
         match self {
-            Self::Herdr => "settings-source-herdr",
-            Self::Spaceport => "settings-source-herdr-ui",
+            Self::Herdr => fl!("settings-source-herdr"),
+            Self::Spaceport => fl!("settings-source-herdr-ui"),
         }
     }
 }
@@ -84,8 +60,8 @@ fn source_tag(theme: &Theme, source: Source, label: impl Into<SharedString>) -> 
 }
 
 /// A section heading, with the tag of the app that holds its settings where
-/// `tag` names one: its source and the app's word for it.
-pub fn section(theme: &Theme, title: &str, tag: Option<(Source, SharedString)>) -> Div {
+/// `tag` names one.
+pub fn section(theme: &Theme, title: &str, tag: Option<Source>) -> Div {
     div()
         .row()
         .items_center()
@@ -98,12 +74,11 @@ pub fn section(theme: &Theme, title: &str, tag: Option<(Source, SharedString)>) 
         .font_weight(FontWeight::SEMIBOLD)
         .text_color(rgb(theme.subtext()))
         .child(title.to_uppercase())
-        .children(tag.map(|(source, label)| source_tag(theme, source, label)))
+        .children(tag.map(|source| source_tag(theme, source, source.words())))
 }
 
 pub struct Row {
     theme: Theme,
-    labels: Labels,
     id: SharedString,
     title: SharedString,
     description: Option<SharedString>,
@@ -114,26 +89,20 @@ pub struct Row {
 
 /// A catalogued row: its id, title and description are its entry's, the
 /// ones search matches, so a page states none of them itself.
-pub fn row(theme: &Theme, entry: &Entry, labels: &Labels) -> Row {
-    let row = data_row(theme, entry.id, (labels.message)(entry.title), labels);
+pub fn row(theme: &Theme, entry: &Entry) -> Row {
+    let row = data_row(theme, entry.id, message(entry.title, &[]));
     if entry.description.is_empty() {
         row
     } else {
-        row.description((labels.message)(entry.description))
+        row.description(message(entry.description, &[]))
     }
 }
 
 /// A row the catalog does not list because it is built from data: a search
 /// result, or one row per SSH host.
-pub fn data_row(
-    theme: &Theme,
-    id: impl Into<SharedString>,
-    title: impl Into<SharedString>,
-    labels: &Labels,
-) -> Row {
+pub fn data_row(theme: &Theme, id: impl Into<SharedString>, title: impl Into<SharedString>) -> Row {
     Row {
         theme: theme.clone(),
-        labels: *labels,
         id: id.into(),
         title: title.into(),
         description: None,
@@ -204,7 +173,6 @@ impl Row {
             Some(reason) => (Some(reason), reason_id),
             None => (self.description, desc_id),
         };
-        let labels = self.labels;
         div()
             .debug_selector(move || id.to_string())
             .relative()
@@ -234,8 +202,7 @@ impl Row {
                             .font_weight(FontWeight::MEDIUM)
                             .child(self.title)
                             .children(self.tag.map(|source| {
-                                let label = (labels.message)(source.label_id());
-                                source_tag(theme, source, label)
+                                source_tag(theme, source, source.words())
                                     .debug_selector(move || tag_id.clone())
                             })),
                     )

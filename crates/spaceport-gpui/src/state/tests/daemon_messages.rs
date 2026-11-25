@@ -13,30 +13,36 @@ fn window_titles_are_sanitized_capped_and_cleared() {
     };
     state.apply(
         title("  agent\u{1b}]2;evil\u{7}\u{9c}\r\n done  "),
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!(state.window_title.as_deref(), Some("agent]2;evil done"));
 
-    state.apply(title(&"é".repeat(MAX_WINDOW_TITLE_CHARS + 50)), &labels());
+    state.apply(
+        title(&"é".repeat(MAX_WINDOW_TITLE_CHARS + 50)),
+        describe,
+        localize,
+    );
     assert_eq!(
         state.window_title.as_ref().map(|t| t.chars().count()),
         Some(MAX_WINDOW_TITLE_CHARS)
     );
 
     // Nothing printable left is no title, as is an explicit clear.
-    state.apply(title("\u{1b}\u{7} \t"), &labels());
+    state.apply(title("\u{1b}\u{7} \t"), describe, localize);
     assert_eq!(state.window_title, None);
-    state.apply(title("x"), &labels());
+    state.apply(title("x"), describe, localize);
     state.apply(
         ClientEvent::Message(ServerMessage::WindowTitle { title: None }),
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!(state.window_title, None);
 
     // An unchanged title does not wake the window.
-    state.apply(title("same"), &labels());
+    state.apply(title("same"), describe, localize);
     state.dirty = false;
-    state.apply(title("same"), &labels());
+    state.apply(title("same"), describe, localize);
     assert!(!state.dirty);
 }
 
@@ -45,17 +51,17 @@ fn keyboard_report_all_follows_the_daemon_and_ends_with_the_connection() {
     let report =
         |enabled| ClientEvent::Message(ServerMessage::ClientShellKeyboardReportAll { enabled });
     let mut state = LiveState::default();
-    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot()), describe, localize);
     state.dirty = false;
-    state.apply(report(true), &labels());
+    state.apply(report(true), describe, localize);
     assert!(state.keyboard_report_all && state.dirty);
     // A repeated report changes nothing to draw.
     state.dirty = false;
-    state.apply(report(true), &labels());
+    state.apply(report(true), describe, localize);
     assert!(!state.dirty);
     // It only shapes later key events, so the chrome is spared.
     let mut next = state.clone();
-    next.apply(report(false), &labels());
+    next.apply(report(false), describe, localize);
     assert!(!next.keyboard_report_all);
     assert!(state.only_surface_changed(&next));
     state.apply(
@@ -63,7 +69,8 @@ fn keyboard_report_all_follows_the_daemon_and_ends_with_the_connection() {
             reason: "gone".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert!(!state.keyboard_report_all);
 }
@@ -71,7 +78,7 @@ fn keyboard_report_all_follows_the_daemon_and_ends_with_the_connection() {
 #[test]
 fn messages_meant_for_the_tui_change_nothing() {
     let mut state = LiveState::default();
-    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot()), describe, localize);
     let before = state.clone();
     state.dirty = false;
     for message in [
@@ -91,7 +98,7 @@ fn messages_meant_for_the_tui_change_nothing() {
             modify_other_keys_level: 2,
         },
     ] {
-        state.apply(ClientEvent::Message(message), &labels());
+        state.apply(ClientEvent::Message(message), describe, localize);
     }
     assert!(!state.dirty);
     assert!(before.only_surface_changed(&state));
@@ -106,13 +113,15 @@ fn daemon_clipboard_payloads_are_decoded_bounded_and_dropped_when_invalid() {
         ClientEvent::Message(ServerMessage::Clipboard {
             data: "aGVsbG8=".into(),
         }),
-        &labels(),
+        describe,
+        localize,
     );
     state.apply(
         ClientEvent::Message(ServerMessage::Clipboard {
             data: "not base64!".into(),
         }),
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!(
         state
@@ -129,7 +138,8 @@ fn daemon_clipboard_payloads_are_decoded_bounded_and_dropped_when_invalid() {
             ClientEvent::Message(ServerMessage::Clipboard {
                 data: "eA==".into(),
             }),
-            &labels(),
+            describe,
+            localize,
         );
         assert_eq!(
             state.clipboard_writes.len(),
@@ -148,33 +158,38 @@ fn bells_count_only_while_connected_and_reset_with_the_connection() {
         })
     };
     let mut state = LiveState::default();
-    state.apply(bell(1), &labels());
+    state.apply(bell(1), describe, localize);
     assert_eq!(state.bells, 0, "no bells before the connection is up");
 
     state.status = ConnectionStatus::Connected;
-    state.apply(bell(0), &labels());
+    state.apply(bell(0), describe, localize);
     assert_eq!(state.bells, 0);
-    state.apply(bell(u16::MAX), &labels());
-    state.apply(bell(2), &labels());
+    state.apply(bell(u16::MAX), describe, localize);
+    state.apply(bell(2), describe, localize);
     assert_eq!(state.bells, u16::MAX, "a burst saturates");
     assert!(!state.only_surface_changed(&state.clone()));
 
-    state.apply(title(), &labels());
+    state.apply(title(), describe, localize);
     state.apply(
         ClientEvent::Disconnected {
             reason: "gone".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert_eq!((state.bells, state.window_title.as_deref()), (0, None));
 
     // A restarted daemon's first snapshot drops the old daemon's title.
-    state.apply(ClientEvent::Snapshot(snapshot()), &labels());
-    state.apply(title(), &labels());
-    state.apply(bell(1), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot()), describe, localize);
+    state.apply(title(), describe, localize);
+    state.apply(bell(1), describe, localize);
     let mut restarted = (*snapshot()).clone();
     restarted.boot_id = "restarted".into();
-    state.apply(ClientEvent::Snapshot(Arc::new(restarted)), &labels());
+    state.apply(
+        ClientEvent::Snapshot(Arc::new(restarted)),
+        describe,
+        localize,
+    );
     assert_eq!((state.bells, state.window_title.as_deref()), (0, None));
 }

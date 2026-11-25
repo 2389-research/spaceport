@@ -16,6 +16,7 @@ serde.workspace                   = true
 serde_json.workspace              = true
 spaceport-chat-protocol.workspace = true
 spaceport-client.workspace        = true
+spaceport-i18n.workspace          = true
 # The connection's live state, which decides whether a chat's program is still
 # reachable.
 spaceport-live.workspace          = true
@@ -33,5 +34,6 @@ unicode-width.workspace           = true
 uuid.workspace                    = true
 
 [dev-dependencies]
+spaceport-i18n   = { features = ["test-support"], workspace = true }
 spaceport-remote = { features = ["test-support"], workspace = true }
 tempfile.workspace = true

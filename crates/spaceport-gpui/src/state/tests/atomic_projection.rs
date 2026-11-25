@@ -3,8 +3,8 @@ use super::*;
 fn ready() -> LiveState {
     let snapshot = snapshot();
     let mut state = LiveState::default();
-    state.apply(ClientEvent::Snapshot(snapshot.clone()), &labels());
-    state.apply(ClientEvent::Surface(surface(&snapshot)), &labels());
+    state.apply(ClientEvent::Snapshot(snapshot.clone()), describe, localize);
+    state.apply(ClientEvent::Surface(surface(&snapshot)), describe, localize);
     assert!(state.surface_ready());
     state
 }
@@ -18,16 +18,16 @@ fn metadata_gaps_keep_one_coherent_pair_until_latest_surface_commits() {
         let mut next = (*old).clone();
         next.revision = revision;
         next.agents[0].title = Some(format!("spinner {revision}"));
-        state.apply(ClientEvent::Snapshot(Arc::new(next)), &labels());
+        state.apply(ClientEvent::Snapshot(Arc::new(next)), describe, localize);
         assert!(state.surface_ready());
         assert!(Arc::ptr_eq(state.snapshot.as_ref().unwrap(), &old));
         assert!(Arc::ptr_eq(state.surface.as_ref().unwrap(), &old_surface));
         assert_eq!(state.pending_snapshot.as_ref().unwrap().revision, revision);
     }
     let latest = state.pending_snapshot.clone().unwrap();
-    state.apply(ClientEvent::Surface(surface(&old)), &labels());
+    state.apply(ClientEvent::Surface(surface(&old)), describe, localize);
     assert!(Arc::ptr_eq(state.snapshot.as_ref().unwrap(), &old));
-    state.apply(ClientEvent::Surface(surface(&latest)), &labels());
+    state.apply(ClientEvent::Surface(surface(&latest)), describe, localize);
     assert!(state.surface_ready());
     assert!(Arc::ptr_eq(state.snapshot.as_ref().unwrap(), &latest));
     assert_eq!(
@@ -60,7 +60,7 @@ fn focus_topology_and_boot_changes_invalidate_input_immediately() {
         let mut next = (*state.snapshot.clone().unwrap()).clone();
         next.revision += 1;
         change(&mut next);
-        state.apply(ClientEvent::Snapshot(Arc::new(next)), &labels());
+        state.apply(ClientEvent::Snapshot(Arc::new(next)), describe, localize);
         assert!(!state.surface_ready());
         assert!(state.surface.is_none());
         assert!(state.pending_snapshot.is_none());
@@ -73,18 +73,22 @@ fn stale_input_changing_snapshot_cannot_replace_newer_staged_metadata() {
     let old = state.snapshot.clone().unwrap();
     let mut latest = (*old).clone();
     latest.revision += 2;
-    state.apply(ClientEvent::Snapshot(Arc::new(latest.clone())), &labels());
+    state.apply(
+        ClientEvent::Snapshot(Arc::new(latest.clone())),
+        describe,
+        localize,
+    );
     let mut stale = (*old).clone();
     stale.revision += 1;
     stale.focused_pane_id = Some("retired".into());
-    state.apply(ClientEvent::Snapshot(Arc::new(stale)), &labels());
+    state.apply(ClientEvent::Snapshot(Arc::new(stale)), describe, localize);
     assert!(state.surface_ready());
     assert!(Arc::ptr_eq(state.snapshot.as_ref().unwrap(), &old));
     assert_eq!(
         state.pending_snapshot.as_ref().unwrap().revision,
         latest.revision
     );
-    state.apply(ClientEvent::Surface(surface(&latest)), &labels());
+    state.apply(ClientEvent::Surface(surface(&latest)), describe, localize);
     assert!(state.surface_ready());
     assert_eq!(state.snapshot.as_ref().unwrap().revision, latest.revision);
 }
@@ -96,7 +100,11 @@ fn staged_metadata_cannot_satisfy_changed_focus_surface_barrier_in_either_ack_or
         let old = state.snapshot.clone().unwrap();
         let mut pending = (*old).clone();
         pending.revision += 1;
-        state.apply(ClientEvent::Snapshot(Arc::new(pending.clone())), &labels());
+        state.apply(
+            ClientEvent::Snapshot(Arc::new(pending.clone())),
+            describe,
+            localize,
+        );
         state.activation = activation::Fence::for_test(
             SurfaceActivation {
                 request: "focus".into(),
@@ -120,7 +128,7 @@ fn staged_metadata_cannot_satisfy_changed_focus_surface_barrier_in_either_ack_or
         } else {
             [frame, ack]
         } {
-            state.apply(event, &labels());
+            state.apply(event, describe, localize);
             assert!(!state.surface_ready());
             assert!(state.activation.request().unwrap().focus.is_some());
         }
@@ -129,10 +137,15 @@ fn staged_metadata_cannot_satisfy_changed_focus_surface_barrier_in_either_ack_or
         destination.focused_pane_id = Some("destination".into());
         state.apply(
             ClientEvent::Snapshot(Arc::new(destination.clone())),
-            &labels(),
+            describe,
+            localize,
         );
         assert!(!state.surface_ready());
-        state.apply(ClientEvent::Surface(surface(&destination)), &labels());
+        state.apply(
+            ClientEvent::Surface(surface(&destination)),
+            describe,
+            localize,
+        );
         assert!(state.surface_ready());
         assert!(state.activation.request().unwrap().focus.is_none());
     }
@@ -145,7 +158,11 @@ fn staged_metadata_cannot_satisfy_same_target_surface_activation_below_its_floor
         let old = state.snapshot.clone().unwrap();
         let mut pending = (*old).clone();
         pending.revision += 1;
-        state.apply(ClientEvent::Snapshot(Arc::new(pending.clone())), &labels());
+        state.apply(
+            ClientEvent::Snapshot(Arc::new(pending.clone())),
+            describe,
+            localize,
+        );
         let mut activated = pending.clone();
         activated.revision += 1;
         state.activation = activation::Fence::for_test(
@@ -174,15 +191,20 @@ fn staged_metadata_cannot_satisfy_same_target_surface_activation_below_its_floor
         } else {
             [frame, ack]
         } {
-            state.apply(event, &labels());
+            state.apply(event, describe, localize);
             assert!(!state.surface_ready());
         }
         state.apply(
             ClientEvent::Snapshot(Arc::new(activated.clone())),
-            &labels(),
+            describe,
+            localize,
         );
         assert!(!state.surface_ready());
-        state.apply(ClientEvent::Surface(surface(&activated)), &labels());
+        state.apply(
+            ClientEvent::Surface(surface(&activated)),
+            describe,
+            localize,
+        );
         assert!(state.surface_ready());
     }
 }
@@ -222,9 +244,17 @@ fn image_catalog_changes_commit_with_their_surface_and_do_not_survive_reboot() {
     let old_images = state.surface_images.clone();
     let mut next = (*state.snapshot.clone().unwrap()).clone();
     next.revision += 1;
-    state.apply(ClientEvent::Snapshot(Arc::new(next.clone())), &labels());
+    state.apply(
+        ClientEvent::Snapshot(Arc::new(next.clone())),
+        describe,
+        localize,
+    );
     let new_images = Arc::new(SurfaceImages::default());
-    state.apply(ClientEvent::SurfaceImages(new_images.clone()), &labels());
+    state.apply(
+        ClientEvent::SurfaceImages(new_images.clone()),
+        describe,
+        localize,
+    );
     assert!(Arc::ptr_eq(&state.surface_images, &old_images));
     assert!(state.surface_images.get(&key).is_some());
     assert_eq!(
@@ -235,12 +265,12 @@ fn image_catalog_changes_commit_with_their_surface_and_do_not_survive_reboot() {
         state.pending_surface_images.as_ref().unwrap(),
         &new_images
     ));
-    state.apply(ClientEvent::Surface(surface(&next)), &labels());
+    state.apply(ClientEvent::Surface(surface(&next)), describe, localize);
     assert!(Arc::ptr_eq(&state.surface_images, &new_images));
     assert!(state.surface_images.get(&key).is_none());
     assert!(state.pending_surface_images.is_none());
     next.boot_id = "reboot".into();
-    state.apply(ClientEvent::Snapshot(Arc::new(next)), &labels());
+    state.apply(ClientEvent::Snapshot(Arc::new(next)), describe, localize);
     assert!(!Arc::ptr_eq(&state.surface_images, &new_images));
     assert!(state.surface_images.is_empty());
     assert!(state.pending_surface_images.is_none());
@@ -251,14 +281,19 @@ fn disconnect_discards_staged_pair_and_surface_images() {
     let mut state = ready();
     let mut next = (*state.snapshot.clone().unwrap()).clone();
     next.revision += 1;
-    state.apply(ClientEvent::Snapshot(Arc::new(next)), &labels());
-    state.apply(ClientEvent::SurfaceImages(Arc::default()), &labels());
+    state.apply(ClientEvent::Snapshot(Arc::new(next)), describe, localize);
+    state.apply(
+        ClientEvent::SurfaceImages(Arc::default()),
+        describe,
+        localize,
+    );
     state.apply(
         ClientEvent::Disconnected {
             reason: "closed".into(),
             ssh: None,
         },
-        &labels(),
+        describe,
+        localize,
     );
     assert!(state.snapshot.is_none() && state.surface.is_none());
     assert!(state.pending_snapshot.is_none() && state.pending_surface_images.is_none());
@@ -277,7 +312,7 @@ fn faster_metadata_bursts_release_superseded_snapshots_and_keep_surfaces_advanci
             next.agents[0].title = Some(format!("metadata {revision}"));
             let next = Arc::new(next);
             staged.push(Arc::downgrade(&next));
-            state.apply(ClientEvent::Snapshot(next), &labels());
+            state.apply(ClientEvent::Snapshot(next), describe, localize);
             assert!(state.surface_ready());
             assert_eq!(state.snapshot.as_ref().unwrap().revision, previous);
         }
@@ -289,7 +324,7 @@ fn faster_metadata_bursts_release_superseded_snapshots_and_keep_surfaces_advanci
             1
         );
         let latest = state.pending_snapshot.clone().unwrap();
-        state.apply(ClientEvent::Surface(surface(&latest)), &labels());
+        state.apply(ClientEvent::Surface(surface(&latest)), describe, localize);
         assert_eq!(state.snapshot.as_ref().unwrap().revision, previous + 32);
         assert!(state.pending_snapshot.is_none());
         assert!(state.surface_ready());

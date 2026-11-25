@@ -1,7 +1,6 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::*;
-use crate::chat::labels;
 use core::prelude::v1::test;
 
 struct AlignedText {
@@ -64,7 +63,7 @@ fn aligned_backgrounds_retain_inline_code_and_selection_colors() {
         },
     });
     let mut prepared = crate::chat::prepared::Prepared::default();
-    prepared.update(&transcript, &[(EntryId(1), 1)], &labels::now());
+    prepared.update(&transcript, &[(EntryId(1), 1)]);
     let document = prepared.text();
     let key = document
         .key(EntryId(1), Region::Body(0), Cell::default())
@@ -116,7 +115,7 @@ fn selecting_even_one_byte_blocks_link_activation_until_the_next_plain_click() {
         },
     });
     let mut prepared = crate::chat::prepared::Prepared::default();
-    prepared.update(&transcript, &[(EntryId(1), 1)], &labels::now());
+    prepared.update(&transcript, &[(EntryId(1), 1)]);
     let geometry = Geometry::default();
     let selection = Selection::default();
     let scope = Scope::new(

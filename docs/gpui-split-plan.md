@@ -361,6 +361,12 @@ five stages landed in one wave, one PR each, and each has its own note:
 | 4 | `Link`, `Failure`, `Transition`, `Phase`, the fence values and `live_of`'s rule, behind `spaceport_endpoint::Host`, which returns typed `Action`s the window performs on its socket | #233 | stage 3 |
 | 5 | `HostView`: six prepared fields the four sidebar row and rail renderers take instead of `&crate::endpoint::Endpoint` | #235 | stage 4 |
 
+Stage 3's one `Labels` struct is gone: `spaceport-live` words its own notices
+through `spaceport-i18n` and takes only the two things it cannot word — a
+client error's sentence, and what an agent notice is about — as `fn` items
+([`wx84`](notes-wx84.md)). The same seam went from the Settings kit, the chat's
+prepared text and the sidebar's Orca chip.
+
 Three groups stay in the app, and the design's
 [honest-remainder table](notes-endpoint-extraction.md) accounts for each. `ConnectionBridge` in
 `connection.rs` with `connection/reader.rs` (766 lines together) stay until

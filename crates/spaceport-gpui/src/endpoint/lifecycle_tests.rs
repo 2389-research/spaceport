@@ -254,12 +254,11 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
     });
     assert!(endpoint.live().supports_surface);
     let frame = surface(endpoint.live().snapshot.as_ref().unwrap());
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Surface(frame), &crate::state::labels());
+    endpoint.connection.inbox.lock().unwrap().apply(
+        ClientEvent::Surface(frame),
+        crate::state::describe,
+        crate::state::localize,
+    );
     endpoint.poll(Instant::now());
     (endpoint, server)
 }

@@ -59,7 +59,7 @@ impl SpaceportWindow {
                                 .truncate()
                                 .text_font(&self.config.terminal)
                                 .text_color(rgb(theme.muted))
-                                .child(tool_header(&tool.title, &chat.labels)),
+                                .child(tool_header(&tool.title)),
                         ),
                 )
             }))

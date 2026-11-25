@@ -1,27 +1,13 @@
 //! The section list and the footer: the crate draws them, and this window
 //! answers them with its sections, its scroll position and its drafts.
 use super::{SettingsWindow, scrollbar};
-use crate::i18n::{self, fl};
 use crate::panel_resize::{PanelDrag, Side, handle};
 use gpui::{prelude::*, *};
 use spaceport_settings_window::navigation as nav;
 
-/// The app's words for the list and the footer.
-fn labels() -> nav::Labels {
-    nav::Labels {
-        message,
-        unsaved: |drafts| fl!("settings-unsaved", drafts = drafts),
-    }
-}
-
-fn message(id: &'static str) -> String {
-    i18n::message(id, &[])
-}
-
 impl SettingsWindow {
     pub(super) fn navigation(&self, cx: &mut Context<Self>) -> Stateful<Div> {
         let theme = &self.theme;
-        let labels = labels();
         let width = px(self.navigation_width.width(self.viewport_width));
         let resize = handle(
             "settings-navigation-resize",
@@ -40,7 +26,6 @@ impl SettingsWindow {
         let view = cx.entity().downgrade();
         let column = nav::sections(
             theme,
-            labels,
             self.section,
             &self.navigation_scroll,
             probe,
@@ -51,7 +36,6 @@ impl SettingsWindow {
         let sections = self.scroll_area(scrollbar::Pane::Sections, column, cx);
         nav::panel(
             theme,
-            labels,
             width,
             resize,
             self.nav_search.clone().into_any_element(),
@@ -88,7 +72,7 @@ impl SettingsWindow {
 
     #[cfg(test)]
     pub(super) fn footer_text(&self) -> String {
-        nav::status_text(&self.footer_status(), labels())
+        nav::status_text(&self.footer_status())
     }
 
     pub(super) fn footer(&self, cx: &mut Context<Self>) -> Div {
@@ -99,7 +83,6 @@ impl SettingsWindow {
             &self.theme,
             &status,
             self.busy(),
-            labels(),
             move |_, _, cx| {
                 let _ = saving.update(cx, |this, cx| this.save_pending_drafts(cx));
             },

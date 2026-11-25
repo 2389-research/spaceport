@@ -31,13 +31,11 @@ fn toast_navigation_queues_typed_targets_and_fences_input(cx: &mut gpui::TestApp
         wire.workspace_id = Some("w1".into());
         wire.tab_id = tab.map(str::to_owned);
         wire.pane_id = pane.map(str::to_owned);
-        endpoint.toasts.receive([crate::notifications::Notice::new(
-            wire,
-            Instant::now(),
-            &crate::state::labels(),
-        )
-        .with_snapshot(endpoint.live().snapshot.as_deref(), &crate::state::labels())
-        .preview()]);
+        endpoint
+            .toasts
+            .receive([crate::notifications::Notice::new(wire, Instant::now())
+                .with_snapshot(endpoint.live().snapshot.as_deref(), crate::state::describe)
+                .preview()]);
         cx.update(|window, cx| {
             view.update(cx, |view, cx| {
                 view.endpoints.truncate(1);
@@ -92,7 +90,8 @@ fn wire_completion_waits_for_evidence_then_command_uses_original_pane(
     });
     endpoint.connection.inbox.lock().unwrap().apply(
         ClientEvent::Surface(surface(&projection)),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     wait_until(|| {
         endpoint.poll(Instant::now());
@@ -150,7 +149,8 @@ fn wire_completion_waits_for_evidence_then_command_uses_original_pane(
             assert!(view.endpoints[1].toasts.entries[0].1.is_visible());
             view.endpoints[1].connection.inbox.lock().unwrap().apply(
                 ClientEvent::Surface(surface(&projection)),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
             wait_until(|| {
                 view.endpoints[1].poll(Instant::now());
@@ -185,8 +185,8 @@ fn toast_click_uses_origin_and_close_never_navigates(cx: &mut gpui::TestAppConte
     remote.initial_surface = false;
     let mut wire = crate::notifications::tests::notification("Remote target");
     wire.workspace_id = Some("w1".into());
-    let notice = crate::notifications::Notice::new(wire, Instant::now(), &crate::state::labels())
-        .with_snapshot(remote.live().snapshot.as_deref(), &crate::state::labels())
+    let notice = crate::notifications::Notice::new(wire, Instant::now())
+        .with_snapshot(remote.live().snapshot.as_deref(), crate::state::describe)
         .preview();
     remote.toasts.receive([notice.clone(), notice]);
     cx.simulate_resize(size(px(1000.), px(600.)));
@@ -244,13 +244,11 @@ fn toast_rendered_clicks_reject_replaced_removed_and_disabled_origins(
         let (mut remote, _server) = connected_endpoint("ssh:toast");
         let mut wire = crate::notifications::tests::notification("old render");
         wire.workspace_id = Some("w1".into());
-        remote.toasts.receive([crate::notifications::Notice::new(
-            wire,
-            Instant::now(),
-            &crate::state::labels(),
-        )
-        .with_snapshot(remote.live().snapshot.as_deref(), &crate::state::labels())
-        .preview()]);
+        remote
+            .toasts
+            .receive([crate::notifications::Notice::new(wire, Instant::now())
+                .with_snapshot(remote.live().snapshot.as_deref(), crate::state::describe)
+                .preview()]);
         cx.update(|window, cx| {
             view.update(cx, |view, _| {
                 view.endpoints.truncate(1);
@@ -302,13 +300,11 @@ fn toast_queue_failure_retains_notice(cx: &mut gpui::TestAppContext) {
     let (mut endpoint, _server) = connected_endpoint("ssh:toast");
     let mut wire = crate::notifications::tests::notification("queue failure");
     wire.workspace_id = Some("w1".into());
-    endpoint.toasts.receive([crate::notifications::Notice::new(
-        wire,
-        Instant::now(),
-        &crate::state::labels(),
-    )
-    .with_snapshot(endpoint.live().snapshot.as_deref(), &crate::state::labels())
-    .preview()]);
+    endpoint
+        .toasts
+        .receive([crate::notifications::Notice::new(wire, Instant::now())
+            .with_snapshot(endpoint.live().snapshot.as_deref(), crate::state::describe)
+            .preview()]);
     view.update(cx, |view, cx| {
         view.endpoints.push(endpoint);
         view.selected_endpoint = 1;
@@ -342,10 +338,9 @@ fn notification_command_rejects_ineligible_cards_without_selection_or_requests(
         let (mut endpoint, mut server) = connected_endpoint("ssh:toast");
         let mut wire = crate::notifications::tests::notification("ineligible");
         wire.workspace_id = (case != 0).then(|| "w1".into());
-        let mut notice =
-            crate::notifications::Notice::new(wire, Instant::now(), &crate::state::labels())
-                .with_snapshot(endpoint.live().snapshot.as_deref(), &crate::state::labels())
-                .preview();
+        let mut notice = crate::notifications::Notice::new(wire, Instant::now())
+            .with_snapshot(endpoint.live().snapshot.as_deref(), crate::state::describe)
+            .preview();
         if case != 4 {
             notice.promote(Instant::now());
         }

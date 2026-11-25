@@ -32,7 +32,8 @@ fn external_popup_at_unchanged_revision_never_receives_earlier_pane_input(
         let frame = popup_frame(view.live.surface.as_ref().unwrap());
         view.endpoints[1].connection.inbox.lock().unwrap().apply(
             ClientEvent::Surface(Arc::new(frame)),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         project_until(view, cx, "popup at unchanged revision", |view| {
             view.live.surface.as_ref().unwrap().popup.is_some()
@@ -73,7 +74,8 @@ fn local_popup_command_keeps_its_barrier_across_metadata_staging(cx: &mut gpui::
         next.revision += 1;
         inbox.lock().unwrap().apply(
             ClientEvent::Snapshot(Arc::new(next)),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         project_until(view, cx, "staged metadata", |view| {
             view.live.pending_snapshot.is_some()
@@ -114,11 +116,13 @@ fn local_popup_command_keeps_its_barrier_across_metadata_staging(cx: &mut gpui::
             let mut inbox = inbox.lock().unwrap();
             inbox.apply(
                 ClientEvent::Snapshot(Arc::new(next.clone())),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
             inbox.apply(
                 ClientEvent::Surface(Arc::new(frame)),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
         }
         project_until(view, cx, "popup before acknowledgement", |view| {
@@ -137,7 +141,8 @@ fn local_popup_command_keeps_its_barrier_across_metadata_staging(cx: &mut gpui::
                     "projection_revision": next.revision
                 }}),
             },
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         project_until(view, cx, "popup barrier", SpaceportWindow::input_ready);
         view.send(ClientPaneInputEvent::TextCommit("after".into()), cx);

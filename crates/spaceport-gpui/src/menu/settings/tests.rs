@@ -32,7 +32,8 @@ fn enabling_does_not_replay_undrained_disabled_ingress(cx: &mut gpui::TestAppCon
             state.status = ConnectionStatus::Connected;
             state.apply(
                 ClientEvent::Message(ServerMessage::SemanticNotification(wire.clone())),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
         }
         // Enabling cannot drain this inbox; the arrival fence must survive until later polling.
@@ -60,7 +61,8 @@ fn enabling_does_not_replay_undrained_disabled_ingress(cx: &mut gpui::TestAppCon
         fresh.title = "enabled ingress".into();
         inbox.lock().unwrap().apply(
             ClientEvent::Message(ServerMessage::SemanticNotification(fresh)),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         view.update(cx, |view, cx| {
             view.poll_endpoints(cx);
@@ -89,11 +91,9 @@ fn enabling_system_delivery_does_not_post_the_backlog(cx: &mut gpui::TestAppCont
         );
         let mut wire = notification("while off");
         wire.kind = spaceport_client::protocol::SemanticNotificationKind::Custom;
-        view.endpoints[0].toasts.receive([Notice::new(
-            wire,
-            Instant::now(),
-            &crate::state::labels(),
-        )]);
+        view.endpoints[0]
+            .toasts
+            .receive([Notice::new(wire, Instant::now())]);
     });
     view.update(cx, |view, cx| {
         view.load_gui_config_with(
@@ -139,11 +139,9 @@ fn notification_reload_retimes_pending_clears_disabled_and_keeps_failed_settings
             delay_seconds: 3600,
             ..Default::default()
         };
-        view.endpoints[0].toasts.receive([Notice::new(
-            notification("pending"),
-            Instant::now(),
-            &crate::state::labels(),
-        )]);
+        view.endpoints[0]
+            .toasts
+            .receive([Notice::new(notification("pending"), Instant::now())]);
         view.tick_toasts(false, Instant::now(), cx);
         assert!(!view.endpoints[0].toasts.entries[0].1.is_visible());
     });

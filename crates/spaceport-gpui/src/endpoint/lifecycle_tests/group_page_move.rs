@@ -58,11 +58,13 @@ fn moving_a_native_tab_steers_its_source_terminal_without_taking_focus(
                     let mut state = view.endpoints[0].connection.inbox.lock().unwrap();
                     state.apply(
                         ClientEvent::Snapshot(Arc::new(shown.clone())),
-                        &crate::state::labels(),
+                        crate::state::describe,
+                        crate::state::localize,
                     );
                     state.apply(
                         ClientEvent::Surface(surface(&shown)),
-                        &crate::state::labels(),
+                        crate::state::describe,
+                        crate::state::localize,
                     );
                     drop(state);
                     project_until(view, cx, "deferred tab focus", |view| {

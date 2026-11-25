@@ -20,7 +20,11 @@ pub(super) fn recover(inbox: &Mutex<LiveState>, state: &mut LiveState) {
         sound_connection_cancel: state.sound_connection_cancel.clone(),
         ..LiveState::default()
     };
-    failed.apply(disconnected(), &crate::state::labels());
+    failed.apply(
+        disconnected(),
+        crate::state::describe,
+        crate::state::localize,
+    );
     *state = failed;
     inbox.clear_poison();
 }
@@ -50,9 +54,6 @@ impl Reader {
 
     fn receive(&self, event: ClientEvent) -> bool {
         let event = self.filter(event);
-        // The words a notice the reducer raises is written in, in the language
-        // this process shows; `fl!` reads it from any thread.
-        let labels = crate::state::labels();
         // Only this background reader waits on the inbox.
         let Ok(mut state) = self.inbox.lock() else {
             return false;
@@ -65,7 +66,7 @@ impl Reader {
             return false;
         }
         match event {
-            Some(event) => state.apply(event, &labels),
+            Some(event) => state.apply(event, crate::state::describe, crate::state::localize),
             // Answer mailboxes still need to wake the window.
             None => state.dirty = true,
         }
@@ -109,7 +110,7 @@ impl Drop for Reader {
             ConnectionStatus::Disconnected | ConnectionStatus::Detached
         ) && let Some(event) = event
         {
-            state.apply(event, &crate::state::labels());
+            state.apply(event, crate::state::describe, crate::state::localize);
         }
         drop(state);
         // Retry may replace this inbox only after terminal state is readable.

@@ -12,7 +12,8 @@ fn on_tab(tab: &str, revision: u64) -> spaceport_client::protocol::ClientShellSn
 fn deliver(view: &SpaceportWindow, snapshot: spaceport_client::protocol::ClientShellSnapshot) {
     view.endpoints[1].connection.inbox.lock().unwrap().apply(
         spaceport_client::ClientEvent::Snapshot(Arc::new(snapshot)),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
 }
 

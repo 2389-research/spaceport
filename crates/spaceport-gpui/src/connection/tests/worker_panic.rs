@@ -54,7 +54,8 @@ fn poison_does_not_erase_an_explicit_shutdown() {
         ClientEvent::Message(spaceport_client::protocol::ServerMessage::ServerShutdown {
             reason: None,
         }),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     poison(&bridge.inbox);
     assert!(bridge.take_update().unwrap().server_stopped);

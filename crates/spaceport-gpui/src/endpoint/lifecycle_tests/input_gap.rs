@@ -56,7 +56,8 @@ fn type_across_gap(
             }
             inbox.lock().unwrap().apply(
                 ClientEvent::Snapshot(Arc::new(next)),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
             project_until(view, cx, "newer snapshot", |view| {
                 if gap == Gap::FocusMoves {
@@ -73,7 +74,8 @@ fn type_across_gap(
             );
             inbox.lock().unwrap().apply(
                 ClientEvent::Surface(Arc::new(frame)),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
             project_until(view, cx, "matching surface", SpaceportWindow::input_ready);
             assert_eq!(view.pending_input.len(), 0);
@@ -169,7 +171,8 @@ fn input_held_across_gap_is_bounded_and_dropped_on_reset(cx: &mut gpui::TestAppC
         next.focused_pane_id = Some("w1:p2".into());
         view.endpoints[1].connection.inbox.lock().unwrap().apply(
             ClientEvent::Snapshot(Arc::new(next)),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         project_until(view, cx, "newer snapshot", |view| !view.input_ready());
         for _ in 0..300 {

@@ -56,11 +56,13 @@ fn workspace_menu_keeps_immediate_and_deferred_navigation(cx: &mut gpui::TestApp
                 let mut state = view.endpoints[0].connection.inbox.lock().unwrap();
                 state.apply(
                     ClientEvent::Snapshot(Arc::new(next.clone())),
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
                 state.apply(
                     ClientEvent::Surface(surface(&next)),
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
                 state.apply(
                     ClientEvent::Response {
@@ -70,7 +72,8 @@ fn workspace_menu_keeps_immediate_and_deferred_navigation(cx: &mut gpui::TestApp
                             "projection_revision": next.revision
                         }}),
                     },
-                    &crate::state::labels(),
+                    crate::state::describe,
+                    crate::state::localize,
                 );
             }
             project_until(

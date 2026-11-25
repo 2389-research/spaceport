@@ -149,7 +149,7 @@ pub(super) fn status_text(transcript: &spaceport_chat_protocol::Transcript) -> S
             fl!(
                 "chat-status-elapsed",
                 status = label,
-                elapsed = super::text::duration(elapsed)
+                elapsed = spaceport_chat_core::text::duration(elapsed)
             )
         }
         _ => label,

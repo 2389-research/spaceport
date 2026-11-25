@@ -80,20 +80,24 @@ fn notices_judge_agents_by_metadata_that_waits_for_its_surface() {
             let mut state = endpoint.connection.inbox.lock().unwrap();
             state.apply(
                 ClientEvent::Snapshot(displayed.clone()),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
             state.apply(
                 ClientEvent::Surface(surface(&displayed)),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
             state.apply(
                 ClientEvent::Snapshot(staged.clone()),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
             assert!(state.pending_snapshot.is_some(), "{pane}: not staged");
             state.apply(
                 ClientEvent::Message(ServerMessage::SemanticNotification(wire)),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
         }
         let now = Instant::now();
@@ -115,7 +119,8 @@ fn notices_judge_agents_by_metadata_that_waits_for_its_surface() {
         // The matching surface commits the metadata without another notice.
         endpoints[0].connection.inbox.lock().unwrap().apply(
             ClientEvent::Surface(surface(&staged)),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         endpoints[0].poll(now + Duration::from_secs(1));
         assert!(Arc::ptr_eq(

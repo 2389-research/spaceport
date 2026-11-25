@@ -198,7 +198,8 @@ fn recovering_leaves_a_host_that_needs_the_user_on_its_wait() {
             reason: "authentication refused".into(),
             ssh: Some(SshFailure::Auth),
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     endpoint.poll(Instant::now());
     let later = Instant::now() + MAX_RETRY_DELAY;

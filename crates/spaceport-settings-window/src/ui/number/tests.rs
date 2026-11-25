@@ -1,6 +1,5 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
-use crate::tests::labels;
 use core::prelude::v1::test;
 use spaceport_settings::Theme;
 use std::{
@@ -91,7 +90,6 @@ impl Render for Harness {
                 &theme,
                 spec("n", self.look, self.enabled),
                 None,
-                &labels(),
                 move |change, _, _| seen.borrow_mut().push(change),
                 move |_, _| edits.set(edits.get() + 1),
             ))
@@ -99,7 +97,6 @@ impl Render for Harness {
                 &theme,
                 spec("m", Look::Slider, true),
                 None,
-                &labels(),
                 move |change, _, _| other.borrow_mut().push(change),
                 |_, _| {},
             ))

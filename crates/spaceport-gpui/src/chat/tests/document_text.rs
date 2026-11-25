@@ -249,7 +249,12 @@ fn short_messages_thoughts_and_turns_draw_their_segments(cx: &mut TestAppContext
     shown.assert_text(1, body, Cell::default(), "Fix it");
     shown.assert_text(2, body, Cell::default(), "Done.");
     shown.assert_text(3, body, Cell::default(), "First idea");
-    shown.assert_text(4, body, Cell::default(), &text::turn(&turn));
+    shown.assert_text(
+        4,
+        body,
+        Cell::default(),
+        &spaceport_chat_core::text::turn(&turn),
+    );
 }
 
 #[gpui::test]

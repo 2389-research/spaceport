@@ -38,7 +38,8 @@ fn disconnection_reason_survives_expiry_and_hides_local_failures(cx: &mut TestAp
                 reason: "socket closed".into(),
                 ssh: None,
             },
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         view.notices.show(Cause::Input, "old input error".into());
         view.live.apply(
@@ -46,7 +47,8 @@ fn disconnection_reason_survives_expiry_and_hides_local_failures(cx: &mut TestAp
                 request_id: None,
                 reason: spaceport_client::Error::Disconnected,
             },
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         assert_eq!(
             crate::state::status_text(&view.live, view.notices.text(), Instant::now()),

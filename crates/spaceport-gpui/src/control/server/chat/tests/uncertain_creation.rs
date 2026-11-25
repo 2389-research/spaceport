@@ -103,7 +103,7 @@ fn malformed_success_on_the_daemon_wire_returns_unknown_over_the_control_socket(
             view.update(cx, |view, cx| {
                 {
                     let mut inbox = view.endpoints[0].connection.inbox.lock().unwrap();
-                    inbox.apply(response, &crate::state::labels());
+                    inbox.apply(response, crate::state::describe, crate::state::localize);
                     view.live = inbox.clone();
                 }
                 view.poll_chats(window, cx);

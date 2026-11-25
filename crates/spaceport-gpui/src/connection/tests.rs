@@ -52,7 +52,8 @@ fn settings_reload_is_coalesced_consumed_once_and_connection_fenced() {
     for _ in 0..3 {
         bridge.inbox.lock().unwrap().apply(
             ClientEvent::Message(spaceport_client::protocol::ServerMessage::ReloadSoundConfig),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
     }
     let update = bridge.take_update().unwrap();
@@ -65,7 +66,8 @@ fn settings_reload_is_coalesced_consumed_once_and_connection_fenced() {
     assert!(!bridge.take_settings_reload());
     bridge.inbox.lock().unwrap().apply(
         ClientEvent::Message(spaceport_client::protocol::ServerMessage::ReloadSoundConfig),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert!(bridge.take_settings_reload());
     assert!(bridge.take_update().unwrap().reload_sound);
@@ -77,19 +79,22 @@ fn settings_reload_is_coalesced_consumed_once_and_connection_fenced() {
     assert!(!bridge.take_settings_reload());
     old.lock().unwrap().apply(
         ClientEvent::Message(spaceport_client::protocol::ServerMessage::ReloadSoundConfig),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert!(!bridge.take_settings_reload());
     bridge.inbox.lock().unwrap().apply(
         ClientEvent::Message(spaceport_client::protocol::ServerMessage::ReloadSoundConfig),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     bridge.inbox.lock().unwrap().apply(
         ClientEvent::Disconnected {
             reason: "closed".into(),
             ssh: None,
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert!(!bridge.take_settings_reload());
 }
@@ -118,7 +123,7 @@ fn integration_responses_do_not_overwrite_dialog_responses() {
             request_id: id.into(),
             response,
         }) {
-            state.apply(event, &crate::state::labels());
+            state.apply(event, crate::state::describe, crate::state::localize);
         }
     }
     assert_eq!(
@@ -243,13 +248,15 @@ fn bells_move_once_titles_persist_and_old_inboxes_are_fenced() {
         state.status = ConnectionStatus::Connected;
         state.apply(
             ClientEvent::Message(ServerMessage::TerminalBell { count: 2 }),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         state.apply(
             ClientEvent::Message(ServerMessage::WindowTitle {
                 title: Some("agent".into()),
             }),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
     }
     let update = bridge.take_update().unwrap();
@@ -269,13 +276,15 @@ fn bells_move_once_titles_persist_and_old_inboxes_are_fenced() {
         let mut state = old.lock().unwrap();
         state.apply(
             ClientEvent::Message(ServerMessage::TerminalBell { count: 1 }),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         state.apply(
             ClientEvent::Message(ServerMessage::WindowTitle {
                 title: Some("late".into()),
             }),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
     }
     let replacement = bridge.take_update().unwrap();
@@ -297,7 +306,8 @@ fn notifications_move_once_are_bounded_and_fenced_by_replacement() {
                 ClientEvent::Message(ServerMessage::SemanticNotification(notification(
                     &id.to_string(),
                 ))),
-                &crate::state::labels(),
+                crate::state::describe,
+                crate::state::localize,
             );
         }
         state.set_outer_focus(true);
@@ -318,7 +328,8 @@ fn notifications_move_once_are_bounded_and_fenced_by_replacement() {
     assert!(update.sound_cancel.load(Ordering::Acquire));
     old.lock().unwrap().apply(
         ClientEvent::Message(ServerMessage::SemanticNotification(notification("late"))),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     let detached = bridge.take_update().unwrap();
     assert!(detached.notifications.is_empty());
@@ -328,7 +339,8 @@ fn notifications_move_once_are_bounded_and_fenced_by_replacement() {
         ClientEvent::Message(ServerMessage::SemanticNotification(notification(
             "late again",
         ))),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     let replacement = bridge.take_update().unwrap();
     assert!(replacement.notifications.is_empty());
@@ -339,14 +351,16 @@ fn notifications_move_once_are_bounded_and_fenced_by_replacement() {
             ClientEvent::Message(ServerMessage::SemanticNotification(notification(
                 "discard on disconnect",
             ))),
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
         state.apply(
             ClientEvent::Disconnected {
                 reason: "test".into(),
                 ssh: None,
             },
-            &crate::state::labels(),
+            crate::state::describe,
+            crate::state::localize,
         );
     }
     let disconnected = bridge.take_update().unwrap();
@@ -363,7 +377,8 @@ fn clipboard_writes_move_out_of_the_mailbox_exactly_once() {
         ClientEvent::Message(ServerMessage::Clipboard {
             data: "aGVsbG8=".into(),
         }),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     let update = bridge.take_update().unwrap();
     assert_eq!(
@@ -443,7 +458,8 @@ fn detach_and_reconnect_fence_old_inboxes() {
             request_id: "remove".into(),
             response: serde_json::json!({"error":{"code":"dirty_worktree_requires_force"}}),
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     old.lock().unwrap().missing_installation = true;
     old.lock().unwrap().apply(
@@ -451,7 +467,8 @@ fn detach_and_reconnect_fence_old_inboxes() {
             reason: "old connection".into(),
             ssh: None,
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     let detached = bridge.take_update().unwrap();
     assert_eq!(detached.status, ConnectionStatus::Detached);
@@ -470,7 +487,8 @@ fn detach_and_reconnect_fence_old_inboxes() {
             reason: "detached connection".into(),
             ssh: None,
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     let failed = bridge.take_update().unwrap();
     assert_eq!(failed.status, ConnectionStatus::Disconnected);
@@ -492,7 +510,8 @@ fn dialog_result_moves_out_once_without_losing_pending_registration() {
             request_id: "list".into(),
             response: serde_json::json!({"result":{}}),
         },
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert!(
         bridge

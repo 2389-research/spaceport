@@ -8,19 +8,20 @@
 //! copy of the selected endpoint's state stays the window's; this crate only
 //! holds the value and the rules, and the app decides which copy a view reads.
 //!
-//! Nothing here paints, opens a socket, or says a word: the words a notice or
-//! a status line needs arrive in [`Labels`], and every effect — the pasteboard,
-//! a bell, a sound, a toast — is the app's.
+//! Nothing here paints, opens a socket, or names its words elsewhere: a notice
+//! words itself through `spaceport-i18n`, and the two things it cannot — an
+//! agent notice's task and place, and a client error's wording — arrive as the
+//! `fn` items in [`words`]. Every effect — the pasteboard, a bell, a sound, a
+//! toast — is the app's.
 
 mod agent_recency;
-mod labels;
 pub mod notice;
 pub mod notifications;
 mod projection;
 mod state;
+pub mod words;
 
 pub use agent_recency::AgentRecency;
-pub use labels::Labels;
 pub use notice::{Cause, HeldNotice, Notices};
 pub use notifications::{Notice, PENDING_LIMIT, Toasts, VISIBLE_LIMIT};
 pub use spaceport_activation as activation;

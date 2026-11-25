@@ -43,10 +43,15 @@ fn a_working_dot_does_not_outlive_the_agent_the_daemon_listed() {
     let mut live = LiveState::default();
     live.apply(
         ClientEvent::Snapshot(listing(&[("w1:p1", AgentStatus::Working)])),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert_eq!(painted(&live), [("w1:p1", AgentStatus::Working)]);
-    live.apply(ClientEvent::Snapshot(listing(&[])), &crate::state::labels());
+    live.apply(
+        ClientEvent::Snapshot(listing(&[])),
+        crate::state::describe,
+        crate::state::localize,
+    );
     assert!(painted(&live).is_empty());
 }
 
@@ -57,14 +62,16 @@ fn a_restarted_daemon_paints_the_status_it_reports_now() {
     let mut live = LiveState::default();
     live.apply(
         ClientEvent::Snapshot(listing(&[("w1:p1", AgentStatus::Working)])),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert_eq!(painted(&live), [("w1:p1", AgentStatus::Working)]);
     let mut reboot = (*listing(&[("w1:p1", AgentStatus::Idle)])).clone();
     reboot.boot_id = "next-boot".into();
     live.apply(
         ClientEvent::Snapshot(Arc::new(reboot)),
-        &crate::state::labels(),
+        crate::state::describe,
+        crate::state::localize,
     );
     assert_eq!(painted(&live), [("w1:p1", AgentStatus::Idle)]);
 }
