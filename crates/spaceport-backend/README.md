@@ -19,3 +19,8 @@ testing, and input routing do not depend on the generation.
 
 Every method may block on I/O: call them from a worker thread, never from
 the UI thread. This crate has no GPUI, runtime, or transport of its own.
+
+`WheelGrid` and `WheelHit` are the one wheel rule both clients apply: which
+grid a report lands in, where inside it, the pixel extent it carries, and
+whether a program reading the wheel takes a count as that many events or as
+one. They hold no GPUI types, so the phone reaches it too.

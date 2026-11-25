@@ -4,10 +4,8 @@ fn hit(target: InputTarget) -> WheelTarget {
     WheelTarget {
         target,
         mouse_reporting: false,
-        stepwise: false,
         bounds: Bounds::default(),
-        position: ClientMousePosition::Cell { column: 2, row: 3 },
-        geometry: None,
+        hit: WheelGrid::pane(&wheel_pane(false)).at_cell(2, 3),
     }
 }
 

@@ -16,10 +16,10 @@ use gpui::{
     Bounds, KeyDownEvent, Keystroke, Modifiers, Pixels, Point, ScrollDelta, ScrollEvent,
     TouchPhase, point, px, size,
 };
+use spaceport_backend::{WheelGrid, WheelHit};
 use spaceport_client::protocol::{
-    CellData, ClientKeyCode, ClientKeyKind, ClientMouseGeometry, ClientMouseKind,
-    ClientMousePosition, ClientPaneInputEvent, ClientSurfaceSize, FrameData, PaneSurfaceFrame,
-    PaneSurfacePane, SurfaceRect,
+    CellData, ClientKeyCode, ClientKeyKind, ClientMouseKind, ClientPaneInputEvent,
+    ClientSurfaceSize, FrameData, PaneSurfaceFrame, PaneSurfacePane, SurfaceRect,
 };
 use std::num::NonZeroU16;
 
@@ -246,34 +246,28 @@ pub(crate) fn wheel_rows(event: &ScrollEvent, cell_height: f32, notch_lines: Non
 pub struct WheelTarget {
     pub target: InputTarget,
     pub(crate) mouse_reporting: bool,
-    /// Whether the wheel goes to an application, as mouse reports or as the
-    /// alternate screen's arrow keys, rather than to the scrollback. Herdr
-    /// sends such an application one report per event whatever its count, so
-    /// a count must travel as that many events.
-    stepwise: bool,
     pub(crate) bounds: Bounds<Pixels>,
-    position: ClientMousePosition,
-    geometry: Option<ClientMouseGeometry>,
+    /// Where inside the grid the pointer is, and how a report of it travels.
+    hit: WheelHit,
 }
 
 impl WheelTarget {
-    /// The events for `steps`, vertical first. Scrollback gets one event per
-    /// moving axis carrying its whole count, which Herdr scrolls by. An
-    /// application reading the wheel gets one single-step event per step,
-    /// since Herdr turns each event into exactly one report or key for it, as
-    /// a terminal sends one report per wheel step.
+    /// The events for `steps`, vertical first: one event per moving axis
+    /// carrying its whole count, or one single-step event per step for an
+    /// application reading the wheel, as `WheelHit::reports` decides.
     pub fn wheel_events(
         &self,
         steps: WheelSteps,
         modifiers: Modifiers,
-    ) -> impl Iterator<Item = ClientPaneInputEvent> + '_ {
+    ) -> impl Iterator<Item = ClientPaneInputEvent> {
+        let modifiers = modifier_bits(modifiers);
         let vertical = (steps.lines != 0).then(|| {
             let kind = if steps.lines > 0 {
                 ClientMouseKind::ScrollUp
             } else {
                 ClientMouseKind::ScrollDown
             };
-            (kind, steps.lines)
+            (kind, steps.lines.unsigned_abs())
         });
         let horizontal = (steps.columns != 0).then(|| {
             let kind = if steps.columns > 0 {
@@ -281,34 +275,18 @@ impl WheelTarget {
             } else {
                 ClientMouseKind::ScrollRight
             };
-            (kind, steps.columns)
+            (kind, steps.columns.unsigned_abs())
         });
+        let hit = self.hit;
         vertical
             .into_iter()
             .chain(horizontal)
-            .flat_map(move |(kind, count)| {
-                let count = count.unsigned_abs();
-                let (events, each) = if self.stepwise {
-                    (count, 1)
-                } else {
-                    (1, count)
-                };
-                (0..events).map(move |_| {
-                    let mut event = self.mouse_event(kind, modifiers);
-                    if let ClientPaneInputEvent::Mouse { lines, .. } = &mut event {
-                        *lines = each;
-                    }
-                    event
-                })
-            })
+            .flat_map(move |(kind, count)| hit.reports(kind, count, modifiers))
     }
 
     /// The cell under the pointer, also for an application that asked for pixels.
     pub(crate) fn cell(&self) -> (u16, u16) {
-        match self.position {
-            ClientMousePosition::Cell { column, row }
-            | ClientMousePosition::Pixels { column, row, .. } => (column, row),
-        }
+        self.hit.cell()
     }
 
     pub(crate) fn mouse_event(
@@ -316,17 +294,17 @@ impl WheelTarget {
         kind: ClientMouseKind,
         modifiers: Modifiers,
     ) -> ClientPaneInputEvent {
-        ClientPaneInputEvent::Mouse {
-            kind,
-            position: self.position,
-            geometry: self.geometry,
-            modifiers: u8::from(modifiers.shift)
-                | (u8::from(modifiers.control) << 1)
-                | (u8::from(modifiers.alt) << 2)
-                | (u8::from(modifiers.platform) << 3),
-            lines: 1,
-        }
+        self.hit.report(kind, 1, modifier_bits(modifiers))
     }
+}
+
+/// The modifier byte a mouse report carries: shift=1, control=2, alt=4,
+/// super=8.
+fn modifier_bits(modifiers: Modifiers) -> u8 {
+    u8::from(modifiers.shift)
+        | (u8::from(modifiers.control) << 1)
+        | (u8::from(modifiers.alt) << 2)
+        | (u8::from(modifiers.platform) << 3)
 }
 
 pub fn wheel_target(
@@ -340,85 +318,40 @@ pub fn wheel_target(
     if !x.is_finite() || !y.is_finite() || !metrics.usable() || x < 0. || y < 0. {
         return None;
     }
-    let (target, rect, mouse_reporting, pixel_mouse, width_px, height_px, origin_x, origin_y) =
-        if let Some(popup) = &surface.popup {
-            let origin = popup_origin(&surface.frame, &popup.frame, metrics);
-            (
-                InputTarget::Popup(popup.terminal_id.clone()),
-                SurfaceRect {
-                    x: 0,
-                    y: 0,
-                    width: popup.frame.width,
-                    height: popup.frame.height,
-                },
-                popup.mouse_reporting,
-                popup.sgr_pixel_mouse,
-                popup.pixel_width,
-                popup.pixel_height,
-                origin.x.to_f64() as f32,
-                origin.y.to_f64() as f32,
-            )
-        } else {
-            let pane = surface.panes.iter().find(|pane| {
-                let r = pane.inner_rect;
-                x >= r.x as f32 * cell_width
-                    && x < (u32::from(r.x) + u32::from(r.width)) as f32 * cell_width
-                    && y >= r.y as f32 * cell_height
-                    && y < (u32::from(r.y) + u32::from(r.height)) as f32 * cell_height
-            })?;
-            (
-                InputTarget::Pane(pane.pane_id.clone()),
-                pane.inner_rect,
-                pane.mouse_reporting,
-                pane.sgr_pixel_mouse,
-                pane.pixel_width,
-                pane.pixel_height,
-                pane.inner_rect.x as f32 * cell_width,
-                pane.inner_rect.y as f32 * cell_height,
-            )
-        };
-    let x = x - origin_x;
-    let y = y - origin_y;
+    let (target, grid, origin) = if let Some(popup) = &surface.popup {
+        (
+            InputTarget::Popup(popup.terminal_id.clone()),
+            WheelGrid::popup(popup),
+            popup_origin(&surface.frame, &popup.frame, metrics),
+        )
+    } else {
+        let pane = surface.panes.iter().find(|pane| {
+            let r = pane.inner_rect;
+            x >= r.x as f32 * cell_width
+                && x < (u32::from(r.x) + u32::from(r.width)) as f32 * cell_width
+                && y >= r.y as f32 * cell_height
+                && y < (u32::from(r.y) + u32::from(r.height)) as f32 * cell_height
+        })?;
+        (
+            InputTarget::Pane(pane.pane_id.clone()),
+            WheelGrid::pane(pane),
+            metrics.origin(pane.inner_rect.x, pane.inner_rect.y),
+        )
+    };
+    let x = x - origin.x.to_f64() as f32;
+    let y = y - origin.y.to_f64() as f32;
     if x < 0.
         || y < 0.
-        || x >= rect.width as f32 * cell_width
-        || y >= rect.height as f32 * cell_height
+        || x >= f32::from(grid.columns()) * cell_width
+        || y >= f32::from(grid.rows()) * cell_height
     {
         return None;
     }
-    let (column, row) = metrics.cell_at(x, y);
-    let geometry = (pixel_mouse && width_px > 0 && height_px > 0).then_some(ClientMouseGeometry {
-        cols: rect.width,
-        rows: rect.height,
-        width_px,
-        height_px,
-    });
-    let position = if geometry.is_some() {
-        ClientMousePosition::Pixels {
-            x: (x / (rect.width as f32 * cell_width) * width_px as f32).floor() as u32,
-            y: (y / (rect.height as f32 * cell_height) * height_px as f32).floor() as u32,
-            column,
-            row,
-        }
-    } else {
-        ClientMousePosition::Cell { column, row }
-    };
-    // A popup does not say whether it is on the alternate screen.
-    let stepwise = mouse_reporting
-        || matches!(&target, InputTarget::Pane(id) if surface
-            .panes
-            .iter()
-            .any(|pane| &pane.pane_id == id && pane.alternate_screen_active));
     Some(WheelTarget {
         target,
-        mouse_reporting,
-        stepwise,
-        bounds: Bounds::new(
-            point(px(origin_x), px(origin_y)),
-            metrics.extent(rect.width, rect.height),
-        ),
-        position,
-        geometry,
+        mouse_reporting: grid.mouse_reporting(),
+        bounds: Bounds::new(origin, metrics.extent(grid.columns(), grid.rows())),
+        hit: grid.at_pixels(x, y, cell_width, cell_height),
     })
 }
 

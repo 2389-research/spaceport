@@ -1,4 +1,5 @@
 use super::*;
+use spaceport_client::protocol::ClientMousePosition;
 
 mod bold_color;
 mod layout_chords;
@@ -9,6 +10,35 @@ mod wheel_reports;
 
 /// The scroll count that leaves the platform's own notch size unchanged.
 const NEUTRAL: NonZeroU16 = NonZeroU16::new(PLATFORM_NOTCH_LINES).unwrap();
+
+/// A pane the wheel tests aim inside: 40 by 24 cells, reporting the mouse only
+/// as asked and telling no pixel size.
+fn wheel_pane(mouse_reporting: bool) -> PaneSurfacePane {
+    PaneSurfacePane {
+        pane_id: "pane".into(),
+        content_revision: 1,
+        rect: SurfaceRect {
+            x: 0,
+            y: 0,
+            width: 40,
+            height: 24,
+        },
+        inner_rect: SurfaceRect {
+            x: 0,
+            y: 0,
+            width: 40,
+            height: 24,
+        },
+        scrollbar_rect: None,
+        scroll: None,
+        focused: false,
+        mouse_reporting,
+        sgr_pixel_mouse: false,
+        alternate_screen_active: false,
+        pixel_width: 400,
+        pixel_height: 480,
+    }
+}
 
 #[test]
 fn pane_context_hit_testing_uses_canvas_origin_and_rects_not_focus() {
@@ -176,7 +206,7 @@ fn wheel_hits_inner_pane_and_uses_relative_coordinates_and_semantic_modes() {
         let target = wheel_target(&surface, 35., 65., 10., CELL_HEIGHT).unwrap();
         assert_eq!(target.target, InputTarget::Pane("pane".into()));
         assert_eq!(
-            target.position,
+            target.hit.position(),
             ClientMousePosition::Cell { column: 2, row: 2 }
         );
         // The scrollback moves by the whole count; an application on the
@@ -203,7 +233,7 @@ fn wheel_hits_inner_pane_and_uses_relative_coordinates_and_semantic_modes() {
     surface.panes[0].sgr_pixel_mouse = true;
     let target = wheel_target(&surface, 35., 65., 10., CELL_HEIGHT).unwrap();
     assert_eq!(
-        target.position,
+        target.hit.position(),
         ClientMousePosition::Pixels {
             x: 25,
             y: 45,
@@ -211,10 +241,10 @@ fn wheel_hits_inner_pane_and_uses_relative_coordinates_and_semantic_modes() {
             row: 2
         }
     );
-    assert_eq!(target.geometry.unwrap().cols, 38);
+    assert_eq!(target.hit.geometry().unwrap().cols, 38);
     let target = wheel_target(&surface, 35., 97.5, 10., 30.).unwrap();
     assert_eq!(
-        target.position,
+        target.hit.position(),
         ClientMousePosition::Pixels {
             x: 25,
             y: 45,
@@ -241,12 +271,12 @@ fn wheel_hits_inner_pane_and_uses_relative_coordinates_and_semantic_modes() {
     let target = wheel_target(&surface, 315., 165., 10., CELL_HEIGHT).unwrap();
     assert_eq!(target.target, InputTarget::Popup("popup".into()));
     assert_eq!(
-        target.position,
+        target.hit.position(),
         ClientMousePosition::Cell { column: 1, row: 1 }
     );
     let target = wheel_target(&surface, 315., 247.5, 10., 30.).unwrap();
     assert_eq!(
-        target.position,
+        target.hit.position(),
         ClientMousePosition::Cell { column: 1, row: 1 }
     );
 
