@@ -394,6 +394,13 @@ where they are. `config.rs:119-122`'s derivation is unchanged in shape and now r
 
 ### Stage 3 — the custom-command reach and the reserved keys move (~330 production / ~305 test)
 
+**Landed early in stage 2** (PR for `feat/wx78-keymap-2`): Rust forbids an
+inherent impl on a foreign type, so `custom.rs`'s `impl Keymap` block moved with
+the type, and the reserved-keys module moved with it (`custom.rs:203` calls
+`reserved_keystrokes`). Stage 3 therefore shrinks to re-pointing
+`platform_defaults.rs`'s reserved-key assertion into the crate and settling the
+two `cfg`/`test-support` questions.
+
 **What moves**: `keymap/custom.rs` (282) into `custom.rs`; `actions.rs`'s
 `EDIT_KEYS`, `SYSTEM_KEYS`, `reserved_keystrokes`, `free_system_keys` (~50) into
 `reserved.rs`; `keymap/tests/{custom_defaults,custom_reference,literal_plus,plugin_actions}.rs`
