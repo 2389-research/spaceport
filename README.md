@@ -4,20 +4,23 @@
 
 Spaceport is an independent desktop fork of
 [Sheprd](https://github.com/sheprd-labs/sheprd). It is under development. A signed,
-notarized [macOS arm64 preview](https://github.com/2389-research/spaceport/releases/tag/v20261117.1)
+notarized [macOS arm64 preview](https://github.com/2389-research/spaceport/releases/tag/v20261125.1)
 is available for macOS 14.2 or later. The [Spaceport specification](docs/spaceport/START_HERE.md)
 defines the product and ownership rules. The [task plan](docs/spaceport/plan/tasks.json),
 [capability matrix](docs/spaceport/plan/capabilities.json), and
 [acceptance record](docs/spaceport/plan/acceptance.json) show what has been
-checked and what remains open. The [feature reachability snapshot](docs/spaceport/evidence/removal-reachability-50b9063be.md)
-maps retained and excluded source routes at a named revision.
+checked and what remains open. The [feature reachability snapshot](docs/spaceport/evidence/removal-reachability-e99d575b.md)
+maps retained and excluded source routes at the revision it names.
 
 The target app keeps native terminals, rich chats, workspaces, customization,
 file interactions, service access, notifications, diagnostics, and a local
 desktop CLI. It removes the old IDE, Git, GitHub, embedded browser, cloud
 provisioning, Teleport, orchestration, mod, scheduler, and phone control
-features. This branch still contains some of those paths; a build is not proof
-that the fork meets the specification.
+features. Two leftovers of those features remain in the tree: the tab renderer
+in `crates/spaceport-browser`, and an Automations page that says this Core has no
+job feed. A tab shows a device list or a Core terminal and never a web page, so
+nothing in the UI opens a browser tab; a URL opens in the system browser. A
+build is not proof that the fork meets the specification.
 
 Spaceport permits **separately installed Herdr 1 and Herdr Core** runtimes.
 Herdr Core is experimental and disabled by default, including existing installs.
@@ -43,8 +46,15 @@ A host's custom Herdr agent view keeps its chosen order.
 
 ## iPhone, iPad, and Android
 
-[Spaceport Mobile](mobile/README.md) connects directly over SSH to an installed Herdr TUI runtime.
-The Swift and Kotlin apps share the Rust client and build separately from the desktop app.
+[Spaceport Mobile](mobile/README.md) connects directly over SSH to an installed
+Herdr TUI runtime. Its Swift and Kotlin apps link one Rust controller, built from
+the separate Cargo workspace in `mobile/rust`. That workspace consumes the
+desktop crates by path: `spaceport-client`, `spaceport-panes`,
+`spaceport-backend`, and `spaceport-truncate`. So the rules both clients follow
+live once — the navigation targets a focus request aims at, the cell map a
+split's rectangles make, the upload staging scripts, and the truncation bounds.
+A rule shared with the phone moves down into one of those crates instead of being
+written twice.
 
 ## Work on the fork
 
@@ -54,6 +64,12 @@ root, the current development executable is named `spaceport`:
 ```sh
 cargo +1.99.0 check --locked -p spaceport-gpui --bin spaceport
 ```
+
+Every recurring check and task is a `just` recipe; run `just` with no arguments
+to list them, and read [just-operations](docs/just-operations.md) for what each one
+does. The app's crates have been leaving `crates/spaceport-gpui` one at a time, and
+[gpui-split-plan](docs/gpui-split-plan.md) records what moved, what stayed on the
+window, and where the next extraction goes.
 
 Install the validator dependency as described in
 [tools/README.md](docs/spaceport/tools/README.md), then run the specification
