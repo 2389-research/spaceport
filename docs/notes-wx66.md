@@ -56,12 +56,13 @@ can ask it.
 | (nothing — the seam did not exist) | `spaceport-endpoint/src/host/view.rs`: `HostView`, with doc | 29 |
 | `Host::enabled`'s private `matches!` | `host/phase.rs`: `Phase::enabled`, `Host::enabled` delegating | 9 |
 | the endpoint facts each renderer read | `Endpoint::view` (`src/endpoint.rs`) — the one app-side preparation | 14 |
-| `rail/render.rs`'s three renderers, `render/rows.rs`, `render/rows/workspaces.rs`, `render/agent_rows.rs` | the same renderers taking `&HostView<'_>` | ~75 rewritten |
+| `rail/render.rs`'s three renderers, `render/rows.rs`, `render/rows/workspaces.rs`, `render/agent_rows.rs` | the same renderers taking `&HostView<'_>` | 26 + 10 + 18 + 7 rewritten, `sidebar/order.rs` 12 |
 
-Production diff: **~130 lines touched across the seam, 29 of them a new crate
-module**. The design's "~80" counted the view and the renderer signature changes;
-the survey's daemon keys and the `Phase::enabled` delegation are the additional
-40.
+Production diff against `9b1556ac31`, tests and the layout fixtures excluded:
+**143 lines added and 79 removed across 12 files, 29 of them a new crate
+module.** The design's "~80" counted the view and the renderer signatures. The
+rest is the daemon keys the survey found, the `Phase::enabled` delegation, and
+renderer bodies rewritten line for line rather than moved.
 
 ## What the renderers take now
 
@@ -110,8 +111,9 @@ layout_host("ssh:test", "Remote", ssh("unused"))
 ```
 
 `layout_host(id, label, target)` is the one place these tests spell
-`Endpoint::new`; `ssh(host)` is the two-line SSH target they used to write out in
-full at fourteen sites. Both are `#[cfg(test)]`, matching their consumers: the
+`Endpoint::new` — 22 call sites now go through it — and `ssh(host)` is the
+two-line SSH target they used to write out in full at nineteen sites. Both are
+`#[cfg(test)]`, matching their consumers: the
 submodules are all `#[cfg(test)]`, and `crates/spaceport-gpui/src/sidebar/layout_tests.rs`
 is also built under `feature = "integration-test"` alone, where those submodules
 do not exist. `fixture_window`'s own local device keeps its `Endpoint::new`: it
