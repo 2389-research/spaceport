@@ -29,7 +29,7 @@ for what only Spaceport shows or keeps.
 | Start a chat with another agent in a new tab, shown as a native chat view | `spaceport chat new claude`, then `spaceport chat` for its status |
 | Render existing Linux Codex/Claude conversations in their current panes | `spaceport config set chat.render_existing true` (needs `features.acp_chats`, on by default); `chat status --json` reports the session and input mode |
 | List or focus the app's windows and its own tabs | `spaceport window`, `spaceport tab`, `spaceport tab focus ID` |
-| Block until something happens in the app | `spaceport wait tab-closed ID --timeout 600`, `spaceport events --follow` |
+| Block until something happens in the app | `spaceport wait tab-closed ID --timeout 600`, `spaceport events --wait 30` for the next event, `spaceport events --follow` for a stream |
 | Read or change a Spaceport setting | `spaceport config get KEY`, `spaceport config set KEY VALUE` |
 | Keep the machine awake during a long job | `spaceport caffeine on --for 2h` |
 | Check for a Spaceport preview update (installed macOS preview only) | `spaceport run check-for-updates` |
