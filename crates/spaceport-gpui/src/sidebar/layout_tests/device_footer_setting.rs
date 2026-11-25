@@ -49,15 +49,7 @@ fn device_footer_setting_hides_it_and_gives_agents_the_room(cx: &mut gpui::TestA
 
     // A second device brings the footer back under auto, not under never.
     view.update(cx, |view, _| {
-        let mut remote = crate::endpoint::Endpoint::new(
-            "ssh:fixture".into(),
-            "Remote".into(),
-            ConnectTarget::Ssh {
-                target: "example.invalid".into(),
-                session: "default".into(),
-            },
-            true,
-        );
+        let mut remote = layout_host("ssh:fixture", "Remote", ssh("example.invalid"));
         remote.live_mut().snapshot = view.live.snapshot.clone();
         view.endpoints.push(remote);
     });

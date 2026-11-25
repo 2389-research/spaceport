@@ -14,15 +14,7 @@ struct Geometry {
 }
 
 fn endpoint(id: &str, label: &str) -> crate::endpoint::Endpoint {
-    let mut remote = crate::endpoint::Endpoint::new(
-        id.into(),
-        label.into(),
-        ConnectTarget::Ssh {
-            target: "unused".into(),
-            session: "default".into(),
-        },
-        true,
-    );
+    let mut remote = layout_host(id, label, ssh("unused"));
     remote.live_mut().snapshot = Some(Arc::new(snapshot(WORKSPACES)));
     remote
 }

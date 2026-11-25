@@ -19,15 +19,7 @@ fn draw(
             let mut view = fixture_window(window, cx);
             view.config.layout.mode = mode;
             view.config.sidebar_style.overrides = overrides;
-            let mut remote = crate::endpoint::Endpoint::new(
-                "ssh:test".into(),
-                "Remote".into(),
-                ConnectTarget::Ssh {
-                    target: "unused".into(),
-                    session: "default".into(),
-                },
-                true,
-            );
+            let mut remote = layout_host("ssh:test", "Remote", ssh("unused"));
             remote.live_mut().snapshot = view.live.snapshot.clone();
             view.endpoints.push(remote);
             view

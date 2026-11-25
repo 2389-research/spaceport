@@ -22,15 +22,7 @@ fn washed(
             view.config.layout.mode = mode;
             view.config.sidebar_style.select = select;
             view.config.sidebar_style.hosts = hosts;
-            let mut remote = crate::endpoint::Endpoint::new(
-                "ssh:test".into(),
-                "Remote".into(),
-                ConnectTarget::Ssh {
-                    target: "unused".into(),
-                    session: "default".into(),
-                },
-                true,
-            );
+            let mut remote = layout_host("ssh:test", "Remote", ssh("unused"));
             remote.live_mut().snapshot = view.live.snapshot.clone();
             // The selected host draws the window's own live snapshot, so the
             // remote's names go wherever the remote will read them from.
@@ -177,15 +169,8 @@ fn a_selected_row_keeps_its_host_colour(cx: &mut gpui::TestAppContext) {
                 view.config.sidebar_style.hosts =
                     BTreeMap::from([(view.endpoints[0].label.clone(), COLOUR)]);
                 // A second host, so the selected one draws a header.
-                view.endpoints.push(crate::endpoint::Endpoint::new(
-                    "ssh:test".into(),
-                    "Remote".into(),
-                    ConnectTarget::Ssh {
-                        target: "unused".into(),
-                        session: "default".into(),
-                    },
-                    true,
-                ));
+                view.endpoints
+                    .push(layout_host("ssh:test", "Remote", ssh("unused")));
                 view
             });
             cx.observe(&view, |_, _, cx| cx.notify()).detach();

@@ -4,7 +4,11 @@
 //! on is `spaceport-sidebar`'s; which rows the sidebar lists is the window's.
 
 use super::{SidebarMode, agents::panel_agents, visible_workspace_entries};
-use crate::{SpaceportWindow, endpoint::Endpoint, state::LiveState};
+use crate::{
+    SpaceportWindow,
+    endpoint::{Endpoint, HostView},
+    state::LiveState,
+};
 use spaceport_client::protocol::ClientShellAgent;
 
 pub(crate) use spaceport_sidebar::order::Row;
@@ -27,10 +31,10 @@ impl SpaceportWindow {
         headed && query.is_empty() && self.device_tags.any()
     }
 
-    /// Whether `endpoint`'s own arrow folds its rows away. One host alone
-    /// has no header to fold.
-    pub(super) fn host_folded(&self, endpoint: &Endpoint) -> bool {
-        self.endpoints.len() > 1 && endpoint.collapsed
+    /// Whether the host's own arrow folds its rows away. One host alone has no
+    /// header to fold.
+    pub(super) fn host_folded(&self, host: &HostView<'_>) -> bool {
+        self.endpoints.len() > 1 && host.collapsed
     }
 
     /// The workspace rows the current mode paints, in its order. The rail
@@ -43,7 +47,8 @@ impl SpaceportWindow {
             && self.lists_tag_sections(self.endpoints.len() > 1, "");
         self.listed_hosts()
             .filter(|(_, endpoint, _)| {
-                !(sections && self.device_tag_folded(&endpoint.id)) && !self.host_folded(endpoint)
+                !(sections && self.device_tag_folded(&endpoint.id))
+                    && !self.host_folded(&endpoint.view())
             })
             .filter_map(|(index, endpoint, live)| {
                 Some((index, endpoint, live.snapshot.as_deref()?))
@@ -99,7 +104,7 @@ impl SpaceportWindow {
             .into_iter()
             .filter(|&(index, agent)| {
                 if rail {
-                    !self.host_folded(&self.endpoints[index])
+                    !self.host_folded(&self.endpoints[index].view())
                 } else {
                     self.panel_agent_lines(index, agent).is_some()
                 }

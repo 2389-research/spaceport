@@ -8,15 +8,7 @@ fn multi_host_rows_scope_duplicate_ids_and_keep_agents_when_host_collapses(
         let view = cx.new(|cx| {
             let mut view = fixture_window(window, cx);
             view.live.snapshot = Some(Arc::new(snapshot(1)));
-            let mut remote = crate::endpoint::Endpoint::new(
-                "ssh:test".into(),
-                "Remote".into(),
-                ConnectTarget::Ssh {
-                    target: "unused".into(),
-                    session: "default".into(),
-                },
-                true,
-            );
+            let mut remote = layout_host("ssh:test", "Remote", ssh("unused"));
             remote.live_mut().snapshot = view.live.snapshot.clone();
             let remote_snapshot = Arc::make_mut(remote.live_mut().snapshot.as_mut().unwrap());
             remote_snapshot.workspaces[0].label = "remote workspace".into();
@@ -130,15 +122,7 @@ fn duplicate_repository_parents_lead_one_group_in_every_layout_and_host(
             duplicate.label = "agent-launcher-copy".into();
             duplicate.focused = false;
             local.workspaces.push(duplicate);
-            let mut remote = crate::endpoint::Endpoint::new(
-                "ssh:test".into(),
-                "Remote".into(),
-                ConnectTarget::Ssh {
-                    target: "unused".into(),
-                    session: "default".into(),
-                },
-                true,
-            );
+            let mut remote = layout_host("ssh:test", "Remote", ssh("unused"));
             remote.live_mut().snapshot = Some(Arc::new(local.clone()));
             view.live.snapshot = Some(Arc::new(local));
             view.endpoints.push(remote);

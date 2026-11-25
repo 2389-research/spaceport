@@ -460,15 +460,15 @@ impl Mutes {
         true
     }
 
-    /// What the app's mutes silence in `endpoint`'s `snapshot`: nothing while
+    /// What the app's mutes silence for `daemon` in `snapshot`: nothing while
     /// none are kept.
     pub(crate) fn silenced_in<'a>(
         cx: &App,
-        endpoint: &crate::endpoint::Endpoint,
+        daemon: &Daemon,
         snapshot: &'a ClientShellSnapshot,
     ) -> Silenced<'a> {
         Self::any(cx)
-            .map(|mutes| mutes.silenced(&Daemon::of(endpoint), snapshot))
+            .map(|mutes| mutes.silenced(daemon, snapshot))
             .unwrap_or_default()
     }
 

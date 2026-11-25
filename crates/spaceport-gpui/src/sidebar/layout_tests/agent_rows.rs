@@ -396,11 +396,10 @@ fn hiding_agents_preserves_scrolled_multi_endpoint_lists(cx: &mut gpui::TestAppC
                 agent
             })
             .collect();
-        let mut remote = crate::endpoint::Endpoint::new(
-            "ssh:test".into(),
-            "Remote".into(),
+        let mut remote = layout_host(
+            "ssh:test",
+            "Remote",
             ConnectTarget::Socket("/unused-remote-layout-test.sock".into()),
-            true,
         );
         remote.live_mut().snapshot = view.live.snapshot.clone();
         for agent in &mut Arc::make_mut(remote.live_mut().snapshot.as_mut().unwrap()).agents {

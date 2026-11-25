@@ -7,15 +7,7 @@ fn open(cx: &mut gpui::TestAppContext) -> (Entity<SpaceportWindow>, &mut VisualT
     let (view, cx) = cx.add_window_view(|window, cx| {
         let mut view = fixture_window(window, cx);
         view.live.snapshot = Some(Arc::new(snapshot(1)));
-        let mut remote = crate::endpoint::Endpoint::new(
-            "ssh:test".into(),
-            "Remote".into(),
-            ConnectTarget::Ssh {
-                target: "unused".into(),
-                session: "default".into(),
-            },
-            true,
-        );
+        let mut remote = layout_host("ssh:test", "Remote", ssh("unused"));
         remote.live_mut().snapshot = Some(Arc::new(snapshot(1)));
         view.endpoints.push(remote);
         view

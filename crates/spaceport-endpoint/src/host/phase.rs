@@ -36,6 +36,15 @@ impl Phase {
         }
     }
 
+    /// Whether this host wants a connection: only a disabled one does not, so
+    /// the phase is where every caller reads it, including the rows of a
+    /// [`HostView`], which hold no host.
+    ///
+    /// [`HostView`]: super::HostView
+    pub fn enabled(self) -> bool {
+        self != Self::Disabled
+    }
+
     /// The phase as `herdr-gpui` commands report it, in English. Command output
     /// is data rather than a word the app shows in the user's language, which
     /// the window words as `endpoint-status`.

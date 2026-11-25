@@ -93,23 +93,23 @@ impl SpaceportWindow {
             .min_h_0()
             .overflow_y_scroll();
         for (endpoint_index, endpoint, live) in self.listed_hosts() {
+            let host = endpoint.view();
             if measured.multi {
-                spaces = spaces.child(self.rail_host_box(measured, endpoint_index, endpoint, cx));
+                spaces = spaces.child(self.rail_host_box(measured, endpoint_index, &host, cx));
             }
-            if self.host_folded(endpoint) {
+            if self.host_folded(&host) {
                 continue;
             }
             let Some(snapshot) = &live.snapshot else {
                 continue;
             };
-            let collapsed_repos = &endpoint.collapsed_repos;
             for (index, indented, _) in
-                visible_workspace_entries(&snapshot.workspaces, collapsed_repos)
+                visible_workspace_entries(&snapshot.workspaces, host.collapsed_repos)
             {
                 spaces = spaces.child(self.rail_workspace_row(
                     measured,
                     endpoint_index,
-                    endpoint,
+                    &host,
                     &snapshot.workspaces[index],
                     indented,
                     cx,
@@ -125,7 +125,7 @@ impl SpaceportWindow {
         &self,
         measured: &RailMeasure<'_>,
         endpoint_index: usize,
-        endpoint: &crate::endpoint::Endpoint,
+        host: &spaceport_endpoint::HostView<'_>,
         cx: &Context<Self>,
     ) -> Stateful<Div> {
         let RailMeasure {
@@ -138,20 +138,20 @@ impl SpaceportWindow {
         } = measured;
         let theme = &self.theme;
         let selected = endpoint_index == self.selected_endpoint;
-        let endpoint_id = endpoint.id.clone();
-        let initial = host_initial(&endpoint.label);
+        let endpoint_id = host.id.to_owned();
+        let initial = host_initial(host.label);
         let select_id = endpoint_id.clone();
         let menu_id = endpoint_id.clone();
-        let connected = endpoint.live().status.is_connected();
-        let text = if endpoint.collapsed {
-            fl!("sidebar-rail-collapsed", host = endpoint.label.as_str())
+        let connected = host.status.is_connected();
+        let text = if host.collapsed {
+            fl!("sidebar-rail-collapsed", host = host.label)
         } else {
-            endpoint.label.clone()
+            host.label.to_owned()
         };
         // An offline or folded host has no rows to carry the mark.
         let text = muted_word(
             Some(text.clone()),
-            mutes.is_some_and(|mutes| mutes.host(&endpoint.id)),
+            mutes.is_some_and(|mutes| mutes.host(host.id)),
         )
         .unwrap_or(text);
         let box_id = endpoint_id.clone();
@@ -209,7 +209,7 @@ impl SpaceportWindow {
         &self,
         measured: &RailMeasure<'_>,
         endpoint_index: usize,
-        endpoint: &crate::endpoint::Endpoint,
+        host: &spaceport_endpoint::HostView<'_>,
         workspace: &spaceport_client::protocol::ClientShellWorkspace,
         indented: bool,
         cx: &Context<Self>,
@@ -227,8 +227,8 @@ impl SpaceportWindow {
         let theme = &self.theme;
         let columns = *columns;
         let selected = endpoint_index == self.selected_endpoint;
-        let endpoint_id = endpoint.id.clone();
-        let host = (*multi).then_some(endpoint.label.as_str());
+        let endpoint_id = host.id.to_owned();
+        let host_label = (*multi).then_some(host.label);
         let id = workspace.workspace_id.clone();
         let key = format!("rail-workspace-{endpoint_id}-{id}");
         let navigate_endpoint = endpoint_id.clone();
@@ -301,7 +301,7 @@ impl SpaceportWindow {
         .debug_selector(|| key)
         .cursor_pointer()
         .tooltip(hint.with(describe(
-            host,
+            host_label,
             workspace_label(workspace, indented),
             None,
             muted_word(status_word(workspace.agent_status), muted).as_deref(),
@@ -347,8 +347,9 @@ impl SpaceportWindow {
             let Some(endpoint) = self.endpoints.get(index) else {
                 continue;
             };
+            let host = endpoint.view();
             // A collapsed host folds its agents away with its workspaces.
-            if self.host_folded(endpoint) {
+            if self.host_folded(&host) {
                 continue;
             }
             let selected = index == self.selected_endpoint;
@@ -356,8 +357,8 @@ impl SpaceportWindow {
             let Some(snapshot) = live.snapshot.as_deref() else {
                 continue;
             };
-            agents = agents
-                .child(self.rail_agent_row(measured, agent, endpoint, snapshot, selected, cx));
+            agents =
+                agents.child(self.rail_agent_row(measured, agent, &host, snapshot, selected, cx));
         }
         agents
     }
@@ -367,7 +368,7 @@ impl SpaceportWindow {
         &self,
         measured: &RailMeasure<'_>,
         agent: &ClientShellAgent,
-        endpoint: &crate::endpoint::Endpoint,
+        host: &spaceport_endpoint::HostView<'_>,
         snapshot: &spaceport_client::protocol::ClientShellSnapshot,
         selected: bool,
         cx: &Context<Self>,
@@ -383,8 +384,8 @@ impl SpaceportWindow {
         } = measured;
         let theme = &self.theme;
         let columns = *columns;
-        let endpoint_id = &endpoint.id;
-        let host = (*multi).then_some(endpoint.label.as_str());
+        let endpoint_id = host.id.to_owned();
+        let host_label = (*multi).then_some(host.label);
         let id = agent.pane_id.clone();
         let key = format!("rail-agent-{endpoint_id}-{id}");
         let navigate_endpoint = endpoint_id.clone();
@@ -410,7 +411,7 @@ impl SpaceportWindow {
                 columns.badge,
                 columns.height,
                 theme.muted,
-                &host_initial(&endpoint.label),
+                &host_initial(host.label),
             )
         } else {
             div()
@@ -466,7 +467,7 @@ impl SpaceportWindow {
         .debug_selector(|| key)
         .cursor_pointer()
         .tooltip(hint.with(describe(
-            host,
+            host_label,
             agent_name(agent),
             place.as_deref(),
             agent_status_word(agent).as_deref(),

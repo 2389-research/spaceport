@@ -8,15 +8,7 @@ fn two_hosts(window: &mut Window, cx: &mut Context<SpaceportWindow>) -> Spacepor
     let listing = snapshot(2);
     view.live.snapshot = Some(Arc::new(listing.clone()));
     view.live.status = ConnectionStatus::Connected;
-    let mut remote = crate::endpoint::Endpoint::new(
-        "ssh:test".into(),
-        "Remote".into(),
-        ConnectTarget::Ssh {
-            target: "unused".into(),
-            session: "default".into(),
-        },
-        true,
-    );
+    let mut remote = layout_host("ssh:test", "Remote", ssh("unused"));
     remote.live_mut().snapshot = Some(Arc::new(listing));
     remote.live_mut().status = ConnectionStatus::Connected;
     view.endpoints.push(remote);

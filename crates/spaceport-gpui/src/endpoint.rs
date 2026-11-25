@@ -44,8 +44,8 @@ pub(crate) use std::time::Duration;
 // always named it by: the policy stage 1 and 2 lowered, and the host the link
 // machine and the live state live in.
 pub(crate) use spaceport_endpoint::{
-    Action, Catalog, History, Host, LOCAL, Phase, Step, Transition, Transport, WSL_PREFIX,
-    WakeClock, focus_requested, saved_profile_id, watch_network,
+    Action, Catalog, History, Host, HostView, LOCAL, Phase, Step, Transition, Transport,
+    WSL_PREFIX, WakeClock, focus_requested, saved_profile_id, watch_network,
 };
 
 /// How much of the window an update changes. Ordered, so several updates
@@ -202,6 +202,20 @@ impl Endpoint {
     /// The endpoint's state as the device picker shows it.
     pub fn status_label(&self) -> String {
         fl!("endpoint-status", state = self.phase().as_str())
+    }
+
+    /// This host as the sidebar's row and rail renderers read it. They take
+    /// this rather than the endpoint, so no row painter holds a bridge, a
+    /// target or a toast queue; the app words every label it already holds.
+    pub(crate) fn view(&self) -> HostView<'_> {
+        HostView {
+            id: &self.id,
+            label: &self.label,
+            phase: self.phase(),
+            status: self.live().status,
+            collapsed: self.collapsed,
+            collapsed_repos: &self.collapsed_repos,
+        }
     }
 
     pub(crate) fn enabled(&self) -> bool {
