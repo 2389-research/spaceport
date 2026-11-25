@@ -56,8 +56,6 @@ pub enum Error {
     #[error(transparent)]
     Daemon(#[from] crate::daemon::Error),
     #[error(transparent)]
-    Devices(#[from] crate::menu::devices::Error),
-    #[error(transparent)]
     Endpoint(#[from] crate::endpoint::Error),
     #[error(transparent)]
     FileDrop(#[from] crate::window::file_drop::Error),

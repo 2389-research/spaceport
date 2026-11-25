@@ -45,7 +45,6 @@ impl Localize for Error {
             Self::ConnectionNotReady => fl!("error-connection-not-ready"),
             Self::Control(error) => error.localize(),
             Self::Daemon(error) => error.localize(),
-            Self::Devices(error) => error.localize(),
             Self::Endpoint(error) => error.localize(),
             Self::FileDrop(error) => error.localize(),
             Self::ImageAnimationResize => fl!("error-image-animation-resize"),

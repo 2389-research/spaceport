@@ -9,15 +9,12 @@ mod activity_card;
 mod add_device;
 mod core_catalog;
 pub(crate) use add_device::enter;
-mod error;
 mod host_menu;
 pub(super) mod picker;
 pub(super) mod rail;
-mod setup;
 mod wsl;
 
 pub(super) use add_device::Setup;
-pub(crate) use error::Error;
 pub(crate) use host_menu::HostMenu;
 pub(super) use wsl::WslSetup;
 

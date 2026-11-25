@@ -1,12 +1,18 @@
 //! Why removing or renaming a saved device failed.
 
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     // keep-sorted start
     #[error("This device is already being removed. Wait for that to finish, then try again.")]
     Busy,
+    #[error(transparent)]
+    Client(#[from] spaceport_client::Error),
     #[error("Device names are at most 128 bytes, without control characters.")]
     InvalidLabel,
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
     #[error("This device has no saved profile.")]
     NoProfile,
     #[error("Removing the device failed ({status}){}", if detail.is_empty() { String::new() } else { format!(": {detail}") })]
