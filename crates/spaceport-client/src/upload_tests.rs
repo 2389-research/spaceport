@@ -1,5 +1,5 @@
 use super::*;
-use crate::ssh;
+use crate::{ssh, staging};
 use std::{
     fs,
     os::unix::fs::{PermissionsExt, symlink},
@@ -559,23 +559,8 @@ fn cancellation_and_idle_deadline_are_polled_on_every_loop() {
 
 #[test]
 fn response_bounds_and_owned_directory_validation() {
-    for dir in [
-        "/tmp/herdr-upload.abcdefghijkl",
-        "/a ' $ x/herdr-upload.123456ABCDEF",
-    ] {
-        assert!(valid_directory(dir));
-    }
-    for dir in [
-        "/",
-        "relative/herdr-upload.abcdefghijkl",
-        "/tmp/../herdr-upload.abcdefghijkl",
-        "/tmp//herdr-upload.abcdefghijkl",
-        "/tmp/herdr-upload.short",
-        "/tmp/herdr-upload.abcdefghijk;",
-        "/tmp\n/herdr-upload.abcdefghijkl",
-    ] {
-        assert!(!valid_directory(dir));
-    }
+    // The staging directory's own shape is `staging`'s rule and its tests.
+    assert!(staging::valid_directory("/tmp/herdr-upload.abcdefghijkl"));
     let stop = AtomicBool::new(false);
     assert!(matches!(
         line(
