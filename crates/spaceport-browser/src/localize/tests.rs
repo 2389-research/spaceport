@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 // ABOUTME: Checks saved-state admission diagnostics through the localization boundary.
 // ABOUTME: Keeps English errors consistent and pseudo-locale messages complete.
 use super::*;

@@ -1,4 +1,5 @@
 //! Every variant of this crate's failures words itself for a window.
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use crate::{BackdropProblem, Error, ThemeParseError, ssh_hosts, tab_layout};
 use spaceport_i18n::{Locale, Localize, assertions::assert_localized, set_locale};

@@ -1,4 +1,5 @@
 //! Every variant of the sound worker's own failure words itself.
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::*;
 use spaceport_i18n::assertions::{assert_localized, assert_verbatim};

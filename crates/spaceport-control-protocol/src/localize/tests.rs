@@ -1,4 +1,5 @@
 //! Every variant of the control socket's own failure words itself.
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::*;
 use crate::protocol::ErrorCode;

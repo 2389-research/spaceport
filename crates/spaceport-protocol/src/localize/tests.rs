@@ -1,4 +1,5 @@
 //! Every variant of the protocol's own failure words itself for a window.
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::*;
 use crate::{decode_payload, encode_message};

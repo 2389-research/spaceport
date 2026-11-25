@@ -1,4 +1,5 @@
 //! Every variant of this crate's failures words itself for a window.
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use crate::{Error, env, session::Refusal, widgets};
 use spaceport_chat_protocol::{ByeReason, Cursor, Rejection};

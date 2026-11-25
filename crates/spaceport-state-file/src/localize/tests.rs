@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 // ABOUTME: Checks the state file's failures word themselves for a window.
 // ABOUTME: Keeps the system's and the parser's own text as it is.
 

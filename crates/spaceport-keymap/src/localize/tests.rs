@@ -1,4 +1,5 @@
 //! Every variant of a keymap failure words itself for a window.
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use crate::{Error, daemon};
 use spaceport_i18n::{Locale, Localize, assertions::assert_localized, set_locale};

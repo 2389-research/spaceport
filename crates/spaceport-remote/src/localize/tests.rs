@@ -1,4 +1,5 @@
 //! Every variant of this crate's failures words itself for a window.
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use crate::{Error, host_script, setup};
 use spaceport_i18n::assertions::{assert_localized, assert_verbatim};

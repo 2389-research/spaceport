@@ -1,4 +1,5 @@
 //! Every variant of this crate's failures words itself for a window.
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use crate::{Cursor, EntryId, Error, PermissionId, Rejection};
 use spaceport_i18n::assertions::assert_localized;
