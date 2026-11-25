@@ -35,20 +35,20 @@ fn a_text_value_is_sent_as_written() {
 fn text_must_say_something_and_stay_short() {
     assert!(matches!(
         resolve(&[("alt-7", "text:")]),
-        Err(crate::Error::Keymap(Error::EmptyPaneKeyText(typed))) if typed == "alt-7"
+        Err(Error::EmptyPaneKeyText(typed)) if typed == "alt-7"
     ));
     let longest = format!("text:{}", "a".repeat(MAX_PANE_TEXT));
     assert!(resolve(&[("alt-7", &longest)]).is_ok());
     assert!(matches!(
         resolve(&[("alt-7", &format!("{longest}a"))]),
-        Err(crate::Error::Keymap(Error::PaneKeyTextTooLong {
+        Err(Error::PaneKeyTextTooLong {
             limit: MAX_PANE_TEXT,
             ..
-        }))
+        })
     ));
     // The keystroke is still checked, and still cannot be typing.
     assert!(matches!(
         resolve(&[("7", "text:|")]),
-        Err(crate::Error::Keymap(Error::PaneKeyWithoutModifier(_)))
+        Err(Error::PaneKeyWithoutModifier(_))
     ));
 }

@@ -100,7 +100,7 @@ pub enum Error {
     #[error("{0}")]
     Json(#[from] serde_json::Error),
     #[error(transparent)]
-    Keymap(#[from] crate::keymap::Error),
+    Keymap(#[from] spaceport_keymap::Error),
     #[cfg(windows)]
     #[error(transparent)]
     LaunchAtLogin(#[from] crate::launch_at_login::Error),
@@ -182,8 +182,6 @@ pub enum Error {
     SelectionSize,
     #[error("The selected pane is no longer on screen.")]
     SelectionStale,
-    #[error(transparent)]
-    ServerKeybindings(#[from] spaceport_keymap::Error),
     #[error(transparent)]
     Settings(#[from] spaceport_settings::Error),
     #[error("Could not finish saving Settings: {0}")]

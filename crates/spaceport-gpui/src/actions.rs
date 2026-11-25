@@ -164,23 +164,6 @@ pub(crate) fn bind_keys(cx: &mut App) {
     }
 }
 
-/// The Edit menu's keystrokes: cut, copy, paste, and select all. Windows
-/// labels paste with plain Ctrl-V, which a pane takes as the app's paste
-/// while the clipboard holds text, because Ctrl-Shift-V is often taken
-/// system-wide there.
-pub(crate) const EDIT_KEYS: [&str; 4] = if cfg!(target_os = "windows") {
-    ["ctrl-shift-x", "ctrl-shift-c", "ctrl-v", "ctrl-shift-a"]
-} else if CTRL_SHORTCUTS {
-    [
-        "ctrl-shift-x",
-        "ctrl-shift-c",
-        "ctrl-shift-v",
-        "ctrl-shift-a",
-    ]
-} else {
-    ["cmd-x", "cmd-c", "cmd-v", "cmd-a"]
-};
-
 /// Fields also accept plain Ctrl on Linux and Windows, where there is no
 /// terminal program to receive it. Keep the terminal's Ctrl-Shift aliases
 /// working in fields so Edit menu clicks and keyboard shortcuts share the
@@ -189,41 +172,14 @@ pub(crate) fn edit_modifiers(modifiers: Modifiers) -> bool {
     Platform::CURRENT.edit_modifiers(modifiers)
 }
 
-/// macOS's Hide, Hide Others, and Minimize, bound there alone.
-const SYSTEM_KEYS: [&str; 3] = ["cmd-h", "cmd-alt-h", "cmd-m"];
-
-/// The system keystrokes the app keeps: each one `keymap` binds no command
-/// to. No default is bound to any of them, so a command that holds one was
-/// put there on purpose, in `[keybindings]` or the daemon's `[keys]`, and
-/// runs instead.
+// The keystrokes the app itself holds — the Edit menu's four and macOS's
+// system keys — spelled by `spaceport-keymap`, where a daemon custom command
+// is kept off them. `bind_keys` above binds them to this app's actions.
 #[cfg(any(target_os = "macos", test))]
-fn free_system_keys(keymap: &crate::keymap::Keymap) -> impl Iterator<Item = &'static str> {
-    let bound: Vec<Keystroke> = keymap
-        .bindings()
-        .filter_map(|(_, label)| crate::keymap::parse_keystroke(label).ok())
-        .collect();
-    SYSTEM_KEYS.into_iter().filter(move |system| {
-        crate::keymap::parse_keystroke(system).is_ok_and(|system| {
-            bound
-                .iter()
-                .all(|bound| (bound.modifiers, &bound.key) != (system.modifiers, &system.key))
-        })
-    })
-}
-
-/// Keystrokes a daemon custom command never takes: the Edit keys and the
-/// macOS system keys. Its direct keystroke is matched before any binding, so
-/// one of these would otherwise take Paste or Hide away from the app. A
-/// system key the keymap gave to a command is held there instead, so a custom
-/// command gets it neither way.
-pub(crate) fn reserved_keystrokes() -> impl Iterator<Item = &'static str> {
-    let system: &[&str] = if cfg!(target_os = "macos") {
-        &SYSTEM_KEYS
-    } else {
-        &[]
-    };
-    EDIT_KEYS.into_iter().chain(system.iter().copied())
-}
+pub use spaceport_keymap::free_system_keys;
+#[cfg(test)]
+pub use spaceport_keymap::reserved_keystrokes;
+pub use spaceport_keymap::{EDIT_KEYS, SYSTEM_KEYS};
 
 /// Replaces every binding after a config reload. The menu bar reads its
 /// shortcut labels from the keymap when it is installed, so it is rebuilt too.

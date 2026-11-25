@@ -1,6 +1,9 @@
-//! Keybindings, the app's and a host's, and the `spaceport-keymap` root that
-//! wraps a host profile's failure: `error-keymap.ftl`. Keystrokes are quoted as
-//! the `Display` quotes them, with `{:?}`.
+//! Keybindings, the app's and a host's: `error-keymap.ftl`. Keystrokes are
+//! quoted as the `Display` quotes them, with `{:?}`.
+//!
+//! `spaceport-keymap`'s root names both what could not be resolved and the host
+//! profile it could not read, so one `Localize` impl words every keymap
+//! failure and delegates the profile's own to `daemon::Error`.
 
 use super::Localize;
 use crate::{
@@ -16,6 +19,7 @@ impl Localize for Error {
     fn localize(&self) -> String {
         match self {
             // keep-sorted start
+            Self::Daemon(error) => error.localize(),
             Self::DuplicateKeystroke {
                 keystroke,
                 first,
@@ -94,14 +98,6 @@ impl Localize for daemon::Error {
             Self::Parse(error) => fl!("error-keymap-daemon-parse", error = error.to_string()),
             Self::TooLarge { max } => fl!("error-keymap-daemon-too-large", max = *max),
             // keep-sorted end
-        }
-    }
-}
-
-impl Localize for spaceport_keymap::Error {
-    fn localize(&self) -> String {
-        match self {
-            Self::Daemon(error) => error.localize(),
         }
     }
 }

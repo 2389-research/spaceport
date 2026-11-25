@@ -1,14 +1,21 @@
 //! The daemon's `[[keys.command]]` shortcuts, matched against the resolved
 //! keymap. Herdr resolves its own actions before custom commands, so a
 //! keystroke a daemon `[keys]` entry, the GUI's `[keybindings]`, a pane key,
-//! the app's reserved bindings, or the prefix already holds never reaches
-//! one, and of two custom commands sharing a trigger only the first runs. A
-//! catalog default is no Herdr action and nobody configured it, so it yields
-//! to a custom command bound to its keystroke, as it does to a daemon
-//! `[keys]` entry. Dispatch and the shortcut reference both answer through
-//! `Keymap::reach`, so neither can claim a shortcut the other disagrees with.
+//! the app's reserved bindings ([`crate::reserved`]), or the prefix already
+//! holds never reaches one, and of two custom commands sharing a trigger only
+//! the first runs. A catalog default is no Herdr action and nobody configured
+//! it, so it yields to a custom command bound to its keystroke, as it does to a
+//! daemon `[keys]` entry. Dispatch and the shortcut reference both answer
+//! through `Keymap::reach`, so neither can claim a shortcut the other disagrees
+//! with.
 
-use super::{Keymap, MAX_KEYSTROKES, Trigger, daemon, has_modifier, identity, typed_matches};
+use crate::{
+    HOST_OS,
+    daemon::{self, Trigger},
+    keymap::{Keymap, MAX_KEYSTROKES, has_modifier, identity, typed_matches},
+    parse_keystroke,
+    reserved::reserved_keystrokes,
+};
 use gpui::{Keystroke, Modifiers};
 use spaceport_client::protocol::{ClientShellCommand, ClientShellCommandAction};
 use std::collections::HashSet;
@@ -18,7 +25,7 @@ use std::collections::HashSet;
 const MAX_LISTED: usize = 16;
 
 /// Herdr plugin actions are excluded from the desktop command surfaces.
-pub(crate) fn available_commands(
+pub fn available_commands(
     commands: &[ClientShellCommand],
 ) -> impl Iterator<Item = &ClientShellCommand> {
     commands.iter().filter(|command| {
@@ -31,7 +38,7 @@ pub(crate) fn available_commands(
 
 /// Whether a custom command's binding runs here, and if not, why.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Reach {
+pub enum Reach {
     Runs,
     /// A configured or daemon keymap binding, a pane key, a reserved app
     /// shortcut, or the prefix itself holds the keystroke first.
@@ -51,11 +58,11 @@ pub(crate) enum Reach {
 
 /// One of a custom command's bindings as the shortcut reference shows it.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct CustomBinding {
+pub struct CustomBinding {
     /// As other shortcuts read: `-`-joined keystrokes, a space after the
     /// prefix.
-    pub(crate) label: String,
-    pub(crate) reach: Reach,
+    pub label: String,
+    pub reach: Reach,
 }
 
 type Identity = (Modifiers, String);
@@ -63,7 +70,7 @@ type Identity = (Modifiers, String);
 impl Keymap {
     /// The daemon custom command `typed` runs, alone or after the prefix as
     /// `prefixed` says.
-    pub(crate) fn custom_command<'a>(
+    pub fn custom_command<'a>(
         &self,
         commands: &'a [ClientShellCommand],
         typed: &Keystroke,
@@ -88,7 +95,7 @@ impl Keymap {
     /// Every binding of each command, parallel to `commands`, including those
     /// that cannot run here so a conflict stays discoverable. A trigger
     /// listed twice is shown once.
-    pub(crate) fn custom_bindings<'a>(
+    pub fn custom_bindings<'a>(
         &self,
         commands: impl IntoIterator<Item = &'a ClientShellCommand>,
     ) -> Vec<Vec<CustomBinding>> {
@@ -177,7 +184,7 @@ impl Keymap {
     /// the app's reserved shortcuts, or a pane key, which then handle it. A
     /// catalog default counts here: only a custom command bound to its own
     /// keystroke takes it over, not one that matches with Shift restored.
-    pub(crate) fn holds_directly(&self, typed: &Keystroke) -> bool {
+    pub fn holds_directly(&self, typed: &Keystroke) -> bool {
         self.pane_key(typed).is_some() || self.direct_keystrokes(true).contains(&identity(typed))
     }
 
@@ -200,23 +207,19 @@ impl Keymap {
                 shortcut.chord.is_none() && (with_catalog_defaults || !shortcut.catalog_default)
             })
             .map(|shortcut| shortcut.label.as_str());
-        let reserved = crate::actions::reserved_keystrokes().map(|label| -> &str { label });
+        let reserved = reserved_keystrokes().map(|label| -> &str { label });
         keymap
             .chain(reserved)
-            .filter_map(|label| crate::keymap::parse_keystroke(label).ok())
+            .filter_map(|label| parse_keystroke(label).ok())
             .map(|keystroke| identity(&keystroke))
             .collect()
     }
 
     fn custom_label(&self, trigger: &Trigger) -> String {
         match trigger {
-            Trigger::Direct(keystroke) => keystroke.unparse(crate::keymap::HOST_OS),
+            Trigger::Direct(keystroke) => keystroke.unparse(HOST_OS),
             Trigger::Prefixed(keystroke) => {
-                format!(
-                    "{} {}",
-                    self.prefix_word(),
-                    keystroke.unparse(crate::keymap::HOST_OS)
-                )
+                format!("{} {}", self.prefix_word(), keystroke.unparse(HOST_OS))
             }
         }
     }

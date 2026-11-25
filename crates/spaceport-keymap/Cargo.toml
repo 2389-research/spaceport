@@ -10,13 +10,21 @@ version.workspace      = true
 workspace = true
 
 [features]
-# `secondary_key`, for the app's own tests that hold the platform's primary
-# modifier while clicking a link. A cargo feature, not `cfg(test)`, because a
-# dependency's own `cfg(test)` is false inside its consumers' test builds.
+# What the app's own tests read from here: `secondary_key`, the keystroke
+# identity and matching rules, and the system keys no command holds. A cargo
+# feature, not `cfg(test)`, because a dependency's own `cfg(test)` is false
+# inside its consumers' test builds.
 test-support = []
 
 [dependencies]
 gpui.workspace               = true
+spaceport-client.workspace   = true
 spaceport-commands.workspace = true
+spaceport-settings.workspace = true
 thiserror.workspace          = true
 toml.workspace               = true
+
+[dev-dependencies]
+# The platform's spelling of a catalog shortcut, for the tests that compare a
+# resolved keymap against the catalog's own defaults.
+spaceport-commands = { features = ["test-support"], workspace = true }
