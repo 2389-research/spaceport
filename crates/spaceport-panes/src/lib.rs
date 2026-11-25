@@ -2,9 +2,14 @@
 //! the app does: a binary tree of terminals, saved with the tab. Pure data
 //! and geometry with no GPUI, so splitting, closing, resizing, and moving
 //! focus are tested without a window.
+//!
+//! It also checks the rectangles a daemon reports for a frame, which is where
+//! every client learns which pane shows where.
 
+mod cells;
 mod error;
 
+pub use cells::{CellMap, CellRect};
 pub use error::{Error, Result};
 
 use serde::{Deserialize, Serialize};

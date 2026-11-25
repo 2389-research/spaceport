@@ -2,6 +2,8 @@
 use super::*;
 use spaceport_backend::TerminalId;
 
+mod cells;
+
 fn id(name: &str) -> TerminalId {
     TerminalId::try_from(name.to_owned()).unwrap()
 }

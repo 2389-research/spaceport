@@ -14,7 +14,9 @@ publish = false
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]
+spaceport-backend = { path = "../../crates/spaceport-backend" }
 spaceport-client = { path = "../../crates/spaceport-client" }
+spaceport-panes = { path = "../../crates/spaceport-panes" }
 spaceport-truncate = { path = "../../crates/spaceport-truncate" }
 p256 = { version = "0.14", default-features = false, features = ["ecdsa"] }
 russh = { version = "=0.65.3", default-features = false, features = ["ring"] }
