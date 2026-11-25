@@ -45,6 +45,20 @@ fn points_order_in_reading_order() {
 }
 
 #[test]
+fn an_odd_revision_is_a_write_in_progress_and_only_newer_settled_content_retries() {
+    assert!(content_settled(0));
+    assert!(!content_settled(1));
+    assert!(content_settled(2));
+    assert!(!content_settled(u64::MAX));
+    // A refusal waits for content the daemon has moved on to, and never for
+    // the revision it already refused or for one mid-write.
+    assert!(retryable_after(4, 6));
+    assert!(!retryable_after(4, 4));
+    assert!(!retryable_after(4, 3));
+    assert!(!retryable_after(4, 5));
+}
+
+#[test]
 fn decodes_a_result_and_its_current_match() {
     let response = json!({
         "id": "gpui-3",

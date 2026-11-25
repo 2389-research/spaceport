@@ -18,7 +18,7 @@ use spaceport_client::{
     protocol::PaneSurfacePane,
     scrollback::{
         CopyMotion, CopyMotionParams, CopySearchParams, CopySearchResult, EndpointErrorCode,
-        ScrollbackResponse, SearchDirection, TextPoint, TextRange,
+        ScrollbackResponse, SearchDirection, TextPoint, TextRange, retryable_after,
     },
 };
 use std::collections::VecDeque;
@@ -647,10 +647,8 @@ impl CopyMode {
     /// newer than the revision it was refused at.
     pub(crate) fn due_retry(&self, pane: &PaneSurfacePane) -> Option<Request> {
         let (operation, refused) = self.retry.as_ref()?;
-        (self.in_flight.is_none()
-            && pane.content_revision != *refused
-            && pane.content_revision.is_multiple_of(2))
-        .then(|| self.request(operation, pane.content_revision))
+        (self.in_flight.is_none() && retryable_after(*refused, pane.content_revision))
+            .then(|| self.request(operation, pane.content_revision))
     }
 
     /// The next key that waited behind a request, once none is in flight.

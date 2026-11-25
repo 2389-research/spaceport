@@ -15,7 +15,7 @@ use spaceport_client::{
 };
 use std::{
     io,
-    sync::{Arc, Mutex, MutexGuard, PoisonError},
+    sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError},
     thread,
     time::{Duration, Instant},
 };
@@ -91,10 +91,14 @@ pub(crate) fn geometry(
 
 #[derive(uniffi::Object)]
 pub struct MobileSession {
-    handle: ClientHandle,
-    routes: Arc<PtyRoutes>,
     enrollment: Mutex<Option<tokio::sync::oneshot::Sender<EnrollmentRequest>>>,
+    /// Signalled whenever the drain takes in an event, so a blocking search can
+    /// wait for a frame instead of asking the daemon about content it is still
+    /// writing.
+    frames: Arc<Condvar>,
+    handle: ClientHandle,
     projection: Arc<Mutex<Projection>>,
+    routes: Arc<PtyRoutes>,
 }
 
 impl Drop for MobileSession {
@@ -427,15 +431,17 @@ impl MobileSession {
         enrollment: Option<tokio::sync::oneshot::Sender<EnrollmentRequest>>,
         routes: Arc<PtyRoutes>,
     ) -> Result<Arc<Self>, MobileError> {
+        let frames = Arc::new(Condvar::new());
         let session = Arc::new(Self {
-            handle: client.handle.clone(),
-            routes: routes.clone(),
             enrollment: Mutex::new(enrollment),
+            frames: frames.clone(),
+            handle: client.handle.clone(),
             projection: projection.clone(),
+            routes: routes.clone(),
         });
         thread::Builder::new()
             .name("spaceport-mobile-state".into())
-            .spawn(move || drain(client, projection, routes))
+            .spawn(move || drain(client, projection, routes, frames))
             .map_err(|e| MobileError::Client {
                 message: e.to_string(),
             })?;
@@ -594,7 +600,12 @@ fn lock<T>(state: &Mutex<T>) -> MutexGuard<'_, T> {
     state.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-fn drain(client: Client, projection: Arc<Mutex<Projection>>, routes: Arc<PtyRoutes>) {
+fn drain(
+    client: Client,
+    projection: Arc<Mutex<Projection>>,
+    routes: Arc<PtyRoutes>,
+    frames: Arc<Condvar>,
+) {
     loop {
         let event = client.events.recv_timeout(Duration::from_millis(250));
         let mut state = lock(&projection);
@@ -671,7 +682,9 @@ fn drain(client: Client, projection: Arc<Mutex<Projection>>, routes: Arc<PtyRout
             if state.direct_attach {
                 routes.invalidate(&state);
             }
-            state.version += 1
+            state.version += 1;
+            // Wakes a search waiting for the pane's content to settle.
+            frames.notify_all();
         }
         if state.disconnected {
             client.handle.disconnect();

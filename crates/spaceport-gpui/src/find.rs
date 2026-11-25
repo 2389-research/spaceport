@@ -18,7 +18,7 @@ use spaceport_client::{
     protocol::PaneSurfacePane,
     scrollback::{
         CopySearchParams, CopySearchResult, EndpointErrorCode, SearchDirection, TextPoint,
-        TextRange,
+        TextRange, content_settled, retryable_after,
     },
 };
 use std::time::{Duration, Instant};
@@ -165,8 +165,10 @@ impl Search {
         let step = self.queued?;
         if self.in_flight.is_some()
             || pane.pane_id != self.pane_id
-            || !pane.content_revision.is_multiple_of(2)
-            || self.refused_revision == Some(pane.content_revision)
+            || !content_settled(pane.content_revision)
+            || self
+                .refused_revision
+                .is_some_and(|refused| !retryable_after(refused, pane.content_revision))
             || self.query.is_empty()
         {
             return None;
