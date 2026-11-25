@@ -1,5 +1,5 @@
 use super::*;
-use crate::keymap::{Error, daemon};
+use spaceport_keymap::{Error, daemon};
 
 fn invalid() -> gpui::InvalidKeystrokeError {
     gpui::Keystroke::parse("cmd-n-t").unwrap_err()

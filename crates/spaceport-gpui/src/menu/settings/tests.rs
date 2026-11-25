@@ -1,14 +1,12 @@
 mod custom_shortcuts;
 mod legacy_plugin_actions;
 
-use crate::keymap::Keymap;
+use spaceport_keymap::Keymap;
 
 #[gpui::test]
 #[allow(clippy::unwrap_used)]
 fn enabling_does_not_replay_undrained_disabled_ingress(cx: &mut gpui::TestAppContext) {
-    use crate::{
-        config::Config, keymap::Keymap, notifications::tests::notification, state::ConnectionStatus,
-    };
+    use crate::{config::Config, notifications::tests::notification, state::ConnectionStatus};
     use spaceport_client::{
         ClientEvent,
         protocol::{SemanticNotificationKind, ServerMessage},
@@ -383,11 +381,9 @@ fn keycaps_split_modifiers_from_the_key() {
 #[allow(clippy::unwrap_used)]
 fn config_reload_rebinds_the_keymap(cx: &mut gpui::TestAppContext) {
     use crate::controls::platform_default as default;
-    use crate::{
-        Command, RunCommand,
-        config::Config,
-        keymap::{Binding, Keymap},
-    };
+    use crate::{Command, RunCommand, config::Config};
+    use spaceport_keymap::Keymap;
+    use spaceport_settings::keys::Binding;
 
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     cx.update(|_, cx| crate::bind_keys(cx));
@@ -395,7 +391,7 @@ fn config_reload_rebinds_the_keymap(cx: &mut gpui::TestAppContext) {
         cx.update(|_, cx| {
             cx.key_bindings()
                 .borrow()
-                .all_bindings_for_input(&[crate::keymap::parse_keystroke(keystroke).unwrap()])
+                .all_bindings_for_input(&[spaceport_keymap::parse_keystroke(keystroke).unwrap()])
                 .iter()
                 .any(|binding| binding.action().partial_eq(&RunCommand { command }))
         })
@@ -438,7 +434,7 @@ fn config_reload_rebinds_the_keymap(cx: &mut gpui::TestAppContext) {
             "cmd-l"
         };
         let console =
-            keymap.all_bindings_for_input(&[crate::keymap::parse_keystroke(level).unwrap()]);
+            keymap.all_bindings_for_input(&[spaceport_keymap::parse_keystroke(level).unwrap()]);
         assert_eq!(console.len(), 1);
     });
     view.read_with(cx, |view, _| {

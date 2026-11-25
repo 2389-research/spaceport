@@ -226,7 +226,7 @@ pub(crate) fn type_text(
 /// Dispatches `name` as one keystroke through the window's keymap.
 #[cfg(target_os = "macos")]
 pub(crate) fn key(name: &str, window: &mut Window, cx: &mut App) -> Result<()> {
-    if !window.dispatch_keystroke(crate::keymap::parse_keystroke(name)?, cx) {
+    if !window.dispatch_keystroke(spaceport_keymap::parse_keystroke(name)?, cx) {
         bail!("unhandled CJK fixture key {name}");
     }
     Ok(())

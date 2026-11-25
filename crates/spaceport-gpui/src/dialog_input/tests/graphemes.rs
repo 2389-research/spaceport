@@ -1,7 +1,7 @@
 use super::*;
 
 fn key(name: &str) -> Keystroke {
-    crate::keymap::parse_keystroke(name).unwrap_or_default()
+    spaceport_keymap::parse_keystroke(name).unwrap_or_default()
 }
 
 #[gpui::test]

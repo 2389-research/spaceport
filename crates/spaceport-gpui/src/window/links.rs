@@ -264,7 +264,7 @@ impl SpaceportWindow {
     ) {
         self.links.pointer = Some((position, modifiers));
         let mut examined = false;
-        let local = crate::keymap::secondary(&modifiers)
+        let local = spaceport_keymap::secondary(&modifiers)
             .then(|| self.local_link_at(position))
             .flatten()
             .and_then(|link| {
@@ -291,7 +291,7 @@ impl SpaceportWindow {
             self.links.local = local;
             cx.notify();
         }
-        let cell = (crate::keymap::secondary(&modifiers) && self.live.supports_link_resolve)
+        let cell = (spaceport_keymap::secondary(&modifiers) && self.live.supports_link_resolve)
             .then(|| self.link_cell_at(position))
             .flatten();
         if cell == self.links.hover {
@@ -403,7 +403,7 @@ impl SpaceportWindow {
         position: Point<Pixels>,
         modifiers: Modifiers,
     ) -> Option<PressedLink> {
-        if !crate::keymap::secondary(&modifiers) {
+        if !spaceport_keymap::secondary(&modifiers) {
             return None;
         }
         Some(PressedLink {

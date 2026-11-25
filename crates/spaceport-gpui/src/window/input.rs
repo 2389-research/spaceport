@@ -91,7 +91,7 @@ impl SpaceportWindow {
         modifiers: gpui::Modifiers,
     ) -> bool {
         modifiers.shift
-            || (crate::keymap::secondary(&modifiers)
+            || (spaceport_keymap::secondary(&modifiers)
                 && (self.terminal_link_at(position).is_some()
                     || self
                         .terminal_link_press(position, modifiers)
@@ -107,7 +107,7 @@ impl SpaceportWindow {
         position: Point<Pixels>,
         modifiers: gpui::Modifiers,
     ) -> bool {
-        crate::keymap::secondary(&modifiers)
+        spaceport_keymap::secondary(&modifiers)
             && (self.terminal_link_at(position).is_some()
                 || self.terminal_hyperlink_at(position)
                 || (self.hovered_local_link().is_some() && self.local_link_at(position).is_some()))

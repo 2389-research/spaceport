@@ -203,7 +203,7 @@ fn right_click_passthrough_wins_over_a_link_under_the_pointer(cx: &mut gpui::Tes
     });
     let view = fixture.update(cx, |fixture, _| fixture.0.clone());
     let (endpoint, mut server) = connected_endpoint("ssh:mouse");
-    let link_modifier = crate::keymap::secondary_key();
+    let link_modifier = spaceport_keymap::secondary_key();
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             prepare_mouse(view, endpoint, cx);

@@ -1,9 +1,8 @@
 use super::*;
-use crate::{
-    keymap::{DaemonKeys, Keymap},
-    window::SpaceportWindow,
-};
+use crate::window::SpaceportWindow;
 use gpui::{TestAppContext, VisualTestContext};
+use spaceport_keymap::Keymap;
+use spaceport_keymap::daemon::DaemonKeys;
 use std::cell::Cell;
 
 /// What a key types with no modifiers, Shift, Command, and Command and Shift,
@@ -182,7 +181,7 @@ fn window<'a>(
 
 fn press(keystroke: &str, cx: &mut VisualTestContext) -> bool {
     let handled = cx.update(|window, cx| {
-        window.dispatch_keystroke(crate::keymap::parse_keystroke(keystroke).unwrap(), cx)
+        window.dispatch_keystroke(spaceport_keymap::parse_keystroke(keystroke).unwrap(), cx)
     });
     cx.run_until_parked();
     handled

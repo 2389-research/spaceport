@@ -74,14 +74,14 @@ fn an_unchanged_url_opens_at_the_release(cx: &mut gpui::TestAppContext) {
     let link = at(&view, cx, 2, 0);
 
     view.update(cx, |view, _| place(view, WEB, 2));
-    release_after(&view, cx, link, crate::keymap::secondary_key(), |view| {
+    release_after(&view, cx, link, spaceport_keymap::secondary_key(), |view| {
         place(view, WEB, 4);
     });
     assert_eq!(cx.opened_url().as_deref(), Some(WEB));
 
     // The same address at the same revision opens the same way.
     view.update(cx, |view, _| place(view, WEB, 2));
-    cx.simulate_click(link, crate::keymap::secondary_key());
+    cx.simulate_click(link, spaceport_keymap::secondary_key());
     assert_eq!(cx.opened_url().as_deref(), Some(WEB));
 }
 
@@ -94,7 +94,7 @@ fn a_changed_or_removed_url_does_not_open(cx: &mut gpui::TestAppContext) {
     let link = at(&view, cx, 2, 0);
 
     view.update(cx, |view, _| place(view, WEB, 2));
-    release_after(&view, cx, link, crate::keymap::secondary_key(), |view| {
+    release_after(&view, cx, link, spaceport_keymap::secondary_key(), |view| {
         place(view, OTHER, 2);
     });
     assert_not_opened(&view, cx, "changed url");
@@ -103,7 +103,7 @@ fn a_changed_or_removed_url_does_not_open(cx: &mut gpui::TestAppContext) {
     });
 
     view.update(cx, |view, _| place(view, WEB, 2));
-    release_after(&view, cx, link, crate::keymap::secondary_key(), |view| {
+    release_after(&view, cx, link, spaceport_keymap::secondary_key(), |view| {
         place(view, "see notes", 2);
     });
     assert_not_opened(&view, cx, "removed url");
@@ -146,7 +146,7 @@ fn a_redraw_that_keeps_the_address_keeps_the_click(cx: &mut gpui::TestAppContext
         },
     ] {
         view.update(cx, |view, _| place(view, WEB, 2));
-        release_after(&view, cx, link, crate::keymap::secondary_key(), |view| {
+        release_after(&view, cx, link, spaceport_keymap::secondary_key(), |view| {
             place(view, WEB, 4);
             move_pane(view);
         });
@@ -177,7 +177,7 @@ fn endpoint_retargeting_drops_a_pending_press(cx: &mut gpui::TestAppContext) {
         view.endpoints.push(remote);
     });
     let link = at(&view, cx, 2, 0);
-    cx.simulate_mouse_down(link, MouseButton::Left, crate::keymap::secondary_key());
+    cx.simulate_mouse_down(link, MouseButton::Left, spaceport_keymap::secondary_key());
     let (surface, snapshot) = view.read_with(cx, |view, _| {
         assert!(view.pressed_terminal_link.is_some());
         (view.live.surface.clone(), view.live.snapshot.clone())
@@ -192,7 +192,7 @@ fn endpoint_retargeting_drops_a_pending_press(cx: &mut gpui::TestAppContext) {
             .activation
             .transition(crate::state::activation::Transition::Reset(None));
     });
-    cx.simulate_mouse_up(link, MouseButton::Left, crate::keymap::secondary_key());
+    cx.simulate_mouse_up(link, MouseButton::Left, spaceport_keymap::secondary_key());
     assert_not_opened(&view, cx, "retarget");
     view.read_with(cx, |view, _| {
         assert_eq!(view.terminal_link_at(link).as_deref(), Some(WEB));
@@ -209,7 +209,7 @@ fn a_file_link_survives_a_redraw_and_a_resolved_span_is_no_click(cx: &mut gpui::
     let path = "notes.md";
     let mut peer = MockPeer::advertising(&["pane.link.resolve"]);
     let (view, cx) = window(&peer, true, cx);
-    let modifiers = crate::keymap::secondary_key();
+    let modifiers = spaceport_keymap::secondary_key();
 
     view.update(cx, |view, _| {
         // The pane prints a path relative to the directory it is in.

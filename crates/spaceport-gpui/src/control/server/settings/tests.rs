@@ -3,10 +3,8 @@ use super::{
     keys::reach_name,
     saves::font_names,
 };
-use crate::{
-    caffeine::{Cup, Mode},
-    keymap::Reach,
-};
+use crate::caffeine::{Cup, Mode};
+use spaceport_keymap::Reach;
 use std::time::{Duration, Instant};
 
 #[test]

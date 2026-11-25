@@ -352,8 +352,8 @@ impl SpaceportWindow {
             "enter" => Some(Step::Older),
             "up" if !modifiers.modified() => Some(Step::Older),
             "down" if !modifiers.modified() => Some(Step::Newer),
-            "g" if crate::keymap::secondary(&modifiers) && modifiers.shift => Some(Step::Newer),
-            "g" if crate::keymap::secondary(&modifiers) => Some(Step::Older),
+            "g" if spaceport_keymap::secondary(&modifiers) && modifiers.shift => Some(Step::Newer),
+            "g" if spaceport_keymap::secondary(&modifiers) => Some(Step::Older),
             _ => return,
         };
         if let Some(step) = step {

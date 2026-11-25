@@ -217,7 +217,7 @@ fn window<'a>(
 /// Holds the link modifier over `position`, which has the path there looked
 /// for on disk, and then clicks it with `modifiers`.
 fn modifier_click(cx: &mut VisualTestContext, position: Point<Pixels>, modifiers: Modifiers) {
-    cx.simulate_mouse_move(position, None, crate::keymap::secondary_key());
+    cx.simulate_mouse_move(position, None, spaceport_keymap::secondary_key());
     cx.run_until_parked();
     cx.simulate_click(position, modifiers);
     cx.run_until_parked();
@@ -251,8 +251,8 @@ fn a_link_modifier_click_opens_a_printed_file_that_exists(cx: &mut gpui::TestApp
     view.read_with(cx, |view, _| {
         assert!(view.hovered_local_link().is_none());
         assert!(!view.terminal_link_hovered(found, Modifiers::default()));
-        assert!(!view.terminal_link_hovered(found, crate::keymap::secondary_key()));
-        assert!(!view.link_modifier_held(found, crate::keymap::secondary_key()));
+        assert!(!view.terminal_link_hovered(found, spaceport_keymap::secondary_key()));
+        assert!(!view.link_modifier_held(found, spaceport_keymap::secondary_key()));
     });
     cx.simulate_click(found, Modifiers::default());
     cx.run_until_parked();
@@ -260,31 +260,31 @@ fn a_link_modifier_click_opens_a_printed_file_that_exists(cx: &mut gpui::TestApp
 
     // Held over the path, the link modifier has it looked for on disk. Found,
     // it is underlined, location included, and the pointer shows a link.
-    cx.simulate_mouse_move(found, None, crate::keymap::secondary_key());
+    cx.simulate_mouse_move(found, None, spaceport_keymap::secondary_key());
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
         let link = view.hovered_local_link().unwrap();
         assert_eq!((link.row, link.columns.clone()), (0, 4..20));
-        assert!(view.terminal_link_hovered(found, crate::keymap::secondary_key()));
-        assert!(view.link_modifier_held(found, crate::keymap::secondary_key()));
+        assert!(view.terminal_link_hovered(found, spaceport_keymap::secondary_key()));
+        assert!(view.link_modifier_held(found, spaceport_keymap::secondary_key()));
     });
 
     // A path that is not there stays plain text.
-    cx.simulate_mouse_move(missing, None, crate::keymap::secondary_key());
+    cx.simulate_mouse_move(missing, None, spaceport_keymap::secondary_key());
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
         assert!(view.hovered_local_link().is_none());
-        assert!(!view.terminal_link_hovered(missing, crate::keymap::secondary_key()));
-        assert!(!view.link_modifier_held(missing, crate::keymap::secondary_key()));
+        assert!(!view.terminal_link_hovered(missing, spaceport_keymap::secondary_key()));
+        assert!(!view.link_modifier_held(missing, spaceport_keymap::secondary_key()));
     });
 
-    cx.simulate_click(missing, crate::keymap::secondary_key());
+    cx.simulate_click(missing, spaceport_keymap::secondary_key());
     cx.run_until_parked();
     assert!(cx.opened_url().is_none());
 
     // A deliberate file click uses the checked system opener even when the
     // pane has no connection; it never queues an editor pane split.
-    modifier_click(cx, found, crate::keymap::secondary_key());
+    modifier_click(cx, found, spaceport_keymap::secondary_key());
     let real = real_path(&root.path().join("docs/notes.txt")).unwrap();
     let expected = url::Url::from_file_path(real).unwrap();
     assert_eq!(cx.opened_url().as_deref(), Some(expected.as_str()));
@@ -292,7 +292,7 @@ fn a_link_modifier_click_opens_a_printed_file_that_exists(cx: &mut gpui::TestApp
     // Alt does not turn the click into a pane launch.
     let alt = Modifiers {
         alt: true,
-        ..crate::keymap::secondary_key()
+        ..spaceport_keymap::secondary_key()
     };
     modifier_click(cx, found, alt);
     assert_eq!(cx.opened_url().as_deref(), Some(expected.as_str()));
@@ -312,8 +312,8 @@ fn a_pane_on_an_ssh_host_has_no_file_links(cx: &mut gpui::TestAppContext) {
         };
         assert!(view.file_link_at(position).is_none());
         assert!(view.local_link_at(position).is_none());
-        assert!(!view.terminal_link_hovered(position, crate::keymap::secondary_key()));
+        assert!(!view.terminal_link_hovered(position, spaceport_keymap::secondary_key()));
     });
-    modifier_click(cx, position, crate::keymap::secondary_key());
+    modifier_click(cx, position, spaceport_keymap::secondary_key());
     assert!(cx.opened_url().is_none());
 }

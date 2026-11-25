@@ -14,8 +14,8 @@
 
 use crate::SpaceportWindow;
 use crate::config::{Config, Theme};
-use crate::keymap::Keymap;
 use spaceport_client::ConnectTarget;
+use spaceport_keymap::Keymap;
 
 /// One connected endpoint, as the pages that list hosts show it.
 pub(super) struct SourceHost {

@@ -222,7 +222,7 @@ fn composition_does_not_activate_or_dismiss_the_palette(cx: &mut TestAppContext)
             for key in ["enter", "escape", "tab", "ctrl-tab", "alt-b"] {
                 view.palette_key(
                     &KeyDownEvent {
-                        keystroke: crate::keymap::parse_keystroke(key).unwrap(),
+                        keystroke: spaceport_keymap::parse_keystroke(key).unwrap(),
                         is_held: false,
                         prefer_character_input: false,
                     },

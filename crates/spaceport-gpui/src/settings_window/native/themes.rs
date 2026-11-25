@@ -45,7 +45,7 @@ pub(super) async fn verify_themes(
         window.draw(cx).clear(cx);
         for key in ["n", "o", "r", "d"] {
             ensure!(
-                window.dispatch_keystroke(crate::keymap::parse_keystroke(key)?, cx),
+                window.dispatch_keystroke(spaceport_keymap::parse_keystroke(key)?, cx),
                 "theme search key {key} was not handled"
             );
         }

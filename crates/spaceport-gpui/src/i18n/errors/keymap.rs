@@ -6,10 +6,8 @@
 //! failure and delegates the profile's own to `daemon::Error`.
 
 use super::Localize;
-use crate::{
-    i18n::fl,
-    keymap::{Error, daemon},
-};
+use crate::i18n::fl;
+use spaceport_keymap::{Error, daemon};
 
 fn quoted(text: &str) -> String {
     format!("{text:?}")

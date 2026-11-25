@@ -5,7 +5,7 @@ const LONG: &str =
     "spaceport/config.local.toml: layout.sidebar_gap is deprecated; use terminal.padding_x";
 
 fn press(key: &str, cx: &mut VisualTestContext) {
-    let keystroke = crate::keymap::parse_keystroke(key).unwrap();
+    let keystroke = spaceport_keymap::parse_keystroke(key).unwrap();
     cx.simulate_event(gpui::KeyDownEvent {
         keystroke: keystroke.clone(),
         is_held: false,

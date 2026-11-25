@@ -500,7 +500,7 @@ impl SpaceportWindow {
                 }
             }))
             .on_click(cx.listener(move |this, event: &ClickEvent, window, cx| {
-                if crate::keymap::secondary(&event.modifiers()) {
+                if spaceport_keymap::secondary(&event.modifiers()) {
                     this.toggle_listed_device(index, window, cx);
                 } else {
                     this.choose_device(index, window, cx);

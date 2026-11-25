@@ -18,7 +18,7 @@ fn alt_web_link_still_uses_system_handler_without_a_page_tab(cx: &mut gpui::Test
         window.draw(cx).clear(cx);
     });
     let link = view.read_with(cx, |view, _| view.bounds.origin + point(px(1.), px(1.)));
-    let mut modifiers = crate::keymap::secondary_key();
+    let mut modifiers = spaceport_keymap::secondary_key();
     modifiers.alt = true;
     cx.simulate_click(link, modifiers);
     assert_eq!(

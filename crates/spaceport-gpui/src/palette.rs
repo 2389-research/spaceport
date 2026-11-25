@@ -5,12 +5,12 @@ use crate::{
     SpaceportWindow,
     controls::{COMMANDS, Command},
     i18n::fl,
-    keymap::Reach,
     menu::Page,
     search_input::{Changed, SearchInput},
 };
 use gpui::{prelude::*, *};
 use spaceport_client::protocol::ClientShellSnapshot;
+use spaceport_keymap::Reach;
 use std::sync::Arc;
 
 mod activate;
@@ -79,7 +79,7 @@ pub(super) struct Palette {
     local_target: Option<LocalTarget>,
     project_operation: ProjectOperation,
     configuration: PaletteConfig,
-    keymap: crate::keymap::Keymap,
+    keymap: spaceport_keymap::Keymap,
     supports_clear: bool,
     supports_edit_scrollback: bool,
     /// The notes revision the entries were prepared from.
@@ -400,7 +400,8 @@ impl SpaceportWindow {
             .as_ref()
             .filter(|_| self.live.status.is_connected())
         {
-            let commands: Vec<_> = crate::keymap::available_commands(&snapshot.commands).collect();
+            let commands: Vec<_> =
+                spaceport_keymap::available_commands(&snapshot.commands).collect();
             let bindings = self.keymap().custom_bindings(commands.iter().copied());
             entries.extend(
                 commands

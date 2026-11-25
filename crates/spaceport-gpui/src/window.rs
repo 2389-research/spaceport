@@ -211,7 +211,7 @@ pub(crate) struct SpaceportWindow {
     pub(crate) key_press: fn() -> Option<(u16, bool)>,
     /// The keymap `config` was resolved into when it loaded. Built beside the
     /// settings it came from, so a change to either arrives as one pair.
-    pub(crate) keymap: crate::keymap::Keymap,
+    pub(crate) keymap: spaceport_keymap::Keymap,
     /// When this window last forwarded user input; gates re-claiming a frame another client sized.
     pub(crate) last_input: Option<std::time::Instant>,
     /// The last pointer position over the panes, so a move event that did not move is not use.

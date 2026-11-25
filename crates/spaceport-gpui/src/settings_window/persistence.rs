@@ -22,7 +22,7 @@ pub(super) type Lifecycle = SaveQueue<Request>;
 
 pub(super) struct Loaded {
     pub(super) config: Config,
-    pub(super) keymap: crate::keymap::Keymap,
+    pub(super) keymap: spaceport_keymap::Keymap,
     pub(super) theme: Theme,
     pub(super) shared: Option<herdr_settings::Settings>,
     pub(super) error: Option<String>,

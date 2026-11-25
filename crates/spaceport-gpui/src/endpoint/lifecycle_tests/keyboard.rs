@@ -11,12 +11,12 @@ fn keyboard_report_all_releases_sent_keys(cx: &mut gpui::TestAppContext) {
     let view = fixture.update(cx, |fixture, _| fixture.0.clone());
     let (endpoint, mut server) = connected_endpoint("report-all");
     let down = |keystroke: &str| gpui::KeyDownEvent {
-        keystroke: crate::keymap::parse_keystroke(keystroke).unwrap(),
+        keystroke: spaceport_keymap::parse_keystroke(keystroke).unwrap(),
         is_held: false,
         prefer_character_input: false,
     };
     let up = |keystroke: &str| gpui::KeyUpEvent {
-        keystroke: crate::keymap::parse_keystroke(keystroke).unwrap(),
+        keystroke: spaceport_keymap::parse_keystroke(keystroke).unwrap(),
     };
     let key = |code, modifiers, kind, tracks_release| ClientMessage::ClientShellPaneInput {
         pane_id: "w1:p1".into(),
@@ -50,10 +50,10 @@ fn keyboard_report_all_releases_sent_keys(cx: &mut gpui::TestAppContext) {
             // A second key-up has nothing left to release.
             view.key_up(&up("c"), window, cx);
             // A pane key presses and releases the key it sends instead.
-            view.keymap = crate::keymap::Keymap::with_overrides(
+            view.keymap = spaceport_keymap::Keymap::with_overrides(
                 &Default::default(),
                 &[("cmd-backspace".into(), "ctrl-u".into())].into(),
-                &crate::keymap::DaemonKeys::default(),
+                &spaceport_keymap::daemon::DaemonKeys::default(),
             )
             .unwrap();
             view.key_down(&down("cmd-backspace"), window, cx);
@@ -100,7 +100,7 @@ fn custom_command_and_resize_mode_keys_send_endpoint_requests(cx: &mut gpui::Tes
     let view = fixture.update(cx, |fixture, _| fixture.0.clone());
     let press = |key: &str, cx: &mut gpui::VisualTestContext| {
         cx.update(|window, cx| {
-            window.dispatch_keystroke(crate::keymap::parse_keystroke(key).unwrap(), cx)
+            window.dispatch_keystroke(spaceport_keymap::parse_keystroke(key).unwrap(), cx)
         });
     };
     for resize in [false, true] {
@@ -216,7 +216,7 @@ fn a_custom_command_runs_from_a_catalog_default_keystroke(cx: &mut gpui::TestApp
                 drop(inbox);
                 assert!(view.input_ready());
             });
-            window.dispatch_keystroke(crate::keymap::parse_keystroke(new_tab).unwrap(), cx);
+            window.dispatch_keystroke(spaceport_keymap::parse_keystroke(new_tab).unwrap(), cx);
         });
         let prompt = view.read_with(cx, |view, _| view.menu.page);
         if !custom {

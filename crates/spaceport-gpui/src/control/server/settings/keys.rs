@@ -7,10 +7,10 @@ use crate::{
         settings::{BindingInfo, CustomInfo, Reply},
     },
     controls::COMMANDS,
-    keymap::Reach,
 };
 use gpui::App;
 use spaceport_client::protocol::ClientShellCommand;
+use spaceport_keymap::Reach;
 
 pub(super) fn reach_name(reach: Reach) -> &'static str {
     match reach {
@@ -52,7 +52,7 @@ pub(super) fn keybinds(caller: &Caller, cx: &mut App) -> Response {
             .as_ref()
             .filter(|_| view.live.status.is_connected())
             .map(|snapshot| {
-                crate::keymap::available_commands(&snapshot.commands).collect::<Vec<_>>()
+                spaceport_keymap::available_commands(&snapshot.commands).collect::<Vec<_>>()
             })
             .unwrap_or_default();
         let custom = commands

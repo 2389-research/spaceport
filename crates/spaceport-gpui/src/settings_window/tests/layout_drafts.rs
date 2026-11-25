@@ -80,7 +80,7 @@ fn layout_draft_survives_settings_and_main_reloads_and_other_saves(cx: &mut Test
                     || {
                         Ok((
                             Config::default(),
-                            crate::keymap::Keymap::default(),
+                            spaceport_keymap::Keymap::default(),
                             Theme::default(),
                         ))
                     },
