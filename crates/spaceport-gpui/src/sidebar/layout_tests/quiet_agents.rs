@@ -18,9 +18,7 @@ fn quiet_agents_start_folded_and_resurface_when_working(cx: &mut gpui::TestAppCo
     cx.simulate_resize(size(px(800.), px(900.)));
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
     for expanded in [false, true] {
-        let heading = cx
-            .debug_bounds("header-agents-quiet")
-            .expect("Quiet heading");
+        let heading = cx.debug_bounds("header-agents-quiet").unwrap();
         view.read_with(cx, |view, _| {
             assert_eq!(view.sidebar_agents().contains(&(0, "p0")), expanded);
         });
