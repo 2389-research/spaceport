@@ -9,6 +9,7 @@ use crate::actions;
 use gpui::{prelude::*, *};
 use spaceport_menu::chrome::{self, Hosts, Layer};
 use spaceport_menu::page_title;
+use spaceport_menu::rows::{self, Row};
 
 /// How far past its panel a popover counts as covering, for the Windows
 /// pages that hide under it.
@@ -243,14 +244,15 @@ impl SpaceportWindow {
     /// The app menu's own rows, each an item the window runs.
     fn menu_item_list(&self, panel: Stateful<Div>, cx: &mut Context<Self>) -> Stateful<Div> {
         let items = self.menu_items();
-        let rows: Vec<chrome::Row> = items
+        let rows: Vec<Row> = items
             .iter()
-            .map(|item| chrome::Row {
+            .map(|item| Row {
                 label: item.label(),
-                selector: item.selector(),
+                selector: format!("menu-{}", item.selector()),
+                ..Row::default()
             })
             .collect();
-        panel.children(chrome::rows(
+        panel.children(rows::list(
             &text(&self.config.ui),
             &self.theme,
             &rows,

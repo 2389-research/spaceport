@@ -7,7 +7,7 @@
 use super::{Page, VersionNotice, WorkspaceAction, version_mismatch::UPDATE_COMMAND};
 use crate::{
     SpaceportWindow,
-    i18n::leak_tests::{Recorder, assert_translated, draw, under_en_xa},
+    i18n::leak_tests::{Recorder, assert_translated, draw, uncut, under_en_xa},
     sidebar::layout_tests::fixture_window,
 };
 use gpui::{Context, Entity, TestAppContext, VisualTestContext, Window, px, size};
@@ -43,7 +43,7 @@ fn check(
         })
     });
     draw(cx);
-    assert_translated(surface, &recorder.take(), data);
+    assert_translated(surface, &uncut(recorder.take()), data);
 }
 
 #[test]
