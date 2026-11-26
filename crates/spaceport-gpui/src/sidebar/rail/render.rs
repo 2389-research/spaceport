@@ -2,10 +2,10 @@
 //! agents lists, and the frame around them.
 
 use super::{
-    AGENT_ICON, Columns, HOST_MARK, Hint, RowState, SidebarMode, agent_icon, agent_name,
-    agent_status_word, aligned_row, describe, dot_slot, host_chrome, host_header, host_initial,
-    host_status, indicator, label_text, mark_slot, muted_word, rail_button, rail_columns,
-    rail_font, status_word, visible_workspace_entries,
+    AGENT_ICON, Columns, HOST_MARK, Hint, RowState, SidebarMode, agent_name, agent_status_word,
+    aligned_row, describe, dot_slot, host_chrome, host_header, host_initial, host_status,
+    indicator, label_text, mark_slot, muted_word, rail_button, rail_columns, rail_font,
+    status_word, visible_workspace_entries,
 };
 use crate::direction::Logical;
 use crate::i18n::fl;
@@ -401,7 +401,18 @@ impl SpaceportWindow {
         } else {
             theme.muted
         };
-        let icon_path = crate::icons::AgentIcon::from_identity(agent.agent.as_deref()).path();
+        let agent_icon = || {
+            let selector = format!("rail-agent-icon-{endpoint_id}-{id}");
+            let mark = crate::icons::AgentIcon::from_identity(agent.agent.as_deref());
+            div()
+                .debug_selector(move || selector)
+                .flex_none()
+                .size(px(icon))
+                .row()
+                .items_center()
+                .justify_center()
+                .child(mark.sidebar_element(icon, icon_color, theme))
+        };
         // The host letter shares the workspace number's column. With one
         // host there is no letter, so the icon takes that column and still
         // starts on the badge's left edge.
@@ -421,26 +432,14 @@ impl SpaceportWindow {
                 .h(px(columns.height))
                 .row()
                 .items_center()
-                .child(agent_icon(
-                    format!("rail-agent-icon-{endpoint_id}-{id}"),
-                    icon,
-                    icon_color,
-                    icon_path,
-                ))
+                .child(agent_icon())
         };
         let marks = div()
             .row()
             .items_center()
             .gap(px(columns.gap))
             .child(badge)
-            .when(*multi, |marks| {
-                marks.child(agent_icon(
-                    format!("rail-agent-icon-{endpoint_id}-{id}"),
-                    icon,
-                    icon_color,
-                    icon_path,
-                ))
-            })
+            .when(*multi, |marks| marks.child(agent_icon()))
             // One host whose muted workspaces took the icon column.
             .when_some(columns.icon.filter(|_| !*multi), |marks, icon| {
                 marks.child(div().flex_none().w(px(icon)).h(px(columns.height)))

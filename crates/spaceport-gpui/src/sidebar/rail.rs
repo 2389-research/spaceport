@@ -237,17 +237,6 @@ fn mark_slot(selector: String, width: f32, height: f32, color: u32, text: &str) 
         .child(label_text(text))
 }
 
-fn agent_icon(selector: String, size: f32, color: u32, path: &'static str) -> Div {
-    div()
-        .debug_selector(move || selector)
-        .flex_none()
-        .size(px(size))
-        .row()
-        .items_center()
-        .justify_center()
-        .child(crate::icons::icon(path, size, color))
-}
-
 fn dot_slot(selector: String, width: f32, height: f32, mark: Div) -> Div {
     div()
         .debug_selector(move || selector)

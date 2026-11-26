@@ -328,7 +328,7 @@ impl RowLayout for Orca {
                 inner(cx, 0.) - icon - GAP + room,
                 cx,
             );
-            let icon = parts::first_line(icon, parts::icon(agent.icon.path(), icon, color), cx);
+            let icon = parts::first_line(icon, agent.icon.sidebar_element(icon, color, theme), cx);
             let icon = parts::align_agent_icon(icon, &agent.lines, cx)
                 .debug_selector(|| format!("agent-icon-{}", agent.key));
             return card(key, state, 0., 4., (theme, cx.mark), cx.right_to_left)
@@ -382,7 +382,7 @@ impl RowLayout for Orca {
             .h(px(line + 8.))
             .items_center()
             .child(status_column(parts::status(agent.status, false, cx), cx))
-            .child(parts::icon(agent.icon.path(), icon, color))
+            .child(agent.icon.sidebar_element(icon, color, theme))
             .child(text.into_div(cx))
     }
 }

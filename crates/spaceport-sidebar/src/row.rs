@@ -406,7 +406,7 @@ pub fn agent_mark(key: &str, icon: AgentIcon, size: f32, color: u32, cx: &RowCon
         .top(px((line_height(cx.font) - size) / 2.))
         .size(px(size))
         .inset_s(cx.right_to_left, px(0.));
-    mark.child(icon.element(size, color))
+    mark.child(icon.sidebar_element(size, color, cx.theme))
 }
 
 #[cfg(test)]

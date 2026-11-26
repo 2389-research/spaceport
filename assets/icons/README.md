@@ -125,7 +125,7 @@ license, and trademark notice.
 
 Each `agent-<label>.svg` is named after the external Herdr daemon's canonical
 `agent_label` identifier, not an editable display label. The `agent_icons!`
-table in `crates/spaceport-gpui/src/icons.rs` maps them; unknown, empty, and missing
+table in `crates/spaceport-icons/src/icons.rs` maps them; unknown, empty, and missing
 identities use `agent-generic.svg`.
 
 | Label | Source |
@@ -155,7 +155,17 @@ identities use `agent-generic.svg`.
 
 Lobe Icons marks are MIT licensed; attribution and the full license are in
 [NOTICE](../../NOTICE), shipped with releases. Their SVG wrappers were reduced
-to 24px `currentColor` masks and titles removed; paths are unchanged. No
-redistributable monochrome mark was found for oh-my-pi, Factory Droid, Letta,
-or Maki, so those lettermarks and the generic mark are original artwork under
-this project's Apache-2.0 license, with the same 2px round stroke.
+to 24px `currentColor` masks and titles removed; paths are unchanged. The original
+lettermarks and generic terminal glyph use this project’s Apache-2.0 license.
+
+The desktop sidebar uses full-color product marks where available. The files
+in `brand/` for Antigravity, Codex, Devin, Gemini, Kimi, Kiro, Meta, and Qoder
+come from the corresponding `*-color.svg` in [Lobe Icons](https://github.com/lobehub/lobe-icons/tree/05260484d9f4de68f90cc87a634ae68fa4043efd/packages/static-svg/icons).
+Kimi and Qoder keep their colored detail over the theme’s monochrome mark.
+Amp, Claude, Cline, Kilo Code, and Qwen use their brand colors on the existing masks.
+
+The sidebar also uses the [oh-my-pi favicon](https://github.com/can1357/oh-my-pi/blob/eded751bee10cedac1df7ace6616b8d2cf121a8a/packages/collab-web/public/favicon.svg),
+the [Maki favicon](https://github.com/tontinton/maki/blob/57b0a869aefc5afb81a9642cbdf33831b209f410/site/favicon-32x32.png),
+and the existing Factory mark in `providers/factory.svg` for Droid.
+Letta retains its original lettermark in [Letta Code’s accent color](https://github.com/letta-ai/letta-code/blob/4d5928b1d0c80790cca0de1a57745c7268ea157c/src/cli/components/colors.ts).
+Monochrome marks and unknown agents follow the row’s ink.

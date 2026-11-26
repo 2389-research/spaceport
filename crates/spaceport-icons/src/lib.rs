@@ -12,6 +12,7 @@
 //! state, names no message, and leaves to the app which mark a row shows and
 //! when.
 
+mod brand;
 mod icons;
 mod providers;
 

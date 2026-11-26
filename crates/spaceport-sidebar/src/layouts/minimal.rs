@@ -165,7 +165,7 @@ impl RowLayout for Minimal {
         let size = scaled(font, 12.);
         let line = Line::new(cx.look.content_width(cx.width), gap);
         if !agent.lines.is_empty() {
-            let icon = parts::first_line(size, parts::icon(agent.icon.path(), size, color), cx);
+            let icon = parts::first_line(size, agent.icon.sidebar_element(size, color, theme), cx);
             let icon = parts::align_agent_icon(icon, &agent.lines, cx)
                 .debug_selector(|| format!("agent-icon-{}", agent.key));
             let lines = agent.lines.len();
@@ -191,7 +191,7 @@ impl RowLayout for Minimal {
                 cx.indicators.width(font),
                 parts::status(agent.status, false, cx),
             )
-            .fixed(size, parts::icon(agent.icon.path(), size, color))
+            .fixed(size, agent.icon.sidebar_element(size, color, theme))
             .when(!cx.icon_only_agent, |line| {
                 line.lead(
                     name(&agent.key, kind, state, theme),
