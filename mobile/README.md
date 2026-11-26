@@ -31,6 +31,10 @@ The `android-release` environment holds the key as secrets `SPACEPORT_ANDROID_KE
 Its variable `SPACEPORT_ANDROID_CERT_SHA256` pins the certificate; the workflow refuses an APK signed by any other key.
 The same run keeps a signed Play bundle, `Spaceport-<version>-android.aab`, as the workflow artifact `android-play-bundle-<version>` for 90 days.
 Play registers this key as the upload key.
+A `play` job then sends that bundle to the Play internal testing track with `scripts/release/play-upload.py`.
+Its `play-internal` environment holds only `SPACEPORT_PLAY_SERVICE_ACCOUNT_JSON`, the service account that may release to testing tracks.
+Production stays a person's decision in the Play Console.
+By hand, `scripts/release/play-upload.py --credentials KEY.json tracks` lists what each track holds.
 
 1. Open **Add host**. Enter the SSH hostname, port, username, and Herdr session. Tap **Connect**.
 2. Compare the displayed SSH fingerprint with the host administrator’s copy before trusting it.
