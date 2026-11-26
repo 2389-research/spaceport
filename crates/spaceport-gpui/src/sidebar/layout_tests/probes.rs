@@ -26,10 +26,12 @@ fn native_child_probe_reports_geometry_and_glyph_failures_without_panicking() {
             width: px(94.),
             clipped: false,
         };
-        probe.verify_child("sidebar-child", mode, 0., 1.).unwrap();
+        probe
+            .verify_child("sidebar-child", mode, crate::sidebar::SIDEBAR_WIDTH, 0., 1.)
+            .unwrap();
         probe.bounds.size.width -= px(1.);
         let error = probe
-            .verify_child("sidebar-child", mode, 0., 1.)
+            .verify_child("sidebar-child", mode, crate::sidebar::SIDEBAR_WIDTH, 0., 1.)
             .unwrap_err();
         assert!(error.to_string().contains("child label width: actual"));
         assert!(error.to_string().contains("expected"));
@@ -37,7 +39,7 @@ fn native_child_probe_reports_geometry_and_glyph_failures_without_panicking() {
         probe.clipped = true;
         assert!(
             probe
-                .verify_child("sidebar-child", mode, 0., 1.)
+                .verify_child("sidebar-child", mode, crate::sidebar::SIDEBAR_WIDTH, 0., 1.)
                 .unwrap_err()
                 .to_string()
                 .contains("clipped")
@@ -46,7 +48,7 @@ fn native_child_probe_reports_geometry_and_glyph_failures_without_panicking() {
         probe.glyph_text = "sidebar-chil".into();
         assert!(
             probe
-                .verify_child("sidebar-child", mode, 0., 1.)
+                .verify_child("sidebar-child", mode, crate::sidebar::SIDEBAR_WIDTH, 0., 1.)
                 .unwrap_err()
                 .to_string()
                 .contains("cached text")
@@ -58,6 +60,7 @@ fn native_child_probe_reports_geometry_and_glyph_failures_without_panicking() {
             .verify_child(
                 "sidebar-child-with-a-long-readable-branch-name",
                 mode,
+                crate::sidebar::SIDEBAR_WIDTH,
                 0.,
                 1.,
             )
@@ -68,6 +71,7 @@ fn native_child_probe_reports_geometry_and_glyph_failures_without_panicking() {
                 .verify_child(
                     "sidebar-child-with-a-long-readable-branch-name",
                     mode,
+                    crate::sidebar::SIDEBAR_WIDTH,
                     0.,
                     1.
                 )
