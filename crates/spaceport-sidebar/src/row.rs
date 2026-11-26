@@ -10,6 +10,7 @@ mod configured;
 mod paint;
 
 pub use badge::RowBadge;
+pub(crate) use configured::agent_line;
 pub use configured::{
     TokenLook, configured_status, configured_status_style, leading_status, styled, token_column,
 };

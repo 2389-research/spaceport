@@ -333,6 +333,12 @@ pub fn first_line(width: f32, element: impl IntoElement, cx: &RowContext<'_>) ->
         .child(element)
 }
 
+/// Align a layout's separate icon slot with the line that identifies the agent.
+pub fn align_agent_icon(icon: Div, lines: &[Vec<ResolvedToken>], cx: &RowContext<'_>) -> Div {
+    let index = row::agent_line(lines).unwrap_or_default();
+    icon.mt(px(index as f32 * line_height(cx.font)))
+}
+
 /// A workspace whose notifications the user muted.
 pub fn muted(key: &str, size: f32, theme: &Theme) -> Div {
     spaceport_icons::muted(theme, size).debug_selector(|| format!("muted-{key}"))

@@ -69,7 +69,7 @@ impl TerminalRow {
         host: &str,
         status: Option<&str>,
     ) -> Vec<Vec<ResolvedToken>> {
-        let mut metadata = vec![token(TokenKind::StateIcon), text(app, TextRole::Agent)];
+        let mut metadata = vec![text(app, TextRole::Agent)];
         if let Some(number) = &self.tab_number {
             metadata.push(text(number, TextRole::Secondary));
         }
@@ -81,7 +81,13 @@ impl TerminalRow {
             metadata.push(text(status, TextRole::Status));
         }
         let title = self.title.as_deref().unwrap_or(app);
-        vec![metadata, vec![text(title, TextRole::Workspace)]]
+        vec![
+            vec![
+                token(TokenKind::StateIcon),
+                text(title, TextRole::Workspace),
+            ],
+            metadata,
+        ]
     }
 
     pub(in crate::sidebar) fn spoken(&self, app: &str, host: &str, state: &str) -> String {

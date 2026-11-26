@@ -104,7 +104,10 @@ fn agent_rows_show_the_terminal_directory_and_host_across_sidebar_widths(
                 assert_eq!(number.top(), directory.top(), "{mode:?} {width}");
                 assert_eq!(directory.top(), host.top(), "{mode:?} {width}");
                 assert!(number.right() <= directory.left() && directory.right() <= host.left());
-                assert!(host.bottom() <= title.top());
+                assert!(
+                    title.bottom() <= host.top(),
+                    "{mode:?} {width}: title above metadata"
+                );
                 assert!(title.size.width > directory.size.width);
                 assert!(!text.contains_key("Claude Code"), "{mode:?} {width}");
             });
@@ -114,21 +117,19 @@ fn agent_rows_show_the_terminal_directory_and_host_across_sidebar_widths(
                 detail.top() >= row.top() && detail.bottom() <= row.bottom(),
                 "{mode:?} {width}: {detail:?} outside {row:?}"
             );
-            let icon = match mode {
-                crate::config::LayoutMode::Classic { .. } | crate::config::LayoutMode::Devices => {
-                    Some("agent-icon-agent-wAB:pX")
-                }
-                crate::config::LayoutMode::Superset => Some("icon-agent-wAB:pX"),
-                _ => None,
+            let selector = match mode {
+                crate::config::LayoutMode::Superset => "icon-agent-wAB:pX",
+                _ => "agent-icon-agent-wAB:pX",
             };
-            if let Some(selector) = icon {
-                let icon = cx.debug_bounds(selector).unwrap();
-                cx.update(|_, cx| {
-                    let number = cx.global::<TextProbes>().0["#2"].0;
-                    assert!(icon.center().y < number.bottom(), "{mode:?} {width}");
-                    assert!(icon.right() <= number.left(), "{mode:?} {width}");
-                });
-            }
+            let icon = cx.debug_bounds(selector).unwrap();
+            cx.update(|_, cx| {
+                let number = cx.global::<TextProbes>().0["#2"].0;
+                assert!(
+                    icon.center().y >= number.top() && icon.center().y < number.bottom(),
+                    "{mode:?} {width}: app icon beside metadata"
+                );
+                assert!(icon.right() <= number.left(), "{mode:?} {width}");
+            });
         }
     }
 }

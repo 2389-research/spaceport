@@ -224,6 +224,14 @@ pub fn token_column(
     )
 }
 
+/// The line whose app name or icon identifies the agent.
+pub(crate) fn agent_line(lines: &[Vec<ResolvedToken>]) -> Option<usize> {
+    lines.iter().position(|line| {
+        line.iter()
+            .any(|token| matches!(token.kind, TokenKind::Text(_, TextRole::Agent)))
+    })
+}
+
 pub(super) fn configured_lines(
     mut column: Div,
     key: &str,
@@ -238,10 +246,7 @@ pub(super) fn configured_lines(
         RowKind::Agent(icon) => Some(icon),
         RowKind::Workspace => None,
     };
-    let agent_at = lines.iter().position(|line| {
-        line.iter()
-            .any(|token| matches!(token.kind, TokenKind::Text(_, TextRole::Agent)))
-    });
+    let agent_at = agent_line(lines);
     let (agent_size, agent_reserve) = agent_icon_size(font);
     let workspace_reserve = if matches!(workspace_icon, RowIcon::None) {
         0.

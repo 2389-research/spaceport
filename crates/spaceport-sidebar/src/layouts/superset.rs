@@ -333,8 +333,9 @@ impl RowLayout for Superset {
         let color = text_color(state, theme);
         let glyph = parts::icon(agent.icon.path(), m.icon * 0.7, color);
         let slot_dot = dot(&agent.lines, agent.status, cx);
-        let icon = slot(key, glyph, slot_dot, &m, cx)
-            .when(agent.lines.len() > 1, |icon| icon.self_flex_start());
+        let icon = slot(key, glyph, slot_dot, &m, cx).when(agent.lines.len() > 1, |icon| {
+            parts::align_agent_icon(icon.self_flex_start(), &agent.lines, cx)
+        });
         let line = Line::new(cx.look.content_width(cx.width), m.gap).fixed(m.icon, icon);
         if !agent.lines.is_empty() {
             let line = line.fill_with(|width| {
