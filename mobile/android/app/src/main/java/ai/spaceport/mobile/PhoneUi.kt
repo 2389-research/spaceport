@@ -8,7 +8,11 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.widget.*
+import androidx.core.view.ViewCompat
+import kotlin.math.abs
 
 internal class PhoneUi(private val ctx: Context) {
     val ink = Color.rgb(241, 240, 244)
@@ -63,6 +67,8 @@ internal class PhoneUi(private val ctx: Context) {
         status: String? = null,
         action: () -> Unit,
         held: (() -> Unit)? = null,
+        swiped: ((towardEnd: Boolean) -> Unit)? = null,
+        actions: List<Pair<String, () -> Unit>> = emptyList(),
     ): LinearLayout {
         val row =
             line().apply {
@@ -103,8 +109,33 @@ internal class PhoneUi(private val ctx: Context) {
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             }
         )
+        if (swiped != null) swipes(row, swiped)
+        for ((label, act) in actions) ViewCompat.addAccessibilityAction(row, label) { _, _ -> act(); true }
         parent.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(3) })
         return row
+    }
+
+    /** A mostly horizontal fling on [row] reports its direction instead of clicking the row. */
+    private fun swipes(row: View, swiped: (towardEnd: Boolean) -> Unit) {
+        val rtl = row.layoutDirection == View.LAYOUT_DIRECTION_RTL
+        val detector = GestureDetector(ctx, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+                val start = e1 ?: return false
+                val dx = e2.x - start.x
+                if (abs(dx) < dp(72) || abs(dx) < abs(e2.y - start.y) * 2) return false
+                swiped((dx > 0) != rtl)
+                return true
+            }
+        })
+        row.setOnTouchListener { view, event ->
+            if (!detector.onTouchEvent(event)) return@setOnTouchListener false
+            // The row saw the press; cancel it so the swipe neither clicks nor stays pressed.
+            MotionEvent.obtain(event).apply { action = MotionEvent.ACTION_CANCEL }.also {
+                view.onTouchEvent(it)
+                it.recycle()
+            }
+            true
+        }
     }
 
     /** Asks for a Herdr session name; an empty answer means "default". */

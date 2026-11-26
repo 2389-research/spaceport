@@ -35,6 +35,7 @@ class SessionController(context: Context) {
     private var passwordLogin = false
     private var rememberKeyOnConnect = false
     private var attemptedEnrollment = false
+    private var enrollOnConnect = false
     private var loadingKey = false
     private var pendingPoll: Runnable? = null
     private var rereadView = false
@@ -139,7 +140,11 @@ class SessionController(context: Context) {
         startLogin(p, requestPassword = true)
     }
 
-    fun login(password: String) = authenticate(password)
+    /** [authorize] installs and verifies this phone's key once the password session connects. */
+    fun login(password: String, authorize: Boolean = false) {
+        enrollOnConnect = authorize
+        authenticate(password)
+    }
 
     /** Use a public key the operator installed on a new host themselves. */
     fun loginWithKey() = authenticate(null)
@@ -231,6 +236,10 @@ class SessionController(context: Context) {
         }
         if (update.error != null) message = update.error
         changed?.invoke()
+        if (ready && enrollOnConnect && canEnroll) {
+            enrollOnConnect = false
+            enrollKey()
+        }
     }
 
     fun sessionFor(target: InputTarget): MobileSession? = presentation?.takeIf { it.view.inputTarget == target }?.session
@@ -462,6 +471,7 @@ class SessionController(context: Context) {
         reopenOnResume = false
         passwordLogin = false
         rememberKeyOnConnect = false
+        enrollOnConnect = false
         enrolling = false
         attemptedEnrollment = false
     }

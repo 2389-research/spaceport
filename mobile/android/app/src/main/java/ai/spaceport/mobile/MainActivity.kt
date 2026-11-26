@@ -50,6 +50,7 @@ class MainActivity : ComponentActivity(), Pages {
     private lateinit var root: LinearLayout
     private var terminal: TerminalScreen? = null
     private var terminalBar: TextView? = null
+    private var homeButton: Button? = null
     private var picker: AgentPicker? = null
     private var page = ""
     private var password: EditText? = null
@@ -189,6 +190,7 @@ class MainActivity : ComponentActivity(), Pages {
         if (page == "terminal") terminal?.dispose()
         terminal = null
         terminalBar = null
+        homeButton = null
         password = null
         page = next
         root.removeAllViews()
@@ -276,6 +278,8 @@ class MainActivity : ComponentActivity(), Pages {
                         row.status,
                         { open(row.host, row) },
                         { marks(row) },
+                        swiped = { towardEnd -> swiped(row, towardEnd) },
+                        actions = markChoices(row).map { (label, next) -> label to { mark(row, next) } },
                     )
                 }
             }
@@ -329,39 +333,44 @@ class MainActivity : ComponentActivity(), Pages {
             ?.let { handler.postDelayed(refresh, it - now + 1) }
     }
 
+    /** Every mark change offered for [row], in menu order. The first two are the swipe actions. */
+    private fun markChoices(row: AgentRow): List<Pair<String, AgentMark>> {
+        val now = System.currentTimeMillis()
+        val mark = (phone.catalog.marks[row.key] ?: AgentMark()).current(row.status, now)
+        fun snooze(until: Long) = mark.copy(until = until, held = row.status)
+        val morning = java.util.Calendar.getInstance().apply {
+            add(java.util.Calendar.DAY_OF_YEAR, 1)
+            set(java.util.Calendar.HOUR_OF_DAY, 9)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        return buildList {
+            add((if (mark.pinned) "Unpin" else "Pin") to mark.copy(pinned = !mark.pinned))
+            if (mark.until > 0) add("Wake now" to mark.copy(until = 0, held = ""))
+            add("Snooze for 1 hour" to snooze(now + 3_600_000L))
+            add("Snooze for 3 hours" to snooze(now + 3 * 3_600_000L))
+            add("Snooze until tomorrow at 9 AM" to snooze(morning))
+        }
+    }
+
+    private fun mark(row: AgentRow, next: AgentMark) {
+        phone.catalog.mark(row, next)
+        showHome()
+    }
+
     private fun marks(row: AgentRow) {
-        val mark =
-            (phone.catalog.marks[row.key] ?: AgentMark()).current(
-                row.status,
-                System.currentTimeMillis(),
-            )
-        val labels =
-            mutableListOf(
-                if (mark.pinned) "Unpin" else "Pin",
-                "Snooze for 1 hour",
-                "Snooze for 3 hours",
-            )
-        if (mark.until > 0) labels.add("Wake now")
+        val choices = markChoices(row)
         AlertDialog.Builder(this)
             .setTitle(row.headline)
-            .setItems(labels.toTypedArray()) { _, i ->
-                val next =
-                    when (i) {
-                        0 -> mark.copy(pinned = !mark.pinned)
-                        1,
-                        2 ->
-                            mark.copy(
-                                until =
-                                    System.currentTimeMillis() +
-                                        (if (i == 1) 1 else 3) * 3_600_000L,
-                                held = row.status,
-                            )
-                        else -> mark.copy(until = 0, held = "")
-                    }
-                phone.catalog.mark(row, next)
-                showHome()
-            }
+            .setItems(choices.map { it.first }.toTypedArray()) { _, i -> mark(row, choices[i].second) }
             .show()
+    }
+
+    /** A swipe toward the end pins or unpins; toward the start snoozes for an hour or wakes. */
+    private fun swiped(row: AgentRow, towardEnd: Boolean) {
+        val choices = markChoices(row)
+        mark(row, choices[if (towardEnd) 0 else 1].second)
     }
 
     private fun editHost() {
@@ -456,7 +465,8 @@ class MainActivity : ComponentActivity(), Pages {
                 if (page != "terminal") {
                     clear("terminal")
                     val bar = ui.line()
-                    bar.addView(ui.button("Home", ::goHome))
+                    homeButton = ui.button("Home", ::goHome)
+                    bar.addView(homeButton)
                     terminalBar =
                         ui.text(host.session, 16, ui.ink, true).apply {
                             gravity = Gravity.CENTER
@@ -472,6 +482,11 @@ class MainActivity : ComponentActivity(), Pages {
                     view.panes
                         .firstOrNull { it.id == view.focusedPane }
                         ?.let { it.terminalTitle ?: it.agentName ?: it.label } ?: host.session
+                val elsewhere = view.panes.any { it.agentName != null && it.status == "blocked" && it.id != view.focusedPane }
+                homeButton?.apply {
+                    text = if (elsewhere) "● Home" else "Home"
+                    contentDescription = if (elsewhere) "Home, an agent in another pane needs you" else "Home"
+                }
                 terminal?.render(view)
                 picker?.update(view)
                 if (phone.toWorkspaces) {
@@ -506,10 +521,18 @@ class MainActivity : ComponentActivity(), Pages {
                             isSaveEnabled = false
                             form.addView(this)
                         }
+                    val authorize = CheckBox(this).apply {
+                        text = getString(R.string.sign_in_authorize)
+                        setTextColor(ui.ink)
+                        minHeight = ui.dp(48)
+                        isChecked = Build.VERSION.SDK_INT >= 28 && c.keyHardwareBacked != false && !c.keyEnrolled
+                        isEnabled = isChecked
+                    }
+                    form.addView(authorize)
                     fun submit() {
                         val entered = password?.text?.toString().orEmpty()
                         password?.text?.clear()
-                        c.login(entered)
+                        c.login(entered, authorize.isChecked)
                     }
                     password?.setOnEditorActionListener { _, _, _ ->
                         submit()
