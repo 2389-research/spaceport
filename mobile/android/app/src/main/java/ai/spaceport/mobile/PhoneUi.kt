@@ -119,13 +119,12 @@ internal class PhoneUi(private val ctx: Context) {
     // Taps still reach the row's own click handling; TalkBack reaches swipes through row actions.
     @android.annotation.SuppressLint("ClickableViewAccessibility")
     private fun swipes(row: View, swiped: (towardEnd: Boolean) -> Unit) {
-        val rtl = row.layoutDirection == View.LAYOUT_DIRECTION_RTL
         val detector = GestureDetector(ctx, object : GestureDetector.SimpleOnGestureListener() {
             override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
                 val start = e1 ?: return false
                 val dx = e2.x - start.x
                 if (abs(dx) < dp(72) || abs(dx) < abs(e2.y - start.y) * 2) return false
-                swiped((dx > 0) != rtl)
+                swiped((dx > 0) != (row.layoutDirection == View.LAYOUT_DIRECTION_RTL))
                 return true
             }
         })

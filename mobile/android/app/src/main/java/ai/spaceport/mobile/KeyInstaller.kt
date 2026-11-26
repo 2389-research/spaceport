@@ -44,6 +44,9 @@ internal class KeyInstaller(private val store: HostStore) {
                     else -> "Could not install the key over a verified SSH connection."
                 }
             )
+        } catch (e: Exception) {
+            // Keystore and binding failures outside SSH must not escape the worker thread.
+            InstallOutcome.Failed("This phone could not open its SSH key. Check the screen lock and try again.")
         }
     }
 }

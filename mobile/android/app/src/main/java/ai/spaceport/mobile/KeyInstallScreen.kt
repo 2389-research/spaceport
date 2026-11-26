@@ -15,6 +15,8 @@ internal class KeyInstallScreen(
 ) {
     private val installer = KeyInstaller(pages.hosts)
     private var password: EditText? = null
+    private var status: android.widget.TextView? = null
+    private var trustPrompt: android.app.AlertDialog? = null
 
     fun build(body: LinearLayout) {
         body.addView(ui.text(group.destination, 20, ui.ink, true).apply { setPadding(ui.dp(3), ui.dp(12), 0, ui.dp(8)) })
@@ -29,11 +31,14 @@ internal class KeyInstallScreen(
             isSaveEnabled = false
         }
         password = field
-        val status = ui.text("", 15, ui.muted)
+        val status = ui.text("", 15, ui.muted).also { this.status = it }
         val install = ui.button("Install key") {}
         fun run(trusting: String?) {
             val secret = field.text.toString()
-            if (secret.isEmpty()) return
+            if (secret.isEmpty()) {
+                status.text = activity.getString(R.string.install_password_again)
+                return
+            }
             field.isEnabled = false
             install.isEnabled = false
             status.text = activity.getString(R.string.install_checking)
@@ -70,7 +75,7 @@ internal class KeyInstallScreen(
     }
 
     private fun trust(fingerprint: String, accept: (String) -> Unit) {
-        android.app.AlertDialog.Builder(activity)
+        trustPrompt = android.app.AlertDialog.Builder(activity)
             .setTitle("Verify host key")
             .setMessage("Compare this fingerprint with the SSH host before trusting it.\n\n${group.first.endpoint}\n\n$fingerprint")
             .setNegativeButton("Cancel") { _, _ -> password?.text?.clear() }
@@ -79,9 +84,18 @@ internal class KeyInstallScreen(
             .show()
     }
 
-    /** The page is leaving; drop the typed password. */
-    fun dispose() {
+    /** The app went to the background: drop the password and any pending trust decision. */
+    fun pause() {
+        trustPrompt?.dismiss()
+        trustPrompt = null
+        if (password?.text?.isNotEmpty() == true) status?.text = activity.getString(R.string.install_password_again)
         password?.text?.clear()
+    }
+
+    /** The page is leaving. */
+    fun dispose() {
+        pause()
         password = null
+        status = null
     }
 }

@@ -159,7 +159,9 @@ internal class AgentPicker(
         if (query.text.isBlank() && map != null) {
             ui.heading(body, "This tab")
             body.addView(
-                PaneMapView(activity, view, map) { id -> rows.firstOrNull { it.id == id }?.let(::jumpTo) },
+                PaneMapView(activity, view, map) { id ->
+                    rows.firstOrNull { it.id == id && it.tab == view.focusedTab }?.let(::jumpTo)
+                },
                 LinearLayout.LayoutParams(-1, -2),
             )
         }

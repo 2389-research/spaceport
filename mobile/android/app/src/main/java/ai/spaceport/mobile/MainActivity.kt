@@ -107,7 +107,8 @@ class MainActivity : ComponentActivity(), Pages {
     override fun onStart() {
         super.onStart()
         active?.let { if (it.phase == ConnectionPhase.Parked) it.resume() }
-        if (phone.selected == null) showHome()
+        // Pages keep their own state across a trip to the background; only Home refreshes.
+        if (phone.selected == null && page == "home") showHome()
     }
 
     override fun onStop() {
@@ -120,6 +121,7 @@ class MainActivity : ComponentActivity(), Pages {
                 c.park()
             }
             password?.text?.clear()
+            install?.pause()
         }
         super.onStop()
     }
@@ -127,6 +129,7 @@ class MainActivity : ComponentActivity(), Pages {
     override fun onDestroy() {
         handler.removeCallbacks(refresh)
         picker?.dismiss()
+        install?.dispose()
         terminal?.dispose()
         phone.sessions.values.forEach { it.changed = null }
         super.onDestroy()
