@@ -122,7 +122,7 @@ fn appearance_updates_open_paused_console_and_geometry(cx: &mut TestAppContext) 
                 window.refresh();
                 window.draw(cx).clear(cx);
             });
-            let search = cx.debug_bounds("theme-search").unwrap();
+            let search = cx.debug_bounds("search-input").unwrap();
             #[cfg(target_os = "macos")]
             {
                 let header = cx.debug_bounds("titlebar").unwrap();
@@ -169,7 +169,7 @@ fn narrow_layout_renders_search_and_virtualized_rows(cx: &mut TestAppContext) {
     cx.simulate_resize(size(px(620.), px(650.)));
     cx.run_until_parked();
     cx.update(|window, cx| window.draw(cx).clear(cx));
-    let search = cx.debug_bounds("theme-search").unwrap();
+    let search = cx.debug_bounds("search-input").unwrap();
     assert!(search.size.width > px(500.));
     assert!(search.size.height > px(0.));
     assert!(search.left() >= px(0.) && search.right() <= px(620.));

@@ -4,14 +4,16 @@
 //! messages, except for commands to run, host names, and the daemon's notes.
 #![allow(clippy::unwrap_used)]
 
-use super::{Page, VersionNotice, version_mismatch::UPDATE_COMMAND};
+use super::{Page, VersionNotice, WorkspaceAction, version_mismatch::UPDATE_COMMAND};
 use crate::{
     SpaceportWindow,
-    i18n::leak_tests::{Recorder, assert_translated, draw, under_en_xa},
+    i18n::leak_tests::{Recorder, assert_translated, draw, uncut, under_en_xa},
     sidebar::layout_tests::fixture_window,
 };
 use gpui::{Context, Entity, TestAppContext, VisualTestContext, Window, px, size};
 use spaceport_client::{VersionMismatch, protocol::ClientShellSnapshot};
+use spaceport_i18n::pseudo::is_marked;
+use spaceport_menu::page_title::name;
 use std::sync::Arc;
 
 fn window<'a>(
@@ -41,7 +43,7 @@ fn check(
         })
     });
     draw(cx);
-    assert_translated(surface, &recorder.take(), data);
+    assert_translated(surface, &uncut(recorder.take()), data);
 }
 
 #[test]
@@ -121,5 +123,65 @@ fn the_release_notes_sheet_shows_only_messages_under_en_xa() {
                 }
             },
         );
+    });
+}
+
+/// A page's accessible name is a translated message too. Screen readers read
+/// it rather than the frame, so the leak test's text recorder cannot see it.
+#[test]
+fn every_page_title_is_a_message_under_en_xa() {
+    under_en_xa("page titles en-XA", |_, _| {
+        let dialogs = [
+            WorkspaceAction::Rename,
+            WorkspaceAction::NewTab,
+            WorkspaceAction::NewWorkspace,
+            WorkspaceAction::Note,
+        ]
+        .map(Page::Dialog);
+        let pages = [
+            Page::About,
+            Page::AddDevice,
+            Page::AddWsl,
+            Page::AgentSkill,
+            Page::Application,
+            Page::ConfirmClose,
+            Page::CoreWorkspaceActions,
+            Page::CoreWorkspaceCreate,
+            Page::CoreWorkspaceDelete,
+            Page::CoreWorkspaceRename,
+            Page::Devices,
+            Page::DeviceTags,
+            Page::DeviceTheme,
+            Page::ForwardPort,
+            Page::Group,
+            Page::Host,
+            Page::Keybinds,
+            Page::KillProcesses,
+            Page::Menu,
+            Page::MovePane,
+            Page::MoveTab,
+            Page::OpenLink,
+            Page::Palette,
+            Page::Pane,
+            Page::PaneProcesses,
+            Page::RemoveDevice,
+            Page::RemoveWsl,
+            Page::RenameDevice,
+            Page::RenamePane,
+            Page::RenameTab,
+            Page::Tab,
+            Page::Themes,
+            Page::Update,
+            Page::VersionMismatch,
+            Page::Workspace,
+        ];
+        let leaks: Vec<_> = pages
+            .into_iter()
+            .chain(dialogs)
+            .chain(crate::usage::registry::all().map(Page::Usage))
+            .map(name)
+            .filter(|name| !is_marked(name))
+            .collect();
+        assert!(leaks.is_empty(), "{leaks:#?}");
     });
 }

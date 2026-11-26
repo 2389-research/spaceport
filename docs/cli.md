@@ -190,6 +190,9 @@ Focus-on-hover between split terminal panes is on by default. Disable it with
 `spaceport config set focus_follows_mouse false`.
 The change applies live; `config get focus_follows_mouse` reads it back.
 
+Set the idle threshold for the Priority sidebar with `spaceport config set quiet_after 48h`.
+Choose `24h` (the default), `48h`, or `7d`. Quiet starts folded.
+
 An unnamed tab shows its number. To show its agent's terminal title instead,
 run `spaceport config set tab_labels.agent_title true`.
 

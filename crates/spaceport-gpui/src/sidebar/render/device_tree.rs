@@ -63,6 +63,7 @@ impl SpaceportWindow {
         };
         let theme = &self.theme;
         let row_cx = RowContext {
+            icon_only_agent: false,
             indicators,
             font: &self.config.sidebar,
             theme,

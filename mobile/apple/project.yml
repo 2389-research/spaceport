@@ -10,21 +10,38 @@ packages:
     exactVersion: 2.2.2026111701
 settings:
   base:
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "17"
     SWIFT_VERSION: "5.0"
     TARGETED_DEVICE_FAMILY: "1,2"
     GENERATE_INFOPLIST_FILE: YES
+  configs:
+    Debug:
+      SPACEPORT_WIDGET_GROUP: group.ai.2389.spaceport.mobile.development.widget
+    Release:
+      SPACEPORT_WIDGET_GROUP: group.ai.2389.spaceport.mobile.widget
 targets:
   SpaceportMobile:
     type: application
     platform: iOS
     sources:
       - Sources
+      - Shared
       - Assets.xcassets
+      - Generated/AgentMarks.xcassets
+      - path: ../../landing/public/assets/rocket-560.webp
+        buildPhase: resources
+      - path: ../../NOTICE
+        buildPhase: resources
+      - path: ../../LICENSE
+        buildPhase: resources
       - path: Notices
         type: folder
         buildPhase: resources
       - Generated/spaceport_mobile.swift
     dependencies:
+      - target: AgentStatusWidget
+        embed: true
       - framework: ../.build/SpaceportMobileCore.xcframework
         embed: false
       - sdk: Security.framework
@@ -32,10 +49,10 @@ targets:
         product: GhosttyTerminal
     settings:
       base:
-        MARKETING_VERSION: "0.1"
+        CODE_SIGN_ENTITLEMENTS: WidgetGroup.entitlements
+        INFOPLIST_FILE: ReleaseInfo.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        CURRENT_PROJECT_VERSION: "11"
         INFOPLIST_KEY_CFBundleDisplayName: Spaceport
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
         INFOPLIST_KEY_NSLocalNetworkUsageDescription: Connect to the SSH hosts you select on your local network.
@@ -46,9 +63,28 @@ targets:
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: ai.2389.spaceport.mobile.development
         Release:
-          INFOPLIST_FILE: ReleaseInfo.plist
           "PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]": "$(SPACEPORT_MOBILE_PROFILE)"
           PRODUCT_BUNDLE_IDENTIFIER: ai.2389.spaceport.mobile
+  AgentStatusWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Shared
+      - path: LiveActivity
+        excludes: [Info.plist]
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: WidgetGroup.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Spaceport Agents
+        INFOPLIST_FILE: LiveActivity/Info.plist
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: ai.2389.spaceport.mobile.development.agent-status
+        Release:
+          "PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]": "$(SPACEPORT_ACTIVITY_PROFILE)"
+          PRODUCT_BUNDLE_IDENTIFIER: ai.2389.spaceport.mobile.agent-status
   SpaceportMobileTests:
     type: bundle.unit-test
     platform: iOS

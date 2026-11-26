@@ -5,6 +5,7 @@
 //! on the UI thread never waits for the disk.
 
 mod error;
+mod localize;
 
 pub use error::{Error, Result};
 

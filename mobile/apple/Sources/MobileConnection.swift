@@ -28,7 +28,7 @@ final class MobileConnection: ObservableObject {
     private(set) var reconnectFrame: MobileTerminal?
     private(set) var editorTarget: InputTarget?
     private(set) var panePreviews = PanePreviewCache()
-    private var lastObservation: Date?
+    private var savedAgentCounts: AgentCounts?
     @Published private(set) var directPane: DirectPaneAttachment?
     private var session: MobileSession?
     private var opening: Task<Void, Never>?
@@ -48,7 +48,51 @@ final class MobileConnection: ObservableObject {
         case moving(SeenAgent, revision: UInt64)
     }
     private var arrival: AgentArrival?
-    private(set) var presentationID: UUID?
+    @Published private(set) var pendingShortcut: SessionShortcutRequest?
+    private(set) var presentationID: UUID? {
+        didSet {
+            if oldValue != presentationID { pendingShortcut = nil }
+        }
+    }
+
+    func requestShortcut(_ action: SessionShortcutAction, presentation: UUID) {
+        guard presentationID == presentation, pendingShortcut == nil else { return }
+        // A warm agent jump can already have failed its identity check in present().
+        if case .revealTerminal = action, phase == .closed { return }
+        // A connected screen may already hold a roster from before the shortcut.
+        // A cold open or parked session will receive its own SSH proof on entry.
+        let needsRefresh: Bool
+        if case .nextWaiting = action { needsRefresh = view?.bootId.isEmpty == false }
+        else { needsRefresh = false }
+        pendingShortcut = SessionShortcutRequest(action: action, destination: phase == .ready ? draftDestination : nil,
+                                                needsRosterRefresh: needsRefresh)
+    }
+
+    var readyShortcutID: UUID? {
+        guard phase == .ready, let request = pendingShortcut, let view, !view.goToPending else { return nil }
+        // The first roster can precede the focused pane's input target.
+        if case .compose = request.action, request.destination == nil, view.focusedPane != nil, view.inputTarget == nil {
+            return nil
+        }
+        return request.id
+    }
+
+    func takeShortcut(from presentation: UUID) -> SessionShortcutAction? {
+        guard presentationID == presentation, readyShortcutID != nil, let request = pendingShortcut else { return nil }
+        if request.needsRosterRefresh {
+            guard let session else { return nil }
+            pendingShortcut?.needsRosterRefresh = false
+            endDirectPane()
+            park(session)
+            foreground()
+            return nil
+        }
+        pendingShortcut = nil
+        if case let .compose(text) = request.action {
+            draft.compose(text, at: request.destination ?? draftDestination)
+        }
+        return request.action
+    }
 
     var openingAgent: SeenAgent? {
         switch arrival {
@@ -58,6 +102,7 @@ final class MobileConnection: ObservableObject {
     }
 
     func present(_ id: UUID, agent: SeenAgent?, alreadyOpen: Bool) {
+        AgentLiveActivity.shared.select(id, view: view, observedAt: view?.rosterObservationDate)
         if alreadyOpen, presentationID == id, agent == nil || agent == openingAgent { return }
         if presentationID != id || agent != nil { reconnectFrame = nil }
         recovery = TransportRecovery()
@@ -73,6 +118,7 @@ final class MobileConnection: ObservableObject {
     }
 
     func keepOnHome() -> Bool {
+        AgentLiveActivity.shared.end(presentationID)
         if method == profile.login, phase == .ready || hasParkedSession {
             presentationID = nil
             arrival = nil
@@ -224,8 +270,7 @@ final class MobileConnection: ObservableObject {
         polling = Task.detached(priority: .userInitiated) { [weak self] in
             var version = initialVersion
             while !Task.isCancelled {
-                let direct = UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty)
-                if let update = direct ? handle.pollForAttach(after: version) : handle.poll(after: version) {
+                if let update = handle.pollForAttach(after: version) {
                     version = update.version
                     await self?.receive(update, token: token)
                     if update.disconnected { break }
@@ -239,7 +284,7 @@ final class MobileConnection: ObservableObject {
         guard generation == token else { return }
         if update.disconnected {
             let established = phase == .ready || phase == .locatingAgent
-            recordLastSeen(at: lastObservation)
+            recordLastSeen()
             if let issue = update.hostChallenge {
                 retire()
                 challenge = issue
@@ -252,20 +297,27 @@ final class MobileConnection: ObservableObject {
         }
         let previousError = view?.error
         if let target = update.inputTarget { editorTarget = target }
-        let changedPane = view?.previewTarget?.paneId != update.previewTarget?.paneId
-        if changedPane, let outgoing = view, let target = outgoing.previewTarget,
+        let changedPane = view?.focusedPaneTarget?.paneId != update.focusedPaneTarget?.paneId
+        if changedPane, let outgoing = view, let target = outgoing.focusedPaneTarget,
            let terminal = outgoing.terminal, outgoing.bootId == update.bootId {
             panePreviews.record(terminal.visibleText, pane: target.paneId, boot: target.bootId)
         }
         if view?.bootId != update.bootId { panePreviews = PanePreviewCache() }
+        let previous = view
         view = update
         if !update.bootId.isEmpty {
-            lastObservation = Date()
+            if let date = update.rosterObservationDate {
+                AgentLiveActivity.shared.observe(update, previous: previous, at: date, from: presentationID)
+            }
             reconnectFrame = nil
             if let arrival, !locate(arrival, in: update) { return }
+            let previousReady = phase == .ready ? previous : nil
             phase = .ready
+            if let status = update.changedAgentStatus(after: previousReady, savedCounts: savedAgentCounts) {
+                saveObservation(status)
+            }
             syncDirectPane()
-            if changedPane, let target = update.previewTarget { panePreviews.visit(target.paneId, boot: target.bootId) }
+            if changedPane, let target = update.focusedPaneTarget { panePreviews.visit(target.paneId, boot: target.bootId) }
             if appliedViewport != viewport { resize(viewport) }
         }
         if update.error != previousError, let failure = update.error { message = failure }
@@ -284,14 +336,15 @@ final class MobileConnection: ObservableObject {
             }
         case let .moving(agent, revision):
             guard update.version >= revision, !update.goToPending else { return false }
-            if update.goToArrival == revision, update.bootId == agent.bootId, update.focusedWorkspace == agent.workspaceId,
-               update.focusedTab == agent.tabId, update.inputTarget?.paneId == agent.paneId,
+            if update.confirmsInput(to: agent.paneId, revision: revision), update.bootId == agent.bootId, update.focusedWorkspace == agent.workspaceId,
+               update.focusedTab == agent.tabId,
                update.panes.contains(where: { $0.id == agent.paneId && $0.tabId == agent.tabId && $0.agentName == agent.name }) {
                 arrival = nil
                 return true
             }
         }
         arrival = nil
+        pendingShortcut = nil
         retire()
         phase = .closed
         message = "Spaceport couldn’t open the last-seen agent. Connect to the session to choose a live agent."
@@ -328,8 +381,7 @@ final class MobileConnection: ObservableObject {
     }
 
     func syncDirectPane() {
-        guard UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty),
-              phase == .ready, presentationID != nil, let view, let session,
+        guard phase == .ready, presentationID != nil, let view, let session,
               !view.goToPending, view.terminal == nil else { endDirectPane(); return }
         if let attached = directPane,
            attached.target.bootId != view.bootId || attached.target.paneId != view.focusedPane {
@@ -361,6 +413,13 @@ final class MobileConnection: ObservableObject {
     func claimSize() {
         guard let session, let view, !view.bootId.isEmpty else { return }
         perform { try session.claimSize(bootId: view.bootId) }
+    }
+
+    func createTab(workspace: String, sourceTab: String, boot: String, from presentation: UUID) {
+        guard acceptsInput(from: presentation), let session else { return }
+        if perform({ try session.createTab(bootId: boot, workspace: workspace, sourceTab: sourceTab) }) {
+            endDirectPane()
+        }
     }
 
     enum Focus { case workspace, tab, pane }
@@ -421,15 +480,13 @@ final class MobileConnection: ObservableObject {
         guard let image = draft.image, let target = draft.destination?.target,
               let session, acceptsInput(from: presentation), view?.inputTarget == target else { throw MobileError.StaleView }
         let direct = directPane
-        let useDirect = UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty) && target.popupId == nil
-        if useDirect && (direct?.target != target || direct?.failure != nil) { throw MobileError.TerminalUnavailable }
+        if target.popupId == nil && (direct?.target != target || direct?.failure != nil) { throw MobileError.TerminalUnavailable }
         let note = draft.text
         let staged = try await Task.detached(priority: .userInitiated) {
             try session.stageDraftImage(target: target, png: image.png)
         }.value
         try Task.checkCancellation()
         guard self.session === session, directPane === direct,
-              useDirect == (UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty) && target.popupId == nil),
               draft.image?.id == image.id, draft.text == note, draft.destination?.target == target,
               UIApplication.shared.applicationState == .active else { throw MobileError.StaleView }
         let path = staged.path()
@@ -447,7 +504,7 @@ final class MobileConnection: ObservableObject {
         guard acceptsInput(from: presentation) else { return false }
         guard let session, target == view?.inputTarget else { inputUnavailable(); return false }
         inputStatus = nil
-        if UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty), target.popupId == nil {
+        if target.popupId == nil {
             guard let directPane, directPane.target == target,
                   directPane.send(input) else { return false }
             recovery.allowRetry()
@@ -476,10 +533,16 @@ final class MobileConnection: ObservableObject {
         }
     }
 
-    private func recordLastSeen(at date: Date? = Date()) {
-        guard phase == .ready, let view, !view.bootId.isEmpty, let date else { return }
-        do { try ProfileStore().recordSeen(profile: profile, snapshot: SessionStatusSnapshot(view: view, seenAt: date)) }
-        catch { message = error.localizedDescription }
+    private func recordLastSeen() {
+        guard phase == .ready, let view, !view.bootId.isEmpty, let date = view.rosterObservationDate else { return }
+        saveObservation(SessionStatusSnapshot(view: view, seenAt: date))
+    }
+
+    private func saveObservation(_ snapshot: SessionStatusSnapshot) {
+        do {
+            try ProfileStore().recordSeen(profile: profile, snapshot: snapshot)
+            savedAgentCounts = snapshot.agentCounts
+        } catch { message = error.localizedDescription }
     }
 
     func sceneInactive() {
@@ -487,6 +550,7 @@ final class MobileConnection: ObservableObject {
     }
 
     func background() {
+        AgentLiveActivity.shared.pause(presentationID)
         endDirectPane()
         sceneInactive()
         // An unanswered fingerprint remains available for comparison in another app.
@@ -494,19 +558,7 @@ final class MobileConnection: ObservableObject {
         if verification == nil && hasParkedSession { return }
         recordLastSeen()
         if let session, phase == .ready || phase == .locatingAgent || hasParkedSession {
-            if case let .moving(agent, _) = arrival { arrival = .requested(agent) }
-            resumeRequested = false
-            if let view { parkedBoot = view.bootId }
-            generation = UUID()
-            polling?.cancel()
-            polling = nil
-            verification?.cancel()
-            verification = nil
-            session.park()
-            let lastFrame = presentationID != nil && arrival == nil ? view?.terminal : nil
-            clearView()
-            reconnectFrame = lastFrame
-            phase = .connecting
+            park(session)
             return
         }
         resumeRequested = phase == .connecting
@@ -514,7 +566,26 @@ final class MobileConnection: ObservableObject {
         phase = .closed
     }
 
+    private func park(_ session: MobileSession) {
+        if case let .moving(agent, _) = arrival { arrival = .requested(agent) }
+        resumeRequested = false
+        if let view { parkedBoot = view.bootId }
+        generation = UUID()
+        polling?.cancel()
+        polling = nil
+        verification?.cancel()
+        verification = nil
+        session.park()
+        let lastFrame = presentationID != nil && arrival == nil ? view?.terminal : nil
+        clearView()
+        reconnectFrame = lastFrame
+        phase = .connecting
+    }
+
     func foreground() {
+        if let presentationID {
+            AgentLiveActivity.shared.select(presentationID, view: view, observedAt: view?.rosterObservationDate)
+        }
         if recovery.sceneActive() {
             resumeRequested = false
             if presentationID != nil { reopen() }
@@ -529,8 +600,7 @@ final class MobileConnection: ObservableObject {
                     do {
                         while !Task.isCancelled {
                             if try session.checkResume(bootId: parkedBoot, request: request) {
-                                let direct = UserDefaults.standard.bool(forKey: TerminalPreferences.ghostty)
-                                let update = direct ? session.pollForAttach(after: 0) : session.poll(after: 0)
+                                let update = session.pollForAttach(after: 0)
                                 if let latest = update, !latest.disconnected, latest.bootId == parkedBoot {
                                     await self?.resumeVerified(session, latest: latest, token: token)
                                 } else {
@@ -599,6 +669,7 @@ final class MobileConnection: ObservableObject {
     }
 
     private func closePresentation() {
+        AgentLiveActivity.shared.end(presentationID)
         recordLastSeen()
         resumeRequested = false
         presentationID = nil
@@ -610,6 +681,7 @@ final class MobileConnection: ObservableObject {
     }
 
     private func retire() {
+        AgentLiveActivity.shared.pause(presentationID)
         closeResources()
         clearView()
     }
@@ -632,7 +704,6 @@ final class MobileConnection: ObservableObject {
 
     private func clearView() {
         panePreviews = PanePreviewCache()
-        lastObservation = nil
         view = nil
         reconnectFrame = nil
         challenge = nil

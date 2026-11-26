@@ -5,6 +5,7 @@ import UIKit
 
 struct TerminalGestures: UIViewRepresentable {
     let tap: () -> Void
+    let openAgents: () -> Void
     let scroll: (CGPoint, CGSize) -> Void
     let arrow: (String) -> Void
     let actions: (CGPoint) -> (menu: UIMenu, selection: CGRect?)
@@ -23,6 +24,10 @@ struct TerminalGestures: UIViewRepresentable {
         let hold = UILongPressGestureRecognizer(target: coordinator, action: #selector(Coordinator.held))
         pan.maximumNumberOfTouches = 1
         pan.require(toFail: hold)
+        let swipe = AgentListSwipe()
+        swipe.openAgents = { [weak coordinator] in coordinator?.callbacks.openAgents() }
+        swipe.require(toFail: hold)
+        view.addGestureRecognizer(swipe)
         tap.require(toFail: hold)
         view.addGestureRecognizer(tap)
         view.addGestureRecognizer(pan)

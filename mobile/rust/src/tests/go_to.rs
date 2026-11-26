@@ -134,6 +134,29 @@ fn go_to_waits_for_the_surface_to_identify_the_same_focused_pane() {
 }
 
 #[test]
+fn agent_artwork_uses_the_daemon_identity_even_when_renamed() {
+    let (mut state, mut snap, mut frame) = route_fixture();
+    snap.revision += 1;
+    snap.agents[0].agent = Some("codex".into());
+    snap.agents[0].display_agent = Some("Reviewer".into());
+    frame.projection_revision = snap.revision;
+    state.snapshot(Arc::new(snap.clone()));
+    state.surface(Arc::new(frame.clone()));
+    let panes = state.view().panes;
+    assert_eq!(panes[0].agent_name.as_deref(), Some("Reviewer"));
+    assert_eq!(panes[0].agent_identity.as_deref(), Some("codex"));
+    assert!(panes[1].agent_identity.is_none());
+    snap.revision += 1;
+    snap.agents[0].agent = Some("a".repeat(257));
+    frame.projection_revision = snap.revision;
+    state.snapshot(Arc::new(snap));
+    state.surface(Arc::new(frame));
+    let panes = state.view().panes;
+    assert!(panes[0].agent_identity.is_none());
+    assert_eq!(panes[0].agent_name.as_deref(), Some("Reviewer"));
+}
+
+#[test]
 fn selector_titles_follow_the_reported_agent_and_clear_without_a_stripped_title() {
     let (mut state, mut snap, mut frame) = route_fixture();
     state.cancel_go_to();

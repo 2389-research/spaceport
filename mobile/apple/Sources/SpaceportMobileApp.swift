@@ -10,6 +10,11 @@ struct SpaceportMobileApp: App {
         // Rust's executable startup normally makes a closed pipe a write error.
         // This Swift process hosts the same worker and cancellation pipes.
         _ = signal(SIGPIPE, SIG_IGN)
+        _ = AgentLiveActivity.shared
+        if let catalog = try? ProfileStore().catalog() {
+            AgentWidgetSnapshot.publish(catalog.agentWidgetSnapshot)
+        }
+        SpaceportAppShortcuts.updateAppShortcutParameters()
     }
     var body: some Scene { WindowGroup { HostList() } }
 }

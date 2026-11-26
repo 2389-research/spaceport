@@ -1,56 +1,21 @@
-// ABOUTME: Paints the Herdr cell grid and cursor at the current device scale.
-// ABOUTME: Exposes the visible terminal text as one accessible reading surface.
+// ABOUTME: Shows Herdr popup and reconnect snapshots on an isolated Ghostty surface.
+// ABOUTME: Keeps accessible text and word selection aligned to Herdr’s source cells.
+import GhosttyTerminal
 import SwiftUI
 
 struct TerminalDisplay: View {
     let terminal: MobileTerminal
     let metrics: TerminalMetrics
-    static let background = Color(red: 28 / 255, green: 28 / 255, blue: 30 / 255)
+    static let background = SessionChrome.terminal
+
     var body: some View {
-        Canvas { context, size in
-            let columns = Int(terminal.width)
-            let rows = Int(terminal.height)
-            guard columns > 0, rows > 0 else { return }
-            let fitted = metrics.fittedCell(in: size, columns: columns, rows: rows)
-            let width = fitted.width
-            let height = fitted.height
-            let font = metrics.pointSize * min(width / metrics.cell.width, height / metrics.cell.height)
-            for (index, cell) in terminal.cells.prefix(columns * rows).enumerated() {
-                let x = index % columns
-                let y = index / columns
-                let rect = CGRect(x: CGFloat(x) * width, y: CGFloat(y) * height, width: width, height: height)
-                let reversed = cell.modifier & 64 != 0
-                let foreground = Self.color(reversed ? cell.bg : cell.fg, foreground: !reversed)
-                let background = Self.color(reversed ? cell.fg : cell.bg, foreground: reversed)
-                if cell.bg != 0 || reversed {
-                    context.fill(Path(rect), with: .color(background))
-                }
-                if !cell.skip && cell.modifier & 128 == 0 && cell.symbol != " " && !cell.symbol.isEmpty {
-                    let text = Text(verbatim: cell.symbol)
-                        .font(.system(size: font, weight: cell.modifier & 1 != 0 ? .bold : .regular, design: .monospaced))
-                        .italic(cell.modifier & 4 != 0)
-                        .foregroundStyle(foreground.opacity(cell.modifier & 2 != 0 ? 0.6 : 1))
-                    context.draw(text, at: rect.origin, anchor: .topLeading)
-                }
-                if cell.modifier & 8 != 0 || cell.modifier & 256 != 0 {
-                    if cell.modifier & 8 != 0 {
-                        context.fill(Path(CGRect(x: rect.minX, y: rect.maxY - 2, width: width, height: 1)), with: .color(foreground))
-                    }
-                    if cell.modifier & 256 != 0 {
-                        context.fill(Path(CGRect(x: rect.minX, y: rect.midY, width: width, height: 1)), with: .color(foreground))
-                    }
-                }
-            }
-            if let x = terminal.cursorX, let y = terminal.cursorY, Int(x) < columns, Int(y) < rows {
-                let rect = CGRect(x: CGFloat(x) * width, y: CGFloat(y) * height, width: width, height: height)
-                context.stroke(Path(rect.insetBy(dx: 0.5, dy: 0.5)), with: .color(.white.opacity(0.8)), lineWidth: 1)
-            }
-        }
-        .background(Self.background)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Terminal display")
-        .accessibilityValue(visibleText)
-        .accessibilityIdentifier("Terminal display")
+        SnapshotDisplay(terminal: terminal, metrics: metrics)
+            .allowsHitTesting(false)
+            .background(Self.background)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Terminal popup")
+            .accessibilityValue(visibleText)
+            .accessibilityIdentifier("terminal.popup")
     }
 
     var visibleText: String { terminal.visibleText }
@@ -67,54 +32,107 @@ struct TerminalDisplay: View {
         let end = min(start + columns, terminal.cells.count)
         var index = start + column
         guard index < end else { return nil }
-        while index > start && terminal.cells[index].skip { index -= 1 }
+        while index > start && terminal.continuesGlyph(at: index) { index -= 1 }
         func belongs(_ position: Int) -> Bool {
             let glyph = terminal.cells[position]
-            return glyph.modifier & 128 == 0 && (glyph.skip || glyph.symbol.contains { !$0.isWhitespace })
+            return terminal.continuesGlyph(at: position)
+                || (glyph.modifier & 128 == 0 && glyph.displayGlyph.contains { !$0.isWhitespace })
         }
         guard belongs(index) else { return nil }
         var left = index, right = index + 1
         while left > start && belongs(left - 1) { left -= 1 }
         while right < end && belongs(right) { right += 1 }
-        let text = terminal.cells[left..<right].filter { !$0.skip }.map(\.symbol).joined()
+        let text = terminal.text(in: left..<right)
         return (text, CGRect(x: CGFloat(left - start) * cell.width, y: CGFloat(row) * cell.height,
                              width: CGFloat(right - left) * cell.width, height: cell.height))
     }
+}
 
-    // Herdr's wire palette numbers named colors from one and tags indexed/RGB colors.
-    static func color(_ value: UInt32, foreground: Bool) -> Color {
-        let rgb: UInt32
-        let palette: [UInt32] = [0x121212, 0xcc5555, 0x64b66a, 0xc7a74e,
-                                 0x598ad1, 0xb877c5, 0x55b8b6, 0xc8c8c8,
-                                 0x777777, 0xf98080, 0x90df96, 0xf2d878,
-                                 0x8db6ed, 0xd89ee8, 0x84dedb, 0xffffff]
-        if value >> 24 == 2 { rgb = value & 0xffffff }
-        else if value >> 24 == 1 {
-            let index = Int(value & 255)
-            if index < 16 { rgb = palette[index] }
-            else if index < 232 {
-                let i = index - 16
-                let levels: [UInt32] = [0, 95, 135, 175, 215, 255]
-                rgb = levels[i / 36] << 16 | levels[i / 6 % 6] << 8 | levels[i % 6]
-            } else { rgb = UInt32(8 + 10 * (index - 232)) * 0x010101 }
-        } else if (1...16).contains(value) { rgb = palette[Int(value) - 1] }
-        else { rgb = foreground ? 0xe5e5e7 : 0x1c1c1e }
-        return Color(red: Double((rgb >> 16) & 255) / 255, green: Double((rgb >> 8) & 255) / 255,
-                     blue: Double(rgb & 255) / 255)
+private struct SnapshotDisplay: UIViewRepresentable {
+    let terminal: MobileTerminal
+    let metrics: TerminalMetrics
+
+    func makeUIView(context: Context) -> SnapshotViewport { SnapshotViewport() }
+
+    func updateUIView(_ view: SnapshotViewport, context: Context) {
+        view.update(terminal, metrics: metrics)
+    }
+
+    static func dismantleUIView(_ view: SnapshotViewport, coordinator: ()) {
+        view.terminalView.setSurfaceVisible(false)
     }
 }
 
-extension MobileTerminal {
-    var visibleText: String {
-        let width = Int(self.width)
-        guard width > 0 else { return "" }
-        var rows = [String]()
-        for start in stride(from: 0, to: cells.count, by: width) {
-            let line = cells[start..<min(cells.count, start + width)]
-                .filter { !$0.skip }.map { $0.modifier & 128 == 0 ? $0.symbol : " " }.joined()
-            let end = line.lastIndex { !$0.isWhitespace }.map { line.index(after: $0) } ?? line.startIndex
-            rows.append(String(line[..<end]))
+@MainActor
+private final class SnapshotViewport: UIView {
+    let terminalView = UITerminalView(frame: .zero)
+    private var frameData: MobileTerminal?
+    private var metrics = TerminalMetrics(textSize: 12)
+    private var grid: InMemoryTerminalViewport?
+    private var fontSize: Float?
+    private lazy var session = InMemoryTerminalSession(write: { _ in }, resize: { [weak self] value in
+        Task { @MainActor in self?.didResize(value) }
+    })
+
+    init() {
+        super.init(frame: .zero)
+        clipsToBounds = true
+        terminalView.isUserInteractionEnabled = false
+        terminalView.accessibilityElementsHidden = true
+        terminalView.layer.anchorPoint = .zero
+        addSubview(terminalView)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    func update(_ frame: MobileTerminal, metrics: TerminalMetrics) {
+        let changed = frameData != frame
+        frameData = frame
+        self.metrics = metrics
+        setNeedsLayout()
+        if changed { repaint() }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard let frameData, bounds.width > 0, bounds.height > 0 else { return }
+        let cols = max(1, Int(frameData.width)), rows = max(1, Int(frameData.height))
+        let fit = metrics.fittedCell(in: bounds.size, columns: cols, rows: rows)
+        let font = Float(max(1, (metrics.pointSize * min(fit.width / metrics.cell.width, fit.height / metrics.cell.height)).rounded(.down)))
+        if fontSize != font {
+            fontSize = font
+            grid = nil
+            terminalView.configuration = TerminalSurfaceOptions(backend: .inMemory(session), fontSize: font)
+            terminalView.controller = GhosttyPaneSurface.controller
         }
-        return rows.joined(separator: "\n").trimmingCharacters(in: .newlines)
+        guard let grid, grid.cellWidthPixels > 0, grid.cellHeightPixels > 0 else {
+            terminalView.transform = .identity
+            terminalView.frame = bounds
+            return
+        }
+        let scale = window?.screen.nativeScale ?? traitCollection.displayScale
+        guard scale > 0 else { return }
+        let naturalWidth = CGFloat(grid.cellWidthPixels) / scale
+        let naturalHeight = CGFloat(grid.cellHeightPixels) / scale
+        // A subpixel margin avoids rounding away the last column or row. Bound the backing texture
+        // to the device for oversized daemon frames and clip the replay to the actual Ghostty grid.
+        terminalView.bounds = CGRect(x: 0, y: 0, width: min(bounds.width * 2, naturalWidth * CGFloat(cols) + 1 / scale),
+                                     height: min(bounds.height * 2, naturalHeight * CGFloat(rows) + 1 / scale))
+        terminalView.layer.position = .zero
+        terminalView.transform = CGAffineTransform(scaleX: fit.width / naturalWidth, y: fit.height / naturalHeight)
+    }
+
+    private func didResize(_ value: InMemoryTerminalViewport) {
+        guard value != grid else { return }
+        let previous = grid
+        grid = value
+        setNeedsLayout()
+        if previous?.columns != value.columns || previous?.rows != value.rows { repaint() }
+    }
+
+    private func repaint() {
+        guard let grid, let frameData else { return }
+        session.discardPendingOutput()
+        session.receiveReplay(frameData.replay(columns: Int(grid.columns), rows: Int(grid.rows)))
     }
 }

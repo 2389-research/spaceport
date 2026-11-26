@@ -4,15 +4,15 @@
 use crate::{
     NavigationTarget, SpaceportWindow,
     sidebar::{
-        Indicators, agent_name,
+        AgentSection, Indicators, agent_name,
         agents::{agent_place, pane_name, state_label, status_text},
         cell::{AgentRow, Cell, RowContext, RowData, layout_for},
         layout::SidebarLook,
-        line_height, tokens, wash,
+        line_height, scaled, tokens, wash,
     },
 };
 use gpui::{prelude::*, *};
-use spaceport_client::protocol::{ClientShellAgent, ClientShellSnapshot};
+use spaceport_client::protocol::{AgentStatus, ClientShellAgent, ClientShellSnapshot};
 
 impl SpaceportWindow {
     /// Appends a row for each agent `panel_agents` lists, in that order, and
@@ -45,6 +45,7 @@ impl SpaceportWindow {
                 continue;
             };
             let row_cx = RowContext {
+                icon_only_agent: false,
                 indicators,
                 font,
                 theme,
@@ -67,27 +68,36 @@ impl SpaceportWindow {
                 continue;
             };
             if show_sections {
-                let section = crate::sidebar::agents::sections::Section::of(live, agent, now);
+                let section = crate::sidebar::agents::sections::Section::of(
+                    live,
+                    agent,
+                    now,
+                    self.config.quiet_after,
+                );
                 if previous != Some(section) {
-                    let (key, title) = section.heading();
-                    list = list.child(super::header::header(key, &title, font, theme, look));
+                    list = list.child(self.agent_section_heading(section, look, cx));
                     count += 1;
                     previous = Some(section);
+                }
+                if self.agent_section_folds.contains(&section) {
+                    continue;
                 }
             }
             if selected && agent.focused {
                 focused = Some(count);
             }
-            let idle_age = show_sections
-                .then(|| live.agent_idle(&agent.pane_id))
-                .flatten()
-                .and_then(|idle| {
-                    crate::sidebar::agents::sections::age_label(idle, live.agent_confirmed_at(now))
-                });
             let gap = self.agent_row_gap(count);
             count += 1;
             list = list.child(self.agent_cell(
-                index, agent, snapshot, &row_cx, lines, gap, false, idle_age, cx,
+                index,
+                agent,
+                snapshot,
+                &row_cx,
+                lines,
+                gap,
+                false,
+                previous.map(|section| (section, now)),
+                cx,
             ));
         }
         (list, count, focused)
@@ -159,10 +169,10 @@ impl SpaceportWindow {
         agent: &ClientShellAgent,
         snapshot: &ClientShellSnapshot,
         row_cx: &RowContext,
-        lines: Vec<Vec<tokens::ResolvedToken>>,
+        mut lines: Vec<Vec<tokens::ResolvedToken>>,
         gap: f32,
         nested: bool,
-        idle_age: Option<String>,
+        section_at: Option<(AgentSection, u64)>,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
         let rows = layout_for(self.config.layout.mode);
@@ -183,36 +193,86 @@ impl SpaceportWindow {
         let place = (!nested).then(|| agent_place(agent, snapshot)).flatten();
         let status = status_text(agent.agent_status);
         let state = state_label(agent, &status);
+        let idle_age = section_at.and_then(|(_, now)| {
+            if agent.agent_status != AgentStatus::Idle {
+                return None;
+            }
+            let live = self.live_of(index);
+            crate::sidebar::agents::sections::age_label(
+                live.agent_idle(&id)?,
+                live.agent_confirmed_at(now),
+            )
+        });
+        let heading_names_state = matches!(section_at, Some((AgentSection::Idle(_), _)))
+            && state.eq_ignore_ascii_case(&status);
+        if heading_names_state {
+            tokens::replace_idle_status(&mut lines, idle_age.as_deref());
+        }
         let state = match idle_age.as_ref() {
             Some(age) => std::borrow::Cow::Owned(format!("{state} · {age}")),
             None => state,
         };
-        let spoken = crate::sidebar::accessibility::agent_name(
-            name,
-            pane.as_deref(),
-            &state,
-            place,
-            row_cx.host,
-        );
+        let icon = crate::icons::AgentIcon::from_identity(agent.agent.as_deref());
+        // An integration can supply a session name in place of its app name.
+        // Keep that fallback, and names whose app has only a generic icon.
+        let app_label = agent.display_agent.as_deref() == Some(name)
+            || agent
+                .agent
+                .as_deref()
+                .is_some_and(|id| id.eq_ignore_ascii_case(name));
+        let mut row_cx = RowContext {
+            icon_only_agent: app_label
+                && icon != crate::icons::AgentIcon::Generic
+                && row_cx.width - row_cx.nest <= scaled(row_cx.font, crate::sidebar::SIDEBAR_WIDTH),
+            ..*row_cx
+        };
+        let visible_status = if heading_names_state {
+            idle_age.map(std::borrow::Cow::Owned)
+        } else {
+            (idle_age.is_some()
+                || self
+                    .config
+                    .sidebar_layout
+                    .agents
+                    .shows_status_text(agent.agent.as_deref()))
+            .then(|| state.clone())
+        };
+        let (lines, spoken, status_text) = if lines.is_empty()
+            && let Some(row) = crate::sidebar::agents::terminal_row::TerminalRow::from_snapshot(
+                agent,
+                snapshot,
+                pane.as_deref(),
+            ) {
+            row_cx.icon_only_agent = true;
+            let host = &self.endpoints[index].label;
+            (
+                row.lines(name, host, visible_status.as_deref()),
+                row.spoken(name, host, &state),
+                None,
+            )
+        } else {
+            let spoken = crate::sidebar::accessibility::agent_name(
+                name,
+                pane.as_deref(),
+                &state,
+                place,
+                row_cx.host,
+            );
+            (lines, spoken, visible_status)
+        };
         Cell::new(
             rows,
             RowData::Agent(AgentRow {
                 key: format!("agent-{id}"),
                 name,
-                icon: crate::icons::AgentIcon::from_identity(agent.agent.as_deref()),
+                icon,
                 status: agent.agent_status,
                 place,
                 pane,
-                status_text: (idle_age.is_some()
-                    || self
-                        .config
-                        .sidebar_layout
-                        .agents
-                        .shows_status_text(agent.agent.as_deref()))
-                .then_some(state),
+                status_text,
                 lines,
             }),
-            row_cx,
+            &row_cx,
         )
         .selected(selected && agent.focused)
         .highlighted(menu_open)

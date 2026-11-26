@@ -8,8 +8,10 @@ use spaceport_client::protocol::ClientShellSnapshot;
 
 mod appear;
 mod chrome;
+mod group_rows;
 mod left_checkout;
 mod page_set;
+mod page_title;
 mod pane_payloads;
 mod picker_lines;
 mod tab_payloads;

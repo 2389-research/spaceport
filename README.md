@@ -4,7 +4,7 @@
 
 Spaceport is an independent desktop fork of
 [Sheprd](https://github.com/sheprd-labs/sheprd). It is under development. A signed,
-notarized [macOS arm64 preview](https://github.com/2389-research/spaceport/releases/tag/v20261125.1)
+notarized [macOS arm64 preview](https://github.com/2389-research/spaceport/releases/tag/v20261126.2)
 is available for macOS 14.2 or later. The [Spaceport specification](docs/spaceport/START_HERE.md)
 defines the product and ownership rules. The [task plan](docs/spaceport/plan/tasks.json),
 [capability matrix](docs/spaceport/plan/capabilities.json), and
@@ -37,10 +37,20 @@ production release identity still have [open gates](docs/spaceport/plan/gaps.jso
 
 ## Desktop Agents sidebar
 
-Priority lists agents waiting for you first, followed by working agents and idle agents
+Click a host name or its arrow to fold or expand its rows. The status dot selects the host.
+Click a status heading in Priority to fold or expand that group.
+Priority lists agents waiting for you first, followed by working agents, done agents, and idle agents
 grouped by approximate time (under an hour, one to five hours, and five hours or more).
+Under an Idle heading, each row shows its elapsed idle time when known.
 An agent already idle when Spaceport connects starts at the end in Herdr sequence order.
 The app can show a lower bound once it has observed an hour of the same idle spell.
+After 24 hours of observed idle time, an agent moves into **Quiet**, which starts folded.
+Choose 24 hours, 48 hours, or 7 days under **Settings → Sidebar → Move idle agents to Quiet**.
+Working agents and agents waiting for you return to their status group automatically.
+Agent rows show the title on the first line.
+The app icon, terminal tab number, directory, and host share a muted line underneath.
+Split panes on the same tab share its number. Selecting a row opens that specific pane.
+Custom Herdr rows keep their configured fields.
 Click **priority** in the Agents header to return to workspace order.
 A host's custom Herdr agent view keeps its chosen order.
 

@@ -52,6 +52,7 @@ spaceport-settings-window.workspace = true
 spaceport-sidebar.workspace      = true
 spaceport-sound.workspace         = true
 spaceport-state-file.workspace    = true
+spaceport-textfield.workspace     = true
 spaceport-usage.workspace         = true
 spaceport-truncate.workspace      = true
 spaceport-web-url.workspace       = true
@@ -104,6 +105,7 @@ spaceport-remote = { features = ["test-support"], workspace = true }
 spaceport-control-protocol = { features = ["test-support"], workspace = true }
 spaceport-diagnostics = { features = ["test-support"], workspace = true }
 spaceport-i18n = { features = ["test-support"], workspace = true }
+spaceport-textfield = { features = ["test-support"], workspace = true }
 spaceport-usage = { features = ["test-support"], workspace = true }
 spaceport-endpoint = { features = ["test-support"], workspace = true }
 spaceport-keymap = { features = ["test-support"], workspace = true }

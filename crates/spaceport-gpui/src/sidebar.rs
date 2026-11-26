@@ -40,6 +40,7 @@ pub(crate) mod native_tests;
 
 pub(crate) use {
     activity::{Activity, ActivityPanel},
+    agents::sections::Section as AgentSection,
     agents::{Indicators, agent_name, pane_name, state_label, status_indicator, status_text},
     metrics::{HOST_ARROW_WIDTH, STATUS_WIDTH},
     paint::label_text,

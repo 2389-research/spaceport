@@ -27,6 +27,37 @@ final class GoToTests: XCTestCase {
         XCTAssertEqual(rows.first?.location, "Agents › Build")
         XCTAssertEqual(rows.first?.tab.id, "build")
         XCTAssertEqual(rows.first?.pane.agentName, "Codex")
+        let groups = AgentRail.groups(rows)
+        XCTAssertEqual(groups.flatMap(\.rows).map(\.id), ["waiting", "working", "recent-idle", "done", "unknown"])
+        XCTAssertEqual(TerminalHeader.nextWaiting(rows, focused: "working")?.id, "waiting")
+        XCTAssertNil(TerminalHeader.nextWaiting(rows, focused: "waiting"))
+    }
+
+    func testNextWaitingCyclesThroughEveryWaitingAgentInDisplayOrder() {
+        let workspace = MobileWorkspace(id: "w", label: "Mission", status: "")
+        let tab = MobileTab(id: "t", workspaceId: workspace.id, label: "Crew", status: "")
+        let rows = [("a", "blocked"), ("working", "working"), ("b", "blocked"), ("c", "blocked")].map { id, status in
+            let pane = MobilePane(stateChangeSeq: nil, agentName: id, id: id, tabId: tab.id, label: id, status: status)
+            return GoToPane(workspace: workspace, tab: tab, pane: pane)
+        }
+        XCTAssertEqual(TerminalHeader.nextWaiting(rows, focused: "a")?.id, "b")
+        XCTAssertEqual(TerminalHeader.nextWaiting(rows, focused: "b")?.id, "c")
+        XCTAssertEqual(TerminalHeader.nextWaiting(rows, focused: "c")?.id, "a")
+        XCTAssertEqual(TerminalHeader.nextWaiting(rows, focused: "working")?.id, "a")
+        XCTAssertEqual(TerminalHeader.nextWaiting(rows, focused: nil)?.id, "a")
+        XCTAssertNil(TerminalHeader.nextWaiting([rows[0]], focused: "a"))
+        XCTAssertNil(TerminalHeader.nextWaiting([rows[1]], focused: nil))
+    }
+
+    func testGoToConfirmationRequiresThePaneToOwnInput() {
+        var view = MobileView(version: 8, bootId: "boot", workspaces: [], tabs: [], panes: [],
+                              paneMap: nil, focusedWorkspace: "w", focusedTab: "t", focusedPane: "p",
+                              terminal: nil, inputTarget: InputTarget(connection: 1, bootId: "boot", paneId: "p", popupId: nil),
+                              error: nil, disconnected: false, hostChallenge: nil, goToPending: false, goToArrival: 7)
+        XCTAssertTrue(view.confirmsInput(to: "p", revision: 7))
+        XCTAssertFalse(view.confirmsInput(to: "p", revision: 6))
+        view.inputTarget?.popupId = "overlay"
+        XCTAssertFalse(view.confirmsInput(to: "p", revision: 7))
     }
 
     func testStatusUsesReportedActivityOnly() {

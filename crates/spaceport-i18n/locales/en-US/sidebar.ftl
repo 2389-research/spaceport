@@ -74,6 +74,7 @@ sidebar-spoken-muted = notifications muted
 # Activity groups and approximate idle ages in the priority Agents panel.
 sidebar-agents-waiting = Waiting for you
 sidebar-agents-working = Working
+sidebar-agents-done = Done
 sidebar-agents-idle-recent = Idle · under 1 hour
 sidebar-agents-idle-hours = Idle · 1–5 hours
 sidebar-agents-idle-long = Idle · 5+ hours
@@ -83,3 +84,4 @@ sidebar-agents-offline = Offline
 sidebar-idle-age-minutes = { $count }m
 sidebar-idle-age-hours = { $count }h
 sidebar-idle-at-least = ≥{ $age }
+sidebar-agents-quiet = Quiet

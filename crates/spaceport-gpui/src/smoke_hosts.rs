@@ -79,6 +79,7 @@ async fn checks(
     clicks(handle, decoy, focus, cx).await?;
     labels::resized(handle, focus, cx).await?;
     labels::scaled(handle, focus, cx).await?;
+    status_group(handle, cx)?;
     independent_scroll(handle, cx).await?;
     close_decoy(decoy, cx)
 }
@@ -269,7 +270,7 @@ async fn clicks(
                 .with_context(|| format!("missing target {label}"))?;
             let mut point = p.bounds.center();
             if let Some(endpoint) = match step {
-                2 => Some("fixture-1"),
+                0 | 2 => Some("fixture-1"),
                 3 => Some(endpoint::LOCAL),
                 4 => Some("fixture-2"),
                 _ => None,
@@ -284,7 +285,11 @@ async fn clicks(
                     .center()
                     .y;
             }
-            if step < 2 {
+            // The name folds the group. The trailing area selects the host.
+            if (2..=4).contains(&step) {
+                point.x = p.bounds.right() + px(spaceport_sidebar::metrics::HOST_GAP);
+            }
+            if step == 1 {
                 point = cx
                     .global::<HostArrows>()
                     .0
@@ -353,6 +358,86 @@ async fn clicks(
         .context("verifying sidebar host interaction")?;
         eprintln!("SIDEBAR native host step={step} verified");
     }
+    Ok(())
+}
+
+/// Clicks a Done heading in the native window, then widens its icon-only agent row.
+fn status_group(handle: WindowHandle<SpaceportWindow>, cx: &mut AsyncApp) -> Result<()> {
+    with_root(handle, cx, |view, _, cx| {
+        view.update(cx, |view, cx| -> Result<()> {
+            view.agent_sort = crate::preferences::AgentSort::Priority;
+            view.sidebar_width = Some(232.);
+            view.sidebar_scroll[1].set_offset(Point::default());
+            view.live.status = crate::state::ConnectionStatus::Connected;
+            let snapshot = view.live.snapshot.as_mut().context("missing host snapshot")?;
+            let snapshot = std::sync::Arc::make_mut(snapshot);
+            let agent = snapshot.agents.first_mut().context("missing agent")?;
+            agent.pane_id = "wAB:pY".into();
+            agent.agent_status = spaceport_client::protocol::AgentStatus::Done;
+            agent.display_agent = Some("Claude Code".into());
+            agent.terminal_title_stripped = Some("Review changes".into());
+            snapshot.panes.push(spaceport_client::protocol::ClientShellPane {
+                pane_id: agent.pane_id.clone(),
+                workspace_id: agent.workspace_id.clone(),
+                tab_id: agent.tab_id.clone(),
+                cwd: Some("/sandbox/review-dir".into()),
+                foreground_cwd: None,
+                focused: false,
+                label: None,
+                right_click_passthrough: false,
+            });
+            cx.notify();
+            Ok(())
+        })
+    })?;
+    for (visible, wide) in [(true, false), (false, false), (true, true)] {
+        let (target, point) = with_root(handle, cx, |view, window, cx| -> Result<_> {
+            if wide {
+                view.update(cx, |view, cx| {
+                    view.sidebar_width = Some(320.);
+                    cx.notify();
+                });
+            }
+            clear_probes(cx);
+            draw(window, cx);
+            let probes = &cx.global::<PaintedProbes>().0;
+            if ["#1", "Review changes", "review-dir"].iter().any(|t| probes.contains_key(*t) != visible)
+                || probes.contains_key("Claude Code") {
+                bail!("unexpected native Done row: visible={visible}, wide={wide}");
+            }
+            if visible {
+                let tab = probe(cx, "#1")?.bounds;
+                let dir = probe(cx, "review-dir")?.bounds;
+                let title = probe(cx, "Review changes")?.bounds;
+                if tab.top() != dir.top() || tab.right() > dir.left() || title.bottom() > dir.top() {
+                    bail!("terminal metadata should share a line below its title");
+                }
+            }
+            Ok((Target::acquire(window)?, probe(cx, "Done")?.bounds.center()))
+        })?;
+        if !wide {
+            target.click(point.x.to_f64(), point.y.to_f64())?;
+        }
+    }
+    with_root(handle, cx, |view, window, cx| -> Result<()> {
+        view.update(cx, |view, cx| -> Result<()> {
+            let snapshot = view.live.snapshot.as_mut().context("missing host snapshot")?;
+            let snapshot = std::sync::Arc::make_mut(snapshot);
+            let agent = snapshot.agents.first_mut().context("missing agent")?;
+            agent.agent_status = spaceport_client::protocol::AgentStatus::Idle;
+            view.live.idle_tracker.observe(snapshot, spaceport_client::agent_idle::now_ms() - 7_500_000);
+            cx.notify();
+            Ok(())
+        })?;
+        clear_probes(cx);
+        draw(window, cx);
+        let probes = &cx.global::<PaintedProbes>().0;
+        let age = crate::i18n::fl!("sidebar-idle-at-least", age = crate::i18n::fl!("sidebar-idle-age-hours", count = "2"));
+        if !probes.contains_key(&age) || probes.keys().any(|text| text.starts_with("idle · ")) {
+            bail!("native Idle row must show its observed age by itself");
+        }
+        Ok(())
+    })?;
     Ok(())
 }
 

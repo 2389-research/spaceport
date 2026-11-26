@@ -8,7 +8,8 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 use spaceport_client::Method;
-use spaceport_menu::pane::{Action, Offers, Target};
+use spaceport_menu::pane::{Action, Offers, Target, render};
+use spaceport_menu::rows::Row;
 
 mod moves;
 mod processes;
@@ -501,40 +502,36 @@ impl SpaceportWindow {
         if pane.moving.is_some() {
             body = self.render_pane_move_pending();
         } else if self.menu.page == Some(Page::Pane) {
-            for (index, action) in pane.actions().into_iter().enumerate() {
-                body = body.child(
-                    div()
-                        .id(("pane-menu-action", index))
-                        .debug_selector(move || format!("pane-menu-{index}"))
-                        .min_h(px(self.config.ui.line_height() + 12.))
-                        .px(px(8.))
-                        .row()
-                        .items_center()
-                        .cursor_pointer()
-                        .when(pane.selected == Some(index), |row| {
-                            row.bg(rgb(self.theme.active))
-                        })
-                        .hover(|row| row.bg(rgb(self.theme.active)))
-                        .child(
-                            // One line: the panel widens to fit it, and a
-                            // window too narrow for that ends it with "…".
-                            div()
-                                .debug_selector(move || format!("pane-menu-label-{index}"))
-                                .min_w_0()
-                                .truncate()
-                                .child(labels::pane_action(action, &pane.target)),
-                        )
-                        .on_hover(cx.listener(move |this, hovered, _, cx| {
-                            if *hovered && let Some(pane) = &mut this.menu.pane {
-                                pane.selected = Some(index);
-                                cx.notify();
-                            }
-                        }))
-                        .on_click(cx.listener(move |this, _, window, cx| {
-                            this.activate_pane_menu(action, window, cx)
-                        })),
-                );
-            }
+            let actions = pane.actions();
+            let rows: Vec<Row> = actions
+                .iter()
+                .enumerate()
+                .map(|(index, action)| Row {
+                    label: labels::pane_action(*action, &pane.target),
+                    selector: format!("pane-menu-{index}"),
+                    label_selector: Some(format!("pane-menu-label-{index}")),
+                    ..Row::default()
+                })
+                .collect();
+            body = render::render_actions(
+                body,
+                &crate::menu::chrome::text(&self.config.ui),
+                &self.theme,
+                &rows,
+                pane.selected,
+                |index, row| {
+                    let action = actions[index];
+                    row.on_hover(cx.listener(move |this, hovered, _, cx| {
+                        if *hovered && let Some(pane) = &mut this.menu.pane {
+                            pane.selected = Some(index);
+                            cx.notify();
+                        }
+                    }))
+                    .on_click(cx.listener(move |this, _, window, cx| {
+                        this.activate_pane_menu(action, window, cx)
+                    }))
+                },
+            );
         } else {
             body =
                 body.p(px(8.))

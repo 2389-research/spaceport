@@ -67,6 +67,22 @@ fn fixed_glyphs(kind: &TokenKind, glyph: f32, status_width: f32) -> usize {
 
 /// Fixed token widths preserve GPUI's text truncation during layout.
 fn token_line(row: &[ResolvedToken], look: TokenLook, width: f32, cx: &RowContext<'_>) -> Div {
+    // Herdr places the app icon on its configured line before budgeting text.
+    let compact;
+    let row = if cx.icon_only_agent
+        && row
+            .iter()
+            .any(|token| matches!(token.kind, TokenKind::Text(_, TextRole::Agent)))
+    {
+        compact = row
+            .iter()
+            .filter(|token| !matches!(token.kind, TokenKind::Text(_, TextRole::Agent)))
+            .cloned()
+            .collect::<Vec<_>>();
+        compact.as_slice()
+    } else {
+        row
+    };
     let status = look.status;
     let (font, theme) = (cx.font, cx.theme);
     let glyph = glyph_width(font);
@@ -208,6 +224,14 @@ pub fn token_column(
     )
 }
 
+/// The line whose app name or icon identifies the agent.
+pub(crate) fn agent_line(lines: &[Vec<ResolvedToken>]) -> Option<usize> {
+    lines.iter().position(|line| {
+        line.iter()
+            .any(|token| matches!(token.kind, TokenKind::Text(_, TextRole::Agent)))
+    })
+}
+
 pub(super) fn configured_lines(
     mut column: Div,
     key: &str,
@@ -222,10 +246,7 @@ pub(super) fn configured_lines(
         RowKind::Agent(icon) => Some(icon),
         RowKind::Workspace => None,
     };
-    let agent_at = lines.iter().position(|line| {
-        line.iter()
-            .any(|token| matches!(token.kind, TokenKind::Text(_, TextRole::Agent)))
-    });
+    let agent_at = agent_line(lines);
     let (agent_size, agent_reserve) = agent_icon_size(font);
     let workspace_reserve = if matches!(workspace_icon, RowIcon::None) {
         0.

@@ -16,6 +16,7 @@ mod device_icons;
 mod features;
 mod focus_follows_mouse;
 mod indicators;
+mod quiet_after;
 mod repository_icons;
 mod session_restore;
 mod sidebar_search;

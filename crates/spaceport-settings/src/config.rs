@@ -102,6 +102,7 @@ pub struct Config {
     pub palette: PaletteConfig,
     /// The `[pane_keys]` table as the file wrote it, for the same reason.
     pub pane_keys: PaneKeys,
+    pub quiet_after: crate::QuietAfter,
     pub show_agents: bool,
     /// The "Agents" title row above the agents list, which also holds the sort
     /// toggle. The sort then follows Herdr's `ui.agent_panel_sort` unless it
@@ -210,6 +211,7 @@ impl Default for Config {
             option_as_alt: OptionAsAlt::default(),
             palette: PaletteConfig::default(),
             pane_keys: PaneKeys::new(),
+            quiet_after: crate::QuietAfter::default(),
             show_agents: true,
             show_agents_header: true,
             show_device_icons: true,
@@ -274,6 +276,7 @@ struct Settings {
     option_as_alt: OptionAsAlt,
     palette: PaletteConfig,
     pane_keys: PaneKeys,
+    quiet_after: crate::QuietAfter,
     show_agents: Option<bool>,
     show_agents_header: Option<bool>,
     show_device_icons: Option<bool>,
@@ -563,6 +566,7 @@ impl Config {
         config.accent = settings.accent;
         config.contrast = settings.contrast;
         config.agents_placement = settings.agents_placement;
+        config.quiet_after = settings.quiet_after;
         config.agent_skill = settings.agent_skill;
         config.usage = settings.usage;
         config.option_as_alt = settings.option_as_alt;

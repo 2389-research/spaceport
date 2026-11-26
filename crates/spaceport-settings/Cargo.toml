@@ -52,5 +52,6 @@ fontdb.workspace = true
 test-support = []
 
 [dev-dependencies]
+spaceport-i18n = { features = ["test-support"], workspace = true }
 anyhow.workspace   = true
 tempfile.workspace = true

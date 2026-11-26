@@ -117,9 +117,13 @@ pub(crate) struct SpaceportWindow {
     pub(crate) _window_closed: Subscription,
     /// Another window may edit a note this one shows.
     pub(crate) _worktree_notes: Subscription,
+    /// The demo the About box is showing. Picked when the box opens, so a
+    /// redraw never changes the scene under the reader.
+    pub(crate) about_demo: crate::about::Demo,
     pub(crate) active: bool,
     /// The activity bar's panel and filter.
     pub(crate) activity: sidebar::Activity,
+    pub(crate) agent_section_folds: std::collections::BTreeSet<sidebar::AgentSection>,
     pub(crate) agent_sort: preferences::AgentSort,
     /// Whether the user chose the sort with the panel toggle, now or in a
     /// stored session. Until then the daemon's `ui.agent_panel_sort` decides,

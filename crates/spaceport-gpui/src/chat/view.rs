@@ -385,7 +385,12 @@ impl SpaceportWindow {
             .capture_action(cx.listener({
                 let pane = pane_id.clone();
                 move |this, _: &crate::actions::SelectAll, window, cx| {
-                    this.chat_reader_key(&pane, &crate::actions::edit_key("a"), window, cx);
+                    this.chat_reader_key(
+                        &pane,
+                        &spaceport_textfield::actions::edit_key("a"),
+                        window,
+                        cx,
+                    );
                 }
             }))
             .capture_action(cx.listener({

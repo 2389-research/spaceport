@@ -56,6 +56,24 @@ nextest *args:
     cargo nextest run --locked --workspace {{args}}
     cargo nextest run --locked --workspace --all-features {{args}}
 
+# Verify fold continuity with an explicitly selected Duo and disposable SSH session.
+test-ios-duo $device:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for field in SSH_HOST SSH_PORT SSH_USER SSH_PASSWORD SSH_FINGERPRINT DUO_SESSION; do
+        variable="TEST_RUNNER_SPACEPORT_TEST_${field}"
+        if [[ -z ${!variable:-} ]]; then
+            echo "Set $variable for the disposable Herdr fixture. See mobile/README.md." >&2
+            exit 2
+        fi
+    done
+    ./mobile/build-apple --release
+    xcodebuild test -project mobile/apple/SpaceportMobile.xcodeproj -scheme SpaceportMobile \
+        -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO \
+        -only-testing:SpaceportMobileUITests/SessionWorkflowTests/testDuoKeepsReviewerInputWhenFolding \
+        -only-testing:SpaceportMobileUITests/SessionWorkflowTests/testDuoTerminalControlsUseAvailableHeight \
+        -only-testing:SpaceportMobileUITests/SessionWorkflowTests/testHeaderHomeReturnsToSessionList
+
 # Explicit opt-in: launches and cleans up its own isolated daemon only.
 test-live binary:
     HERDR_TEST_BINARY="{{binary}}" cargo test --locked -p spaceport-client --test live -- --ignored --nocapture

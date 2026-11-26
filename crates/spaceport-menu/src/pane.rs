@@ -6,6 +6,8 @@ use crate::{Error, Result};
 use serde_json::{Value, json};
 use spaceport_client::{Method, protocol::ClientShellSnapshot};
 
+pub mod render;
+
 /// The pane one menu is about, captured from the snapshot it opened under.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Target {

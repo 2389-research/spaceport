@@ -1,0 +1,168 @@
+# The About box's demoscene stage
+
+What issue [#245] asked for: an About box with the energy of a cracktro's
+ABOUT key — old-school effects, real-time, unmistakably 2389 Research — while
+staying an About box: same version, same links, same credits, same Escape-to-
+close.
+
+The owner's ruling (`notes-owner-decisions-2026-11-25.md`, item 4) is
+**shipped in every build, no sound**. That is what this change does: the scene
+is in release builds, and nothing in it makes a noise.
+
+## What the box is now
+
+`about.rs` is still the panel: `render_about` builds the credits column, hands
+it to `scene::panel`, which lays it over `scene::stage` so the scene paints
+behind it, and hands it back untouched when the plain panel is asked for.
+
+## The document
+
+The credits are `nfo`'s release file, every row one message: the field's name
+padded out to the same width with stops, then its value, in the window's
+terminal face. Above the rows stands the wordmark, `SPACE` over `PORT` in block
+letters the theme's own field inks. The messages and the debug selectors
+(`about`, `about-version`, `about-icon`, `about-notices` …) are the ones the box
+has always had, so the layout tests, QA and screen readers read it as they did.
+
+Each demo owns the whole stage, so five opens of the box are five scenes rather
+than one scene in five colours: `demos` picks one when the box opens and the
+window keeps it until the box closes, and `SPACEPORT_ABOUT_DEMO` names one for
+QA (`copper`, `plasma`, `rotozoom`, `scroller`, `starfield`).
+
+The panel is 340 px wide at most, so a row longer than it wraps; an address at
+the document's size cannot fit, and the native About smoke allows the wrap
+while it still requires the whole message, every glyph of it, inside the panel.
+
+The credits are ordinary text elements: the scene paints under them and never
+stands in for them. Nothing in the scene carries an accessible name, so a
+screen reader still reaches the dialog's role and title and the credits' text,
+and hears no decoration.
+
+## The layers, one module each
+
+All of `crates/spaceport-gpui/src/about/effects/`. Each effect is a pure
+function of the scene's time (seconds into a 12 s loop) plus its own constants:
+no clock, no state, nothing allocated. That is what the tests pin — projection,
+sine phases, palette selection at `t`, the rotozoom matrix at `t` — rather than
+pixels.
+
+| Layer | File | What it is |
+| --- | --- | --- |
+| Plasma | `effects/plasma.rs` | Four crossing sine waves read through the theme's cool ANSI ramp, one colour a 14 px cell. The field everything else sits on. |
+| Starfield | `effects/starfield.rs` | 96 stars from a fixed hash, each a point projected from its own depth: the far plane reads its scattered place, and a star brightens and flies outward as its depth shrinks. |
+| Copper bars | `effects/copper.rs` | Five warm columns riding across the stage in a sine, each lit across its width from a copper ramp, so each reads as a lit tube. |
+| Rotozoomer | `effects/rotozoom.rs` | A checkered texture with a bright ring, read backwards through a matrix that turns twice and breathes three times a loop, over the whole stage. |
+| Sine scroller | `effects/scroller.rs` | The greeting, one glyph an element, each lifted by a sine of where it is across the stage, so the line crosses as a wave. |
+| Ramps | `effects/ramp.rs` | Three-stop colour mixing, so a layer's palette is a value its maths returns. |
+
+`effects.rs` holds the loop length, the cell grid the painted layers share, and
+the layer order. `scene.rs` holds the stage: the palette, the animation, the
+marquee, and one canvas that paints the layers in order.
+
+## Composition
+
+Back to front, all inside one canvas: the stage's ground, the plasma field, the
+stars, the copper columns, then the rotozoomed field over all of it. A demo
+paints the layers it composes itself — the rotozoom demo the field alone, the
+scroller's the field and the stars under its two-line marquee — so no two of
+them compose the same scene. The marquee rides a band at the top of the stage,
+over the field, and the credits column paints over all of it.
+
+The palette comes from the window's theme, not from fixed brand colours: the
+ground is the theme's background, the layers the theme's ANSI brights mixed
+toward that ground, and a star the theme's ink. So the box reads on a dark
+theme and on a light one — a dark plasma and warm beams behind light text, a
+pale wash behind dark text — and the credits keep the contrast they have
+anywhere else. The identity comes from the mark and the words; there is no
+second palette to drift from the theme.
+
+## The clock
+
+Both stage elements read one `Animation` in `crate::motion`'s terms:
+
+- `Animation::new(motion::duration(LOOP))` with `repeat_synced()`, so the
+  canvas and the marquee share the app's phase-locked clock and the scene
+  repeats without a seam. Under QA > Slow Animations `duration` stretches the
+  loop tenfold, so the scene slows like every other motion.
+- `.with_max_fps(30)`, so it re-renders at most 30 times a second instead of
+  burning every frame the window draws.
+- Nothing reads a wall clock. Under reduced motion GPUI holds a repeating
+  animation on its first frame and schedules nothing, so the scene becomes a
+  still picture.
+- Teardown is the element: the scene is a child of the About page, so closing
+  the box drops it and the frame requests with it. There is no timer to stop
+  and no state on the window.
+
+A frame is a bounded amount of work: at the narrowest panel (326×568) the
+plasma field is 984 quads, the rotozoomed field over the whole stage 2,368, the
+stars 96, the copper bars 40 — under 2,500 quads for the busiest demo, and the
+marquee is one text element a visible glyph. The paint closure allocates
+nothing: palettes are mixed from `Copy` colours, the star table is `LazyLock`ed
+once, and the frame's time reaches the closure through a cell the animator
+writes, not through a rebuilt closure.
+
+The About box is the one place the issue allows to burn a frame. The cost of
+one frame is the window scene rebuild plus those quads, and it is paid only
+while the box is open.
+
+## Reaching the plain panel
+
+For QA of the box without the scene:
+
+```sh
+SPACEPORT_ABOUT_CLASSIC=1 just run-debug
+```
+
+`scene::classic()` honours the variable in development and test builds
+(`cfg!(debug_assertions)`) only, so every shipped build shows the scene and no
+user finds a second About box behind a variable. `scene::panel` is the branch
+itself, so a test draws both panels through it and finds the stage and marquee
+only in the one that is shipped. The plain panel keeps the same credits
+column, laid out by the same code, with no canvas and no marquee behind it.
+
+## What this change does not do
+
+- **No sound.** Per the owner's ruling. Sound stays in the notification path;
+  nothing here plays anything.
+- **No video and no new dependency.** Every effect is GPUI quads and text.
+- **The mark does not spin.** A squircle rotated inside its 96 px box shows
+  clipped corners, and the box has no room to grow it, so the rotozoomed field
+  turns and breathes around a still mark instead.
+- **No settings toggle.** The issue offered "an env var or a settings debug
+  toggle"; a QA-only variable does not need a row in Settings.
+- **No native screenshots in this change.** The layers were composed and
+  colour-checked against the dark and light themes before they were painted in
+  GPUI, but the real window was not captured here: `just test-gui` needs an
+  active desktop and an installed Herdr. `just test-gui /path/to/herdr` with
+  `HERDR_TEST_LOCAL_CONTROLS_CAPTURE=<dir>` writes `about-{theme}-{width}.png`
+  from the native About smoke, which is the check to run on a desktop.
+
+[#245]: https://github.com/2389-research/spaceport/issues/245
+
+## Review fixes
+
+Three findings from the review of this change, each fixed where it was named
+and pinned by a test:
+
+| Finding | File | What changed |
+| --- | --- | --- |
+| Bidi controls took glyph slots in the marquee | `about/scene.rs` | `scene::letters` drops the campaign's untrusted characters — `spaceport_client::text::unsafe_char`, the same class `spaceport_truncate` drops from every other line the app shows — before the marquee counts or indexes anything. Fluent's default isolation wraps the placeables in U+2068/U+2069 and a pseudo-locale wraps the line again in U+202E/U+202C, so the greeting arrives carrying controls; each would have taken a slot and left a gap in the wave. The control set is reused rather than restated, so the marquee cannot drift from what the rest of the app refuses. |
+| The starfield's repetition test could pass on two `None`s | `about/effects/tests/starfield.rs` | The old star sat past the edge at both sampled times, so `assert_eq!(None, None)` proved nothing. The test now finds a star the field holds on the stage a whole loop apart, requires both projections, and compares `x`, `y` and `brightness` (to a thousandth of the stage's half-width and a millionth of the brightness: the phase repeats exactly and only the two times' rounding differs). A brightness that stopped repeating now fails. |
+| The marquee set a font size but no line height | `about/scene.rs` | `.line_height(px(size))` beside `.text_size(px(size))`. Each glyph's line box is now its own size, so the panel's inherited line height cannot push the baseline below the 18 px band and let `overflow_hidden` clip the crest at large UI font sizes. The band's height, the vertical offset that centres a glyph and the clipping are untouched. |
+
+One thing deliberately not widened: the marquee still keeps U+200B (zero-width
+space) and the U+200C/U+200D joiners. The campaign's class drops the bidi
+formatting controls — the embedding, override and isolate codes, and the
+deprecated U+200E/U+200F marks — and those three have no bidi power, so
+dropping them here would be a second, marquee-local class saying something the
+rest of the app does not. Text carrying a joiner would show one zero-width
+element slot; that is cosmetic, and it is not what the review asked about.
+
+What was run for these three fixes:
+
+| Check | Result |
+| --- | --- |
+| `cargo test -p spaceport-gpui --bin spaceport about` | 46 passed: the 45 the change had, plus `the_marquee_gives_bidi_controls_no_glyph_slot` (`the_field_repeats_with_the_loop` was rewritten in place) |
+| `cargo check -p spaceport-gpui --all-targets` | clean |
+| `SPARKLE_FRAMEWORK_PATH=$PWD/target/sparkle-sdk cargo clippy -p spaceport-gpui --all-targets --all-features` | clean, no warnings from this crate (SDK acquired with `bash scripts/release/prepare-sparkle-sdk.sh target/sparkle-sdk`) |
+| `cargo fmt --check` | clean |

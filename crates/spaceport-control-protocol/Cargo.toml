@@ -13,6 +13,7 @@ workspace = true
 spaceport-client.workspace = true
 serde.workspace        = true
 serde_json.workspace   = true
+spaceport-i18n.workspace   = true
 # Only for `test-support`: its socket addresses live in private temporary directories.
 tempfile               = { optional = true, workspace = true }
 thiserror.workspace    = true
@@ -24,7 +25,9 @@ tracing.workspace      = true
 interprocess.workspace = true
 
 [dev-dependencies]
-tempfile.workspace = true
+serde_json.workspace = true
+spaceport-i18n       = { features = ["test-support"], workspace = true }
+tempfile.workspace   = true
 
 [features]
 # Fresh socket addresses for the app's control server tests.

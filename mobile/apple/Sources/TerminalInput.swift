@@ -16,9 +16,9 @@ struct TerminalInput: UIViewRepresentable {
         view.backgroundColor = .clear
         view.font = .monospacedSystemFont(ofSize: pointSize, weight: .regular)
         view.textContainerInset = UIEdgeInsets(top: 2, left: 0, bottom: 2, right: 0)
-        view.textColor = .white
-        view.tintColor = .white
-        view.keyboardAppearance = .dark
+        view.textColor = .label
+        view.tintColor = .label
+        view.keyboardAppearance = .default
         view.autocapitalizationType = .none
         view.autocorrectionType = .no
         view.spellCheckingType = .no

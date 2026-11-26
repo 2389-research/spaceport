@@ -5,6 +5,7 @@
 pub mod agent;
 mod error;
 pub mod host_script;
+mod localize;
 pub mod setup;
 pub mod snapshot;
 

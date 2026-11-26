@@ -13,7 +13,7 @@ fn priority_sections_show_attention_then_timed_and_undated_idle(cx: &mut gpui::T
             listing.agents = [
                 ("oldest", AgentStatus::Idle, 11),
                 ("middle", AgentStatus::Idle, 12),
-                ("recent", AgentStatus::Done, 13),
+                ("recent", AgentStatus::Idle, 13),
                 ("early", AgentStatus::Idle, 2),
                 ("work", AgentStatus::Working, 5),
                 ("wait", AgentStatus::Blocked, 3),
@@ -59,6 +59,7 @@ fn priority_sections_show_attention_then_timed_and_undated_idle(cx: &mut gpui::T
     for selector in [
         "header-agents-waiting",
         "header-agents-working",
+        "header-agents-done",
         "header-agents-recent",
         "header-agents-hours",
         "header-agents-long-idle",
@@ -78,7 +79,7 @@ fn priority_sections_show_attention_then_timed_and_undated_idle(cx: &mut gpui::T
         assert_eq!(
             panes,
             [
-                "wait", "work", "recent", "middle", "oldest", "late", "early"
+                "wait", "work", "late", "recent", "middle", "oldest", "early"
             ]
         );
     });

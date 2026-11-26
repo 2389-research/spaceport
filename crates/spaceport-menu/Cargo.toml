@@ -13,8 +13,12 @@ workspace = true
 gpui.workspace               = true
 serde_json.workspace         = true
 spaceport-client.workspace   = true
+spaceport-i18n.workspace     = true
 spaceport-motion.workspace   = true
 spaceport-settings.workspace = true
 spaceport-usage.workspace    = true
 spaceport-widgets.workspace  = true
 thiserror.workspace          = true
+
+[dev-dependencies]
+spaceport-i18n = { features = ["test-support"], workspace = true }

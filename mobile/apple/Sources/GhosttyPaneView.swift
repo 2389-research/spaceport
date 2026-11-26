@@ -5,9 +5,20 @@ import SwiftUI
 import UIKit
 
 @MainActor
-final class GhosttyPaneSurface: TerminalSurfaceOpenURLHandlingDelegate {
+final class GhosttyPaneSurface: TerminalSurfaceOpenURLHandlingDelegate, TerminalSurfaceColorChangeDelegate {
+    @Published private(set) var reportedAppearance: TerminalAppearance?
+
+    func terminalDidChangeColor(_ change: TerminalColorChange) {
+        guard change.kind == .background else { return }
+        let appearance = TerminalAppearance(background: change.color)
+        if appearance != reportedAppearance { reportedAppearance = appearance }
+    }
+
     // Each attachment owns a separate terminal grid. The font and Metal runtime are shared.
-    private static let controller = TerminalController { config in
+    static let controller = TerminalController(theme: (TerminalAppearance(rawValue:
+        UserDefaults.standard.string(forKey: TerminalAppearance.preference) ?? "") ?? .dark).theme) { config in
+        config.withWindowPaddingX(0)
+        config.withWindowPaddingY(0)
         config.withCustom("clipboard-read", "deny")
         config.withCustom("clipboard-write", "deny")
         config.withCustom("desktop-notifications", "false")
@@ -29,7 +40,7 @@ final class GhosttyPaneSurface: TerminalSurfaceOpenURLHandlingDelegate {
     init(write: @escaping @Sendable (Data) -> Bool, resize: @escaping @Sendable (Viewport) -> Void,
          textSize: Int? = nil) {
         self.write = write
-        self.textSize = TerminalPreferences.textSize(saved: textSize, ghostty: true)
+        self.textSize = textSize ?? TerminalPreferences.defaultTextSize
         session = InMemoryTerminalSession(write: { _ = write($0) }, resize: { grid in
             guard grid.columns > 0, grid.rows > 0 else { return }
             resize(Viewport(columns: grid.columns, rows: grid.rows,
@@ -89,6 +100,7 @@ final class GhosttyPaneSurface: TerminalSurfaceOpenURLHandlingDelegate {
 }
 
 final class PhoneGhosttyView: UITerminalView {
+    let agentSwipe = AgentListSwipe()
     var readScreen: (() -> String?)?
     var shiftArmed = false
     var updatingModifiers = false
@@ -164,14 +176,20 @@ struct GhosttyPaneView: UIViewRepresentable {
     let surface: GhosttyPaneSurface
     @Binding var keyboard: Bool
     @Binding var modifiers: UInt8
+    var openAgents: (() -> Void)? = nil
 
     func makeUIView(context: Context) -> PhoneGhosttyView {
         let view = PhoneGhosttyView(frame: .zero)
+        view.agentSwipe.canStart = { [weak view] in
+            view?.canPerformAction(#selector(UIResponderStandardEditActions.copy(_:)), withSender: nil) == false
+        }
+        view.addGestureRecognizer(view.agentSwipe)
         surface.attach(to: view)
         return view
     }
 
     func updateUIView(_ view: PhoneGhosttyView, context: Context) {
+        view.agentSwipe.openAgents = openAgents
         view.keyboardTapped = { keyboard.toggle() }
         view.keyboardDismissed = { keyboard = false }
         view.wantsKeyboard = keyboard
@@ -184,6 +202,7 @@ struct GhosttyPaneView: UIViewRepresentable {
     }
 
     static func dismantleUIView(_ view: PhoneGhosttyView, coordinator: ()) {
+        view.agentSwipe.openAgents = nil
         view.keyboardTapped = nil
         view.keyboardDismissed = nil
         view.didSpendShift = nil

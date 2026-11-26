@@ -27,6 +27,32 @@ final class GhosttyPaneTests: XCTestCase {
         XCTAssertEqual(try fontSize(custom), 17)
     }
 
+    func testProgramBackgroundAndResetFollowTheGhosttySurface() async throws {
+        let controller = GhosttyPaneSurface.controller
+        let previous = controller.theme
+        controller.setTheme(TerminalAppearance.dark.theme)
+        defer { controller.setTheme(previous) }
+        let surface = GhosttyPaneSurface(write: { _ in true }, resize: { _ in })
+        let host = UIHostingController(rootView: GhosttyPaneView(surface: surface, keyboard: .constant(false), modifiers: .constant(0)))
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = host
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        host.view.layoutIfNeeded()
+        func check(_ sequence: String, becomes mode: TerminalAppearance) async {
+            let changed = expectation(description: "Ghostty reported the terminal background")
+            let observation = surface.$reportedAppearance.first(where: { $0 == mode }).sink { _ in changed.fulfill() }
+            surface.receive(Data(sequence.utf8))
+            await fulfillment(of: [changed], timeout: 5)
+            observation.cancel()
+        }
+        await check("\u{1b}]11;#ffffee\u{7}", becomes: .light)
+        await check("\u{1b}]111\u{7}", becomes: .dark)
+        controller.setTheme(TerminalAppearance.light.theme)
+        XCTAssertEqual(TerminalAppearance(background: controller.backgroundColor), .light)
+    }
+
     func testRemoteScreenAndClipboardPolicy() async throws {
         let surface = GhosttyPaneSurface(write: { _ in true }, resize: { _ in })
         let host = UIHostingController(rootView: GhosttyPaneView(surface: surface, keyboard: .constant(false), modifiers: .constant(0)))

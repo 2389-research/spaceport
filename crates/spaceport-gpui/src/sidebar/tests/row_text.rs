@@ -158,6 +158,7 @@ fn cells_hand_their_state_and_data_to_the_layout() {
     let snapshot = layout_tests::snapshot(1);
     let (font, theme) = (crate::config::Config::default().sidebar, Theme::default());
     let cx = RowContext {
+        icon_only_agent: false,
         indicators: Indicators::new(None, StatusIcons::default(), false, false, &theme),
         font: &font,
         theme: &theme,

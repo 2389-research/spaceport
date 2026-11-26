@@ -8,7 +8,8 @@ struct DraftComposer: View {
     @Binding var draft: TerminalDraft
     @ObservedObject var connection: MobileConnection
     let presentation: UUID
-    @Environment(\.dismiss) private var dismiss
+    let inline: Bool
+    let close: () -> Void
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var editing = DraftEditing()
     @State private var notice: String?
@@ -18,8 +19,26 @@ struct DraftComposer: View {
 
     var body: some View {
         if scenePhase == .active {
-            NavigationStack {
-                VStack(alignment: .leading, spacing: 12) {
+            VStack(spacing: 0) {
+                if !inline {
+                    Capsule().fill(.secondary.opacity(0.6))
+                        .frame(width: 36, height: 5).padding(.vertical, 8)
+                        .frame(maxWidth: .infinity).contentShape(Rectangle())
+                        .gesture(DragGesture().onEnded { drag in
+                            if drag.translation.height > 44 { close() }
+                        })
+                        .accessibilityHidden(true)
+                }
+                HStack {
+                    Text("Draft").font(.headline).accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier(inline ? "draft.inline" : "draft.sheet")
+                    Spacer()
+                    Button("Close") { operation?.cancel(); close() }
+                        .frame(minWidth: 44, minHeight: 44)
+                        .accessibilityIdentifier("draft.done")
+                }
+                .padding(.horizontal, 12)
+                VStack(alignment: .leading, spacing: 6) {
                     let current = connection.draftDestination
                     Button { choosingDestination = true } label: {
                         HStack {
@@ -34,7 +53,7 @@ struct DraftComposer: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             Image(systemName: "chevron.right").font(.caption.weight(.semibold))
                         }
-                        .padding(.horizontal, 16).frame(minHeight: 54)
+                        .padding(.horizontal, 12).frame(minHeight: 44)
                         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
                     }
                     .buttonStyle(.plain).accessibilityIdentifier("draft.destination")
@@ -52,12 +71,17 @@ struct DraftComposer: View {
                         Text(notice)
                             .foregroundStyle(.secondary)
                     }
+                    DraftEditor(text: $draft.text, editing: editing, attach: attach)
+                        .privacySensitive()
                     HStack {
                         if let image = draft.image {
                             Image(decorative: image.thumbnail, scale: 1)
                                 .resizable().scaledToFit().frame(maxWidth: 68, maxHeight: 60)
                                 .clipShape(RoundedRectangle(cornerRadius: 6)).privacySensitive()
-                            Text("Screenshot").font(.subheadline)
+                            VStack(alignment: .leading) {
+                                Text("Screenshot").font(.subheadline)
+                                Text("Uploads to the host, then pastes its path.").font(.caption).foregroundStyle(.secondary)
+                            }
                             Spacer()
                             Button("Remove screenshot", systemImage: "xmark.circle.fill") { draft.image = nil }
                                 .labelStyle(.iconOnly).accessibilityIdentifier("draft.removeImage")
@@ -70,75 +94,68 @@ struct DraftComposer: View {
                     }
                     .padding(.horizontal, 12).frame(minHeight: 44)
                     if operation != nil { ProgressView().accessibilityLabel("Preparing screenshot") }
-                    DraftEditor(text: $draft.text, editing: editing, attach: attach)
-                        .privacySensitive()
-                    Toggle(TerminalPreferences.pressReturnLabel, isOn: $pressReturn)
-                        .tint(.green)
-                        .padding(.horizontal, 16).frame(minHeight: 52)
-                        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
-                        .accessibilityIdentifier("draft.pressReturn")
-                    Text(pressReturn ? "Send pastes the draft and presses Return." : "Paste leaves the text in the terminal for you to review.")
-                        .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 8)
+                    HStack(spacing: 10) {
+                        Toggle(TerminalPreferences.pressReturnLabel, isOn: $pressReturn)
+                            .font(.footnote).tint(.green)
+                            .accessibilityIdentifier("draft.pressReturn")
+                        sendButton
+                    }
+                    .frame(minHeight: 44)
                 }
                 .disabled(operation != nil)
-                .padding()
+                .padding(10)
                 .background(Color(uiColor: .systemGroupedBackground))
-                .navigationTitle("Compose")
-                .navigationBarTitleDisplayMode(.inline)
                 .sheet(isPresented: $choosingDestination) {
-                    GoToSheet(connection: connection, presentation: presentation, initialSection: .agents)
-                }
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel", systemImage: "xmark") { operation?.cancel(); dismiss() }.labelStyle(.iconOnly)
-                            .accessibilityIdentifier("draft.done")
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button(pressReturn ? "Send" : "Paste") {
-                            guard scenePhase == .active, operation == nil else { return }
-                            guard let text = editing.committedText else {
-                                notice = "Finish composing the current word before pasting."
-                                return
-                            }
-                            draft.text = text
-                            if draft.image != nil {
-                                operation = Task {
-                                    defer { operation = nil }
-                                    do {
-                                        try await connection.sendDraftImage(from: presentation, pressReturn: pressReturn)
-                                        dismiss()
-                                    } catch MobileError.ImageRetentionUnconfirmed {
-                                        notice = "Couldn’t confirm the screenshot on the host. A temporary copy may remain. Your draft is still here."
-                                    } catch MobileError.StaleView {
-                                        notice = "The destination changed. Check it before sending your draft."
-                                    } catch {
-                                        notice = "Couldn’t paste the screenshot. Your draft is still here."
-                                    }
-                                }
-                            } else if draft.send(to: connection.view?.inputTarget, enqueuePaste: { text, target in
-                                connection.send(.paste(text, pressReturn: pressReturn), to: target, from: presentation)
-                            }) {
-                                dismiss()
-                            } else {
-                                notice = "Couldn’t queue this draft. Your text is still here."
-                            }
-                        }
-                        .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
-                        .disabled(operation != nil || !draft.canSend(to: connection.view?.inputTarget))
-                        .accessibilityHint(pressReturn ? "Pastes the draft and presses Return in the selected terminal." :
-                                                        "Pastes the draft into the selected terminal.")
-                        .accessibilityIdentifier("draft.send")
-                    }
+                    GoToSheet(connection: connection, presentation: presentation, initialSection: .agents, onArrival: {
+                        if let destination = connection.draftDestination { draft.retarget(to: destination) }
+                    })
                 }
             }
+            .background(Color(uiColor: .systemGroupedBackground))
+            .accessibilityAction(.escape) { close() }
+            .clipShape(RoundedRectangle(cornerRadius: inline ? 0 : 18))
             .onDisappear { operation?.cancel() }
-            .preferredColorScheme(.dark)
-            .presentationCornerRadius(34)
-            .presentationDragIndicator(.visible)
         } else {
             Color(uiColor: .systemBackground).ignoresSafeArea()
         }
     }
+    private var sendButton: some View {
+        Button(pressReturn ? "Send" : "Paste") {
+            guard scenePhase == .active, operation == nil else { return }
+            guard let text = editing.committedText else {
+                notice = "Finish composing the current word before pasting."
+                return
+            }
+            draft.text = text
+            if draft.image != nil {
+                operation = Task {
+                    defer { operation = nil }
+                    do {
+                        try await connection.sendDraftImage(from: presentation, pressReturn: pressReturn)
+                        close()
+                    } catch MobileError.ImageRetentionUnconfirmed {
+                        notice = "Couldn’t confirm the screenshot on the host. A temporary copy may remain. Your draft is still here."
+                    } catch MobileError.StaleView {
+                        notice = "The destination changed. Check it before sending your draft."
+                    } catch {
+                        notice = "Couldn’t paste the screenshot. Your draft is still here."
+                    }
+                }
+            } else if draft.send(to: connection.view?.inputTarget, enqueuePaste: { text, target in
+                connection.send(.paste(text, pressReturn: pressReturn), to: target, from: presentation)
+            }) {
+                close()
+            } else {
+                notice = "Couldn’t queue this draft. Your text is still here."
+            }
+        }
+        .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
+        .disabled(operation != nil || !draft.canSend(to: connection.view?.inputTarget))
+        .accessibilityHint(pressReturn ? "Pastes the draft and presses Return in the selected terminal." :
+                                        "Pastes the draft into the selected terminal.")
+        .accessibilityIdentifier("draft.send")
+    }
+
     private func attach(_ providers: [NSItemProvider]) {
         guard operation == nil, let provider = providers.first else { return }
         let target = draft.destination?.target
@@ -198,7 +215,7 @@ final class DraftTextView: UITextView, UITextViewDelegate {
     init(content: Binding<String>) {
         self.content = content
         super.init(frame: .zero, textContainer: nil)
-        font = .preferredFont(forTextStyle: .body)
+        font = UIFontMetrics(forTextStyle: .body).scaledFont(for: .monospacedSystemFont(ofSize: 15, weight: .regular))
         adjustsFontForContentSizeCategory = true
         autocapitalizationType = .none
         autocorrectionType = .no

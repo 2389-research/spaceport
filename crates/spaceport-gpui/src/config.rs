@@ -25,8 +25,8 @@ pub use spaceport_settings::{
     ClipboardToast, ClipboardToastPosition, Config, DeviceFooter, Error, FONT_SIZE_RANGE,
     FONT_SIZE_STEP, Feature, FontConfig, FontFace, KeybindingSource, LayoutMode, Material,
     NotificationConfig, NotificationDelivery, OptionAsAlt, OptionKeys, Padding, SelectMode, Side,
-    SkillInstall, SoundConfig, SpaceLayout, StatusIcons, TabLayoutMode, ThemeName, ThemeParseError,
-    Weight, ZenWidth,
+    SkillInstall, SoundConfig, SpaceLayout, StatusIcons, TabLayoutMode, ThemeName, Weight,
+    ZenWidth,
 };
 // A density or style only the layout tests name.
 #[cfg(any(test, feature = "integration-test"))]

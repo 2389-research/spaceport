@@ -32,12 +32,14 @@ fn check_layouts(modes: &[crate::config::LayoutMode], cx: &mut gpui::TestAppCont
                     view.sidebar_width = Some(width);
                     cx.notify();
                 });
+                let named = width > 232. * font_size / 12.;
                 let context = format!("{mode} at {width}px, {font_size}pt");
                 cx.update(|window, cx| {
                     cx.default_global::<TextProbes>().0.clear();
                     full_draw(window, cx).clear(cx);
                     let probes = &cx.global::<TextProbes>().0;
-                    for text in ["herdr", "agent-launcher", "Claude Code"] {
+                    assert_eq!(probes.contains_key("Claude Code"), named, "{context}");
+                    for text in ["herdr", "agent-launcher"] {
                         assert!(probes.contains_key(text), "{context}: {text} missing");
                     }
                     for (text, (bounds, _, glyphs)) in probes {
@@ -63,6 +65,16 @@ fn check_layouts(modes: &[crate::config::LayoutMode], cx: &mut gpui::TestAppCont
                         .debug_bounds(row)
                         .unwrap_or_else(|| panic!("{context}: {row} missing"));
                     assert!(row_bounds.right() <= sidebar.right(), "{context}: {row}");
+                    if row == "row-agent-p0"
+                        && !named
+                        && matches!(
+                            mode,
+                            LayoutMode::Superset | LayoutMode::Minimal | LayoutMode::Orca
+                        )
+                    {
+                        assert!(cx.debug_bounds(name).is_none(), "{context}");
+                        continue;
+                    }
                     let name_bounds = cx.debug_bounds(name).unwrap();
                     assert!(
                         name_bounds.right() <= row_bounds.right(),
@@ -137,6 +149,7 @@ fn sidebar_densities_keep_details_and_marks_within_their_rows(cx: &mut gpui::Tes
                 })
             {
                 let compact = mode.density() == Density::Compact;
+                let named = width > 232. * font_size / 12.;
                 let comfortable = mode.density() == Density::Comfortable;
                 view.update(cx, |view, cx| {
                     view.config.layout.mode = mode;
@@ -155,7 +168,7 @@ fn sidebar_densities_keep_details_and_marks_within_their_rows(cx: &mut gpui::Tes
                         comfortable,
                         "worktree/sidebar-child"
                     );
-                    assert!(probes.contains_key("Claude Code"), "Claude Code");
+                    assert_eq!(probes.contains_key("Claude Code"), named);
                 });
                 let line = font_size * 4. / 3.;
                 let density_padding = match mode.density() {
@@ -196,8 +209,11 @@ fn sidebar_densities_keep_details_and_marks_within_their_rows(cx: &mut gpui::Tes
                         "highlight-agent-p0",
                     ),
                 ] {
-                    let show_detail = row == "row-agent-p0"
-                        || (!compact && (comfortable || row != "row-sidebar-child"));
+                    let show_detail = if row == "row-agent-p0" {
+                        named
+                    } else {
+                        !compact && (comfortable || row != "row-sidebar-child")
+                    };
                     let highlight = cx.debug_bounds(highlight).unwrap();
                     let row = cx.debug_bounds(row).unwrap();
                     let name = cx.debug_bounds(name).unwrap();
@@ -219,12 +235,7 @@ fn sidebar_densities_keep_details_and_marks_within_their_rows(cx: &mut gpui::Tes
                         assert!(cx.debug_bounds(detail).is_some());
                     }
                 }
-                let agent = cx.debug_bounds("row-agent-p0").unwrap();
-                assert_eq!(
-                    agent.size.height,
-                    px(2. * line + 2. * vertical_padding + spacing)
-                );
-                assert!(cx.debug_bounds("detail-agent-p0").is_some());
+                assert_eq!(cx.debug_bounds("detail-agent-p0").is_some(), named);
                 let row = cx.debug_bounds("row-sidebar-child").unwrap();
                 assert!(cx.debug_bounds("name-sidebar-child").unwrap().right() <= row.right());
                 assert!(cx.debug_bounds("dirty-sidebar-child").is_none());

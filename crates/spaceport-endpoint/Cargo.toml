@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 spaceport-client.workspace  = true
+spaceport-i18n.workspace    = true
 # The live state a host's link is read from.
 spaceport-live.workspace    = true
 spaceport-reorder.workspace = true
@@ -28,6 +29,7 @@ dispatch2.workspace = true
 test-support = []
 
 [dev-dependencies]
+spaceport-i18n = { features = ["test-support"], workspace = true }
 # The history and focus tests read the protocol's own endpoint snapshot
 # fixture, as the app's did.
 serde_json.workspace = true

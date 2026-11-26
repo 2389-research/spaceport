@@ -15,7 +15,7 @@ fn palette_query_spans_the_top_in_a_larger_font(cx: &mut gpui::TestAppContext) {
         full_draw(window, cx).clear(cx);
     });
     let line = view.read_with(cx, |view, _| view.config.ui.line_height());
-    let search = cx.debug_bounds("theme-search").unwrap();
+    let search = cx.debug_bounds("palette-search").unwrap();
     let status = cx.debug_bounds("palette-status").unwrap();
     let filter = cx.debug_bounds("palette-filter-all").unwrap();
     assert!(search.size.height >= px(line * 1.5) - px(0.5));

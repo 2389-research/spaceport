@@ -146,7 +146,8 @@ fn the_pinned_header_takes_input_instead_of_the_rows_under_it(cx: &mut gpui::Tes
     assert!(under.contains(&pinned.center()), "{under:?} vs {pinned:?}");
 
     // Clicking it selects the host and reaches no row, which would navigate.
-    cx.simulate_click(pinned.center(), Default::default());
+    let status = cx.debug_bounds("sticky-host-status-local").unwrap();
+    cx.simulate_click(status.center(), Default::default());
     view.read_with(cx, |view, _| {
         assert_eq!(view.selected_endpoint, 0);
         assert!(view.pending_navigation.is_none());

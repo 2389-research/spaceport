@@ -10,6 +10,7 @@ mod configured;
 mod paint;
 
 pub use badge::RowBadge;
+pub(crate) use configured::agent_line;
 pub use configured::{
     TokenLook, configured_status, configured_status_style, leading_status, styled, token_column,
 };
@@ -218,6 +219,8 @@ pub fn tree_lines(
 
 /// Read-only inputs every row of one render shares.
 pub struct RowContext<'a> {
+    /// The application icon identifies the agent in a narrow row.
+    pub icon_only_agent: bool,
     pub indicators: Indicators,
     pub font: &'a FontConfig,
     pub theme: &'a Theme,

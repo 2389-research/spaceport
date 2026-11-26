@@ -29,6 +29,8 @@ mod agent_sections;
 #[cfg(test)]
 mod agents_header;
 #[cfg(test)]
+mod compact_agent_names;
+#[cfg(test)]
 mod configured_rows;
 #[cfg(test)]
 mod device_footer;
@@ -43,6 +45,8 @@ mod device_tag_groups;
 #[cfg(test)]
 mod devices_layout;
 #[cfg(test)]
+mod group_folds;
+#[cfg(test)]
 #[cfg(test)]
 mod host_agents;
 #[cfg(test)]
@@ -53,6 +57,8 @@ mod host_nesting;
 mod host_origin;
 #[cfg(test)]
 mod host_wash;
+#[cfg(test)]
+mod idle_row_labels;
 #[cfg(test)]
 mod layouts;
 #[cfg(test)]
@@ -82,6 +88,8 @@ mod probe_bar;
 mod probe_scale;
 #[cfg(test)]
 mod probes;
+#[cfg(test)]
+mod quiet_agents;
 #[cfg(test)]
 mod repository_icons;
 #[cfg(test)]
@@ -587,6 +595,7 @@ pub(crate) fn fixture_window(
     let terminal_focus = SpaceportWindow::leave_region_with_terminal(&focus, window, cx);
     SpaceportWindow {
         _terminal_focus: terminal_focus,
+        about_demo: crate::about::Demo::Starfield,
         chrome_region: None,
         chats: Default::default(),
         sound: Default::default(),
@@ -731,6 +740,7 @@ pub(crate) fn fixture_window(
         sidebar_split_modified: false,
         sidebar_preferences: None,
         sidebar_modified: false,
+        agent_section_folds: [super::AgentSection::Quiet].into(),
         agent_sort: Default::default(),
         agent_sort_modified: false,
         #[cfg(feature = "integration-test")]

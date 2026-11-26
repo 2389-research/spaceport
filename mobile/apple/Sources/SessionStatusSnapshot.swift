@@ -2,6 +2,39 @@
 // ABOUTME: Keeps terminal contents and SSH credentials out of local preferences.
 import Foundation
 
+extension MobileView {
+    func changedAgentStatus(after previous: MobileView?, savedCounts: AgentCounts?) -> SessionStatusSnapshot? {
+        guard let date = rosterObservationDate else { return nil }
+        let first = previous?.bootId != bootId || savedCounts == nil
+        guard first || previous?.panes != panes || previous?.tabs != tabs || previous?.workspaces != workspaces
+        else { return nil }
+        let snapshot = SessionStatusSnapshot(view: self, seenAt: date)
+        return first || snapshot.agentCounts != savedCounts ? snapshot : nil
+    }
+
+    var rosterObservationDate: Date? {
+        rosterObservedAtMs.map { Date(timeIntervalSince1970: Double($0) / 1_000) }
+    }
+}
+
+extension AgentCounts {
+    init(view: MobileView) {
+        self.init(agents: GoToPane.agents(workspaces: view.workspaces, tabs: view.tabs, panes: view.panes))
+    }
+
+    fileprivate init(agents: [GoToPane]) {
+        self.init()
+        for agent in agents {
+            switch PaneActivity(agent.pane.status) {
+            case .blocked: waiting += 1
+            case .working: working += 1
+            case .idle: idle += 1
+            case nil: break
+            }
+        }
+    }
+}
+
 extension SessionStatusSnapshot {
     init(view: MobileView, seenAt: Date = Date()) {
         let workspace = view.workspaces.first { $0.id == view.focusedWorkspace }
@@ -15,7 +48,8 @@ extension SessionStatusSnapshot {
                              paneId: row.id, name: name, status: row.pane.status, location: row.location,
                              stateChangeSeq: row.pane.stateChangeSeq, changeObservedAt: firstSeen ?? seenAt,
                              idleOnsetObserved: PaneActivity(row.pane.status) == .idle ? row.pane.idleOnsetObserved : nil,
-                             terminalTitle: row.pane.terminalTitle)
+                             terminalTitle: row.pane.terminalTitle, agentIdentity: row.pane.agentIdentity,
+                             workspaceLabelBytes: row.workspace.label.utf8.count, paneTitle: row.pane.displayPaneTitle)
         }
         // Save attention requests before applying the per-session cache limit.
         let ordered = rows.filter { $0.status == "blocked" } + rows.filter { $0.status != "blocked" }
@@ -23,6 +57,7 @@ extension SessionStatusSnapshot {
                   blocked: view.panes.filter { $0.status == "blocked" }.count,
                   working: view.panes.filter { $0.status == "working" }.count,
                   hasIdle: view.panes.contains { $0.status == "idle" || $0.status == "done" },
-                  location: [workspace?.label, tab?.label, pane?.label].compactMap { $0 }, agents: ordered)
+                  location: [workspace?.label, tab?.label, pane?.label].compactMap { $0 }, agents: ordered,
+                  agentCounts: AgentCounts(agents: agents))
     }
 }

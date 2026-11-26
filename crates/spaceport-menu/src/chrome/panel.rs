@@ -234,7 +234,10 @@ fn panel_sized<K>(
             |panel| panel.flex().flex_col().overflow_hidden().shadow_lg(),
         )
         .when(page == Page::About, |panel| {
-            panel.w((layer.viewport.width - px(24.)).max(px(0.)).min(px(340.)))
+            // The About box is a release file: its longest row (the notices
+            // address) must fit on one line, so the cap is the row's width
+            // and not the popover's usual 340 px.
+            panel.w((layer.viewport.width - px(24.)).max(px(0.)).min(px(480.)))
         })
 }
 

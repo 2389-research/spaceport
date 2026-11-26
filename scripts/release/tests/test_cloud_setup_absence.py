@@ -22,7 +22,7 @@ class CloudSetupAbsence(unittest.TestCase):
 
     def test_menu_and_settings_do_not_offer_setup_execution(self):
         self.assertFalse("RunSetup" in source("crates/spaceport-gpui/src/menu/devices/host_menu.rs"))
-        self.assertFalse("RunSetup" in source("crates/spaceport-gpui/src/menu/devices/host_menu/actions.rs"))
+        self.assertFalse("RunSetup" in source("crates/spaceport-menu/src/host/actions.rs"))
         self.assertFalse((ROOT / "crates/spaceport-gpui/src/settings_window/cloud_devices.rs").exists())
         self.assertFalse((ROOT / "crates/spaceport-gpui/src/config/cloud.rs").exists())
         self.assertFalse((ROOT / "crates/spaceport-gpui/src/config/container.rs").exists())

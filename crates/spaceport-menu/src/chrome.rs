@@ -1,8 +1,9 @@
 // ABOUTME: Measures and paints a popup's panel, placement and overlay.
 // ABOUTME: Keeps popup input and focus isolated from what lies beneath it.
 //! The popup shell the app lays in its window: where the panel sits, how much
-//! room each page takes, the surface it paints on, the rows of the in-window
-//! app menu, and the overlay that keeps everything beneath it inert.
+//! room each page takes, the surface it paints on, and the overlay that keeps
+//! everything beneath it inert. A page's rows are [`crate::rows`]', painted the
+//! same way by every page and by the in-window app menu.
 //!
 //! A page is the window's, so the app builds its body and hands it over as an
 //! element; what is here is the chrome around it. The app owns the window and
@@ -10,11 +11,9 @@
 //! appear state, the anchor, the window's measurements, the theme — and keeps
 //! the keyboard and pointer handlers, which are the window's own.
 
-mod items;
 mod overlay;
 mod panel;
 
-pub use items::{Row, rows};
 pub use overlay::overlay;
 pub use panel::{anchor_footer_panel, leaving, panel, placement};
 

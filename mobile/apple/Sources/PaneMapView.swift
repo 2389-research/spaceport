@@ -51,7 +51,7 @@ struct PaneMapView: View {
                     .padding(8)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
-                shape.strokeBorder(selected ? (activity == .blocked ? Color.accentColor : .white) : .secondary.opacity(0.4), lineWidth: selected ? 2 : 1)
+                shape.strokeBorder(selected ? (activity == .blocked ? Color.accentColor : .primary) : .secondary.opacity(0.4), lineWidth: selected ? 2 : 1)
             }
             .padding(1)
             .frame(width: size.width, height: size.height)

@@ -11,12 +11,7 @@ use crate::{
 };
 use device_tags::normalized;
 use gpui::{prelude::*, *};
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum Mode {
-    MoveTo,
-    AlsoTagged,
-}
+use spaceport_menu::host::Mode;
 
 pub(crate) struct TagPicker {
     mode: Mode,

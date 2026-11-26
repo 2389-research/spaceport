@@ -1,0 +1,31 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-textfield"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace       = true
+
+[lints]
+workspace = true
+
+[features]
+# The app's own fields, and its tests, read the editing model, the key table
+# driver and the placeholder a field holds. A cargo feature rather than
+# `cfg(test)`, because a dependency's own `cfg(test)` is false inside its
+# consumers' test builds.
+test-support = []
+
+[dependencies]
+gpui.workspace                 = true
+spaceport-commands.workspace   = true
+spaceport-settings.workspace   = true
+spaceport-widgets.workspace    = true
+spaceport-words.workspace      = true
+unicode-bidi.workspace         = true
+unicode-segmentation.workspace = true
+
+[dev-dependencies]
+gpui = { features = ["test-support"], workspace = true }
+# The crate's right-to-left test publishes a direction on its own thread.
+spaceport-widgets = { features = ["test-support"], workspace = true }

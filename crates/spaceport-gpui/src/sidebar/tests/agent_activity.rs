@@ -27,6 +27,7 @@ fn painted(live: &LiveState) -> Vec<(&str, AgentStatus)> {
         std::iter::once((0, live)),
         AgentSort::Grouped,
         spaceport_client::agent_idle::now_ms(),
+        Default::default(),
     )
     .into_iter()
     .map(|(_, agent)| (agent.pane_id.as_str(), agent.agent_status))

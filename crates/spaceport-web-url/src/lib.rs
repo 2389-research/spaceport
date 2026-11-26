@@ -2,6 +2,7 @@
 //! Opening one is the app's, through the system handler; nothing here loads a
 //! page.
 mod error;
+mod localize;
 #[cfg(test)]
 mod tests;
 

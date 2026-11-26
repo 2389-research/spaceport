@@ -268,3 +268,5 @@ mod idle_evidence;
 mod direct_terminal;
 
 mod cell_fields;
+mod new_terminal;
+mod roster_observation;

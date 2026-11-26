@@ -97,9 +97,9 @@ impl Projection {
             return Ok(false);
         }
         self.visibility = Visibility::Active;
-        if let Some(snapshot) = &self.snapshot {
-            self.idle
-                .observe(snapshot, spaceport_client::agent_idle::now_ms());
+        if let Some(snapshot) = &mut self.snapshot {
+            snapshot.observed_at_ms = spaceport_client::agent_idle::now_ms();
+            self.idle.observe(snapshot, snapshot.observed_at_ms);
         }
         self.focus_interrupted = false;
         self.version += 1;

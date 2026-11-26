@@ -21,7 +21,6 @@ mod browser;
 mod bundled;
 mod caffeine;
 mod caption;
-mod caret;
 mod chat;
 mod cli;
 mod close_modal;
@@ -86,7 +85,6 @@ mod progress;
 mod release_notes;
 mod restart_manager;
 mod scrollback;
-mod search_input;
 mod sessions;
 mod settings_panel;
 mod settings_window;
@@ -99,7 +97,6 @@ mod tab_menu;
 mod taskbar;
 mod terminal;
 mod terminal_painter;
-mod text_editing;
 mod theme_picker;
 mod titlebar;
 mod toggles;
@@ -130,6 +127,10 @@ pub use error::{Error, Result};
 
 // The command catalog and its default shortcuts, without GPUI.
 use spaceport_commands as controls;
+// The text fields and the editing model they share, in `spaceport-textfield`:
+// the app's own `DialogInput` and `MultilineInput` read the same model the
+// search field does, at the crate-wide paths they have always named it by.
+pub(crate) use spaceport_textfield::{caret, search_input, text_editing};
 // The log file and crash reports, without GPUI.
 use spaceport_diagnostics::{self as diagnostics, crash};
 // Git status, without GPUI.
