@@ -77,6 +77,7 @@ impl SpaceportWindow {
             _terminal_focus: effects.terminal_focus,
             _window_closed: effects.window_closed,
             _worktree_notes: effects.worktree_notes,
+            about_demo: crate::about::Demo::Starfield,
             active: window.is_window_active(),
             activity: Default::default(),
             agent_sort: preferences::AgentSort::default(),

@@ -1,8 +1,10 @@
-// ABOUTME: Installs the embedded development icon and verifies bundled image bytes.
-// ABOUTME: Keeps asset filenames stable while identifying the Spaceport app in diagnostics.
 //! Embedded development icon; app bundles use their native Info.plist icon.
-//! The same artwork identifies the build in the About box on every platform.
+//! The About box draws its own block-letter mark rather than a picture, so
+//! the PNG here identifies the artwork the release pipeline ships.
 // i18n: migrated
+/// The artwork this build ships, read back by the test that checks it is
+/// still a 1024-square PNG.
+#[cfg(test)]
 pub(super) const PNG: &[u8] = if env!("HERDR_BUILD_WORKTREE").as_bytes()[0] == b'1' {
     include_bytes!("../../../assets/icons/spaceport-worktree-1024.png")
 } else {
@@ -10,7 +12,7 @@ pub(super) const PNG: &[u8] = if env!("HERDR_BUILD_WORKTREE").as_bytes()[0] == b
 };
 
 // AppKit selects a directly rendered representation for the Dock's size and
-// backing scale, rather than downsampling the About box's single large PNG.
+// backing scale, rather than downsampling one large image.
 #[cfg(target_os = "macos")]
 const ICNS: &[u8] = if env!("HERDR_BUILD_WORKTREE").as_bytes()[0] == b'1' {
     include_bytes!("../../../assets/icons/Spaceport-worktree.icns") // i18n: data

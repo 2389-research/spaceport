@@ -117,6 +117,9 @@ pub(crate) struct SpaceportWindow {
     pub(crate) _window_closed: Subscription,
     /// Another window may edit a note this one shows.
     pub(crate) _worktree_notes: Subscription,
+    /// The demo the About box is showing. Picked when the box opens, so a
+    /// redraw never changes the scene under the reader.
+    pub(crate) about_demo: crate::about::Demo,
     pub(crate) active: bool,
     /// The activity bar's panel and filter.
     pub(crate) activity: sidebar::Activity,
