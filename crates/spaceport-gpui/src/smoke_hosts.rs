@@ -409,8 +409,8 @@ fn status_group(handle: WindowHandle<SpaceportWindow>, cx: &mut AsyncApp) -> Res
                 let tab = probe(cx, "#1")?.bounds;
                 let dir = probe(cx, "review-dir")?.bounds;
                 let title = probe(cx, "Review changes")?.bounds;
-                if tab.top() != dir.top() || tab.right() > dir.left() || dir.bottom() > title.top() {
-                    bail!("terminal metadata should share a line above its title");
+                if tab.top() != dir.top() || tab.right() > dir.left() || title.bottom() > dir.top() {
+                    bail!("terminal metadata should share a line below its title");
                 }
             }
             Ok((Target::acquire(window)?, probe(cx, "Done")?.bounds.center()))

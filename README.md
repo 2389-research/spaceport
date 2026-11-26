@@ -47,8 +47,8 @@ The app can show a lower bound once it has observed an hour of the same idle spe
 After 24 hours of observed idle time, an agent moves into **Quiet**, which starts folded.
 Choose 24 hours, 48 hours, or 7 days under **Settings → Sidebar → Move idle agents to Quiet**.
 Working agents and agents waiting for you return to their status group automatically.
-Agent rows show the app icon, terminal tab number, directory and host on one muted line.
-The title has its own line underneath.
+Agent rows show the title on the first line.
+The app icon, terminal tab number, directory, and host share a muted line underneath.
 Split panes on the same tab share its number. Selecting a row opens that specific pane.
 Custom Herdr rows keep their configured fields.
 Click **priority** in the Agents header to return to workspace order.

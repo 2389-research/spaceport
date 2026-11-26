@@ -329,6 +329,8 @@ impl RowLayout for Orca {
                 cx,
             );
             let icon = parts::first_line(icon, parts::icon(agent.icon.path(), icon, color), cx);
+            let icon = parts::align_agent_icon(icon, &agent.lines, cx)
+                .debug_selector(|| format!("agent-icon-{}", agent.key));
             return card(key, state, 0., 4., (theme, cx.mark), cx.right_to_left)
                 .py(px(4.))
                 .items_start()

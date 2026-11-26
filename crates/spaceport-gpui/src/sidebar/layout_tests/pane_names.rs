@@ -251,7 +251,7 @@ fn a_name_that_repeats_the_agent_is_painted_once_in_every_layout(cx: &mut gpui::
     }
 }
 
-/// A long title has its own line beneath the status even in a narrow sidebar.
+/// A long title has its own line above the status even in a narrow sidebar.
 #[gpui::test]
 fn long_pane_titles_have_their_own_line(cx: &mut gpui::TestAppContext) {
     let pane = "api-service-with-a-deliberately-long-pane-name";
@@ -277,7 +277,7 @@ fn long_pane_titles_have_their_own_line(cx: &mut gpui::TestAppContext) {
                 .get(pane)
                 .unwrap_or_else(|| panic!("{mode:?} {width}: no pane name in {probes:?}"));
             assert!(
-                probes[&status].0.bottom() <= bounds.top(),
+                bounds.bottom() <= probes[&status].0.top(),
                 "{mode:?} {width}"
             );
             assert!(bounds.size.width > px(0.), "{mode:?} {width}: pane hidden");
