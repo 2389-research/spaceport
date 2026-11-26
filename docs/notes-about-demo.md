@@ -11,18 +11,32 @@ is in release builds, and nothing in it makes a noise.
 
 ## What the box is now
 
-`about.rs` is still the panel: `render_about` builds the same credits column it
-always built — icon, name, version, publisher, repository link, summary,
-upstream credits, the unaffiliated line, a worktree build's branch and PR, the
-team links, the modifications and original-copyright lines, the license and
-notices links, OK — with every word unchanged. `render_about` hands that
-column to `scene::panel`, which lays it over `scene::stage` so the scene paints
+`about.rs` is still the panel: `render_about` builds the credits column, hands
+it to `scene::panel`, which lays it over `scene::stage` so the scene paints
 behind it, and hands it back untouched when the plain panel is asked for.
 
-The credits are ordinary text elements, laid out exactly as before: the scene
-paints under them and never stands in for them. Nothing in the scene carries an
-accessible name, so a screen reader still reaches the dialog's role and title
-and the credits' text, and hears no decoration.
+## The document
+
+The credits are `nfo`'s release file, every row one message: the field's name
+padded out to the same width with stops, then its value, in the window's
+terminal face. Above the rows stands the wordmark, `SPACE` over `PORT` in block
+letters the theme's own field inks. The messages and the debug selectors
+(`about`, `about-version`, `about-icon`, `about-notices` …) are the ones the box
+has always had, so the layout tests, QA and screen readers read it as they did.
+
+Each demo owns the whole stage, so five opens of the box are five scenes rather
+than one scene in five colours: `demos` picks one when the box opens and the
+window keeps it until the box closes, and `SPACEPORT_ABOUT_DEMO` names one for
+QA (`copper`, `plasma`, `rotozoom`, `scroller`, `starfield`).
+
+The panel is 340 px wide at most, so a row longer than it wraps; an address at
+the document's size cannot fit, and the native About smoke allows the wrap
+while it still requires the whole message, every glyph of it, inside the panel.
+
+The credits are ordinary text elements: the scene paints under them and never
+stands in for them. Nothing in the scene carries an accessible name, so a
+screen reader still reaches the dialog's role and title and the credits' text,
+and hears no decoration.
 
 ## The layers, one module each
 
@@ -37,7 +51,7 @@ pixels.
 | Plasma | `effects/plasma.rs` | Four crossing sine waves read through the theme's cool ANSI ramp, one colour a 14 px cell. The field everything else sits on. |
 | Starfield | `effects/starfield.rs` | 96 stars from a fixed hash, each a point projected from its own depth: the far plane reads its scattered place, and a star brightens and flies outward as its depth shrinks. |
 | Copper bars | `effects/copper.rs` | Five warm columns riding across the stage in a sine, each lit across its width from a copper ramp, so each reads as a lit tube. |
-| Rotozoomer | `effects/rotozoom.rs` | A checkered texture with a bright ring, read backwards through a matrix that turns twice and breathes three times a loop, in a square framing the mark. |
+| Rotozoomer | `effects/rotozoom.rs` | A checkered texture with a bright ring, read backwards through a matrix that turns twice and breathes three times a loop, over the whole stage. |
 | Sine scroller | `effects/scroller.rs` | The greeting, one glyph an element, each lifted by a sine of where it is across the stage, so the line crosses as a wave. |
 | Ramps | `effects/ramp.rs` | Three-stop colour mixing, so a layer's palette is a value its maths returns. |
 
@@ -48,9 +62,11 @@ marquee, and one canvas that paints the layers in order.
 ## Composition
 
 Back to front, all inside one canvas: the stage's ground, the plasma field, the
-stars, the copper columns, then the rotozoomed field around the mark. The
-marquee rides a band at the top of the stage, over the field, and the credits
-column paints over all of it.
+stars, the copper columns, then the rotozoomed field over all of it. A demo
+paints the layers it composes itself — the rotozoom demo the field alone, the
+scroller's the field and the stars under its two-line marquee — so no two of
+them compose the same scene. The marquee rides a band at the top of the stage,
+over the field, and the credits column paints over all of it.
 
 The palette comes from the window's theme, not from fixed brand colours: the
 ground is the theme's background, the layers the theme's ANSI brights mixed
@@ -77,12 +93,13 @@ Both stage elements read one `Animation` in `crate::motion`'s terms:
   the box drops it and the frame requests with it. There is no timer to stop
   and no state on the window.
 
-A frame is a bounded amount of work: at the narrowest panel (326×568) the field
-is 984 quads, the rotozoomed square 400, the stars 96, the copper 40 — about
-1,500 quads, and the marquee is one text element a visible glyph. The paint
-closure allocates nothing: palettes are mixed from `Copy` colours, the star
-table is `LazyLock`ed once, and the frame's time reaches the closure through a
-cell the animator writes, not through a rebuilt closure.
+A frame is a bounded amount of work: at the narrowest panel (326×568) the
+plasma field is 984 quads, the rotozoomed field over the whole stage 2,368, the
+stars 96, the copper bars 40 — under 2,500 quads for the busiest demo, and the
+marquee is one text element a visible glyph. The paint closure allocates
+nothing: palettes are mixed from `Copy` colours, the star table is `LazyLock`ed
+once, and the frame's time reaches the closure through a cell the animator
+writes, not through a rebuilt closure.
 
 The About box is the one place the issue allows to burn a frame. The cost of
 one frame is the window scene rebuild plus those quads, and it is paid only

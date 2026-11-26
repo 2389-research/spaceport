@@ -91,7 +91,7 @@ pub(super) fn stage(credits: Div, theme: &Theme, text: f32, demo: Demo) -> Div {
         .flex_col()
         .w_full()
         .overflow_hidden()
-        .child(scene(Ink::of(theme), demo, text, "about-scene-paint"))
+        .child(scene(Ink::of(theme), demo, "about-scene-paint"))
         .child(marquee(
             greeting,
             theme.muted,
@@ -106,20 +106,13 @@ pub(super) fn stage(credits: Div, theme: &Theme, text: f32, demo: Demo) -> Div {
 /// paint closure cannot be rebuilt each frame, so the animator passes the
 /// frame's time through a cell the closure reads, as a measured element
 /// passes its height.
-fn scene(ink: Ink, demo: Demo, text: f32, id: &'static str) -> impl IntoElement {
+fn scene(ink: Ink, demo: Demo, id: &'static str) -> impl IntoElement {
     let clock = Rc::new(Cell::new(0.));
     let reading = clock.clone();
     canvas(
         |_, _, _| (),
         move |bounds, _, window, _| {
-            demos::paint(
-                demo,
-                &ink,
-                mark_bounds(bounds, demo, text),
-                bounds,
-                reading.get(),
-                window,
-            );
+            demos::paint(demo, &ink, bounds, reading.get(), window);
         },
     )
     .absolute()
@@ -128,20 +121,6 @@ fn scene(ink: Ink, demo: Demo, text: f32, id: &'static str) -> impl IntoElement 
         clock.set(time(delta));
         layer
     })
-}
-
-/// The square the credits' mark stands on: the column leaves [`margin`]
-/// above it and gives it [`super::nfo::art_height`], so the stage paints the
-/// mark's own square in the same place.
-pub(super) fn mark_bounds(bounds: Bounds<Pixels>, demo: Demo, text: f32) -> Bounds<Pixels> {
-    let side = super::nfo::mark_height(text);
-    Bounds::new(
-        point(
-            bounds.origin.x + (bounds.size.width - px(side)) / 2.,
-            bounds.origin.y + px(margin(demo, text)),
-        ),
-        size(px(side), px(side)),
-    )
 }
 
 /// The glyphs of the marquee's line, without the characters that take no room

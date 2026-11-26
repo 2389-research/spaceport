@@ -13,7 +13,7 @@
 use super::effects::scroller::{COUNTER, RIDE, Wave};
 use super::effects::{copper, plasma, rotozoom, starfield};
 use crate::config::Theme;
-use gpui::{Bounds, Pixels, Window, point, px, size};
+use gpui::{Bounds, Pixels, Window};
 use std::{
     collections::hash_map::RandomState,
     ffi::OsStr,
@@ -63,8 +63,8 @@ impl Demo {
 
     /// The room the marquee rides above the mark, in whole pixels at a window
     /// text size of `text`: the tallest band is the two-line scroller's. A
-    /// whole number of pixels keeps the band, the mark and the field the stage
-    /// frames it with on the pixel grid, so a test can name them exactly.
+    /// whole number of pixels keeps the band and the mark below it on the
+    /// pixel grid, so a test can name them exactly.
     pub(super) fn band(self, text: f32) -> f32 {
         let share = match self {
             Self::CopperBars => 1.6,
@@ -170,40 +170,21 @@ impl Ink {
     }
 }
 
-/// How far the rotozoomed field reaches past the mark.
-const FRAME: f32 = 40.;
-
 /// Paints one frame of `demo` over `bounds`, `t` seconds into the loop. Each
 /// demo paints the whole stage itself: its own layers over the ground, so no
-/// two of them compose the same scene. `mark` is the mark's height in pixels
-/// and `top` its offset from the stage's own top.
-pub(super) fn paint(
-    demo: Demo,
-    ink: &Ink,
-    mark: Bounds<Pixels>,
-    bounds: Bounds<Pixels>,
-    t: f32,
-    window: &mut Window,
-) {
+/// two of them compose the same scene.
+pub(super) fn paint(demo: Demo, ink: &Ink, bounds: Bounds<Pixels>, t: f32, window: &mut Window) {
     window.paint_quad(gpui::fill(bounds, gpui::rgb(ink.ground)));
     match demo {
         Demo::CopperBars => copper::paint(&ink.copper, bounds, t, window),
         Demo::Plasma => plasma::paint(&ink.field, bounds, t, window),
-        Demo::Rotozoom => rotozoom::paint(&ink.tile, framed(mark), t, window),
-        // The scroller's marquee is the demo; a calm raster keeps the stage
-        // behind it alive without competing with the line.
-        Demo::SineScroller => copper::paint(&ink.copper, bounds, t, window),
+        Demo::Rotozoom => rotozoom::paint(&ink.tile, bounds, t, window),
+        Demo::SineScroller => {
+            // The quietest composition of the pool: the two-line marquee is
+            // the demo, and the stage behind it only has to keep moving.
+            plasma::paint(&ink.field, bounds, t, window);
+            starfield::paint(ink.spark, bounds, t, window);
+        }
         Demo::Starfield => starfield::paint(ink.spark, bounds, t, window),
     }
-}
-
-/// The square the rotozoomed field fills: it stands on the mark's own centre
-/// and reaches [`FRAME`] past each of the mark's edges.
-pub(super) fn framed(mark: Bounds<Pixels>) -> Bounds<Pixels> {
-    let side = f32::from(mark.size.height) + 2. * FRAME;
-    let centre = mark.center();
-    Bounds::new(
-        centre - point(px(side / 2.), px(side / 2.)),
-        size(px(side), px(side)),
-    )
 }

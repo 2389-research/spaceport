@@ -24,6 +24,13 @@ fn text_size(view: &Entity<SpaceportWindow>, cx: &mut VisualTestContext) -> f32 
     view.read_with(cx, |view, _| view.config.ui.size)
 }
 
+/// The height the wordmark's rows stack to at a window text size of `text`:
+/// its cell size, a whole number of pixels, times the rows [`nfo::MARK`]
+/// spells.
+fn wordmark_height(text: f32) -> f32 {
+    nfo::MARK.len() as f32 * nfo::mark_size(text)
+}
+
 /// The visible copyright must not drift from the repository's NOTICE.
 #[test]
 fn copyright_tracks_the_repository_notice() {
@@ -85,9 +92,8 @@ fn about_box_shows_build_identity_and_opens_links(cx: &mut TestAppContext) {
         let credits = cx.debug_bounds("about-upstream-credits").unwrap();
         let copyright = cx.debug_bounds("about-copyright").unwrap();
         let close = cx.debug_bounds("about-close").unwrap();
-        // The mark is the block wordmark itself, as tall as its rows, which is
-        // the square the stage frames with a demo's rotozoomed field.
-        assert_eq!(mark.size.height, px(nfo::mark_height(text)));
+        // The mark is the block wordmark itself, as tall as its rows.
+        assert_eq!(mark.size.height, px(wordmark_height(text)));
         for row in [mark, name, version, credits, disclaimer, copyright, close] {
             assert!(row.top() >= about.top() && row.bottom() <= about.bottom());
             assert!(row.left() >= about.left() && row.right() <= about.right());

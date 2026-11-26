@@ -63,8 +63,10 @@ pub(super) async fn verify(handle: WindowHandle<SpaceportWindow>, cx: &mut Async
                         .0
                         .get(&label)
                         .with_context(|| format!("missing native About text {label}"))?;
-                    // Wrapped text is valid; all source glyphs and the full layout must remain visible.
-                    if probe.cached != label
+                    // A row longer than the narrow panel wraps, which is valid:
+                    // what must hold is that the whole message is laid out,
+                    // every glyph of it drawn, and the block inside the panel.
+                    if probe.cached.replace('\n', "") != label
                         || probe.glyph_text != label.replace(['\u{2068}', '\u{2069}'], "")
                         || probe.bounds.left() < probe.mask.left()
                         || probe.bounds.right() > probe.mask.right()
@@ -72,7 +74,7 @@ pub(super) async fn verify(handle: WindowHandle<SpaceportWindow>, cx: &mut Async
                         || probe.bounds.bottom() > probe.mask.bottom()
                         || probe.bounds.bottom() > window.viewport_size().height
                     {
-                        bail!("native About text clipped or changed: {label}");
+                        bail!("native About text clipped or changed: {label} {probe:?}");
                     }
                 }
                 let image = capture
