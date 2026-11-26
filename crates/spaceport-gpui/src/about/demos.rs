@@ -61,8 +61,10 @@ impl Demo {
         }
     }
 
-    /// The room the marquee rides above the mark, in pixels at a window text
-    /// size of `text`: the tallest band is the two-line scroller's.
+    /// The room the marquee rides above the mark, in whole pixels at a window
+    /// text size of `text`: the tallest band is the two-line scroller's. A
+    /// whole number of pixels keeps the band, the mark and the field the stage
+    /// frames it with on the pixel grid, so a test can name them exactly.
     pub(super) fn band(self, text: f32) -> f32 {
         let share = match self {
             Self::CopperBars => 1.6,
@@ -71,7 +73,7 @@ impl Demo {
             Self::SineScroller => 3.6,
             Self::Starfield => 1.45,
         };
-        text * share
+        (text * share).round()
     }
 
     /// The lines this demo's marquee is made of, top to bottom.

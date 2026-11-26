@@ -26,7 +26,7 @@ use gpui::{prelude::*, *};
 
 /// The wordmark, a row at a time: SPACE over PORT, in block letters a mono
 /// cell wide.
-const MARK: [&str; 11] = [
+pub(super) const MARK: [&str; 11] = [
     "█████ ████   ███   ████ █████",
     "█     █   █ █   █ █     █    ",
     "█████ ████  █████ █     ████ ",
@@ -50,9 +50,10 @@ const ROW_SHARE: f32 = 0.85;
 const ROW_SIZE: std::ops::RangeInclusive<f32> = 9.0..=13.0;
 
 /// The size one cell of the wordmark is drawn at, at a window text size of
-/// `text`.
+/// `text`: whole pixels, so the eleven rows it stacks to land on the pixel
+/// grid and the stage can frame the mark exactly.
 pub(super) fn mark_size(text: f32) -> f32 {
-    (text * MARK_SHARE).max(7.)
+    (text * MARK_SHARE).round().max(7.)
 }
 
 /// The room the wordmark takes, which is the square the stage frames with its

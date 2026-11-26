@@ -1,7 +1,7 @@
 // ABOUTME: Verify Spaceport and upstream attribution in the real native About box.
 // ABOUTME: Check painted glyphs, narrow layouts and focus in the isolated GUI fixture.
 use crate::SpaceportWindow;
-use crate::about::{AUTHOR, COPYRIGHT_YEAR, PUBLISHER};
+use crate::about::{AUTHOR, COPYRIGHT_YEAR, NOTICE, PUBLISHER};
 use crate::i18n::fl;
 use crate::menu::Page;
 use crate::smoke::*;
@@ -56,7 +56,7 @@ pub(super) async fn verify(handle: WindowHandle<SpaceportWindow>, cx: &mut Async
                         copyright = COPYRIGHT_YEAR,
                         author = AUTHOR
                     ),
-                    fl!("about-notices"),
+                    fl!("about-notices", url = NOTICE),
                 ] {
                     let probe = cx
                         .global::<PaintedProbes>()

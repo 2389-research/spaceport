@@ -32,11 +32,12 @@ pub(in crate::about) const RIDE: Wave = Wave {
 };
 
 /// The wave of a marquee's second line: shallower, taller, and crossing
-/// against the first, so the two read as one moving figure.
+/// against the first, so the two read as one moving figure. A whole number of
+/// passes, like every wave's, so the loop repeats without a seam.
 pub(in crate::about) const COUNTER: Wave = Wave {
-    passes: -1.5,
+    passes: -1.,
     waves: 1.5,
-    lift: 6.,
+    lift: 5.,
 };
 
 /// How far the glyph at `x` rises above the band's middle, in pixels.

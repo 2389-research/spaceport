@@ -115,7 +115,7 @@ fn scene(ink: Ink, demo: Demo, text: f32, id: &'static str) -> impl IntoElement 
             demos::paint(
                 demo,
                 &ink,
-                mark(bounds, demo, text),
+                mark_bounds(bounds, demo, text),
                 bounds,
                 reading.get(),
                 window,
@@ -133,11 +133,11 @@ fn scene(ink: Ink, demo: Demo, text: f32, id: &'static str) -> impl IntoElement 
 /// The square the credits' mark stands on: the column leaves [`margin`]
 /// above it and gives it [`super::nfo::art_height`], so the stage paints the
 /// mark's own square in the same place.
-pub(super) fn mark(bounds: Bounds<Pixels>, demo: Demo, text: f32) -> Bounds<Pixels> {
+pub(super) fn mark_bounds(bounds: Bounds<Pixels>, demo: Demo, text: f32) -> Bounds<Pixels> {
     let side = super::nfo::mark_height(text);
     Bounds::new(
         point(
-            bounds.origin.x + bounds.size.width / 2.,
+            bounds.origin.x + (bounds.size.width - px(side)) / 2.,
             bounds.origin.y + px(margin(demo, text)),
         ),
         size(px(side), px(side)),
