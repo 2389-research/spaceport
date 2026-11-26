@@ -1,16 +1,14 @@
-// ABOUTME: Names popup pages and roles for accessibility.
-// ABOUTME: Uses localized labels for the active page.
 //! What a screen reader calls each popup page. Keyboard focus stays on the
 //! popup's overlay while it is open, so the overlay carries the page's role
 //! and title, and the page's own rows and fields sit under it.
 
 // i18n: migrated
-use super::{Page, WorkspaceAction};
-use crate::i18n::fl;
+use crate::page::{Page, WorkspaceAction};
 use gpui::{Role, SharedString};
+use spaceport_i18n::fl;
 
 /// A list of commands is a menu; anything that asks or edits is a dialog.
-pub(crate) fn role(page: Page) -> Role {
+pub fn role(page: Page) -> Role {
     match page {
         Page::Application
         | Page::Group
@@ -25,7 +23,7 @@ pub(crate) fn role(page: Page) -> Role {
 }
 
 /// The page's title, in the current language.
-pub(crate) fn name(page: Page) -> SharedString {
+pub fn name(page: Page) -> SharedString {
     SharedString::from(match page {
         Page::About => fl!("menu-page-about-herdr-ui"),
         Page::AddDevice => fl!("menu-page-add-device"),
@@ -71,6 +69,3 @@ pub(crate) fn name(page: Page) -> SharedString {
         Page::Workspace => fl!("menu-page-workspace"),
     })
 }
-
-#[cfg(test)]
-mod tests;

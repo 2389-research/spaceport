@@ -11,7 +11,6 @@ pub(crate) mod labels;
 mod mute;
 mod open_link;
 mod page;
-mod page_title;
 mod sessions;
 mod settings;
 mod shortcut_editor;

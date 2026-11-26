@@ -1,8 +1,15 @@
 //! The rows each kind of device's menu offers.
-use super::tags::Mode;
+
+/// Which of the two tag rows a device's menu shows: moving it to a group, or
+/// adding the tags it also carries.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Mode {
+    MoveTo,
+    AlsoTagged,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum Action {
+pub enum Action {
     Rename,
     /// Toggles the device's mute, which silences everything on it.
     Mute,
@@ -20,7 +27,7 @@ pub(super) enum Action {
 }
 
 /// Each row's action and the message naming it.
-pub(super) const SSH_ACTIONS: &[(Action, &str)] = &[
+pub const SSH_ACTIONS: &[(Action, &str)] = &[
     (Action::Rename, "host-menu-rename"),
     (Action::Tags(Mode::MoveTo), "device-tags-move-to"),
     (Action::Tags(Mode::AlsoTagged), "device-tags-also-tagged"),
@@ -34,7 +41,7 @@ pub(super) const SSH_ACTIONS: &[(Action, &str)] = &[
 ];
 
 /// This computer is not saved anywhere, so it can only be grouped and muted.
-pub(super) const LOCAL_ACTIONS: &[(Action, &str)] = &[
+pub const LOCAL_ACTIONS: &[(Action, &str)] = &[
     (Action::Tags(Mode::MoveTo), "device-tags-move-to"),
     (Action::Tags(Mode::AlsoTagged), "device-tags-also-tagged"),
     (Action::Mute, "host-menu-mute"),

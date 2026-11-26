@@ -4,7 +4,6 @@
 //! A terminal tab comes from the group's "+". Closing a group closes no tab:
 //! its tabs go to the group that takes its room.
 // i18n: migrated
-use crate::direction::Logical;
 use crate::i18n::fl;
 use crate::{
     SpaceportWindow,
@@ -14,6 +13,8 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 use spaceport_chat_protocol::Agent;
+use spaceport_menu::group::render::{self, Entry};
+use spaceport_menu::rows::{Detail, Mark, Row};
 
 /// The most a port's process name takes in its row. Names run to 32
 /// characters, and the address beside it is what tells ports apart.
@@ -53,6 +54,14 @@ impl Action {
             Self::CloseOthers => fl!("group-menu-close-others").into(),
             Self::CloseGroup => fl!("group-menu-close-group").into(),
             Self::Split => fl!("group-menu-split-right").into(),
+        }
+    }
+
+    /// The dimmed text after the label, which for a port is its process.
+    fn detail(&self) -> Option<String> {
+        match self {
+            Self::Port { process, .. } => Some(process.clone()).filter(|it| !it.is_empty()),
+            _ => None,
         }
     }
 
@@ -104,19 +113,36 @@ pub(crate) struct GroupMenu {
     scroll: ScrollHandle,
 }
 
+/// The group menu's rows, as the crate paints them: what each shows, the run
+/// of rows it belongs to, and the heading over that run.
+fn entries(actions: &[Action]) -> Vec<Entry> {
+    actions
+        .iter()
+        .map(|action| Entry {
+            row: Row {
+                label: action.label().to_string(),
+                selector: action.selector(),
+                label_selector: Some(format!("{}-label", action.selector())),
+                detail: action.detail().map(|text| Detail {
+                    selector: format!("{}-detail", action.selector()),
+                    text,
+                    max_width: matches!(action, Action::Port { .. }).then_some(PROCESS_WIDTH),
+                }),
+                mark: Some(match action.icon() {
+                    Some(icon) => Mark::Icon(icon),
+                    None => Mark::Room,
+                }),
+            },
+            section: action.section(),
+            heading: action.heading(),
+        })
+        .collect()
+}
+
 /// The panel child that draws `actions[index]`: the heading before the
 /// first row of a headed section, such as "Listening", is a child of its own.
 fn child_index(actions: &[Action], index: usize) -> usize {
-    let headings = actions
-        .iter()
-        .take(index + 1)
-        .enumerate()
-        .filter(|(at, action)| {
-            action.heading().is_some()
-                && (*at == 0 || actions[at - 1].section() != action.section())
-        })
-        .count();
-    index + headings
+    render::child_index(&entries(actions), index)
 }
 
 impl SpaceportWindow {
@@ -278,115 +304,50 @@ impl SpaceportWindow {
             return panel;
         };
         let theme = &self.theme;
-        let mut panel = panel.track_scroll(&menu.scroll).flex().flex_col();
-        let mut section = None;
-        for (index, action) in self.group_actions(menu.group, cx).into_iter().enumerate() {
-            let starts_section = section.is_some_and(|last| last != action.section());
-            let heading = action
-                .heading()
-                .filter(|_| section != Some(action.section()));
-            section = Some(action.section());
-            let headed = heading.is_some();
-            if let Some(heading) = heading {
-                panel = panel.child(
-                    div()
-                        .flex_none()
-                        .when(starts_section, |heading| {
-                            heading
-                                .mt(px(4.))
-                                .border_t_1()
-                                .border_color(rgb(theme.active))
-                        })
-                        .pt(px(6.))
-                        .pb(px(2.))
-                        .px(px(8.))
-                        .text_xs()
-                        .text_color(rgb(theme.muted))
-                        .child(heading),
-                );
-            }
-            let detail: SharedString = match &action {
-                Action::Port { process, .. } => process.clone().into(),
-                _ => "".into(),
-            };
-            let selector = action.selector();
-            let (label, process) = (format!("{selector}-label"), format!("{selector}-detail"));
-            let capped = matches!(action, Action::Port { .. });
-            // An open tunnel can be closed from its row, as from its chip.
-            let close = match &action {
+        let actions = self.group_actions(menu.group, cx);
+        // An open tunnel can be closed from its row, as from its chip. They
+        // are laid before the rows so the painter's two handlers never hold
+        // the window's context at once.
+        let mut closing: Vec<Option<AnyElement>> = actions
+            .iter()
+            .map(|action| match action {
                 Action::Port {
                     number,
                     link: Link::Tunnel(key),
                     ..
-                } if self.tunnels.is_open(key) => Some(crate::listening_ports::close_button(
-                    format!("group-menu-close-Port{number}").into(), // i18n: data
-                    key,
-                    ICON_SIZE,
-                    theme,
-                    cx,
-                )),
-                _ => None,
-            };
-            panel = panel.child(
-                div()
-                    .id(("group-menu-action", index))
-                    .flex_none()
-                    .debug_selector(move || selector.clone())
-                    .when(starts_section && !headed, |row| {
-                        row.mt(px(4.)).border_t_1().border_color(rgb(theme.active))
-                    })
-                    .min_h(px(self.config.ui.line_height() + 12.))
-                    .px(px(8.))
-                    .row()
-                    .items_center()
-                    .gap(px(8.))
-                    .cursor_pointer()
-                    .when(menu.selected == Some(index), |row| {
-                        row.bg(rgb(theme.active))
-                    })
-                    .hover(|row| row.bg(rgb(theme.active)))
-                    .child(match action.icon() {
-                        Some(icon) => svg()
-                            .path(icon)
-                            .size(px(ICON_SIZE))
-                            .flex_none()
-                            .text_color(rgb(theme.muted))
-                            .into_any_element(),
-                        None => div().size(px(ICON_SIZE)).flex_none().into_any_element(),
-                    })
-                    .child(
-                        div()
-                            .debug_selector(move || label.clone())
-                            // Its own width counts, so the panel widens to
-                            // fit the longest label.
-                            .flex_grow(1.)
-                            .min_w_0()
-                            .truncate()
-                            .child(action.label()),
+                } if self.tunnels.is_open(key) => Some(
+                    crate::listening_ports::close_button(
+                        format!("group-menu-close-Port{number}").into(), // i18n: data
+                        key,
+                        ICON_SIZE,
+                        theme,
+                        cx,
                     )
-                    .when(!detail.is_empty(), |line| {
-                        line.child(
-                            div()
-                                .debug_selector(move || process.clone())
-                                .flex_none()
-                                .when(capped, |detail| detail.max_w(px(PROCESS_WIDTH)).truncate())
-                                .text_color(rgb(theme.muted))
-                                .child(detail),
-                        )
-                    })
-                    .children(close)
-                    .on_hover(cx.listener(move |this, hovered, _, cx| {
-                        if *hovered && let Some(menu) = &mut this.menu.group {
-                            menu.selected = Some(index);
-                            cx.notify();
-                        }
-                    }))
-                    .on_click(cx.listener(move |this, _, window, cx| {
-                        this.activate_group_menu(action.clone(), window, cx)
-                    })),
-            );
-        }
-        panel
+                    .into_any_element(),
+                ),
+                _ => None,
+            })
+            .collect();
+        render::render_actions(
+            panel.track_scroll(&menu.scroll).flex().flex_col(),
+            &crate::menu::chrome::text(&self.config.ui),
+            theme,
+            &entries(&actions),
+            menu.selected,
+            |index| closing[index].take(),
+            |index, row| {
+                let action = actions[index].clone();
+                row.on_hover(cx.listener(move |this, hovered, _, cx| {
+                    if *hovered && let Some(menu) = &mut this.menu.group {
+                        menu.selected = Some(index);
+                        cx.notify();
+                    }
+                }))
+                .on_click(cx.listener(move |this, _, window, cx| {
+                    this.activate_group_menu(action.clone(), window, cx)
+                }))
+            },
+        )
     }
 }
 

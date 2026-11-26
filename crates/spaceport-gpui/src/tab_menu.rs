@@ -11,7 +11,8 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 use spaceport_client::Method;
-use spaceport_menu::tab::{Action, Offers, Target};
+use spaceport_menu::rows::Row;
+use spaceport_menu::tab::{Action, Offers, Target, render};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 #[cfg(test)]
@@ -569,36 +570,36 @@ impl SpaceportWindow {
         if tab.moving.is_some() {
             body = self.render_tab_move_pending();
         } else if self.menu.page == Some(Page::Tab) {
-            for (index, action) in tab.actions().into_iter().enumerate() {
-                body = body.child(
-                    div()
-                        .id(("tab-menu-action", index))
-                        .debug_selector(move || format!("tab-menu-{index}"))
-                        .min_h(px(self.config.ui.line_height() + 12.))
-                        .px(px(8.))
-                        .flex()
-                        .items_center()
-                        .cursor_pointer()
-                        .when(tab.selected == Some(index), |row| row.bg(rgb(theme.active)))
-                        .hover(|row| row.bg(rgb(theme.active)))
-                        .child(
-                            div()
-                                .debug_selector(move || format!("tab-menu-label-{index}"))
-                                .min_w_0()
-                                .truncate()
-                                .child(labels::tab_action(action)),
-                        )
-                        .on_hover(cx.listener(move |this, hovered, _, cx| {
-                            if *hovered && let Some(tab) = &mut this.menu.tab {
-                                tab.selected = Some(index);
-                                cx.notify();
-                            }
-                        }))
-                        .on_click(cx.listener(move |this, _, window, cx| {
-                            this.activate_tab_menu(action, window, cx)
-                        })),
-                );
-            }
+            let actions = tab.actions();
+            let rows: Vec<Row> = actions
+                .iter()
+                .enumerate()
+                .map(|(index, action)| Row {
+                    label: labels::tab_action(*action),
+                    selector: format!("tab-menu-{index}"),
+                    label_selector: Some(format!("tab-menu-label-{index}")),
+                    ..Row::default()
+                })
+                .collect();
+            body = render::render_actions(
+                body,
+                &crate::menu::chrome::text(&self.config.ui),
+                &self.theme,
+                &rows,
+                tab.selected,
+                |index, row| {
+                    let action = actions[index];
+                    row.on_hover(cx.listener(move |this, hovered, _, cx| {
+                        if *hovered && let Some(tab) = &mut this.menu.tab {
+                            tab.selected = Some(index);
+                            cx.notify();
+                        }
+                    }))
+                    .on_click(cx.listener(move |this, _, window, cx| {
+                        this.activate_tab_menu(action, window, cx)
+                    }))
+                },
+            );
         } else {
             body =
                 body.p(px(8.))
