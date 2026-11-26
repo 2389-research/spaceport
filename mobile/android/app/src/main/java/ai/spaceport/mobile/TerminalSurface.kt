@@ -50,6 +50,7 @@ internal class TerminalSurface(
     private var downX = 0f
     private var downY = 0f
     private var trackpad: TerminalTrackpad? = null
+    private var multitouch = false
     private val hold = Runnable {
         val destination = gestureTarget
         if (destination != null && destination == target && !dragged) {
@@ -175,9 +176,18 @@ internal class TerminalSurface(
                 postDelayed(hold, ViewConfiguration.getLongPressTimeout().toLong())
                 scrollYPosition = event.y
                 dragged = false
+                multitouch = false
                 gestureTarget = target
             }
+            // A second finger ends the gesture: event.x and event.y read pointer index 0, whose
+            // finger can change, so a held trackpad would otherwise jump and send stray arrows.
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                removeCallbacks(hold)
+                trackpad = null
+                multitouch = true
+            }
             MotionEvent.ACTION_MOVE -> {
+                if (multitouch) return true
                 trackpad?.let { pad ->
                     val destination = gestureTarget
                     if (destination == null || destination != target) return true
@@ -200,7 +210,7 @@ internal class TerminalSurface(
                 removeCallbacks(hold)
                 val pad = trackpad
                 trackpad = null
-                if (gestureTarget == target) {
+                if (gestureTarget == target && !multitouch) {
                     if (pad != null && !pad.moved) cellAt(downX, downY)?.let { (_, row) -> onHold(row) }
                     else if (pad == null && !dragged) performClick()
                 }

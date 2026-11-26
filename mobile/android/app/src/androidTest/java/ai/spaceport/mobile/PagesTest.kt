@@ -1,4 +1,4 @@
-// ABOUTME: Drives Settings, the toolbar key editor and Host Detail through accessibility actions.
+// ABOUTME: Drives Settings, the toolbar key editor and Host Detail, including refused host edits.
 // ABOUTME: Uses a saved host that is never contacted and removes every value it saves.
 package ai.spaceport.mobile
 
@@ -11,12 +11,14 @@ class PagesTest : LiveMobileUi() {
     private val context get() = instrumentation.targetContext
     private val first = HostProfile("fixture.invalid", 22, "tester", "default")
     private val second = first.copy(session = "next")
+    private val elsewhere = HostProfile("elsewhere.invalid", 22, "tester", "default")
 
     @Before @After fun reset() {
         val store = HostStore(context)
-        store.replace(store.profiles().filter { it.hostname == first.hostname }, emptyList())
+        store.replace(store.profiles().filter { it.hostname == first.hostname || it.hostname == elsewhere.hostname }, emptyList())
         store.pin(first)?.let { store.forgetPin(first, it) }
         store.rename(first.account, "")
+        store.rename(elsewhere.account, "")
         check(context.getSharedPreferences("terminal", 0).edit().clear().commit())
         flushFixturePreferences()
     }
@@ -55,6 +57,23 @@ class PagesTest : LiveMobileUi() {
             after("renamed", { click("Save") }, { label("renamed") != null })
             assertEquals(setOf(first, first.copy(session = "renamed")), store.profiles().filter { it.hostname == first.hostname }.toSet())
             after("Home", { click("Back") }, { label("Add host") != null && label("renamed") != null })
+        }
+    }
+
+    @Test fun editingAHostOntoAnotherSavedHostIsRefused() {
+        val store = HostStore(context)
+        store.replace(emptyList(), listOf(first, elsewhere))
+        store.rename(elsewhere.account, "Elsewhere")
+        flushFixturePreferences()
+        launchAtHome().use {
+            after("details", { click("Host details for tester@fixture.invalid") }, { label("Edit host") != null })
+            after("edit dialog", { click("Edit host") }, { label("Save") != null })
+            input("elsewhere.invalid", "Hostname")
+            after("save refused", { click("Save") }, { label("Save") != null })
+            // Both hosts keep their own sessions and labels; nothing merged.
+            assertEquals(setOf(first, elsewhere),
+                store.profiles().filter { it.hostname == first.hostname || it.hostname == elsewhere.hostname }.toSet())
+            assertEquals("Elsewhere", store.name(elsewhere.account))
         }
     }
 }

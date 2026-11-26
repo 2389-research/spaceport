@@ -17,6 +17,8 @@ internal class KeyInstallScreen(
     private var password: EditText? = null
     private var status: android.widget.TextView? = null
     private var trustPrompt: android.app.AlertDialog? = null
+    // pause() advances this, so an install that finishes after the app left cannot raise a prompt.
+    private var attempt = 0
 
     fun build(body: LinearLayout) {
         body.addView(ui.text(group.destination, 20, ui.ink, true).apply { setPadding(ui.dp(3), ui.dp(12), 0, ui.dp(8)) })
@@ -42,9 +44,12 @@ internal class KeyInstallScreen(
             field.isEnabled = false
             install.isEnabled = false
             status.text = activity.getString(R.string.install_checking)
+            val mine = ++attempt
             pages.background({ installer.install(group.first, secret, trusting) }) { outcome ->
                 field.isEnabled = true
                 install.isEnabled = true
+                // A finished install or failure is still true; only a stale host-key prompt is dropped.
+                if (mine != attempt && outcome is InstallOutcome.Challenge) return@background
                 when (outcome) {
                     InstallOutcome.Installed -> {
                         field.text.clear()
@@ -86,6 +91,7 @@ internal class KeyInstallScreen(
 
     /** The app went to the background: drop the password and any pending trust decision. */
     fun pause() {
+        attempt++
         trustPrompt?.dismiss()
         trustPrompt = null
         if (password?.text?.isNotEmpty() == true) status?.text = activity.getString(R.string.install_password_again)

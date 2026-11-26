@@ -144,9 +144,15 @@ jobs:
     needs: [plan, build]
     # Only the Play key lives here; the signing key stays in android-release.
     environment: play-internal
+    # Play allows one open edit per account and app, so uploads from overlapping tags take turns.
+    concurrency:
+      group: android-play-upload
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
+      SHA: ${{ needs.plan.outputs.sha }}
+      TAG: ${{ needs.plan.outputs.tag }}
       VERSION: ${{ needs.plan.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -156,6 +162,8 @@ jobs:
         with:
           name: android-play-bundle-${{ needs.plan.outputs.version }}
           path: target/android-play
+      - name: Refuse a tag that moved during the build
+        run: scripts/release/check-tag-unmoved.sh "$GITHUB_REPOSITORY" "$TAG" "$SHA"
       - name: Upload the signed bundle to the Play internal testing track
         env:
           SPACEPORT_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.SPACEPORT_PLAY_SERVICE_ACCOUNT_JSON }}
@@ -173,21 +181,19 @@ jobs:
       SHA: ${{ needs.plan.outputs.sha }}
       VERSION: ${{ needs.plan.outputs.version }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: android-release-${{ github.run_id }}
           path: target/android-release
+      - name: Refuse a tag that moved during the build
+        run: scripts/release/check-tag-unmoved.sh "$GITHUB_REPOSITORY" "$TAG" "$SHA"
       - name: Attach the APK to the tag's existing release
         run: |
           set -euo pipefail
           cd target/android-release
           sha256sum -c "Spaceport-$VERSION-android.apk.sha256"
-          # Read the tag ref itself, never a same-named branch; ^{} is the commit an annotated tag names.
-          refs=$(git ls-remote "https://github.com/$GITHUB_REPOSITORY" "refs/tags/$TAG" "refs/tags/$TAG^{}")
-          current=$(awk -v tag="refs/tags/$TAG" '$2 == tag || $2 == tag "^{}" { sha = $1 } END { print sha }' <<< "$refs")
-          if [[ "$current" != "$SHA" ]]; then
-            echo "::error::$TAG moved from $SHA to $current; refusing to publish" >&2
-            exit 1
-          fi
           gh release upload "$TAG" "Spaceport-$VERSION-android.apk" "Spaceport-$VERSION-android.apk.sha256" \
             --repo "$GITHUB_REPOSITORY"

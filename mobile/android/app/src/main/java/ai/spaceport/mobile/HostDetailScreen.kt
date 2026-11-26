@@ -109,6 +109,9 @@ internal class HostDetailScreen(
                 port.text.toString().toIntOrNull() ?: 0, user.text.toString().trim())
             moved.firstNotNullOfOrNull { it.validationError() }?.let { return@setOnClickListener pages.toast(it) }
             val account = moved.first().account
+            // Moving onto another saved host's account would silently merge both groups and relabel it.
+            if (account != group.account && pages.hosts.profiles().any { it.account == account })
+                return@setOnClickListener pages.toast("Another saved host already uses ${moved.first().destination}")
             if (moved != group.sessions) {
                 pages.hosts.replace(group.sessions, moved)
                 pages.forget(group.sessions)

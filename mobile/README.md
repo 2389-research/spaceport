@@ -37,6 +37,8 @@ A `play` job then sends that bundle to the Play internal testing track with `scr
 Its `play-internal` environment holds only `SPACEPORT_PLAY_SERVICE_ACCOUNT_JSON`, the service account that may release to testing tracks.
 Production stays a person's decision in the Play Console.
 By hand, `scripts/release/play-upload.py --credentials KEY.json tracks` lists what each track holds.
+Even `tracks` opens a Play edit, and Play keeps one open edit per account and app.
+Do not run it, or a manual upload, while the workflow's `play` job is uploading; the newer edit makes that upload fail.
 
 1. Open **Add host**. Enter the SSH hostname, port, username, and Herdr session. Tap **Connect**.
 2. Compare the displayed SSH fingerprint with the host administrator’s copy before trusting it.
