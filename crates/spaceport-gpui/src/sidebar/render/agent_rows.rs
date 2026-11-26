@@ -178,6 +178,7 @@ impl SpaceportWindow {
         let rows = layout_for(self.config.layout.mode);
         let multi = self.endpoints.len() > 1;
         let selected = index == self.selected_endpoint;
+        let focused = selected && agent.focused;
         let endpoint_id = self
             .endpoints
             .get(index)
@@ -274,14 +275,14 @@ impl SpaceportWindow {
             }),
             &row_cx,
         )
-        .selected(selected && agent.focused)
+        .selected(focused)
         .highlighted(menu_open)
         .row()
         .when(gap > 0., |row| row.mt(px(gap)))
         .id(SharedString::from(format!("agent-{endpoint_id}-{id}")))
         .role(Role::ListItem)
         .aria_label(spoken)
-        .aria_selected(selected && agent.focused)
+        .aria_selected(focused)
         .map(|control| self.chrome_stop(crate::window::chrome_focus::Region::Sidebar, control))
         .when(multi, |row| {
             row.debug_selector(|| format!("agent-{endpoint_id}-{id}"))

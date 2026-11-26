@@ -463,6 +463,7 @@ impl SpaceportWindow {
             columns,
             marks,
         )
+        .when(focused, |row| row.child(look.agent_outline(theme)))
         .id(SharedString::from(key.clone()))
         .debug_selector(|| key)
         .cursor_pointer()

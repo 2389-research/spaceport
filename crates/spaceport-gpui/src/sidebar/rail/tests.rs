@@ -17,6 +17,7 @@ use std::sync::Arc;
 
 mod mutes;
 mod omo;
+mod selection;
 
 fn rail_window(
     cx: &mut TestAppContext,

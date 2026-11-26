@@ -29,6 +29,14 @@ fn token_appearance(kind: &TokenKind, look: TokenLook, cx: &RowContext<'_>) -> (
         TokenKind::StateIcon | TokenKind::Text(_, TextRole::Status) => {
             (cx.indicators.color(look.status), FontWeight::NORMAL)
         }
+        TokenKind::Text(_, TextRole::Directory) => (
+            spaceport_settings::contrast::ink_on_chrome(
+                theme.palette[4],
+                [theme.sidebar_background(), theme.surface, theme.active],
+                4.5,
+            ),
+            FontWeight::NORMAL,
+        ),
         TokenKind::Text(_, TextRole::Workspace) => (name, weight),
         TokenKind::Text(_, TextRole::Secondary | TextRole::Agent) => {
             (secondary, FontWeight::NORMAL)

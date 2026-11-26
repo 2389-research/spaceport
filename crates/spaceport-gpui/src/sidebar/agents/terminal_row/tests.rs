@@ -31,3 +31,22 @@ fn agent_rows_follow_their_tabs_reported_number() -> Result<()> {
     assert_eq!(label(&agent, &snapshot)?, None);
     Ok(())
 }
+
+#[test]
+fn directory_uses_a_distinct_text_role_from_other_metadata() {
+    let row = TerminalRow {
+        title: Some("Review".into()),
+        tab_number: Some("#3".into()),
+        directory: Some("spaceport".into()),
+    };
+    let lines = row.lines("Codex", "Relay", None);
+    assert_eq!(
+        lines[1],
+        [
+            text("Codex", TextRole::Agent),
+            text("#3", TextRole::Secondary),
+            text("spaceport", TextRole::Directory),
+            text("Relay", TextRole::Secondary),
+        ]
+    );
+}

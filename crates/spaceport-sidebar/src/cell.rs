@@ -197,7 +197,13 @@ impl<'a> Cell<'a> {
                     &row.key,
                     self.cx.right_to_left,
                 );
-                (self.layout.agent(row, self.state, self.cx), rail)
+                let row = self
+                    .layout
+                    .agent(row, self.state, self.cx)
+                    .when(self.state.selected, |row| {
+                        row.child(self.cx.look.agent_outline(self.cx.theme))
+                    });
+                (row, rail)
             }
         };
         match rail {
