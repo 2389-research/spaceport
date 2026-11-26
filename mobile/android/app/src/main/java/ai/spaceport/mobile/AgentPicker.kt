@@ -130,6 +130,8 @@ internal class AgentPicker(
                 old.panes == view.panes &&
                 old.tabs == view.tabs &&
                 old.workspaces == view.workspaces &&
+                old.paneMap == view.paneMap &&
+                old.focusedPane == view.focusedPane &&
                 old.bootId == view.bootId
         )
             return
@@ -137,27 +139,37 @@ internal class AgentPicker(
         draw()
     }
 
+    private fun jumpTo(row: AgentRow) {
+        val live = connection.view
+        if (jump == null && live != null && live.bootId == row.boot) {
+            val pane = row.paneIn(live)
+            val revision = pane?.let { connection.goTo(it, live) }
+            if (revision != null) jump = row to revision
+            message.text =
+                if (revision != null) "Opening " + row.headline
+                else "The pane changed. Select it again."
+            message.visibility = android.view.View.VISIBLE
+        }
+    }
+
     private fun draw() {
         val view = source ?: return
         body.removeAllViews()
+        val map = view.paneMap
+        if (query.text.isBlank() && map != null) {
+            ui.heading(body, "This tab")
+            body.addView(
+                PaneMapView(activity, view, map) { id -> rows.firstOrNull { it.id == id }?.let(::jumpTo) },
+                LinearLayout.LayoutParams(-1, -2),
+            )
+        }
         fun pane(row: AgentRow) {
             ui.row(
                 body,
                 row.headline,
                 row.path,
                 row.status,
-                action = {
-                    val live = connection.view
-                    if (jump == null && live != null && live.bootId == row.boot) {
-                        val pane = row.paneIn(live)
-                        val revision = pane?.let { connection.goTo(it, live) }
-                        if (revision != null) jump = row to revision
-                        message.text =
-                            if (revision != null) "Opening " + row.headline
-                            else "The pane changed. Select it again."
-                        message.visibility = android.view.View.VISIBLE
-                    }
-                },
+                action = { jumpTo(row) },
                 held = {
                     val latest = connection.view
                     val excerpt =
