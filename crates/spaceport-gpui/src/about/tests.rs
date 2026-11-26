@@ -1,10 +1,35 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 use super::*;
 use core::prelude::v1::test;
+use gpui::VisualTestContext;
 
 mod attribution;
 mod en_xa;
 mod scene;
+mod selection;
+
+/// Opens the box with `demo` pinned: [`SpaceportWindow::open_about`] picks one
+/// at random, and a test reads one arrangement.
+fn open_about_with(view: &Entity<SpaceportWindow>, demo: Demo, cx: &mut VisualTestContext) {
+    cx.update(|window, cx| {
+        view.update(cx, |view, cx| {
+            view.open_about(window, cx);
+            view.about_demo = demo;
+        })
+    });
+}
+
+/// The window text size this window sets its document at.
+fn text_size(view: &Entity<SpaceportWindow>, cx: &mut VisualTestContext) -> f32 {
+    view.read_with(cx, |view, _| view.config.ui.size)
+}
+
+/// The height the wordmark's rows stack to at a window text size of `text`:
+/// its cell size, a whole number of pixels, times the rows [`nfo::MARK`]
+/// spells.
+fn wordmark_height(text: f32) -> f32 {
+    nfo::MARK.len() as f32 * nfo::mark_size(text)
+}
 
 /// The visible copyright must not drift from the repository's NOTICE.
 #[test]
@@ -54,28 +79,33 @@ fn about_leads_the_application_menu() {
 fn about_box_shows_build_identity_and_opens_links(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     for width in [800., 360.] {
-        cx.update(|window, cx| view.update(cx, |view, cx| view.open_about(window, cx)));
         cx.simulate_resize(size(px(width), px(600.)));
+        open_about_with(&view, Demo::Starfield, cx);
         cx.update(|window, cx| window.draw(cx).clear(cx));
+        let text = text_size(&view, cx);
         let about = cx.debug_bounds("about").unwrap();
-        let icon = cx.debug_bounds("about-icon").unwrap();
+        let margin = super::scene::margin(Demo::Starfield, text);
+        let mark = cx.debug_bounds("about-icon").unwrap();
         let name = cx.debug_bounds("about-name").unwrap();
         let version = cx.debug_bounds("about-version").unwrap();
         let disclaimer = cx.debug_bounds("about-unaffiliated").unwrap();
         let credits = cx.debug_bounds("about-upstream-credits").unwrap();
         let copyright = cx.debug_bounds("about-copyright").unwrap();
         let close = cx.debug_bounds("about-close").unwrap();
-        assert_eq!(icon.size, size(px(96.), px(96.)));
-        for row in [icon, name, version, credits, disclaimer, copyright, close] {
+        // The mark is the block wordmark itself, as tall as its rows.
+        assert_eq!(mark.size.height, px(wordmark_height(text)));
+        for row in [mark, name, version, credits, disclaimer, copyright, close] {
             assert!(row.top() >= about.top() && row.bottom() <= about.bottom());
             assert!(row.left() >= about.left() && row.right() <= about.right());
         }
-        assert!(icon.bottom() <= name.top());
+        assert_eq!(mark.top() - about.top(), px(margin));
+        assert!(mark.bottom() <= name.top());
         assert!(name.bottom() <= version.top());
         assert!(version.bottom() <= disclaimer.top());
         assert!(disclaimer.bottom() <= copyright.top());
         assert!(copyright.bottom() <= close.top());
         assert!(about.right() <= px(width));
+        assert!(about.bottom() <= px(600.), "{width}: {about:?}");
         assert_eq!(
             cx.debug_bounds("about-build").is_some(),
             env!("HERDR_BUILD_WORKTREE") == "1"
@@ -86,6 +116,7 @@ fn about_box_shows_build_identity_and_opens_links(cx: &mut TestAppContext) {
             ("about-repository", REPOSITORY.to_owned()),
             ("about-upstream-repository", UPSTREAM_REPOSITORY.to_owned()),
             ("about-license", LICENSE_URL.to_owned()),
+            ("about-notices", NOTICE.to_owned()),
         ] {
             let link = cx.debug_bounds(selector).unwrap();
             cx.simulate_click(link.center(), Modifiers::default());
@@ -98,7 +129,7 @@ fn about_box_shows_build_identity_and_opens_links(cx: &mut TestAppContext) {
         // Both the OK button and Escape close the box without other effects.
         cx.simulate_click(close.center(), Modifiers::default());
         view.read_with(cx, |view, _| assert!(view.menu.page.is_none()));
-        cx.update(|window, cx| view.update(cx, |view, cx| view.open_about(window, cx)));
+        open_about_with(&view, Demo::Starfield, cx);
         cx.update(|window, cx| window.draw(cx).clear(cx));
         cx.simulate_keystrokes("escape");
         view.read_with(cx, |view, _| assert!(view.menu.page.is_none()));

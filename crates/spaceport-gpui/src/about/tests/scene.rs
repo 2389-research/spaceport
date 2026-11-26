@@ -1,9 +1,11 @@
-//! The stage under the About box: the scene behind the credits, the marquee
-//! over them, and the clock they read.
+//! The stage under the About box: the demo's scene behind the credits, the
+//! marquee over them, and the clock they read.
 
 use super::*;
+use crate::about::demos;
 use crate::about::effects::LOOP;
 use crate::about::scene;
+use crate::about::scene::margin;
 use crate::config::Theme;
 use crate::sidebar::layout_tests::run_frames;
 use std::cell::Cell;
@@ -11,35 +13,50 @@ use std::ffi::OsStr;
 use std::rc::Rc;
 use std::time::Duration;
 
-/// The scene covers the credits column it is painted behind, and the
-/// marquee rides the room the column leaves above the mark.
+/// The scene covers the credits column it is painted behind, and the marquee
+/// rides the room the column leaves above the mark, as tall as the demo's
+/// band.
 #[gpui::test]
 fn the_scene_covers_the_credits_and_the_marquee_rides_its_top(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
-    cx.update(|window, cx| view.update(cx, |view, cx| view.open_about(window, cx)));
-    cx.update(|window, cx| window.draw(cx).clear(cx));
-    let stage = cx.debug_bounds("about-scene").expect("the stage is drawn");
-    let about = cx.debug_bounds("about").expect("the credits are drawn");
-    assert_eq!(stage, about);
-    let marquee = cx
-        .debug_bounds("about-marquee")
-        .expect("the marquee rides the stage");
-    assert_eq!(marquee.top(), stage.top());
-    assert_eq!(marquee.size.height, px(scene::BAND));
-    assert_eq!(marquee.size.width, stage.size.width);
+    for demo in demos::POOL {
+        open_about_with(&view, demo, cx);
+        cx.update(|window, cx| window.draw(cx).clear(cx));
+        let text = text_size(&view, cx);
+        let stage = cx.debug_bounds("about-scene").expect("the stage is drawn");
+        let about = cx.debug_bounds("about").expect("the credits are drawn");
+        assert_eq!(stage, about);
+        let marquee = cx
+            .debug_bounds("about-marquee")
+            .expect("the marquee rides the stage");
+        assert_eq!(marquee.top(), stage.top() + px(2.));
+        assert_eq!(marquee.size.height, px(demo.band(text)));
+        assert_eq!(marquee.size.width, stage.size.width);
+    }
 }
 
-/// The rotozoomed field is centred on the mark the credits draw, so the
-/// stage's own room above the mark and the mark's place are one agreement.
+/// The mark the credits draw is the wordmark's own square, standing in the
+/// room the demo's band leaves, so the stage and the document agree on where
+/// the art goes whatever the demo paints behind it.
 #[gpui::test]
-fn the_field_frames_the_mark_the_credits_draw(cx: &mut TestAppContext) {
+fn the_mark_stands_in_the_room_the_credits_leave_it(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
-    cx.update(|window, cx| view.update(cx, |view, cx| view.open_about(window, cx)));
-    cx.update(|window, cx| window.draw(cx).clear(cx));
-    let stage = cx.debug_bounds("about-scene").expect("the stage is drawn");
-    let mark = cx.debug_bounds("about-icon").expect("the mark is drawn");
-    assert_eq!(mark.size, size(px(scene::MARK_SIZE), px(scene::MARK_SIZE)));
-    assert_eq!(scene::framed(stage).center(), mark.center());
+    for demo in demos::POOL {
+        open_about_with(&view, demo, cx);
+        cx.update(|window, cx| window.draw(cx).clear(cx));
+        let text = text_size(&view, cx);
+        let stage = cx.debug_bounds("about-scene").expect("the stage is drawn");
+        let about = cx.debug_bounds("about").expect("the credits are drawn");
+        let mark = cx.debug_bounds("about-icon").expect("the mark is drawn");
+        assert_eq!(stage, about);
+        assert_eq!(mark.size.height, px(wordmark_height(text)));
+        assert!(
+            mark.size.width < stage.size.width,
+            "the art is its own width"
+        );
+        assert_eq!(mark.top(), about.top() + px(margin(demo, text)));
+        assert_eq!(mark.center().x, stage.center().x);
+    }
 }
 
 /// A frame's share of the loop is the scene's own clock: no wall clock is
@@ -85,7 +102,13 @@ impl Render for CreditsPanel {
             .debug_selector(|| "about-credits".into())
             .w(px(320.))
             .h(px(480.));
-        scene::panel(credits, &Theme::default(), 13., self.classic)
+        scene::panel(
+            credits,
+            &Theme::default(),
+            13.,
+            self.classic,
+            Demo::Starfield,
+        )
     }
 }
 
@@ -105,7 +128,7 @@ fn the_scene_keeps_frames_coming_unless_motion_is_reduced(cx: &mut TestAppContex
     for reduced in [false, true] {
         cx.update(|cx| cx.set_reduce_motion(reduced));
         let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
-        cx.update(|window, cx| view.update(cx, |view, cx| view.open_about(window, cx)));
+        open_about_with(&view, Demo::Plasma, cx);
         cx.update(|window, cx| window.draw(cx).clear(cx));
         let frames = Rc::new(Cell::new(0));
         let counted = frames.clone();
@@ -134,4 +157,18 @@ fn the_marquee_gives_bidi_controls_no_glyph_slot() {
     let wrapped = "\u{2067}2389 Research, Inc.\u{200e} presents Spaceport\u{2069}";
     assert_eq!(scene::letters(wrapped), scene::letters(plain));
     assert_eq!(scene::letters(wrapped).len(), plain.chars().count());
+}
+
+/// The wordmark is block letters and gaps alone, drawn on the pixel grid:
+/// nothing in it is a word, so it needs no translation and a screen reader
+/// reads the credits instead.
+#[test]
+fn the_wordmark_is_block_letters_and_gaps() {
+    assert_eq!(nfo::mark_size(13.), nfo::mark_size(13.).round());
+    for line in nfo::MARK {
+        assert!(
+            line.chars().all(|cell| cell == '\u{2588}' || cell == ' '),
+            "{line}"
+        );
+    }
 }

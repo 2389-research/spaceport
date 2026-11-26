@@ -1,4 +1,4 @@
-//! A rotozoomed field behind the mark: a checkered texture read through a
+//! A rotozoomed field filling the stage: a checkered texture read through a
 //! matrix that turns and breathes with the scene's time.
 
 use super::{LOOP, cell, grid, ramp::ramp};
@@ -67,14 +67,14 @@ pub(in crate::about) fn colour(uv: (f32, f32), stops: &[u32; 3]) -> u32 {
     ramp(stops, texel(uv))
 }
 
-/// Paints the field over `area`, which is the mark's square.
+/// Paints the field over `area`, the whole stage the demo owns.
 pub(in crate::about) fn paint(stops: &[u32; 3], area: Bounds<Pixels>, t: f32, window: &mut Window) {
     let (columns, rows) = grid(area, STEP);
     let side = f32::from(area.size.width).max(1.);
     for row in 0..rows {
         for column in 0..columns {
             // A cell reads the texture from its middle, in the field's own
-            // square, so the field turns about the mark's centre.
+            // square, so the field turns about the stage's centre.
             let at = (
                 (column as f32 + 0.5) * STEP / side - 0.5,
                 (row as f32 + 0.5) * STEP / side - 0.5,

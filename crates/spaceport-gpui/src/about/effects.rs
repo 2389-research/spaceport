@@ -5,7 +5,8 @@
 //!
 //! The stage is one canvas, so the layers paint into the same bounds in turn:
 //! [`plasma`] fills it, [`starfield`] and [`copper`] move over that, and
-//! [`rotozoom`] frames the mark. [`scroller`] rides above them as real text.
+//! [`rotozoom`] replaces it with its own field. [`scroller`] rides above them as
+//! real text.
 //! Each layer completes a whole number of its own turns in [`LOOP`] seconds,
 //! so the scene repeats without a seam and the animation element that drives
 //! it can simply loop.

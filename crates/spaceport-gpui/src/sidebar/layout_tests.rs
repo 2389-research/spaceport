@@ -595,6 +595,7 @@ pub(crate) fn fixture_window(
     let terminal_focus = SpaceportWindow::leave_region_with_terminal(&focus, window, cx);
     SpaceportWindow {
         _terminal_focus: terminal_focus,
+        about_demo: crate::about::Demo::Starfield,
         chrome_region: None,
         chats: Default::default(),
         sound: Default::default(),
