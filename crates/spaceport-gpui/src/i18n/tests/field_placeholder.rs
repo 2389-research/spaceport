@@ -1,11 +1,15 @@
+//! A field the app words formats its placeholder again when the locale
+//! changes: `spaceport-textfield` holds no sentence, so the field is told by
+//! the app's own `LocaleChanged` rather than reading the catalog.
+
 use super::*;
-use crate::i18n::{self, fl};
-use spaceport_i18n::{Language, Pseudo};
+use gpui::{AppContext, TestAppContext};
+use spaceport_textfield::search_input::SearchInput;
 
 #[gpui::test]
-fn a_localized_placeholder_follows_the_locale(cx: &mut gpui::TestAppContext) {
+fn a_localized_placeholder_follows_the_locale(cx: &mut TestAppContext) {
     let (localized, fixed) = cx.update(|cx| {
-        i18n::install(&Language::System, cx);
+        install(&Language::System, cx);
         let localized = cx.new(|cx| {
             let mut input = SearchInput::new(cx);
             input.set_placeholder_with(|| fl!("settings-search-placeholder"), cx);
@@ -26,7 +30,7 @@ fn a_localized_placeholder_follows_the_locale(cx: &mut gpui::TestAppContext) {
         english
     );
 
-    cx.update(|cx| i18n::toggle_pseudo(Pseudo::Accented, cx));
+    cx.update(|cx| toggle_pseudo(Pseudo::Accented, cx));
     let shown = localized.read_with(cx, |input, _| input.placeholder().to_owned());
     assert_ne!(shown, english);
     assert!(spaceport_i18n::pseudo::is_marked(&shown), "{shown}");
@@ -35,7 +39,7 @@ fn a_localized_placeholder_follows_the_locale(cx: &mut gpui::TestAppContext) {
         "/path/to/file"
     );
 
-    cx.update(|cx| i18n::toggle_pseudo(Pseudo::Accented, cx));
+    cx.update(|cx| toggle_pseudo(Pseudo::Accented, cx));
     assert_eq!(
         localized.read_with(cx, |input, _| input.placeholder().to_owned()),
         english
@@ -43,9 +47,9 @@ fn a_localized_placeholder_follows_the_locale(cx: &mut gpui::TestAppContext) {
 }
 
 #[gpui::test]
-fn setting_the_same_localized_placeholder_again_does_not_redraw(cx: &mut gpui::TestAppContext) {
+fn setting_the_same_localized_placeholder_again_does_not_redraw(cx: &mut TestAppContext) {
     let input = cx.update(|cx| {
-        i18n::install(&Language::System, cx);
+        install(&Language::System, cx);
         cx.new(|cx| {
             let mut input = SearchInput::new(cx);
             input.set_placeholder_with(|| fl!("chat-composer-placeholder"), cx);

@@ -6,16 +6,16 @@
 use std::ops::Range;
 use unicode_segmentation::UnicodeSegmentation;
 
-mod keys;
+pub mod keys;
 
-pub(crate) use keys::{EditCommand, KeyTable, Keys, Platform, edit_command};
+pub use keys::{EditCommand, KeyTable, Keys, Platform, edit_command};
 
-#[cfg(test)]
-pub(crate) mod key_matrix;
+#[cfg(any(test, feature = "test-support"))]
+pub mod key_matrix;
 
 /// Whether replaced text keeps its newlines.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Newlines {
+pub enum Newlines {
     /// Every line break and carriage return is dropped.
     Strip,
     /// Line endings are normalized to `\n`.
@@ -23,7 +23,7 @@ pub(crate) enum Newlines {
 }
 
 /// What replaced text becomes for `newlines`.
-pub(crate) fn normalize(text: &str, newlines: Newlines) -> String {
+pub fn normalize(text: &str, newlines: Newlines) -> String {
     match newlines {
         Newlines::Strip => text
             .chars()
@@ -50,14 +50,14 @@ pub(crate) fn normalize(text: &str, newlines: Newlines) -> String {
 
 // Internal offsets are UTF-8 boundaries; only the platform input API uses UTF-16.
 #[derive(Default)]
-pub(crate) struct Editing {
-    pub(crate) text: String,
-    pub(crate) anchor: usize,
-    pub(crate) cursor: usize,
-    pub(crate) marked: Option<Range<usize>>,
+pub struct Editing {
+    pub text: String,
+    pub anchor: usize,
+    pub cursor: usize,
+    pub marked: Option<Range<usize>>,
 }
 
-pub(crate) fn from_utf16(text: &str, offset: usize) -> usize {
+pub fn from_utf16(text: &str, offset: usize) -> usize {
     let mut units = 0;
     for (byte, ch) in text.char_indices() {
         if units >= offset {
@@ -68,32 +68,32 @@ pub(crate) fn from_utf16(text: &str, offset: usize) -> usize {
     text.len()
 }
 
-pub(crate) fn to_utf16(text: &str, offset: usize) -> usize {
+pub fn to_utf16(text: &str, offset: usize) -> usize {
     text[..offset].encode_utf16().count()
 }
 
-pub(crate) fn byte_range(text: &str, range: Range<usize>) -> Range<usize> {
+pub fn byte_range(text: &str, range: Range<usize>) -> Range<usize> {
     // Clamp out-of-bounds requests and round split surrogate pairs forward.
     from_utf16(text, range.start.min(range.end))..from_utf16(text, range.start.max(range.end))
 }
 
 impl Editing {
-    pub(crate) fn selection(&self) -> Range<usize> {
+    pub fn selection(&self) -> Range<usize> {
         self.anchor.min(self.cursor)..self.anchor.max(self.cursor)
     }
 
     /// Selects `range`, the caret at its end.
-    pub(crate) fn select(&mut self, range: Range<usize>) {
+    pub fn select(&mut self, range: Range<usize>) {
         self.anchor = range.start;
         self.cursor = range.end;
     }
 
     /// Whether the caret is at the selection's start rather than its end.
-    pub(crate) fn reversed(&self) -> bool {
+    pub fn reversed(&self) -> bool {
         self.cursor < self.anchor
     }
 
-    pub(crate) fn select_to(&mut self, offset: usize, extend: bool) {
+    pub fn select_to(&mut self, offset: usize, extend: bool) {
         self.cursor = offset;
         if !extend {
             self.anchor = offset;
@@ -104,18 +104,18 @@ impl Editing {
     // split what reads as one character: an accented letter, an emoji
     // sequence, a Hangul syllable. A slice would start a cluster of its own
     // at the cursor, splitting a letter from the accent typed before it.
-    pub(crate) fn boundaries(&self) -> impl DoubleEndedIterator<Item = usize> + '_ {
+    pub fn boundaries(&self) -> impl DoubleEndedIterator<Item = usize> + '_ {
         self.text
             .grapheme_indices(true)
             .map(|(i, _)| i)
             .chain([self.text.len()])
     }
 
-    pub(crate) fn previous(&self) -> usize {
+    pub fn previous(&self) -> usize {
         self.boundaries().rfind(|i| *i < self.cursor).unwrap_or(0)
     }
 
-    pub(crate) fn next(&self) -> usize {
+    pub fn next(&self) -> usize {
         self.boundaries()
             .find(|i| *i > self.cursor)
             .unwrap_or(self.cursor)
@@ -131,14 +131,14 @@ impl Editing {
 
     /// The bytes a replacement of UTF-16 `range` covers: that range, else
     /// the text being composed, else the selection.
-    pub(crate) fn replaced(&self, range: Option<Range<usize>>) -> Range<usize> {
+    pub fn replaced(&self, range: Option<Range<usize>>) -> Range<usize> {
         range
             .map(|r| byte_range(&self.text, r))
             .or_else(|| self.marked.clone())
             .unwrap_or_else(|| self.selection())
     }
 
-    pub(crate) fn replace(
+    pub fn replace(
         &mut self,
         range: Option<Range<usize>>,
         text: &str,
@@ -152,7 +152,7 @@ impl Editing {
 
     /// Replaces the bytes of `range` with `text`. `selection` is the input
     /// method's, in UTF-16 units of `text`.
-    pub(crate) fn replace_bytes(
+    pub fn replace_bytes(
         &mut self,
         range: Range<usize>,
         text: &str,

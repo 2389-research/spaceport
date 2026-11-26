@@ -3,7 +3,6 @@ use super::*;
 mod composition;
 mod control_keys;
 mod key_table;
-mod placeholder;
 mod rtl_caret;
 mod word_keys;
 

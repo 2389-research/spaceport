@@ -2,8 +2,8 @@
 
 //! Every key the search field takes, pinned row by row against
 //! `key_table_plain.txt`, and against `key_table_masked.txt` for a field that
-//! hides a secret. `crate::text_editing::key_matrix` lists the keys and says
-//! how to regenerate the tables.
+//! hides a secret. `spaceport_textfield::text_editing::key_matrix` lists the
+//! keys and says how to regenerate the tables.
 
 use super::*;
 use crate::text_editing::key_matrix::{self, CLIPBOARD, Outcome, SINGLE_STARTS};
@@ -91,7 +91,7 @@ fn table(masked: bool, cx: &mut gpui::TestAppContext) -> Vec<String> {
 #[gpui::test]
 fn every_key_does_what_the_plain_table_pins(cx: &mut gpui::TestAppContext) {
     key_matrix::assert_pinned(
-        "search_input/tests",
+        concat!(env!("CARGO_MANIFEST_DIR"), "/src/search_input/tests"),
         "key_table_plain.txt",
         include_str!("key_table_plain.txt"),
         &table(false, cx),
@@ -101,7 +101,7 @@ fn every_key_does_what_the_plain_table_pins(cx: &mut gpui::TestAppContext) {
 #[gpui::test]
 fn every_key_does_what_the_masked_table_pins(cx: &mut gpui::TestAppContext) {
     key_matrix::assert_pinned(
-        "search_input/tests",
+        concat!(env!("CARGO_MANIFEST_DIR"), "/src/search_input/tests"),
         "key_table_masked.txt",
         include_str!("key_table_masked.txt"),
         &table(true, cx),

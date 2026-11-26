@@ -6728,6 +6728,7 @@ dependencies = [
  "spaceport-sidebar",
  "spaceport-sound",
  "spaceport-state-file",
+ "spaceport-textfield",
  "spaceport-truncate",
  "spaceport-usage",
  "spaceport-web-url",
@@ -6999,6 +7000,19 @@ dependencies = [
  "spaceport-backend",
  "spaceport-protocol",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "spaceport-textfield"
+version = "0.1.0"
+dependencies = [
+ "gpui-pre",
+ "spaceport-commands",
+ "spaceport-settings",
+ "spaceport-widgets",
+ "spaceport-words",
+ "unicode-bidi",
+ "unicode-segmentation",
 ]
 
 [[package]]

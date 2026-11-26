@@ -4,6 +4,7 @@
 //! `tests/key_table*.txt`.
 //!
 //! Regenerate a table on macOS, where every row runs, with
+//! `UPDATE_KEY_TABLES=1 cargo test -p spaceport-textfield key_table` and
 //! `UPDATE_KEY_TABLES=1 cargo test -p spaceport-gpui key_table`, and review the
 //! diff: a changed row is a changed key.
 
@@ -13,21 +14,21 @@ use std::fmt::Write as _;
 
 /// A field's text with its selection: `anchor` is where it started, `cursor`
 /// where the caret is.
-pub(crate) struct Start {
-    pub(crate) name: &'static str,
-    pub(crate) text: &'static str,
-    pub(crate) anchor: usize,
-    pub(crate) cursor: usize,
+pub struct Start {
+    pub name: &'static str,
+    pub text: &'static str,
+    pub anchor: usize,
+    pub cursor: usize,
 }
 
 /// `one é😀 two`: the accent is a combining mark (bytes 4..7 are one
 /// character) and the emoji takes four bytes (7..11).
-pub(crate) const SINGLE: &str = "one e\u{301}\u{1f600} two";
+pub const SINGLE: &str = "one e\u{301}\u{1f600} two";
 
 /// Three lines: `one é`, `😀 two`, `three`, the breaks at bytes 7 and 16.
-pub(crate) const LINES: &str = "one e\u{301}\n\u{1f600} two\nthree";
+pub const LINES: &str = "one e\u{301}\n\u{1f600} two\nthree";
 
-pub(crate) const SINGLE_STARTS: [Start; 5] = [
+pub const SINGLE_STARTS: [Start; 5] = [
     start("start", SINGLE, 0, 0),
     start("middle", SINGLE, 7, 7),
     start("end", SINGLE, 15, 15),
@@ -35,7 +36,7 @@ pub(crate) const SINGLE_STARTS: [Start; 5] = [
     start("reversed", SINGLE, 11, 4),
 ];
 
-pub(crate) const LINES_STARTS: [Start; 5] = [
+pub const LINES_STARTS: [Start; 5] = [
     start("start", LINES, 0, 0),
     start("middle", LINES, 12, 12),
     start("end", LINES, 22, 22),
@@ -54,7 +55,7 @@ const fn start(name: &'static str, text: &'static str, anchor: usize, cursor: us
 
 /// What every case starts with on the clipboard: a tab and a line break show
 /// what each field keeps of a paste.
-pub(crate) const CLIPBOARD: &str = "P\tQ\r\nR";
+pub const CLIPBOARD: &str = "P\tQ\r\nR";
 
 /// Keys pressed on every platform, Enter aside: the test platform types an
 /// unhandled Enter as a line break, which is not the field's doing. `word-` is the modifier fields move by
@@ -133,7 +134,7 @@ const MACOS_KEYS: &[&str] = &[
 
 /// The rows this platform runs. `vertical` is false for a text of several
 /// lines, where Up and Down land by glyph widths the platforms disagree on.
-pub(crate) fn keys(vertical: bool) -> impl Iterator<Item = &'static str> {
+pub fn keys(vertical: bool) -> impl Iterator<Item = &'static str> {
     let macos: &[&str] = if cfg!(target_os = "macos") {
         MACOS_KEYS
     } else {
@@ -146,7 +147,7 @@ pub(crate) fn keys(vertical: bool) -> impl Iterator<Item = &'static str> {
 }
 
 /// The keystrokes a row's keys are on this platform, separated by spaces.
-pub(crate) fn keystrokes(keys: &str) -> String {
+pub fn keystrokes(keys: &str) -> String {
     let (word, edit) = if cfg!(target_os = "macos") {
         ("alt-", "cmd-")
     } else {
@@ -167,17 +168,17 @@ fn escaped(text: &str) -> String {
 }
 
 /// What a case left behind.
-pub(crate) struct Outcome {
-    pub(crate) text: String,
-    pub(crate) anchor: usize,
-    pub(crate) cursor: usize,
+pub struct Outcome {
+    pub text: String,
+    pub anchor: usize,
+    pub cursor: usize,
     /// How many of the keys the field let through to its owner.
-    pub(crate) passed: usize,
-    pub(crate) clipboard: Option<String>,
+    pub passed: usize,
+    pub clipboard: Option<String>,
 }
 
 /// One row of a table.
-pub(crate) fn row(start: &Start, keys: &str, outcome: &Outcome) -> String {
+pub fn row(start: &Start, keys: &str, outcome: &Outcome) -> String {
     let clipboard = match outcome.clipboard.as_deref() {
         Some(CLIPBOARD) => "kept".to_owned(),
         Some(text) => format!("\"{}\"", escaped(text)),
@@ -199,15 +200,15 @@ fn id(row: &str) -> &str {
     row.split(" => ").next().unwrap_or(row)
 }
 
-/// Compares the rows a widget produced with its pinned table, the file
-/// `name` beside the test. Rows pinned for another platform are skipped.
+/// Compares the rows a widget produced with its pinned table, the file `name`
+/// in `directory`. The caller builds `directory` from its own
+/// `CARGO_MANIFEST_DIR`, because the table is written beside the test that
+/// drives the widget, whichever crate that is. Rows pinned for another
+/// platform are skipped.
 #[track_caller]
-pub(crate) fn assert_pinned(directory: &str, name: &str, pinned: &str, rows: &[String]) {
+pub fn assert_pinned(directory: &str, name: &str, pinned: &str, rows: &[String]) {
     if std::env::var_os("UPDATE_KEY_TABLES").is_some() {
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("src")
-            .join(directory)
-            .join(name);
+        let path = std::path::Path::new(directory).join(name);
         std::fs::write(&path, rows.join("\n") + "\n").unwrap();
         return;
     }

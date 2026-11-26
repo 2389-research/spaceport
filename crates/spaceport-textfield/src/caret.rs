@@ -50,13 +50,13 @@ impl Cluster {
 
 /// A shaped line's carets in logical order.
 #[derive(Clone, Debug, Default, PartialEq)]
-pub(crate) struct Carets {
+pub struct Carets {
     clusters: Vec<Cluster>,
 }
 
 impl Carets {
     /// The carets of `text` as shaped into `line`.
-    pub(crate) fn new(text: &str, line: &LineLayout) -> Self {
+    pub fn new(text: &str, line: &LineLayout) -> Self {
         let width = f32::from(line.width);
         let mut glyphs: Vec<(f32, usize)> = line
             .runs
@@ -114,7 +114,7 @@ impl Carets {
 
     /// Where the caret before byte `index` is drawn; past the end, after the
     /// last character in logical order, which may be on the left.
-    pub(crate) fn x(&self, index: usize) -> Pixels {
+    pub fn x(&self, index: usize) -> Pixels {
         let Some(last) = self.clusters.last() else {
             return px(0.);
         };
@@ -126,7 +126,7 @@ impl Carets {
     }
 
     /// The caret position nearest a click at `x`.
-    pub(crate) fn index_at(&self, x: Pixels) -> usize {
+    pub fn index_at(&self, x: Pixels) -> usize {
         let x = f32::from(x);
         let Some(cluster) = self
             .clusters
@@ -145,7 +145,7 @@ impl Carets {
 
     /// The stretches `range` covers, left to right. A selection across a
     /// change of direction is several stretches, as it is in any editor.
-    pub(crate) fn spans(&self, range: Range<usize>) -> Vec<Range<Pixels>> {
+    pub fn spans(&self, range: Range<usize>) -> Vec<Range<Pixels>> {
         let mut spans: Vec<Range<f32>> = self
             .clusters
             .iter()
@@ -174,7 +174,7 @@ impl Carets {
 
     /// The leftmost and rightmost edges `range` covers, as one box for the
     /// input method's candidate window; the caret's own place when empty.
-    pub(crate) fn extent(&self, range: Range<usize>) -> Range<Pixels> {
+    pub fn extent(&self, range: Range<usize>) -> Range<Pixels> {
         let spans = self.spans(range.clone());
         match (spans.first(), spans.last()) {
             (Some(first), Some(last)) => first.start..last.end,

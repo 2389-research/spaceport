@@ -9,18 +9,20 @@ use gpui::{
 };
 
 use crate::caret::Carets;
-use crate::config::{Config, FontConfig, Theme};
-use crate::fonts::StyledFont;
 use crate::text_editing::{
     EditCommand, Editing, KeyTable, Keys, Newlines, Platform, byte_range, edit_command, normalize,
     to_utf16,
 };
 use crate::{actions, input::ViewInputHandler};
+use spaceport_settings::{Config, FontConfig, Theme, corners};
+use spaceport_widgets::fonts::StyledFont;
 
 pub struct Changed;
 
 pub struct SearchInput {
     pub focus: FocusHandle,
+    /// What a test locates the field's element by.
+    debug: SharedString,
     placeholder: String,
     /// Formats the placeholder in the current locale, so a field built
     /// before a language change shows the new language's hint.
@@ -65,9 +67,10 @@ impl SearchInput {
     pub fn new(cx: &mut Context<Self>) -> Self {
         Self {
             focus: cx.focus_handle(),
-            placeholder: "Search themes...".into(),
+            debug: "search-input".into(),
+            placeholder: String::new(),
             localized: None,
-            _locale: cx.observe_global::<crate::i18n::CurrentLocale>(|this, cx| {
+            _locale: cx.observe_global::<crate::locale::LocaleChanged>(|this, cx| {
                 if let Some(placeholder) = this.localized.as_ref().map(|localized| localized()) {
                     this.show_placeholder(placeholder, cx);
                 }
@@ -94,13 +97,20 @@ impl SearchInput {
     }
 
     /// Draw only the text, inside a frame the owner draws.
-    pub(crate) fn set_frameless(&mut self, cx: &mut Context<Self>) {
+    pub fn set_frameless(&mut self, cx: &mut Context<Self>) {
         self.framed = false;
         cx.notify();
     }
 
-    #[cfg(test)]
-    pub(crate) fn framed(&self) -> bool {
+    /// What a test locates the field's element by, where a window holds more
+    /// than one field and the default would name either.
+    pub fn set_debug_selector(&mut self, selector: &str, cx: &mut Context<Self>) {
+        self.debug = selector.to_owned().into();
+        cx.notify();
+    }
+
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn framed(&self) -> bool {
         self.framed
     }
 
@@ -119,7 +129,7 @@ impl SearchInput {
 
     /// Replaces the text with the cursor at byte `cursor`, moved back to a
     /// character boundary, and nothing selected.
-    pub(crate) fn set_text_at(&mut self, text: &str, cursor: usize, cx: &mut Context<Self>) {
+    pub fn set_text_at(&mut self, text: &str, cursor: usize, cx: &mut Context<Self>) {
         let text = normalize(text, Newlines::Strip);
         let mut cursor = cursor.min(text.len());
         while !text.is_char_boundary(cursor) {
@@ -136,7 +146,7 @@ impl SearchInput {
         self.did_edit(changed, cx);
     }
 
-    pub(super) fn set_text_selected(&mut self, text: &str, cx: &mut Context<Self>) {
+    pub fn set_text_selected(&mut self, text: &str, cx: &mut Context<Self>) {
         let text = normalize(text, Newlines::Strip);
         let changed = self.edit.text != text;
         self.edit = Editing {
@@ -161,7 +171,7 @@ impl SearchInput {
 
     /// Shows what `placeholder` formats now, laid out again only when its text
     /// changed (callers set it every poll), and formats it again per locale.
-    pub(crate) fn set_placeholder_with(
+    pub fn set_placeholder_with(
         &mut self,
         placeholder: impl Fn() -> String + 'static,
         cx: &mut Context<Self>,
@@ -181,7 +191,7 @@ impl SearchInput {
 
     /// The field's accessible name, which the placeholder otherwise stands
     /// in for. Unchanged is a no-op, so the owner may set it from its render.
-    pub(crate) fn set_label(&mut self, label: &str, cx: &mut Context<Self>) {
+    pub fn set_label(&mut self, label: &str, cx: &mut Context<Self>) {
         if self.label.as_deref() == Some(label) {
             return;
         }
@@ -189,13 +199,13 @@ impl SearchInput {
         cx.notify();
     }
 
-    #[cfg(test)]
-    pub(crate) fn label(&self) -> Option<&str> {
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn label(&self) -> Option<&str> {
         self.label.as_deref()
     }
 
-    #[cfg(test)]
-    pub(crate) fn placeholder(&self) -> &str {
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn placeholder(&self) -> &str {
         &self.placeholder
     }
 
@@ -399,7 +409,7 @@ impl EntityInputHandler for SearchInput {
         // An empty field's layout is the placeholder's, which can read the
         // other way: the input method's box is the caret where text starts.
         if self.text().is_empty() {
-            let x = match crate::direction::is_rtl() {
+            let x = match spaceport_widgets::direction::is_rtl() {
                 false => bounds.left(),
                 true => (bounds.right() - px(1.)).max(bounds.left()),
             };
@@ -441,8 +451,9 @@ impl Render for SearchInput {
         let input = cx.entity();
         let painter = input.clone();
         let height = px(self.font.line_height());
+        let debug = self.debug.clone();
         div()
-            .debug_selector(|| "theme-search".into())
+            .debug_selector(move || debug.to_string())
             .id("search-input")
             .map(|field| {
                 // A masked field is a secret: its role says so and it reports
@@ -471,7 +482,7 @@ impl Render for SearchInput {
                 field
                     .px_2()
                     .py_1()
-                    .rounded(px(crate::config::corners::CONTROL))
+                    .rounded(px(corners::CONTROL))
                     .border_1()
                     .border_color(rgb(self.theme.active))
                     .bg(rgb(self.theme.background))
@@ -596,7 +607,7 @@ impl Render for SearchInput {
                         painter.update(cx, |input, cx| {
                             let visible_width = (bounds.size.width - px(1.)).max(px(0.));
                             let carets = Carets::new(&line.text, &line);
-                            let rtl = crate::direction::is_rtl();
+                            let rtl = spaceport_widgets::direction::is_rtl();
                             // An empty field's caret waits where text starts.
                             let caret = match (input.text().is_empty(), rtl) {
                                 (true, false) => px(0.),

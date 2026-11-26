@@ -1,11 +1,11 @@
 #![allow(clippy::unwrap_used)]
 
-//! An empty field under `en-XB` keeps its caret where text starts, on the
-//! right, however long the placeholder beside it.
+//! An empty field laid out right to left keeps its caret where text starts, on
+//! the right, however long the placeholder beside it.
 
 use super::*;
 use gpui::VisualTestContext;
-use spaceport_i18n::Pseudo;
+use spaceport_widgets::direction::{Direction, set};
 
 /// A field narrower than its placeholder.
 struct Narrow(gpui::Entity<SearchInput>);
@@ -34,7 +34,7 @@ fn field(cx: &mut gpui::TestAppContext) -> (gpui::Entity<SearchInput>, &mut Visu
 
 #[gpui::test]
 fn an_empty_field_waits_at_its_right_edge(cx: &mut gpui::TestAppContext) {
-    crate::i18n::show(&Pseudo::Bidi.locale());
+    set(Direction::Rtl);
     let (input, cx) = field(cx);
     cx.update(|window, cx| {
         window.draw(cx).clear(cx);
@@ -54,5 +54,5 @@ fn an_empty_field_waits_at_its_right_edge(cx: &mut gpui::TestAppContext) {
             assert_eq!(place.right(), caret);
         })
     });
-    crate::i18n::show(&spaceport_i18n::Locale::FALLBACK);
+    set(Direction::Ltr);
 }

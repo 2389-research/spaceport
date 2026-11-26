@@ -4,9 +4,9 @@
 //! items are the exception: they are not catalog commands, and keep the
 //! keystrokes macOS gives every app unless the keymap binds a command to one.
 
-use crate::controls::{CTRL_SHORTCUTS, Command};
+use crate::controls::Command;
 use crate::text_editing::Platform;
-use gpui::{Action, App, KeyBinding, KeyDownEvent, Keystroke, Modifiers, actions};
+use gpui::{Action, App, KeyBinding, Modifiers, actions};
 
 actions!(
     herdr,
@@ -24,34 +24,15 @@ actions!(
     ]
 );
 
-// Edit menu items. Each element registers only the ones it can perform, so
-// GPUI disables the rest while that element has focus.
-actions!(edit, [Cut, Copy, Paste, SelectAll]);
+// Edit menu items, declared where the fields that perform them register them.
+// Each element registers only the ones it can perform, so GPUI disables the
+// rest while that element has focus.
+pub(crate) use spaceport_textfield::actions::{Copy, Cut, Paste, SelectAll};
 
 /// No element sets this context, so these bindings never match a keystroke.
 /// They exist only so the Edit menu shows its standard shortcuts. The focused
 /// element's key handler keeps owning the Edit keys, as it did before the menu.
 const EDIT_MENU_LABELS: &str = "EditMenuLabels";
-
-/// The keystroke an Edit menu item stands for. A menu click replays it
-/// through the focused element's own key handler, so choosing the item and
-/// pressing its shortcut cannot behave differently.
-pub(crate) fn edit_key(key: &str) -> KeyDownEvent {
-    KeyDownEvent {
-        keystroke: Keystroke {
-            modifiers: Modifiers {
-                platform: !CTRL_SHORTCUTS,
-                control: CTRL_SHORTCUTS,
-                shift: CTRL_SHORTCUTS,
-                ..Modifiers::default()
-            },
-            key: key.into(),
-            key_char: None,
-        },
-        is_held: false,
-        prefer_character_input: false,
-    }
-}
 
 #[derive(Clone, PartialEq, serde::Deserialize, Action)]
 #[action(no_json)]

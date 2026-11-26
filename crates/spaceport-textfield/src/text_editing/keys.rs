@@ -9,11 +9,11 @@ use std::ops::Range;
 use gpui::Modifiers;
 
 use super::Editing;
-use crate::controls::CTRL_SHORTCUTS;
+use spaceport_commands::CTRL_SHORTCUTS;
 
 /// The desktops' modifier conventions.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Platform {
+pub enum Platform {
     /// Cmd edits, Option moves by word, and Control keeps its Emacs keys.
     MacOs,
     /// Linux and Windows: Ctrl edits as well as the platform key, and moves
@@ -25,7 +25,7 @@ pub(crate) enum Platform {
 
 impl Platform {
     /// The desktop this build runs on.
-    pub(crate) const CURRENT: Self = if cfg!(target_os = "macos") {
+    pub const CURRENT: Self = if cfg!(target_os = "macos") {
         Self::MacOs
     } else if CTRL_SHORTCUTS {
         Self::CtrlDesktop
@@ -35,7 +35,7 @@ impl Platform {
 
     /// Whether the modifiers are those of Cut, Copy, Paste, and Select All.
     /// The Ctrl desktops also take Ctrl-Shift, the terminal's alias for them.
-    pub(crate) fn edit_modifiers(self, modifiers: Modifiers) -> bool {
+    pub fn edit_modifiers(self, modifiers: Modifiers) -> bool {
         !modifiers.alt
             && !modifiers.function
             && ((modifiers.platform && !modifiers.control && !modifiers.shift)
@@ -44,7 +44,7 @@ impl Platform {
 
     /// Whether a field moves or deletes by word on an arrow, Backspace, or
     /// Delete: Option on macOS, Ctrl on the other desktops. Shift extends.
-    pub(crate) fn word_modifiers(self, modifiers: Modifiers) -> bool {
+    pub fn word_modifiers(self, modifiers: Modifiers) -> bool {
         let (word, other) = match self {
             Self::MacOs => (modifiers.alt, modifiers.control),
             Self::CtrlDesktop | Self::Other => (modifiers.control, modifiers.alt),
@@ -67,7 +67,7 @@ impl Platform {
 
 /// Which keys a field takes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum KeyTable {
+pub enum KeyTable {
     /// The search field's and the composer's: the Emacs keys on macOS, then
     /// the edit and platform keys, the plain ones, and the word ones. A key
     /// with any other modifiers is left to the owner.
@@ -78,21 +78,21 @@ pub(crate) enum KeyTable {
 }
 
 /// What a field's keys are read against.
-pub(crate) struct Keys {
+pub struct Keys {
     /// The line the caret is on, which Home, End, and the platform key's
     /// arrows and deletions reach the ends of: the whole text in a
     /// single-line field.
-    pub(crate) line: Range<usize>,
+    pub line: Range<usize>,
     /// The text is a secret: it is one word, so moving by word shows
     /// nothing of where its words are.
-    pub(crate) words_hidden: bool,
-    pub(crate) table: KeyTable,
-    pub(crate) platform: Platform,
+    pub words_hidden: bool,
+    pub table: KeyTable,
+    pub platform: Platform,
 }
 
 /// An edit a key asks for. Offsets are bytes of the field's text.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) enum EditCommand {
+pub enum EditCommand {
     /// Put the selection on the clipboard.
     Copy,
     /// Put the selection on the clipboard and delete it.
@@ -116,7 +116,7 @@ pub(crate) enum EditCommand {
 /// The edit `key` asks for under `modifiers`, or `None` for a key the field
 /// leaves to its owner or to the platform's text input. A field that is
 /// composing asks nothing: its input method takes every key.
-pub(crate) fn edit_command(
+pub fn edit_command(
     key: &str,
     modifiers: Modifiers,
     edit: &Editing,

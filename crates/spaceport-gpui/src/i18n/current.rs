@@ -7,8 +7,13 @@ use spaceport_i18n::Locale;
 
 /// Shows `locale`'s messages, and lays the chrome out in its direction. A
 /// catalog that cannot load keeps the one shown so far, and its direction.
-pub(super) fn replace(locale: &Locale) {
+/// Answers whether the catalog changed, so the caller can publish the
+/// text-field crate's `LocaleChanged` global beside the direction.
+pub(super) fn replace(locale: &Locale) -> bool {
     if spaceport_i18n::set_locale(locale) {
         spaceport_widgets::direction::set(locale.direction());
+        true
+    } else {
+        false
     }
 }

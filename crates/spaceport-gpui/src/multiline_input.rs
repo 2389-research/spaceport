@@ -571,16 +571,16 @@ impl Render for MultilineInput {
             .cursor(CursorStyle::IBeam)
             .on_key_down(cx.listener(Self::key_down))
             .on_action(cx.listener(|this, _: &actions::Cut, window, cx| {
-                this.key_down(&actions::edit_key("x"), window, cx)
+                this.key_down(&spaceport_textfield::actions::edit_key("x"), window, cx)
             }))
             .on_action(cx.listener(|this, _: &actions::Copy, window, cx| {
-                this.key_down(&actions::edit_key("c"), window, cx)
+                this.key_down(&spaceport_textfield::actions::edit_key("c"), window, cx)
             }))
             .on_action(cx.listener(|this, _: &actions::Paste, window, cx| {
-                this.key_down(&actions::edit_key("v"), window, cx)
+                this.key_down(&spaceport_textfield::actions::edit_key("v"), window, cx)
             }))
             .on_action(cx.listener(|this, _: &actions::SelectAll, window, cx| {
-                this.key_down(&actions::edit_key("a"), window, cx)
+                this.key_down(&spaceport_textfield::actions::edit_key("a"), window, cx)
             }))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::mouse_down))
             .on_mouse_move(cx.listener(Self::mouse_move))

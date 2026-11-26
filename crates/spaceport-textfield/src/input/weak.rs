@@ -8,13 +8,13 @@ use std::ops::Range;
 
 /// Forwards to the view like GPUI's `ElementInputHandler`, but through a weak
 /// reference. Callbacks after the view is released return the default value.
-pub(crate) struct WeakInputHandler<V: EntityInputHandler> {
+pub struct WeakInputHandler<V: EntityInputHandler> {
     view: WeakEntity<V>,
     bounds: Bounds<Pixels>,
 }
 
 impl<V: EntityInputHandler> WeakInputHandler<V> {
-    pub(crate) fn new(bounds: Bounds<Pixels>, view: Entity<V>) -> Self {
+    pub fn new(bounds: Bounds<Pixels>, view: Entity<V>) -> Self {
         Self {
             view: view.downgrade(),
             bounds,
