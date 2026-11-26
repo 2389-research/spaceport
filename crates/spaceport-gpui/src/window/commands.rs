@@ -55,7 +55,11 @@ impl SpaceportWindow {
         self.config.layout.mode = mode;
         // The menu reads its checkmark from the latest config.
         if cx.has_global::<InitialAppearance>() {
-            cx.global_mut::<InitialAppearance>().config.layout.mode = mode;
+            cx.global_mut::<InitialAppearance>()
+                .shown
+                .config
+                .layout
+                .mode = mode;
         }
         crate::menus::install(cx);
         cx.notify();
@@ -95,7 +99,7 @@ impl SpaceportWindow {
         }
         self.config.tab_layout = mode;
         if cx.has_global::<InitialAppearance>() {
-            cx.global_mut::<InitialAppearance>().config.tab_layout = mode;
+            cx.global_mut::<InitialAppearance>().shown.config.tab_layout = mode;
         }
         crate::menus::install(cx);
         cx.notify();
@@ -146,7 +150,11 @@ impl SpaceportWindow {
         }
         self.config.chat.layout = mode;
         if cx.has_global::<InitialAppearance>() {
-            cx.global_mut::<InitialAppearance>().config.chat.layout = mode;
+            cx.global_mut::<InitialAppearance>()
+                .shown
+                .config
+                .chat
+                .layout = mode;
         }
         self.chats.relayout(mode);
         crate::menus::install(cx);

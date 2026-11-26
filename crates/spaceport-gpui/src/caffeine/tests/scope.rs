@@ -71,7 +71,7 @@ fn an_active_hold_reports_the_scope_it_started_with(cx: &mut gpui::TestAppContex
 fn install_takes_the_scope_from_the_loaded_config(cx: &mut gpui::TestAppContext) {
     cx.update(|cx| {
         let mut appearance = crate::app::InitialAppearance::default();
-        appearance.config.status_bar.keep_awake_scope = AwakeScope::System;
+        appearance.shown.config.status_bar.keep_awake_scope = AwakeScope::System;
         cx.set_global(appearance);
         install(cx);
         assert_eq!(scope(cx), AwakeScope::System);

@@ -21,6 +21,7 @@ mod activity_bar;
 mod agent_skill;
 mod agents_header;
 mod agents_placement;
+mod appearance;
 mod backdrop;
 mod bitmap_fonts;
 mod bold_color;

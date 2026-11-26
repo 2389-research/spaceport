@@ -78,9 +78,9 @@ impl SpaceportWindow {
                     self.theme = theme.styled_for(&self.config);
                     if let Some(mut appearance) =
                         cx.try_global::<crate::app::InitialAppearance>().cloned()
-                        && ThemeName::follows_herdr(&appearance.config.theme, light)
+                        && ThemeName::follows_herdr(&appearance.shown.config.theme, light)
                     {
-                        appearance.theme = self.theme.clone();
+                        appearance.shown.theme = self.theme.clone();
                         cx.set_global(appearance);
                     }
                     crate::log_window::set_appearance(&self.config, &self.theme, cx);
@@ -155,9 +155,9 @@ impl SpaceportWindow {
                 this.theme = theme;
                 if let Some(mut appearance) =
                     cx.try_global::<crate::app::InitialAppearance>().cloned()
-                    && appearance.config.theme == this.config.theme
+                    && appearance.shown.config.theme == this.config.theme
                 {
-                    appearance.theme = this.theme.clone();
+                    appearance.shown.theme = this.theme.clone();
                     cx.set_global(appearance);
                 }
                 crate::log_window::set_appearance(&this.config, &this.theme, cx);

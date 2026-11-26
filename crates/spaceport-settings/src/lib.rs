@@ -15,6 +15,7 @@
 pub mod accent;
 pub mod agent_skill;
 pub mod agents_placement;
+pub mod appearance;
 pub mod backdrop;
 pub mod bitmap_fonts;
 pub mod catalog;
@@ -65,6 +66,7 @@ pub mod zen;
 pub use accent::Accent;
 pub use agent_skill::{AgentSkillConfig, SkillInstall};
 pub use agents_placement::AgentsPlacement;
+pub use appearance::{Appearance, ThemeSides};
 pub use backdrop::{Backdrop, Material};
 pub use chat::{ChatLauncher, ChatLayoutMode};
 pub use config::{Config, corners, home};

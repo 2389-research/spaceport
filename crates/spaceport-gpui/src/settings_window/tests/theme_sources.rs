@@ -260,7 +260,7 @@ fn explicit_theme_applies_contrast_once_and_shared_callbacks_cannot_restore_old_
         let view = settings.read(cx).unwrap();
         assert_eq!(source.read(cx).unwrap().theme, view.theme);
         assert_eq!(
-            cx.global::<crate::app::InitialAppearance>().theme,
+            cx.global::<crate::app::InitialAppearance>().shown.theme,
             view.theme
         );
     });

@@ -186,7 +186,7 @@ pub(super) async fn verify_themes(
                 );
                 let appearance = cx.global::<crate::app::InitialAppearance>();
                 ensure!(
-                    appearance.config.theme == name && appearance.theme == expected,
+                    appearance.shown.config.theme == name && appearance.shown.theme == expected,
                     "{name} did not update the appearance used by new windows"
                 );
                 Ok(Some(expected))

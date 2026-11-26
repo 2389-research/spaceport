@@ -181,7 +181,10 @@ fn follow_appearance_resolves_prepared_settings_without_source_or_disk(cx: &mut 
                 assert_eq!(view.theme, expected);
                 cx.set_global(crate::app::InitialAppearance::default());
                 view.apply_window_appearance(cx);
-                assert_eq!(cx.global::<crate::app::InitialAppearance>().theme, expected);
+                assert_eq!(
+                    cx.global::<crate::app::InitialAppearance>().shown.theme,
+                    expected
+                );
                 assert_eq!(view.config.theme, "Follow Herdr");
                 assert!(!view.busy());
                 assert!(view.error.is_none());
@@ -273,11 +276,15 @@ fn reload_publishes_baseline_and_rebinds_only_changed_keys(cx: &mut TestAppConte
                 loaded.theme = Theme::builtin("Nord").unwrap();
                 view.apply_loaded(Ok(loaded), cx);
                 assert_eq!(
-                    cx.global::<crate::app::InitialAppearance>().config.ui.size,
+                    cx.global::<crate::app::InitialAppearance>()
+                        .shown
+                        .config
+                        .ui
+                        .size,
                     19.
                 );
                 assert_eq!(
-                    cx.global::<crate::app::InitialAppearance>().theme,
+                    cx.global::<crate::app::InitialAppearance>().shown.theme,
                     view.theme
                 );
                 let keys = cx.key_bindings();

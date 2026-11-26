@@ -40,7 +40,7 @@ impl SettingsWindow {
             .try_global::<crate::app::InitialAppearance>()
             .cloned()
             .unwrap_or_default();
-        appearance.config.layout.mode = self.config.layout.mode;
+        appearance.shown.config.layout.mode = self.config.layout.mode;
         cx.set_global(appearance);
         crate::menus::install(cx);
         cx.notify();
