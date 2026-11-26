@@ -92,9 +92,27 @@ Brand marks identify their respective products and remain their owners' trademar
 The lettermarks agent-omp.svg, agent-droid.svg, agent-letta.svg, and
 agent-maki.svg are original artwork, not those products' logos.
 
+The colored Lobe Icons in assets/icons/brand/ come from revision
+05260484d9f4de68f90cc87a634ae68fa4043efd. The Kimi and Qoder files
+contain only their colored detail. assets/icons/README.md lists the sources.
+
+assets/icons/brand/omp.svg comes from the oh-my-pi repository:
+https://github.com/can1357/oh-my-pi/tree/eded751bee10cedac1df7ace6616b8d2cf121a8a
+assets/icons/brand/maki.png comes from the Maki repository:
+https://github.com/tontinton/maki/tree/57b0a869aefc5afb81a9642cbdf33831b209f410
+
 MIT License
 
+Lobe Icons:
 Copyright (c) 2023 LobeHub
+
+oh-my-pi:
+Copyright (c) 2025 Mario Zechner
+Copyright (c) 2025-2026 Can Bölük
+Copyright (c) 2026 Stencil Labs, Inc.
+
+Maki:
+Copyright (c) 2026 Tony Solomonik
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

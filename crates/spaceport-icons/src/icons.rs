@@ -309,8 +309,10 @@ impl AssetSource for Icons {
         let bytes = EMBEDDED
             .iter()
             .chain(&STATUS_ICONS)
+            .copied()
+            .chain(crate::brand::assets())
             .find(|(name, _)| *name == path)
-            .map(|(_, bytes)| *bytes)
+            .map(|(_, bytes)| bytes)
             .or_else(|| crate::provider_logo(path));
         Ok(bytes.map(Cow::Borrowed))
     }
@@ -321,6 +323,7 @@ impl AssetSource for Icons {
             .map(|(name, _)| *name)
             .chain(AgentIcon::ALL.iter().map(|icon| icon.path()))
             .chain(STATUS_ICONS.iter().map(|(name, _)| *name))
+            .chain(crate::brand::assets().map(|(name, _)| name))
             .chain(crate::provider_paths())
             .filter(|name| name.starts_with(path))
             .map(Into::into)

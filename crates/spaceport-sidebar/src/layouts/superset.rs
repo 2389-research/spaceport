@@ -331,7 +331,7 @@ impl RowLayout for Superset {
         let m = Metrics::new(cx);
         let key = agent.key.as_str();
         let color = text_color(state, theme);
-        let glyph = parts::icon(agent.icon.path(), m.icon * 0.7, color);
+        let glyph = agent.icon.sidebar_element(m.icon * 0.7, color, theme);
         let slot_dot = dot(&agent.lines, agent.status, cx);
         let icon = slot(key, glyph, slot_dot, &m, cx).when(agent.lines.len() > 1, |icon| {
             parts::align_agent_icon(icon.self_flex_start(), &agent.lines, cx)

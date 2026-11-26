@@ -99,4 +99,5 @@ fn unknown_or_display_identities_use_the_generic_mark() {
     assert!(Icons.load(AgentIcon::Generic.path()).unwrap().is_some());
 }
 
+mod brand;
 mod omo;
