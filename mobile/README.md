@@ -24,14 +24,28 @@ The APK uses Android debug signing. `./mobile/build-android --release` builds an
 
 1. Open **Add host**. Enter the SSH hostname, port, username, and Herdr session. Tap **Connect**.
 2. Compare the displayed SSH fingerprint with the host administrator’s copy before trusting it.
-3. For password sign-in, enter the account password. Open **Session → Phone key → Install key** to enroll the device.
+3. For password sign-in, enter the account password. Leave **Authorize this phone for future sign-ins** checked to enroll the device.
    Spaceport installs the public key through the password session and verifies a fresh key-only SSH login.
+   You can also enroll later from **Session → Phone key → Install key**.
 4. For an account that requires a key, open **Phone key → Copy public key** at the password prompt.
    Authorize that public key for the SSH account, then tap **Use phone key**. The P-256 private key stays in Android Keystore.
    Key login requires Android 9 or later and secure hardware. The phone must be unlocked to sign.
    Android 8 and devices without a hardware-backed key support password sign-in.
-5. Tap **Go To** to select an agent or workspace. Android draws Herdr’s terminal cells on a native Canvas.
-   The iOS Ghostty experiment uses a separate renderer.
+5. Tap **Go To** to select an agent or workspace. For a split tab, tap a tile on the pane map.
+   Android draws Herdr’s terminal cells on a native Canvas. The iOS Ghostty experiment uses a separate renderer.
+
+Home groups saved sessions under their SSH account. Tap **New session** to add a Herdr session on that account.
+Tap **Details** for the address, trusted host key, phone key, and sessions. Hold a session there to rename or remove it.
+Forgetting a host key closes that host's open connections. You verify the fingerprint again on the next connection.
+On Home, swipe an agent toward the end to pin it, or toward the start to snooze it for an hour.
+Touch and hold for other snooze lengths, including until 9 AM tomorrow. TalkBack offers the same choices as actions.
+The terminal's **Home** button shows a dot when an agent in another pane needs you.
+
+**Settings** shows the phone's public key with **Copy public key** and **Share**.
+**Install on a host** asks for the account's SSH password once. It installs the key and checks a fresh key-only login without starting Herdr.
+Later connections to that account skip the password. Settings also sets the terminal text size, the toolbar keys, and **Press Return after pasting**.
+The toolbar keys are one ordered list of up to 16; Shift, Control, and Alt apply to the next key.
+Hold the terminal and drag to move the cursor with arrow keys. Hold still to copy a line or the screen, or to paste.
 
 On Android 12–14, set a PIN, password, or pattern before creating a phone key.
 Removing the screen lock can delete that key. If it does, install the replacement key on the host.
