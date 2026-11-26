@@ -142,7 +142,7 @@ jobs:
 
   play:
     needs: [plan, build]
-    # Only the Play key lives here; the signing key and its approval gate stay in android-release.
+    # Only the Play key lives here; the signing key stays in android-release.
     environment: play-internal
     runs-on: ubuntu-24.04
     timeout-minutes: 15
