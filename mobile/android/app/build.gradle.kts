@@ -17,13 +17,26 @@ android {
         applicationId = "ai.research2389.spaceport.mobile"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1"
+        // Release builds take both from the v* tag (scripts/release/android-request.py).
+        versionCode = providers.gradleProperty("spaceport.versionCode").orNull?.toInt() ?: 1
+        versionName = providers.gradleProperty("spaceport.versionName").orNull ?: "0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += setOf("arm64-v8a", "x86_64") }
     }
+    // The release key lives only in the android-release environment's secrets. Without it,
+    // assembleRelease leaves the APK unsigned, and the release workflow refuses to publish it.
+    val keystore = System.getenv("SPACEPORT_ANDROID_KEYSTORE")
+    if (keystore != null) {
+        signingConfigs.create("release") {
+            storeFile = file(keystore)
+            storePassword = System.getenv("SPACEPORT_ANDROID_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("SPACEPORT_ANDROID_KEY_ALIAS")
+            keyPassword = System.getenv("SPACEPORT_ANDROID_KEY_PASSWORD")
+        }
+    }
     buildTypes {
         debug { applicationIdSuffix = ".debug" }
+        release { signingConfigs.findByName("release")?.let { signingConfig = it } }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
