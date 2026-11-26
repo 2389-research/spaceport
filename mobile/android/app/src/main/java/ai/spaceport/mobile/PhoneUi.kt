@@ -116,6 +116,8 @@ internal class PhoneUi(private val ctx: Context) {
     }
 
     /** A mostly horizontal fling on [row] reports its direction instead of clicking the row. */
+    // Taps still reach the row's own click handling; TalkBack reaches swipes through row actions.
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
     private fun swipes(row: View, swiped: (towardEnd: Boolean) -> Unit) {
         val rtl = row.layoutDirection == View.LAYOUT_DIRECTION_RTL
         val detector = GestureDetector(ctx, object : GestureDetector.SimpleOnGestureListener() {
