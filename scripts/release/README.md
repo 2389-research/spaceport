@@ -287,61 +287,79 @@ The Windows targets are `x86_64-pc-windows-msvc` and
 `windows-package` job, paused for the fork under D66, is the only caller of
 these scripts. `scripts/release/package-windows.py VERSION TARGET BINARY LAUNCHER
 OUTPUT_DIR THIRD_PARTY_NOTICES` (standard-library Python, since the runner has no
-zip tool) writes one `Sheprd-VERSION-TARGET.zip` per target with a same-named root
+zip tool) writes one `Spaceport-VERSION-TARGET.zip` per target with a same-named root
 containing `spaceport.exe`, the windowed `spaceport-launcher.exe` that the
 installer's Start menu shortcut opens, `sheprd-acp.exe`, which the app starts
-chats with (taken from beside `BINARY`), real legacy executable
-and helper copies, and `licenses/` holding the license
+chats with (taken from beside `BINARY`), and `licenses/` holding the license
 and notice files. Entries carry a fixed timestamp.
 
 `scripts/release/windows-installer.py` then installs the pinned Inno Setup
 compiler (`install-iscc`, checked against its SHA-256), compiles
 `spaceport.iss` over the extracted zip tree into
-`Sheprd-VERSION-TARGET-setup.exe` (`build`), and installs and uninstalls it on
+`Spaceport-VERSION-TARGET-setup.exe` (`build`), and installs and uninstalls it on
 the runner (`smoke`), checking the files, their subsystems, `spaceport.exe`'s
 output, the Start menu shortcut's target (the launcher) and AppUserModelID,
+that the AppUserModelID is the one build record the executable itself carries,
 the user `PATH` and Settings entries, and a silent reinstall that preserves
 startup settings without launching the app.
 CI's `windows-package` job runs the same
 optimized build, packaging, installer build, and install/uninstall check on
 `windows-2025` for any pull request that changes their inputs
 (`scripts/ci-changes.sh` lists them), and the required gate then requires it. The installer is per-user (no elevation),
-installs to `%LOCALAPPDATA%\Programs\Herdr UI` as `site/install.ps1` does, adds
-that directory to the user `PATH`, and creates the Start menu shortcut to the
-launcher.
-The smoke test seeds a disabled `Herdr UI` startup entry targeting the legacy
+installs to `%LOCALAPPDATA%\Programs\Spaceport`, adds that directory to the
+user `PATH`, and creates the Start menu shortcut to the launcher.
+The smoke test seeds a disabled `Spaceport` startup entry naming the installed
 launcher and requires the command and `StartupApproved` bytes to survive the
-upgrade unchanged. Setup renames only shortcuts targeting this installation;
-it preserves a preexisting desktop shortcut even without a new desktop task.
+upgrade unchanged. Setup leaves a preexisting desktop shortcut alone even when a
+run does not select the desktop task.
 
-## Windows Signing
+## Signing Gates
 
-Every Windows zip and installer built here is unsigned: `windows-installer.py
-build` signs only when given `--sign`, and `spaceport.iss` only sets `SignTool`
-when ISCC receives one. The upstream release workflow's `windows-sign` job was
-the only caller of that mode and was removed with that workflow.
-`windows-signing.py` (`unpack`, `repack`, `verify`), `windows-sign-file.ps1`,
-and the installer's `--sign` and `smoke --signed` modes remain with their
-tests, and nothing calls them. Restoring Authenticode signing needs a new
-protected signing job and its Azure Artifact Signing setup.
+Signing is scaffolding here: the steps exist, no build signs, and no credential
+lives in the repository. A signed artifact needs all of the following for its
+platform.
 
-## Retained Identities
+| Platform | Mechanism | Credential, and where the step plugs in | State |
+| --- | --- | --- | --- |
+| macOS | Developer ID signature with hardened runtime, notarization, stapling | A 2389 Research Developer ID certificate for Team `HD9NM9NSMK`, `notarytool` credentials for the same team, and the Spaceport Sparkle Ed25519 key, all in the protected `macos-preview` environment. `sign-macos.sh` and the preview workflow run them. | Configured for previews (D61, D64, D65). |
+| Windows | Authenticode with an RFC 3161 timestamp on the executables and the installer | An Azure Artifact Signing endpoint, account and certificate profile plus an Azure CLI OIDC login, named by `ARTIFACT_SIGNING_ENDPOINT`, `ARTIFACT_SIGNING_ACCOUNT` and `ARTIFACT_SIGNING_PROFILE`. `windows-installer.py build --sign` points ISCC at `windows-sign-file.ps1` for Setup.exe and its uninstaller; `windows-signing.py unpack`, `repack` and `verify` sign and check the zip's tree. | Nothing calls them (D61 defers Windows signing); a protected signing job must set up that login and the three variables first. |
+| Linux | Detached signature over the published archive and its checksum list | No key exists, and no archive is published: this repository builds the `spaceport` binary and the Nix package only. A `.deb`, `.rpm` or AppImage and its signing arrive with the Linux update route. | Not started. |
 
-The retained packaging scripts keep inherited Sheprd identities on purpose:
+Every path stays unsigned until then, and each is tested: `windows-package` CI
+builds the zip and the installer with no sign tool and runs `smoke` (unsigned)
+on them, the macOS preview route refuses an unsigned input before packaging,
+and `--sign`, `smoke --signed` and `windows-signing.py verify` reject an
+artifact without a valid timestamped signature from one signer.
+`test-release-security.py` keeps signing credentials out of every workflow, so
+restoring signing needs a signing job, not a code change here.
 
-- macOS preview bundles are `Spaceport.app`, with `spaceport` and `sheprd-acp`,
-  signed for Team `HD9NM9NSMK`. The preview approves no other public release
+## Package Identities
+
+- macOS preview bundles are `Spaceport.app` under `ai.2389.spaceport`, Team
+  `HD9NM9NSMK`, signed and notarized as above; ordinary development bundles
+  keep `spaceport.development`. The preview approves no other public release
   identity.
-- The Linux desktop ID is `org.sheprd.Sheprd`, matching the app's Wayland app ID
-  and X11 `WM_CLASS`. The chat helper remains `sheprd-acp`. Nix wraps the
-  `spaceport` command.
-- Windows retains AppId `{7FA70894-4FC0-4923-BDCB-B05F7475610A}`,
-  `%LOCALAPPDATA%\Programs\Herdr UI`, AppUserModelID `so.pen.herdr-gpui` and
-  publisher `Herdr UI`. ZIPs and installers ship `spaceport.exe`,
-  `spaceport-launcher.exe` and `sheprd-acp.exe`. Shortcuts and Explorer text
-  show Sheprd. The installer registers neither inherited `sheprd://` nor
-  `herdr-gpui://` scheme. Setup gracefully stops automation running under
-  either executable name.
+- Windows packages are Spaceport's own: product name `Spaceport`, AppId
+  `{62B8722B-1FA2-48E0-9609-46AA5D431983}`, `%LOCALAPPDATA%\Programs\Spaceport`,
+  publisher `2389 Research, Inc.`, and `Spaceport-VERSION-TARGET` archive and
+  installer names. The Start menu shortcut and the executable's `FileDescription`
+  are both `Spaceport`. The installer's AppUserModelID is the app ID the shipped
+  executable embeds in its build record — `spaceport.development` while packages
+  carry the development identity — so notifications and taskbar grouping stay
+  together. Setup neither upgrades nor adopts an inherited Sheprd installation:
+  that one keeps its AppId, directory, shortcuts and startup entry. The installer
+  registers neither inherited `sheprd://` nor `herdr-gpui://` scheme, and
+  `CloseApplications` stops only the executables it replaces.
+- Linux packaging installs `scripts/release/spaceport.desktop` as
+  `spaceport.development.desktop` under `share/applications` and the icon as
+  `share/icons/hicolor/scalable/apps/spaceport.svg`, both by Nix
+  (`flake.nix`); `Icon=spaceport`, `Categories=Development;` and
+  `StartupWMClass` naming the app ID the window reports. The chat helper remains
+  `sheprd-acp`. A distribution package (`.deb`, `.rpm`, AppImage) does not exist
+  yet, and its package name is `spaceport` when it does.
+- `site/install.ps1` is still the inherited Sheprd installer, for a different
+  product than these packages, so the two no longer share a directory, a
+  shortcut or an AppUserModelID.
 - Runtime service/state identities and the upstream `herdr-core` / `hc` and
   `herdr` command remain compatible. Preview signing uses the explicit environment
   interface above; no local `.envrc` or signing hook is sourced.

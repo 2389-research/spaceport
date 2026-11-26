@@ -23,8 +23,11 @@ def load(name, path):
 PACKAGE = load("package_windows", SCRIPT)
 INSTALLER_SCRIPT = SCRIPT.parent / "windows-installer.py"
 INSTALLER = load("windows_installer", INSTALLER_SCRIPT)
+ROOT = SCRIPT.parents[2]
 VERSION = "20260920.3"
 TARGET = "x86_64-pc-windows-msvc"
+# The build record cli.rs embeds in every executable it builds.
+IDENTITY = b"\0SPACEPORT_PREVIEW_V1\nid=spaceport.development\nversion=dev\nprofile=release\n\0"
 # Stands in for ISCC.exe: checks it was given the zip's tree and writes the
 # installer where the defines say.
 MOCK_ISCC = """#!/usr/bin/env python3
@@ -33,7 +36,7 @@ defines = dict(arg[2:].split("=", 1) for arg in sys.argv[1:] if arg.startswith("
 source = pathlib.Path(defines["SourceDir"])
 assert all((source / name).is_file() for name in ("spaceport.exe", "spaceport-launcher.exe", "sheprd-acp.exe"))
 assert sys.argv[-1].endswith("spaceport.iss")
-name = f"Sheprd-{defines['Version']}-{defines['Target']}-setup.exe"
+name = f"Spaceport-{defines['Version']}-{defines['Target']}-setup.exe"
 (pathlib.Path(defines["OutputDir"]) / name).write_bytes(b"setup " + defines["Architecture"].encode())
 """
 
@@ -48,7 +51,7 @@ class InstallerTests(unittest.TestCase):
         self.iscc.chmod(0o755)
 
     def release_zip(self, entries):
-        path = self.work / f"Sheprd-{VERSION}-{TARGET}.zip"
+        path = self.work / f"Spaceport-{VERSION}-{TARGET}.zip"
         with zipfile.ZipFile(path, "w") as archive:
             for name in entries:
                 archive.writestr(name, b"data")
@@ -63,16 +66,16 @@ class InstallerTests(unittest.TestCase):
         return result
 
     def test_builds_from_the_zip_tree(self):
-        root = f"Sheprd-{VERSION}-{TARGET}/"
+        root = f"Spaceport-{VERSION}-{TARGET}/"
         archive = self.release_zip([*(root + name for name in PACKAGE.EXECUTABLES), root + "licenses/LICENSE"])
         output = Path(self.build(archive).stdout.strip())
-        self.assertEqual(output, self.work.resolve() / f"Sheprd-{VERSION}-{TARGET}-setup.exe")
+        self.assertEqual(output, self.work.resolve() / f"Spaceport-{VERSION}-{TARGET}-setup.exe")
         self.assertEqual(output.read_bytes(), b"setup x64compatible")
         result = self.build(archive, success=False)
         self.assertIn("Output already exists", result.stderr)
 
     def test_rejects_a_zip_without_the_layout(self):
-        root = f"Sheprd-{VERSION}-{TARGET}/"
+        root = f"Spaceport-{VERSION}-{TARGET}/"
         executables = [root + name for name in PACKAGE.EXECUTABLES]
         cases = {
             "no launcher": [e for e in executables if not e.endswith("launcher.exe")],
@@ -97,12 +100,12 @@ class InstallerTests(unittest.TestCase):
                 INSTALLER.iscc_arguments(version, target, "src", "out")
 
     def test_uninstall_entry_check(self):
-        self.assertEqual(INSTALLER.app_id(), "{7FA70894-4FC0-4923-BDCB-B05F7475610A}")
-        app = Path("C:/Users/runner/Sheprd")
-        listed = {"DisplayName": "Sheprd", "UninstallString": f'"{app / "unins000.exe"}"'}
+        self.assertEqual(INSTALLER.app_id(), "{62B8722B-1FA2-48E0-9609-46AA5D431983}")
+        app = Path("C:/Users/runner/Spaceport")
+        listed = {"DisplayName": "Spaceport", "UninstallString": f'"{app / "unins000.exe"}"'}
         with mock.patch.object(INSTALLER, "uninstall_entry", return_value=listed):
             INSTALLER.check_uninstall_entry(app)
-        hidden = [None, {**listed, "DisplayName": "Herdr"}, {**listed, "SystemComponent": 1},
+        hidden = [None, {**listed, "DisplayName": "Sheprd"}, {**listed, "SystemComponent": 1},
                   {**listed, "ParentKeyName": "Other"}, {**listed, "UninstallString": '"C:/x/unins000.exe"'}]
         for entry in hidden:
             with self.subTest(entry=entry), mock.patch.object(INSTALLER, "uninstall_entry", return_value=entry), \
@@ -124,6 +127,37 @@ class InstallerTests(unittest.TestCase):
             with self.subTest(path.name):
                 defined = set(re.findall(r"^(\w+)=", path.read_text(), re.MULTILINE))
                 self.assertEqual(defined, used)
+
+    def test_the_executable_and_installer_share_one_product_name(self):
+        # Explorer and Task Manager show the executable's FileDescription, and
+        # Settings shows the installer's AppName; both are Spaceport.
+        resource = (ROOT / "crates/spaceport-gpui/windows_resource.rs").read_text()
+        described = re.search(r'^const APP_NAME: &str = "([^"]+)";$', resource, re.MULTILINE)[1]
+        self.assertEqual(described, INSTALLER.app_name())
+        setup = INSTALLER.SCRIPT.read_text()
+        self.assertIn("AppName={#AppName}", setup)
+        self.assertIn("UninstallDisplayName={#AppName}", setup)
+
+    def test_the_shortcut_carries_the_app_id_the_executable_embeds(self):
+        # Notifications and the taskbar group by the app ID in the executable's
+        # own build record, so the installer's shortcuts must name that one. A
+        # released Windows identity replaces both together.
+        development = (ROOT / "crates/spaceport-gpui/development-app-id").read_text().strip()
+        self.assertEqual(INSTALLER.app_user_model_id(), development)
+
+    def test_embedded_app_id(self):
+        binary = self.work / "spaceport.exe"
+        binary.write_bytes(b"MZ" + bytes(8) + IDENTITY + bytes(8))
+        self.assertEqual(INSTALLER.embedded_app_id(binary), "spaceport.development")
+        binary.write_bytes(b"MZ" + IDENTITY + IDENTITY.replace(b"development", b"other"))
+        with self.assertRaisesRegex(ValueError, "2 build identities"):
+            INSTALLER.embedded_app_id(binary)
+        binary.write_bytes(b"MZ" + bytes(8))
+        with self.assertRaisesRegex(ValueError, "0 build identities"):
+            INSTALLER.embedded_app_id(binary)
+        binary.write_bytes(b"MZ\0SPACEPORT_PREVIEW_V1\nid=spaceport.development")
+        with self.assertRaisesRegex(ValueError, "no complete build identity record"):
+            INSTALLER.embedded_app_id(binary)
 
     def test_the_inno_setup_pin_is_one_exact_release(self):
         self.assertRegex(INSTALLER.INNO_SHA256, r"^[0-9a-f]{64}$")

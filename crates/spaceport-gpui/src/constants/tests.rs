@@ -62,7 +62,7 @@ fn running_development_app_has_its_own_os_identity() {
 fn linux_desktop_entry_identifies_the_development_app() -> anyhow::Result<()> {
     let entry = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../scripts/release")
-        .join("org.sheprd.Sheprd.desktop");
+        .join("spaceport.desktop");
     let entry = fs::read_to_string(entry)?;
     let class = format!(
         "StartupWMClass={}",
