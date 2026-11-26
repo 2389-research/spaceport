@@ -30,7 +30,7 @@ pub(crate) fn submit_dialog(
 pub(crate) fn offers_note(view: &SpaceportWindow) -> bool {
     view.workspace_items()
         .iter()
-        .any(|(action, _)| *action == WorkspaceMenuAction::Dialog(WorkspaceAction::Note))
+        .any(|item| item.action == WorkspaceMenuAction::Dialog(WorkspaceAction::Note))
 }
 
 /// The workspace a menu currently targets, for tests outside this module.
@@ -64,8 +64,8 @@ pub(crate) fn check_menu_interactions(
                 super::Page::Workspace,
                 items.len(),
                 // Debug selectors are static; leaking two test labels is fine.
-                &*format!("workspace-menu-{}", items[0].1.english()).leak(),
-                &*format!("workspace-menu-{}", items[1].1.english()).leak(),
+                &*items[0].selector().leak(),
+                &*items[1].selector().leak(),
             )
         } else {
             (
@@ -137,7 +137,7 @@ pub(crate) fn check_menu_interactions(
     });
     let second_action = cx.update(|_, cx| {
         let view = view.read(cx);
-        (page == super::Page::Workspace).then(|| view.workspace_items()[1].0)
+        (page == super::Page::Workspace).then(|| view.workspace_items()[1].action)
     });
     cx.simulate_keystrokes("enter");
     cx.update(|_, cx| {

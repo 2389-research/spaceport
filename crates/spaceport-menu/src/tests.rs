@@ -15,6 +15,7 @@ mod page_title;
 mod pane_payloads;
 mod picker_lines;
 mod tab_payloads;
+mod workspace_popover;
 mod workspace_targets;
 
 /// The repository the snapshot's linked checkouts hang off, in the shape
