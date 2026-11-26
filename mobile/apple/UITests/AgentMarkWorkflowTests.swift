@@ -8,7 +8,7 @@ extension SessionWorkflowTests {
         let app = XCUIApplication()
         _ = try connect(in: app, sessionVariable: "SPACEPORT_TEST_MARKS_SESSION")
         let session = try XCTUnwrap(ProcessInfo.processInfo.environment["SPACEPORT_TEST_MARKS_SESSION"])
-        app.buttons["session.home"].tap()
+        openSessionHome(in: app)
         let scout = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label BEGINSWITH %@ AND label CONTAINS %@",
                                                     "home.agent.", "Scout,", session)).firstMatch
         reveal(scout, in: app)

@@ -41,5 +41,25 @@ xcodebuild -create-xcframework -library "$device" -headers "$staging/Headers" \
     -library "$simulator" -headers "$staging/Headers" -output "$staging/SpaceportMobileCore.xcframework"
 rm -rf "$build/SpaceportMobileCore.xcframework"
 mv "$staging/SpaceportMobileCore.xcframework" "$build/"
+
+# Compile the same artwork the desktop app embeds. The catalog keeps SVG masks
+# tintable at any display scale and preserves the original colors of PNG marks.
+catalog="$staging/AgentMarks.xcassets"
+mkdir "$catalog"
+printf '%s\n' '{"info":{"author":"xcode","version":1}}' > "$catalog/Contents.json"
+for asset in "$mobile_root"/../assets/icons/agent-*.{svg,png}; do
+    filename=${asset##*/}
+    imageset="$catalog/${filename%.*}.imageset"
+    mkdir "$imageset"
+    cp "$asset" "$imageset/$filename"
+    intent=template
+    if [[ $filename == *.png ]]; then intent=original; fi
+    cat > "$imageset/Contents.json" <<EOF
+{"images":[{"filename":"$filename","idiom":"universal"}],"info":{"author":"xcode","version":1},
+ "properties":{"preserves-vector-representation":true,"template-rendering-intent":"$intent"}}
+EOF
+done
+rm -rf "$generated/AgentMarks.xcassets"
+mv "$catalog" "$generated/"
 cd "$mobile_root/apple"
 xcodegen generate

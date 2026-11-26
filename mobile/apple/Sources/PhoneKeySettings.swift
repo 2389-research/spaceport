@@ -23,12 +23,12 @@ struct PhoneKeySettings: View {
                         InstallKeyForm(host: host, openHostDetails: { openHostDetails(host.id) })
                     } label: {
                         VStack(alignment: .leading) {
-                            Text(verbatim: host.address.destination)
-                            Text(host.login.title).font(.caption).foregroundStyle(.secondary)
+                            Text(verbatim: host.address.endpoint)
+                            Text("Account \(host.address.username) · \(host.login.title)").font(.caption).foregroundStyle(.secondary)
                         }
                     }
-                    .accessibilityLabel(host.address.destination)
-                    .accessibilityValue(host.login.title)
+                    .accessibilityLabel(host.address.endpoint)
+                    .accessibilityValue("Account \(host.address.username), \(host.login.title)")
                 }
                 .navigationTitle("Choose a host")
             }
@@ -62,7 +62,8 @@ struct InstallKeyForm: View {
             } else {
                 Form {
                     Section {
-                        Label(host.address.destination, systemImage: "server.rack").font(.headline)
+                        Label(host.address.endpoint, systemImage: "server.rack").font(.headline)
+                        LabeledContent("Account", value: host.address.username)
                         if installed {
                             Label("Key installed", systemImage: "checkmark.circle")
                             Text("The host accepted a fresh SSH login using this phone’s key.")

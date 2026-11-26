@@ -8,6 +8,7 @@ final class DirectPaneAttachment: ObservableObject, Identifiable {
     let target: InputTarget
     private let channel: MobilePty?
     private(set) var surface: GhosttyPaneSurface?
+    private var startup = HerdrAttachStartup()
     private var closed = false
     @Published private(set) var inputWarning: String?
     @Published private(set) var failure: String?
@@ -53,11 +54,15 @@ final class DirectPaneAttachment: ObservableObject, Identifiable {
     }
 
     private func display(_ bytes: Data) {
-        if !closed { surface?.receive(bytes) }
+        guard !closed else { return }
+        let output = startup.receive(bytes)
+        if !output.isEmpty { surface?.receive(output) }
     }
 
     private func finish(_ error: Error) {
         guard !closed else { return }
+        let tail = startup.finish()
+        if !tail.isEmpty { surface?.receive(tail) }
         failure = Self.describe(error)
         close()
     }
@@ -98,10 +103,12 @@ final class DirectPaneAttachment: ObservableObject, Identifiable {
 }
 
 struct DirectPaneDisplay: View {
+    @EnvironmentObject private var appearance: WindowTerminalAppearance
     @ObservedObject var pane: DirectPaneAttachment
     @Binding var keyboard: Bool
     @Binding var modifiers: UInt8
     let retry: () -> Void
+    let openAgents: () -> Void
 
     var body: some View {
         Group {
@@ -114,7 +121,10 @@ struct DirectPaneDisplay: View {
                     Button("Try Again", action: retry)
                 }
             } else if let surface = pane.surface {
-                GhosttyPaneView(surface: surface, keyboard: $keyboard, modifiers: $modifiers)
+                GhosttyPaneView(surface: surface, keyboard: $keyboard, modifiers: $modifiers, openAgents: openAgents)
+                    .onReceive(surface.$reportedAppearance) { mode in
+                        if appearance.reported != mode { appearance.reported = mode }
+                    }
             }
         }
         .overlay(alignment: .bottom) {

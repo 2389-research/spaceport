@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- ABOUTME: Supplies Spaceport's release metadata when Xcode builds the app. -->
+<!-- ABOUTME: Supplies Spaceport's metadata shared by device and simulator builds. -->
 <!-- ABOUTME: Record the confirmed export determination here so later archives carry it. -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>SpaceportWidgetGroup</key>
+    <string>$(SPACEPORT_WIDGET_GROUP)</string>
+    <key>NSSupportsLiveActivities</key>
+    <true/>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
 </dict>

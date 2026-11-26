@@ -5,14 +5,14 @@ import SwiftUI
 struct MobileSettings: View {
     let hosts: [SavedHost]
     let openHostDetails: (UUID) -> Void
+    @ObservedObject private var agentActivity = AgentLiveActivity.shared
+    @AppStorage(TerminalAppearance.preference) private var appearance = TerminalAppearance.dark
     @AppStorage(TerminalPreferences.textSize) private var savedTextSize: Int?
     @AppStorage(TerminalPreferences.toolbarKeys) private var keys = TerminalKeyPages.standard
     @AppStorage(TerminalPreferences.composeReturn) private var pressReturn = TerminalPreferences.defaultComposeReturn
 
-    @AppStorage(TerminalPreferences.ghostty) private var ghostty = false
-
     private var textSize: Binding<Int> {
-        Binding(get: { TerminalPreferences.textSize(saved: savedTextSize, ghostty: ghostty) },
+        Binding(get: { savedTextSize ?? TerminalPreferences.defaultTextSize },
                 set: { savedTextSize = $0 })
     }
 
@@ -20,6 +20,22 @@ struct MobileSettings: View {
         Form {
             PhoneKeySettings(hosts: hosts, openHostDetails: openHostDetails)
             Section {
+                Toggle("Live Activities", isOn: Binding(
+                    get: { agentActivity.isEnabled },
+                    set: { agentActivity.setEnabled($0) }
+                ))
+                .accessibilityIdentifier("settings.liveActivity")
+            } header: {
+                Text("Agents")
+            } footer: {
+                Text("Show agent counts on the Lock Screen and Dynamic Island.")
+            }
+            Section {
+                Picker("Appearance", selection: $appearance) {
+                    Text("Light").tag(TerminalAppearance.light)
+                    Text("Dark").tag(TerminalAppearance.dark)
+                }
+                .pickerStyle(.segmented).accessibilityIdentifier("settings.appearance")
                 Stepper(value: textSize, in: TerminalPreferences.textRange) {
                     LabeledContent("Text Size", value: "\(textSize.wrappedValue) pt")
                 }
@@ -37,14 +53,6 @@ struct MobileSettings: View {
                 Text("Terminal")
             } footer: {
                 Text("Swipe the terminal keys to change pages. Hold the space bar and drag to move the cursor.")
-            }
-            Section {
-                Toggle("Use Ghostty", isOn: $ghostty)
-                    .accessibilityIdentifier("settings.ghostty")
-            } header: {
-                Text("Terminal Experiment")
-            } footer: {
-                Text("Use Ghostty to attach directly to the selected terminal over your SSH connection.")
             }
             Section {
                 LabeledContent("Version", value: version)

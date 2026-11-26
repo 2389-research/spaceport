@@ -6,9 +6,7 @@ extension SessionWorkflowTests {
     @MainActor
     func testSearchAndPeekWithoutMovingTerminalFocus() async throws {
         let app = XCUIApplication()
-        app.launchArguments += ["-useGhosttyTerminal", "YES"]
-        let (surface, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_PICKER_SESSION",
-                                      terminalIdentifier: "terminal.ghostty")
+        let (surface, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_PICKER_SESSION")
         let navigation = app.buttons["session.navigation"]
         let origin = try XCTUnwrap(navigation.value as? String)
         navigation.tap()

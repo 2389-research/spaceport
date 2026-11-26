@@ -1,11 +1,39 @@
 // ABOUTME: Exercises saved agent groups against observations from multiple Herdr sessions.
 // ABOUTME: Checks that cache writes and relaunches preserve idle age evidence.
 import Foundation
+import SwiftUI
 import XCTest
 @testable import SpaceportMobile
 
 @MainActor
 final class AgentSectionsTests: XCTestCase {
+    func testOnlyActiveAgentDotsPulseWhenMotionIsEnabled() {
+        XCTAssertEqual(PaneActivity.working.pulse(reduceMotion: false, scene: .active), .working)
+        XCTAssertEqual(PaneActivity.blocked.pulse(reduceMotion: false, scene: .active), .waiting)
+        XCTAssertNil(PaneActivity.idle.pulse(reduceMotion: false, scene: .active))
+        for activity in [PaneActivity.working, .blocked, .idle] {
+            XCTAssertNil(activity.pulse(reduceMotion: true, scene: .active))
+            XCTAssertNil(activity.pulse(reduceMotion: false, scene: .background))
+            XCTAssertNil(activity.pulse(reduceMotion: false, scene: .inactive))
+        }
+    }
+
+    func testWorkingBreathesOnceAndWaitingPulsesTwiceBeforeResting() {
+        func brightness(_ pulse: AgentPulse, at times: [Double]) -> [Double] {
+            let timeline = KeyframeTimeline(initialValue: 1.0) { pulse.opacity }
+            return times.map { timeline.value(time: $0) }
+        }
+        let working = brightness(.working, at: [0, 1.2, 2.4])
+        XCTAssertLessThan(working[1], working[0])
+        XCTAssertEqual(working[2], working[0], accuracy: 0.01)
+        let waiting = brightness(.waiting, at: [0, 0.22, 0.44, 0.72, 0.94, 1.8])
+        XCTAssertLessThan(waiting[1], waiting[0])
+        XCTAssertGreaterThan(waiting[2], waiting[1])
+        XCTAssertLessThan(waiting[3], waiting[2])
+        XCTAssertEqual(waiting[4], waiting[0], accuracy: 0.01)
+        XCTAssertEqual(waiting[5], waiting[4], accuracy: 0.01)
+    }
+
     private func row(_ name: String, _ status: String, seq: UInt64) -> SeenAgent {
         SeenAgent(bootId: "boot", workspaceId: "w", tabId: "t", paneId: name,
                   name: name, status: status, location: "Build › Review", stateChangeSeq: seq)

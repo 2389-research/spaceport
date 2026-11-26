@@ -100,6 +100,8 @@ pub enum Transition<'a> {
         result: Option<&'a serde_json::Value>,
     },
     Boot(&'a str),
+    /// A create request named the tab that its ordered barrier must observe.
+    CreatedTab(String),
     Settled,
     Opened,
     Expire(Instant),
@@ -259,18 +261,13 @@ impl Fence {
                     };
                 }
             }
+            Transition::CreatedTab(tab) => self.set_focus(Some(OwnedNavigationTarget::Tab(tab))),
             Transition::Settled => {
                 // Focus is evidence for completing one navigation, not a
                 // permanent constraint. A caller whose focus request was
                 // refused settles while its barrier is still waiting, because
                 // the barrier alone establishes which pane owns input.
-                match self {
-                    Self::Sent { request, .. } | Self::Acknowledged { request, .. } => {
-                        request.focus = None
-                    }
-                    Self::Retry { focus, .. } => *focus = None,
-                    _ => {}
-                }
+                self.set_focus(None);
             }
             Transition::Opened => {
                 if let Self::Acknowledged {
@@ -285,6 +282,16 @@ impl Fence {
                     };
                 }
             }
+        }
+    }
+
+    fn set_focus(&mut self, target: Option<OwnedNavigationTarget>) {
+        match self {
+            Self::Sent { request, .. } | Self::Acknowledged { request, .. } => {
+                request.focus = target
+            }
+            Self::Retry { focus, .. } => *focus = target,
+            _ => {}
         }
     }
 

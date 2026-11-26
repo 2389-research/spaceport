@@ -26,13 +26,13 @@ struct HomeAgentsSection: View {
     let open: (HomeAgent) -> Void
 
     private struct LabelPath: Hashable {
-        let destination: String
+        let hostname: String
         let session: String
         let name: String
         let location: String
 
         init(_ row: HomeAgent) {
-            destination = row.profile.destination
+            hostname = row.profile.hostname
             session = row.profile.session
             name = row.agent.name
             location = row.agent.location
@@ -56,10 +56,9 @@ struct HomeAgentsSection: View {
                 ForEach(bySection[section] ?? []) { row in
                     let duplicates = groups[LabelPath(row)] ?? []
                     let hasSamePane = duplicates.contains { $0.agent.paneId == row.agent.paneId && $0.id != row.id }
-                    let context = [
-                        row.agent.location,
-                        accountCount > 1 ? row.profile.destination : "",
-                        multipleSessions ? row.profile.session : "",
+                    let detail = [
+                        duplicates.contains { $0.profile.port != row.profile.port } ? "Port \(row.profile.port)" : "",
+                        duplicates.contains { $0.profile.username != row.profile.username } ? "Account " + row.profile.username : "",
                         duplicates.count > 1 ? "Pane \(row.agent.paneId)" : "",
                         hasSamePane ? row.profile.login.title : ""
                     ].filter { !$0.isEmpty }.joined(separator: " · ")
@@ -70,11 +69,19 @@ struct HomeAgentsSection: View {
                     default: nil
                     }
                     let spokenStatus = [markLabel, activity?.title, row.ageLabel].compactMap { $0 }.joined(separator: " ")
+                    let path = row.agent.locationLabels
                     let label = AgentSelectorLabel(name: row.agent.name, terminalTitle: row.agent.terminalTitle,
-                                                   location: context, font: .headline)
+                                                   workspace: path.workspace, tab: path.tab,
+                                                   host: accountCount > 1 ? row.profile.hostname : "",
+                                                   session: multipleSessions ? row.profile.session : "",
+                                                   detail: detail, font: .headline, paneTitle: row.agent.paneTitle, address: row.profile.address)
+                    let spokenLabel = [row.agent.name, row.profile.hostname, row.profile.session, row.agent.location, detail]
+                        .filter { !$0.isEmpty }.joined(separator: ", ")
                     Button { open(row) } label: {
                         HStack(spacing: 10) {
-                            if let activity { activity.dot }
+                            AgentRowBadge(identity: row.agent.agentIdentity, activity: activity,
+                                          background: Color(uiColor: .secondarySystemGroupedBackground),
+                                          statusColor: activity?.color ?? .secondary)
                             label
                             Spacer(minLength: 4)
                             if section == .snoozed, let wake = row.agent.marks?.snoozeUntil {
@@ -87,8 +94,8 @@ struct HomeAgentsSection: View {
                         .padding(.vertical, 3).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(Text(verbatim: "\(row.agent.name), \(row.profile.destination), \(row.profile.session), \(context)"))
-                    .accessibilityValue(Text("\(label.title.map { $0 + ", " } ?? "")\(spokenStatus), last seen \(row.seenAt, format: .relative(presentation: .named))"))
+                    .accessibilityLabel(Text(verbatim: spokenLabel))
+                    .accessibilityValue(Text("\(String(label.heading.characters)), \(spokenStatus), last seen \(row.seenAt, format: .relative(presentation: .named))"))
                     .accessibilityIdentifier("home.agent.\(row.profile.id).\(row.agent.bootId).\(row.agent.paneId)")
                     .modifier(AgentMarkActions(row: row, snoozed: section == .snoozed) { mark(row, $0) })
                 }

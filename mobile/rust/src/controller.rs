@@ -3,7 +3,9 @@
 #[path = "history.rs"]
 pub(crate) mod history;
 use crate::{
-    projection::{HostChallenge, InputTarget, MobileView, OwnedNavigationTarget, Projection},
+    projection::{
+        FocusAction, HostChallenge, InputTarget, MobileView, OwnedNavigationTarget, Projection,
+    },
     ssh::{
         EnclaveSigner, EnrollmentRequest, MobilePty, PtyRoutes, SshAuth, SshError, SshHost,
         open_bridge,
@@ -291,13 +293,27 @@ impl MobileSession {
     }
 
     pub fn focus_workspace(&self, boot_id: String, id: String) -> Result<(), MobileError> {
-        self.navigate(&boot_id, OwnedNavigationTarget::Workspace(id))
+        self.navigate(&boot_id, OwnedNavigationTarget::Workspace(id).into())
     }
     pub fn focus_tab(&self, boot_id: String, id: String) -> Result<(), MobileError> {
-        self.navigate(&boot_id, OwnedNavigationTarget::Tab(id))
+        self.navigate(&boot_id, OwnedNavigationTarget::Tab(id).into())
+    }
+    pub fn create_tab(
+        &self,
+        boot_id: String,
+        workspace: String,
+        source_tab: String,
+    ) -> Result<(), MobileError> {
+        self.navigate(
+            &boot_id,
+            FocusAction::CreateTab {
+                workspace,
+                source_tab,
+            },
+        )
     }
     pub fn focus_pane(&self, boot_id: String, id: String) -> Result<(), MobileError> {
-        self.navigate(&boot_id, OwnedNavigationTarget::Pane(id))
+        self.navigate(&boot_id, OwnedNavigationTarget::Pane(id).into())
     }
 
     /// Run on a background thread. Swift rechecks the original input route before pasting.
@@ -492,7 +508,7 @@ impl MobileSession {
         Ok(())
     }
 
-    fn navigate(&self, boot: &str, target: OwnedNavigationTarget) -> Result<(), MobileError> {
+    fn navigate(&self, boot: &str, target: FocusAction) -> Result<(), MobileError> {
         let mut state = self.active(boot)?;
         if state.navigating() || state.go_to_pending() {
             return Err(MobileError::NavigationPending);
@@ -511,7 +527,7 @@ impl MobileSession {
                     .ok_or(MobileError::StaleView)?
                     .boot_id
                     .clone();
-                Self::queue_focus(handle, state, &boot, next)?;
+                Self::queue_focus(handle, state, &boot, next.into())?;
             }
             Ok(())
         });
@@ -525,7 +541,7 @@ impl MobileSession {
         handle: &ClientHandle,
         state: &mut Projection,
         boot: &str,
-        target: OwnedNavigationTarget,
+        target: FocusAction,
     ) -> Result<(), MobileError> {
         if state
             .snapshot
@@ -535,9 +551,16 @@ impl MobileSession {
             return Err(MobileError::StaleView);
         }
         let navigation = match &target {
-            OwnedNavigationTarget::Workspace(id) => handle.focus_workspace(boot, id),
-            OwnedNavigationTarget::Tab(id) => handle.focus_tab(boot, id),
-            OwnedNavigationTarget::Pane(id) => handle.focus_pane(boot, id),
+            FocusAction::Select(OwnedNavigationTarget::Workspace(id)) => {
+                handle.focus_workspace(boot, id)
+            }
+            FocusAction::Select(OwnedNavigationTarget::Tab(id)) => handle.focus_tab(boot, id),
+            FocusAction::Select(OwnedNavigationTarget::Pane(id)) => handle.focus_pane(boot, id),
+            FocusAction::CreateTab { workspace, .. } => handle.request(
+                boot,
+                spaceport_client::Method::TabCreate,
+                serde_json::json!({"workspace_id": workspace, "focus": true}),
+            ),
         }?;
         state.note_input(Instant::now());
         state.version += 1;

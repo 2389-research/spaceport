@@ -100,6 +100,8 @@ pub struct MobilePane {
     pub idle_onset_observed: bool,
     #[uniffi(default = None)]
     pub terminal_title: Option<String>,
+    #[uniffi(default = None)]
+    pub agent_identity: Option<String>,
 }
 
 #[derive(Clone, uniffi::Record)]
@@ -126,6 +128,58 @@ pub struct MobileView {
     pub host_challenge: Option<HostChallenge>,
     pub go_to_pending: bool,
     pub go_to_arrival: Option<u64>,
+    #[uniffi(default = None)]
+    pub roster_observed_at_ms: Option<u64>,
+}
+
+pub(crate) enum FocusAction {
+    Select(OwnedNavigationTarget),
+    CreateTab {
+        workspace: String,
+        source_tab: String,
+    },
+}
+
+impl From<OwnedNavigationTarget> for FocusAction {
+    fn from(target: OwnedNavigationTarget) -> Self {
+        Self::Select(target)
+    }
+}
+
+impl FocusAction {
+    pub(crate) fn reachable_in(&self, snapshot: &ClientShellSnapshot) -> bool {
+        match self {
+            Self::Select(target) => target.reachable_in(snapshot),
+            Self::CreateTab {
+                workspace,
+                source_tab,
+            } => {
+                snapshot.focused_workspace_id.as_ref() == Some(workspace)
+                    && snapshot.focused_tab_id.as_ref() == Some(source_tab)
+            }
+        }
+    }
+}
+
+#[derive(Clone)]
+struct FocusRequest {
+    id: String,
+    /// Until the matching creation receipt supplies a destination, any current tab is unsafe.
+    creating_from: Option<String>,
+}
+
+#[derive(Clone)]
+pub(crate) struct ObservedSnapshot {
+    snapshot: Arc<ClientShellSnapshot>,
+    observed_at_ms: u64,
+}
+
+impl std::ops::Deref for ObservedSnapshot {
+    type Target = ClientShellSnapshot;
+
+    fn deref(&self) -> &Self::Target {
+        &self.snapshot
+    }
 }
 
 #[derive(Clone)]
@@ -139,15 +193,14 @@ pub(crate) struct Projection {
     pub(crate) release_request: Option<String>,
     pub(crate) version: u64,
     pub(crate) options: ConnectOptions,
-    pub(crate) snapshot: Option<Arc<ClientShellSnapshot>>,
-    pending: Option<Arc<ClientShellSnapshot>>,
+    pub(crate) snapshot: Option<ObservedSnapshot>,
+    pending: Option<ObservedSnapshot>,
     surface: Option<Arc<PaneSurfaceFrame>>,
     focus_interrupted: bool,
     fence: Fence,
-    /// The focus request's own id, so its refusal can drop the destination
-    /// while the ordered barrier still establishes which pane owns input. The
-    /// shared fence records only the barrier.
-    focus_request: Option<String>,
+    /// The focus request's receipt may name a created tab or refuse the move.
+    /// The ordered barrier has its own request ID.
+    focus_request: Option<FocusRequest>,
     route: Option<go_to::Walk>,
     go_to_arrival: Option<u64>,
     last_input: Option<Instant>,
@@ -188,14 +241,22 @@ impl Projection {
         }
     }
 
-    fn adopt_snapshot(&mut self, snapshot: Arc<ClientShellSnapshot>) {
+    fn adopt_snapshot(&mut self, snapshot: ObservedSnapshot) {
         if self.is_active() {
-            self.idle.observe(&snapshot, now_ms());
+            self.idle.observe(&snapshot, snapshot.observed_at_ms);
         }
         self.snapshot = Some(snapshot);
     }
 
     pub(crate) fn snapshot(&mut self, snapshot: Arc<ClientShellSnapshot>) {
+        self.snapshot_at(snapshot, now_ms());
+    }
+
+    pub(crate) fn snapshot_at(&mut self, snapshot: Arc<ClientShellSnapshot>, observed_at_ms: u64) {
+        let snapshot = ObservedSnapshot {
+            snapshot,
+            observed_at_ms,
+        };
         if (self.navigating() || self.route.is_some())
             && self
                 .snapshot
@@ -329,16 +390,23 @@ impl Projection {
     pub(crate) fn start_fence(
         &mut self,
         request: String,
-        destination: OwnedNavigationTarget,
+        action: impl Into<FocusAction>,
         barrier: Result<String, spaceport_client::SendError>,
     ) {
         self.surface = None;
         if let Some(pending) = self.pending.take() {
             self.adopt_snapshot(pending)
         }
-        self.focus_request = Some(request);
+        let (focus, creating_from) = match action.into() {
+            FocusAction::Select(target) => (Some(target), None),
+            FocusAction::CreateTab { source_tab, .. } => (None, Some(source_tab)),
+        };
+        self.focus_request = Some(FocusRequest {
+            id: request,
+            creating_from,
+        });
         let boot = self.boot_id();
-        self.barrier_queued(barrier, boot, Some(destination));
+        self.barrier_queued(barrier, boot, focus);
     }
 
     /// The barrier the queue refused, waiting to be offered again.
@@ -383,6 +451,13 @@ impl Projection {
     /// is the one the barrier was acknowledged at, and holds the destination it
     /// was aimed at.
     fn settle(&mut self) {
+        if self
+            .focus_request
+            .as_ref()
+            .is_some_and(|r| r.creating_from.is_some())
+        {
+            return;
+        }
         if let Some((snapshot, surface)) = self.coherent()
             && self.fence.ready(snapshot, surface)
         {
@@ -412,11 +487,24 @@ impl Projection {
         if let Err(error) = &result {
             self.error = Some(error.to_string());
         }
-        if self.focus_request.as_deref() == Some(id) {
+        if let Some(request) = self.focus_request.take_if(|r| r.id == id) {
+            if let Some(source_tab) = request.creating_from
+                && !matches!(result, Err(spaceport_client::Error::Endpoint { .. }))
+            {
+                let Some(tab) = response::tagged(payload, "tab_created")
+                    .ok()
+                    .and_then(|r| r["tab"]["tab_id"].as_str())
+                    .filter(|id| !id.is_empty() && *id != source_tab)
+                else {
+                    self.end("Herdr did not identify the new terminal. Reconnect to check the workspace.".into());
+                    return;
+                };
+                self.fence
+                    .transition(Transition::CreatedTab(tab.to_owned()));
+            }
             // The requested pane did not acquire focus. The ordered barrier
             // still establishes which pane actually owns subsequent input, so
             // the fence keeps waiting for the barrier alone.
-            self.focus_request = None;
             if result.is_err() {
                 self.route = None;
                 self.fence.transition(Transition::Settled);
@@ -464,7 +552,11 @@ impl Projection {
             self.end(message);
             return;
         }
-        if id.is_some() && id == self.focus_request.as_deref() {
+        if self
+            .focus_request
+            .as_ref()
+            .is_some_and(|r| Some(r.id.as_str()) == id)
+        {
             self.focus_request = None;
             self.route = None;
             self.fence.transition(Transition::Settled);
@@ -567,6 +659,7 @@ impl Projection {
             .collect();
         MobileView {
             version: self.version,
+            roster_observed_at_ms: self.snapshot.as_ref().map(|s| s.observed_at_ms),
             go_to_pending: self.route.is_some(),
             go_to_arrival: self.go_to_arrival,
             boot_id: s.map(|s| s.boot_id.clone()).unwrap_or_default(),
@@ -608,6 +701,10 @@ impl Projection {
                         .and_then(|a| self.idle.get(&a.pane_id))
                         .filter(|_| self.is_active());
                     MobilePane {
+                        agent_identity: agent
+                            .and_then(|a| a.agent.as_ref())
+                            .filter(|identity| identity.len() <= 256)
+                            .cloned(),
                         terminal_title: agent.and_then(spaceport_truncate::agent_terminal_title),
                         idle_first_observed_ms: idle.map(|age| age.first_observed_ms),
                         idle_onset_observed: idle.is_some_and(|age| age.onset_observed),
