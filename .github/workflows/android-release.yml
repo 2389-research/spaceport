@@ -78,7 +78,7 @@ jobs:
           sdk=$(sed -n 's/.*compileSdk = \([0-9]*\).*/\1/p' mobile/android/app/build.gradle.kts)
           # Feed licence answers without a pipe: under pipefail, yes's SIGPIPE would fail the step.
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$ndk" "platforms;android-$sdk" > /dev/null < <(yes)
-      - name: Build the release APK with the protected signing key
+      - name: Build the release APK and Play bundle with the protected signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.SPACEPORT_ANDROID_KEYSTORE_BASE64 }}
           SPACEPORT_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SPACEPORT_ANDROID_KEYSTORE_PASSWORD }}
@@ -94,7 +94,7 @@ jobs:
           trap 'rm -f "$SPACEPORT_ANDROID_KEYSTORE"' EXIT
           base64 --decode <<< "$KEYSTORE_BASE64" > "$SPACEPORT_ANDROID_KEYSTORE"
           export JAVA_HOME="$JAVA_HOME_17_X64"
-          ./mobile/android/gradlew -p mobile/android :app:assembleRelease \
+          ./mobile/android/gradlew -p mobile/android :app:assembleRelease :app:bundleRelease \
             "-Pspaceport.versionCode=$VERSION_CODE" "-Pspaceport.versionName=$VERSION"
       - name: Refuse an APK not signed by the pinned release certificate
         run: |
@@ -114,12 +114,31 @@ jobs:
           mkdir -p target/android-release
           cp "$apk" "target/android-release/Spaceport-$VERSION-android.apk"
           (cd target/android-release && sha256sum "Spaceport-$VERSION-android.apk" > "Spaceport-$VERSION-android.apk.sha256")
+      - name: Refuse a Play bundle not signed by the pinned release certificate
+        run: |
+          set -euo pipefail
+          bundle=mobile/android/app/build/outputs/bundle/release/app-release.aab
+          # Play re-signs installs, but it only accepts a bundle signed with the registered upload key.
+          signer=$("$JAVA_HOME_17_X64/bin/keytool" -printcert -jarfile "$bundle" | sed -n 's/^[[:space:]]*SHA256: //p' | head -1)
+          if [[ "$(tr -d ':' <<< "${signer,,}")" != "$(tr -d ':' <<< "${EXPECTED_CERT,,}")" ]]; then
+            echo "::error::Bundle signer $signer does not match SPACEPORT_ANDROID_CERT_SHA256" >&2
+            exit 1
+          fi
+          mkdir -p target/android-play
+          cp "$bundle" "target/android-play/Spaceport-$VERSION-android.aab"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: android-release-${{ github.run_id }}
           path: target/android-release
           if-no-files-found: error
           retention-days: 7
+      # Kept off the GitHub release: phones cannot install a bundle, and Play takes it from here.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: android-play-bundle-${{ needs.plan.outputs.version }}
+          path: target/android-play
+          if-no-files-found: error
+          retention-days: 90
 
   publish:
     needs: [plan, build]

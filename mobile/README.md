@@ -29,6 +29,8 @@ Those sources are `mobile/android`, `mobile/rust`, every shared crate it reaches
 The release application ID is `ai.research2389.spaceport.mobile`, and its `versionCode` is `YYYYMMDD×100+N` from the tag, so each release installs over the last.
 The `android-release` environment holds the key as secrets `SPACEPORT_ANDROID_KEYSTORE_BASE64`, `SPACEPORT_ANDROID_KEYSTORE_PASSWORD`, `SPACEPORT_ANDROID_KEY_ALIAS`, and `SPACEPORT_ANDROID_KEY_PASSWORD`.
 Its variable `SPACEPORT_ANDROID_CERT_SHA256` pins the certificate; the workflow refuses an APK signed by any other key.
+The same run keeps a signed Play bundle, `Spaceport-<version>-android.aab`, as the workflow artifact `android-play-bundle-<version>` for 90 days.
+Play registers this key as the upload key.
 
 1. Open **Add host**. Enter the SSH hostname, port, username, and Herdr session. Tap **Connect**.
 2. Compare the displayed SSH fingerprint with the host administrator’s copy before trusting it.
