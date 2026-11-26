@@ -40,9 +40,11 @@ mod window;
 
 pub(crate) use chats::{ChatInput, Chats, LauncherDeck, Toward};
 // The attach side and the model below the views, at the paths the rest of the
-// chat reads them at.
+// chat reads them at. A refused delivery words itself; only the tests name the
+// type.
 pub(crate) use spaceport_chat_core::discovery::Route;
 pub(crate) use spaceport_chat_core::env::{check_env, env_text, parse_env};
+#[cfg(test)]
 pub(crate) use spaceport_chat_core::session::Refusal;
 pub(crate) use spaceport_chat_core::{
     MAX_CHATS, env, existing, highlight, link, list, session, summary,

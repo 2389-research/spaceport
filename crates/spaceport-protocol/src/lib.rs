@@ -9,6 +9,7 @@ mod clipboard;
 mod codec;
 mod error;
 mod frame;
+mod localize;
 mod surface_prefix;
 mod wire;
 

@@ -15,6 +15,7 @@ mod groups;
 mod hidden;
 mod hosts;
 mod layouts;
+mod localize;
 mod location;
 mod pick;
 mod store;

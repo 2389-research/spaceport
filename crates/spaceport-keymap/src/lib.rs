@@ -21,6 +21,7 @@ pub mod daemon;
 mod error;
 mod host;
 mod keymap;
+mod localize;
 mod pane;
 mod reserved;
 

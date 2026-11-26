@@ -29,6 +29,8 @@ mod wake;
 // keep-sorted end
 
 pub use catalog::{Catalog, CatalogUpdate, Device, devices, entry_changed};
+mod localize;
+
 pub use error::{Error, Result};
 pub use follow::focus_requested;
 pub use history::{History, Step};

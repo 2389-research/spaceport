@@ -1,10 +1,12 @@
 // ABOUTME: Localizes chat connection, command, and helper failures.
 // ABOUTME: Keeps local delivery uncertainty distinct from wire refusals.
-//! Agent chats and starting one: `error-chat.ftl`.
+//! Agent chats and starting one: `error-chat.ftl`. The attach side's own
+//! failures, the program's refusals, the card catalog's and the environment
+//! table's word themselves.
 
 use super::Localize;
 use crate::{
-    chat::{Error, Program, Refusal, StartError, env, page, pasted, visual, widgets},
+    chat::{Error, Program, StartError, page, pasted, visual},
     i18n::fl,
 };
 
@@ -16,40 +18,6 @@ impl Localize for Error {
             Self::Environment(error) => error.localize(),
             Self::Pasted(error) => error.localize(),
             Self::Start(error) => error.localize(),
-            // keep-sorted end
-        }
-    }
-}
-
-impl Localize for spaceport_chat_core::Error {
-    fn localize(&self) -> String {
-        match self {
-            // keep-sorted start
-            Self::Apply(_) => fl!("error-chat-apply"),
-            Self::Busy => fl!("error-chat-busy"),
-            // The chat protocol's own name for the reason.
-            Self::Bye(reason) => fl!("error-chat-bye", reason = format!("{reason:?}")),
-            Self::Closed => fl!("error-chat-closed"),
-            Self::Connect(_) => fl!("error-chat-connect"),
-            Self::Environment(error) => error.localize(),
-            // The existing-agent probe is shown in its own words: the app
-            // has no message for it and no path attaches to it.
-            Self::Existing(error) => error.to_string(),
-            Self::Handshake => fl!("error-chat-handshake"),
-            Self::NoEndpointDir => fl!("error-chat-no-endpoint-dir"),
-            Self::NotAttached => fl!("error-chat-not-attached"),
-            Self::Overflow => fl!("error-chat-overflow"),
-            Self::Read(_) => fl!("error-chat-read"),
-            Self::ReadOnly => fl!("error-chat-read-only"),
-            Self::Remote(_) => fl!("error-chat-remote"),
-            Self::Spawn(_) => fl!("error-chat-spawn"),
-            // Stream positions, as the chat protocol writes them.
-            Self::Stream { after, got } => fl!(
-                "error-chat-stream",
-                got = format!("{got:?}"),
-                after = format!("{after:?}")
-            ),
-            Self::Version(version) => fl!("error-chat-version", version = *version),
             // keep-sorted end
         }
     }
@@ -135,72 +103,6 @@ impl Localize for visual::Error {
             Self::Panicked => fl!("error-chat-visual-panicked"),
             Self::Raster(_) => fl!("error-chat-visual-raster"),
             // keep-sorted end
-        }
-    }
-}
-
-impl Localize for spaceport_chat_protocol::Rejection {
-    fn localize(&self) -> String {
-        match self {
-            Self::EmptyPrompt => fl!("error-chat-rejection-empty-prompt"),
-            Self::PromptTooLong => fl!("error-chat-rejection-prompt-too-long"),
-            Self::NotReady => fl!("error-chat-rejection-not-ready"),
-            Self::NotWorking => fl!("error-chat-rejection-not-working"),
-            Self::UnknownPermission => fl!("error-chat-rejection-unknown-permission"),
-            Self::UnknownOption => fl!("error-chat-rejection-unknown-option"),
-            Self::UnknownMode => fl!("error-chat-rejection-unknown-mode"),
-            Self::UnknownSetting => fl!("error-chat-rejection-unknown-setting"),
-            Self::UnknownQueued => fl!("error-chat-rejection-unknown-queued"),
-            Self::AgentUnavailable => fl!("error-chat-rejection-agent-unavailable"),
-            Self::TooManyAttachments => fl!(
-                "error-chat-rejection-too-many-attachments",
-                count = spaceport_chat_protocol::MAX_ATTACHMENTS
-            ),
-            Self::QueueFull => fl!("error-chat-rejection-queue-full"),
-            Self::UnknownFile => fl!("error-chat-rejection-unknown-file"),
-            Self::Unsupported => fl!("error-chat-rejection-unsupported"),
-            Self::Other => fl!("error-chat-rejection-other"),
-        }
-    }
-}
-
-impl Localize for Refusal {
-    fn localize(&self) -> String {
-        match self {
-            Self::DeliveryUnconfirmed => fl!("error-chat-delivery-unconfirmed"),
-            Self::Remote(rejection) => rejection.localize(),
-            Self::SessionChanged => fl!("error-chat-session-changed"),
-        }
-    }
-}
-
-impl Localize for widgets::Error {
-    fn localize(&self) -> String {
-        match self {
-            // keep-sorted start
-            Self::ActionGone => fl!("error-chat-card-action-gone"),
-            Self::Component => fl!("error-chat-card-component"),
-            Self::ComponentCount => fl!("error-chat-card-component-count"),
-            Self::FieldId => fl!("error-chat-card-field-id"),
-            Self::FormValue => fl!("error-chat-card-form-value"),
-            Self::Json(_) => fl!("error-chat-card-json"),
-            Self::Title => fl!("error-chat-card-title"),
-            Self::TooLarge => fl!("error-chat-card-too-large"),
-            Self::TooManyFields => fl!("error-chat-card-too-many-fields"),
-            // keep-sorted end
-        }
-    }
-}
-
-impl Localize for env::Error {
-    fn localize(&self) -> String {
-        match self {
-            Self::Name { name } => fl!("error-chat-environment-name", name = name.as_str()),
-            Self::Size => fl!(
-                "error-chat-environment-size",
-                count = env::MAX_ENV,
-                bytes = env::MAX_ENV_BYTES
-            ),
         }
     }
 }
