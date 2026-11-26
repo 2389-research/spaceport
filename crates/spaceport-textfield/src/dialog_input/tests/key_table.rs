@@ -23,12 +23,7 @@ fn ends(input: &DialogInput) -> (usize, usize) {
 fn press(input: &mut DialogInput, keys: &str, cx: &mut gpui::App) -> usize {
     key_matrix::keystrokes(keys)
         .split(' ')
-        .filter(|key| {
-            !input.key(
-                &spaceport_keymap::parse_keystroke(key).unwrap_or_default(),
-                cx,
-            )
-        })
+        .filter(|keystroke| !input.key(&key(keystroke), cx))
         .count()
 }
 
@@ -55,7 +50,7 @@ fn every_key_does_what_the_table_pins(cx: &mut gpui::TestAppContext) {
         rows
     });
     key_matrix::assert_pinned(
-        "dialog_input/tests",
+        concat!(env!("CARGO_MANIFEST_DIR"), "/src/dialog_input/tests"),
         "key_table.txt",
         include_str!("key_table.txt"),
         &rows,

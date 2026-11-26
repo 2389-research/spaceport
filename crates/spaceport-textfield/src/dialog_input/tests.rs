@@ -1,9 +1,27 @@
+#![allow(clippy::unwrap_used)]
+
 use super::DialogInput;
-use gpui::Keystroke;
+use gpui::{Keystroke, OperatingSystem};
 
 mod graphemes;
 mod key_table;
 mod word_keys;
+
+/// A keystroke as this desktop spells it, parsed the way
+/// `spaceport-keymap`'s `parse_keystroke` parses one: with the same host OS,
+/// which is what a `secondary-` keystroke is read against.
+fn key(name: &str) -> Keystroke {
+    let os = if cfg!(target_os = "macos") {
+        OperatingSystem::Mac
+    } else if cfg!(target_os = "windows") {
+        OperatingSystem::Windows
+    } else if cfg!(target_os = "freebsd") {
+        OperatingSystem::FreeBsd
+    } else {
+        OperatingSystem::Linux
+    };
+    Keystroke::parse_with_os(name, os).unwrap_or_else(|error| panic!("{name}: {error}"))
+}
 
 #[test]
 fn utf16_replacement_and_composition_use_relative_selection() {
@@ -34,14 +52,14 @@ fn editing_uses_graphemes_selection_clipboard_and_bounded_single_line_text(
     cx.update(|cx| {
         let mut input =
             DialogInput::new("e\u{301}\u{1f468}\u{200d}\u{1f469}\u{200d}\u{1f467}".into());
-        input.key(&Keystroke::parse("end").unwrap_or_default(), cx);
-        input.key(&Keystroke::parse("backspace").unwrap_or_default(), cx);
+        input.key(&key("end"), cx);
+        input.key(&key("backspace"), cx);
         assert_eq!(input.text, "e\u{301}");
-        input.key(&Keystroke::parse("shift-left").unwrap_or_default(), cx);
+        input.key(&key("shift-left"), cx);
         assert_eq!(input.selection(), 0..3);
-        input.key(&Keystroke::parse("cmd-x").unwrap_or_default(), cx);
+        input.key(&key("cmd-x"), cx);
         assert_eq!(input.text, "");
-        input.key(&Keystroke::parse("cmd-v").unwrap_or_default(), cx);
+        input.key(&key("cmd-v"), cx);
         assert_eq!(input.text, "e\u{301}");
         input.replace(None, "\n\r\tX", false, None);
         assert_eq!(input.text, "e\u{301}X");
@@ -54,14 +72,14 @@ fn editing_uses_graphemes_selection_clipboard_and_bounded_single_line_text(
 fn cmd_backspace_and_cmd_delete_reach_the_line_ends(cx: &mut gpui::TestAppContext) {
     cx.update(|cx| {
         let mut input = DialogInput::new("one two".into());
-        input.key(&Keystroke::parse("cmd-left").unwrap_or_default(), cx);
+        input.key(&key("cmd-left"), cx);
         for _ in 0..3 {
-            input.key(&Keystroke::parse("right").unwrap_or_default(), cx);
+            input.key(&key("right"), cx);
         }
-        input.key(&Keystroke::parse("cmd-delete").unwrap_or_default(), cx);
+        input.key(&key("cmd-delete"), cx);
         assert_eq!(input.text, "one");
-        input.key(&Keystroke::parse("left").unwrap_or_default(), cx);
-        input.key(&Keystroke::parse("cmd-backspace").unwrap_or_default(), cx);
+        input.key(&key("left"), cx);
+        input.key(&key("cmd-backspace"), cx);
         assert_eq!(input.text, "e");
         assert_eq!(input.selection(), 0..0);
     });

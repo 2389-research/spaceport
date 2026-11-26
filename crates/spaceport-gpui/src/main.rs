@@ -65,7 +65,6 @@ mod mark_layer;
 mod menu;
 mod menus;
 mod motion;
-mod multiline_input;
 mod navigation;
 mod network_quality;
 mod notice;
@@ -127,9 +126,10 @@ pub use error::{Error, Result};
 // The command catalog and its default shortcuts, without GPUI.
 use spaceport_commands as controls;
 // The text fields and the editing model they share, in `spaceport-textfield`:
-// the app's own `DialogInput` and `MultilineInput` read the same model the
-// search field does, at the crate-wide paths they have always named it by.
-pub(crate) use spaceport_textfield::{caret, search_input, text_editing};
+// the search field, the composer, and the editing model a dialog's draft reads
+// too, at the crate-wide paths the app has always named them by. The dialog's
+// own module stays beside this, where the window draws its frame.
+pub(crate) use spaceport_textfield::{multiline_input, search_input, text_editing};
 // The log file and crash reports, without GPUI.
 use spaceport_diagnostics::{self as diagnostics, crash};
 // Git status, without GPUI.

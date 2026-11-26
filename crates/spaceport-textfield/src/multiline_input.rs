@@ -13,12 +13,12 @@ use gpui::{
     div, fill, point, prelude::*, px, rgb, size,
 };
 
+use spaceport_settings::{Config, FontConfig, Theme};
+use spaceport_widgets::fonts::{StyledFont, font_for};
+
 use crate::{
     actions,
     caret::Carets,
-    config::{Config, FontConfig, Theme},
-    direction,
-    fonts::StyledFont,
     input::ViewInputHandler,
     text_editing::{Editing, Newlines, normalize},
 };
@@ -117,7 +117,7 @@ struct CaretSpot {
 }
 
 fn is_rtl() -> bool {
-    direction::is_rtl()
+    spaceport_widgets::direction::is_rtl()
 }
 
 /// The x of a row's left edge within the bounds: rows set against the
@@ -311,9 +311,9 @@ impl MultilineInput {
     pub fn new(cx: &mut Context<Self>) -> Self {
         Self {
             focus: cx.focus_handle(),
-            placeholder: "Message".into(),
+            placeholder: String::new(),
             localized: None,
-            _locale: cx.observe_global::<crate::i18n::CurrentLocale>(|this, cx| {
+            _locale: cx.observe_global::<crate::locale::LocaleChanged>(|this, cx| {
                 if let Some(placeholder) = this.localized.as_ref().map(|localized| localized()) {
                     this.show_placeholder(placeholder, cx);
                 }
@@ -340,7 +340,7 @@ impl MultilineInput {
 
     /// `text` with `cursor` at its byte offset, for restoring a draft. The
     /// text keeps its newlines; the cursor snaps to a grapheme boundary.
-    pub(crate) fn set_text_at(&mut self, text: &str, cursor: usize, cx: &mut Context<Self>) {
+    pub fn set_text_at(&mut self, text: &str, cursor: usize, cx: &mut Context<Self>) {
         let text = normalize(text, Newlines::Keep);
         let mut cursor = cursor.min(text.len());
         while !text.is_char_boundary(cursor) {
@@ -373,7 +373,7 @@ impl MultilineInput {
 
     /// Shows what `placeholder` formats now, laid out again only when its
     /// text changed, and formats it again per locale.
-    pub(crate) fn set_placeholder_with(
+    pub fn set_placeholder_with(
         &mut self,
         placeholder: impl Fn() -> String + 'static,
         cx: &mut Context<Self>,
@@ -392,7 +392,7 @@ impl MultilineInput {
 
     /// Offers `completion` after the typed text. Unchanged is a no-op, so the
     /// owner may set it from its own render.
-    pub(crate) fn set_completion(&mut self, completion: Option<String>, cx: &mut Context<Self>) {
+    pub fn set_completion(&mut self, completion: Option<String>, cx: &mut Context<Self>) {
         if self.completion != completion {
             self.completion = completion;
             cx.notify();
@@ -536,7 +536,7 @@ impl Render for MultilineInput {
         // the real width, assume a reasonable one.
         // Measure with the same face the field applies below, rather than
         // inheriting the surrounding layout's (possibly monospace) font.
-        let font = crate::config::font_for(&self.font);
+        let font = font_for(&self.font);
         let rows = window.with_text_style(
             Some(gpui::TextStyleRefinement {
                 font_family: Some(font.family),
@@ -571,16 +571,16 @@ impl Render for MultilineInput {
             .cursor(CursorStyle::IBeam)
             .on_key_down(cx.listener(Self::key_down))
             .on_action(cx.listener(|this, _: &actions::Cut, window, cx| {
-                this.key_down(&spaceport_textfield::actions::edit_key("x"), window, cx)
+                this.key_down(&actions::edit_key("x"), window, cx)
             }))
             .on_action(cx.listener(|this, _: &actions::Copy, window, cx| {
-                this.key_down(&spaceport_textfield::actions::edit_key("c"), window, cx)
+                this.key_down(&actions::edit_key("c"), window, cx)
             }))
             .on_action(cx.listener(|this, _: &actions::Paste, window, cx| {
-                this.key_down(&spaceport_textfield::actions::edit_key("v"), window, cx)
+                this.key_down(&actions::edit_key("v"), window, cx)
             }))
             .on_action(cx.listener(|this, _: &actions::SelectAll, window, cx| {
-                this.key_down(&spaceport_textfield::actions::edit_key("a"), window, cx)
+                this.key_down(&actions::edit_key("a"), window, cx)
             }))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::mouse_down))
             .on_mouse_move(cx.listener(Self::mouse_move))

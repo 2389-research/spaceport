@@ -1,9 +1,5 @@
 use super::*;
 
-fn key(name: &str) -> Keystroke {
-    spaceport_keymap::parse_keystroke(name).unwrap_or_default()
-}
-
 #[gpui::test]
 fn a_letter_typed_before_an_accent_leaves_the_caret_after_both(cx: &mut gpui::TestAppContext) {
     cx.update(|cx| {

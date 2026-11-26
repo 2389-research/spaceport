@@ -102,7 +102,7 @@ fn table(starts: &[Start], vertical: bool, cx: &mut TestAppContext) -> Vec<Strin
 #[gpui::test]
 fn every_key_does_what_the_single_line_table_pins(cx: &mut TestAppContext) {
     key_matrix::assert_pinned(
-        "multiline_input/tests",
+        concat!(env!("CARGO_MANIFEST_DIR"), "/src/multiline_input/tests"),
         "key_table_single.txt",
         include_str!("key_table_single.txt"),
         &table(&SINGLE_STARTS, true, cx),
@@ -112,7 +112,7 @@ fn every_key_does_what_the_single_line_table_pins(cx: &mut TestAppContext) {
 #[gpui::test]
 fn every_key_does_what_the_three_line_table_pins(cx: &mut TestAppContext) {
     key_matrix::assert_pinned(
-        "multiline_input/tests",
+        concat!(env!("CARGO_MANIFEST_DIR"), "/src/multiline_input/tests"),
         "key_table_lines.txt",
         include_str!("key_table_lines.txt"),
         &table(&LINES_STARTS, false, cx),
