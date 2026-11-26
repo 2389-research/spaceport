@@ -31,6 +31,8 @@ The `android-release` environment holds the key as secrets `SPACEPORT_ANDROID_KE
 Its variable `SPACEPORT_ANDROID_CERT_SHA256` pins the certificate; the workflow refuses an APK signed by any other key.
 The same run keeps a signed Play bundle, `Spaceport-<version>-android.aab`, as the workflow artifact `android-play-bundle-<version>` for 90 days.
 Play registers this key as the upload key.
+Play signs installs with its own Google-generated key (certificate SHA-256 `A4:79:B9:98:53:07:0C:BC:4D:00:45:93:69:1A:71:68:18:B6:45:83:75:4D:3B:B2:7A:D2:EF:FC:81:71:BF:F2`).
+A phone therefore cannot switch between a Play install and a GitHub APK without uninstalling first.
 A `play` job then sends that bundle to the Play internal testing track with `scripts/release/play-upload.py`.
 Its `play-internal` environment holds only `SPACEPORT_PLAY_SERVICE_ACCOUNT_JSON`, the service account that may release to testing tracks.
 Production stays a person's decision in the Play Console.
