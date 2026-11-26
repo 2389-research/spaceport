@@ -13,7 +13,6 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import androidx.core.content.edit
 import java.util.concurrent.ExecutorService
 import uniffi.spaceport_mobile.InputTarget
 import uniffi.spaceport_mobile.MobileView
@@ -31,7 +30,7 @@ internal class TerminalDraftDialog(
     private var label = ""
     private var refresh: (() -> Unit)? = null
     private var current: InputTarget? = null
-    private val preferences = activity.getSharedPreferences("terminal", Activity.MODE_PRIVATE)
+    private val preferences = TerminalPreferences(activity)
 
     fun update(target: InputTarget?) {
         if (target == current) return
@@ -74,8 +73,8 @@ internal class TerminalDraftDialog(
         val attach = Button(activity).apply { isAllCaps = false }
         val enter = CheckBox(activity).apply {
             setText(R.string.terminal_compose_return)
-            isChecked = preferences.getBoolean("composeReturn", true)
-            setOnCheckedChangeListener { _, checked -> preferences.edit { putBoolean("composeReturn", checked) } }
+            isChecked = preferences.pressReturn
+            setOnCheckedChangeListener { _, checked -> preferences.pressReturn = checked }
         }
         val status = TextView(activity)
         listOf(endpoint, retarget, input, attach, enter, status).forEach { form.addView(it) }

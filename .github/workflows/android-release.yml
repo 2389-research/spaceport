@@ -1,0 +1,199 @@
+# Adds a signed Android APK to a v* preview release when the Android sources changed.
+# It runs after the macOS preview workflow publishes that release, and never alters the macOS route.
+name: Android release APK
+run-name: Android APK for ${{ github.event.workflow_run.head_branch }}
+
+on:
+  # zizmor: ignore[dangerous-triggers] only completed tag-push runs on this repository proceed, and
+  # the plan job re-proves the tag, its commit and main ancestry before any secret is read.
+  workflow_run:
+    workflows: ['macOS signed preview']
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  plan:
+    if: >-
+      github.repository == '2389-research/spaceport' &&
+      github.event.workflow_run.repository.full_name == '2389-research/spaceport' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      changed: ${{ steps.request.outputs.changed }}
+      sha: ${{ steps.request.outputs.sha }}
+      tag: ${{ steps.request.outputs.tag }}
+      version: ${{ steps.request.outputs.version }}
+      version_code: ${{ steps.request.outputs.version_code }}
+    steps:
+      # The checker comes from main, where workflow_run runs; the tagged commit is only data to it,
+      # so a commit cannot vouch for itself before the signing job builds it.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          path: tagged
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate the tag and compare the APK's sources with the last APK release
+        id: request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: python3 scripts/release/android-request.py tagged
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.changed == 'true'
+    environment: android-release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      EXPECTED_CERT: ${{ vars.SPACEPORT_ANDROID_CERT_SHA256 }}
+      VERSION: ${{ needs.plan.outputs.version }}
+      VERSION_CODE: ${{ needs.plan.outputs.version_code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+          persist-credentials: false
+      - name: Install the pinned NDK and platform before reading the signing key
+        run: |
+          set -euo pipefail
+          ndk=$(sed -n 's/.*ndkVersion = "\(.*\)".*/\1/p' mobile/android/app/build.gradle.kts)
+          sdk=$(sed -n 's/.*compileSdk = \([0-9]*\).*/\1/p' mobile/android/app/build.gradle.kts)
+          # Feed licence answers without a pipe: under pipefail, yes's SIGPIPE would fail the step.
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$ndk" "platforms;android-$sdk" > /dev/null < <(yes)
+      - name: Build the release APK and Play bundle with the protected signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.SPACEPORT_ANDROID_KEYSTORE_BASE64 }}
+          SPACEPORT_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SPACEPORT_ANDROID_KEYSTORE_PASSWORD }}
+          SPACEPORT_ANDROID_KEY_ALIAS: ${{ secrets.SPACEPORT_ANDROID_KEY_ALIAS }}
+          SPACEPORT_ANDROID_KEY_PASSWORD: ${{ secrets.SPACEPORT_ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$KEYSTORE_BASE64" || -z "$EXPECTED_CERT" ]]; then
+            echo "::error::The android-release environment needs its signing secrets and SPACEPORT_ANDROID_CERT_SHA256" >&2
+            exit 1
+          fi
+          export SPACEPORT_ANDROID_KEYSTORE="$RUNNER_TEMP/release.jks"
+          trap 'rm -f "$SPACEPORT_ANDROID_KEYSTORE"' EXIT
+          base64 --decode <<< "$KEYSTORE_BASE64" > "$SPACEPORT_ANDROID_KEYSTORE"
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          ./mobile/android/gradlew -p mobile/android :app:assembleRelease :app:bundleRelease \
+            "-Pspaceport.versionCode=$VERSION_CODE" "-Pspaceport.versionName=$VERSION"
+      - name: Refuse an APK not signed by the pinned release certificate
+        run: |
+          set -euo pipefail
+          apk=mobile/android/app/build/outputs/apk/release/app-release.apk
+          tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 | sort -V | tail -1)
+          signer=$("$tools/apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          if [[ "$signer" != "$(tr -d ':' <<< "${EXPECTED_CERT,,}")" ]]; then
+            echo "::error::APK signer $signer does not match SPACEPORT_ANDROID_CERT_SHA256" >&2
+            exit 1
+          fi
+          badging=$("$tools/aapt2" dump badging "$apk" | head -1)
+          if [[ "$badging" != *"versionCode='$VERSION_CODE'"* || "$badging" != *"versionName='$VERSION'"* ]]; then
+            echo "::error::APK reports '$badging', expected version $VERSION ($VERSION_CODE)" >&2
+            exit 1
+          fi
+          mkdir -p target/android-release
+          cp "$apk" "target/android-release/Spaceport-$VERSION-android.apk"
+          (cd target/android-release && sha256sum "Spaceport-$VERSION-android.apk" > "Spaceport-$VERSION-android.apk.sha256")
+      - name: Refuse a Play bundle not signed by the pinned release certificate
+        run: |
+          set -euo pipefail
+          bundle=mobile/android/app/build/outputs/bundle/release/app-release.aab
+          # Play re-signs installs, but it only accepts a bundle signed with the registered upload key.
+          signer=$("$JAVA_HOME_17_X64/bin/keytool" -printcert -jarfile "$bundle" | sed -n 's/^[[:space:]]*SHA256: //p' | head -1)
+          if [[ "$(tr -d ':' <<< "${signer,,}")" != "$(tr -d ':' <<< "${EXPECTED_CERT,,}")" ]]; then
+            echo "::error::Bundle signer $signer does not match SPACEPORT_ANDROID_CERT_SHA256" >&2
+            exit 1
+          fi
+          mkdir -p target/android-play
+          cp "$bundle" "target/android-play/Spaceport-$VERSION-android.aab"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: android-release-${{ github.run_id }}
+          path: target/android-release
+          if-no-files-found: error
+          retention-days: 7
+      # Kept off the GitHub release: phones cannot install a bundle, and Play takes it from here.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: android-play-bundle-${{ needs.plan.outputs.version }}
+          path: target/android-play
+          if-no-files-found: error
+          retention-days: 90
+
+  play:
+    needs: [plan, build]
+    # Only the Play key lives here; the signing key stays in android-release.
+    environment: play-internal
+    # Play allows one open edit per account and app, so uploads from overlapping tags take turns.
+    concurrency:
+      group: android-play-upload
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      SHA: ${{ needs.plan.outputs.sha }}
+      TAG: ${{ needs.plan.outputs.tag }}
+      VERSION: ${{ needs.plan.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: android-play-bundle-${{ needs.plan.outputs.version }}
+          path: target/android-play
+      - name: Refuse a tag that moved during the build
+        run: scripts/release/check-tag-unmoved.sh "$GITHUB_REPOSITORY" "$TAG" "$SHA"
+      - name: Upload the signed bundle to the Play internal testing track
+        env:
+          SPACEPORT_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.SPACEPORT_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: python3 scripts/release/play-upload.py upload "target/android-play/Spaceport-$VERSION-android.aab" --name "$VERSION"
+
+  publish:
+    needs: [plan, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.plan.outputs.tag }}
+      SHA: ${{ needs.plan.outputs.sha }}
+      VERSION: ${{ needs.plan.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: android-release-${{ github.run_id }}
+          path: target/android-release
+      - name: Refuse a tag that moved during the build
+        run: scripts/release/check-tag-unmoved.sh "$GITHUB_REPOSITORY" "$TAG" "$SHA"
+      - name: Attach the APK to the tag's existing release
+        run: |
+          set -euo pipefail
+          cd target/android-release
+          sha256sum -c "Spaceport-$VERSION-android.apk.sha256"
+          gh release upload "$TAG" "Spaceport-$VERSION-android.apk" "Spaceport-$VERSION-android.apk.sha256" \
+            --repo "$GITHUB_REPOSITORY"

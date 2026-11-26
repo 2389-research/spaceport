@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ABOUTME: Names terminal controls and progress messages for Compose and Find. -->
+<!-- ABOUTME: Names terminal, Settings and key installation messages shown on the phone. -->
 <!-- ABOUTME: Keeps remote pane names and history counts in localizable format strings. -->
 <resources>
     <string name="terminal_use_selected">Use selected pane</string>
@@ -13,4 +13,9 @@
     <string name="terminal_searching">Searching…</string>
     <string name="terminal_no_matches">No matches</string>
     <string name="terminal_history_count">Match %1$s of %2$s</string>
+    <string name="settings_text_size">%1$d sp</string>
+    <string name="sign_in_authorize">Authorize this phone for future sign-ins</string>
+    <string name="install_password_again">Enter the SSH password again.</string>
+    <string name="install_checking">Checking SSH access…</string>
+    <string name="install_changed_host">The host key changed. Confirm the change with the host administrator, then forget the old key in Host details.</string>
 </resources>

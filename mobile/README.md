@@ -22,15 +22,48 @@ Gradle builds the shared Rust controller for both ABIs and generates matching Ko
 The debug application ID is `ai.research2389.spaceport.mobile.debug`.
 The APK uses Android debug signing. `./mobile/build-android --release` builds an unsigned release APK.
 
+Signed release APKs come from `.github/workflows/android-release.yml`.
+It runs after the macOS preview workflow publishes a `v*` release.
+If the APK's sources changed since the last release that has an APK, it attaches `Spaceport-<version>-android.apk` and its `.sha256` to that release.
+Those sources are `mobile/android`, `mobile/rust`, every shared crate it reaches by path, the root `Cargo.toml` and `rust-toolchain.toml`.
+The release application ID is `ai.research2389.spaceport.mobile`, and its `versionCode` is `YYYYMMDD×100+N` from the tag, so each release installs over the last.
+The `android-release` environment holds the key as secrets `SPACEPORT_ANDROID_KEYSTORE_BASE64`, `SPACEPORT_ANDROID_KEYSTORE_PASSWORD`, `SPACEPORT_ANDROID_KEY_ALIAS`, and `SPACEPORT_ANDROID_KEY_PASSWORD`.
+Its variable `SPACEPORT_ANDROID_CERT_SHA256` pins the certificate; the workflow refuses an APK signed by any other key.
+The same run keeps a signed Play bundle, `Spaceport-<version>-android.aab`, as the workflow artifact `android-play-bundle-<version>` for 90 days.
+Play registers this key as the upload key.
+Play signs installs with its own Google-generated key (certificate SHA-256 `A4:79:B9:98:53:07:0C:BC:4D:00:45:93:69:1A:71:68:18:B6:45:83:75:4D:3B:B2:7A:D2:EF:FC:81:71:BF:F2`).
+A phone therefore cannot switch between a Play install and a GitHub APK without uninstalling first.
+A `play` job then sends that bundle to the Play internal testing track with `scripts/release/play-upload.py`.
+Its `play-internal` environment holds only `SPACEPORT_PLAY_SERVICE_ACCOUNT_JSON`, the service account that may release to testing tracks.
+Production stays a person's decision in the Play Console.
+By hand, `scripts/release/play-upload.py --credentials KEY.json tracks` lists what each track holds.
+Even `tracks` opens a Play edit, and Play keeps one open edit per account and app.
+Do not run it, or a manual upload, while the workflow's `play` job is uploading; the newer edit makes that upload fail.
+
 1. Open **Add host**. Enter the SSH hostname, port, username, and Herdr session. Tap **Connect**.
 2. Compare the displayed SSH fingerprint with the host administrator’s copy before trusting it.
-3. For password sign-in, enter the account password. Open **Session → Phone key → Install key** to enroll the device.
+3. For password sign-in, enter the account password. Leave **Authorize this phone for future sign-ins** checked to enroll the device.
    Spaceport installs the public key through the password session and verifies a fresh key-only SSH login.
+   You can also enroll later from **Session → Phone key → Install key**.
 4. For an account that requires a key, open **Phone key → Copy public key** at the password prompt.
    Authorize that public key for the SSH account, then tap **Use phone key**. The P-256 private key stays in Android Keystore.
    Key login requires Android 9 or later and secure hardware. The phone must be unlocked to sign.
    Android 8 and devices without a hardware-backed key support password sign-in.
-5. Tap **Go To** to select an agent or workspace. Android draws Herdr’s terminal cells on a native Canvas.
+5. Tap **Go To** to select an agent or workspace. For a split tab, tap a tile on the pane map.
+   Android draws Herdr’s terminal cells on a native Canvas.
+
+Home groups saved sessions under their SSH account. Tap **New session** to add a Herdr session on that account.
+Tap **Details** for the address, trusted host key, phone key, and sessions. Hold a session there to rename or remove it.
+Forgetting a host key closes that host's open connections. You verify the fingerprint again on the next connection.
+On Home, swipe an agent toward the end to pin it, or toward the start to snooze it for an hour.
+Touch and hold for other snooze lengths, including until 9 AM tomorrow. TalkBack offers the same choices as actions.
+The terminal's **Home** button shows a dot when an agent in another pane needs you.
+
+**Settings** shows the phone's public key with **Copy public key** and **Share**.
+**Install on a host** asks for the account's SSH password once. It installs the key and checks a fresh key-only login without starting Herdr.
+Later connections to that account skip the password. Settings also sets the terminal text size, the toolbar keys, and **Press Return after pasting**.
+The toolbar keys are one ordered list of up to 16; Shift, Control, and Alt apply to the next key.
+Hold the terminal and drag to move the cursor with arrow keys. Hold still to copy a line or the screen, or to paste.
 
 On Android 12–14, set a PIN, password, or pattern before creating a phone key.
 Removing the screen lock can delete that key. If it does, install the replacement key on the host.

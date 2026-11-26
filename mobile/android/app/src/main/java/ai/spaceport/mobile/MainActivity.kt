@@ -19,6 +19,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import uniffi.spaceport_mobile.MobileView
 
 internal class RetainedPhone(app: Application) : AndroidViewModel(app) {
@@ -32,25 +34,32 @@ internal class RetainedPhone(app: Application) : AndroidViewModel(app) {
     var revision: ULong? = null
     var toWorkspaces = false
     var routeError: String? = null
+    /** Screens opened above Home, newest last. */
+    val pages = mutableListOf<Page>()
+    val work: ExecutorService = Executors.newSingleThreadExecutor()
 
     override fun onCleared() {
         sessions.values.forEach { it.close() }
+        work.shutdownNow()
     }
 }
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), Pages {
     private lateinit var phone: RetainedPhone
     private lateinit var ui: PhoneUi
     private lateinit var root: LinearLayout
     private var terminal: TerminalScreen? = null
     private var terminalBar: TextView? = null
+    private var homeButton: Button? = null
     private var picker: AgentPicker? = null
     private var page = ""
     private var password: EditText? = null
     private var refreshPhoneKey: (() -> Unit)? = null
     private var lastNotice: String? = null
+    private var pageToken = 0L
+    private var install: KeyInstallScreen? = null
     private val handler = Handler(Looper.getMainLooper())
-    private val refresh = Runnable { if (phone.selected == null && !isFinishing) showHome() }
+    private val refresh = Runnable { if (page == "home" && !isFinishing) showHome() }
     private val active
         get() = phone.sessions[phone.selected]
 
@@ -82,7 +91,11 @@ class MainActivity : ComponentActivity() {
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    if (phone.selected != null) goHome() else finish()
+                    when {
+                        phone.selected != null -> goHome()
+                        phone.pages.isNotEmpty() -> back()
+                        else -> finish()
+                    }
                 }
             },
         )
@@ -94,7 +107,8 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         active?.let { if (it.phase == ConnectionPhase.Parked) it.resume() }
-        if (phone.selected == null) showHome()
+        // Pages keep their own state across a trip to the background; only Home refreshes.
+        if (phone.selected == null && page == "home") showHome()
     }
 
     override fun onStop() {
@@ -107,6 +121,7 @@ class MainActivity : ComponentActivity() {
                 c.park()
             }
             password?.text?.clear()
+            install?.pause()
         }
         super.onStop()
     }
@@ -114,6 +129,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         handler.removeCallbacks(refresh)
         picker?.dismiss()
+        install?.dispose()
         terminal?.dispose()
         phone.sessions.values.forEach { it.changed = null }
         super.onDestroy()
@@ -171,9 +187,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun clear(next: String) {
+        pageToken++
+        install?.dispose()
+        install = null
         if (page == "terminal") terminal?.dispose()
         terminal = null
         terminalBar = null
+        homeButton = null
         password = null
         page = next
         root.removeAllViews()
@@ -203,12 +223,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun showHome() {
+        phone.pages.lastOrNull()?.let { return showPage(it) }
         clear("home")
         val profiles = phone.hosts.profiles()
         val tiles = profiles.flatMap(phone.catalog::rows)
         val now = System.currentTimeMillis()
         val header = ui.line().apply { setPadding(ui.dp(18), ui.dp(8), ui.dp(8), ui.dp(4)) }
         header.addView(ui.text("Agents", 30, ui.ink, true), LinearLayout.LayoutParams(0, -2, 1f))
+        header.addView(ui.button("Settings") { go(Page.Settings) })
         header.addView(ui.button("Add host") { editHost() })
         root.addView(header)
         val body = ui.column().apply { setPadding(ui.dp(14), 0, ui.dp(14), ui.dp(24)) }
@@ -259,6 +281,8 @@ class MainActivity : ComponentActivity() {
                         row.status,
                         { open(row.host, row) },
                         { marks(row) },
+                        swiped = { towardEnd -> swiped(row, towardEnd) },
+                        actions = markChoices(row).map { (label, next) -> label to { mark(row, next) } },
                     )
                 }
             }
@@ -281,31 +305,27 @@ class MainActivity : ComponentActivity() {
                             .show()
                 },
             )
-            ui.heading(body, "Saved sessions")
-            profiles.forEach { host ->
-                ui.row(
-                    body,
-                    host.session,
-                    host.destination,
-                    action = { open(host) },
-                    held = {
-                        AlertDialog.Builder(this)
-                            .setTitle(host.destination)
-                            .setMessage("Remove the saved session ${host.session} from this phone?")
-                            .setNegativeButton("Cancel", null)
-                            .setPositiveButton("Remove") { _, _ ->
-                                phone.sessions.remove(host)?.let {
-                                    it.changed = null
-                                    it.close()
-                                }
-                                phone.previews.remove(host)
-                                phone.hosts.remove(host)
-                                phone.catalog.forget(host)
-                                showHome()
-                            }
-                            .show()
-                    },
-                )
+            for (group in HostGroup.of(profiles)) {
+                val title = phone.hosts.name(group.account)?.let { "$it · ${group.destination}" } ?: group.destination
+                val heading = ui.line()
+                heading.addView(ui.text(title, 14, ui.muted, true).apply {
+                    setPadding(ui.dp(3), ui.dp(20), ui.dp(3), ui.dp(7))
+                    if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
+                }, LinearLayout.LayoutParams(0, -2, 1f))
+                heading.addView(ui.button("Details") { go(Page.HostDetail(group.account)) }.apply {
+                    contentDescription = "Host details for ${group.destination}"
+                })
+                body.addView(heading)
+                group.sessions.forEach { host ->
+                    ui.row(body, host.session, if (phone.sessions.containsKey(host)) "Connected" else "Saved session",
+                        action = { open(host) }, held = { go(Page.HostDetail(group.account)) })
+                }
+                body.addView(ui.button("New session") {
+                    ui.askSessionName("New session", "") { name ->
+                        val next = group.first.copy(session = name)
+                        if (addSession(emptyList(), next)) open(next)
+                    }
+                })
             }
         }
         handler.removeCallbacks(refresh)
@@ -316,39 +336,44 @@ class MainActivity : ComponentActivity() {
             ?.let { handler.postDelayed(refresh, it - now + 1) }
     }
 
+    /** Every mark change offered for [row], in menu order. The first two are the swipe actions. */
+    private fun markChoices(row: AgentRow): List<Pair<String, AgentMark>> {
+        val now = System.currentTimeMillis()
+        val mark = (phone.catalog.marks[row.key] ?: AgentMark()).current(row.status, now)
+        fun snooze(until: Long) = mark.copy(until = until, held = row.status)
+        val morning = java.util.Calendar.getInstance().apply {
+            add(java.util.Calendar.DAY_OF_YEAR, 1)
+            set(java.util.Calendar.HOUR_OF_DAY, 9)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        return buildList {
+            add((if (mark.pinned) "Unpin" else "Pin") to mark.copy(pinned = !mark.pinned))
+            if (mark.until > 0) add("Wake now" to mark.copy(until = 0, held = ""))
+            add("Snooze for 1 hour" to snooze(now + 3_600_000L))
+            add("Snooze for 3 hours" to snooze(now + 3 * 3_600_000L))
+            add("Snooze until tomorrow at 9 AM" to snooze(morning))
+        }
+    }
+
+    private fun mark(row: AgentRow, next: AgentMark) {
+        phone.catalog.mark(row, next)
+        showHome()
+    }
+
     private fun marks(row: AgentRow) {
-        val mark =
-            (phone.catalog.marks[row.key] ?: AgentMark()).current(
-                row.status,
-                System.currentTimeMillis(),
-            )
-        val labels =
-            mutableListOf(
-                if (mark.pinned) "Unpin" else "Pin",
-                "Snooze for 1 hour",
-                "Snooze for 3 hours",
-            )
-        if (mark.until > 0) labels.add("Wake now")
+        val choices = markChoices(row)
         AlertDialog.Builder(this)
             .setTitle(row.headline)
-            .setItems(labels.toTypedArray()) { _, i ->
-                val next =
-                    when (i) {
-                        0 -> mark.copy(pinned = !mark.pinned)
-                        1,
-                        2 ->
-                            mark.copy(
-                                until =
-                                    System.currentTimeMillis() +
-                                        (if (i == 1) 1 else 3) * 3_600_000L,
-                                held = row.status,
-                            )
-                        else -> mark.copy(until = 0, held = "")
-                    }
-                phone.catalog.mark(row, next)
-                showHome()
-            }
+            .setItems(choices.map { it.first }.toTypedArray()) { _, i -> mark(row, choices[i].second) }
             .show()
+    }
+
+    /** A swipe toward the end pins or unpins; toward the start snoozes for an hour or wakes. */
+    private fun swiped(row: AgentRow, towardEnd: Boolean) {
+        val choices = markChoices(row)
+        mark(row, choices[if (towardEnd) 0 else 1].second)
     }
 
     private fun editHost() {
@@ -443,7 +468,8 @@ class MainActivity : ComponentActivity() {
                 if (page != "terminal") {
                     clear("terminal")
                     val bar = ui.line()
-                    bar.addView(ui.button("Home", ::goHome))
+                    homeButton = ui.button("Home", ::goHome)
+                    bar.addView(homeButton)
                     terminalBar =
                         ui.text(host.session, 16, ui.ink, true).apply {
                             gravity = Gravity.CENTER
@@ -459,6 +485,11 @@ class MainActivity : ComponentActivity() {
                     view.panes
                         .firstOrNull { it.id == view.focusedPane }
                         ?.let { it.terminalTitle ?: it.agentName ?: it.label } ?: host.session
+                val elsewhere = view.panes.any { it.agentName != null && it.status == "blocked" && it.id != view.focusedPane }
+                homeButton?.apply {
+                    text = if (elsewhere) "● Home" else "Home"
+                    contentDescription = if (elsewhere) "Home, an agent in another pane needs you" else "Home"
+                }
                 terminal?.render(view)
                 picker?.update(view)
                 if (phone.toWorkspaces) {
@@ -493,10 +524,18 @@ class MainActivity : ComponentActivity() {
                             isSaveEnabled = false
                             form.addView(this)
                         }
+                    val authorize = CheckBox(this).apply {
+                        text = getString(R.string.sign_in_authorize)
+                        setTextColor(ui.ink)
+                        minHeight = ui.dp(48)
+                        isChecked = Build.VERSION.SDK_INT >= 28 && c.keyHardwareBacked != false && !c.keyEnrolled
+                        isEnabled = isChecked
+                    }
+                    form.addView(authorize)
                     fun submit() {
                         val entered = password?.text?.toString().orEmpty()
                         password?.text?.clear()
-                        c.login(entered)
+                        c.login(entered, authorize.isChecked)
                     }
                     password?.setOnEditorActionListener { _, _, _ ->
                         submit()
@@ -663,5 +702,78 @@ class MainActivity : ComponentActivity() {
         refreshPhoneKey?.invoke()
     }
 
-    private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_LONG).show()
+    override fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_LONG).show()
+
+    override val hosts get() = phone.hosts
+
+    override fun go(page: Page) {
+        phone.pages.add(page)
+        showPage(page)
+    }
+
+    override fun back() {
+        phone.pages.removeLastOrNull()
+        showHome()
+    }
+
+    override fun redraw() = showHome()
+
+    override fun open(profile: HostProfile) {
+        phone.pages.clear()
+        open(profile, null)
+    }
+
+    override fun forget(profiles: Collection<HostProfile>) = profiles.forEach { host ->
+        phone.sessions.remove(host)?.let {
+            it.changed = null
+            it.close()
+        }
+        phone.previews.remove(host)
+        phone.catalog.forget(host)
+    }
+
+    override fun closeEndpoint(endpoint: String) =
+        phone.sessions.keys.filter { it.endpoint == endpoint }.forEach { host ->
+            phone.sessions.remove(host)?.let {
+                it.changed = null
+                it.close()
+            }
+            phone.previews.remove(host)
+        }
+
+    override fun <T> background(work: () -> T, done: (T) -> Unit) {
+        val token = pageToken
+        phone.work.execute {
+            val result = work()
+            handler.post { if (token == pageToken && !isDestroyed) done(result) }
+        }
+    }
+
+    private fun showPage(target: Page) {
+        val group = when (target) {
+            is Page.InstallKey -> group(target.account)
+            is Page.HostDetail -> group(target.account)
+            else -> null
+        }
+        if ((target is Page.InstallKey || target is Page.HostDetail) && group == null) return back()
+        clear("page")
+        val title = when (target) {
+            Page.Settings -> "Settings"
+            Page.ToolbarKeys -> "Toolbar keys"
+            is Page.InstallKey -> "Install phone key"
+            is Page.HostDetail -> phone.hosts.name(target.account) ?: group?.destination.orEmpty()
+        }
+        val bar = ui.line().apply { setPadding(ui.dp(4), ui.dp(8), ui.dp(8), ui.dp(4)) }
+        bar.addView(ui.button("‹ Back", ::back).apply { contentDescription = "Back" })
+        bar.addView(ui.text(title, 20, ui.ink, true).apply { maxLines = 1 }, LinearLayout.LayoutParams(0, -2, 1f))
+        root.addView(bar)
+        val body = ui.column().apply { setPadding(ui.dp(14), 0, ui.dp(14), ui.dp(24)) }
+        root.addView(ScrollView(this).apply { addView(body) })
+        when (target) {
+            Page.Settings -> SettingsScreen(this, ui, this).build(body)
+            Page.ToolbarKeys -> ToolbarKeyEditor(this, ui, this).build(body)
+            is Page.InstallKey -> install = KeyInstallScreen(this, ui, this, group!!).also { it.build(body) }
+            is Page.HostDetail -> HostDetailScreen(this, ui, this, group!!).build(body)
+        }
+    }
 }

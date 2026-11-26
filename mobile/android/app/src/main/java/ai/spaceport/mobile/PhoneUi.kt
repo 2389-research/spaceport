@@ -8,7 +8,11 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.widget.*
+import androidx.core.view.ViewCompat
+import kotlin.math.abs
 
 internal class PhoneUi(private val ctx: Context) {
     val ink = Color.rgb(241, 240, 244)
@@ -42,7 +46,11 @@ internal class PhoneUi(private val ctx: Context) {
             text = value
             isAllCaps = false
             textSize = 15f
-            setTextColor(accent)
+            // A disabled button must look unavailable, not like every other accent action.
+            setTextColor(android.content.res.ColorStateList(
+                arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()),
+                intArrayOf(Color.argb(110, 182, 177, 188), accent),
+            ))
             minHeight = dp(48)
             minWidth = 0
             setBackgroundColor(Color.TRANSPARENT)
@@ -63,6 +71,8 @@ internal class PhoneUi(private val ctx: Context) {
         status: String? = null,
         action: () -> Unit,
         held: (() -> Unit)? = null,
+        swiped: ((towardEnd: Boolean) -> Unit)? = null,
+        actions: List<Pair<String, () -> Unit>> = emptyList(),
     ): LinearLayout {
         val row =
             line().apply {
@@ -103,8 +113,51 @@ internal class PhoneUi(private val ctx: Context) {
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             }
         )
+        if (swiped != null) swipes(row, swiped)
+        for ((label, act) in actions) ViewCompat.addAccessibilityAction(row, label) { _, _ -> act(); true }
         parent.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(3) })
         return row
+    }
+
+    /** A mostly horizontal fling on [row] reports its direction instead of clicking the row. */
+    // Taps still reach the row's own click handling; TalkBack reaches swipes through row actions.
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private fun swipes(row: View, swiped: (towardEnd: Boolean) -> Unit) {
+        val detector = GestureDetector(ctx, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+                val start = e1 ?: return false
+                val dx = e2.x - start.x
+                if (abs(dx) < dp(72) || abs(dx) < abs(e2.y - start.y) * 2) return false
+                swiped((dx > 0) != (row.layoutDirection == View.LAYOUT_DIRECTION_RTL))
+                return true
+            }
+        })
+        row.setOnTouchListener { view, event ->
+            if (!detector.onTouchEvent(event)) return@setOnTouchListener false
+            // The row saw the press; cancel it so the swipe neither clicks nor stays pressed.
+            MotionEvent.obtain(event).apply { action = MotionEvent.ACTION_CANCEL }.also {
+                view.onTouchEvent(it)
+                it.recycle()
+            }
+            true
+        }
+    }
+
+    /** Asks for a Herdr session name; an empty answer means "default". */
+    fun askSessionName(title: String, initial: String, done: (String) -> Unit) {
+        val input = EditText(ctx).apply {
+            hint = "default"
+            isSingleLine = true
+            setText(initial)
+        }
+        android.app.AlertDialog.Builder(ctx).setTitle(title)
+            .setView(LinearLayout(ctx).apply {
+                setPadding(dp(20), 0, dp(20), 0)
+                addView(input, LinearLayout.LayoutParams(-1, -2))
+            })
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Save") { _, _ -> done(input.text.toString().trim().ifEmpty { "default" }) }
+            .show()
     }
 
     private fun View.accessibilityHeadingCompat() {

@@ -21,11 +21,28 @@ class HostStore(context: Context) {
 
     fun remove(profile: HostProfile) = editProfiles(profile, false)
 
+    /** Replaces saved sessions in one write so Home never lists both the old and new names. */
+    fun replace(old: List<HostProfile>, new: List<HostProfile>) = synchronized(storageLock) {
+        new.forEach { require(it.validationError() == null) { it.validationError().orEmpty() } }
+        val profiles = prefs.getStringSet("profiles", emptySet()).orEmpty()
+        prefs.edit { putStringSet("profiles", profiles - old.map(::encode).toSet() + new.map(::encode)) }
+    }
+
+    /** An optional label shown in place of the SSH destination; blank clears it. */
+    fun name(account: String): String? = prefs.getString("name/$account", null)
+
+    fun rename(account: String, name: String) = prefs.edit {
+        if (name.isBlank()) remove("name/$account") else putString("name/$account", name.trim().take(64))
+    }
+
     private fun editProfiles(profile: HostProfile, add: Boolean) = synchronized(storageLock) {
-        val row = JSONArray().put(profile.hostname).put(profile.port).put(profile.username).put(profile.session).toString()
+        val row = encode(profile)
         val profiles = prefs.getStringSet("profiles", emptySet()).orEmpty()
         prefs.edit { putStringSet("profiles", if (add) profiles + row else profiles - row) }
     }
+
+    private fun encode(profile: HostProfile) =
+        JSONArray().put(profile.hostname).put(profile.port).put(profile.username).put(profile.session).toString()
 
     internal fun pin(profile: HostProfile): String? = prefs.getString("pin/${profile.endpoint}", null)
 

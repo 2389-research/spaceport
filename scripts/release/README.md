@@ -156,6 +156,19 @@ Ordinary `just bundle` builds retain `spaceport.development`. The general
 channel (`development` or `macos-preview`) from one compiled constant. Preview signing grants no provider credential reads or automatic skill install.
 The existing three-line `--build-info` output remains unchanged.
 
+### Android APK on preview releases
+
+`android-release.yml` runs when a tag-push run of the macOS preview workflow succeeds.
+It never changes the macOS route. `android-request.py` runs from main, never from the tagged commit.
+It re-proves the tag, its commit and main ancestry.
+It then compares the APK's sources with the newest earlier release that carries an `-android.apk` asset.
+The sources are the Android app, the controller crate, the shared crates it reaches by path, and the root build inputs.
+The `android-release` environment must allow `main`: under `workflow_run`, the job's ref is main, not the tag.
+It needs no reviewer: pushing the `v*` tag is the release decision, as for macOS.
+Anyone who may push a `v*` tag can therefore cause a signed Android build.
+If they differ, the protected `android-release` environment signs a release APK, and the workflow attaches it to the tag's release.
+`mobile/README.md` lists the environment's secrets and the pinned certificate variable.
+
 ## Build Identity
 
 Packaging and `just bundle` require Python 3 and read a versioned identity record
