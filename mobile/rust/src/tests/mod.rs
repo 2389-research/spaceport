@@ -263,3 +263,5 @@ mod resume;
 mod idle_evidence;
 
 mod direct_terminal;
+mod new_terminal;
+mod roster_observation;

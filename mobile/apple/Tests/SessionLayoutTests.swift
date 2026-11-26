@@ -17,8 +17,10 @@ final class SessionLayoutTests: XCTestCase {
         XCTAssertEqual(pages.compactMenuKeys, [.left, .alt, .tab, .enter])
     }
 
-    func testCompactTerminalPrioritizesEscapeButWideTerminalsKeepTheirKeyPages() {
-        XCTAssertEqual(SessionLayout.keyRow(width: 320, keyCount: 6), .compact)
+    func testToolbarFitsFullKeysThenPagesBeforeUsingTheCompactMenu() {
+        XCTAssertEqual(SessionLayout.keyRow(width: 200, keyCount: 6), .compact)
+        XCTAssertEqual(SessionLayout.keyRow(width: 320, keyCount: 6), .paged)
+        XCTAssertEqual(SessionLayout.keyRow(width: 350, keyCount: 6), .flat)
         XCTAssertEqual(SessionLayout.keyRow(width: 400, keyCount: 12), .paged)
         XCTAssertEqual(SessionLayout.keyRow(width: 595, keyCount: 12), .paged)
         XCTAssertEqual(SessionLayout.keyRow(width: 596, keyCount: 12), .flat)
@@ -35,6 +37,16 @@ final class SessionLayoutTests: XCTestCase {
             XCTAssertEqual(SessionLayout.sidebar(width: width, regular: regular, keyboard: keyboard,
                                                   composing: composing, userCollapsed: collapsed), expected)
         }
+    }
+
+    func testSidebarMotionRespectsReduceMotionAndCompactWindows() {
+        let full = SessionLayout.Sidebar.full(248)
+        let rail = SessionLayout.Sidebar.rail
+        XCTAssertNotNil(full.transitionAnimation(reduceMotion: false))
+        XCTAssertEqual(full.transitionAnimation(reduceMotion: false), rail.transitionAnimation(reduceMotion: false))
+        XCTAssertNil(full.transitionAnimation(reduceMotion: true))
+        XCTAssertNil(rail.transitionAnimation(reduceMotion: true))
+        XCTAssertNil(SessionLayout.Sidebar.hidden.transitionAnimation(reduceMotion: false))
     }
 
     func testWaitingInterruptFollowsNewTransitionsAndHonorsLater() {

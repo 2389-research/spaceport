@@ -88,7 +88,7 @@ struct SessionToolbar: View {
             if keys.pages.count > 1 && !page.contains(where: isArmed) {
                 HStack(spacing: 3) {
                     ForEach(keys.pages.indices, id: \.self) { i in
-                        Circle().fill(.white.opacity(i == keyPage ? 0.75 : 0.34)).frame(width: 5, height: 5)
+                        Circle().fill(.primary.opacity(i == keyPage ? 0.75 : 0.34)).frame(width: 5, height: 5)
                     }
                 }.padding(.bottom, 3).allowsHitTesting(false).accessibilityHidden(true)
             }
@@ -114,9 +114,9 @@ struct SessionToolbar: View {
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
-                .foregroundStyle(armed ? .black : .white)
+                .foregroundStyle(armed ? Color(uiColor: .systemBackground) : .primary)
                 .frame(width: 32, height: 32)
-                .background(armed ? Color.white : Color.clear, in: Circle())
+                .background(armed ? Color.primary : Color.clear, in: Circle())
                 .frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .accessibilityLabel(key.title)
@@ -130,8 +130,8 @@ private extension View {
         if docked { self } else if #available(iOS 26.0, *) {
             glassEffect(.regular, in: Capsule())
         } else {
-            background(Color(white: 0.23, opacity: 0.82), in: Capsule())
-                .overlay { Capsule().strokeBorder(.white.opacity(0.14), lineWidth: 0.5).allowsHitTesting(false) }
+            background(Color(uiColor: .secondarySystemBackground), in: Capsule())
+                .overlay { Capsule().strokeBorder(.primary.opacity(0.14), lineWidth: 0.5).allowsHitTesting(false) }
         }
     }
 }

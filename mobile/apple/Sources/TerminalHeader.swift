@@ -2,27 +2,50 @@
 // ABOUTME: Shows a waiting agent on the folded display and pane controls on the open display.
 import SwiftUI
 
+extension EnvironmentValues {
+    var usesVerticalSessionToolbar: Bool {
+        if #available(iOS 27.1, *) { return toolbarVerticalEdge != nil }
+        return false
+    }
+}
+
 struct TerminalHeader: View {
+    @Environment(\.usesVerticalSessionToolbar) private var verticalToolbar
+    @Environment(\.isEnabled) private var enabled
     let view: MobileView?
     let location: String
+    let address: SSHAddress
     let folded: Bool
     let composing: Bool
     let navigate: () -> Void
     let select: (GoToPane) -> Void
     let find: () -> Void
     let home: () -> Void
+    let newTerminal: () -> Void
     let compose: () -> Void
 
     nonisolated static func nextWaiting(_ agents: [GoToPane], focused: String?) -> GoToPane? {
-        agents.first { $0.id != focused && PaneActivity($0.pane.status) == .blocked }
+        let waiting = agents.filter { PaneActivity($0.pane.status) == .blocked }
+        guard let index = waiting.firstIndex(where: { $0.id == focused }) else { return waiting.first }
+        guard waiting.count > 1 else { return nil }
+        return waiting[(index + 1) % waiting.count]
     }
 
     var body: some View {
+        let workspace = view?.workspaces.first { $0.id == view?.focusedWorkspace }
+        let tab = view?.tabs.first { $0.id == view?.focusedTab && $0.workspaceId == workspace?.id }
+        let homeButton = action("Home", symbol: "house", id: "session.header.home", perform: home)
+        let newButton = action("New Terminal", symbol: "plus", id: "session.header.newTerminal", perform: newTerminal)
+            .disabled(workspace == nil || tab == nil || view?.inputTarget == nil)
+            .accessibilityHint("Opens a terminal tab in this workspace.")
+        let findButton = action("Find in Terminal", symbol: "magnifyingglass", id: "session.header.find", perform: find)
+            .disabled(view?.focusedPaneTarget == nil)
+        let composeButton = action("Compose", symbol: "square.and.pencil", id: "session.compose", perform: compose)
         HStack(spacing: 2) {
-            let workspace = view?.workspaces.first { $0.id == view?.focusedWorkspace }
-            let tab = view?.tabs.first { $0.id == view?.focusedTab && $0.workspaceId == workspace?.id }
             let pane = view?.panes.first { $0.id == view?.focusedPane && $0.tabId == tab?.id }
-            locationButton(pane, path: [workspace?.label, tab?.label].compactMap { $0 }.joined(separator: " › "))
+            let first = pane?.displayPaneTitle ?? tab?.label ?? ""
+            let path = [workspace?.label, tab?.label == first ? nil : tab?.label].compactMap { $0 }.joined(separator: " › ")
+            locationButton(pane, first: first, path: path)
             if composing {
                 Text("Live").font(.caption).foregroundStyle(SessionChrome.secondary)
             } else {
@@ -35,39 +58,56 @@ struct TerminalHeader: View {
                                                uniquingKeysWith: { first, _ in first })
                         paneTiles(map.panes.compactMap { panes[$0.id] }, in: workspace, tab: tab)
                     }
-                    Button(action: find) {
-                        Image(systemName: "magnifyingglass").frame(width: 44, height: 44).contentShape(Rectangle())
-                    }
-                    .disabled(view?.focusedPaneTarget == nil)
-                    .accessibilityLabel("Find in Terminal")
-                    .accessibilityIdentifier("session.header.find")
+                    if !verticalToolbar { findButton }
                 }
-                Button(action: home) {
-                    Image(systemName: "house").frame(width: 44, height: 44).contentShape(Rectangle())
+                if !verticalToolbar {
+                    homeButton
+                    newButton
+                    composeButton
                 }
-                .accessibilityLabel("Home")
-                .accessibilityIdentifier("session.header.home")
-                Button(action: compose) {
-                    Image(systemName: "square.and.pencil").frame(width: 44, height: 44).contentShape(Rectangle())
-                }
-                .accessibilityLabel("Compose")
-                .accessibilityIdentifier("session.compose")
             }
         }
+        .labelStyle(HeaderIcon())
         .buttonStyle(.plain)
         .padding(.horizontal, 12)
         .frame(minHeight: folded ? 50 : 44)
         .background(SessionChrome.terminal)
         .overlay(alignment: .bottom) { Divider() }
+        .toolbar {
+            if verticalToolbar && !composing {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    homeButton
+                    newButton
+                }
+                ToolbarItemGroup(placement: .bottomBar) {
+                    findButton
+                    composeButton
+                }
+            }
+        }
     }
 
-    private func locationButton(_ pane: MobilePane?, path: String) -> some View {
+    private func action(_ title: LocalizedStringKey, symbol: String, id: String, perform: @escaping () -> Void) -> some View {
+        Button(action: perform) { Label(title, systemImage: symbol) }
+            .accessibilityLabel(Text(title))
+            .accessibilityIdentifier(id)
+            .disabled(!enabled)
+    }
+
+    private struct HeaderIcon: LabelStyle {
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.icon.frame(width: 44, height: 44).contentShape(Rectangle())
+        }
+    }
+
+    private func locationButton(_ pane: MobilePane?, first: String, path: String) -> some View {
         let name = pane?.agentName ?? pane?.label ?? location
         let activity = pane.flatMap { PaneActivity($0.status) }
+        let agentTitle = folded ? nil : AgentSelectorLabel.displayTitle(pane?.terminalTitle, address: address)
         return Button(action: navigate) {
             HStack(spacing: 7) {
                 if let activity { activity.sessionDot }
-                let title = Text(verbatim: name).font(.subheadline.weight(.semibold))
+                let title = Text(AgentSelectorLabel.heading(pane: first, title: name)).font(.subheadline.weight(.semibold))
                 if folded {
                     VStack(alignment: .leading, spacing: 2) {
                         title
@@ -78,6 +118,8 @@ struct TerminalHeader: View {
                         }.font(.caption).foregroundStyle(SessionChrome.secondary)
                     }
                     Image(systemName: "chevron.down").font(.caption2)
+                } else if let agentTitle {
+                    Text(verbatim: agentTitle).font(.subheadline.weight(.semibold))
                 } else {
                     title.layoutPriority(1)
                     if !path.isEmpty {
@@ -92,7 +134,7 @@ struct TerminalHeader: View {
             .contentShape(Rectangle())
         }
         .accessibilityLabel("Agents")
-        .accessibilityValue(Text(verbatim: [name, activity?.title, path].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")))
+        .accessibilityValue(Text(verbatim: [agentTitle, first, first == name || name == agentTitle ? nil : name, activity?.title, path].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")))
         .accessibilityHint(folded ? "Opens Go To." : "Opens the agents sidebar.")
         .accessibilityIdentifier("session.navigation")
     }
@@ -107,7 +149,7 @@ struct TerminalHeader: View {
             }
             .padding(.horizontal, 9).frame(height: 30)
             .foregroundStyle(PaneActivity.blocked.sessionTextColor)
-            .background(Color(red: 58/255, green: 26/255, blue: 38/255), in: Capsule())
+            .background(SessionChrome.waitingBackground, in: Capsule())
             .frame(maxWidth: 112, minHeight: 44).contentShape(Rectangle())
         }
         .accessibilityLabel(Text(verbatim: "\(name) needs you"))
@@ -125,7 +167,7 @@ struct TerminalHeader: View {
                         Button { select(GoToPane(workspace: workspace, tab: tab, pane: pane)) } label: {
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(focused ? SessionChrome.selected : SessionChrome.sidebar)
-                                .strokeBorder(focused ? activity?.sessionColor ?? .white : SessionChrome.field)
+                                .strokeBorder(focused ? activity?.sessionColor ?? .primary : SessionChrome.field)
                                 .frame(width: 22, height: 30).frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }

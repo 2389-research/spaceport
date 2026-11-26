@@ -6,12 +6,53 @@ import XCTest
 
 final class AgentPickerTests: XCTestCase {
     @MainActor
-    func testAgentSubtitleLeadsWithLocation() {
+    func testSidebarSummaryUsesTheNonemptyRosterGroups() {
+        let workspace = MobileWorkspace(id: "w", label: "Mission", status: "idle")
+        let tab = MobileTab(id: "t", workspaceId: "w", label: "1", status: "idle")
+        let agents = ["idle", "working", "idle"].enumerated().map { index, status in
+            GoToPane(workspace: workspace, tab: tab, pane: MobilePane(stateChangeSeq: nil, agentName: "Scout",
+                     id: "p\(index)", tabId: tab.id, label: "1", status: status))
+        }
+        XCTAssertEqual(AgentRail.summary(AgentRail.groups(agents)), "1 working · 2 idle")
+        XCTAssertEqual(AgentRail.summary([]), "No agents")
+    }
+
+    @MainActor
+    func testAgentRowShowsOnlyTheHostForShellTitles() {
+        func title(_ value: String) -> String? {
+            var label = AgentSelectorLabel(name: "codex", terminalTitle: value, workspace: "app", tab: "3", font: .body)
+            label.address = SSHAddress(hostname: "alias", port: 22, username: "pilot")
+            return label.title
+        }
+        XCTAssertEqual(title("pilot@box: ~/src"), "box")
+        XCTAssertEqual(title("pilot@box"), "box")
+        XCTAssertEqual(title("pilot@alias"), "alias")
+        XCTAssertEqual(title("Review pilot@alias"), "Review pilot@alias")
+        XCTAssertEqual(title("pilot@example.com"), "pilot@example.com")
+    }
+
+    @MainActor
+    func testHeadingStartsWithPaneTitleOrTabLabel() {
+        func label(_ tab: String, pane: String? = nil) -> AgentSelectorLabel {
+            AgentSelectorLabel(name: "codex", terminalTitle: "Fix sidebar", workspace: "app",
+                               tab: tab, font: .body, paneTitle: pane)
+        }
+        let named = label("3", pane: "Review")
+        XCTAssertEqual(String(named.heading.characters), "Review · Fix sidebar")
+        XCTAssertEqual(String(named.subtitle(includingName: true).characters), "app › 3 · codex")
+        XCTAssertEqual(String(label("3").heading.characters), "3 · Fix sidebar")
+        XCTAssertEqual(String(label("Build").heading.characters), "Build · Fix sidebar")
+        XCTAssertEqual(String(label("Fix sidebar").heading.characters), "Fix sidebar")
+        XCTAssertEqual(String(label("").heading.characters), "Fix sidebar")
+    }
+
+    @MainActor
+    func testAgentSubtitleShowsWorkspaceAndAgentBelowTheHeading() {
         func subtitle(_ workspace: String, _ tab: String, _ name: String) -> String {
             let label = AgentSelectorLabel(name: name, terminalTitle: "Fix sidebar", workspace: workspace, tab: tab, font: .body)
             return String(label.subtitle(includingName: true).characters)
         }
-        XCTAssertEqual(subtitle("artifact-host", "3", "codex"), "artifact-host › 3 · codex")
+        XCTAssertEqual(subtitle("artifact-host", "3", "codex"), "artifact-host · codex")
         XCTAssertEqual(subtitle("", "", "codex"), "codex")
         XCTAssertEqual(subtitle("spaceport", "", ""), "spaceport")
     }
@@ -21,10 +62,10 @@ final class AgentPickerTests: XCTestCase {
         let label = AgentSelectorLabel(name: "codex", terminalTitle: nil, workspace: "codex", tab: "3", font: .body)
         let subtitle = label.subtitle(includingName: true)
         let runs = subtitle.runs.map { (String(subtitle[$0.range].characters), $0.swiftUI.foregroundColor) }
-        XCTAssertEqual(runs.map { $0.0 }, ["codex", " › ", "3", " · ", "codex"])
-        XCTAssertEqual(Set(runs.compactMap { $0.1 }).count, 4)
+        XCTAssertEqual(runs.map { $0.0 }, ["codex", " · ", "codex"])
+        XCTAssertEqual(Set(runs.compactMap { $0.1 }).count, 3)
         let location = label.subtitle(includingName: false)
-        XCTAssertEqual(String(location.characters), "codex › 3")
+        XCTAssertEqual(String(location.characters), "codex")
         XCTAssertEqual(location.runs.first?.swiftUI.foregroundColor, runs.first?.1)
     }
 
@@ -34,7 +75,7 @@ final class AgentPickerTests: XCTestCase {
                                        host: "pilot@host", session: "dev · main", font: .body)
         let text = label.subtitle(includingName: true)
         let parts = text.runs.filter { $0.swiftUI.foregroundColor != .secondary }
-        XCTAssertEqual(parts.map { String(text[$0.range].characters) }, ["repo › fork", "3", "pilot@host", "dev · main", "Scout"])
+        XCTAssertEqual(parts.map { String(text[$0.range].characters) }, ["repo › fork", "pilot@host", "dev · main", "Scout"])
         XCTAssertEqual(Set(parts.compactMap { $0.swiftUI.foregroundColor }).count, parts.count)
     }
 
@@ -51,11 +92,13 @@ final class AgentPickerTests: XCTestCase {
         XCTAssertEqual(restored.locationLabels.workspace, workspace)
         XCTAssertEqual(restored.locationLabels.tab, tab)
         XCTAssertEqual(restored.agentIdentity, "claude")
+        XCTAssertEqual(restored.paneTitle, "Build")
         let legacy = Data(#"{"bootId":"b","workspaceId":"w","tabId":"t","paneId":"p","name":"Scout","status":"working","location":"Flight › Checklist"}"#.utf8)
         let old = try JSONDecoder().decode(SeenAgent.self, from: legacy)
         XCTAssertEqual(old.locationLabels.workspace, "Flight")
         XCTAssertEqual(old.locationLabels.tab, "Checklist")
         XCTAssertNil(old.agentIdentity)
+        XCTAssertNil(old.paneTitle)
     }
 
     func testSearchIncludesShellsAndMatchesWordsAcrossTitlesAndPaths() {

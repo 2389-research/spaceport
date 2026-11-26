@@ -61,6 +61,7 @@ fn a_jump_fences_every_step_and_only_exposes_the_final_input_target() {
         snap.revision += 1;
         frame.projection_revision = snap.revision;
         match &step {
+            Navigation::NewTab { .. } => panic!("A jump must only visit existing tabs"),
             Navigation::Workspace(id) => snap.focused_workspace_id = Some(id.clone()),
             Navigation::Tab(id) => snap.focused_tab_id = Some(id.clone()),
             Navigation::Pane(id) => {

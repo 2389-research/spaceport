@@ -1,10 +1,15 @@
 // ABOUTME: Fits the agent sidebar and keyboard controls to the usable session width.
 // ABOUTME: Reserves enough space for terminal input as the window changes size.
-import Foundation
+import SwiftUI
 
 enum SessionLayout {
     enum Sidebar: Equatable {
         case full(CGFloat), rail, hidden
+        func transitionAnimation(reduceMotion: Bool) -> Animation? {
+            guard self != .hidden, !reduceMotion else { return nil }
+            return .smooth(duration: 0.28)
+        }
+
         var width: CGFloat {
             switch self {
             case let .full(width): width
@@ -28,8 +33,11 @@ enum SessionLayout {
     }
 
     static func keyRow(width: CGFloat, keyCount: Int) -> KeyRow {
-        if width < 360 { return .compact }
-        return CGFloat(keyCount) * 44 + 68 <= width ? .flat : .paged
+        // The toggle, horizontal padding and gap take 68 points. A page needs
+        // three 44-point targets and eight points of padding.
+        let available = width - 68
+        if CGFloat(keyCount) * 44 <= available { return .flat }
+        return available >= 140 ? .paged : .compact
     }
 }
 

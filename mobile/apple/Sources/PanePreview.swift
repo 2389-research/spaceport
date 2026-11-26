@@ -67,6 +67,7 @@ extension MobileConnection {
 
 struct AgentPeek: View {
     let row: GoToPane
+    let address: SSHAddress
     let read: () -> PaneExcerpt?
     @State private var snapshot: PaneExcerpt?
 
@@ -74,7 +75,7 @@ struct AgentPeek: View {
         VStack(alignment: .leading, spacing: 10) {
             AgentSelectorLabel(name: row.pane.agentName ?? row.pane.label, terminalTitle: row.pane.terminalTitle,
                                workspace: row.workspace.label, tab: row.tab.label, font: .headline,
-                               isAgent: row.pane.agentName != nil)
+                               paneTitle: row.pane.displayPaneTitle, isAgent: row.pane.agentName != nil, address: address)
             if let activity = PaneActivity(row.pane.status) {
                 HStack { activity.dot; Text(activity.title).font(.subheadline) }
             }

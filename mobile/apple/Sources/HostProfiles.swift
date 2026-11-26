@@ -8,10 +8,11 @@ struct SSHAddress: Codable, Hashable {
     var port: UInt16
     var username: String
 
-    var destination: String {
+    var endpoint: String {
         let host = hostname.contains(":") ? "[\(hostname)]" : hostname
-        return "\(username)@\(host)" + (port == 22 ? "" : ":\(port)")
+        return host + (port == 22 ? "" : ":\(port)")
     }
+    var destination: String { "\(username)@\(endpoint)" }
     var pinAccount: String { "host/[\(hostname.lowercased())]:\(port)" }
 
     static func parse(_ text: String) throws -> Self {
@@ -55,7 +56,6 @@ struct HostProfile: Codable, Hashable, Identifiable {
     var login: LoginMethod
 
     var address: SSHAddress { SSHAddress(hostname: hostname, port: port, username: username) }
-    var destination: String { address.destination }
     var pinAccount: String { address.pinAccount }
 
     static func make(id: UUID = UUID(), hostname: String, port: String, username: String,
@@ -102,6 +102,15 @@ struct SavedHost: Codable, Equatable, Identifiable {
 
     var title: String { name ?? address.hostname }
 
+    func listHeading(in hosts: [SavedHost]) -> String {
+        var parts = [address.endpoint]
+        if let name, !name.isEmpty, name != address.hostname { parts.insert(name, at: 0) }
+        let peers = hosts.filter { $0.id != id && $0.address.endpoint == address.endpoint }
+        if peers.contains(where: { $0.address.username != address.username }) { parts.append("Account " + address.username) }
+        if peers.contains(where: { $0.address == address }) { parts.append(login.title) }
+        return parts.joined(separator: " · ")
+    }
+
     func profile(session: SavedSession) -> HostProfile {
         HostProfile(id: session.id, hostname: address.hostname, port: address.port,
                     username: address.username, session: session.name, login: login)
@@ -122,6 +131,7 @@ struct SeenAgent: Hashable, Codable {
     var terminalTitle: String?
     var agentIdentity: String?
     var workspaceLabelBytes: Int?
+    var paneTitle: String?
 
     var marks: AgentMarks?
 
@@ -168,6 +178,8 @@ struct SessionStatusSnapshot: Codable, Equatable {
     let hasIdle: Bool
     let location: [String]
     var agents: [SeenAgent]?
+    // Older snapshots counted all panes and may retain only part of the named roster.
+    var agentCounts: AgentCounts?
 }
 
 struct SavedSession: Codable, Equatable, Identifiable {
@@ -176,6 +188,15 @@ struct SavedSession: Codable, Equatable, Identifiable {
     var name: String
     var lastOpened: Date?
     var lastStatus: SessionStatusSnapshot?
+    private(set) var widgetDestinationOverride: UUID?
+
+    var widgetDestination: UUID { widgetDestinationOverride ?? id }
+
+    mutating func clearObservationForChangedTarget() {
+        lastOpened = nil
+        lastStatus = nil
+        widgetDestinationOverride = UUID()
+    }
 }
 
 struct HostCatalog: Codable {
@@ -183,6 +204,16 @@ struct HostCatalog: Codable {
     var sessions: [SavedSession] = []
 
     var profiles: [HostProfile] { sessions.compactMap { profile($0) } }
+    var agentWidgetSnapshot: AgentWidgetSnapshot? {
+        guard let session = lastOpenedSession, let status = session.lastStatus, let counts = status.agentCounts
+        else { return nil }
+        return AgentWidgetSnapshot(destinationID: session.widgetDestination, counts: counts, observedAt: status.seenAt)
+    }
+
+    func widgetSession(for destination: UUID) -> UUID? {
+        sessions.first { $0.widgetDestination == destination && $0.lastStatus?.agentCounts != nil }?.id
+    }
+
     var observedAgents: [HomeAgent] {
         let hostsByID = Dictionary(hosts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let rows = sessions.flatMap { session -> [HomeAgent] in
@@ -216,8 +247,7 @@ struct HostCatalog: Codable {
         else { throw ProfileError.duplicateHost }
         if hosts[index].address != host.address {
             for i in sessions.indices where sessions[i].hostID == host.id {
-                sessions[i].lastOpened = nil
-                sessions[i].lastStatus = nil
+                sessions[i].clearObservationForChangedTarget()
             }
         }
         hosts[index] = host
@@ -262,8 +292,7 @@ struct ProfileStore {
             if catalog.sessions[index].name != profile.session {
                 guard !catalog.sessions.contains(where: { $0.hostID == host.id && $0.id != profile.id && $0.name == profile.session })
                 else { throw ProfileError.duplicateSession }
-                catalog.sessions[index].lastOpened = nil
-                catalog.sessions[index].lastStatus = nil
+                catalog.sessions[index].clearObservationForChangedTarget()
             }
             host.address = profile.address
             host.login = profile.login
@@ -389,5 +418,9 @@ struct ProfileStore {
 
     private func write(_ catalog: HostCatalog) throws {
         defaults.set(try JSONEncoder().encode(catalog), forKey: Self.catalogKey)
+        if defaults === UserDefaults.standard {
+            AgentWidgetSnapshot.publish(catalog.agentWidgetSnapshot)
+            SpaceportAppShortcuts.updateAppShortcutParameters()
+        }
     }
 }

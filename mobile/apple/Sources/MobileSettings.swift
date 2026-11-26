@@ -5,6 +5,8 @@ import SwiftUI
 struct MobileSettings: View {
     let hosts: [SavedHost]
     let openHostDetails: (UUID) -> Void
+    @ObservedObject private var agentActivity = AgentLiveActivity.shared
+    @AppStorage(TerminalAppearance.preference) private var appearance = TerminalAppearance.dark
     @AppStorage(TerminalPreferences.textSize) private var savedTextSize: Int?
     @AppStorage(TerminalPreferences.toolbarKeys) private var keys = TerminalKeyPages.standard
     @AppStorage(TerminalPreferences.composeReturn) private var pressReturn = TerminalPreferences.defaultComposeReturn
@@ -18,6 +20,22 @@ struct MobileSettings: View {
         Form {
             PhoneKeySettings(hosts: hosts, openHostDetails: openHostDetails)
             Section {
+                Toggle("Live Activities", isOn: Binding(
+                    get: { agentActivity.isEnabled },
+                    set: { agentActivity.setEnabled($0) }
+                ))
+                .accessibilityIdentifier("settings.liveActivity")
+            } header: {
+                Text("Agents")
+            } footer: {
+                Text("Show agent counts on the Lock Screen and Dynamic Island.")
+            }
+            Section {
+                Picker("Appearance", selection: $appearance) {
+                    Text("Light").tag(TerminalAppearance.light)
+                    Text("Dark").tag(TerminalAppearance.dark)
+                }
+                .pickerStyle(.segmented).accessibilityIdentifier("settings.appearance")
                 Stepper(value: textSize, in: TerminalPreferences.textRange) {
                     LabeledContent("Text Size", value: "\(textSize.wrappedValue) pt")
                 }

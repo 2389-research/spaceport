@@ -26,13 +26,13 @@ struct HomeAgentsSection: View {
     let open: (HomeAgent) -> Void
 
     private struct LabelPath: Hashable {
-        let destination: String
+        let hostname: String
         let session: String
         let name: String
         let location: String
 
         init(_ row: HomeAgent) {
-            destination = row.profile.destination
+            hostname = row.profile.hostname
             session = row.profile.session
             name = row.agent.name
             location = row.agent.location
@@ -57,6 +57,8 @@ struct HomeAgentsSection: View {
                     let duplicates = groups[LabelPath(row)] ?? []
                     let hasSamePane = duplicates.contains { $0.agent.paneId == row.agent.paneId && $0.id != row.id }
                     let detail = [
+                        duplicates.contains { $0.profile.port != row.profile.port } ? "Port \(row.profile.port)" : "",
+                        duplicates.contains { $0.profile.username != row.profile.username } ? "Account " + row.profile.username : "",
                         duplicates.count > 1 ? "Pane \(row.agent.paneId)" : "",
                         hasSamePane ? row.profile.login.title : ""
                     ].filter { !$0.isEmpty }.joined(separator: " · ")
@@ -70,10 +72,10 @@ struct HomeAgentsSection: View {
                     let path = row.agent.locationLabels
                     let label = AgentSelectorLabel(name: row.agent.name, terminalTitle: row.agent.terminalTitle,
                                                    workspace: path.workspace, tab: path.tab,
-                                                   host: accountCount > 1 ? row.profile.destination : "",
+                                                   host: accountCount > 1 ? row.profile.hostname : "",
                                                    session: multipleSessions ? row.profile.session : "",
-                                                   detail: detail, font: .headline)
-                    let spokenLabel = [row.agent.name, row.profile.destination, row.profile.session, row.agent.location, detail]
+                                                   detail: detail, font: .headline, paneTitle: row.agent.paneTitle, address: row.profile.address)
+                    let spokenLabel = [row.agent.name, row.profile.hostname, row.profile.session, row.agent.location, detail]
                         .filter { !$0.isEmpty }.joined(separator: ", ")
                     Button { open(row) } label: {
                         HStack(spacing: 10) {
@@ -93,7 +95,7 @@ struct HomeAgentsSection: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text(verbatim: spokenLabel))
-                    .accessibilityValue(Text("\(label.title.map { $0 + ", " } ?? "")\(spokenStatus), last seen \(row.seenAt, format: .relative(presentation: .named))"))
+                    .accessibilityValue(Text("\(String(label.heading.characters)), \(spokenStatus), last seen \(row.seenAt, format: .relative(presentation: .named))"))
                     .accessibilityIdentifier("home.agent.\(row.profile.id).\(row.agent.bootId).\(row.agent.paneId)")
                     .modifier(AgentMarkActions(row: row, snoozed: section == .snoozed) { mark(row, $0) })
                 }

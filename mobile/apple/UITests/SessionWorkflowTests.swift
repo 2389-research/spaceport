@@ -14,14 +14,19 @@ final class SessionWorkflowTests: XCTestCase {
         app.buttons["session.navigation"].tap()
         let live = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ OR identifier BEGINSWITH %@",
                                                     "goTo.agent.", "goTo.needsYou."))
-        let liveOrder = ["Scout", "Reviewer", "Zephyr", "Atlas"]
+        let switcher = app.segmentedControls["goTo.browse"]
+        XCTAssertTrue(switcher.waitForExistence(timeout: 3))
+        switcher.buttons["Workspaces"].tap()
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "goTo.workspace.")).firstMatch.exists)
+        switcher.buttons["Agents"].tap()
+        let liveOrder = ["Reviewer", "Scout", "Zephyr", "Atlas"]
         let homeOrder = ["Reviewer", "Scout", "Zephyr", "Atlas"]
         func names(in rows: XCUIElementQuery) -> [String] {
             rows.allElementsBoundByIndex.map { $0.label.components(separatedBy: ", ").first ?? "" }
         }
         XCTAssertEqual(names(in: live), liveOrder)
         let liveReviewer = live.matching(NSPredicate(format: "label BEGINSWITH %@", "Reviewer")).firstMatch
-        XCTAssertTrue((liveReviewer.value as? String)?.contains("Review the launch checklist") == true)
+        XCTAssertTrue((liveReviewer.value as? String)?.hasPrefix("Review · Review the launch checklist") == true)
         attachScreen("Live agent order", in: app)
         app.buttons["goTo.done"].tap()
         XCTAssertFalse(keyboard.exists)
@@ -31,7 +36,7 @@ final class SessionWorkflowTests: XCTestCase {
                                                      "home.agent.", session))
         XCTAssertEqual(names(in: saved), homeOrder)
         let savedReviewer = saved.matching(NSPredicate(format: "label BEGINSWITH %@", "Reviewer")).firstMatch
-        XCTAssertTrue((savedReviewer.value as? String)?.contains("Review the launch checklist") == true)
+        XCTAssertTrue((savedReviewer.value as? String)?.hasPrefix("Review · Review the launch checklist") == true)
         XCTAssertTrue(app.staticTexts["Waiting for you"].exists)
         XCTAssertTrue(app.staticTexts["Idle"].exists)
         attachScreen("Saved agent order", in: app)
@@ -67,15 +72,31 @@ final class SessionWorkflowTests: XCTestCase {
         XCTAssertLessThan(locationFrame.maxY, app.buttons["terminal.key.esc"].frame.minY)
         XCTAssertEqual(locationFrame.midY, app.buttons["session.compose"].frame.midY, accuracy: 2)
         attachScreen("Keyboard after switching agents", in: app)
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let rotated = expectation(for: NSPredicate { _, _ in
+            MainActor.assumeIsolated { app.frame.width > app.frame.height && keyboard.frame.width > keyboard.frame.height * 2 }
+        }, evaluatedWith: app)
+        await fulfillment(of: [rotated], timeout: 8)
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["session.sidebar.hide"].exists)
+        XCTAssertGreaterThan(terminal.frame.width, app.frame.width * 0.8)
+        XCTAssertGreaterThan(terminal.frame.height, 32)
+        let landscape = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        landscape.name = "iPhone landscape keyboard"
+        landscape.lifetime = .keepAlways
+        add(landscape)
         if let authenticated {
             let after = try await sshWitness("sample")
             XCTAssertEqual(after, authenticated, "Choosing two agents in this session must reuse its SSH login.")
         }
-        openSessionHome(in: app)
+        app.buttons["session.header.home"].tap()
+        XCTAssertTrue(app.buttons["Settings"].waitForExistence(timeout: 5))
+        XCUIDevice.shared.orientation = .portrait
         app.terminate()
         app.launch()
         XCTAssertEqual(names(in: saved), homeOrder)
-        XCTAssertTrue((savedReviewer.value as? String)?.contains("Review the launch checklist") == true)
+        XCTAssertTrue((savedReviewer.value as? String)?.hasPrefix("Review · Review the launch checklist") == true)
     }
 
     @MainActor
@@ -89,6 +110,9 @@ final class SessionWorkflowTests: XCTestCase {
         let copy = app.menuItems["Copy"]
         XCTAssertTrue(copy.waitForExistence(timeout: 5))
         attachScreen("Ghostty selection menu", in: app)
+        terminal.swipeRight()
+        XCTAssertFalse(app.segmentedControls["goTo.browse"].exists)
+        XCTAssertTrue(copy.waitForExistence(timeout: 5))
         copy.tap()
         XCTAssertTrue(terminal.exists)
     }
@@ -128,7 +152,7 @@ final class SessionWorkflowTests: XCTestCase {
             return
         }
         installToHost.tap()
-        let destination = "\(user)@\(host)" + (port == "22" ? "" : ":\(port)")
+        let destination = host + (port == "22" ? "" : ":\(port)")
         let hostRow = app.buttons[destination]
         reveal(hostRow, in: app)
         hostRow.tap()
@@ -246,6 +270,7 @@ final class SessionWorkflowTests: XCTestCase {
         try await waitForText("accepted-" + reply, in: terminal)
 
         app.buttons["session.navigation"].tap()
+        app.segmentedControls["goTo.browse"].buttons["Workspaces"].tap()
         let sibling = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND selected == false", "pane.map.")).firstMatch
         reveal(sibling, in: app)
         XCTAssertEqual(sibling.label, "Logs")
@@ -268,6 +293,22 @@ final class SessionWorkflowTests: XCTestCase {
     }
 
     @MainActor
+    func testPhoneCanOpenAnotherTerminalFromAShell() async throws {
+        let app = XCUIApplication()
+        let (terminal, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_SHELL_SESSION")
+        let navigation = app.buttons["session.navigation"]
+        navigation.tap()
+        XCTAssertTrue(app.segmentedControls["goTo.browse"].buttons["Workspaces"].isSelected)
+        app.buttons["goTo.done"].tap()
+        app.buttons["terminal.keyboard.toggle"].tap()
+        let label = "phone-" + UUID().uuidString.prefix(5)
+        app.typeText("herdr tab create --focus --label " + label + "\n")
+        try await waitForText(label, in: navigation)
+        app.typeText("printf '%s%s\\n' phone-hello- " + label + "\n")
+        try await waitForText("phone-hello-" + label, in: terminal)
+    }
+
+    @MainActor
     func testSaveEditAndRemoveSessionAcrossLaunches() throws {
         let app = XCUIApplication()
         app.launch()
@@ -276,9 +317,9 @@ final class SessionWorkflowTests: XCTestCase {
         app.terminate()
         app.launch()
         let destination = "operator@\(name):2202"
-        let row = app.buttons["\(destination), lab"]
+        let row = app.buttons["\(name):2202, lab"]
         reveal(row, in: app)
-        let detail = app.buttons["Host details for \(destination)"]
+        let detail = app.buttons["Host details for \(name):2202"]
         detail.tap()
         app.buttons["Edit"].tap()
         attachScreen("Edit Host", in: app)
@@ -297,13 +338,10 @@ final class SessionWorkflowTests: XCTestCase {
         app.terminate()
         app.launch()
         reveal(row, in: app)
-        XCTAssertTrue(app.buttons["\(destination), telemetry"].exists)
+        XCTAssertTrue(app.buttons["\(name):2202, telemetry"].exists)
         detail.tap()
         let remove = app.buttons["Remove Host"]
-        for _ in 0..<4 {
-            if remove.exists && remove.isHittable { break }
-            app.swipeUp()
-        }
+        reveal(remove, in: app)
         remove.tap()
         let confirmation = app.sheets.firstMatch
         confirmation.buttons["Remove Host"].tap()
@@ -414,7 +452,7 @@ final class SessionWorkflowTests: XCTestCase {
         let session = sessionName + suffix
         if launch { app.launch() }
         addHost(in: app, hostname: host, port: port, user: user, session: session, password: true)
-        let dest = "\(user)@\(host)" + (port == "22" ? "" : ":\(port)")
+        let dest = host + (port == "22" ? "" : ":\(port)")
         let saved = app.buttons.matching(identifier: "\(dest), \(session)")
         let row = saved.element(boundBy: max(0, saved.count - 1))
         let passwordField = app.secureTextFields["SSH password"]
@@ -444,9 +482,11 @@ final class SessionWorkflowTests: XCTestCase {
 
     @MainActor
     func reveal(_ element: XCUIElement, in app: XCUIApplication, towardTop: Bool = false) {
+        let list = app.collectionViews.firstMatch
+        let scrollTarget = list.exists ? list : app
         for _ in 0..<10 {
             if element.exists && element.isHittable { return }
-            if towardTop { app.swipeDown() } else { app.swipeUp() }
+            if towardTop { scrollTarget.swipeDown() } else { scrollTarget.swipeUp() }
         }
         XCTAssertTrue(element.isHittable)
     }
@@ -468,6 +508,7 @@ final class SessionWorkflowTests: XCTestCase {
         let path = try XCTUnwrap(navigation.value as? String)
         XCTAssertFalse(path.isEmpty)
         app.buttons["session.navigation"].tap()
+        app.segmentedControls["goTo.browse"].buttons["Workspaces"].tap()
         let tiles = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "pane.map."))
         let needsSplit = !tiles.firstMatch.exists
         app.buttons["goTo.done"].tap()
@@ -481,6 +522,7 @@ final class SessionWorkflowTests: XCTestCase {
             keyboard.tap()
         }
         app.buttons["session.navigation"].tap()
+        app.segmentedControls["goTo.browse"].buttons["Workspaces"].tap()
         let other = tiles.matching(NSPredicate(format: "selected == false")).firstMatch
         reveal(other, in: app)
         XCTAssertTrue(other.waitForExistence(timeout: 8))
@@ -711,13 +753,16 @@ extension SessionWorkflowTests {
             let addHost = app.buttons["home.empty.addHost"]
             XCTAssertTrue(addHost.exists)
             guard addHost.exists else { return }
+            attachScreen("iPhone welcome", in: app)
             addHost.tap()
             XCTAssertTrue(app.textFields["Address"].waitForExistence(timeout: 5))
             app.buttons["Cancel"].tap()
         }
         app.buttons["Settings"].tap()
         XCTAssertTrue(app.buttons["Install on a Host…"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.switches["settings.composeReturn"].label, "Press Return After Pasting")
+        let composeReturn = app.switches["settings.composeReturn"]
+        reveal(composeReturn, in: app)
+        XCTAssertEqual(composeReturn.label, "Press Return After Pasting")
         attachScreen("Settings and device key", in: app)
     }
 }

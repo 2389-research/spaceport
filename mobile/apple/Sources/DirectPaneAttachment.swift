@@ -103,10 +103,12 @@ final class DirectPaneAttachment: ObservableObject, Identifiable {
 }
 
 struct DirectPaneDisplay: View {
+    @EnvironmentObject private var appearance: WindowTerminalAppearance
     @ObservedObject var pane: DirectPaneAttachment
     @Binding var keyboard: Bool
     @Binding var modifiers: UInt8
     let retry: () -> Void
+    let openAgents: () -> Void
 
     var body: some View {
         Group {
@@ -119,7 +121,10 @@ struct DirectPaneDisplay: View {
                     Button("Try Again", action: retry)
                 }
             } else if let surface = pane.surface {
-                GhosttyPaneView(surface: surface, keyboard: $keyboard, modifiers: $modifiers)
+                GhosttyPaneView(surface: surface, keyboard: $keyboard, modifiers: $modifiers, openAgents: openAgents)
+                    .onReceive(surface.$reportedAppearance) { mode in
+                        if appearance.reported != mode { appearance.reported = mode }
+                    }
             }
         }
         .overlay(alignment: .bottom) {

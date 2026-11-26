@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ABOUTME: Lets the containing app and its widget share the latest agent counts. -->
+<!-- ABOUTME: Xcode assigns a distinct group to debug and distribution builds. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>$(SPACEPORT_WIDGET_GROUP)</string>
+    </array>
+</dict>
+</plist>

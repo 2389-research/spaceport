@@ -6,6 +6,15 @@ import XCTest
 
 @MainActor
 final class HostProfilesTests: XCTestCase {
+    func testSavedHostHeadingShowsAnAccountOnlyToDistinguishLogins() throws {
+        let address = try SSHAddress.parse("pilot@box")
+        let host = SavedHost(id: UUID(), address: address, login: .password)
+        let other = SavedHost(id: UUID(), address: try SSHAddress.parse("deploy@box"), login: .password)
+        XCTAssertEqual(host.listHeading(in: [host]), "box")
+        XCTAssertEqual(host.listHeading(in: [host, other]), "box · Account pilot")
+        XCTAssertEqual(other.listHeading(in: [host, other]), "box · Account deploy")
+    }
+
     func testEditingSavedHostReplacesOriginalAndSurvivesRelaunch() throws {
         let suite = "spaceport.mobile.tests.\(UUID())"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
@@ -66,6 +75,8 @@ final class HostProfilesTests: XCTestCase {
         XCTAssertEqual(address.hostname, "::1")
         XCTAssertEqual(address.port, 23892)
         XCTAssertEqual(address.destination, "pilot@[::1]:23892")
+        XCTAssertEqual(address.endpoint, "[::1]:23892")
+        XCTAssertEqual(try SSHAddress.parse("pilot@box").endpoint, "box")
         XCTAssertEqual(try SSHAddress.parse("pilot@box").port, 22)
         for invalid in ["host", "a@b:", "a@b:65536", "a@[::1", "a@host/path", "a@b@c", "a@host:0"] {
             XCTAssertThrowsError(try SSHAddress.parse(invalid), invalid)
@@ -205,9 +216,9 @@ final class HostProfilesTests: XCTestCase {
         XCTAssertEqual(snapshot.agents, [
             SeenAgent(bootId: "boot", workspaceId: "two", tabId: "tab2", paneId: "review", name: "Reviewer",
                       status: "blocked", location: "Ops › Watch", changeObservedAt: seen, terminalTitle: "Verify the release",
-                      workspaceLabelBytes: "Ops".utf8.count),
+                      workspaceLabelBytes: "Ops".utf8.count, paneTitle: "Tests"),
             SeenAgent(bootId: "boot", workspaceId: "one", tabId: "tab1", paneId: "phone", name: "Builder",
-                      status: "working", location: "Dev › Build", changeObservedAt: seen, workspaceLabelBytes: "Dev".utf8.count)
+                      status: "working", location: "Dev › Build", changeObservedAt: seen, workspaceLabelBytes: "Dev".utf8.count, paneTitle: "Compile")
         ])
     }
 
@@ -249,7 +260,7 @@ final class HostProfilesTests: XCTestCase {
         let bare = try HostProfile.make(hostname: "::1", port: "23892", username: "pilot", session: "main")
         XCTAssertEqual(bracketed.hostname, "::1")
         XCTAssertEqual(bracketed.pinAccount, bare.pinAccount)
-        XCTAssertEqual(bracketed.destination, "pilot@[::1]:23892")
+        XCTAssertEqual(bracketed.address.destination, "pilot@[::1]:23892")
     }
 
     func testRejectsMissingTargetAndInvalidPort() {

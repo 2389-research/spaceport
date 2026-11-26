@@ -38,7 +38,7 @@ struct VerifyHostView: View {
                      : "First time connecting. Compare the full fingerprint with the host before you trust it.")
                     .foregroundStyle(.secondary)
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(verbatim: address.destination).font(.subheadline.weight(.semibold))
+                    Text(verbatim: address.endpoint).font(.subheadline.weight(.semibold))
                     if challenge.changed {
                         Divider()
                         Text("Trusted").font(.subheadline).foregroundStyle(.secondary)

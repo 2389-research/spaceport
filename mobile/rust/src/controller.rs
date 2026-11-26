@@ -291,6 +291,20 @@ impl MobileSession {
     pub fn focus_tab(&self, boot_id: String, id: String) -> Result<(), MobileError> {
         self.navigate(&boot_id, Navigation::Tab(id))
     }
+    pub fn create_tab(
+        &self,
+        boot_id: String,
+        workspace: String,
+        source_tab: String,
+    ) -> Result<(), MobileError> {
+        self.navigate(
+            &boot_id,
+            Navigation::NewTab {
+                workspace,
+                source_tab,
+            },
+        )
+    }
     pub fn focus_pane(&self, boot_id: String, id: String) -> Result<(), MobileError> {
         self.navigate(&boot_id, Navigation::Pane(id))
     }
@@ -527,6 +541,11 @@ impl MobileSession {
             Navigation::Workspace(id) => handle.focus_workspace(boot, id),
             Navigation::Tab(id) => handle.focus_tab(boot, id),
             Navigation::Pane(id) => handle.focus_pane(boot, id),
+            Navigation::NewTab { workspace, .. } => handle.request(
+                boot,
+                spaceport_client::Method::TabCreate,
+                serde_json::json!({"workspace_id": workspace, "focus": true}),
+            ),
         }?;
         state.note_input(Instant::now());
         state.version += 1;

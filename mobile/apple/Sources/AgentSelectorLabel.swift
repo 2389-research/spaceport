@@ -11,11 +11,48 @@ struct AgentSelectorLabel: View {
     var session = ""
     var detail = ""
     let font: Font
+    var paneTitle: String?
     var isAgent = true
+    var address: SSHAddress?
 
     var title: String? {
-        guard let terminalTitle, !terminalTitle.isEmpty, terminalTitle != name else { return nil }
+        guard terminalTitle != name else { return nil }
+        return Self.displayTitle(terminalTitle, address: address)
+    }
+
+    static func displayTitle(_ terminalTitle: String?, address: SSHAddress?) -> String? {
+        guard let terminalTitle, !terminalTitle.isEmpty else { return nil }
+        if let address, terminalTitle.hasPrefix(address.username + "@") {
+            let target = terminalTitle.dropFirst(address.username.count + 1)
+            if target == address.hostname || target == address.endpoint { return address.hostname }
+            // Shells may report their local hostname even when SSH connects through an alias.
+            let path = target.range(of: #":\s*(?=[~/])"#, options: .regularExpression)
+            let host = target[..<(path?.lowerBound ?? target.endIndex)]
+            if !host.isEmpty, path != nil || !host.contains("."),
+               host.allSatisfy({ $0.isLetter || $0.isNumber || ".-_".contains($0) }) {
+                return String(host)
+            }
+        }
         return terminalTitle
+    }
+
+    var heading: AttributedString {
+        Self.heading(pane: paneTitle ?? tab, title: title ?? name,
+                     titleColor: title == nil && isAgent ? Self.agentColor : .primary)
+    }
+
+    static func heading(pane: String, title: String, titleColor: Color = .primary) -> AttributedString {
+        var result = AttributedString(pane)
+        result.swiftUI.foregroundColor = tabColor
+        guard !title.isEmpty, title != pane else { return result }
+        if !pane.isEmpty {
+            var separator = AttributedString(" · ")
+            separator.swiftUI.foregroundColor = .secondary
+            result += separator
+        }
+        var text = AttributedString(title)
+        text.swiftUI.foregroundColor = titleColor
+        return result + text
     }
 
     func subtitle(includingName: Bool) -> AttributedString {
@@ -32,7 +69,7 @@ struct AgentSelectorLabel: View {
             result += part
         }
         append(workspace, color: Self.directoryColor)
-        append(tab, color: Self.tabColor, separator: " › ")
+        if let paneTitle, paneTitle != tab { append(tab, color: Self.tabColor, separator: " › ") }
         append(host, color: Self.hostColor)
         append(session, color: Self.sessionColor)
         append(detail, color: .secondary)
@@ -56,8 +93,7 @@ struct AgentSelectorLabel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(verbatim: title ?? name).font(font).lineLimit(2)
-                .foregroundStyle(title == nil && isAgent ? Self.agentColor : Color.primary)
+            Text(heading).font(font).lineLimit(2)
             Text(subtitle(includingName: title != nil))
                 .font(.footnote)
         }

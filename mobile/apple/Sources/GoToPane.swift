@@ -108,6 +108,13 @@ private struct AgentDotMotion: ViewModifier {
     }
 }
 
+extension MobilePane {
+    var displayPaneTitle: String? {
+        guard !label.isEmpty, label != id, label != agentName, label != terminalTitle else { return nil }
+        return label
+    }
+}
+
 struct GoToPane: Identifiable {
     let workspace: MobileWorkspace
     let tab: MobileTab

@@ -22,8 +22,9 @@ final class TerminalPreferencesTests: XCTestCase {
     @MainActor
     func testOpenTerminalHeaderFitsOneControlRow() {
         let header = TerminalHeader(view: nil, location: "A long session name on the open display",
+                                    address: SSHAddress(hostname: "example.test", port: 22, username: "pilot"),
                                     folded: false, composing: false, navigate: {}, select: { _ in },
-                                    find: {}, home: {}, compose: {})
+                                    find: {}, home: {}, newTerminal: {}, compose: {})
         let host = UIHostingController(rootView: header)
         for width: CGFloat in [320, 590] {
             let size = host.sizeThatFits(in: CGSize(width: width, height: 120))

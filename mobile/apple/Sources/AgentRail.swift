@@ -3,16 +3,16 @@
 import SwiftUI
 
 enum SessionChrome {
-    static let terminal = Color(red: 14/255, green: 14/255, blue: 16/255)
-    static let sidebar = Color(red: 28/255, green: 28/255, blue: 30/255)
-    static let field = Color(red: 44/255, green: 44/255, blue: 46/255)
-    static let selected = Color(red: 58/255, green: 58/255, blue: 60/255)
-    static let keyboard = Color(red: 42/255, green: 42/255, blue: 45/255)
-    static let secondary = Color(red: 161/255, green: 161/255, blue: 166/255)
-    static let waiting = Color(red: 1, green: 92/255, blue: 147/255)
-    static let working = Color(red: 91/255, green: 155/255, blue: 240/255)
-    static let idle = Color(red: 142/255, green: 142/255, blue: 147/255)
-    static let connected = Color(red: 48/255, green: 209/255, blue: 88/255)
+    static let terminal = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? UIColor(white: 0.055, alpha: 1) : UIColor(white: 0.97, alpha: 1) })
+    static let sidebar = Color(uiColor: .secondarySystemBackground)
+    static let field = Color(uiColor: .tertiarySystemFill)
+    static let selected = Color(uiColor: .systemFill)
+    static let keyboard = Color(uiColor: .secondarySystemBackground)
+    static let secondary = Color.secondary
+    static let waiting = Color.accentColor
+    static let working = PaneActivity.working.color
+    static let idle = Color(uiColor: .systemGray)
+    static let waitingBackground = Color.accentColor.opacity(0.14)
 }
 
 extension PaneActivity {
@@ -25,11 +25,7 @@ extension PaneActivity {
     }
 
     var sessionTextColor: Color {
-        switch self {
-        case .blocked: Color(red: 1, green: 122/255, blue: 168/255)
-        case .working: Color(red: 127/255, green: 176/255, blue: 1)
-        case .idle: SessionChrome.secondary
-        }
+        self == .idle ? .secondary : textColor
     }
 
     var sessionDot: some View {
@@ -61,6 +57,18 @@ struct AgentRail: View {
         return [HomeAgentSection.waiting, .working, .idle, .other].compactMap { kind in
             grouped[kind].map { Section(kind: kind, rows: $0) }
         }
+    }
+
+    static func summary(_ sections: [Section]) -> String {
+        guard !sections.isEmpty else { return "No agents" }
+        return sections.map { section in
+            let label = switch section.kind {
+            case .waiting: "waiting"
+            case .other: "other"
+            default: section.kind.title.lowercased()
+            }
+            return "\(section.rows.count.formatted()) \(label)"
+        }.joined(separator: " · ")
     }
 
     var body: some View {

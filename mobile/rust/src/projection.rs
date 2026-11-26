@@ -105,6 +105,8 @@ pub struct MobileView {
     pub host_challenge: Option<HostChallenge>,
     pub go_to_pending: bool,
     pub go_to_arrival: Option<u64>,
+    #[uniffi(default = None)]
+    pub roster_observed_at_ms: Option<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -112,6 +114,10 @@ pub(crate) enum Navigation {
     Workspace(String),
     Tab(String),
     Pane(String),
+    NewTab {
+        workspace: String,
+        source_tab: String,
+    },
 }
 
 impl Navigation {
@@ -120,12 +126,21 @@ impl Navigation {
             Self::Workspace(id) => snapshot.focused_workspace_id.as_ref() == Some(id),
             Self::Tab(id) => snapshot.focused_tab_id.as_ref() == Some(id),
             Self::Pane(id) => snapshot.focused_pane_id.as_ref() == Some(id),
+            // The create receipt replaces this with the exact tab Herdr created.
+            Self::NewTab { .. } => false,
         }
     }
 
     pub(crate) fn present(&self, snapshot: &ClientShellSnapshot) -> bool {
         match self {
             Self::Workspace(id) => snapshot.workspaces.iter().any(|w| &w.workspace_id == id),
+            Self::NewTab {
+                workspace,
+                source_tab,
+            } => {
+                snapshot.focused_workspace_id.as_ref() == Some(workspace)
+                    && snapshot.focused_tab_id.as_ref() == Some(source_tab)
+            }
             Self::Tab(id) => snapshot.tabs.iter().any(|t| {
                 &t.tab_id == id && Some(&t.workspace_id) == snapshot.focused_workspace_id.as_ref()
             }),
@@ -148,6 +163,20 @@ struct FocusFence {
 }
 
 #[derive(Clone)]
+pub(crate) struct ObservedSnapshot {
+    snapshot: Arc<ClientShellSnapshot>,
+    observed_at_ms: u64,
+}
+
+impl std::ops::Deref for ObservedSnapshot {
+    type Target = ClientShellSnapshot;
+
+    fn deref(&self) -> &Self::Target {
+        &self.snapshot
+    }
+}
+
+#[derive(Clone)]
 pub(crate) struct Projection {
     pub(crate) direct_attach: bool,
     pub(crate) history: crate::history::HistoryInbox,
@@ -158,8 +187,8 @@ pub(crate) struct Projection {
     pub(crate) release_request: Option<String>,
     pub(crate) version: u64,
     pub(crate) options: ConnectOptions,
-    pub(crate) snapshot: Option<Arc<ClientShellSnapshot>>,
-    pending: Option<Arc<ClientShellSnapshot>>,
+    pub(crate) snapshot: Option<ObservedSnapshot>,
+    pending: Option<ObservedSnapshot>,
     surface: Option<Arc<PaneSurfaceFrame>>,
     focus_interrupted: bool,
     fence: Option<FocusFence>,
@@ -202,14 +231,22 @@ impl Projection {
         }
     }
 
-    fn adopt_snapshot(&mut self, snapshot: Arc<ClientShellSnapshot>) {
+    fn adopt_snapshot(&mut self, snapshot: ObservedSnapshot) {
         if self.is_active() {
-            self.idle.observe(&snapshot, now_ms());
+            self.idle.observe(&snapshot, snapshot.observed_at_ms);
         }
         self.snapshot = Some(snapshot);
     }
 
     pub(crate) fn snapshot(&mut self, snapshot: Arc<ClientShellSnapshot>) {
+        self.snapshot_at(snapshot, now_ms());
+    }
+
+    pub(crate) fn snapshot_at(&mut self, snapshot: Arc<ClientShellSnapshot>, observed_at_ms: u64) {
+        let snapshot = ObservedSnapshot {
+            snapshot,
+            observed_at_ms,
+        };
         if (self.navigating() || self.route.is_some())
             && self
                 .snapshot
@@ -392,6 +429,23 @@ impl Projection {
             self.error = Some(error.to_string());
         }
         let Some(fence) = &mut self.fence else { return };
+        if fence.request == id
+            && let Some(Navigation::NewTab { source_tab, .. }) = &fence.destination
+            && !matches!(result, Err(spaceport_client::Error::Endpoint { .. }))
+        {
+            let Some(tab) = response::tagged(payload, "tab_created")
+                .ok()
+                .and_then(|r| r["tab"]["tab_id"].as_str())
+                .filter(|id| !id.is_empty() && id != source_tab)
+            else {
+                self.end(
+                    "Herdr did not identify the new terminal. Reconnect to check the workspace."
+                        .into(),
+                );
+                return;
+            };
+            fence.destination = Some(Navigation::Tab(tab.to_owned()));
+        }
         if fence.request == id && result.is_err() {
             // The requested pane did not acquire focus. The ordered barrier still
             // establishes which pane actually owns subsequent input.
@@ -525,6 +579,7 @@ impl Projection {
             .collect();
         MobileView {
             version: self.version,
+            roster_observed_at_ms: self.snapshot.as_ref().map(|s| s.observed_at_ms),
             go_to_pending: self.route.is_some(),
             go_to_arrival: self.go_to_arrival,
             boot_id: s.map(|s| s.boot_id.clone()).unwrap_or_default(),

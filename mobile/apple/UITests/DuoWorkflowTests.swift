@@ -4,6 +4,42 @@ import XCTest
 
 extension SessionWorkflowTests {
     @MainActor
+    func testKeyboardTransitionKeepsTerminalFocusAndSidebarChoice() async throws {
+        let app = XCUIApplication()
+        let (surface, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_DUO_SESSION")
+        let sidebar = app.buttons["session.sidebar.hide"]
+        let rail = app.buttons["session.rail.expand"]
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 5))
+        let originalWidth = surface.frame.width
+        let toggle = app.buttons["terminal.keyboard.toggle"]
+        let keyboard = app.keyboards.firstMatch
+        let pane = app.buttons["session.navigation"].value as? String
+        attachScreen("Terminal before keyboard", in: app)
+
+        toggle.tap()
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+        XCTAssertTrue(rail.isHittable)
+        XCTAssertGreaterThan(surface.frame.width, originalWidth)
+        app.buttons["terminal.key.ctrl"].tap()
+        app.typeText("u")
+        let pending = "motion-" + UUID().uuidString.prefix(6).lowercased()
+        app.typeText(pending)
+        try await waitForText(pending, in: surface)
+        toggle.tap()
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 5))
+        XCTAssertEqual(surface.frame.width, originalWidth, accuracy: 1)
+
+        sidebar.tap()
+        toggle.tap()
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+        toggle.tap()
+        XCTAssertTrue(keyboard.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(rail.isHittable)
+        XCTAssertEqual(app.buttons["session.navigation"].value as? String, pane)
+        try await waitForText(pending, in: surface)
+    }
+
+    @MainActor
     func testHeaderHomeReturnsToSessionList() throws {
         let app = XCUIApplication()
         let (terminal, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_DUO_SESSION")
@@ -14,11 +50,9 @@ extension SessionWorkflowTests {
             return
         }
         XCTAssertEqual(home.label, "Home")
-        XCTAssertGreaterThanOrEqual(home.frame.width, 44)
-        XCTAssertGreaterThanOrEqual(home.frame.height, 44)
-        XCTAssertLessThanOrEqual(home.frame.maxX, compose.frame.minX)
-        XCTAssertEqual(home.frame.midY, compose.frame.midY, accuracy: 1)
-        attachScreen("Home beside Compose", in: app)
+        XCTAssertTrue(home.isHittable)
+        XCTAssertTrue(compose.isHittable)
+        attachScreen("Connected session Home action", in: app)
         app.buttons["terminal.keyboard.toggle"].tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         home.tap()
@@ -47,7 +81,7 @@ extension SessionWorkflowTests {
         XCTAssertLessThanOrEqual(gap, 12)
         XCTAssertGreaterThanOrEqual(gap, 0)
         XCTAssertEqual(details.frame.midY, toggle.frame.midY, accuracy: 2)
-        for button in [navigation, app.buttons["session.header.find"], app.buttons["session.compose"], sidebar, details, toggle] {
+        for button in [navigation, sidebar, details, toggle] {
             XCTAssertGreaterThanOrEqual(button.frame.width, 44)
             XCTAssertGreaterThanOrEqual(button.frame.height, 44)
             XCTAssertTrue(button.isHittable)

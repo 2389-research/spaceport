@@ -17,11 +17,15 @@ private enum CatalogSheet: Identifiable {
 }
 
 struct HostList: View {
+    @AppStorage(TerminalAppearance.preference) private var terminalMode = TerminalAppearance.dark
+    @StateObject private var appearance = WindowTerminalAppearance()
     private let store = ProfileStore()
     @StateObject private var sessions = SceneSessions()
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(ProfileStore.catalogKey) private var storedCatalog: Data?
     @State private var catalog = HostCatalog()
+    @State private var loadedCatalog = false
+    @State private var shortcutWindow = UUID()
     @State private var sheet: CatalogSheet?
     @State private var sessionAfterSheet: HostProfile?
     @State private var path: [HomeRoute] = []
@@ -51,7 +55,7 @@ struct HostList: View {
                             let profile = host.profile(session: session)
                             Button { open(profile) } label: { HomeSessionRow(session: session) }
                                 .buttonStyle(.plain)
-                                .accessibilityLabel("\(profile.destination), \(session.name)")
+                                .accessibilityLabel("\(host.address.endpoint), \(session.name)")
                                 .accessibilityValue(accessibilityStatus(session))
                                 .swipeActions(allowsFullSwipe: false) {
                                     Button("Remove", role: .destructive) { removal = profile }
@@ -69,11 +73,11 @@ struct HostList: View {
                         Button("New Session", systemImage: "plus") { sheet = .session(host, nil) }
                     } header: {
                         HStack(spacing: 8) {
-                            Text("\(host.title) · \(host.address.destination)")
+                            Text(verbatim: host.listHeading(in: catalog.hosts))
                             Spacer()
                             Button { path.append(.host(host.id)) } label: {
                                 Image(systemName: "info.circle").imageScale(.large).frame(minWidth: 44, minHeight: 32)
-                            }.accessibilityLabel("Host details for \(host.address.destination)")
+                            }.accessibilityLabel("Host details for \(host.address.endpoint)")
                         }
                     }
                 }
@@ -81,22 +85,11 @@ struct HostList: View {
             .listStyle(.insetGrouped)
             .textCase(nil)
             .overlay {
-                if catalog.hosts.isEmpty {
-                    ContentUnavailableView {
-                        Label("Add your first host", systemImage: "server.rack")
-                    } description: {
-                        Text("Connect to a Herdr session over SSH to see its agents here.")
-                    } actions: {
-                        Button("Add Host", systemImage: "plus") { sheet = .addHost }
-                            .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
-                            .controlSize(.large).accessibilityIdentifier("home.empty.addHost")
-                        Text("The host needs an SSH account with a POSIX shell and Herdr installed.")
-                            .font(.footnote).foregroundStyle(.secondary)
-                            .frame(maxWidth: 300).multilineTextAlignment(.center).padding(.top, 12)
-                    }
+                if loadedCatalog && catalog.hosts.isEmpty {
+                    WelcomeCover { sheet = .addHost }
                 }
             }
-            .navigationTitle("Agents")
+            .navigationTitle(catalog.hosts.isEmpty ? "" : "Agents")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Settings", systemImage: "gearshape") { path.append(.settings) }.accessibilityIdentifier("Settings")
@@ -113,10 +106,10 @@ struct HostList: View {
                         ForEach(catalog.hosts) { host in
                             let sessions = catalog.sessions.filter { $0.hostID == host.id }
                             if !sessions.isEmpty {
-                                Section(host.address.destination) {
+                                Section(host.listHeading(in: catalog.hosts)) {
                                     ForEach(sessions) { session in
                                         Button(session.name) { open(host.profile(session: session), navigation: .workspaces) }
-                                            .accessibilityLabel("\(host.address.destination), \(session.name)")
+                                            .accessibilityLabel("\(host.address.endpoint), \(session.name)")
                                             .accessibilityIdentifier("home.workspaces." + session.id.uuidString)
                                     }
                                 }
@@ -192,11 +185,25 @@ struct HostList: View {
                 do { try store.remove(profile); reload() } catch { notice = error.localizedDescription }
             }
         } message: { _ in Text("Its Herdr session keeps running on the host.") }
-        .onAppear { reload() }
+        .onAppear {
+            reload()
+            if scenePhase == .active { activateShortcuts() }
+        }
+        .onOpenURL { url in
+            guard let destination = AgentWidgetSnapshot.destinationID(from: url) else { return }
+            do { try openShortcut(.widgetNextWaiting(destination: destination)) }
+            catch { notice = error.localizedDescription }
+        }
+        .onDisappear { SpaceportShortcutRouter.shared.deactivate(shortcutWindow) }
         .onChange(of: storedCatalog) { reload() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { markClock = Date() }
             sessions.scenePhaseChanged(phase)
+            if phase == .active {
+                activateShortcuts()
+            } else {
+                SpaceportShortcutRouter.shared.deactivate(shortcutWindow)
+            }
         }
         .onChange(of: path) { _, path in
             if let current = sessions.current, !path.contains(where: { $0.presentation == current }) {
@@ -208,6 +215,12 @@ struct HostList: View {
                 sessions.forget(pinAccount: account)
                 closeInvalidPresentation()
             }
+        }
+        .environmentObject(appearance)
+        .preferredColorScheme((appearance.reported ?? terminalMode).scheme)
+        .onChange(of: terminalMode) { _, mode in
+            appearance.reported = nil
+            GhosttyPaneSurface.controller.setTheme(mode.theme)
         }
         .task(id: snoozeDeadlines) {
             markClock = Date()
@@ -246,6 +259,20 @@ struct HostList: View {
         } catch { notice = error.localizedDescription }
     }
 
+    private func activateShortcuts() {
+        do {
+            try SpaceportShortcutRouter.shared.activate(shortcutWindow, handler: openShortcut)
+        } catch {
+            notice = error.localizedDescription
+        }
+    }
+
+    private func openShortcut(_ request: SpaceportShortcut) throws {
+        guard sheet == nil, removal == nil else { throw ShortcutFailure.editing }
+        let presentation = try sessions.openShortcut(request, in: store.catalog())
+        if path.last?.presentation != presentation { path = [.session(presentation, nil)] }
+    }
+
     private func closeInvalidPresentation() {
         if let presentation = path.last?.presentation, presentation != sessions.current { path = [] }
     }
@@ -253,6 +280,7 @@ struct HostList: View {
     private func reload() {
         do {
             catalog = try store.catalog()
+            loadedCatalog = true
             sessions.reconcile(catalog.profiles)
             closeInvalidPresentation()
         } catch {

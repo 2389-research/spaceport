@@ -115,7 +115,6 @@ struct DraftComposer: View {
             .accessibilityAction(.escape) { close() }
             .clipShape(RoundedRectangle(cornerRadius: inline ? 0 : 18))
             .onDisappear { operation?.cancel() }
-            .preferredColorScheme(.dark)
         } else {
             Color(uiColor: .systemBackground).ignoresSafeArea()
         }
