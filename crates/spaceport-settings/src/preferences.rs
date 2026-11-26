@@ -16,6 +16,7 @@ use std::{fs, io::ErrorKind, path::Path};
 #[derive(Clone, Debug, PartialEq)]
 pub enum Preference {
     AgentsPlacement(AgentsPlacement),
+    QuietAfter(crate::QuietAfter),
     /// `[chat] glide`: whether chats scroll smoothly to new output.
     ChatGlide(bool),
     /// `[chat] launcher`: where tab strips offer one-click chats.
@@ -116,6 +117,7 @@ impl Config {
             // The table, by its dotted name, then the key, which is never
             // split: a host's name may hold a dot of its own.
             let (table, key, value): (Option<&'static str>, &str, _) = match edit {
+                Preference::QuietAfter(after) => (None, "quiet_after", Some(spelled(after)?)),
                 Preference::AgentsPlacement(placement) => {
                     (None, "agents_placement", Some(spelled(placement)?))
                 }

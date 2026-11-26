@@ -119,7 +119,7 @@ impl SpaceportWindow {
         // The focused agent's row when agents nest under their workspaces.
         let mut nested_focus = None;
         // A plugin view hid every agent, rather than there being none.
-        let mut filtered = false;
+        let filtered = self.config.show_agents && self.filtered_agent_view();
         for (endpoint_index, endpoint, live) in self.listed_hosts() {
             if m.devices && !self.device_listed(endpoint_index, &m.query) {
                 continue;
@@ -175,6 +175,7 @@ impl SpaceportWindow {
                 continue;
             }
             let row_cx = RowContext {
+                icon_only_agent: false,
                 indicators,
                 font,
                 theme,
@@ -205,11 +206,6 @@ impl SpaceportWindow {
             );
             spaces = next;
             nested_focus = nested_focus.or(focused);
-            // Agent rows come after every host: the panel interleaves them.
-            // Only a host the panel lists can make the view a filtered one.
-            if self.config.show_agents && view.phase.enabled() {
-                filtered |= snapshot.agent_view_label.is_some();
-            }
         }
         if self.core_enabled() && !m.devices && search.is_none() {
             spaces.list = spaces.list.child(self.core_workspace_rows(cx));
@@ -222,7 +218,7 @@ impl SpaceportWindow {
                 indicators,
                 m.look,
                 m.width,
-                self.agent_sort == crate::preferences::AgentSort::Priority && !filtered,
+                self.shows_agent_sections(filtered),
                 cx,
             );
         }

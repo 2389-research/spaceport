@@ -69,6 +69,9 @@ show_agents_header = true
 # section below Spaces, or "nested", under the workspace each one runs in.
 # Also under Settings > Sidebar.
 agents_placement = "panel"
+
+# Fold idle agents into Quiet in the Priority panel after 24h, 48h, or 7d.
+quiet_after = "24h"
 # Show the search field at the top of the sidebar, which finds devices,
 # worktrees, and branches. Also under Settings > Sidebar.
 show_sidebar_search = true

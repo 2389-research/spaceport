@@ -212,7 +212,10 @@ pub fn agent_labels<'a>(
     pane: Option<&'a str>,
 ) -> (Vec<(&'a str, bool)>, &'a str) {
     let Some((workspace, tab)) = place else {
-        let segments = [Some((name, true)), pane.map(|pane| (pane, false))];
+        let segments = [
+            (!name.is_empty()).then_some((name, true)),
+            pane.map(|pane| (pane, false)),
+        ];
         return (segments.into_iter().flatten().collect(), "");
     };
     // Only the workspace carries the row's weight: upstream paints the host and

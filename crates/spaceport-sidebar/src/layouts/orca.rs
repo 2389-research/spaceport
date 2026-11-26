@@ -338,14 +338,16 @@ impl RowLayout for Orca {
         }
         // The agent leads, then its pane, then where it runs, all on one line.
         let text = Line::new(inner(cx, 0.) - icon - GAP, GAP)
-            .lead(
-                div()
-                    .debug_selector(|| format!("name-{key}"))
-                    .text_color(rgb(color)),
-                agent.name,
-                glyph_at(font, font.size),
-                0.4,
-            )
+            .when(!cx.icon_only_agent, |line| {
+                line.lead(
+                    div()
+                        .debug_selector(|| format!("name-{key}"))
+                        .text_color(rgb(color)),
+                    agent.name,
+                    glyph_at(font, font.size),
+                    0.4,
+                )
+            })
             .when_some(agent.pane, |line, pane| {
                 line.label(
                     div()

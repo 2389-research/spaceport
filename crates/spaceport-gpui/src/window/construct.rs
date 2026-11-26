@@ -79,6 +79,7 @@ impl SpaceportWindow {
             _worktree_notes: effects.worktree_notes,
             active: window.is_window_active(),
             activity: Default::default(),
+            agent_section_folds: [sidebar::AgentSection::Quiet].into(),
             agent_sort: preferences::AgentSort::default(),
             agent_sort_modified: false,
             arrival: None,

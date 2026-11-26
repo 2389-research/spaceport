@@ -33,7 +33,12 @@ fn configured_sidebar_rows_render_all_lines_within_the_row(cx: &mut gpui::TestAp
                 cx.default_global::<TextProbes>().0.clear();
                 full_draw(window, cx).clear(cx);
                 let probes = &cx.global::<TextProbes>().0;
-                for text in ["herdr", "Claude Code", "working", "main"] {
+                assert_eq!(
+                    probes.contains_key("Claude Code"),
+                    width == 320.,
+                    "{mode:?}"
+                );
+                for text in ["herdr", "working", "main"] {
                     assert!(probes.contains_key(text), "{mode:?}: missing {text}");
                 }
             });

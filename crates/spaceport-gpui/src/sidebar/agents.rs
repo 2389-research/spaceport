@@ -7,6 +7,7 @@
 //! i18n: migrated
 
 pub(super) mod sections;
+pub(super) mod terminal_row;
 
 use super::label_text;
 use crate::SpaceportWindow;
@@ -86,6 +87,7 @@ pub(super) fn panel_agents<'a>(
     hosts: impl IntoIterator<Item = (usize, &'a crate::state::LiveState)>,
     sort: AgentSort,
     now: u64,
+    quiet_after: spaceport_settings::QuietAfter,
 ) -> Vec<(usize, &'a ClientShellAgent)> {
     let mut merge = sort == AgentSort::Priority;
     let mut rows = Vec::new();
@@ -101,7 +103,9 @@ pub(super) fn panel_agents<'a>(
         );
     }
     if merge {
-        rows.sort_by_cached_key(|(index, live, agent)| sections::order(*index, live, agent, now));
+        rows.sort_by_cached_key(|(index, live, agent)| {
+            sections::order(*index, live, agent, now, quiet_after)
+        });
     }
     rows.into_iter()
         .map(|(index, _, agent)| (index, agent))

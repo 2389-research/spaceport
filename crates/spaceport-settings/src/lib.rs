@@ -44,6 +44,7 @@ pub mod option_as_alt;
 pub mod padding;
 pub mod palette;
 pub mod preferences;
+mod quiet_after;
 pub mod save_queue;
 pub mod section;
 pub mod sidebar;
@@ -88,6 +89,7 @@ pub use notifications::{
 pub use option_as_alt::{OptionAsAlt, OptionKeys};
 pub use padding::{Axis, MAX_PADDING, Padding, Side, Sides};
 pub use preferences::Preference;
+pub use quiet_after::QuietAfter;
 pub use sidebar::{
     AgentLayout, AgentToken, Rows, SidebarLayout, SpaceLayout, SpaceToken, TokenStyle,
 };

@@ -68,7 +68,8 @@ impl RowLayout for Herdr {
     }
 
     fn agent(&self, agent: AgentRow<'_>, state: RowState, cx: &RowContext<'_>) -> Div {
-        let (name, detail) = agent_labels(agent.name, agent.place, cx.host, agent.pane.as_deref());
+        let app_name = if cx.icon_only_agent { "" } else { agent.name };
+        let (name, detail) = agent_labels(app_name, agent.place, cx.host, agent.pane.as_deref());
         super::super::row::row(
             &agent.key,
             &name,

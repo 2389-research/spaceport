@@ -266,6 +266,11 @@ rows! {
             "[notifications]\n", InNotifications("enabled = false # mine\n"),
             |c| c.notification_overrides.position().is_none();
     }
+    QuietAfter {
+        Preference::QuietAfter(QuietAfter::TwoDays) =>
+            "quiet_after = \"48h\"\n", Root("quiet_after = \"48h\"\n"),
+            |c| c.quiet_after == QuietAfter::TwoDays;
+    }
     ShowAgentsHeader {
         Preference::ShowAgentsHeader(false) =>
             "show_agents_header = false\n", Root("show_agents_header = false\n"),

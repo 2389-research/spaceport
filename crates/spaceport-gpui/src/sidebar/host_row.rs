@@ -72,6 +72,7 @@ impl SpaceportWindow {
         let prefix = if pinned { "sticky-" } else { "" };
         let endpoint_id = endpoint.id.clone();
         let collapse_id = endpoint_id.clone();
+        let name_fold_id = endpoint_id.clone();
         let select_id = endpoint_id.clone();
         let menu_id = endpoint_id.clone();
         let removing = self.device_removing(endpoint);
@@ -247,7 +248,14 @@ impl SpaceportWindow {
                     })
                     .child(
                         div()
+                            .id(SharedString::from(format!(
+                                "{prefix}host-label-{endpoint_id}"
+                            )))
                             .debug_selector(|| format!("{prefix}host-label-{endpoint_id}"))
+                            .on_click(cx.listener(move |this, _, _, cx| {
+                                cx.stop_propagation();
+                                this.toggle_device(&name_fold_id, cx);
+                            }))
                             // As with workspace labels, avoid zero-basis text measurement.
                             .w(px(label_width))
                             .flex_none()

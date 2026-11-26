@@ -120,6 +120,7 @@ pub(crate) struct SpaceportWindow {
     pub(crate) active: bool,
     /// The activity bar's panel and filter.
     pub(crate) activity: sidebar::Activity,
+    pub(crate) agent_section_folds: std::collections::BTreeSet<sidebar::AgentSection>,
     pub(crate) agent_sort: preferences::AgentSort,
     /// Whether the user chose the sort with the panel toggle, now or in a
     /// stored session. Until then the daemon's `ui.agent_panel_sort` decides,

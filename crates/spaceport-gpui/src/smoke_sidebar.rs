@@ -134,7 +134,7 @@ async fn agents_visibility(handle: WindowHandle<SpaceportWindow>, cx: &mut Async
             clear_probes(cx);
             draw(window, cx);
             let probes = &cx.default_global::<sidebar::layout_tests::PaintedProbes>().0;
-            if probes.contains_key("Claude Code") != show_agents
+            if probes.contains_key("tab 1") != show_agents
                 || !probes.contains_key("herdr")
                 || !probes.contains_key("menu")
             {

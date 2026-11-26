@@ -8,7 +8,8 @@ fn agent_icons_follow_names_and_reserve_narrow_label_width(cx: &mut gpui::TestAp
         let mut view = fixture_window(window, cx);
         let mut snapshot = snapshot(6);
         for agent in &mut snapshot.agents {
-            agent.display_agent = Some(label.into());
+            agent.display_agent = None;
+            agent.name = Some(label.into());
         }
         snapshot.agents[1].workspace_id = "missing-workspace".into();
         view.live.snapshot = Some(Arc::new(snapshot));
@@ -365,12 +366,10 @@ fn hiding_agents_reclaims_sidebar_height(cx: &mut gpui::TestAppContext) {
                 window.refresh();
                 full_draw(window, cx).clear(cx);
             });
-            cx.update(|_, cx| {
-                assert_eq!(
-                    cx.global::<TextProbes>().0.contains_key("Claude Code"),
-                    show_agents
-                );
-            });
+            assert_eq!(
+                cx.debug_bounds("agent-icon-agent-p0").is_some(),
+                show_agents
+            );
             let spaces = cx.debug_bounds("spaces-scroll").unwrap();
             if show_agents {
                 visible_height = spaces.size.height;
@@ -388,6 +387,7 @@ fn hiding_agents_reclaims_sidebar_height(cx: &mut gpui::TestAppContext) {
 fn hiding_agents_preserves_scrolled_multi_endpoint_lists(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(|window, cx| {
         let mut view = fixture_window(window, cx);
+        view.sidebar_width = Some(320.);
         let snapshot = Arc::make_mut(view.live.snapshot.as_mut().unwrap());
         snapshot.agents = (0..8)
             .map(|i| {
@@ -431,7 +431,7 @@ fn hiding_agents_preserves_scrolled_multi_endpoint_lists(cx: &mut gpui::TestAppC
                 for label in ["Claude Code", "Remote Agent"] {
                     assert_eq!(
                         cx.global::<TextProbes>().0.contains_key(label),
-                        show_agents,
+                        show_agents && width == 800.,
                         "{label}"
                     );
                 }

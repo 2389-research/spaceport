@@ -251,11 +251,9 @@ fn a_name_that_repeats_the_agent_is_painted_once_in_every_layout(cx: &mut gpui::
     }
 }
 
-/// The single-line layouts give the agent name its room before the pane,
-/// place and status labels share the rest, so a long pane name beside a long
-/// workspace and status can cut them but not the name.
+/// A long title has its own line beneath the status even in a narrow sidebar.
 #[gpui::test]
-fn the_agent_name_stays_whole_beside_long_labels(cx: &mut gpui::TestAppContext) {
+fn long_pane_titles_have_their_own_line(cx: &mut gpui::TestAppContext) {
     let pane = "api-service-with-a-deliberately-long-pane-name";
     let status = "s".repeat(60);
     let mut snapshot = crowded(1, |_| Some(pane.into()));
@@ -274,14 +272,14 @@ fn the_agent_name_stays_whole_beside_long_labels(cx: &mut gpui::TestAppContext) 
         for width in [NARROWEST, 200., SIDEBAR] {
             show(&view, mode, width, cx);
             let probes = probes(cx);
-            let (bounds, rendered, _) = probes
-                .get("grok")
-                .unwrap_or_else(|| panic!("{mode:?} {width}: no agent name in {probes:?}"));
-            assert_eq!(rendered, "grok", "{mode:?} {width}: name was cut");
-            assert!(bounds.size.width > px(0.), "{mode:?} {width}: no room");
+            assert!(!probes.contains_key("grok"), "{mode:?} {width}");
             let (bounds, _, _) = probes
                 .get(pane)
                 .unwrap_or_else(|| panic!("{mode:?} {width}: no pane name in {probes:?}"));
+            assert!(
+                probes[&status].0.bottom() <= bounds.top(),
+                "{mode:?} {width}"
+            );
             assert!(bounds.size.width > px(0.), "{mode:?} {width}: pane hidden");
         }
     }
