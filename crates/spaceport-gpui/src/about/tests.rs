@@ -1,9 +1,10 @@
-#![allow(clippy::unwrap_used)]
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 use super::*;
 use core::prelude::v1::test;
 
 mod attribution;
 mod en_xa;
+mod scene;
 
 /// The visible copyright must not drift from the repository's NOTICE.
 #[test]
