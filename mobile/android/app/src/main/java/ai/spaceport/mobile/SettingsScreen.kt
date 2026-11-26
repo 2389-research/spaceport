@@ -9,6 +9,7 @@ import android.content.ClipboardManager
 import android.content.Intent
 import android.graphics.Typeface
 import android.os.Build
+import android.view.View
 import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -69,9 +70,12 @@ internal class SettingsScreen(private val activity: Activity, private val ui: Ph
                     .show()
             })
         install.isEnabled = false
-        footer(body, "Android Keystore keeps this P-256 key in secure hardware. It signs SSH logins while the phone is unlocked.")
+        // Shown only once a hardware key exists; a phone without one must not claim it has one.
+        val about = footer(body, "Android Keystore keeps this P-256 key in secure hardware. It signs SSH logins while the phone is unlocked.")
+            .apply { visibility = View.GONE }
         pages.background({ runCatching { enclavePublicKey(PhoneKey.open().point) } }) { result ->
             result.onSuccess { public ->
+                about.visibility = View.VISIBLE
                 key.text = public
                 key.typeface = Typeface.MONOSPACE
                 key.setTextColor(ui.ink)
@@ -88,12 +92,14 @@ internal class SettingsScreen(private val activity: Activity, private val ui: Ph
                 }
             }.onFailure {
                 key.text = (it as? HardwareKeyUnavailable)?.message ?: "This phone could not open its SSH key."
+                actions.visibility = View.GONE
+                install.visibility = View.GONE
             }
         }
     }
 
-    private fun footer(body: LinearLayout, text: String) =
-        body.addView(ui.text(text, 13, ui.muted).apply { setPadding(ui.dp(3), ui.dp(4), ui.dp(3), 0) })
+    private fun footer(body: LinearLayout, text: String): TextView =
+        ui.text(text, 13, ui.muted).apply { setPadding(ui.dp(3), ui.dp(4), ui.dp(3), 0) }.also(body::addView)
 }
 
 /** Orders, adds and removes the toolbar's keys; every change saves at once. */

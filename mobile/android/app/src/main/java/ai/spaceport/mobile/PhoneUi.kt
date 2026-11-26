@@ -46,7 +46,11 @@ internal class PhoneUi(private val ctx: Context) {
             text = value
             isAllCaps = false
             textSize = 15f
-            setTextColor(accent)
+            // A disabled button must look unavailable, not like every other accent action.
+            setTextColor(android.content.res.ColorStateList(
+                arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()),
+                intArrayOf(Color.argb(110, 182, 177, 188), accent),
+            ))
             minHeight = dp(48)
             minWidth = 0
             setBackgroundColor(Color.TRANSPARENT)
