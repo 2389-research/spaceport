@@ -19,6 +19,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import uniffi.spaceport_mobile.MobileView
 
 internal class RetainedPhone(app: Application) : AndroidViewModel(app) {
@@ -32,13 +34,17 @@ internal class RetainedPhone(app: Application) : AndroidViewModel(app) {
     var revision: ULong? = null
     var toWorkspaces = false
     var routeError: String? = null
+    /** Screens opened above Home, newest last. */
+    val pages = mutableListOf<Page>()
+    val work: ExecutorService = Executors.newSingleThreadExecutor()
 
     override fun onCleared() {
         sessions.values.forEach { it.close() }
+        work.shutdownNow()
     }
 }
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), Pages {
     private lateinit var phone: RetainedPhone
     private lateinit var ui: PhoneUi
     private lateinit var root: LinearLayout
@@ -49,8 +55,10 @@ class MainActivity : ComponentActivity() {
     private var password: EditText? = null
     private var refreshPhoneKey: (() -> Unit)? = null
     private var lastNotice: String? = null
+    private var pageToken = 0L
+    private var install: KeyInstallScreen? = null
     private val handler = Handler(Looper.getMainLooper())
-    private val refresh = Runnable { if (phone.selected == null && !isFinishing) showHome() }
+    private val refresh = Runnable { if (page == "home" && !isFinishing) showHome() }
     private val active
         get() = phone.sessions[phone.selected]
 
@@ -82,7 +90,11 @@ class MainActivity : ComponentActivity() {
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    if (phone.selected != null) goHome() else finish()
+                    when {
+                        phone.selected != null -> goHome()
+                        phone.pages.isNotEmpty() -> back()
+                        else -> finish()
+                    }
                 }
             },
         )
@@ -171,6 +183,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun clear(next: String) {
+        pageToken++
+        install?.dispose()
+        install = null
         if (page == "terminal") terminal?.dispose()
         terminal = null
         terminalBar = null
@@ -203,12 +218,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun showHome() {
+        phone.pages.lastOrNull()?.let { return showPage(it) }
         clear("home")
         val profiles = phone.hosts.profiles()
         val tiles = profiles.flatMap(phone.catalog::rows)
         val now = System.currentTimeMillis()
         val header = ui.line().apply { setPadding(ui.dp(18), ui.dp(8), ui.dp(8), ui.dp(4)) }
         header.addView(ui.text("Agents", 30, ui.ink, true), LinearLayout.LayoutParams(0, -2, 1f))
+        header.addView(ui.button("Settings") { go(Page.Settings) })
         header.addView(ui.button("Add host") { editHost() })
         root.addView(header)
         val body = ui.column().apply { setPadding(ui.dp(14), 0, ui.dp(14), ui.dp(24)) }
@@ -281,31 +298,27 @@ class MainActivity : ComponentActivity() {
                             .show()
                 },
             )
-            ui.heading(body, "Saved sessions")
-            profiles.forEach { host ->
-                ui.row(
-                    body,
-                    host.session,
-                    host.destination,
-                    action = { open(host) },
-                    held = {
-                        AlertDialog.Builder(this)
-                            .setTitle(host.destination)
-                            .setMessage("Remove the saved session ${host.session} from this phone?")
-                            .setNegativeButton("Cancel", null)
-                            .setPositiveButton("Remove") { _, _ ->
-                                phone.sessions.remove(host)?.let {
-                                    it.changed = null
-                                    it.close()
-                                }
-                                phone.previews.remove(host)
-                                phone.hosts.remove(host)
-                                phone.catalog.forget(host)
-                                showHome()
-                            }
-                            .show()
-                    },
-                )
+            for (group in HostGroup.of(profiles)) {
+                val title = phone.hosts.name(group.account)?.let { "$it · ${group.destination}" } ?: group.destination
+                val heading = ui.line()
+                heading.addView(ui.text(title, 14, ui.muted, true).apply {
+                    setPadding(ui.dp(3), ui.dp(20), ui.dp(3), ui.dp(7))
+                    if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
+                }, LinearLayout.LayoutParams(0, -2, 1f))
+                heading.addView(ui.button("Details") { go(Page.HostDetail(group.account)) }.apply {
+                    contentDescription = "Host details for ${group.destination}"
+                })
+                body.addView(heading)
+                group.sessions.forEach { host ->
+                    ui.row(body, host.session, if (phone.sessions.containsKey(host)) "Connected" else "Saved session",
+                        action = { open(host) }, held = { go(Page.HostDetail(group.account)) })
+                }
+                body.addView(ui.button("New session") {
+                    ui.askSessionName("New session", "") { name ->
+                        val next = group.first.copy(session = name)
+                        if (addSession(emptyList(), next)) open(next)
+                    }
+                })
             }
         }
         handler.removeCallbacks(refresh)
@@ -663,5 +676,78 @@ class MainActivity : ComponentActivity() {
         refreshPhoneKey?.invoke()
     }
 
-    private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_LONG).show()
+    override fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_LONG).show()
+
+    override val hosts get() = phone.hosts
+
+    override fun go(page: Page) {
+        phone.pages.add(page)
+        showPage(page)
+    }
+
+    override fun back() {
+        phone.pages.removeLastOrNull()
+        showHome()
+    }
+
+    override fun redraw() = showHome()
+
+    override fun open(profile: HostProfile) {
+        phone.pages.clear()
+        open(profile, null)
+    }
+
+    override fun forget(profiles: Collection<HostProfile>) = profiles.forEach { host ->
+        phone.sessions.remove(host)?.let {
+            it.changed = null
+            it.close()
+        }
+        phone.previews.remove(host)
+        phone.catalog.forget(host)
+    }
+
+    override fun closeEndpoint(endpoint: String) =
+        phone.sessions.keys.filter { it.endpoint == endpoint }.forEach { host ->
+            phone.sessions.remove(host)?.let {
+                it.changed = null
+                it.close()
+            }
+            phone.previews.remove(host)
+        }
+
+    override fun <T> background(work: () -> T, done: (T) -> Unit) {
+        val token = pageToken
+        phone.work.execute {
+            val result = work()
+            handler.post { if (token == pageToken && !isDestroyed) done(result) }
+        }
+    }
+
+    private fun showPage(target: Page) {
+        val group = when (target) {
+            is Page.InstallKey -> group(target.account)
+            is Page.HostDetail -> group(target.account)
+            else -> null
+        }
+        if ((target is Page.InstallKey || target is Page.HostDetail) && group == null) return back()
+        clear("page")
+        val title = when (target) {
+            Page.Settings -> "Settings"
+            Page.ToolbarKeys -> "Toolbar keys"
+            is Page.InstallKey -> "Install phone key"
+            is Page.HostDetail -> phone.hosts.name(target.account) ?: group?.destination.orEmpty()
+        }
+        val bar = ui.line().apply { setPadding(ui.dp(4), ui.dp(8), ui.dp(8), ui.dp(4)) }
+        bar.addView(ui.button("‹ Back", ::back).apply { contentDescription = "Back" })
+        bar.addView(ui.text(title, 20, ui.ink, true).apply { maxLines = 1 }, LinearLayout.LayoutParams(0, -2, 1f))
+        root.addView(bar)
+        val body = ui.column().apply { setPadding(ui.dp(14), 0, ui.dp(14), ui.dp(24)) }
+        root.addView(ScrollView(this).apply { addView(body) })
+        when (target) {
+            Page.Settings -> SettingsScreen(this, ui, this).build(body)
+            Page.ToolbarKeys -> ToolbarKeyEditor(this, ui, this).build(body)
+            is Page.InstallKey -> install = KeyInstallScreen(this, ui, this, group!!).also { it.build(body) }
+            is Page.HostDetail -> HostDetailScreen(this, ui, this, group!!).build(body)
+        }
+    }
 }

@@ -107,6 +107,23 @@ internal class PhoneUi(private val ctx: Context) {
         return row
     }
 
+    /** Asks for a Herdr session name; an empty answer means "default". */
+    fun askSessionName(title: String, initial: String, done: (String) -> Unit) {
+        val input = EditText(ctx).apply {
+            hint = "default"
+            isSingleLine = true
+            setText(initial)
+        }
+        android.app.AlertDialog.Builder(ctx).setTitle(title)
+            .setView(LinearLayout(ctx).apply {
+                setPadding(dp(20), 0, dp(20), 0)
+                addView(input, LinearLayout.LayoutParams(-1, -2))
+            })
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Save") { _, _ -> done(input.text.toString().trim().ifEmpty { "default" }) }
+            .show()
+    }
+
     private fun View.accessibilityHeadingCompat() {
         if (android.os.Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
     }
