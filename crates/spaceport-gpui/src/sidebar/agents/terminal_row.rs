@@ -74,7 +74,7 @@ impl TerminalRow {
             metadata.push(text(number, TextRole::Secondary));
         }
         if let Some(dir) = &self.directory {
-            metadata.push(text(dir, TextRole::Secondary));
+            metadata.push(text(dir, TextRole::Directory));
         }
         metadata.push(text(host, TextRole::Secondary));
         if let Some(status) = status {

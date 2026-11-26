@@ -48,7 +48,8 @@ After 24 hours of observed idle time, an agent moves into **Quiet**, which start
 Choose 24 hours, 48 hours, or 7 days under **Settings → Sidebar → Move idle agents to Quiet**.
 Working agents and agents waiting for you return to their status group automatically.
 Agent rows show the title on the first line.
-The app icon, terminal tab number, directory, and host share a muted line underneath.
+The line underneath shows the app icon, terminal tab number, directory, and host.
+The directory uses the theme's blue. An accent outline marks the focused agent in the list and collapsed rail.
 Split panes on the same tab share its number. Selecting a row opens that specific pane.
 Custom Herdr rows keep their configured fields.
 Click **priority** in the Agents header to return to workspace order.

@@ -32,6 +32,7 @@ pub enum TokenKind {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TextRole {
+    Directory,
     Status,
     Workspace,
     Agent,

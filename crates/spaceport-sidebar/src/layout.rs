@@ -328,6 +328,16 @@ impl SidebarLook {
         }
     }
 
+    /// Frames the focused agent without moving its contents.
+    pub fn agent_outline(&self, theme: &Theme) -> Div {
+        div()
+            .absolute()
+            .inset_0()
+            .rounded(px(self.density.radius))
+            .border_2()
+            .border_color(rgb(theme.ink(theme.primary())))
+    }
+
     /// Joins `row` to the hover group its highlight follows.
     pub fn hover_group<E: InteractiveElement>(&self, row: E) -> E {
         row.group(ROW_GROUP)
