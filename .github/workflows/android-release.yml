@@ -71,13 +71,15 @@ jobs:
         with:
           ref: ${{ needs.plan.outputs.sha }}
           persist-credentials: false
-      - name: Install the pinned NDK and platform before reading the signing key
+      - name: Install the pinned NDK, platform and build tools before reading the signing key
         run: |
           set -euo pipefail
           ndk=$(sed -n 's/.*ndkVersion = "\(.*\)".*/\1/p' mobile/android/app/build.gradle.kts)
           sdk=$(sed -n 's/.*compileSdk = \([0-9]*\).*/\1/p' mobile/android/app/build.gradle.kts)
+          tools=$(sed -n 's/.*buildToolsVersion = "\(.*\)".*/\1/p' mobile/android/app/build.gradle.kts)
           # Feed licence answers without a pipe: under pipefail, yes's SIGPIPE would fail the step.
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$ndk" "platforms;android-$sdk" > /dev/null < <(yes)
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$ndk" "platforms;android-$sdk" \
+            "build-tools;$tools" > /dev/null < <(yes)
       - name: Build the release APK and Play bundle with the protected signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.SPACEPORT_ANDROID_KEYSTORE_BASE64 }}
@@ -100,7 +102,8 @@ jobs:
         run: |
           set -euo pipefail
           apk=mobile/android/app/build/outputs/apk/release/app-release.apk
-          tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 | sort -V | tail -1)
+          # The pinned build tools, not the runner's newest: build-tools 37 renamed "Signer #1" to "V2 Signer".
+          tools=$ANDROID_HOME/build-tools/$(sed -n 's/.*buildToolsVersion = "\(.*\)".*/\1/p' mobile/android/app/build.gradle.kts)
           signer=$("$tools/apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
           if [[ "$signer" != "$(tr -d ':' <<< "${EXPECTED_CERT,,}")" ]]; then
             echo "::error::APK signer $signer does not match SPACEPORT_ANDROID_CERT_SHA256" >&2
