@@ -61,6 +61,25 @@ impl SpaceportWindow {
             .collect()
     }
 
+    /// A custom agent view supplies its own order, so it has no priority headings.
+    pub(super) fn filtered_agent_view(&self) -> bool {
+        self.listed_hosts().any(|(_, endpoint, live)| {
+            endpoint.enabled()
+                && live
+                    .snapshot
+                    .as_deref()
+                    .is_some_and(|s| s.agent_view_label.is_some())
+        })
+    }
+
+    pub(super) fn shows_agent_sections(&self, filtered: bool) -> bool {
+        self.config.show_agents
+            && self.config.layout.mode.lists_workspaces()
+            && self.config.agents_placement == crate::config::AgentsPlacement::Panel
+            && self.agent_sort == crate::preferences::AgentSort::Priority
+            && !filtered
+    }
+
     pub(crate) fn has_live_idle_rows(&self) -> bool {
         self.config.show_agents
             && self.agent_sort == crate::preferences::AgentSort::Priority
@@ -69,9 +88,10 @@ impl SpaceportWindow {
                     && live.status.is_connected()
                     && live.snapshot.as_deref().is_some_and(|s| {
                         s.agent_view_label.is_none()
-                            && s.agents
-                                .iter()
-                                .any(|a| live.agent_idle(&a.pane_id).is_some())
+                            && s.agents.iter().any(|a| {
+                                a.agent_status == spaceport_client::protocol::AgentStatus::Idle
+                                    && live.agent_idle(&a.pane_id).is_some()
+                            })
                     })
             })
     }
@@ -90,6 +110,7 @@ impl SpaceportWindow {
                 .map(|(index, _, live)| (index, live)),
             self.agent_sort,
             now,
+            self.config.quiet_after,
         )
     }
 
@@ -100,13 +121,24 @@ impl SpaceportWindow {
     /// sidebar steps as the expanded one.
     pub(crate) fn sidebar_agents(&self) -> Vec<Row<'_>> {
         let rail = self.sidebar_mode() == SidebarMode::Rail;
-        self.panel_agents()
+        let now = spaceport_client::agent_idle::now_ms();
+        let respect_folds = !rail
+            && !self.agent_section_folds.is_empty()
+            && self.shows_agent_sections(self.filtered_agent_view());
+        self.panel_agents_at(now)
             .into_iter()
             .filter(|&(index, agent)| {
                 if rail {
                     !self.host_folded(&self.endpoints[index].view())
                 } else {
-                    self.panel_agent_lines(index, agent).is_some()
+                    !(respect_folds
+                        && self.agent_section_folds.contains(&super::AgentSection::of(
+                            self.live_of(index),
+                            agent,
+                            now,
+                            self.config.quiet_after,
+                        )))
+                        && self.panel_agent_lines(index, agent).is_some()
                 }
             })
             .map(|(index, agent)| (index, agent.pane_id.as_str()))

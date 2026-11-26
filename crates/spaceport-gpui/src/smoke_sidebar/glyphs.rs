@@ -124,8 +124,6 @@ pub(super) async fn frames(handle: WindowHandle<SpaceportWindow>, cx: &mut Async
             for input in [
                 "herdr",
                 "main",
-                "Claude Code",
-                "agent",
                 "1256789",
                 "herdr-gpui-sidebar-rendering-regression-investigation",
                 "fix/sidebar-label-width-and-overflow-regression",
@@ -158,8 +156,6 @@ pub(super) async fn frames(handle: WindowHandle<SpaceportWindow>, cx: &mut Async
                 };
                 let icon_reserve = if title_icon {
                     spaceport_sidebar::metrics::ICON_RESERVE
-                } else if matches!(input, "Claude Code" | "agent") {
-                    16. // 12px agent mark and 4px gap before its name.
                 } else {
                     0.
                 };
@@ -235,7 +231,7 @@ pub(super) async fn other_layouts(
             {
                 bail!("{mode}: {LONG:?} was not ellipsized");
             }
-            for input in ["herdr", "Claude Code", LONG] {
+            for input in ["herdr", LONG] {
                 let p = probes
                     .get(input)
                     .with_context(|| format!("missing paint: {input}"))?;

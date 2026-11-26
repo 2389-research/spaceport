@@ -27,3 +27,8 @@ settings-sidebar-host-tint = Tints the host header, its workspaces, worktrees an
 settings-sidebar-host-uncoloured = Connected, no colour set.
 settings-sidebar-host-offline = Not connected.
 # The hex field of a host with no colour.
+settings-sidebar-quiet-after = Move idle agents to Quiet
+settings-sidebar-quiet-after-description = In Priority order, agents idle this long move into the Quiet group.
+settings-sidebar-quiet-one-day = 24 hours
+settings-sidebar-quiet-two-days = 48 hours
+settings-sidebar-quiet-one-week = 7 days

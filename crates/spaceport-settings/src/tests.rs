@@ -51,6 +51,7 @@ mod lock_access;
 mod notification_settings;
 mod preference_round_trip;
 mod preferences;
+mod quiet_after;
 mod removed_checkpoints;
 mod removed_github;
 mod removed_mods;

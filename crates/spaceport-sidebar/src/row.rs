@@ -218,6 +218,8 @@ pub fn tree_lines(
 
 /// Read-only inputs every row of one render shares.
 pub struct RowContext<'a> {
+    /// The application icon identifies the agent in a narrow row.
+    pub icon_only_agent: bool,
     pub indicators: Indicators,
     pub font: &'a FontConfig,
     pub theme: &'a Theme,

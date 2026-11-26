@@ -190,12 +190,14 @@ impl RowLayout for Minimal {
                 parts::status(agent.status, false, cx),
             )
             .fixed(size, parts::icon(agent.icon.path(), size, color))
-            .lead(
-                name(&agent.key, kind, state, theme),
-                agent.name,
-                parts::glyph_at(font, font.size),
-                0.4,
-            )
+            .when(!cx.icon_only_agent, |line| {
+                line.lead(
+                    name(&agent.key, kind, state, theme),
+                    agent.name,
+                    parts::glyph_at(font, font.size),
+                    0.4,
+                )
+            })
             .when_some(agent.pane, |line, pane| {
                 line.label(
                     div()

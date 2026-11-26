@@ -41,6 +41,7 @@ fn order<'a>(hosts: &[&'a LiveState], sort: AgentSort) -> Vec<(usize, &'a str)> 
         hosts.iter().copied().enumerate(),
         sort,
         spaceport_client::agent_idle::now_ms(),
+        Default::default(),
     )
     .into_iter()
     .map(|(index, agent)| (index, agent.pane_id.as_str()))
@@ -65,7 +66,7 @@ fn priority_merges_hosts_where_grouped_keeps_them_apart() {
     // below every agent of the first.
     assert_eq!(
         order(&[&first, &second], AgentSort::Priority),
-        [(1, "blocked"), (0, "working"), (0, "idle"), (1, "done")]
+        [(1, "blocked"), (0, "working"), (1, "done"), (0, "idle")]
     );
 }
 

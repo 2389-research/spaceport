@@ -22,7 +22,7 @@ pub(super) fn check_text_allocation(cx: &mut gpui::VisualTestContext) {
         }
         // Each part of an agent's line is painted on its own, so the tab can
         // stay muted beside its workspace.
-        for input in ["herdr", "main", "tab 1", "Claude Code"] {
+        for input in ["herdr", "main", "tab 1"] {
             let (bounds, rendered, _) = &cx.global::<TextProbes>().0[input];
             assert_eq!(
                 rendered, input,
@@ -124,6 +124,13 @@ pub(super) fn check_row_geometry(cx: &mut gpui::VisualTestContext) {
         let row_bounds = cx.debug_bounds(row).unwrap();
         let column_bounds = cx.debug_bounds(column).unwrap();
         let name_bounds = cx.debug_bounds(name).unwrap();
+        if row.starts_with("row-agent-") {
+            assert!(cx.debug_bounds(detail).is_none());
+            assert_eq!(row_bounds.size.height, px(24.));
+            assert!(column_bounds.contains(&name_bounds.center()));
+            assert!(row_bounds.contains(&name_bounds.center()));
+            continue;
+        }
         let detail_bounds = cx.debug_bounds(detail).unwrap();
         eprintln!(
             "{row}: row={row_bounds:?}, column={column_bounds:?}, name={name_bounds:?}, detail={detail_bounds:?}"

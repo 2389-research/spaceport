@@ -23,6 +23,7 @@ fn the_slot_dot_follows_a_configured_leading_state_icon() {
     let theme = Theme::default();
     let indicators = Indicators::new(None, StatusIcons::default(), false, false, &theme);
     let cx = RowContext {
+        icon_only_agent: false,
         indicators,
         font: &font,
         theme: &theme,

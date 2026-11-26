@@ -17,6 +17,7 @@ use crate::{
     sidebar::SidebarMetrics,
 };
 use gpui::{prelude::*, *};
+use spaceport_settings::QuietAfter;
 
 /// The configured override, or none when the preset applies.
 fn overridden(spacing: Spacing, config: &Config) -> Option<f32> {
@@ -196,6 +197,22 @@ impl SettingsWindow {
                     ready && page.config.show_agents,
                     on_value(cx, |this, placement, _, cx| {
                         this.save_preference(Preference::AgentsPlacement(placement), cx);
+                    }),
+                )),
+            )
+            .child(
+                ui::row(theme, &catalog::SIDEBAR_QUIET_AFTER).control(ui::segmented(
+                    theme,
+                    "sidebar-quiet-after-control",
+                    &[
+                        (QuietAfter::OneDay, fl!("settings-sidebar-quiet-one-day")),
+                        (QuietAfter::TwoDays, fl!("settings-sidebar-quiet-two-days")),
+                        (QuietAfter::OneWeek, fl!("settings-sidebar-quiet-one-week")),
+                    ],
+                    Some(page.config.quiet_after),
+                    ready,
+                    on_value(cx, |this, after, _, cx| {
+                        this.save_preference(Preference::QuietAfter(after), cx);
                     }),
                 )),
             )

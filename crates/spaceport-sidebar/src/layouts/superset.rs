@@ -333,8 +333,9 @@ impl RowLayout for Superset {
         let color = text_color(state, theme);
         let glyph = parts::icon(agent.icon.path(), m.icon * 0.7, color);
         let slot_dot = dot(&agent.lines, agent.status, cx);
-        let line = Line::new(cx.look.content_width(cx.width), m.gap)
-            .fixed(m.icon, slot(key, glyph, slot_dot, &m, cx));
+        let icon = slot(key, glyph, slot_dot, &m, cx)
+            .when(agent.lines.len() > 1, |icon| icon.self_flex_start());
+        let line = Line::new(cx.look.content_width(cx.width), m.gap).fixed(m.icon, icon);
         if !agent.lines.is_empty() {
             let line = line.fill_with(|width| {
                 token_column(
@@ -354,14 +355,16 @@ impl RowLayout for Superset {
         // The agent's pane, then where it runs, trail its name, each never over
         // half the row.
         let line = line
-            .lead(
-                div()
-                    .debug_selector(|| format!("name-{key}"))
-                    .text_color(rgb(color)),
-                agent.name,
-                glyph_at(cx.font, cx.font.size),
-                0.4,
-            )
+            .when(!cx.icon_only_agent, |line| {
+                line.lead(
+                    div()
+                        .debug_selector(|| format!("name-{key}"))
+                        .text_color(rgb(color)),
+                    agent.name,
+                    glyph_at(cx.font, cx.font.size),
+                    0.4,
+                )
+            })
             .when_some(agent.pane, |line, pane| {
                 line.label(
                     div()

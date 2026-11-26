@@ -118,6 +118,7 @@ catalog! {
     SIDEBAR_AUTOMATIONS = entry(Section::Sidebar, "sidebar-automations", "settings-sidebar-automations-title", "settings-sidebar-automations-hint").only(Availability::Core);
     SIDEBAR_SHOW_AGENTS = entry(Section::Sidebar, "sidebar-show-agents", "settings-sidebar-show-agents", "settings-sidebar-show-agents-description");
     SIDEBAR_AGENTS_PLACEMENT = entry(Section::Sidebar, "sidebar-agents-placement", "settings-sidebar-agents-placement", "settings-sidebar-agents-placement-description");
+    SIDEBAR_QUIET_AFTER = entry(Section::Sidebar, "sidebar-quiet-after", "settings-sidebar-quiet-after", "settings-sidebar-quiet-after-description");
     SIDEBAR_SHOW_AGENTS_HEADER = entry(Section::Sidebar, "sidebar-show-agents-header", "settings-sidebar-show-agents-header", "settings-sidebar-agents-header-hint");
     SIDEBAR_SHOW_SEARCH = entry(Section::Sidebar, "sidebar-show-search", "settings-sidebar-show-search", "settings-sidebar-show-search-description");
     SIDEBAR_REPOSITORY_ICONS = entry(Section::Sidebar, "sidebar-repository-icons", "settings-sidebar-repository-icons", "settings-sidebar-repository-icons-description");
