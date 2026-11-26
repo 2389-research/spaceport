@@ -12,6 +12,8 @@ android {
     namespace = "ai.spaceport.mobile"
     compileSdk = 36
     ndkVersion = "28.2.13676358"
+    // AGP 8.11's default. The release workflow reads this pin for apksigner and aapt2, whose output changes between versions.
+    buildToolsVersion = "35.0.0"
 
     defaultConfig {
         applicationId = "ai.research2389.spaceport.mobile"
