@@ -109,7 +109,7 @@ Changing this preference never stops Core or its terminals.
 | `ui font-size +\|-\|reset\|POINTS` | The terminal font size for this session; POINTS is 8-48, and `larger`/`smaller` are `+`/`-` |
 | `ui panel workspaces\|overview` | Show an activity bar section: Workspaces with the sidebar expanded, or Overview of what needs you on every host. Exits 8 when the activity bar is off (`[sidebar] activity_bar = false`) |
 | `ui agent-idle [--pane ID]` | Read this client’s idle estimate for a pane in the targeted workspace. Defaults to the caller’s pane, then the focused pane. JSON includes seconds and a lower-bound flag. Exits 4 when the client has no usable age. |
-| `run check-for-updates` | Open Sparkle’s native update check in an installed macOS preview; unsupported builds refuse it |
+| `run check-for-updates` | Open Sparkle’s native update check in an installed signed macOS build, preview or production; development, worktree and other-platform builds refuse it |
 | `run COMMAND` | Any app command by its `[keybindings]` name, as the palette runs it; an unknown name exits 5 |
 | `commands` | The names `run` accepts (no app needed) |
 

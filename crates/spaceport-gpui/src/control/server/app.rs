@@ -386,7 +386,6 @@ fn update_error(error: crate::updates::Error) -> Response {
     let code = match &error {
         crate::updates::Error::Busy => ErrorCode::Busy,
         crate::updates::Error::Unsupported => ErrorCode::Unsupported,
-        #[cfg(all(target_os = "macos", feature = "macos-updater"))]
         _ => ErrorCode::Failed,
     };
     Response::error(code, error.localize())

@@ -112,20 +112,42 @@ receipts after a failure; never rerun, move or delete a used tag to force anothe
 submission. Use a new version after resolving the failure. D65 adds the preview
 updater feed; general production publication remains excluded.
 
-### Preview updates
+### Updater channels
 
-Updater-enabled installed previews expose **Check for Updates…** in the app
-menu and `spaceport run check-for-updates`. Sparkle asks permission for automatic
-checks; installation requires confirmation by default. Ordinary development and
-compiled worktree builds cannot start the updater. The first enabled preview
-requires one manual installation; older previews cannot bootstrap themselves.
-Updates replace Spaceport and its bundled chat adapter, never either Herdr runtime.
+Sparkle is the production update mechanism, and the same route serves both signed
+macOS channels. Installed updater-enabled builds expose **Check for Updates…** in
+the app menu and `spaceport run check-for-updates`. Sparkle asks permission for
+automatic checks; installation requires confirmation by default. Ordinary
+development and compiled worktree builds cannot start the updater. The first
+enabled build requires one manual installation; older copies cannot bootstrap
+themselves. Updates replace Spaceport and its bundled chat adapter, never either
+Herdr runtime.
+
+Only the preview channel has a publication route today. The `macos-stable-feed`
+release name and its URL are configured and checked, but no workflow creates that
+feed, no release builds the production channel, and publishing it needs its own
+owner authorization.
 
 The build embeds pinned Sparkle 2.10.1 and its license, preserving framework
 symlinks. Signing rechecks all original framework bytes before credentials,
 then signs nested code inside out. The final app and DMG retain the existing
 Developer ID/notarization/Gatekeeper checks. `sparkle.json` is the shared public
-SDK version/checksum, feed URL and Ed25519 trust configuration.
+SDK version/checksum, Ed25519 trust configuration and channel table: one feed per
+signed channel, each the fixed release asset named beside it.
+
+```json
+"feeds": {
+  "macos-preview": { "release": "macos-preview-feed", "url": ".../macos-preview-feed/appcast.xml" },
+  "production":     { "release": "macos-stable-feed",  "url": ".../macos-stable-feed/appcast.xml" }
+}
+```
+
+Packaging writes the bundle's channel's URL as `SUFeedURL`; the app checks it
+against the same table at startup, so a preview never follows the stable feed and
+a production build never follows the preview's. Feed URLs are https release
+assets served from one host, and a bundle carrying any other address refuses to
+start the updater. `sparkle_framework.py configure --channel production` writes
+the stable channel, which no release route invokes yet.
 
 Only the protected signing job receives `SPARKLE_PRIVATE_KEY`, over the SDK
 signer's stdin. It signs the final stapled DMG and appcast. Publication verifies
@@ -147,13 +169,18 @@ pipeline. Wrong-key ZIP and feed tests exercise signature refusal without the
 same-Team signed-DMG key-rotation fallback. These policies do not authorize an
 inherited upstream feed, production release or daemon installation.
 
-Preview builds use `SPACEPORT_MACOS_PREVIEW_VERSION`, `ai.2389.spaceport`, and
-`Spaceport.app`. The compile-time selector rejects other target operating systems
-and malformed versions. The app ID files beside `crates/spaceport-gpui/build.rs` are
-the source for compiled and bundle identities; a final newline is allowed.
-Ordinary `just bundle` builds retain `spaceport.development`. The general
-`HERDR_RELEASE_VERSION` refusal remains in force. The app reads its build
-channel (`development` or `macos-preview`) from one compiled constant. Preview signing grants no provider credential reads or automatic skill install.
+Signed builds use `SPACEPORT_MACOS_PREVIEW_VERSION` (the preview channel) or
+`SPACEPORT_PRODUCTION_VERSION` (the production channel), one at a time, and
+report `ai.2389.spaceport` in `Spaceport.app`. The compile-time selector rejects
+other target operating systems, malformed versions and both variables at once.
+The app ID files beside `crates/spaceport-gpui/build.rs` are the source for
+compiled and bundle identities; a final newline is allowed. Ordinary `just bundle`
+builds retain `spaceport.development`. The general `HERDR_RELEASE_VERSION`
+refusal remains in force, so no production release is built from that route. The
+app reads its build channel (`development`, `macos-preview` or `production`) from
+one compiled constant and derives everything else from it. Signed builds share one
+app identity, so the channel - never the bundle ID - decides which feed is
+followed. Signing grants no provider credential reads or automatic skill install.
 The existing three-line `--build-info` output remains unchanged.
 
 ### Android APK on preview releases

@@ -53,6 +53,7 @@ fn build(root: &Sandbox, feature: bool) {
         .env("CARGO_TARGET_DIR", root.0.join("target"))
         .env("HERDR_BUILD_PR_NUMBER", "")
         .env_remove("SPACEPORT_MACOS_PREVIEW_VERSION")
+        .env_remove("SPACEPORT_PRODUCTION_VERSION")
         .env_remove("CARGO_FEATURE_MACOS_UPDATER");
     if feature {
         command.args(["--features", "macos-updater"]);
@@ -76,7 +77,7 @@ fn build_script_emits_the_channel_of_each_identity() {
     let root = fixture();
     build(&root, false);
     let script = build_script(&root);
-    let run = |target: &str, preview: Option<&str>| {
+    let run = |target: &str, preview: Option<&str>, production: Option<&str>| {
         let mut command = Command::new(&script);
         command
             .current_dir(&root.0)
@@ -85,28 +86,44 @@ fn build_script_emits_the_channel_of_each_identity() {
             .env("CARGO_CFG_TARGET_OS", target)
             .env("HERDR_BUILD_PR_NUMBER", "")
             .env_remove("CARGO_FEATURE_MACOS_UPDATER")
-            .env_remove("SPACEPORT_MACOS_PREVIEW_VERSION");
+            .env_remove("SPACEPORT_MACOS_PREVIEW_VERSION")
+            .env_remove("SPACEPORT_PRODUCTION_VERSION");
         if let Some(preview) = preview {
             command.env("SPACEPORT_MACOS_PREVIEW_VERSION", preview);
+        }
+        if let Some(production) = production {
+            command.env("SPACEPORT_PRODUCTION_VERSION", production);
         }
         command.output().unwrap()
     };
     let development = include_str!("../../development-app-id").trim();
-    let preview = include_str!("../../macos-preview-app-id").trim();
-    for (target, version, channel, id, shown) in [
-        ("macos", None, "development", development, "dev"),
-        ("linux", None, "development", development, "dev"),
-        ("windows", None, "development", development, "dev"),
+    let signed = include_str!("../../macos-preview-app-id").trim();
+    for (target, preview, production, channel, id, shown) in [
+        ("macos", None, None, "development", development, "dev"),
+        ("linux", None, None, "development", development, "dev"),
+        ("windows", None, None, "development", development, "dev"),
         (
             "macos",
             Some("20261109.1"),
+            None,
             "macos-preview",
-            preview,
+            signed,
             "20261109.1",
         ),
+        (
+            "macos",
+            None,
+            Some("20261201.1"),
+            "production",
+            signed,
+            "20261201.1",
+        ),
     ] {
-        let output = run(target, version);
-        assert!(output.status.success(), "{target} {version:?}: {output:?}");
+        let output = run(target, preview, production);
+        assert!(
+            output.status.success(),
+            "{target} {preview:?} {production:?}: {output:?}"
+        );
         let directives = String::from_utf8(output.stdout).unwrap();
         let emitted = |name: &str| {
             let prefix = format!("cargo:rustc-env={name}=");
@@ -119,10 +136,18 @@ fn build_script_emits_the_channel_of_each_identity() {
         assert_eq!(emitted("SPACEPORT_APP_ID"), [id], "{target}");
         assert_eq!(emitted("SPACEPORT_APP_VERSION"), [shown], "{target}");
     }
-    // A preview version is refused off macOS, so no channel is emitted for it.
-    let refused = run("linux", Some("20261109.1"));
-    assert!(!refused.status.success());
-    assert!(!String::from_utf8_lossy(&refused.stdout).contains("SPACEPORT_BUILD_CHANNEL"));
+    // A signed version is refused off macOS, so no channel is emitted for it.
+    for refused in [
+        run("linux", Some("20261109.1"), None),
+        run("linux", None, Some("20261201.1")),
+    ] {
+        assert!(!refused.status.success());
+        assert!(!String::from_utf8_lossy(&refused.stdout).contains("SPACEPORT_BUILD_CHANNEL"));
+    }
+    // One build is one channel, so asking for both is refused.
+    let both = run("macos", Some("20261109.1"), Some("20261201.1"));
+    assert!(!both.status.success());
+    assert!(!String::from_utf8_lossy(&both.stdout).contains("SPACEPORT_BUILD_CHANNEL"));
 }
 
 #[cfg(target_os = "macos")]
@@ -162,6 +187,7 @@ fn non_macos_target_does_not_receive_the_updater_search_path() {
             .env("CARGO_FEATURE_MACOS_UPDATER", "1")
             .env("HERDR_BUILD_PR_NUMBER", "")
             .env_remove("SPACEPORT_MACOS_PREVIEW_VERSION")
+            .env_remove("SPACEPORT_PRODUCTION_VERSION")
             .output()
             .unwrap();
         assert!(output.status.success(), "{output:?}");

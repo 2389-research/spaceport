@@ -20,21 +20,41 @@ const _: () = assert!(
 
 /// What kind of build this is, decided once by the build script's
 /// `preview_identity::select`. Code that behaves differently in a signed
-/// preview asks this, never the app ID or version strings.
+/// release asks this, never the app ID or version strings.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Channel {
     /// An ordinary local or worktree build.
     Development,
     /// The signed macOS preview route.
     MacosPreview,
+    /// A signed macOS production release.
+    Production,
 }
 
 impl Channel {
+    /// The name the build script compiles in, and the key `sparkle.json` files
+    /// each signed channel's feed under.
+    #[cfg_attr(
+        not(all(target_os = "macos", feature = "macos-updater")),
+        allow(
+            dead_code,
+            reason = "only the native updater files feeds by channel so far"
+        )
+    )]
+    pub(crate) const fn name(self) -> &'static str {
+        match self {
+            Self::Development => "development",
+            Self::MacosPreview => "macos-preview",
+            Self::Production => "production",
+        }
+    }
+
     /// The channel the build script names, or `None` for any other text.
     pub(crate) const fn parse(name: &str) -> Option<Self> {
         match name.as_bytes() {
             b"development" => Some(Self::Development),
             b"macos-preview" => Some(Self::MacosPreview),
+            b"production" => Some(Self::Production),
             _ => None,
         }
     }
@@ -50,7 +70,7 @@ pub(crate) const CHANNEL: Channel = match Channel::parse(env!("SPACEPORT_BUILD_C
     None => panic!("SPACEPORT_BUILD_CHANNEL is not a known build channel"),
 };
 
-/// Preview builds carry an explicit version; ordinary local builds say dev.
+/// Signed releases carry an explicit version; ordinary local builds say dev.
 pub(crate) const APP_VERSION: &str = env!("SPACEPORT_APP_VERSION");
 
 // Wayland app ID and X11 WM_CLASS. Linux desktop metadata uses the development

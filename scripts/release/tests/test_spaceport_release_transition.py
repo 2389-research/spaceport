@@ -66,8 +66,11 @@ class SpaceportReleaseTransition(unittest.TestCase):
 
     def test_feed_and_release_workflow_use_transferred_repository(self):
         config = json.loads((ROOT / "scripts/release/sparkle.json").read_text())
-        self.assertEqual(config["feed_url"],
-                         f"https://github.com/{REPO}/releases/download/macos-preview-feed/appcast.xml")
+        for channel, release in (("macos-preview", "macos-preview-feed"),
+                                 ("production", "macos-stable-feed")):
+            self.assertEqual(config["feeds"][channel]["release"], release)
+            self.assertEqual(config["feeds"][channel]["url"],
+                             f"https://github.com/{REPO}/releases/download/{release}/appcast.xml")
         workflow = (ROOT / ".github/workflows/macos-preview.yml").read_text()
         self.assertIn(f"github.repository == '{REPO}'", workflow)
         self.assertIn(f"--wait --repo {REPO}\n", workflow)

@@ -31,7 +31,7 @@ for what only Spaceport shows or keeps.
 | Block until something happens in the app | `spaceport wait tab-closed ID --timeout 600`, `spaceport events --wait 30` for the next event, `spaceport events --follow` for a stream |
 | Read or change a Spaceport setting | `spaceport config get KEY`, `spaceport config set KEY VALUE` |
 | Keep the machine awake during a long job | `spaceport caffeine on --for 2h` |
-| Check for a Spaceport preview update (installed macOS preview only) | `spaceport run check-for-updates` |
+| Check for a Spaceport update (installed signed macOS build only) | `spaceport run check-for-updates` |
 | Check whether the app runs, and which windows and hosts it has | `spaceport status` |
 
 Add `--json` after the command word for machine-readable output; errors then

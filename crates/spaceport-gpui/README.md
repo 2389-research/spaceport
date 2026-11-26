@@ -153,11 +153,15 @@ are not restored. Geometry is stored in `window-state.json` under
 (`%LOCALAPPDATA%\herdr\gpui` on Windows when `HOME` is unset). Native
 test modes skip this state. Up to 64 main windows are restored.
 
-The inherited custom updater has been removed. App updates remain a required
-release gate; no replacement engine or package-manager ownership policy is
-configured. Development builds report `dev`, and `HERDR_RELEASE_VERSION`
-refuses compilation until Spaceport's independent release identity is configured.
-The removed `update` command and `[updates]` settings are rejected.
+The inherited custom updater has been removed, and no other updater was added in
+its place. Installed signed macOS builds update through Sparkle: a preview
+follows the preview appcast and a production build the stable one, each named
+for its channel in `scripts/release/sparkle.json`. Development and worktree
+builds never check, and Windows and Linux have no update route yet. Publishing
+the stable feed and the production release route itself remain separate
+decisions. Development builds report `dev`, and `HERDR_RELEASE_VERSION` refuses
+compilation until Spaceport's independent release identity is configured. The
+removed `update` command and `[updates]` settings are rejected.
 
 The **QA** menu is off by default in every build, including published
 releases; turn on **Settings > General > QA menu** (`qa_menu = true` under `[features]`) to show it. The menu bar

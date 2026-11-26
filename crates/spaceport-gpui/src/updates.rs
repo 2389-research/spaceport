@@ -1,5 +1,5 @@
-// ABOUTME: Owns native preview updates for the application's main-thread lifetime.
-// ABOUTME: Routes checks through Sparkle's standard consent and installation UI.
+// ABOUTME: Owns native updates for the application's main-thread lifetime.
+// ABOUTME: Routes each signed channel's checks through Sparkle's standard consent and installation UI.
 mod error;
 pub use error::Error;
 
@@ -7,6 +7,8 @@ pub use error::Error;
 mod native;
 #[cfg(any(test, all(target_os = "macos", feature = "macos-updater")))]
 mod policy;
+#[cfg(any(test, all(target_os = "macos", feature = "macos-updater")))]
+mod trust;
 
 pub(crate) fn install(cx: &mut gpui::App) {
     #[cfg(all(target_os = "macos", feature = "macos-updater"))]

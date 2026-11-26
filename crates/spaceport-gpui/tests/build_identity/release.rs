@@ -39,7 +39,8 @@ fn main() {{
             .arg(&source)
             .env("SPACEPORT_BUILD_CHANNEL", channel)
             .env_remove("HERDR_RELEASE_VERSION")
-            .env_remove("SPACEPORT_MACOS_PREVIEW_VERSION");
+            .env_remove("SPACEPORT_MACOS_PREVIEW_VERSION")
+            .env_remove("SPACEPORT_PRODUCTION_VERSION");
         if channel == "macos-preview" {
             rustc
                 .env("SPACEPORT_APP_ID", "ai.2389.spaceport")

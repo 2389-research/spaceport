@@ -1,42 +1,54 @@
-// ABOUTME: Verify the bounded macOS preview mode and unchanged development identity.
+// ABOUTME: Verify the bounded signed macOS channels and unchanged development identity.
 // ABOUTME: Run pure build selection without GPUI or signing credentials.
 #[path = "../preview_identity.rs"]
 mod preview_identity;
-use preview_identity::Identity;
+use preview_identity::{Identity, Requested};
+
+const PREVIEW_VERSION: &str = "20261109.1";
 
 #[test]
-fn development_and_macos_preview_are_distinct() {
+fn development_and_the_signed_channels_are_distinct() {
     assert_eq!(
-        preview_identity::select(None, "linux"),
+        preview_identity::select(Requested::Development, "linux"),
         Some(Identity {
             channel: "development",
             app_id: "spaceport.development",
             version: "dev",
         })
     );
-    assert_eq!(
-        preview_identity::select(Some("20261109.1"), "macos"),
-        Some(Identity {
-            channel: "macos-preview",
-            app_id: "ai.2389.spaceport",
-            version: "20261109.1",
-        })
-    );
-}
-
-#[test]
-fn every_target_without_a_preview_version_is_a_development_build() {
-    for target in ["macos", "linux", "windows", ""] {
-        let channel = preview_identity::select(None, target).map(|identity| identity.channel);
-        assert_eq!(channel, Some(preview_identity::DEVELOPMENT));
-        assert_ne!(channel, Some(preview_identity::MACOS_PREVIEW));
+    for (requested, channel) in [
+        (Requested::MacosPreview(PREVIEW_VERSION), "macos-preview"),
+        (Requested::Production(PREVIEW_VERSION), "production"),
+    ] {
+        assert_eq!(
+            preview_identity::select(requested, "macos"),
+            Some(Identity {
+                channel,
+                app_id: "ai.2389.spaceport",
+                version: PREVIEW_VERSION,
+            })
+        );
     }
 }
 
 #[test]
-fn preview_rejects_other_targets_and_malformed_versions() {
+fn every_target_without_a_version_is_a_development_build() {
+    for target in ["macos", "linux", "windows", ""] {
+        let channel = preview_identity::select(Requested::Development, target)
+            .map(|identity| identity.channel);
+        assert_eq!(channel, Some(preview_identity::DEVELOPMENT));
+        assert_ne!(channel, Some(preview_identity::MACOS_PREVIEW));
+        assert_ne!(channel, Some(preview_identity::PRODUCTION));
+    }
+}
+
+#[test]
+fn signed_channels_reject_other_targets_and_malformed_versions() {
     for target in ["linux", "windows", ""] {
-        assert!(preview_identity::select(Some("20261109.1"), target).is_none());
+        assert!(
+            preview_identity::select(Requested::MacosPreview(PREVIEW_VERSION), target).is_none()
+        );
+        assert!(preview_identity::select(Requested::Production(PREVIEW_VERSION), target).is_none());
     }
     for version in [
         "",
@@ -46,8 +58,16 @@ fn preview_rejects_other_targets_and_malformed_versions() {
         "20261109.0",
         "20261109.1\n",
         "20261109.1-rc1",
+        "1.0.0",
     ] {
-        assert!(preview_identity::select(Some(version), "macos").is_none());
+        assert!(
+            preview_identity::select(Requested::MacosPreview(version), "macos").is_none(),
+            "{version:?}"
+        );
+        assert!(
+            preview_identity::select(Requested::Production(version), "macos").is_none(),
+            "{version:?}"
+        );
     }
 }
 
