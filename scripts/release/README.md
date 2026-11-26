@@ -159,8 +159,12 @@ The existing three-line `--build-info` output remains unchanged.
 ### Android APK on preview releases
 
 `android-release.yml` runs when a tag-push run of the macOS preview workflow succeeds.
-It never changes the macOS route. `android-request.py` re-proves the tag, its commit and main ancestry.
-It then compares `mobile/android` and `mobile/rust` with the newest earlier release that carries an `-android.apk` asset.
+It never changes the macOS route. `android-request.py` runs from main, never from the tagged commit.
+It re-proves the tag, its commit and main ancestry.
+It then compares the APK's sources with the newest earlier release that carries an `-android.apk` asset.
+The sources are the Android app, the controller crate, the shared crates it reaches by path, and the root build inputs.
+The `android-release` environment must allow `main`: under `workflow_run`, the job's ref is main, not the tag.
+Guard it with required reviewers rather than a tag rule.
 If they differ, the protected `android-release` environment signs a release APK, and the workflow attaches it to the tag's release.
 `mobile/README.md` lists the environment's secrets and the pinned certificate variable.
 

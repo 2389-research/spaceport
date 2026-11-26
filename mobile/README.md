@@ -24,7 +24,8 @@ The APK uses Android debug signing. `./mobile/build-android --release` builds an
 
 Signed release APKs come from `.github/workflows/android-release.yml`.
 It runs after the macOS preview workflow publishes a `v*` release.
-If `mobile/android` or `mobile/rust` changed since the last release that has an APK, it attaches `Spaceport-<version>-android.apk` and its `.sha256` to that release.
+If the APK's sources changed since the last release that has an APK, it attaches `Spaceport-<version>-android.apk` and its `.sha256` to that release.
+Those sources are `mobile/android`, `mobile/rust`, every shared crate it reaches by path, the root `Cargo.toml` and `rust-toolchain.toml`.
 The release application ID is `ai.research2389.spaceport.mobile`, and its `versionCode` is `YYYYMMDD×100+N` from the tag, so each release installs over the last.
 The `android-release` environment holds the key as secrets `SPACEPORT_ANDROID_KEYSTORE_BASE64`, `SPACEPORT_ANDROID_KEYSTORE_PASSWORD`, `SPACEPORT_ANDROID_KEY_ALIAS`, and `SPACEPORT_ANDROID_KEY_PASSWORD`.
 Its variable `SPACEPORT_ANDROID_CERT_SHA256` pins the certificate; the workflow refuses an APK signed by any other key.

@@ -37,18 +37,24 @@ jobs:
       version: ${{ steps.request.outputs.version }}
       version_code: ${{ steps.request.outputs.version_code }}
     steps:
+      # The checker comes from main, where workflow_run runs; the tagged commit is only data to it,
+      # so a commit cannot vouch for itself before the signing job builds it.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
+          path: tagged
           fetch-depth: 0
           persist-credentials: false
-      - name: Validate the tag and compare Android sources with the last APK release
+      - name: Validate the tag and compare the APK's sources with the last APK release
         id: request
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.workflow_run.head_branch }}
           SHA: ${{ github.event.workflow_run.head_sha }}
-        run: python3 scripts/release/android-request.py
+        run: python3 scripts/release/android-request.py tagged
 
   build:
     needs: plan
@@ -70,7 +76,8 @@ jobs:
           set -euo pipefail
           ndk=$(sed -n 's/.*ndkVersion = "\(.*\)".*/\1/p' mobile/android/app/build.gradle.kts)
           sdk=$(sed -n 's/.*compileSdk = \([0-9]*\).*/\1/p' mobile/android/app/build.gradle.kts)
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$ndk" "platforms;android-$sdk" > /dev/null
+          # Feed licence answers without a pipe: under pipefail, yes's SIGPIPE would fail the step.
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$ndk" "platforms;android-$sdk" > /dev/null < <(yes)
       - name: Build the release APK with the protected signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.SPACEPORT_ANDROID_KEYSTORE_BASE64 }}
@@ -100,7 +107,10 @@ jobs:
             exit 1
           fi
           badging=$("$tools/aapt2" dump badging "$apk" | head -1)
-          [[ "$badging" == *"versionCode='$VERSION_CODE'"* && "$badging" == *"versionName='$VERSION'"* ]]
+          if [[ "$badging" != *"versionCode='$VERSION_CODE'"* || "$badging" != *"versionName='$VERSION'"* ]]; then
+            echo "::error::APK reports '$badging', expected version $VERSION ($VERSION_CODE)" >&2
+            exit 1
+          fi
           mkdir -p target/android-release
           cp "$apk" "target/android-release/Spaceport-$VERSION-android.apk"
           (cd target/android-release && sha256sum "Spaceport-$VERSION-android.apk" > "Spaceport-$VERSION-android.apk.sha256")
@@ -132,7 +142,9 @@ jobs:
           set -euo pipefail
           cd target/android-release
           sha256sum -c "Spaceport-$VERSION-android.apk.sha256"
-          current=$(gh api "repos/$GITHUB_REPOSITORY/commits/$TAG" --jq .sha)
+          # Read the tag ref itself, never a same-named branch; ^{} is the commit an annotated tag names.
+          refs=$(git ls-remote "https://github.com/$GITHUB_REPOSITORY" "refs/tags/$TAG" "refs/tags/$TAG^{}")
+          current=$(awk -v tag="refs/tags/$TAG" '$2 == tag || $2 == tag "^{}" { sha = $1 } END { print sha }' <<< "$refs")
           if [[ "$current" != "$SHA" ]]; then
             echo "::error::$TAG moved from $SHA to $current; refusing to publish" >&2
             exit 1
