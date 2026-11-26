@@ -2,6 +2,7 @@
 use super::*;
 use crate::device_tags::DeviceTags;
 use gpui::Entity;
+use spaceport_menu::host::Mode;
 
 fn open(
     action: Action,
@@ -29,7 +30,7 @@ fn tags(cx: &mut VisualTestContext) -> Vec<String> {
 
 #[gpui::test]
 fn moving_to_a_starter_group_tags_the_device_and_closes(cx: &mut TestAppContext) {
-    let (view, cx) = open(Action::Tags(super::super::tags::Mode::MoveTo), cx);
+    let (view, cx) = open(Action::Tags(Mode::MoveTo), cx);
     assert_eq!(
         view.read_with(cx, |view, _| view.menu.page),
         Some(Page::DeviceTags)
@@ -44,7 +45,7 @@ fn moving_to_a_starter_group_tags_the_device_and_closes(cx: &mut TestAppContext)
 
 #[gpui::test]
 fn a_typed_name_makes_a_new_group(cx: &mut TestAppContext) {
-    let (_, cx) = open(Action::Tags(super::super::tags::Mode::MoveTo), cx);
+    let (_, cx) = open(Action::Tags(Mode::MoveTo), cx);
     cx.simulate_input("  client  acme ");
     cx.simulate_keystrokes("enter");
     assert_eq!(tags(cx), ["client acme"]);
@@ -52,7 +53,7 @@ fn a_typed_name_makes_a_new_group(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn also_tagged_ticks_tags_and_stays_open(cx: &mut TestAppContext) {
-    let (view, cx) = open(Action::Tags(super::super::tags::Mode::AlsoTagged), cx);
+    let (view, cx) = open(Action::Tags(Mode::AlsoTagged), cx);
     cx.simulate_keystrokes("down enter");
     assert_eq!(tags(cx), ["personal"]);
     assert_eq!(

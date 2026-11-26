@@ -5,9 +5,10 @@ use super::super::appear::{self, Kept};
 use super::super::devices::rail;
 use super::{Page, metrics, text};
 use crate::SpaceportWindow;
-use crate::{actions, menu::page_title};
+use crate::actions;
 use gpui::{prelude::*, *};
 use spaceport_menu::chrome::{self, Hosts, Layer};
+use spaceport_menu::page_title;
 
 /// How far past its panel a popover counts as covering, for the Windows
 /// pages that hide under it.

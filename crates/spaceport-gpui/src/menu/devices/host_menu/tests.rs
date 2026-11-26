@@ -1,6 +1,7 @@
-use super::{Action, HostMenu, SSH_ACTIONS, Saved};
+use super::{HostMenu, Saved};
 use crate::{config::KeybindingSource, menu::Page, sidebar::layout_tests::fixture_window};
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px, size};
+use spaceport_menu::host::{Action, LOCAL_ACTIONS, SSH_ACTIONS};
 
 mod device_theme;
 mod en_xa;
@@ -55,7 +56,7 @@ fn right_clicking_a_saved_host_offers_removal_but_local_only_grouping_and_mute(
     view.read_with(cx, |view, _| {
         assert_eq!(view.menu.page, Some(Page::Host));
         assert_eq!(host(view).saved, Saved::Local);
-        assert_eq!(host(view).actions(), super::LOCAL_ACTIONS);
+        assert_eq!(host(view).actions(), LOCAL_ACTIONS);
     });
     view.update_in(cx, |view, window, cx| view.dismiss_menu(window, cx));
     cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));

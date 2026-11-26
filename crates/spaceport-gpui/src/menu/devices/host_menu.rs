@@ -11,9 +11,9 @@ use crate::{
     menu::Page,
     search_input::SearchInput,
 };
-use actions::{Action, LOCAL_ACTIONS, SSH_ACTIONS};
 use gpui::{prelude::*, *};
 use spaceport_client::ConnectTarget;
+use spaceport_menu::host::{Action, LOCAL_ACTIONS, SSH_ACTIONS};
 use spaceport_remote::setup;
 
 /// The saved entry the menu acts on.
@@ -676,7 +676,6 @@ fn removal_note(host: &HostMenu) -> String {
     }
 }
 
-mod actions;
 mod forwards;
 mod rename;
 mod tags;

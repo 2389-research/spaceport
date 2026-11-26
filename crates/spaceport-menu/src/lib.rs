@@ -5,9 +5,8 @@
 //! bar a Linux or Windows window draws for itself.
 //!
 //! The app keeps the window's aggregate menu state, every word a page says and
-//! every page's body, and words an action by matching its variant
-//! (`docs/i18n.md`). Nothing here reads a window, and nothing here says a
-//! sentence a person reads: a target is captured from a snapshot, a row that
+//! every page's body, and words an action by matching its variant (`docs/i18n.md`). Nothing here reads a window, and nothing here says
+//! a sentence a person reads: a target is captured from a snapshot, a row that
 //! sends anything names it explicitly, a row that paints carries the words the
 //! app built, and the chrome around a page takes the page's own element from
 //! the app.
@@ -16,8 +15,10 @@ pub mod appear;
 pub mod bar;
 pub mod chrome;
 mod error;
+pub mod host;
 mod localize;
 pub mod page;
+pub mod page_title;
 pub mod pane;
 pub mod picker;
 pub mod sessions;
