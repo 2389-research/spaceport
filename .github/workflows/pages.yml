@@ -1,7 +1,7 @@
 name: Landing page
 
 # Publishes landing/public to GitHub Pages at
-# https://2389-research.github.io/spaceport/ (see landing/README.md).
+# https://spaceport.wtf/ (see landing/README.md).
 
 on:
   push:
