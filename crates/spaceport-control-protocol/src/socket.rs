@@ -126,6 +126,9 @@ impl Server {
         let (sender, requests) = mpsc::sync_channel(QUEUE);
         // The worker blocks in accept for the life of the process. Nothing
         // joins it: the UI must never wait on it, and exit reclaims it.
+        // 2026-11-27: accept loop just overruns the new 25 ceiling on the CI
+        // toolchain; owes the control-protocol sweep.
+        #[allow(clippy::cognitive_complexity)]
         thread::Builder::new()
             .name("control-socket".into())
             .spawn(move || {

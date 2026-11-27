@@ -38,7 +38,8 @@ one.
 
 `cargo clippy --locked --workspace --all-targets --all-features` on the commit
 above: **196 findings in 163 files** — 14 over the complexity ceiling, 182 over
-the line ceiling. Nothing else warned.
+the line ceiling. Nothing else warned. CI's ubuntu clippy found one more (see
+the control-protocol row below): 197 all told.
 
 | Allowance sits in | cognitive | lines | worst cognitive | worst lines |
 | --- | --- | --- | --- | --- |
@@ -58,6 +59,12 @@ the line ceiling. Nothing else warned.
 | `crates/spaceport-client/tests/live.rs` | 0 | 1 | — | `:280` 128 |
 | `crates/spaceport-endpoint` | 0 | 1 | — | `src/host/link.rs:168` 183 |
 | `crates/spaceport-chat-core` | 0 | 1 | — | `src/prepared.rs:430` 107 |
+| `crates/spaceport-control-protocol` | 1 | 0 | `src/socket.rs:131` 26† | — |
+
+† Found only by CI's clippy (ubuntu); the local 1.99.0 run scored this
+accept-loop closure at or under 25. Added 2026-11-27 as a dated scoped
+allowance after the first CI run; the count above reads 196 local findings,
+197 with this one.
 | `crates/spaceport-textfield` | 0 | 1 | — | `src/search_input.rs:450` 216 |
 | `crates/spaceport-gpui/tests/live_gui.rs` | 0 | 1 | — | `:280` 114 |
 
