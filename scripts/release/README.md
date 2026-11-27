@@ -1,7 +1,9 @@
 # Release Packaging
 
-**Spaceport development status:** The only release route in this fork is the
-macOS preview route below. The inherited upstream production route (its release
+**Spaceport development status:** The only desktop release route in this fork is the
+macOS preview route below. The separate [iOS TestFlight route](#ios-testflight-route)
+uploads the mobile client to TestFlight and publishes no desktop artifact. The inherited
+upstream production route (its release
 and promotion workflows, Linux packages, Homebrew, winget, artifact signing and
 SBOM) has been removed; restore it from git history when the release gate
 opens. The current release build rejects
@@ -168,6 +170,125 @@ It needs no reviewer: pushing the `v*` tag is the release decision, as for macOS
 Anyone who may push a `v*` tag can therefore cause a signed Android build.
 If they differ, the protected `android-release` environment signs a release APK, and the workflow attaches it to the tag's release.
 `mobile/README.md` lists the environment's secrets and the pinned certificate variable.
+
+## iOS TestFlight route
+
+`ios-testflight.yml` signs the Spaceport Mobile app and uploads it to TestFlight. It is a
+mobile route: it publishes no desktop artifact, and it changes neither the macOS preview
+nor the Android route. It runs when a tag-push run of `macOS signed preview` succeeds,
+because that run's `publish` job creates the tag's release and this route attaches its
+`.ipa` there. It never runs for a pull request or another repository. A manual run on main
+takes an explicit `version` and an optional `tag`: with a tag whose release already exists
+it attaches the `.ipa`, and otherwise it keeps the `.ipa` as a workflow artifact.
+
+`build` runs `./mobile/build-apple --release` with no credentials and archives only what
+that produced — `mobile/.build/SpaceportMobileCore.xcframework`, `mobile/apple/Generated`
+and the generated `SpaceportMobile.xcodeproj` — under a `SHA256SUMS`. `sign` downloads
+only that checksummed artifact and holds the credentials. `publish` re-proves the tag and
+attaches `Spaceport-VERSION-ios.ipa` and its `.sha256`; it publishes nothing else.
+
+The iOS simulator suite is a **skipped gate**, not a silent pass. `mobile/README.md`'s
+verification target is Product → Test inside Xcode, whose live tests need a disposable SSH
+host, seeded Herdr sessions and a hand-driven Duo fold, and `just test-ios-duo` needs an
+open simulator on a desktop. Neither is a CI-runnable suite, so the build job records the
+absence with `TODO(ios-simulator-gate)` and runs nothing in its place.
+
+`bash scripts/release/sign-ios.sh VERSION OUTPUT_DIR` performs signing, verification and
+the upload:
+
+- VERSION is a calendar version. The iOS build number is that version as
+  `YYYYMMDD*100+COUNTER`, the rule `android-request.py` applies to the Android
+  `versionCode`, passed to xcodebuild as `CURRENT_PROJECT_VERSION` so every later tag
+  uploads a greater TestFlight build. `MARKETING_VERSION` stays `0.1` from
+  `mobile/apple/project.yml`, which keeps the existing App Store Connect record and the
+  export-compliance note in `mobile/README.md` valid.
+- Both App Store distribution profiles are written from base64 and installed under the
+  UUID each carries. `project.yml`'s Release settings read them through
+  `SPACEPORT_MOBILE_PROFILE` and `SPACEPORT_ACTIVITY_PROFILE`. Naming
+  `SPACEPORT_MOBILE_PROFILE_UUID` and `SPACEPORT_ACTIVITY_PROFILE_UUID` instead lets
+  xcodebuild resolve the profiles itself with `-allowProvisioningUpdates` through the
+  API key. The first form needs no Apple network round trip beyond the upload.
+- It archives the `SpaceportMobile` scheme's Release configuration for
+  `generic/platform=iOS` with manual signing, `DEVELOPMENT_TEAM`, a `CURRENT_PROJECT_VERSION`
+  override and the temporary keychain, then exports with an `exportOptions.plist` written
+  in-script: method `app-store`, manual signing with both profiles for both bundle
+  identifiers, the team ID, and `manageAppVersionAndBuildNumber` false so the uploaded
+  build number is the derived one.
+- Before uploading it verifies the shipped `.ipa`: both bundle identifiers, both build
+  numbers, `codesign --verify --deep --strict`, both signed Team identifiers, the App Group
+  in the signed entitlements of the app and its Agent Status extension, and — in both
+  embedded profiles — `application-identifier` for this Team, no `get-task-allow`, and
+  `group.ai.2389.spaceport.mobile.widget`.
+- It uploads with `xcrun altool --upload-app --type ios` and the App Store Connect key,
+  then writes `Spaceport-VERSION-ios.ipa.json` beside the `.ipa` and its `.sha256` with the
+  bundle id, build number, marketing version, Team, App Group, digest and upload result,
+  and prints the same facts as `key=value` lines. altool's exit status is the result; a
+  failure reports Apple's product errors and refuses a second upload of that build number.
+- Credentials follow `sign-macos.sh`: the P12 is imported into a temporary keychain inside
+  a private temporary directory, the user keychain search list is restored, the `.p8` sits
+  under a private `private_keys` directory that `altool` reads, and exit/INT/TERM remove the
+  keychain, the profiles this run installed and the directory. SIGKILL and power loss cannot
+  run cleanup, and Apple's tools receive the P12 password as an argument, so the runner must
+  have no untrusted local users. Existing outputs are refused before credentials are read.
+
+### Owner switch-on checklist
+
+Nothing here runs until the `ios-testflight` environment exists, so pushes and manual runs
+fail closed on missing inputs instead of uploading something unverified.
+
+1. In **Settings → Environments**, create the environment `ios-testflight`. Allow `main`
+   through its deployment rules: under `workflow_run` the job's ref is main, not the tag,
+   exactly as the `android-release` environment requires. Required reviewers are optional —
+   pushing the `v*` tag is the release decision, as it is for macOS and Android.
+2. Create this **variable** on that environment (not in a source file):
+   `SPACEPORT_APPLE_TEAM_ID` — the 10-character Apple Developer Team ID. Both bundle
+   identifiers, both profiles and the imported certificate must belong to it, and the
+   script refuses any other Team.
+3. Create these **secrets** on that environment:
+
+   | Secret | What it is |
+   | --- | --- |
+   | `IOS_DISTRIBUTION_P12_BASE64` | Base64 of an `Apple Distribution: 2389 Research, Inc (TEAMID)` certificate exported from the team's developer account as a `.p12` with its private key. The script rejects a P12 holding more than one identity. This is not the macOS Developer ID certificate. |
+   | `IOS_DISTRIBUTION_P12_PASSWORD` | That P12's export password. |
+   | `SPACEPORT_MOBILE_PROFILE_B64` | Base64 of the App Store distribution profile for `ai.2389.spaceport.mobile`. |
+   | `SPACEPORT_ACTIVITY_PROFILE_B64` | Base64 of the App Store distribution profile for `ai.2389.spaceport.mobile.agent-status`. |
+   | `APPLE_API_PRIVATE_KEY` | The App Store Connect `.p8` contents. Reuse the macOS route's key. |
+   | `APPLE_API_KEY_ID` | That key's ID. Reuse the macOS route's value. |
+   | `APPLE_API_ISSUER_ID` | That key's issuer ID. Reuse the macOS route's value. |
+
+4. The App Store Connect API key needs the **Developer** role or better to manage
+   provisioning profiles, which the UUID form needs. Uploading a build with
+   `altool --upload-app` needs **App Manager** or **Admin**: a key created for macOS
+   notarization can be Developer-only, which notarizes but cannot upload. Raise that key's
+   role or add a second key and put it in this environment before the first tag.
+5. In the developer account, confirm the App Store Connect record
+   `ai.2389.spaceport.mobile` exists and both identifiers carry the App Group
+   `group.ai.2389.spaceport.mobile.widget`; the widget extension shares state with the app
+   only through it. Then create one App Store distribution profile for each identifier with
+   that capability enabled, and base64 each `.mobileprovision` file. The script probes both
+   profiles for the group and refuses a profile that lacks it or admits development installs.
+6. Confirm the app record carries the export-compliance answer described in
+   `mobile/README.md`; the Release plist already ships `ITSAppUsesNonExemptEncryption`
+   `false`, and a build that Apple will not import is reported by the upload step.
+7. Push a `v` tag for a commit whose macOS preview run succeeds:
+
+   ```sh
+   git tag -a v20261218.1 FULL_MAIN_COMMIT_SHA -m 'Spaceport 20261218.1'
+   git push origin refs/tags/v20261218.1
+   ```
+
+   The macOS preview route publishes the release, then this route builds, signs, uploads to
+   TestFlight and attaches the `.ipa` and its checksum. The `sign` job's summary and the
+   `.ipa.json` receipt state the bundle id, build number and upload result; TestFlight
+   processing continues in App Store Connect after the job turns green. A manual run on the
+   default branch builds the commit it checks out and uploads the version it is given; when
+   it also names a tag whose release exists it attaches the `.ipa` there, and otherwise the
+   `.ipa` stays a workflow artifact.
+
+A rerun of the same tag rebuilds and re-uploads the same build number, which Apple refuses.
+Use a new version instead, and inspect the retained `.ipa` artifact and job log first. No
+receipt here proves native behavior on a device: the skipped simulator gate above covers
+what this route does not.
 
 ## Build Identity
 
