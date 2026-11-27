@@ -453,6 +453,7 @@ impl SpaceportWindow {
         aligned_row(
             &key,
             RowState {
+                agent: true,
                 selected: focused,
                 ..RowState::default()
             },
@@ -462,7 +463,7 @@ impl SpaceportWindow {
             columns,
             marks,
         )
-        .when(focused, |row| row.child(look.agent_outline(theme)))
+        .when(focused, |row| look.agent_selection(row, theme))
         .id(SharedString::from(key.clone()))
         .debug_selector(|| key)
         .cursor_pointer()

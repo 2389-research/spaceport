@@ -151,8 +151,11 @@ impl<'a> Cell<'a> {
     pub fn new(layout: &'a dyn RowLayout, data: RowData<'a>, cx: &'a RowContext<'a>) -> Self {
         Self {
             layout,
+            state: RowState {
+                agent: matches!(data, RowData::Agent(_)),
+                ..RowState::default()
+            },
             data,
-            state: RowState::default(),
             cx,
         }
     }
@@ -197,13 +200,7 @@ impl<'a> Cell<'a> {
                     &row.key,
                     self.cx.right_to_left,
                 );
-                let row = self
-                    .layout
-                    .agent(row, self.state, self.cx)
-                    .when(self.state.selected, |row| {
-                        row.child(self.cx.look.agent_outline(self.cx.theme))
-                    });
-                (row, rail)
+                (self.layout.agent(row, self.state, self.cx), rail)
             }
         };
         match rail {
