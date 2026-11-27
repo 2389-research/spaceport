@@ -69,9 +69,10 @@ fn roster_bridge_requests_an_inactive_surface_at_hello() {
     peer.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
     let client = observe_embedded_bridge("phone", move |_, _| Ok((stream, ()))).unwrap();
     observer_banner(&mut peer, true);
-    let mut selected = String::new();
-    io::BufRead::read_line(&mut io::BufReader::new(&mut peer), &mut selected).unwrap();
-    assert_eq!(selected, "/private/session/herdr-client.sock\n");
+    let socket = b"/private/session/herdr-client.sock\n";
+    let mut selected = vec![0; socket.len()];
+    peer.read_exact(&mut selected).unwrap();
+    assert_eq!(&selected, socket);
     let ClientMessage::EndpointControl { data, .. } = receive(&mut peer) else {
         panic!("hello")
     };
