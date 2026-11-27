@@ -130,7 +130,7 @@ pub(crate) struct SpaceportWindow {
     /// including after a config reload, as upstream's manual override does.
     pub(crate) agent_sort_modified: bool,
     /// A tab torn off another window, waiting for its host to be listed.
-    pub(crate) arrival: Option<tab_tear::TornTab>,
+    pub(crate) arrival: Option<(tab_tear::TornTab, AnyWindowHandle)>,
     /// The picture and platform appearance `[backdrop]` asks for.
     pub(crate) backdrop: backdrop::State,
     pub(crate) bell: crate::bell::Bell,

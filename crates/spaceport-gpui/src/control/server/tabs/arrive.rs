@@ -3,6 +3,7 @@
 //! workspace, so the window first switches to the caller's, and the tab
 //! opens once a snapshot says the switch landed.
 use super::{busy, closed};
+use crate::endpoint::fence::ConnectionRef;
 use crate::{
     SpaceportWindow,
     browser::{Location, Store},
@@ -20,8 +21,27 @@ use std::time::Duration;
 /// The window, endpoint, and workspace a request's tab goes to.
 struct Destination {
     handle: WindowHandle<SpaceportWindow>,
-    endpoint: usize,
+    connection: ConnectionRef,
+    boot: String,
     workspace: String,
+}
+
+impl Destination {
+    fn endpoint(&self, view: &SpaceportWindow) -> Result<usize, Response> {
+        view.endpoint_for(&self.connection)
+            .filter(|&index| {
+                view.live_of(index)
+                    .snapshot
+                    .as_ref()
+                    .is_some_and(|snapshot| snapshot.boot_id == self.boot)
+            })
+            .ok_or_else(|| {
+                Response::error(
+                    ErrorCode::WorkspaceNotFound,
+                    "The destination workspace connection changed",
+                )
+            })
+    }
 }
 
 fn destination(caller: &Caller, cx: &mut App) -> Result<Destination, Response> {
@@ -33,9 +53,17 @@ fn destination(caller: &Caller, cx: &mut App) -> Result<Destination, Response> {
                 .strictness()
                 .iter()
                 .find_map(|strict| view.control_target(&target, *strict))
+                .and_then(|(index, workspace)| {
+                    Some(Destination {
+                        handle,
+                        workspace,
+                        connection: view.endpoints[index].connection_ref(),
+                        boot: view.live_of(index).snapshot.as_ref()?.boot_id.clone(),
+                    })
+                })
         })
         .map_err(|_| closed())?;
-    let (endpoint, workspace) = found.ok_or_else(|| {
+    found.ok_or_else(|| {
         Response::error(
             ErrorCode::WorkspaceNotFound,
             match &caller.workspace_id {
@@ -43,11 +71,6 @@ fn destination(caller: &Caller, cx: &mut App) -> Result<Destination, Response> {
                 None => "The window shows no workspace yet".to_owned(),
             },
         )
-    })?;
-    Ok(Destination {
-        handle,
-        endpoint,
-        workspace,
     })
 }
 
@@ -62,20 +85,18 @@ fn open_there(
     act: impl FnOnce(&mut SpaceportWindow, &str, &mut Window, &mut Context<SpaceportWindow>) -> Response
     + 'static,
 ) {
-    let Destination {
-        handle,
-        endpoint,
-        workspace,
-    } = match destination(caller, cx) {
+    let destination = match destination(caller, cx) {
         Ok(destination) => destination,
         Err(response) => return incoming.respond(response),
     };
+    let handle = destination.handle;
+    let workspace = &destination.workspace;
     let started = handle
         .update(cx, |view, _, cx| {
             if view.menu.page.is_some() {
                 return Err(busy());
             }
-            view.go_to_workspace(endpoint, &workspace, cx);
+            view.go_to_workspace(destination.endpoint(view)?, workspace, cx);
             Ok(())
         })
         .unwrap_or_else(|_| Err(closed()));
@@ -91,25 +112,21 @@ fn open_there(
         incoming,
         Duration::from_secs(ARRIVE_WAIT_SECONDS),
         move |cx| {
-            let arrived = handle.read_with(cx, |view, _| {
-                view.shows_workspace(endpoint, &workspace) && ready(view)
-            });
-            match arrived {
-                Err(_) => return Some(closed()),
-                Ok(false) => return None,
-                Ok(true) => {}
-            }
-            let act = act.take()?;
-            Some(
-                handle
-                    .update(cx, |view, window, cx| {
-                        if view.menu.page.is_some() {
-                            return busy();
-                        }
-                        act(view, &workspace, window, cx)
-                    })
-                    .unwrap_or_else(|_| closed()),
-            )
+            handle
+                .update(cx, |view, window, cx| {
+                    let index = match destination.endpoint(view) {
+                        Ok(index) => index,
+                        Err(response) => return Some(response),
+                    };
+                    if !view.shows_workspace(index, &destination.workspace) || !ready(view) {
+                        return None;
+                    }
+                    if view.menu.page.is_some() {
+                        return Some(busy());
+                    }
+                    Some(act.take()?(view, &destination.workspace, window, cx))
+                })
+                .unwrap_or_else(|_| Some(closed()))
         },
         expired,
         cx,

@@ -90,7 +90,8 @@ internal enum class AgentSection(val label: String) {
 }
 
 internal object AgentBoard {
-    fun rows(host: HostProfile, view: MobileView, at: Long): List<AgentRow> {
+    fun rows(host: HostProfile, view: MobileView): List<AgentRow>? {
+        val at = view.rosterObservedAtMs?.toLong() ?: return null
         val tabs = view.tabs.associateBy { it.id }
         val spaces = view.workspaces.associateBy { it.id }
         return view.panes.mapNotNull { pane ->

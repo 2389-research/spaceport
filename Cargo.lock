@@ -6479,6 +6479,7 @@ dependencies = [
  "rustix",
  "serde",
  "serde_json",
+ "spaceport-chat-core",
  "spaceport-chat-protocol",
  "spaceport-client",
  "tempfile",
