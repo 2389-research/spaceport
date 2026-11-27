@@ -3,6 +3,8 @@ use super::*;
 use crate::protocol::{Call, Caller, Request, Response};
 
 mod excluded_fan_out;
+mod removed_checkpoint;
+mod removed_teleport;
 
 #[test]
 fn work_requests_have_a_stable_wire_form() {

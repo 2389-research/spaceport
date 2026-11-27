@@ -102,6 +102,9 @@ pub struct SidebarStyle {
     /// the sidebar and terminals, or a retained section. On unless
     /// turned off.
     pub activity_bar: bool,
+    /// `automations`: show the unavailable Automation activity page.
+    /// On unless turned off.
+    pub automations: bool,
     pub device_footer: DeviceFooter,
     /// A colour per host, keyed by the host's display name, as `0xRRGGBB`.
     pub hosts: BTreeMap<String, u32>,
@@ -113,6 +116,7 @@ impl Default for SidebarStyle {
     fn default() -> Self {
         Self {
             activity_bar: true,
+            automations: true,
             device_footer: DeviceFooter::default(),
             hosts: BTreeMap::new(),
             overrides: SidebarOverrides::default(),
@@ -147,6 +151,7 @@ pub struct SidebarSettings {
     pub(super) device_footer: DeviceFooter,
     pub(super) hosts: BTreeMap<String, String>,
     pub(super) activity_bar: Option<bool>,
+    pub(super) automations: Option<bool>,
 }
 
 impl SidebarSettings {
@@ -167,6 +172,7 @@ impl SidebarSettings {
             .collect::<crate::Result<_, Error>>()?;
         Ok(SidebarStyle {
             activity_bar: self.activity_bar.unwrap_or(true),
+            automations: self.automations.unwrap_or(true),
             device_footer: self.device_footer,
             hosts,
             overrides: self.overrides,
@@ -203,7 +209,12 @@ impl<'de> Deserialize<'de> for SidebarSettings {
                         "host_gap" => settings.overrides.host_gap = Some(map.next_value()?),
                         "select" => settings.select = map.next_value()?,
                         "device_footer" => settings.device_footer = map.next_value()?,
+                        "change_counts" => {
+                            let _: serde::de::IgnoredAny = map.next_value()?;
+                            return Err(serde::de::Error::custom(Error::RemovedChangeCounts));
+                        }
                         "activity_bar" => settings.activity_bar = Some(map.next_value()?),
+                        "automations" => settings.automations = Some(map.next_value()?),
                         "hosts" => settings.hosts = map.next_value()?,
                         _ => {
                             map.next_value::<serde::de::IgnoredAny>()?;

@@ -51,7 +51,7 @@ fn card(
         .rounded(px(radius))
         .border_1()
         .border_color(rgba(0))
-        .when(state.selected && !state.agent, |card| {
+        .when(state.selected, |card| {
             card.border_color(wash(theme.foreground, 0x2e))
         })
         .row(right_to_left)

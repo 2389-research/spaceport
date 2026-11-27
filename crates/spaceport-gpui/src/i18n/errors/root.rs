@@ -144,6 +144,7 @@ impl Localize for Error {
             Self::Tunnel(error) => error.localize(),
             Self::UnsupportedCommand => fl!("error-unsupported-command"),
             Self::Updates(error) => error.localize(),
+            Self::Usage(error) => error.localize(),
             Self::WorkspaceDocument(error) => error.to_string(),
             Self::WslDrop(error) => error.localize(),
             // keep-sorted end

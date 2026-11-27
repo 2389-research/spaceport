@@ -152,6 +152,35 @@ impl Config {
         Self::save_font_sizes_path(sizes, &local)
     }
 
+    /// Persist usage visibility without replacing provider settings.
+    pub fn save_usage_visibility(show: bool) -> Result<()> {
+        let (_lock, local) = Self::prepare_files(&Self::path()?)?;
+        Self::save_usage_visibility_path(show, &local)
+    }
+
+    pub fn save_usage_visibility_path(show: bool, path: &Path) -> Result<()> {
+        let result = (|| -> Result<()> {
+            let text = match fs::read_to_string(path) {
+                Ok(text) => text,
+                Err(error) if error.kind() == ErrorKind::NotFound => LOCAL_CONFIG.into(),
+                Err(error) => return Err(error.into()),
+            };
+            let mut document = text.parse::<toml_edit::DocumentMut>()?;
+            let usage = document
+                .entry("usage")
+                .or_insert(toml_edit::Item::Table(toml_edit::Table::new()))
+                .as_table_like_mut()
+                .ok_or(Error::InvalidUsageTable)?;
+            let mut value = toml_edit::Value::from(show);
+            if let Some(previous) = usage.get("show").and_then(toml_edit::Item::as_value) {
+                *value.decor_mut() = previous.decor().clone();
+            }
+            usage.insert("show", toml_edit::Item::Value(value));
+            write_config(path, &document.to_string())
+        })();
+        result.map_err(|error| error.at_path(path))
+    }
+
     /// Persist only the contrast setting, keeping the rest of the local file.
     pub fn save_contrast(contrast: Contrast) -> Result<()> {
         let (_lock, local) = Self::prepare_files(&Self::path()?)?;

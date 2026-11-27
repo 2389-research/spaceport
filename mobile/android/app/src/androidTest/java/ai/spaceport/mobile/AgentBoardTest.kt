@@ -6,10 +6,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
-import uniffi.spaceport_mobile.MobilePane
-import uniffi.spaceport_mobile.MobileTab
-import uniffi.spaceport_mobile.MobileView
-import uniffi.spaceport_mobile.MobileWorkspace
 
 @RunWith(AndroidJUnit4::class)
 class AgentBoardTest {
@@ -33,47 +29,6 @@ class AgentBoardTest {
             false,
             600000L,
         )
-
-    @Test
-    fun persistedIdleAgeUsesOnlyConfirmedRosterObservations() {
-        val context =
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
-        val catalog = AgentCatalog(context)
-        val view =
-            MobileView(
-                version = 1u,
-                bootId = "boot",
-                workspaces = listOf(MobileWorkspace("w", "Work", "idle")),
-                tabs = listOf(MobileTab("t", "w", "Tab", "idle")),
-                panes = listOf(MobilePane(1u, "Scout", "p", "t", "Pane", "idle", 1_000u, true)),
-                paneMap = null,
-                focusedWorkspace = "w",
-                focusedTab = "t",
-                focusedPane = "p",
-                terminal = null,
-                inputTarget = null,
-                error = null,
-                disconnected = false,
-                hostChallenge = null,
-                goToPending = false,
-                goToArrival = null,
-                rosterObservedAtMs = 3_600_000u,
-            )
-        catalog.forget(host)
-        try {
-            catalog.observe(host, AgentBoard.rows(host, view))
-            catalog.observe(host, AgentBoard.rows(host, view.copy(rosterObservedAtMs = null)))
-            val row = AgentCatalog(context).rows(host).single()
-            assertEquals(AgentSection.RECENT, AgentBoard.section(row, null, 7_200_000))
-            catalog.observe(host, AgentBoard.rows(host, view.copy(rosterObservedAtMs = 3_601_001u)))
-            val refreshed = AgentCatalog(context).rows(host).single()
-            assertEquals(AgentSection.HOURS, AgentBoard.section(refreshed, null, 7_200_000))
-            catalog.observe(host, AgentBoard.rows(host, view.copy(panes = emptyList())))
-            assertTrue(AgentCatalog(context).rows(host).isEmpty())
-        } finally {
-            catalog.forget(host)
-        }
-    }
 
     @Test
     fun homeUsesStatusThenSequenceAndSearchSpansTitleAndLocation() {

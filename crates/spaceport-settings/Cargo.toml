@@ -19,6 +19,7 @@ spaceport-client.workspace  = true
 spaceport-commands.workspace = true
 spaceport-i18n.workspace    = true
 spaceport-lenient.workspace = true
+spaceport-usage.workspace   = true
 # Reads the weight a family has a face at (macOS only).
 skrifa.workspace            = true
 thiserror.workspace         = true

@@ -6,6 +6,10 @@ use super::*;
 mod core_groups;
 mod identity_ambiguity;
 mod recovery;
+mod retired_code_view;
+mod retired_px0;
+mod retired_review;
+mod retired_vs_code;
 mod saved_schema;
 
 fn terminal(id: &str) -> Option<Location> {
@@ -142,6 +146,7 @@ fn saved_tabs_round_trip_and_invalid_files_are_rejected() {
     // New tabs never reuse a restored ID.
     assert!(restored.next > id.0);
     for invalid in [
+        r#"{"tabs":[{"id":0,"scope":"local","workspace_id":"w","location":{"kind":"web","url":"file:///etc/passwd"},"title":""}]}"#,
         r#"{"tabs":[{"id":0,"scope":"local","workspace_id":"","location":{"kind":"web","url":"https://a.test/"},"title":""}]}"#,
         r#"{"tabs":[{"id":0,"scope":"local","workspace_id":"w","location":null,"title":"","origin":""}]}"#,
         r#"{"tabs":"#,

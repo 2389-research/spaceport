@@ -14,6 +14,7 @@ mod app;
 #[cfg(any(target_os = "macos", windows, test))]
 mod app_badge;
 mod app_icon;
+mod automations;
 mod backdrop;
 mod bell;
 mod browser;
@@ -45,7 +46,6 @@ mod fonts;
 mod group_menu;
 mod group_terminals;
 mod herdr_settings;
-mod hint;
 mod i18n;
 mod icon_font_notice;
 mod icons;
@@ -65,7 +65,6 @@ mod mark_layer;
 mod menu;
 mod menus;
 mod motion;
-mod multiline_input;
 mod navigation;
 mod network_quality;
 mod notice;
@@ -101,6 +100,7 @@ mod theme_picker;
 mod titlebar;
 mod toggles;
 mod updates;
+mod usage;
 mod window;
 mod window_state;
 mod worker_stop;
@@ -127,9 +127,10 @@ pub use error::{Error, Result};
 // The command catalog and its default shortcuts, without GPUI.
 use spaceport_commands as controls;
 // The text fields and the editing model they share, in `spaceport-textfield`:
-// the app's own `DialogInput` and `MultilineInput` read the same model the
-// search field does, at the crate-wide paths they have always named it by.
-pub(crate) use spaceport_textfield::{caret, search_input, text_editing};
+// the search field, the composer, and the editing model a dialog's draft reads
+// too, at the crate-wide paths the app has always named them by. The dialog's
+// own module stays beside this, where the window draws its frame.
+pub(crate) use spaceport_textfield::{multiline_input, search_input, text_editing};
 // The log file and crash reports, without GPUI.
 use spaceport_diagnostics::{self as diagnostics, crash};
 // Git status, without GPUI.
