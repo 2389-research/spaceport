@@ -26,8 +26,6 @@ mod page_messages;
 mod pages_behaviour;
 mod quit_saves;
 mod remote_history_reload;
-mod removed_plugins;
-mod removed_worktree_cleanup;
 mod rtl;
 mod save_intents;
 mod save_now;

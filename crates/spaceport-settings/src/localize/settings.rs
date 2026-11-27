@@ -81,9 +81,6 @@ impl Localize for Error {
             ),
             Self::PreferencesNotObject => fl!("error-config-preferences-not-object"),
             Self::RelativeConfigRoot => fl!("error-relative-config-root"),
-            Self::RemovedChangeCounts => fl!("error-config-removed-change-counts"),
-            Self::RemovedGitHub => fl!("error-config-removed-github"),
-            Self::RemovedUpdates => fl!("error-config-removed-updates"),
             Self::SshHosts(error) => error.localize(),
             Self::ThemeLine { line, key, source } => fl!(
                 "error-config-theme-line",

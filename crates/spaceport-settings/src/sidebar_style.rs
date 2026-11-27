@@ -209,10 +209,6 @@ impl<'de> Deserialize<'de> for SidebarSettings {
                         "host_gap" => settings.overrides.host_gap = Some(map.next_value()?),
                         "select" => settings.select = map.next_value()?,
                         "device_footer" => settings.device_footer = map.next_value()?,
-                        "change_counts" => {
-                            let _: serde::de::IgnoredAny = map.next_value()?;
-                            return Err(serde::de::Error::custom(Error::RemovedChangeCounts));
-                        }
                         "activity_bar" => settings.activity_bar = Some(map.next_value()?),
                         "automations" => settings.automations = Some(map.next_value()?),
                         "hosts" => settings.hosts = map.next_value()?,

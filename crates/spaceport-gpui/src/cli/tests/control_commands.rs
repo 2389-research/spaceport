@@ -98,14 +98,6 @@ fn app_window_and_ui_commands() {
 }
 
 #[test]
-fn removed_code_open_command_is_rejected() {
-    assert_eq!(
-        parse(&["code", "open", "src/main.rs:42"]).unwrap_err(),
-        CliError::UnknownOption("code".into())
-    );
-}
-
-#[test]
 fn work_commands() {
     assert_eq!(
         command(&["notes", "set", "waiting", "on", "review"]),
@@ -130,14 +122,6 @@ fn work_commands() {
             what: WaitFor::TabClosed(4),
             timeout: 5
         }
-    );
-}
-
-#[test]
-fn excluded_fan_out_command_is_rejected() {
-    assert_eq!(
-        parse(&["fan-out", "--agent", "claude:2", "fix it"]).unwrap_err(),
-        CliError::UnknownOption("fan-out".into())
     );
 }
 

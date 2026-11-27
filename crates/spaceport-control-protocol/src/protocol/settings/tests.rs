@@ -136,5 +136,3 @@ fn slow_operations_extend_the_answer_timeout() {
 }
 
 mod language;
-
-mod removed_updater;

@@ -469,20 +469,6 @@ impl Config {
             .into_iter()
             .flat_map(|(name, face)| face.reject_terminal_keys(name)),
         );
-        // An old account table must not silently become accepted inert data:
-        // the app no longer owns GitHub sign-ins, and settings must say so.
-        if unknown_keys
-            .iter()
-            .any(|key| key == "github" || key.starts_with("github."))
-        {
-            return Err(Error::RemovedGitHub);
-        }
-        if unknown_keys
-            .iter()
-            .any(|key| key == "updates" || key.starts_with("updates."))
-        {
-            return Err(Error::RemovedUpdates);
-        }
         unknown_keys.sort();
         unknown_keys.dedup();
         let mut config = Self {

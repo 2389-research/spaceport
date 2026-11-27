@@ -1,8 +1,6 @@
 use super::*;
 use std::path::PathBuf;
 
-mod removed_clone;
-
 #[test]
 fn accepts_plain_folder_names() {
     assert_eq!(parse_name("my-project").as_deref(), Some("my-project"));

@@ -237,10 +237,6 @@ pub(crate) fn unexpected(response: Response) -> crate::Error {
 /// The exit status an error maps to.
 pub(crate) fn status(error: &crate::Error) -> u8 {
     match error {
-        crate::Error::Browser(
-            spaceport_browser::Error::InvalidLocalPage
-            | spaceport_browser::Error::WebUrl(spaceport_web_url::Error::InvalidUrl),
-        ) => exit::USAGE,
         crate::Error::Control(
             crate::control::Error::Unavailable { .. } | crate::control::Error::NoResponse,
         ) => exit::NOT_RUNNING,

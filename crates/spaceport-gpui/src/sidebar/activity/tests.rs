@@ -7,5 +7,4 @@ mod automation_unavailable;
 mod bubbles;
 mod layout;
 mod pulse;
-mod removed_sections;
 mod toggle;

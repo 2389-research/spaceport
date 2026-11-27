@@ -233,13 +233,6 @@ fn unknown_keys_are_ignored_and_reported() -> anyhow::Result<()> {
             .unknown_keys
             .is_empty()
     );
-    // Old account settings, including pasted secrets, are rejected without edits.
-    for name in ["client_secret", "private_key", "token"] {
-        assert!(matches!(
-            Config::parse(&format!("[github]\n{name} = 'x'")),
-            Err(Error::RemovedGitHub)
-        ));
-    }
 
     // Loading from disk keeps going too, and leaves the file alone.
     let temp = TempDirectory::new()?;

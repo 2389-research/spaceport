@@ -272,5 +272,3 @@ mod tests;
 
 #[cfg(all(test, target_os = "macos"))]
 mod native_chrome_tests;
-#[cfg(test)]
-mod removed_git_tests;

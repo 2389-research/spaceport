@@ -23,8 +23,6 @@ mod workspace;
 mod worktree_note;
 
 #[cfg(test)]
-mod account_route_tests;
-#[cfg(test)]
 mod announcement_tests;
 #[cfg(test)]
 mod en_xa_tests;

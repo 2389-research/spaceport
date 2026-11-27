@@ -100,14 +100,6 @@ pub enum Error {
     PreferencesNotObject,
     #[error("XDG_CONFIG_HOME must be an absolute path")]
     RelativeConfigRoot,
-    #[error("sidebar.change_counts was removed; remove this setting")]
-    RemovedChangeCounts,
-    #[error(
-        "[github] account settings were removed; remove this table from spaceport/config.local.toml"
-    )]
-    RemovedGitHub,
-    #[error("Custom updater settings have been removed; remove [updates] from the configuration")]
-    RemovedUpdates,
     /// A `[ssh]` table this build cannot use.
     #[error("{0}")]
     SshHosts(#[from] crate::ssh_hosts::Error),
