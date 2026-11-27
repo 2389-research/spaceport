@@ -58,6 +58,7 @@ impl Localize for Error {
             }
             Self::InvalidThemePair => fl!("error-config-invalid-theme-pair"),
             Self::InvalidThemePath => fl!("error-config-invalid-theme-path"),
+            Self::InvalidUsageTable => fl!("error-config-invalid-usage-table"),
             Self::InvalidWorktreeTint(tint) => fl!(
                 "error-worktree-identity-invalid-tint",
                 tint = format!("{tint:?}")
@@ -80,6 +81,9 @@ impl Localize for Error {
             ),
             Self::PreferencesNotObject => fl!("error-config-preferences-not-object"),
             Self::RelativeConfigRoot => fl!("error-relative-config-root"),
+            Self::RemovedChangeCounts => fl!("error-config-removed-change-counts"),
+            Self::RemovedGitHub => fl!("error-config-removed-github"),
+            Self::RemovedUpdates => fl!("error-config-removed-updates"),
             Self::SshHosts(error) => error.localize(),
             Self::ThemeLine { line, key, source } => fl!(
                 "error-config-theme-line",

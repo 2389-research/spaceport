@@ -9,6 +9,7 @@ use spaceport_client::protocol::ClientShellSnapshot;
 mod appear;
 mod chrome;
 mod group_rows;
+mod keybinds;
 mod left_checkout;
 mod page_set;
 mod page_title;

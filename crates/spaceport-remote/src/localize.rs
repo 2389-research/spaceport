@@ -3,10 +3,9 @@
 //! keeps its English `Display` for logs, and an enum wrapping another crate's
 //! error calls that error's own `localize()`, so each failure has one message
 //! as it has one definition. The messages are `error-host-script.ftl`,
-//! `error-shell.ftl` and `error-devices.ftl`.
+//! `error-devices.ftl`, and the host script's own `error-host-script.ftl`.
 // i18n: migrated
 
-mod host_shell;
 mod root;
 mod setup;
 

@@ -1,17 +1,23 @@
-//! Status bar: a switch per item, and how a shown button draws. Network
-//! quality keeps its existing visibility key, which also stops its sampling.
+//! Status bar: a switch per item, and how compactly a shown item draws.
+//! Usage and network quality keep their existing visibility keys,
+//! which also stop their sampling.
 // i18n: migrated
 use super::{PageState, SettingsWindow, catalog, on_value, ui};
 use crate::{
     config::{
+        Config,
         preferences::Preference,
-        status_bar::{AwakeScope, Button, Edit},
+        status_bar::{AwakeScope, Button, Detail, Edit},
     },
     i18n::{self, fl},
 };
 use gpui::{prelude::*, *};
 
 /// Each choice of a segmented control, with the message naming it.
+const DETAILS: [(Detail, &str); 2] = [
+    (Detail::Detailed, "settings-status-bar-detailed"),
+    (Detail::Compact, "settings-status-bar-compact"),
+];
 const SCOPES: [(AwakeScope, &str); 2] = [
     (AwakeScope::Display, "settings-status-bar-awake-display"),
     (AwakeScope::System, "settings-status-bar-awake-system"),
@@ -47,6 +53,7 @@ impl SettingsWindow {
     ) -> Div {
         let theme = page.theme;
         let items = page.config.status_bar;
+        let usage = page.config.usage.show;
         let network_quality = page.config.show_network_quality;
         let keep_awake = items.keep_awake;
         let buttons = [
@@ -80,6 +87,30 @@ impl SettingsWindow {
                 &fl!("settings-status-bar-section-items"),
                 Some(ui::Source::Spaceport),
             ))
+            .child(
+                ui::row(theme, &catalog::STATUS_USAGE)
+                    .control(self.detail_control(
+                        page,
+                        "status-usage-detail",
+                        items.usage,
+                        usage,
+                        Edit::Usage,
+                        cx,
+                    ))
+                    .switch(
+                        ui::toggle(theme, "status-usage-toggle", usage, true).on_click(
+                            cx.listener(move |this, _, _, cx| {
+                                this.save_native(
+                                    move || {
+                                        Config::save_usage_visibility(!usage)
+                                            .map_err(crate::Error::from)
+                                    },
+                                    cx,
+                                );
+                            }),
+                        ),
+                    ),
+            )
             .child(
                 ui::row(theme, &catalog::STATUS_NETWORK_QUALITY).switch(self.preference_toggle(
                     page.theme,
@@ -118,6 +149,28 @@ impl SettingsWindow {
                     .mt(px(10.))
                     .text_size(px(11.)),
             )
+    }
+
+    /// Detailed or Compact for an item; inert while the item is hidden.
+    fn detail_control(
+        &self,
+        page: &PageState<'_>,
+        id: &'static str,
+        current: Detail,
+        shown: bool,
+        edit: fn(Detail) -> Edit,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        ui::segmented(
+            page.theme,
+            id,
+            &choices(&DETAILS),
+            shown.then_some(current),
+            shown,
+            on_value(cx, move |this, detail, _, cx| {
+                this.save_preference(Preference::StatusBar(edit(detail)), cx)
+            }),
+        )
     }
 
     /// A switch that hides the button, then whether it keeps its name.

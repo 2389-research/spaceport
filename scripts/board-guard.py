@@ -2,8 +2,8 @@
 """ABOUTME: Guard against double-wrapped task-row writes on an artifact-host data collection.
 ABOUTME: Every PUT to data/tasks must carry the bare record, never an API envelope.
 
-Usage: board-guard.py put-body.json   # exits 1 if the body is an envelope
-       board-guard.py get-response.json --unwrap  # prints the bare record to stdout
+Usage: guard-task-put.py put-body.json   # exits 1 if the body is an envelope
+       guard-task-put.py list-response.json --unwrap  # prints the bare record to stdout
 
 An envelope is any object whose top-level keys include 'commit_revision', 'revision'
 or 'value'. Those are GET-response fields; a record's own fields are title/body/status/
@@ -23,9 +23,7 @@ def is_envelope(record: dict) -> bool:
 
 def unwrap(value):
     while isinstance(value, dict) and is_envelope(value):
-        if "value" not in value:
-            raise ValueError("envelope is missing its value")
-        value = value["value"]
+        value = value.get("value", value)
     return value
 
 
@@ -35,17 +33,13 @@ def main() -> int:
         print(__doc__, file=sys.stderr)
         return 2
     try:
-        with open(args[0], encoding="utf-8") as source:
-            data = json.load(source)
+        data = json.load(open(args[0]))
     except (OSError, ValueError) as error:
         print(f"guard: cannot read {args[0]}: {error}", file=sys.stderr)
         return 2
     if "--unwrap" in args:
-        try:
-            data = unwrap(data)
-        except ValueError as error:
-            print(f"guard: {error}", file=sys.stderr)
-            return 1
+        print(json.dumps(unwrap(data), indent=2, ensure_ascii=False))
+        return 0
     if not isinstance(data, dict):
         print("guard: PUT body must be a JSON object (the bare record)", file=sys.stderr)
         return 1
@@ -55,8 +49,6 @@ def main() -> int:
               "PUT response['value'] (the bare record), not the response. "
               "See artifacts.folk-fujita.ts.net/p/spaceport-crew-incident/", file=sys.stderr)
         return 1
-    if "--unwrap" in args:
-        print(json.dumps(data, indent=2, ensure_ascii=False))
     return 0
 
 

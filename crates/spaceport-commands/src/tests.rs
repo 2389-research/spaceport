@@ -1,6 +1,15 @@
 use super::*;
 
+mod browser_page;
 mod catalog;
+mod removed_git;
+mod removed_orchestrator;
+mod retired_ide;
+
+#[test]
+fn excluded_worktree_creation_is_absent_from_the_command_catalog() {
+    assert!(COMMANDS.iter().all(|info| info.name != "new_worktree"));
+}
 
 fn snapshot() -> ClientShellSnapshot {
     serde_json::from_str(include_str!(
@@ -363,6 +372,11 @@ fn tab_moves_wrap_and_stay_in_workspace() {
 }
 
 mod messages;
+mod removed_mods;
+mod terminal_annotations;
+mod visual_annotations;
+
+mod removed_chat_lifecycle;
 
 #[test]
 fn check_for_updates_is_a_window_command_without_a_shortcut() {

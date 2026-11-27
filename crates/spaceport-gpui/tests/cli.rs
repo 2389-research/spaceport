@@ -4,6 +4,16 @@
 #[cfg(target_os = "macos")]
 #[path = "cli/clipboard.rs"]
 mod clipboard;
+#[path = "cli/orchestrator.rs"]
+mod orchestrator;
+#[path = "cli/phone.rs"]
+mod phone;
+#[path = "cli/removed_project_open.rs"]
+mod removed_project_open;
+#[path = "cli/removed_scripts.rs"]
+mod removed_scripts;
+#[path = "cli/removed_updater.rs"]
+mod removed_updater;
 #[cfg(unix)]
 #[path = "cli/transport.rs"]
 mod transport;
@@ -246,6 +256,20 @@ fn code_edit_is_rejected_before_socket_lookup() {
         "{output:?}"
     );
     assert!(output.stdout.is_empty(), "{output:?}");
+}
+
+#[test]
+fn removed_design_feedback_is_rejected_before_socket_lookup() {
+    let state = tempfile::tempdir().unwrap();
+    let output = cli_in(&["browser", "feedback"], Some(state.path()));
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("Unknown option: browser"),
+        "{output:?}"
+    );
+    usage_error(&["feedback"], "Unknown option: feedback");
+    usage_error(&["wait", "feedback"], "Unknown wait command");
+    usage_error(&["--mockup"], "Unknown option: --mockup");
 }
 
 #[test]

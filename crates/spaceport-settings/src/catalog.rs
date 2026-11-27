@@ -115,6 +115,7 @@ catalog! {
     SIDEBAR_ACTIVITY_BAR = entry(Section::Sidebar, "sidebar-activity-bar", "settings-sidebar-activity-bar-title", "settings-sidebar-activity-bar-hint");
     SIDEBAR_SELECT = entry(Section::Sidebar, "sidebar-select", "settings-sidebar-select", "settings-sidebar-select-description");
     SIDEBAR_DEVICE_FOOTER = entry(Section::Sidebar, "sidebar-device-footer", "settings-sidebar-device-footer", "settings-sidebar-device-footer-description");
+    SIDEBAR_AUTOMATIONS = entry(Section::Sidebar, "sidebar-automations", "settings-sidebar-automations-title", "settings-sidebar-automations-hint").only(Availability::Core);
     SIDEBAR_SHOW_AGENTS = entry(Section::Sidebar, "sidebar-show-agents", "settings-sidebar-show-agents", "settings-sidebar-show-agents-description");
     SIDEBAR_AGENTS_PLACEMENT = entry(Section::Sidebar, "sidebar-agents-placement", "settings-sidebar-agents-placement", "settings-sidebar-agents-placement-description");
     SIDEBAR_QUIET_AFTER = entry(Section::Sidebar, "sidebar-quiet-after", "settings-sidebar-quiet-after", "settings-sidebar-quiet-after-description");
@@ -134,6 +135,7 @@ catalog! {
     FONTS_TABS = entry(Section::Fonts, "fonts-tabs", face_message(FontFace::Tabs), "");
     FONTS_UI = entry(Section::Fonts, "fonts-ui", face_message(FontFace::Ui), "");
     FONTS_ALL_ROW = entry(Section::Fonts, "fonts-all-row", "settings-fonts-all-row", "");
+    STATUS_USAGE = entry(Section::StatusBar, "status-usage", "settings-status-usage", "settings-status-bar-usage-hint");
     STATUS_NETWORK_QUALITY = entry(Section::StatusBar, "status-network-quality", "settings-status-network-quality", "settings-status-network-quality-description");
     STATUS_KEEP_AWAKE = entry(Section::StatusBar, "status-keep-awake", "settings-status-keep-awake", "settings-status-keep-awake-description");
     STATUS_THEME = entry(Section::StatusBar, "status-theme", "settings-status-theme", "");
