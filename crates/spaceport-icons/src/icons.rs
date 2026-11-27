@@ -4,8 +4,7 @@
 use gpui::{AssetSource, SharedString};
 use std::borrow::Cow;
 
-/// The one `gpui::AssetSource`: every embedded icon, plus the provider logos
-/// `providers` holds, by asset path.
+/// The one `gpui::AssetSource`: every embedded icon, by asset path.
 pub struct Icons;
 
 /// Declares each agent mark once: its variant, Herdr's canonical
@@ -227,15 +226,14 @@ macro_rules! embedded_icons {
     };
 }
 
-// Embedded UI icons under assets/icons, one per line; agent marks and usage
-// providers declare their own. Keep the list sorted so parallel additions land
+// Embedded UI icons under assets/icons, one per line; agent marks declare
+// their own. Keep the list sorted so parallel additions land
 // on different lines.
 embedded_icons! {
     // keep-sorted start
     "arrow-left.svg",
     "arrow-right.svg",
     "arrow-up.svg",
-    "automations.svg",
     "azure-devops.svg",
     "bell-off.svg",
     "bell.svg",
@@ -273,6 +271,7 @@ embedded_icons! {
     "play.svg",
     "plug.svg",
     "plus.svg",
+    "providers/factory.svg",
     "pull-request.svg",
     "pulse.svg",
     "refresh.svg",
@@ -312,8 +311,7 @@ impl AssetSource for Icons {
             .copied()
             .chain(crate::brand::assets())
             .find(|(name, _)| *name == path)
-            .map(|(_, bytes)| bytes)
-            .or_else(|| crate::provider_logo(path));
+            .map(|(_, bytes)| bytes);
         Ok(bytes.map(Cow::Borrowed))
     }
 
@@ -324,7 +322,6 @@ impl AssetSource for Icons {
             .chain(AgentIcon::ALL.iter().map(|icon| icon.path()))
             .chain(STATUS_ICONS.iter().map(|(name, _)| *name))
             .chain(crate::brand::assets().map(|(name, _)| name))
-            .chain(crate::provider_paths())
             .filter(|name| name.starts_with(path))
             .map(Into::into)
             .collect())

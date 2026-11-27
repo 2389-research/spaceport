@@ -26,7 +26,6 @@ error-config-invalid-sound-volume = sound.volume must be between 0 and 100
 error-config-invalid-terminal-padding = terminal.{ $key } must be one number or a pair of numbers, each finite and between 0 and 64 logical pixels
 error-config-invalid-theme-pair = a theme that follows the system must name both sides: light:NAME,dark:NAME
 error-config-invalid-theme-path = theme must be a name, absolute path, or ~/ path
-error-config-invalid-usage-table = usage must be a TOML table
 error-config-invalid-zen-font-size = zen.font_size must be finite and between 8 and 48 logical pixels
 error-config-invalid-zen-width = zen.width must be 20 to 1000 columns, or a percentage from "10%" to "100%"
 # $key is a dotted config key.
@@ -34,8 +33,6 @@ error-config-key-not-table = { $key }: a part of this key holds a value, not a t
 # $original is the old config file; $local is the local file it moves into.
 error-config-migration-conflict = Cannot migrate { $original }: { $local } already contains different settings. Merge your old settings into the local file, then remove the old config; it will be regenerated.
 error-config-preferences-not-object = preferences must be an object
-error-config-removed-change-counts = sidebar.change_counts was removed; remove this setting
-error-config-removed-github = [github] account settings were removed; remove this table from spaceport/config.local.toml
 # A line of a terminal theme file. $line is its number, $key the color it sets.
 error-config-theme-line = line { $line }: { $key }: { $error }
 # $name is the theme's name, quoted; $directories lists the folders searched.
@@ -63,4 +60,3 @@ error-config-ssh-too-many = ssh.skip_host_key_verification must list at most { $
 # $name is the layout's name as the config wrote it, quoted.
 error-config-tab-layout-unknown = Unknown tab layout { $name }
 
-error-config-removed-updates = Custom updater settings have been removed; remove [updates] from the configuration.

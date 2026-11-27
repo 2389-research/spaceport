@@ -34,4 +34,3 @@ menu-page-themes = Themes
 menu-page-version-mismatch = Version mismatch
 menu-page-workspace = Workspace
 # $provider is an AI service, such as Claude or Codex.
-menu-page-usage = { $provider } usage

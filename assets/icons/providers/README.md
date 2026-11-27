@@ -1,9 +1,10 @@
 # Provider icons
 
-Monochrome provider logos from [CodexBar](https://github.com/steipete/CodexBar)
-(`Sources/CodexBar/Resources/ProviderIcon-*.svg`), used under its MIT license
-below. The logos themselves remain trademarks of their owners and identify
-each service only.
+`factory.svg`, the monochrome Factory logo that Droid's agent mark draws, is
+from [CodexBar](https://github.com/steipete/CodexBar)
+(`Sources/CodexBar/Resources/ProviderIcon-factory.svg`), used under its MIT
+license below. The logo remains a trademark of its owner and identifies the
+service only.
 
 ```text
 MIT License

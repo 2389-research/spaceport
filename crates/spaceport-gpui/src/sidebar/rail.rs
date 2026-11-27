@@ -456,7 +456,7 @@ impl Hint {
     ) -> impl Fn(&mut Window, &mut App) -> AnyView + 'static {
         let text = text.into();
         move |_, cx| {
-            cx.new(|_| crate::usage::Hint {
+            cx.new(|_| crate::hint::Hint {
                 text: text.clone(),
                 foreground: self.foreground,
                 surface: self.surface,

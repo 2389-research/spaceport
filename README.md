@@ -16,9 +16,8 @@ The target app keeps native terminals, rich chats, workspaces, customization,
 file interactions, service access, notifications, diagnostics, and a local
 desktop CLI. It removes the old IDE, Git, GitHub, embedded browser, cloud
 provisioning, Teleport, orchestration, mod, scheduler, and phone control
-features. Two leftovers of those features remain in the tree: the tab renderer
-in `crates/spaceport-browser`, and an Automations page that says this Core has no
-job feed. A tab shows a device list or a Core terminal and never a web page, so
+features. One leftover of those features remains in the tree: the tab renderer
+in `crates/spaceport-browser`. A tab shows a device list or a Core terminal and never a web page, so
 nothing in the UI opens a browser tab; a URL opens in the system browser. A
 build is not proof that the fork meets the specification.
 

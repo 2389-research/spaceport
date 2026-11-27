@@ -26,7 +26,6 @@ fn status_bar_controls_save_typed_edits(cx: &mut TestAppContext) {
         edits.lock().unwrap().pop()
     };
     for (selector, edit) in [
-        ("status-usage-detail-1", Edit::Usage(Detail::Compact)),
         ("status-keep-awake-toggle", Edit::KeepAwake(false)),
         ("status-theme-toggle", Edit::Theme(Button::Hidden)),
         ("status-theme-style-1", Edit::Theme(Button::Icon)),
@@ -42,8 +41,7 @@ fn status_bar_controls_save_typed_edits(cx: &mut TestAppContext) {
             "{selector}"
         );
     }
-    // The current choice, and the choices of a hidden item, save nothing.
-    assert_eq!(click(cx, "status-usage-detail-0"), None);
+    // The choices of a hidden item save nothing.
     view.update(cx, |view, cx| {
         view.config.status_bar.theme = Button::Hidden;
         cx.notify();
@@ -59,10 +57,9 @@ fn status_bar_controls_save_typed_edits(cx: &mut TestAppContext) {
 #[test]
 fn choices_name_messages() {
     let none: &[&str] = &[];
-    let messages = DETAILS
+    let messages = SCOPES
         .iter()
         .map(|(_, message)| *message)
-        .chain(SCOPES.iter().map(|(_, message)| *message))
         .chain(STYLES.iter().map(|(_, message)| *message));
     for message in messages {
         assert_eq!(i18n::takes(message), Some(none), "{message}");

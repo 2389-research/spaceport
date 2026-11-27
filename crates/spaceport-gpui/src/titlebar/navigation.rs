@@ -134,7 +134,7 @@ impl SpaceportWindow {
                         .hover(move |button| button.bg(wash(ink, hover)))
                         .active(move |button| button.bg(wash(ink, pressed)))
                         .tooltip(move |_, cx| {
-                            cx.new(|_| crate::usage::Hint {
+                            cx.new(|_| crate::hint::Hint {
                                 text: label.clone(),
                                 foreground: ink,
                                 surface,

@@ -10,9 +10,6 @@ mod excluded_remote_workspace;
 mod group_fold;
 mod mute;
 mod no_pull_request;
-mod removed_checkpoints;
-mod removed_close_delete;
-mod removed_orchestrator;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 mod scripts;
 mod targets;

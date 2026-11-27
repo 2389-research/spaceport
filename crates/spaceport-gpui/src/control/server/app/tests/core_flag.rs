@@ -39,24 +39,3 @@ fn enabled_core_commands_reach_normal_window_resolution(cx: &mut gpui::TestAppCo
         );
     });
 }
-
-#[gpui::test]
-fn disabled_automation_panel_reports_core_opt_in(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
-    cx.cx.update(|cx| {
-        view.update(cx, |view, _| {
-            view.config.sidebar_style.activity_bar = true;
-            view.config.sidebar_style.automations = true;
-        });
-        let response = ui(
-            call(UiOp::Panel {
-                panel: crate::sidebar::ActivityPanel::Automations,
-            }),
-            cx,
-        );
-        assert!(
-            matches!(response, Response::Error { code: ErrorCode::Unsupported, message }
-            if message == crate::core_feature::disabled_message())
-        );
-    });
-}

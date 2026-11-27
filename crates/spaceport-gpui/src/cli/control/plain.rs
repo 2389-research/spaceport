@@ -1,5 +1,5 @@
 //! Families with no command enum of their own: `status`, `skill`,
-//! `processes`, `usage`, `bell`, `events`, `run`, `commands`, `logs`, and
+//! `processes`, `bell`, `events`, `run`, `commands`, `logs`, and
 //! `diagnostics`.
 use super::{Args, CliError, ControlCommand, wait_option};
 
@@ -22,12 +22,6 @@ pub(super) fn processes(args: &mut Args) -> Result<ControlCommand, CliError> {
     Ok(ControlCommand::Processes {
         pane: args.text_option("--pane")?,
     })
-}
-
-pub(super) const USAGE_USAGE: &str = "spaceport usage\n    Plan usage on the selected host when Core supplies a feed; currently unavailable.";
-
-pub(super) fn usage(_: &mut Args) -> Result<ControlCommand, CliError> {
-    Ok(ControlCommand::Usage)
 }
 
 pub(super) const BELL_USAGE: &str =

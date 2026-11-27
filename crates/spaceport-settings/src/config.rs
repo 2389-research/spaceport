@@ -153,7 +153,8 @@ pub struct Config {
     /// ignored, as Herdr ignores its own, so a config written by a newer
     /// build or with a typo still loads; `diagnostic` reports them.
     pub unknown_keys: Vec<String>,
-    pub usage: spaceport_usage::UsageConfig,
+    /// `[usage]`: which daemon-reported usage indicators the window shows.
+    pub usage: crate::usage::Indicators,
     /// The private view settings' `[keys]` table as written, kept so the app
     /// can build its keymap from the same defaults this config was layered
     /// over. Not a value this crate resolves: keystrokes are the app's.
@@ -238,7 +239,7 @@ impl Default for Config {
             theme: "Default".into(), // i18n: data
             ui: font(ui, 12.0),
             unknown_keys: Vec::new(),
-            usage: spaceport_usage::UsageConfig::default(),
+            usage: crate::usage::Indicators::default(),
             view_keys: None,
             worktrees: Worktrees::default(),
             zen: Zen::default(),
@@ -297,7 +298,7 @@ struct Settings {
     terminal: FontSettings,
     theme: Option<String>,
     ui: FontSettings,
-    usage: spaceport_usage::UsageConfig,
+    usage: crate::usage::Indicators,
     worktrees: worktrees::WorktreeSettings,
     zen: zen::ZenSettings,
     // keep-sorted end
@@ -453,7 +454,6 @@ impl Config {
             }
             known
         });
-        unknown_keys.extend(settings.usage.retain_known());
         // Only catalog profile IDs name a device; anything else is ignored
         // and reported like any other unknown key.
         settings.devices.retain(|id, _| {
@@ -475,20 +475,6 @@ impl Config {
             .into_iter()
             .flat_map(|(name, face)| face.reject_terminal_keys(name)),
         );
-        // An old account table must not silently become accepted inert data:
-        // the app no longer owns GitHub sign-ins, and settings must say so.
-        if unknown_keys
-            .iter()
-            .any(|key| key == "github" || key.starts_with("github."))
-        {
-            return Err(Error::RemovedGitHub);
-        }
-        if unknown_keys
-            .iter()
-            .any(|key| key == "updates" || key.starts_with("updates."))
-        {
-            return Err(Error::RemovedUpdates);
-        }
         unknown_keys.sort();
         unknown_keys.dedup();
         let mut config = Self {
@@ -571,10 +557,10 @@ impl Config {
         config.backdrop = settings.backdrop;
         config.accent = settings.accent;
         config.contrast = settings.contrast;
+        config.usage = settings.usage;
         config.agents_placement = settings.agents_placement;
         config.quiet_after = settings.quiet_after;
         config.agent_skill = settings.agent_skill;
-        config.usage = settings.usage;
         config.option_as_alt = settings.option_as_alt;
         config.keep_selection_after_copy = settings.keep_selection_after_copy.unwrap_or(true);
         config.herdr_2_terminals = settings.herdr_2_terminals.unwrap_or(false);

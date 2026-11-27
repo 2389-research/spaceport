@@ -116,7 +116,7 @@ fn ports_list_the_workspaces_listeners_or_say_why_not(cx: &mut TestAppContext) {
     cx.update(|_, cx| {
         view.update(cx, |view, _| {
             view.listening_ports.seed(
-                crate::usage::Host::Local,
+                spaceport_remote::Host::Local,
                 [(
                     Owner {
                         workspace: "w3".into(),

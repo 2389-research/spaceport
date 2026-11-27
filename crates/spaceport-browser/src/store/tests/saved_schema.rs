@@ -1,5 +1,5 @@
 // ABOUTME: Pins which saved tabs load, which files are refused, and the bytes written back.
-// ABOUTME: Guards the saved-file contract while retired tab kinds leave the live model.
+// ABOUTME: Drops retired tab kinds and refuses kinds no build wrote.
 use super::*;
 
 /// An absolute path on the platform running the test, as JSON text.
@@ -155,83 +155,24 @@ fn unknown_kinds_places_and_members_keep_their_outcome() {
 }
 
 #[test]
-fn a_malformed_retired_payload_refuses_the_whole_file() {
-    let checkout = |repo_key: &str, branch: &str| {
-        format!(
-            r#"{{"kind":"review","checkout":{{"repo_key":{repo_key},"branch":"{branch}","checkout":null}}}}"#
-        )
-    };
-    let local = |root: &str, entry: &str| {
-        format!(r#"{{"kind":"local","file":{{"root":{root},"entry":"{entry}"}}}}"#)
-    };
-    // Each payload fails its own check; the message names which.
-    let url = spaceport_web_url::Error::InvalidUrl.to_string();
-    let page = Error::InvalidLocalPage.to_string();
-    let review = Error::InvalidReviewCheckout.to_string();
-    let tabs = Error::InvalidBrowserTabs.to_string();
-    let source = Error::InvalidCodeFile.to_string();
-    let cases = [
-        (
-            r#"{"kind":"web","url":"file:///etc/passwd"}"#.to_owned(),
-            &url,
-        ),
-        (r#"{"kind":"web","url":"https://"}"#.to_owned(), &url),
-        (local(r#""/""#, "etc"), &page),
-        (local(r#""relative""#, "index.html"), &page),
-        (local(&absolute("site"), ".env"), &page),
-        (local(&absolute("site"), "../index.html"), &page),
-        (local(&absolute(".hidden"), "index.html"), &page),
-        (checkout(r#""relative/.git""#, "main"), &review),
-        (checkout("null", "main"), &review),
-        (checkout(&absolute("repo/.git"), ""), &review),
-        (
-            r#"{"kind":"orchestrator","repo":{"checkout":"relative"}}"#.to_owned(),
-            &tabs,
-        ),
-        (
-            r#"{"kind":"orchestrator","repo":{"checkout":""}}"#.to_owned(),
-            &tabs,
-        ),
-        (
-            r#"{"kind":"code","file":{"path":"relative/main.rs","line":1}}"#.to_owned(),
-            &source,
-        ),
-        (
-            r#"{"kind":"code","file":{"path":"","line":null}}"#.to_owned(),
-            &source,
-        ),
-    ];
-    for (location, message) in cases {
+fn malformed_retired_payloads_trigger_file_recovery() {
+    for location in [
+        r#"{"kind":"web"}"#,
+        r#"{"kind":"web","url":"file:///etc/passwd"}"#,
+        r#"{"kind":"local","file":"index.html"}"#,
+        r#"{"kind":"review","checkout":{"branch":7}}"#,
+        r#"{"kind":"orchestrator","repo":"relative"}"#,
+        r#"{"kind":"orchestrator","repo":{"checkout":"relative"}}"#,
+        r#"{"kind":"review","checkout":{"branch":"main"}}"#,
+        r#"{"kind":"code","file":{"path":"","line":-1}}"#,
+    ] {
         let bytes = file(
             &[
                 legacy(0, r#"{"kind":"devices"}"#, ""),
-                legacy(1, &location, ""),
+                legacy(1, location, ""),
             ],
             "",
         );
-        let Err(Error::Json(error)) = Store::restored_for_test(&bytes) else {
-            panic!("{location} loaded or failed another way");
-        };
-        assert!(
-            error.to_string().starts_with(message.as_str()),
-            "{location}: {error}"
-        );
-    }
-    // A retired kind without its payload, or with one of the wrong shape.
-    for location in [
-        r#"{"kind":"web"}"#,
-        r#"{"kind":"local"}"#,
-        r#"{"kind":"review"}"#,
-        r#"{"kind":"orchestrator"}"#,
-        r#"{"kind":"code"}"#,
-        r#"{"kind":"web","url":7}"#,
-        r#"{"kind":"local","file":"index.html"}"#,
-        r#"{"kind":"review","checkout":{"branch":7}}"#,
-        r#"{"kind":"orchestrator","repo":"/srv/repo"}"#,
-        r#"{"kind":"code","file":{"line":4}}"#,
-        r#"{"kind":"code","file":{"path":"/srv/main.rs","line":-1}}"#,
-    ] {
-        let bytes = file(&[legacy(1, location, "")], "");
         assert!(
             matches!(Store::restored_for_test(&bytes), Err(Error::Json(_))),
             "{location}"
@@ -244,9 +185,6 @@ fn a_tab_that_breaks_a_bound_refuses_the_whole_file() {
     let devices = r#"{"kind":"devices"}"#;
     let long = "x".repeat(MAX_TITLE_CHARS + 1);
     for invalid in [
-        // An editor tab never had a terminal agent to own it.
-        legacy(1, "null", r#","origin":"w:p1","place":"code""#),
-        legacy(1, devices, r#","origin":"w:p1","place":"px0""#),
         legacy(1, devices, r#","origin":"""#),
         tab(1, r#""local""#, "", devices, ""),
         tab(1, CORE_SCOPE, "w", "null", ""),

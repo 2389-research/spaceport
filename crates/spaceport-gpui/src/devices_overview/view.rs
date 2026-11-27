@@ -290,7 +290,7 @@ impl SpaceportWindow {
                         .when_some(unavailable, |button, reason| {
                             let (foreground, surface) = (theme.foreground, theme.surface);
                             button.opacity(0.5).tooltip(move |_, cx| {
-                                cx.new(|_| crate::usage::Hint {
+                                cx.new(|_| crate::hint::Hint {
                                     text: reason.into(),
                                     foreground,
                                     surface,

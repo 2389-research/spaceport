@@ -96,24 +96,6 @@ impl SettingsWindow {
                     })),
                 ),
             )
-            .children(
-                page.available(catalog::SIDEBAR_AUTOMATIONS.availability)
-                    .then(|| {
-                        ui::row(theme, &catalog::SIDEBAR_AUTOMATIONS).switch(
-                            ui::toggle(
-                                theme,
-                                "sidebar-automations-toggle",
-                                page.config.sidebar_style.automations,
-                                ready,
-                            )
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                let mut intent = SidebarIntent::of(&this.config);
-                                intent.style.automations = !intent.style.automations;
-                                this.commit_sidebar(intent, cx);
-                            })),
-                        )
-                    }),
-            )
             .child(
                 ui::row(theme, &catalog::SIDEBAR_SELECT).control(ui::segmented(
                     theme,

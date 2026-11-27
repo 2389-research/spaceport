@@ -5,6 +5,7 @@
 pub mod agent;
 mod error;
 pub mod host_script;
+pub mod host_shell;
 mod localize;
 pub mod setup;
 pub mod snapshot;
@@ -14,3 +15,4 @@ pub mod snapshot;
 mod test_executable;
 
 pub use error::{Error, Result};
+pub use host_shell::{Host, Shell};

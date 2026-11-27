@@ -124,5 +124,3 @@ fn chat_creation_has_a_bounded_acknowledgement_wait() {
     });
     assert_eq!(status.wait_seconds(), 0);
 }
-
-mod removed_lifecycle;

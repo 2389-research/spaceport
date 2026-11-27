@@ -63,6 +63,16 @@ fn recovery_keeps_valid_tabs_and_reserves_rejected_ids_and_saved_next() {
             90,
             90,
         ),
+        (
+            r#"{"id":70,"scope":"local","workspace_id":"w","location":{"kind":"code","file":{"path":"/project/main.rs","line":-1}},"title":"Last edit"}"#,
+            3,
+            71,
+        ),
+        (
+            r#"{"id":70,"scope":"local","workspace_id":"w","place":"px0","location":{"kind":"devices"},"origin":"w:p1","title":"Old editor"}"#,
+            3,
+            71,
+        ),
     ] {
         let folder = tempfile::tempdir().unwrap();
         let path = folder.path().join(TABS_FILE);
@@ -94,6 +104,23 @@ fn recovery_keeps_valid_tabs_and_reserves_rejected_ids_and_saved_next() {
         assert_eq!(reloaded.get(TabId::test(2)), good.as_ref());
         assert!(reloaded.get(opened.unwrap()).is_some());
     }
+}
+
+#[test]
+fn loading_valid_retired_tabs_leaves_the_original_as_the_only_copy() {
+    let folder = tempfile::tempdir().unwrap();
+    let path = folder.path().join(TABS_FILE);
+    let retired = r#"{"id":7,"scope":"local","workspace_id":"w","location":{"kind":"web","url":"https://example.org"},"title":"Docs"}"#;
+    let original = format!(r#"{{"tabs":[{GOOD},{retired}]}}"#);
+    fs::write(&path, &original).unwrap();
+    for _ in 0..2 {
+        let mut store = Store::load(Some(path.clone()));
+        assert!(store.get(TabId::test(2)).is_some());
+        assert!(store.get(TabId::test(7)).is_none());
+        assert!(finish_writes(&mut store));
+    }
+    assert_eq!(fs::read(&path).unwrap(), original.as_bytes());
+    assert!(backups(folder.path()).is_empty());
 }
 
 #[test]

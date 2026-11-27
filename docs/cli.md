@@ -66,7 +66,7 @@ unknown option, not `status` asked for JSON.
 | 1 | Refused or failed |
 | 2 | Invalid arguments, or an address or file that cannot be shown |
 | 3 | Spaceport is not running, or the control connection closed without an answer |
-| 4 | Nothing yet: no notes, no events, no chat panes, no ports, no usage, no log, a key not set, or the wait not met |
+| 4 | Nothing yet: no notes, no events, no chat panes, no ports, no log, a key not set, or the wait not met |
 | 5 | The window, workspace, tab, host, file, or `run` command name is not there |
 | 6 | A dialog is open in the window, or the app is busy |
 | 7 | The app did not answer in time |
@@ -107,7 +107,7 @@ Changing this preference never stops Core or its terminals.
 | `window detach\|reconnect` | Detach from, or reconnect to, the selected host |
 | `ui sidebar\|statusbar [on\|off\|toggle]` | For this window and session; `status-bar` is the same verb, and `show`/`hide` are `on`/`off` |
 | `ui font-size +\|-\|reset\|POINTS` | The terminal font size for this session; POINTS is 8-48, and `larger`/`smaller` are `+`/`-` |
-| `ui panel workspaces\|overview\|automations\|usage` | Show an activity bar section: Workspaces with the sidebar expanded, Overview of what needs you on every host, an unavailable job and run feed, or every host's plan usage. Exits 8 when the activity bar is off (`[sidebar] activity_bar = false`), when that section is turned off in settings, or for `automations` while Core is off |
+| `ui panel workspaces\|overview` | Show an activity bar section: Workspaces with the sidebar expanded, or Overview of what needs you on every host. Exits 8 when the activity bar is off (`[sidebar] activity_bar = false`) |
 | `ui agent-idle [--pane ID]` | Read this client’s idle estimate for a pane in the targeted workspace. Defaults to the caller’s pane, then the focused pane. JSON includes seconds and a lower-bound flag. Exits 4 when the client has no usable age. |
 | `run check-for-updates` | Open Sparkle’s native update check in an installed macOS preview; unsupported builds refuse it |
 | `run COMMAND` | Any app command by its `[keybindings]` name, as the palette runs it; an unknown name exits 5 |
@@ -162,7 +162,6 @@ not take it either.
 | `ports [list]` | Ports your workspace listens on, and forwards |
 | `ports forward\|unforward PORT` | Forward a port of the SSH host to this machine |
 | `ports open PORT` | Open `localhost:PORT` with the system handler; forwards a remote port before opening |
-| `usage` | Plan usage on the selected host; reports unavailable until Core supplies a usage feed |
 | `processes [--pane ID]` | The processes under a pane, with CPU and memory (no app needed) |
 
 ### Settings and services
@@ -286,7 +285,7 @@ One JSON request line, one JSON response line, then the socket closes. Every
 request but `status` is `{"method", "caller", "op"}`, where `caller` carries
 the pane, workspace, daemon socket, and window, and `op` is tagged with
 `"op"`. `status` carries those caller fields beside `"method": "status"`
-instead, with no `op`. It reports the protocol version, currently 38.
+instead, with no `op`. It reports the protocol version, currently 39.
 Requests and responses are bounded to 256 KiB. A request that waits says for
 how long (at most 600 seconds), and the app answers at most a few requests at
 a time.

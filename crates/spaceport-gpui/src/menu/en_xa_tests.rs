@@ -178,7 +178,6 @@ fn every_page_title_is_a_message_under_en_xa() {
         let leaks: Vec<_> = pages
             .into_iter()
             .chain(dialogs)
-            .chain(crate::usage::registry::all().map(Page::Usage))
             .map(name)
             .filter(|name| !is_marked(name))
             .collect();

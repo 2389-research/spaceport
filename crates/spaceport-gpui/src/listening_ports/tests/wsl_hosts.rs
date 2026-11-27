@@ -15,8 +15,8 @@ fn a_name_that_is_not_a_distribution_starts_no_shell() {
     assert!(
         matches!(
             error,
-            Error::Usage(spaceport_usage::Error::Shell(
-                spaceport_usage::shell::Error::Client(spaceport_client::Error::Wsl(
+            Error::Remote(spaceport_remote::Error::HostShell(
+                spaceport_remote::host_shell::Error::Client(spaceport_client::Error::Wsl(
                     spaceport_client::wsl::Error::InvalidDistro
                 ))
             ))
@@ -32,8 +32,8 @@ fn a_distribution_is_only_scanned_from_windows() {
     assert!(
         matches!(
             error,
-            Error::Usage(spaceport_usage::Error::Shell(
-                spaceport_usage::shell::Error::WslHostUnsupported
+            Error::Remote(spaceport_remote::Error::HostShell(
+                spaceport_remote::host_shell::Error::WslHostUnsupported
             ))
         ),
         "{error:?}"

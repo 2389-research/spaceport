@@ -64,7 +64,6 @@ pub fn name(page: Page) -> SharedString {
         Page::RenameTab => fl!("menu-page-rename-tab"),
         Page::Tab => fl!("menu-page-tab"),
         Page::Themes => fl!("menu-page-themes"),
-        Page::Usage(provider) => fl!("menu-page-usage", provider = provider.name()),
         Page::VersionMismatch => fl!("menu-page-version-mismatch"),
         Page::Workspace => fl!("menu-page-workspace"),
     })

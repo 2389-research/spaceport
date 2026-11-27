@@ -72,7 +72,7 @@
         "S03",
         "S09"
       ],
-      "issue": "Current Sheprd visibility depends in part on its own provider probes and automation daemon, both excluded. No equivalent complete Core feed is established.",
+      "issue": "Current Sheprd visibility depends in part on its own provider probes and automation daemon, both excluded. No equivalent complete Core feed is established. Under D73 Spaceport ships no usage or automation view of its own until one is.",
       "required_evidence": "Supported source contract and A20 without removed collectors/schedulers; document the exact coverage.",
       "forbidden_workaround": "Retain a hidden scheduler/provider login, scrape secrets or present unavailable values as zero/empty."
     },

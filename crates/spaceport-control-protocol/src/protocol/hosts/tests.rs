@@ -2,10 +2,6 @@
 use super::*;
 use crate::protocol::{Call, Caller, MAX_WAIT_SECONDS, Request, Response};
 
-mod removed_cloud;
-mod removed_github;
-mod removed_system;
-
 #[test]
 fn host_requests_have_a_stable_wire_form() {
     let request = Request::Host(Call {
@@ -26,7 +22,6 @@ fn host_requests_have_a_stable_wire_form() {
         HostOp::Ports,
         HostOp::Unforward { port: 1 },
         HostOp::OpenPort { port: 8080 },
-        HostOp::Usage,
     ] {
         let request = Request::Host(Call {
             caller: Caller::default(),
@@ -68,6 +63,7 @@ fn only_waiting_operations_extend_the_answer_timeout() {
 #[test]
 fn host_replies_round_trip() {
     for reply in [
+        Reply::Hosts { hosts: Vec::new() },
         Reply::Ports(Box::new(Ports {
             host: "Local".into(),
             workspace: "w_1".into(),
@@ -86,21 +82,6 @@ fn host_replies_round_trip() {
             }],
             note: None,
         })),
-        Reply::Usage {
-            host: "Local".into(),
-            usage: vec![UsageInfo {
-                provider: "Claude".into(),
-                account: None,
-                plan: Some("Max".into()),
-                windows: vec![UsageWindow {
-                    label: "Session".into(),
-                    used_percent: 12.5,
-                    resets_in_seconds: Some(60),
-                }],
-                error: None,
-            }],
-            note: None,
-        },
     ] {
         let response = Response::Host { reply };
         let text = serde_json::to_string(&response).unwrap();

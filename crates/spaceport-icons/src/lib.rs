@@ -1,5 +1,5 @@
-//! The artwork the app draws: each agent's mark, each status set, the UI
-//! glyphs, and the provider logos the usage views show.
+//! The artwork the app draws: each agent's mark, each status set and the UI
+//! glyphs.
 //!
 //! Every file is embedded at build time from `assets/icons` at the repository
 //! root, so nothing is read from disk at run time and no asset has to be
@@ -14,9 +14,7 @@
 
 mod brand;
 mod icons;
-mod providers;
 
 pub use icons::{
     AgentIcon, Icons, MUTED, STARRED, UNSTARRED, icon, muted, note, spoken_muted, status_icon,
 };
-pub use providers::{provider_logo, provider_paths};

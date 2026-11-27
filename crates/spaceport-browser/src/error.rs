@@ -9,16 +9,8 @@ pub enum Error {
     // keep-sorted start
     #[error("Invalid saved browser tabs")]
     InvalidBrowserTabs,
-    #[error("An old source tab must name an absolute file path without control characters")]
-    InvalidCodeFile,
     #[error("Invalid saved editor groups")]
     InvalidGroupLayouts,
-    #[error(
-        "Local pages must be a plain file in a folder that is not hidden and does not hold your home directory."
-    )]
-    InvalidLocalPage,
-    #[error("A saved review tab names a checkout that is not a local absolute path.")]
-    InvalidReviewCheckout,
     #[error("{0}")]
     Json(#[from] serde_json::Error),
     #[error(
@@ -31,7 +23,5 @@ pub enum Error {
         "Saved tab IDs are exhausted. Check browser-tabs.json and editor-groups.json, then restart Spaceport before opening new tabs."
     )]
     TabIdsExhausted,
-    #[error(transparent)]
-    WebUrl(#[from] spaceport_web_url::Error),
     // keep-sorted end
 }

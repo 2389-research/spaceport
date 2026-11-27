@@ -3,7 +3,7 @@ use super::text;
 
 use crate::control::protocol::{
     app::HostInfo,
-    hosts::{ForwardInfo, PortInfo, Ports, Reply, UsageInfo, UsageWindow},
+    hosts::{ForwardInfo, PortInfo, Ports},
 };
 
 #[test]
@@ -72,34 +72,7 @@ fn ports_list_listeners_forwards_and_why_none() {
 }
 
 #[test]
-fn usage_reads_in_plain_units() {
-    let reply = Reply::Usage {
-        host: "Local".into(),
-        usage: vec![UsageInfo {
-            provider: "Claude".into(),
-            account: Some("me@example.com".into()),
-            plan: Some("Max".into()),
-            windows: vec![UsageWindow {
-                label: "Session".into(),
-                used_percent: 12.4,
-                resets_in_seconds: Some(2 * 3600 + 53 * 60),
-            }],
-            error: None,
-        }],
-        note: None,
-    };
-    assert_eq!(
-        text::usage(&reply),
-        "Claude · Max · me@example.com\n  Session       12% used, resets in 2h 53m"
-    );
-}
-
-#[test]
-fn durations_and_sizes_keep_two_units_at_most() {
-    assert_eq!(text::duration(59), "0m");
-    assert_eq!(text::duration(5 * 60), "5m");
-    assert_eq!(text::duration(3600 + 60), "1h 1m");
-    assert_eq!(text::duration(2 * 86_400 + 3600 + 60), "2d 1h");
+fn sizes_use_binary_units() {
     assert_eq!(text::bytes(512), "512 B");
     assert_eq!(text::bytes(1536), "1.5 KiB");
     assert_eq!(text::bytes(3 << 30), "3.0 GiB");

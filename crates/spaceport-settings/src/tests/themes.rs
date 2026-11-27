@@ -50,13 +50,14 @@ fn contrast_parses_reaches_the_theme_and_saves_in_place() -> anyhow::Result<()> 
 
     let temp = TempDirectory::new()?;
     let path = temp.0.join("config.toml");
-    let original = "theme = 'Nord' # keep\ncontrast = 'standard' # mine\n[usage]\nshow = false\n";
+    let original =
+        "theme = 'Nord' # keep\ncontrast = 'standard' # mine\n[sidebar]\nactivity_bar = false\n";
     fs::write(&path, original)?;
     Config::save_contrast_path(Contrast::High, &path)?;
     let saved = fs::read_to_string(&path)?;
     assert_eq!(saved, original.replace("'standard'", "\"high\""));
     assert_eq!(Config::parse(&saved)?.contrast, Contrast::High);
-    assert!(!Config::parse(&saved)?.usage.show);
+    assert!(!Config::parse(&saved)?.sidebar_style.activity_bar);
     fs::remove_file(&path)?;
     Config::save_contrast_path(Contrast::High, &path)?;
     let created = fs::read_to_string(&path)?;
@@ -109,13 +110,10 @@ fn saves_only_theme_and_preserves_latest_settings_and_comments() -> anyhow::Resu
     assert_eq!(config.theme, "Default");
     assert_eq!(fs::read_dir(&temp.0)?.count(), 1);
 
-    fs::write(
-        &path,
-        "# no theme\n[tabs]\nsize = 19\n[github]\noauth_client_id = 'Iv1.fixture'\n",
-    )?;
+    fs::write(&path, "# no theme\n[tabs]\nsize = 19\n")?;
     config.save_theme_path("Dracula", &path)?;
     let saved = fs::read_to_string(&path)?;
-    assert!(matches!(Config::parse(&saved), Err(Error::RemovedGitHub)));
+    assert_eq!(Config::parse(&saved)?.theme, "Dracula");
     assert!(saved.contains("# no theme"));
     Ok(())
 }

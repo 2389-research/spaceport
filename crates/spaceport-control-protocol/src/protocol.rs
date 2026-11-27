@@ -40,7 +40,9 @@ use serde::{Deserialize, Serialize};
 /// 36: removed custom app updater operations and replies.
 /// 37: removed chat conversion requests and replies.
 /// 38: `chat new` waits for the created tab and pane, replying `created`.
-pub const PROTOCOL_VERSION: u32 = 38;
+/// 39: removed the usage request and reply, and the automations and usage
+/// activity panels.
+pub const PROTOCOL_VERSION: u32 = 39;
 
 /// Bounds a request and a response alike.
 pub const MAX_MESSAGE: usize = 256 * 1024;
@@ -234,28 +236,7 @@ mod tests {
     use super::*;
 
     mod caller;
-    mod removed_browser;
-    mod removed_phone;
     mod waits;
-
-    #[test]
-    fn removed_browser_open_request_is_rejected() {
-        let request = r#"{"method":"browser.open","page":{"url":"https://a.test/"},"caller":{},"focus":true}"#;
-        assert!(serde_json::from_str::<Request>(request).is_err());
-    }
-
-    #[test]
-    fn removed_design_feedback_requests_are_rejected() {
-        for request in [
-            r#"{"method":"browser.feedback","pane_id":"w_1:p1","wait_seconds":0}"#,
-            r#"{"method":"notes.send","caller":{"pane_id":"w_1:p1"},"text":"Picked: B"}"#,
-        ] {
-            assert!(
-                serde_json::from_str::<Request>(request).is_err(),
-                "{request}"
-            );
-        }
-    }
 
     #[test]
     fn requests_have_a_stable_wire_form() {
