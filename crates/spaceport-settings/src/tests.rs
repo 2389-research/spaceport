@@ -43,6 +43,7 @@ mod follows_herdr;
 mod generated_guidance;
 mod herdr_2_terminals;
 mod icon_font;
+mod keybindings_save;
 mod language;
 mod legacy_cloud;
 mod line_height;

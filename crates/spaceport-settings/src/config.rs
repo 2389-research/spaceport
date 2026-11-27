@@ -380,12 +380,18 @@ impl Config {
         let (_lock, local) = Self::prepare_files(path)?;
         let text =
             fs::read_to_string(&local).map_err(|error| Error::from(error).at_path(&local))?;
-        // Validate the override independently so bad types/unknown keys cannot
-        // disappear inside the merge. Empty arrays explicitly replace defaults.
-        Self::parse_over(&text, &base).map_err(|error| error.at_path(&local))?;
-        Self::parse_layers([DEFAULT_CONFIG, &text], &base)
+        Self::parse_loaded(&text, &base)
             .map_err(|error| error.at_path(&local))
             .map(|config| config.with_desktop_theme(&text))
+    }
+
+    /// The overrides file as a load reads it, so a save can check the text it
+    /// is about to write exactly as reload will.
+    pub(crate) fn parse_loaded(text: &str, base: &Daemon) -> Result<Self> {
+        // Validate the override independently so bad types/unknown keys cannot
+        // disappear inside the merge. Empty arrays explicitly replace defaults.
+        Self::parse_over(text, base)?;
+        Self::parse_layers([DEFAULT_CONFIG, text], base)
     }
 
     /// Without a home directory there is no desktop theme to find, and the
