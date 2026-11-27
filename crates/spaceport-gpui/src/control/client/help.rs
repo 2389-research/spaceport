@@ -9,9 +9,9 @@ or `caffeine`, only checks that the window is there. By default a command acts
 in the window showing the caller's workspace (HERDR_WORKSPACE_ID), and exits 5
 when no window shows it; outside Herdr, in the frontmost window.
 Exit status: 0 done, 1 refused, 2 invalid arguments, 3 Spaceport not running,
-4 nothing yet (no notes, no events, no chat panes, no ports, no log, a key not
-set, or the wait not met), 5 not found, 6 busy (a dialog is open), 7 timed
-out, 8 unsupported on this platform or by this app version.";
+4 nothing yet (no notes, no events, no chat panes, no ports, no usage, no log,
+a key not set, or the wait not met), 5 not found, 6 busy (a dialog is open),
+7 timed out, 8 unsupported on this platform or by this app version.";
 
 /// Usage for one family, or the list of families.
 pub(super) fn usage(name: Option<&str>) -> String {

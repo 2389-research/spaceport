@@ -8,7 +8,6 @@ impl Localize for Error {
     fn localize(&self) -> String {
         match self {
             Self::HostScript(error) => error.localize(),
-            Self::HostShell(error) => error.localize(),
             Self::Setup(error) => error.localize(),
         }
     }

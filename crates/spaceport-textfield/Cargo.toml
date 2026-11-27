@@ -22,6 +22,7 @@ spaceport-commands.workspace   = true
 spaceport-settings.workspace   = true
 spaceport-widgets.workspace    = true
 spaceport-words.workspace      = true
+tracing.workspace              = true
 unicode-bidi.workspace         = true
 unicode-segmentation.workspace = true
 

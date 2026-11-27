@@ -85,6 +85,10 @@ mod plain_folder_icon;
 #[cfg(test)]
 mod probe_bar;
 #[cfg(test)]
+mod probe_failure;
+#[cfg(test)]
+mod probe_resized;
+#[cfg(test)]
 mod probe_scale;
 #[cfg(test)]
 mod probes;
@@ -175,6 +179,17 @@ impl PaintedProbes {
 #[derive(Default)]
 pub(crate) struct VerifyChildGeometry(pub bool);
 impl Global for VerifyChildGeometry {}
+
+/// Holds the child rows to the default sidebar's column however wide the frame
+/// laid them out, so a correctly painted child row fails the probe. Only the
+/// native probe-failure fixture sets it: that run exists to prove a failed probe
+/// reports and exits nonzero instead of aborting, and it needs a failure it can
+/// ask for — a legitimately narrow sidebar is painted correctly, so the failing
+/// frame has to come from the expectation. [`VerifyChildGeometry`] alone cannot
+/// provide one now that the probe reads the width each frame measured.
+#[derive(Default)]
+pub(crate) struct ExpectDefaultChildColumn(pub bool);
+impl Global for ExpectDefaultChildColumn {}
 
 #[derive(Debug)]
 #[cfg_attr(not(feature = "integration-test"), allow(dead_code))]
@@ -349,27 +364,36 @@ impl ProbeText {
             )
             && bounds.top() >= mask.top()
             && bounds.bottom() <= mask.bottom()
-            // The expected column assumes the window leaves the default
-            // sidebar width alone. A frame painted mid-resize, such as the
-            // return from a 320px check, can narrow it.
-            && super::sidebar_width(None, f32::from(window.viewport_size().width))
-                == super::SIDEBAR_WIDTH
         {
-            // The activity bar, when shown, puts the sidebar beside it.
-            let (mode, bar) = window
-                .root::<SpaceportWindow>()
-                .flatten()
-                .map(|view| {
-                    let view = view.read(cx);
-                    let bar = if view.activity_bar_shown() {
-                        super::activity::BAR_WIDTH
-                    } else {
-                        0.
-                    };
-                    (view.config.layout.mode, bar)
-                })
-                .unwrap_or_default();
-            probe.verify_child(&self.0, mode, bar, window.scale_factor())?;
+            // The column the row was laid out at comes from this frame's own
+            // panel width, so a frame painted while the sidebar is resized, or
+            // at a width the user chose, is held to what it measured. The
+            // probe-failure fixture asks for the default column instead.
+            let fixed = cx.default_global::<ExpectDefaultChildColumn>().0;
+            let Some((mode, panel, bar)) = window.root::<SpaceportWindow>().flatten().map(|view| {
+                let view = view.read(cx);
+                let measured = super::sidebar_width(
+                    view.sidebar_width,
+                    f32::from(window.viewport_size().width),
+                );
+                let panel = if fixed {
+                    super::SIDEBAR_WIDTH
+                } else {
+                    measured
+                };
+                // The activity bar, when shown, puts the sidebar beside it.
+                let bar = if view.activity_bar_shown() {
+                    super::activity::BAR_WIDTH
+                } else {
+                    0.
+                };
+                (view.config.layout.mode, panel, bar)
+            }) else {
+                // No window view to measure the panel with, so nothing to hold
+                // the row to.
+                return Ok(probe);
+            };
+            probe.verify_child(&self.0, mode, panel, bar, window.scale_factor())?;
             eprintln!("SIDEBAR child verified: {}", probe.glyph_text);
         }
         Ok(probe)
@@ -385,13 +409,14 @@ pub(crate) fn within_device_pixel(actual: Pixels, expected: Pixels, scale: f32) 
 }
 
 impl PaintedText {
-    /// `bar` is the width of the activity bar left of the sidebar, if any;
-    /// `scale` is the window's device pixels per logical pixel; see
-    /// [`within_device_pixel`].
+    /// `panel` is the sidebar's width in the frame that painted the row, `bar`
+    /// the width of the activity bar left of it, if any, and `scale` the
+    /// window's device pixels per logical pixel; see [`within_device_pixel`].
     fn verify_child(
         &self,
         input: &str,
         mode: crate::config::LayoutMode,
+        panel: f32,
         bar: f32,
         scale: f32,
     ) -> Result<()> {
@@ -406,7 +431,7 @@ impl PaintedText {
             px(bar + look.content_x() + layout.child_indent() + super::STATUS_WIDTH + layout.gap());
         // A worktree group's member draws no chevron, so its name also
         // takes the arrow column.
-        let width = px(look.content_width(super::SIDEBAR_WIDTH)
+        let width = px(look.content_width(panel)
             - super::STATUS_WIDTH
             - layout.gap()
             - layout.child_indent());
@@ -433,19 +458,16 @@ impl PaintedText {
             self.cached
         );
         ensure!(!self.clipped, "child glyphs clipped: {}", self.glyph_text);
-        if input == "sidebar-child" {
-            ensure!(
-                self.glyph_text == input,
-                "short child label changed: {:?}",
-                self.glyph_text
-            );
-        } else {
-            ensure!(
-                self.glyph_text.starts_with("sidebar-child")
-                    && self.glyph_text.ends_with('\u{2026}'),
-                "long child label did not truncate correctly: {:?}",
-                self.glyph_text
-            );
+        // A panel narrower than the label keeps the longest prefix that fits,
+        // ending in an ellipsis; a wide one paints the whole label.
+        let painted = self.glyph_text.trim_end_matches('\u{2026}');
+        ensure!(
+            input.starts_with(painted)
+                && (painted == input || self.glyph_text.ends_with('\u{2026}')),
+            "child label {input:?} painted as {:?}",
+            self.glyph_text
+        );
+        if painted != input {
             // GPUI keeps the longest prefix that fits beside the ellipsis
             // and drops the glyph that would not, so a correct truncation
             // can fall one glyph plus the ellipsis short. Segoe UI on Windows
@@ -643,6 +665,7 @@ pub(crate) fn fixture_window(
         notice_overflow: Default::default(),
         overview: Default::default(),
         viewport_width: 0.,
+        usage: Default::default(),
         network_quality_seen: 0,
         devices_overview: Default::default(),
         port_forwards: Default::default(),

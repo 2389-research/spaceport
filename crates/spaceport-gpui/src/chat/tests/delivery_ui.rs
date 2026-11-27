@@ -69,7 +69,9 @@ fn a_replaced_conversation_shows_delivery_uncertainty_and_accepts_a_fresh_prompt
 }
 
 #[gpui::test]
-fn a_reconnect_shows_uncertainty_and_only_sends_a_fresh_prompt(cx: &mut TestAppContext) {
+fn a_reconnect_repeats_the_unconfirmed_prompt_with_its_id_and_mints_nothing(
+    cx: &mut TestAppContext,
+) {
     let (view, _peer, cx) = open(cx, ConnectTarget::Local);
     let program = Program::new();
     let mut stream = attach_with(
@@ -80,7 +82,7 @@ fn a_reconnect_shows_uncertainty_and_only_sends_a_fresh_prompt(cx: &mut TestAppC
     );
     cx.simulate_input("Fixture prompt across a reconnect");
     cx.simulate_keystrokes("enter");
-    let Some(ClientMessage::Command { id: previous, .. }) = read(&mut stream) else {
+    let Some(ClientMessage::Command { command, id }) = read(&mut stream) else {
         panic!("prompt")
     };
     // The program took the write and never acknowledged it: dropping its end
@@ -93,31 +95,28 @@ fn a_reconnect_shows_uncertainty_and_only_sends_a_fresh_prompt(cx: &mut TestAppC
         &mut stream,
         &snapshot(cursor(1, 0), vec![agent(1, "Ready.")]),
     );
+    // The repeat waits for the new connection to confirm the conversation's
+    // epoch, which the snapshot does.
     wait_until(|| {
         poll(&view, &program, cx);
         view.read_with(cx, |view, _| {
             view.chats.pane("w1:p1").unwrap().session.live()
         })
     });
-    assert!(cx.debug_bounds("chat-problem").is_some());
+    // The one repeat carries the id and body the window already wrote, so the
+    // program can tell it from a new prompt. Nothing else is sent for it, and
+    // the following reconnect in this epoch leaves it alone.
     assert_eq!(
-        view.read_with(cx, |view, _| view
-            .chats
-            .pane("w1:p1")
-            .unwrap()
-            .session
-            .rejection()),
-        Some(Refusal::DeliveryUnconfirmed)
+        read(&mut stream),
+        Some(ClientMessage::Command { command, id })
     );
-    cx.simulate_input("Fresh fixture prompt");
-    cx.simulate_keystrokes("enter");
-    let Some(ClientMessage::Command { command, id }) = read(&mut stream) else {
-        panic!("fresh prompt")
-    };
-    assert_ne!(id, previous);
-    assert!(
-        matches!(command, spaceport_chat_protocol::Command::Prompt { text, .. } if text == "Fresh fixture prompt")
-    );
+    send(&mut stream, &ServerMessage::Ack { id, rejected: None });
+    poll(&view, &program, cx);
+    view.update(cx, |view, _| {
+        let pane = view.chats.pane_mut("w1:p1").unwrap();
+        assert_eq!(pane.session.rejection(), None);
+        assert!(pane.session.resend().is_empty());
+    });
 }
 
 #[gpui::test]
@@ -148,10 +147,6 @@ fn a_reconnect_into_a_replaced_conversation_sends_nothing(cx: &mut TestAppContex
     wait_until(|| {
         poll(&view, &program, cx);
         cx.debug_bounds("chat-problem").is_some()
-            && view.read_with(cx, |view, _| {
-                view.chats.panes().next().unwrap().session.rejection()
-                    == Some(Refusal::SessionChanged)
-            })
     });
     view.read_with(cx, |view, _| {
         assert_eq!(

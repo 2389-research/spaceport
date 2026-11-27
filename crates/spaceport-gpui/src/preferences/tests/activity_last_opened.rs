@@ -12,7 +12,11 @@ fn last_opened_times_round_trip_and_damaged_ones_are_forgotten() {
     let path = directory.0.join("preferences.json");
     let at = |text: &str| DateTime::parse_from_rfc3339(text).unwrap().to_utc();
     let chrome = Chrome {
-        activity_last_opened: [(ActivityPanel::Workspaces, at("2026-10-19T08:30:00.250Z"))].into(),
+        activity_last_opened: [
+            (ActivityPanel::Workspaces, at("2026-10-19T08:30:00Z")),
+            (ActivityPanel::Usage, at("2026-10-18T22:00:00.250Z")),
+        ]
+        .into(),
         ..Chrome::default()
     };
     write_chrome(&path, chrome.clone()).unwrap();
@@ -23,7 +27,7 @@ fn last_opened_times_round_trip_and_damaged_ones_are_forgotten() {
     fs::write(
         &path,
         r#"{"sidebar_width_px": 250, "activity_last_opened_at": {
-            "workspaces": "2026-10-19T10:00:00+02:00",
+            "issues": "2026-10-19T10:00:00+02:00",
             "dashboard": "2026-10-19T10:00:00Z",
             "overview": "yesterday",
             "security": "2026-10-19T10:00:00Z"
@@ -43,35 +47,39 @@ fn last_opened_times_round_trip_and_damaged_ones_are_forgotten() {
 }
 
 #[test]
-fn visits_to_sections_this_build_lacks_are_forgotten_without_writing_on_read() {
+fn retired_activity_visits_merge_into_workspaces_without_writing_on_read() {
     let directory = TestDirectory::new();
     let path = directory.0.join("preferences.json");
-    let bytes = r#"{"activity_last_opened_at":{"workspaces":"2026-10-01T00:00:00Z","issues":"2026-10-03T00:00:00Z","usage":"2026-10-04T00:00:00Z"}}"#;
+    let bytes = r#"{"activity_last_opened_at":{"workspaces":"2026-10-01T00:00:00Z","issues":"2026-10-03T00:00:00Z","tasks":"2026-10-02T00:00:00Z","usage":"2026-10-04T00:00:00Z"}}"#;
     fs::write(&path, bytes).unwrap();
     let chrome = read_chrome(&path).unwrap();
     let at = |text: &str| DateTime::parse_from_rfc3339(text).unwrap().to_utc();
+    assert_eq!(chrome.activity_last_opened.len(), 2);
     assert_eq!(
-        chrome.activity_last_opened,
-        [(ActivityPanel::Workspaces, at("2026-10-01T00:00:00Z"))].into()
+        chrome.activity_last_opened.get(&ActivityPanel::Workspaces),
+        Some(&at("2026-10-03T00:00:00Z"))
+    );
+    assert_eq!(
+        chrome.activity_last_opened.get(&ActivityPanel::Usage),
+        Some(&at("2026-10-04T00:00:00Z"))
     );
     assert_eq!(fs::read_to_string(&path).unwrap(), bytes);
 }
 
 /// A section picked before the file loaded queues a save holding only this
-/// run's visits, which overwrites the stored ones; once they load and merge,
-/// the window saves the merge, so a stored visit later than this run's, as
-/// another machine's clock may write, is not lost.
+/// run's visit, which overwrites the stored ones; once they load and merge,
+/// the window saves the merge, so neither is lost.
 #[gpui::test]
 fn visits_stored_before_a_save_that_raced_the_load_are_saved_again(cx: &mut TestAppContext) {
     let directory = TestDirectory::new();
     let path = directory.0.join("preferences.json");
-    let stored = DateTime::parse_from_rfc3339("2999-01-02T03:04:05Z")
+    let stored = DateTime::parse_from_rfc3339("2026-01-02T03:04:05Z")
         .unwrap()
         .to_utc();
     write_chrome(
         &path,
         Chrome {
-            activity_last_opened: [(ActivityPanel::Workspaces, stored)].into(),
+            activity_last_opened: [(ActivityPanel::Usage, stored)].into(),
             sidebar_width: Some(250.),
             ..Chrome::default()
         },
@@ -101,8 +109,12 @@ fn visits_stored_before_a_save_that_raced_the_load_are_saved_again(cx: &mut Test
     worker.finish();
     let read = read_chrome(&path).unwrap();
     assert_eq!(
-        read.activity_last_opened.get(&ActivityPanel::Workspaces),
+        read.activity_last_opened.get(&ActivityPanel::Usage),
         Some(&stored)
+    );
+    assert!(
+        read.activity_last_opened
+            .contains_key(&ActivityPanel::Workspaces)
     );
     assert_eq!(read.sidebar_width, Some(250.));
     // A load with nothing new to merge asks for no save.

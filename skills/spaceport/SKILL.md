@@ -23,6 +23,7 @@ for what only Spaceport shows or keeps.
 | Keep a note on this worktree (repository and branch) | `spaceport notes set waiting on CI` |
 | Silence this worktree's notifications | `spaceport worktree mute` |
 | Silence a whole host's notifications | `spaceport host mute studio` |
+| Show the Automations section while Core has no job feed | `spaceport ui panel automations` |
 | Open a dev server in your system browser, forwarding a remote port to this machine first | `spaceport ports open 3000` |
 | See the processes under a pane, with CPU and memory | `spaceport processes` |
 | Start a chat with another agent in a new tab, shown as a native chat view | `spaceport chat new claude`, then `spaceport chat` for its status |

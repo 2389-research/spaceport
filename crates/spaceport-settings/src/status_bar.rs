@@ -1,6 +1,17 @@
 //! Status bar visibility and detail for retained controls.
 use serde::{Deserialize, Serialize};
 
+/// How much of a reading an item spells out.
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Detail {
+    /// Meters and every figure.
+    #[default]
+    Detailed,
+    /// One number per item.
+    Compact,
+}
+
 /// What the cup keeps awake.
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -35,6 +46,7 @@ impl Button {
 pub struct StatusBar {
     /// The bar at all; `toggle_status_bar` hides or shows it for the session.
     pub show: bool,
+    pub usage: Detail,
     pub keep_awake: bool,
     pub keep_awake_scope: AwakeScope,
     pub theme: Button,
@@ -46,6 +58,7 @@ impl Default for StatusBar {
     fn default() -> Self {
         Self {
             show: true,
+            usage: Detail::default(),
             keep_awake: true,
             keep_awake_scope: AwakeScope::default(),
             theme: Button::default(),
@@ -58,6 +71,7 @@ impl Default for StatusBar {
 /// One `[status_bar]` key, as the Settings window saves it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Edit {
+    Usage(Detail),
     KeepAwake(bool),
     KeepAwakeScope(AwakeScope),
     Theme(Button),
@@ -69,6 +83,7 @@ impl Edit {
     pub fn entry(self) -> crate::Result<(&'static str, toml_edit::Value)> {
         use crate::toml_value::spelled;
         Ok(match self {
+            Self::Usage(detail) => ("usage", spelled(detail)?),
             Self::KeepAwake(shown) => ("keep_awake", shown.into()),
             Self::KeepAwakeScope(scope) => ("keep_awake_scope", spelled(scope)?),
             Self::Theme(button) => ("theme", spelled(button)?),

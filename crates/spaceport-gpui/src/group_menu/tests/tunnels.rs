@@ -20,7 +20,7 @@ fn remote_menu(view: &Entity<SpaceportWindow>, cx: &mut VisualTestContext) -> Gr
             view.endpoints = vec![remote];
             view.selected_endpoint = 0;
             view.listening_ports.seed(
-                spaceport_remote::Host::Ssh("devbox".into()),
+                crate::usage::Host::Ssh("devbox".into()),
                 parse("L 1 127.0.0.1:5173 vite\nL 1 127.0.0.1:5174 vite\nE 1 w0\n").unwrap(),
             );
             cx.notify();

@@ -20,7 +20,7 @@ use std::time::Duration;
 const STATUS_GLYPH: f32 = 16.;
 
 /// The widest the focused agent's model gets, so a long name cannot crowd out
-/// what follows it.
+/// the usage after it.
 const MODEL_WIDTH: f32 = 160.;
 
 impl SpaceportWindow {
@@ -53,6 +53,8 @@ impl SpaceportWindow {
         };
         let items = self.config.status_bar;
         let height = px(self.status_bar_height());
+        let usage = self.render_usage(cx);
+        let has_usage = usage.is_some();
         div()
             .id("connection-status")
             .debug_selector(|| "connection-status".into())
@@ -69,6 +71,7 @@ impl SpaceportWindow {
             .bg(self.fill().panel(self.theme.surface))
             .text_color(rgb(self.theme.foreground))
             .children(self.render_agent_model(cx))
+            .children(usage)
             .when_some(
                 self.prefix_armed
                     .then(|| self.keymap().prefix_label())
@@ -108,7 +111,7 @@ impl SpaceportWindow {
             })
             .child(
                 div()
-                    .flex_1()
+                    .when(!has_usage || status.is_some(), |row| row.flex_1())
                     .min_w_0()
                     .overflow_hidden()
                     .whitespace_nowrap()
@@ -444,7 +447,7 @@ impl SpaceportWindow {
         let text = text.into();
         let (foreground, surface) = (self.theme.foreground, self.theme.surface);
         move |_, cx| {
-            cx.new(|_| crate::hint::Hint {
+            cx.new(|_| crate::usage::Hint {
                 text: text.clone(),
                 foreground,
                 surface,

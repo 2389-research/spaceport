@@ -130,7 +130,7 @@ pub(crate) struct SpaceportWindow {
     /// including after a config reload, as upstream's manual override does.
     pub(crate) agent_sort_modified: bool,
     /// A tab torn off another window, waiting for its host to be listed.
-    pub(crate) arrival: Option<(tab_tear::TornTab, AnyWindowHandle)>,
+    pub(crate) arrival: Option<tab_tear::TornTab>,
     /// The picture and platform appearance `[backdrop]` asks for.
     pub(crate) backdrop: backdrop::State,
     pub(crate) bell: crate::bell::Bell,
@@ -338,6 +338,7 @@ pub(crate) struct SpaceportWindow {
     pub(crate) toasts_hidden: bool,
     /// SSH tunnels to remote ports that listen on their host's loopback only.
     pub(crate) tunnels: crate::listening_ports::Tunnels,
+    pub(crate) usage: crate::usage::Usage,
     /// Whether the selected endpoint's refused handshake was announced. Reset
     /// once it has none, so a later refusal is announced again.
     pub(crate) version_notice_shown: bool,

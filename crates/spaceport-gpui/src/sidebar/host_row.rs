@@ -35,7 +35,7 @@ fn origin_mark(
         .flex_none()
         .child(svg().path(origin.icon()).size_full().text_color(rgb(color)))
         .tooltip(move |_, cx| {
-            cx.new(|_| crate::hint::Hint {
+            cx.new(|_| crate::usage::Hint {
                 text: text.clone(),
                 foreground,
                 surface,

@@ -28,8 +28,10 @@ pub(crate) fn start(handle: WindowHandle<SpaceportWindow>, cx: &mut App) {
     verify_child_geometry(cx, true);
     if std::env::var_os("HERDR_TEST_SIDEBAR_PROBE_FAILURE").is_some() {
         let _ = handle.update(cx, |view, _, cx| {
-            // Exercise the real native paint failure path with a column that
-            // intentionally violates the fixed-width initial fixture.
+            // Exercise the real native paint failure path: a legitimately narrow
+            // sidebar, held to the default column the probe once assumed for
+            // every frame, so the next frame's child row is one it must reject.
+            cx.set_global(sidebar::layout_tests::ExpectDefaultChildColumn(true));
             view.sidebar_width = Some(180.);
             cx.notify();
         });

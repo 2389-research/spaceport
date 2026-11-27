@@ -9,7 +9,7 @@ fn workspace_menu_keeps_checkout_actions_without_script_launches(cx: &mut gpui::
             let items = |view: &SpaceportWindow| -> Vec<_> {
                 view.workspace_items()
                     .into_iter()
-                    .map(|(action, _)| action)
+                    .map(|item| item.action)
                     .collect()
             };
             for id in ["w3", "w4", "w0"] {
