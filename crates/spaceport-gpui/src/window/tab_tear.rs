@@ -200,21 +200,27 @@ impl SpaceportWindow {
             });
             return true;
         }
-        // The workspace's saved split would show the tabs this window
-        // hides, so it is dropped before the page is shown in it.
-        self.browser.saved.remove(&torn.workspace);
-        if let Pick::Page(id) = torn.pick {
-            self.show_browser_tab(id, window, cx);
-        }
+        self.catalog.restore_pending = false;
         let holder = window.window_handle().window_id();
         let _ = torn.from.update(cx, |from, _| {
             from.browser
                 .hidden
                 .hold(&torn.workspace, &torn.pick, holder);
         });
-        self.arrival = Some(torn);
-        self.land_arrival(false, cx);
-        true
+        self.land_arrival(torn, false, window, cx)
+    }
+
+    /// Resume in the receiving window after the catalog update finishes.
+    pub(crate) fn resume_arrival(&mut self, cx: &mut Context<Self>) {
+        let Some((torn, handle)) = self.arrival.take() else {
+            return;
+        };
+        let view = cx.entity().downgrade();
+        cx.defer(move |cx| {
+            let _ = handle.update(cx, |_, window, cx| {
+                let _ = view.update(cx, |view, cx| view.land_arrival(torn, true, window, cx));
+            });
+        });
     }
 
     /// Goes where a waiting legacy tab is, once its host is listed:
@@ -222,25 +228,53 @@ impl SpaceportWindow {
     /// with the workspace's other tabs hidden and unsplit.
     /// The navigation itself waits for the surface. After the saved hosts
     /// are `listed`, a host still missing is gone, and the tab with it.
-    pub(crate) fn land_arrival(&mut self, listed: bool, cx: &mut Context<Self>) {
-        let Some(torn) = self.arrival.take() else {
-            return;
-        };
+    fn land_arrival(
+        &mut self,
+        torn: TornTab,
+        listed: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
         let TornRoute::Legacy {
             endpoint, session, ..
         } = &torn.route
         else {
-            return;
+            return false;
         };
-        if !self
+        let entry = self
             .endpoints
             .iter()
-            .any(|entry| entry.id == *endpoint && entry.enabled())
-        {
-            if !listed {
-                self.arrival = Some(torn);
-            }
-            return;
+            .find(|entry| entry.id == *endpoint && entry.enabled());
+        if entry.is_none() && !listed {
+            self.arrival = Some((torn, window.window_handle()));
+            return true;
+        }
+        let target = match &torn.pick {
+            Pick::Herdr(tab) => Some(NavigationTarget::Tab(tab.clone())),
+            Pick::Page(id) => cx
+                .try_global::<Store>()
+                .and_then(|store| store.get(*id))
+                .map(|tab| NavigationTarget::Workspace(tab.workspace_id.clone())),
+        };
+        let target = target.filter(|_| {
+            entry.is_some_and(|entry| {
+                entry.connection.target == *session
+                    || (session.is_remote()
+                        && entry.connection.target.remote_host() == session.remote_host())
+            })
+        });
+        let Some(target) = target else {
+            let _ = torn
+                .from
+                .update(cx, |from, cx| from.untear(&torn.workspace, &torn.pick, cx));
+            window.remove_window();
+            return false;
+        };
+        // The workspace's saved split would show the tabs this window
+        // hides, so it is dropped before the page is shown in it.
+        self.browser.saved.remove(&torn.workspace);
+        if let Pick::Page(id) = torn.pick {
+            self.show_browser_tab(id, window, cx);
         }
         self.browser
             .hidden
@@ -248,16 +282,8 @@ impl SpaceportWindow {
         if let Some(session) = remote_session(session) {
             self.select_device_session(endpoint, session, cx);
         }
-        let target = match &torn.pick {
-            Pick::Herdr(tab) => NavigationTarget::Tab(tab.clone()),
-            Pick::Page(id) => {
-                let Some(tab) = cx.try_global::<Store>().and_then(|store| store.get(*id)) else {
-                    return;
-                };
-                NavigationTarget::Workspace(tab.workspace_id.clone())
-            }
-        };
         self.navigate_endpoint(endpoint, target.as_deref(), cx);
+        true
     }
 }
 

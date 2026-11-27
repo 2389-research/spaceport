@@ -65,12 +65,13 @@ pub fn name_line(
                     .child(painters.label(*text));
                 (if index == 0 { "" } else { " · " }, advance, cell)
             });
-    place_line(parts, width, cx)
+    place_line(parts, width, 0., cx)
 }
 
 pub(super) fn place_line(
     parts: impl IntoIterator<Item = (&'static str, f32, Div)>,
     width: f32,
+    start: f32,
     cx: &RowContext<'_>,
 ) -> Div {
     let (font, painters, muted, right_to_left) =
@@ -81,7 +82,7 @@ pub(super) fn place_line(
         .h(px(line_height(font)))
         .flex_none()
         .overflow_hidden();
-    let mut x = 0.;
+    let mut x = start;
     for (separator, advance, cell) in parts {
         if !separator.is_empty() {
             let gap = separator.chars().count() as f32 * glyph_width(font);

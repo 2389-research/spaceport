@@ -267,6 +267,7 @@ impl MobileSession {
             state.history = Default::default();
             state.disconnected = true;
             state.version += 1;
+            self.frames.notify_all();
         }
     }
 

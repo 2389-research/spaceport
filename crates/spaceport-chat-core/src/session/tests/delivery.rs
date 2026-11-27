@@ -32,21 +32,16 @@ fn dispatch_waits_for_the_epoch_and_never_queues_a_command_twice() {
 }
 
 #[test]
-fn a_written_command_retries_with_the_same_id_only_in_its_epoch() {
+fn a_written_command_stays_uncertain_after_same_epoch_reconnect() {
     let mut session = Session::default();
     current(&mut session, cursor(1, 0));
     let id = submit(&mut session);
-    let command = session.resend();
+    assert_eq!(session.resend().len(), 1);
     session.delivered(WriteOutcome::Written(id));
     session.lost(&Error::Closed);
     session.begin();
     assert!(session.resend().is_empty());
     current(&mut session, cursor(1, 4));
-    assert_eq!(session.resend(), command);
-    session.delivered(WriteOutcome::Written(id));
-    session.lost(&Error::Closed);
-    session.begin();
-    current(&mut session, cursor(1, 5));
     assert!(session.resend().is_empty());
     assert_eq!(session.rejection(), Some(Refusal::DeliveryUnconfirmed));
 }
@@ -151,4 +146,18 @@ fn greeted_connections_without_writes_never_drop_a_prompt() {
         assert_eq!(session.resend(), vec![prompt.clone()]);
     }
     assert_eq!(session.rejection(), None);
+}
+
+#[test]
+fn losing_unacknowledged_writes_frees_the_offline_queue() {
+    let mut session = Session::default();
+    current(&mut session, cursor(1, 0));
+    let ids: Vec<_> = (0..MAX_PENDING).map(|_| submit(&mut session)).collect();
+    assert_eq!(session.resend().len(), ids.len());
+    for id in ids {
+        session.delivered(WriteOutcome::Written(id));
+    }
+    session.lost(&Error::Closed);
+    assert_eq!(session.rejection(), Some(Refusal::DeliveryUnconfirmed));
+    submit(&mut session);
 }

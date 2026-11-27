@@ -1,5 +1,5 @@
 // ABOUTME: Checks pure transcript and pending-command session contracts.
-// ABOUTME: Covers acknowledgement, stream fencing, and bounded retries.
+// ABOUTME: Covers acknowledgement, stream fencing, and pending command delivery.
 use super::*;
 use crate::link::WriteOutcome;
 use spaceport_chat_protocol::{ByeReason, Change, Command, Entry, EntryKind, Status, Transcript};
@@ -249,7 +249,7 @@ fn commands_wait_for_their_acknowledgement() {
 }
 
 #[test]
-fn a_command_that_keeps_ending_the_connection_is_given_up() {
+fn only_unwritten_commands_survive_a_lost_link() {
     let mut session = live(cursor(1, 0), Vec::new());
     let ClientMessage::Command { id, .. } =
         session.submit(Command::SetAutoAccept { on: true }).unwrap()
@@ -258,17 +258,12 @@ fn a_command_that_keeps_ending_the_connection_is_given_up() {
     };
     assert_eq!(session.resend().len(), 1);
     session.delivered(WriteOutcome::Written(id));
-    // It reached this connection, which ended; the next one gets it again.
+    let queued = session.submit(Command::Cancel).unwrap();
     session.lost(&Error::Closed);
     session.begin();
     session.receive(welcome()).unwrap();
     session.receive(snapshot(cursor(1, 0), Vec::new())).unwrap();
-    assert_eq!(session.resend().len(), 1);
-    session.delivered(WriteOutcome::Written(id));
-    // That connection ended too, so the third leaves it behind.
-    session.lost(&Error::Closed);
-    session.begin();
-    assert!(session.resend().is_empty());
+    assert_eq!(session.resend(), vec![queued]);
     assert_eq!(session.rejection(), Some(Refusal::DeliveryUnconfirmed));
 }
 

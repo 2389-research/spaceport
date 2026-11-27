@@ -92,7 +92,7 @@ fn shell(key: &str, state: RowState, indent: f32, line: Line<'_>, cx: &RowContex
     )
     // Flat rows round off while carried, so the card reads as picked up.
     .when(state.lift == RowLift::Lifted, |row| row.rounded(px(4.)))
-    .when(state.selected, |row| {
+    .when(state.selected && !state.agent, |row| {
         row.child(
             div()
                 .debug_selector(|| format!("highlight-{key}"))

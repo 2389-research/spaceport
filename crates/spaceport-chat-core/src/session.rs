@@ -12,11 +12,6 @@ use spaceport_chat_protocol::{
 };
 use std::collections::HashMap;
 
-/// Complete writes before a command is given up: a program that
-/// drops the connection on a command it cannot read would otherwise get it
-/// again on every reconnect and never come back. Greetings never count.
-const SENDS: u8 = 2;
-
 /// A command waiting for its acknowledgement.
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Pending {
@@ -28,9 +23,9 @@ struct Pending {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Delivery {
-    Queued { writes: u8 },
-    Writing { writes: u8 },
-    AwaitingAck { writes: u8 },
+    Queued,
+    Writing,
+    AwaitingAck,
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -64,7 +59,7 @@ enum Transition {
     },
     Written(CommandId),
     Uncertain(CommandId),
-    Retry,
+    Disconnect,
     Dispatch,
     Epoch(uuid::Uuid),
     Ack {
@@ -80,6 +75,8 @@ pub struct Session {
     pending: Vec<Pending>,
     /// The last command the program refused, shown until the next one.
     rejection: Option<Refusal>,
+    /// Conversation of the last completed write lost before acknowledgement.
+    uncertain_epoch: Option<uuid::Uuid>,
     /// The transcript and the stream position it reflects. It holds no
     /// position when the next connection must start from a snapshot.
     replica: Replica,
@@ -100,13 +97,13 @@ impl Session {
     /// A new connection: it must greet before anything else counts.
     pub fn begin(&mut self) {
         self.attachment = Attachment::Unwelcomed;
-        self.transition(Transition::Retry);
     }
 
     /// The connection ended. After a change that did not fit, the next one
     /// asks for a snapshot; the transcript stays on screen meanwhile.
     pub fn lost(&mut self, error: &Error) {
         self.attachment = Attachment::Unwelcomed;
+        self.transition(Transition::Disconnect);
         // `receive` forgot the position already when it returned such an
         // error; this covers one that reaches the session any other way.
         if error.desynced() {
@@ -197,10 +194,7 @@ impl Session {
             .collect()
     }
 
-    /// The commands to send again on a new connection, in order. The
-    /// program acknowledges one it already ran without running it twice.
-    /// One that reached [`SENDS`] complete writes, each followed by a loss
-    /// without an answer, is given up and shown as refused.
+    /// Dispatch commands whose frames have never reached a writer, in order.
     pub fn resend(&mut self) -> Vec<ClientMessage> {
         if self.attachment != Attachment::Current {
             return Vec::new();
@@ -208,7 +202,7 @@ impl Session {
         let messages = self
             .pending
             .iter()
-            .filter(|pending| matches!(pending.delivery, Delivery::Queued { .. }))
+            .filter(|pending| pending.delivery == Delivery::Queued)
             .map(|pending| ClientMessage::Command {
                 command: pending.command.clone(),
                 id: pending.id,
@@ -302,18 +296,19 @@ impl Session {
         match event {
             Transition::Submit { command, id, epoch } => {
                 self.rejection = None;
+                self.uncertain_epoch = None;
                 self.pending.push(Pending {
                     command,
                     id,
                     epoch,
-                    delivery: Delivery::Queued { writes: 0 },
+                    delivery: Delivery::Queued,
                 });
             }
             Transition::Written(id) => {
                 if let Some(pending) = self.pending.iter_mut().find(|pending| pending.id == id)
-                    && let Delivery::Writing { writes } = pending.delivery
+                    && pending.delivery == Delivery::Writing
                 {
-                    pending.delivery = Delivery::AwaitingAck { writes: writes + 1 };
+                    pending.delivery = Delivery::AwaitingAck;
                 }
             }
             Transition::Uncertain(id) => {
@@ -323,28 +318,32 @@ impl Session {
                     self.rejection = Some(Refusal::DeliveryUnconfirmed);
                 }
             }
-            Transition::Retry => {
+            Transition::Disconnect => {
                 self.pending.retain_mut(|pending| {
-                    let writes = match pending.delivery {
-                        Delivery::AwaitingAck { writes } | Delivery::Writing { writes } => writes,
-                        Delivery::Queued { .. } => return true,
-                    };
-                    if writes >= SENDS {
+                    if pending.delivery == Delivery::AwaitingAck {
                         self.rejection = Some(Refusal::DeliveryUnconfirmed);
+                        self.uncertain_epoch = pending.epoch;
                         return false;
                     }
-                    pending.delivery = Delivery::Queued { writes };
+                    pending.delivery = Delivery::Queued;
                     true
                 });
             }
             Transition::Dispatch => {
                 for pending in &mut self.pending {
-                    if let Delivery::Queued { writes } = pending.delivery {
-                        pending.delivery = Delivery::Writing { writes };
+                    if pending.delivery == Delivery::Queued {
+                        pending.delivery = Delivery::Writing;
                     }
                 }
             }
             Transition::Epoch(epoch) => {
+                if self
+                    .uncertain_epoch
+                    .take()
+                    .is_some_and(|previous| previous != epoch)
+                {
+                    self.rejection = Some(Refusal::SessionChanged);
+                }
                 self.pending.retain_mut(|pending| {
                     if pending.epoch.is_some_and(|previous| previous != epoch) {
                         self.rejection = Some(Refusal::SessionChanged);

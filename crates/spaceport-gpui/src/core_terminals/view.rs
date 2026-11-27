@@ -195,9 +195,8 @@ impl CoreTerminalView {
         let Ok(size) = Size::new(fits.cols, fits.rows) else {
             return;
         };
-        if self.sent_size != Some(size) {
+        if self.sent_size != Some(size) && self.link.send(Command::Resize(size)) {
             self.sent_size = Some(size);
-            self.link.send(Command::Resize(size));
         }
     }
 
@@ -272,9 +271,8 @@ impl CoreTerminalView {
 
     fn report_focus(&mut self, window: &Window) {
         let focused = self.focus.is_focused(window);
-        if self.sent_focus != Some(focused) {
+        if self.sent_focus != Some(focused) && self.link.send(Command::Focus(focused)) {
             self.sent_focus = Some(focused);
-            self.link.send(Command::Focus(focused));
         }
     }
 
@@ -498,3 +496,6 @@ impl EntityInputHandler for CoreTerminalView {
         None
     }
 }
+
+#[cfg(test)]
+mod tests;
