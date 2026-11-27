@@ -17,8 +17,7 @@ version_check "$1"
 for tool in base64 codesign jq openssl plutil security shasum unzip xcodebuild xcrun; do
     command -v "$tool" >/dev/null || fail "Required tool: $tool"
 done
-# The distribution record this route uploads: the app, its Agent Status
-# extension, and the App Group both distribution profiles must grant.
+# Match the targets in this release checkout. The app and extensions share one App Group.
 bundle_id=ai.2389.spaceport.mobile
 extension_id=ai.2389.spaceport.mobile.agent-status
 app_group=group.ai.2389.spaceport.mobile.widget
@@ -32,9 +31,15 @@ project=$release_root/mobile/apple/SpaceportMobile.xcodeproj
 # Reject a checkout whose Release configuration no longer builds the identifiers
 # this route verifies, before any credential is read. Anchored at the end of the
 # line so a Debug value, which appends to each identifier, cannot satisfy it.
-for fact in "PRODUCT_BUNDLE_IDENTIFIER: $bundle_id" \
-            "PRODUCT_BUNDLE_IDENTIFIER: $extension_id" \
-            "SPACEPORT_WIDGET_GROUP: $app_group"; do
+bundle_ids=("$bundle_id" "$extension_id")
+profile_settings=(SPACEPORT_MOBILE_PROFILE SPACEPORT_ACTIVITY_PROFILE)
+if grep -Eq '^  ShareFile:[[:space:]]*$' "$release_root/mobile/apple/project.yml"; then
+    bundle_ids+=("$bundle_id.share")
+    profile_settings+=(SPACEPORT_SHARE_PROFILE)
+fi
+facts=("SPACEPORT_WIDGET_GROUP: $app_group")
+for id in "${bundle_ids[@]}"; do facts+=("PRODUCT_BUNDLE_IDENTIFIER: $id"); done
+for fact in "${facts[@]}"; do
     grep -Eq "^[[:space:]]*${fact//./\\.}[[:space:]]*$" "$release_root/mobile/apple/project.yml" \
         || fail "mobile/apple/project.yml no longer declares the Release $fact"
 done
@@ -47,12 +52,20 @@ done
 # Base64 profiles are written for this build and installed under the UUID they
 # carry. UUIDs alone are accepted instead, so xcodebuild can fetch the profiles
 # through the API key; both paths still need the API key to upload.
-if [[ -n ${SPACEPORT_MOBILE_PROFILE_B64:-} && -n ${SPACEPORT_ACTIVITY_PROFILE_B64:-} ]]; then
+missing_written=()
+missing_uuids=()
+for setting in "${profile_settings[@]}"; do
+    written=${setting}_B64
+    uuid=${setting}_UUID
+    [[ -n ${!written:-} ]] || missing_written+=("$written")
+    [[ -n ${!uuid:-} ]] || missing_uuids+=("$uuid")
+done
+if [[ -z ${missing_written[*]:-} ]]; then
     profile_mode='written'
-elif [[ -n ${SPACEPORT_MOBILE_PROFILE_UUID:-} && -n ${SPACEPORT_ACTIVITY_PROFILE_UUID:-} ]]; then
+elif [[ -z ${missing_uuids[*]:-} ]]; then
     profile_mode='uuid'
 else
-    fail 'Provide SPACEPORT_MOBILE_PROFILE_B64 and SPACEPORT_ACTIVITY_PROFILE_B64, or SPACEPORT_MOBILE_PROFILE_UUID and SPACEPORT_ACTIVITY_PROFILE_UUID'
+    fail "Missing profiles. Supply ${missing_written[*]} for base64 signing, or ${missing_uuids[*]} for UUID signing."
 fi
 out=$(cd -- "$2" && pwd)
 ipa=$out/Spaceport-$1-ios.ipa
@@ -92,7 +105,7 @@ cleanup() {
     exit "$status"
 }
 write_profile() {  # $1 base64 profile, $2 label, $3 installed-profile directory
-    local decoded=$tmp/$2.mobileprovision uuid
+    local decoded=$tmp/$2.mobileprovision
     printf '%s' "$1" | base64 -D > "$decoded"
     security cms -D -i "$decoded" > "$tmp/$2.plist" || fail "The $2 profile is not a readable provisioning profile"
     uuid=$(plutil -extract UUID raw "$tmp/$2.plist") || fail "The $2 profile has no UUID"
@@ -103,7 +116,6 @@ write_profile() {  # $1 base64 profile, $2 label, $3 installed-profile directory
         cp "$decoded" "$3/$uuid.mobileprovision"
         installed_profiles+=("$3/$uuid.mobileprovision")
     fi
-    printf '%s\n' "$uuid"
 }
 trap cleanup EXIT
 trap 'exit 130' INT
@@ -141,30 +153,39 @@ identity_count=$(printf '%s\n' "$identities" | awk '/valid identities found$/ {p
 [[ $identity_count == 1 ]] || fail 'Imported P12 must hold exactly one signing identity'
 subject=$(printf '%s\n' "$identities" | sed -n 's/^ *[0-9]*) [0-9A-F]\{40\} "\(.*\)"$/\1/p')
 [[ $subject == "Apple Distribution: "*"($team)" ]] || fail "Imported identity '$subject' is not an Apple Distribution certificate for Team $team"
+profile_specifiers=()
+archive_settings=()
+provisioning_args=()
 if [[ $profile_mode == written ]]; then
-    [[ -d $profiles_dir ]] || mkdir -p "$profiles_dir"
-    mobile_specifier=$(write_profile "$SPACEPORT_MOBILE_PROFILE_B64" mobile "$profiles_dir")
-    activity_specifier=$(write_profile "$SPACEPORT_ACTIVITY_PROFILE_B64" activity "$profiles_dir")
-    unset SPACEPORT_MOBILE_PROFILE_B64 SPACEPORT_ACTIVITY_PROFILE_B64
-    provisioning_args=()
+    mkdir -p "$profiles_dir"
 else
-    mobile_specifier=$SPACEPORT_MOBILE_PROFILE_UUID
-    activity_specifier=$SPACEPORT_ACTIVITY_PROFILE_UUID
-    provisioning_args=(-allowProvisioningUpdates \
-        -authenticationKeyPath "$api_key" \
-        -authenticationKeyID "$APPLE_API_KEY_ID" \
+    provisioning_args=(-allowProvisioningUpdates
+        -authenticationKeyPath "$api_key"
+        -authenticationKeyID "$APPLE_API_KEY_ID"
         -authenticationKeyIssuerID "$APPLE_API_ISSUER_ID")
 fi
-# Each target reads its profile through the project's Release build setting, so
-# the two specifiers are user-defined settings rather than one shared override.
+for setting in "${profile_settings[@]}"; do
+    if [[ $profile_mode == written ]]; then
+        encoded=${setting}_B64
+        # Keep installation and cleanup in the same shell. write_profile also sets uuid.
+        write_profile "${!encoded}" "$setting" "$profiles_dir"
+    else
+        variable=${setting}_UUID
+        uuid=${!variable}
+        [[ $uuid =~ ^[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}$ ]] || fail "Malformed profile UUID in $variable"
+    fi
+    profile_specifiers+=("$uuid")
+    archive_settings+=("$setting=$uuid")
+done
+# Xcode project scripts inherit this environment, even on checkouts without ShareFile.
+unset SPACEPORT_MOBILE_PROFILE_B64 SPACEPORT_ACTIVITY_PROFILE_B64 SPACEPORT_SHARE_PROFILE_B64
 printf 'archive\n' >&2
 xcodebuild archive -project "$project" -scheme SpaceportMobile -configuration Release \
     -destination 'generic/platform=iOS' -archivePath "$tmp/SpaceportMobile.xcarchive" \
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' \
     DEVELOPMENT_TEAM="$team" CURRENT_PROJECT_VERSION="$build_number" \
     OTHER_CODE_SIGN_FLAGS="--keychain $keychain" \
-    SPACEPORT_MOBILE_PROFILE="$mobile_specifier" \
-    SPACEPORT_ACTIVITY_PROFILE="$activity_specifier" \
+    "${archive_settings[@]}" \
     ${provisioning_args[@]+"${provisioning_args[@]}"}
 # Manual export signed by the profiles this run was given, with Xcode's own
 # build-number rewrite disabled so the uploaded build number is the derived one.
@@ -186,10 +207,11 @@ cat > "$tmp/exportOptions.plist" <<PLIST
     <false/>
     <key>provisioningProfiles</key>
     <dict>
-        <key>$bundle_id</key>
-        <string>$mobile_specifier</string>
-        <key>$extension_id</key>
-        <string>$activity_specifier</string>
+PLIST
+for i in "${!bundle_ids[@]}"; do
+    printf '        <key>%s</key><string>%s</string>\n' "${bundle_ids[i]}" "${profile_specifiers[i]}"
+done >> "$tmp/exportOptions.plist"
+cat >> "$tmp/exportOptions.plist" <<'PLIST'
     </dict>
 </dict>
 </plist>
@@ -206,44 +228,8 @@ shopt -u nullglob
 [[ ${#exported[@]} == 1 ]] || fail 'Expected exactly one exported .ipa'
 unzip -q "${exported[0]}" -d "$tmp/verify" || fail 'Exported .ipa is not a readable archive'
 app=$tmp/verify/Payload/SpaceportMobile.app
-extension=$app/PlugIns/AgentStatusWidget.appex
-[[ -d $app && -d $extension ]] || fail 'Exported .ipa is missing the app or its Agent Status extension'
-plist_value() { plutil -extract "$2" raw "$1"; }
-signed_value() { codesign -d --verbose=4 "$1" 2>&1 | sed -n "s/^$2=//p"; }
-# Verify the shipped bundles, not the archive: export re-signs them.
-[[ $(plist_value "$app/Info.plist" CFBundleIdentifier) == "$bundle_id" ]] || fail 'Exported app identifier mismatch'
-[[ $(plist_value "$extension/Info.plist" CFBundleIdentifier) == "$extension_id" ]] || fail 'Exported extension identifier mismatch'
-for info in "$app/Info.plist" "$extension/Info.plist"; do
-    [[ $(plist_value "$info" CFBundleVersion) == "$build_number" ]] || fail 'Exported build number is not the derived one'
-done
-marketing_version=$(plist_value "$app/Info.plist" CFBundleShortVersionString)
-codesign --verify --deep --strict --verbose=2 "$app"
-[[ $(signed_value "$app" TeamIdentifier) == "$team" ]] || fail 'Signed app Team mismatch'
-[[ $(signed_value "$app" Identifier) == "$bundle_id" ]] || fail 'Signed app identifier mismatch'
-[[ $(signed_value "$extension" TeamIdentifier) == "$team" ]] || fail 'Signed extension Team mismatch'
-[[ $(signed_value "$extension" Identifier) == "$extension_id" ]] || fail 'Signed extension identifier mismatch'
-requires_group() {
-    codesign -d --entitlements :- "$1" 2>/dev/null | plutil -convert json -o - - |
-        jq -e --arg group "$app_group" '."com.apple.security.application-groups" | type == "array" and index($group) != null' >/dev/null ||
-        fail "Signed ${1##*/} does not carry the App Group $app_group"
-}
-requires_group "$app"
-requires_group "$extension"
-# The embedded profile is what Apple evaluates: it must name this Team's bundle
-# and grant the shared group, and it must not admit development installs.
-requires_profile() {
-    local facts
-    [[ -f $1 ]] || fail "Exported .ipa has no embedded profile for the $2"
-    facts=$(security cms -D -i "$1" | plutil -convert json -o - -) || fail "The $2 profile is not readable"
-    [[ $(jq -r '.Entitlements["application-identifier"] // ""' <<< "$facts") == "$team.$3" ]] ||
-        fail "The $2 profile does not name $team.$3"
-    [[ $(jq -r '.Entitlements["get-task-allow"] // true' <<< "$facts") == false ]] ||
-        fail "The $2 profile admits development installs"
-    jq -e --arg group "$app_group" '.Entitlements["com.apple.security.application-groups"] | type == "array" and index($group) != null' <<< "$facts" >/dev/null ||
-        fail "The $2 profile does not grant $app_group"
-}
-requires_profile "$app/embedded.mobileprovision" app "$bundle_id"
-requires_profile "$extension/embedded.mobileprovision" extension "$extension_id"
+bash "$release_root/scripts/release/verify-ios-app.sh" "$app" "$team" "$build_number" "$app_group" "${bundle_ids[@]}"
+marketing_version=$(plutil -extract CFBundleShortVersionString raw "$app/Info.plist")
 new_output "$ipa"
 mv -n "${exported[0]}" "$ipa"
 [[ ! -e ${exported[0]} ]] || fail "Could not promote output: $ipa"

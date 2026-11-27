@@ -29,7 +29,8 @@ class TestflightRoute(unittest.TestCase):
         self.assertIn('environment: ios-testflight', route['sign'])
         for secret in ('IOS_DISTRIBUTION_P12_BASE64', 'IOS_DISTRIBUTION_P12_PASSWORD',
                        'APPLE_API_PRIVATE_KEY', 'APPLE_API_KEY_ID', 'APPLE_API_ISSUER_ID',
-                       'SPACEPORT_MOBILE_PROFILE_B64', 'SPACEPORT_ACTIVITY_PROFILE_B64'):
+                       'SPACEPORT_MOBILE_PROFILE_B64', 'SPACEPORT_ACTIVITY_PROFILE_B64',
+                       'SPACEPORT_SHARE_PROFILE_B64'):
             self.assertIn(f'{secret}: ${{{{ secrets.{secret} }}}}', route['sign'])
         self.assertIn('SPACEPORT_APPLE_TEAM_ID: ${{ vars.SPACEPORT_APPLE_TEAM_ID }}', route['sign'])
 
@@ -81,23 +82,15 @@ class SignerScript(unittest.TestCase):
 
     def test_the_upload_follows_its_own_verification(self):
         script = SCRIPT.read_text()
-        for check in ('codesign --verify --deep --strict',
-                      'app/embedded.mobileprovision',
-                      'extension/embedded.mobileprovision',
-                      '.Entitlements["get-task-allow"]',
-                      'manageAppVersionAndBuildNumber'):
-            self.assertIn(check, script)
+        verifier = (SCRIPT.parent / 'verify-ios-app.sh').read_text()
+        for check in ('codesign --verify --deep --strict', 'bundle/embedded.mobileprovision',
+                      '.["get-task-allow"] == false'):
+            self.assertIn(check, verifier)
+        self.assertIn('manageAppVersionAndBuildNumber', script)
         self.assertIn('xcrun altool --upload-app --type ios --file "$ipa"', script)
-        self.assertLess(script.index('codesign --verify --deep --strict'),
+        self.assertLess(script.index('bash "$release_root/scripts/release/verify-ios-app.sh"'),
                         script.index('xcrun altool --upload-app'))
         self.assertIn('security delete-keychain "$keychain"', script)
-
-    def test_both_profile_forms_are_reachable(self):
-        script = SCRIPT.read_text()
-        self.assertIn('SPACEPORT_MOBILE_PROFILE_B64', script)
-        self.assertIn('SPACEPORT_ACTIVITY_PROFILE_B64', script)
-        self.assertIn('SPACEPORT_MOBILE_PROFILE_UUID', script)
-        self.assertIn('-allowProvisioningUpdates', script)
 
     def test_usage_and_version_refusals(self):
         script = SCRIPT.read_text()

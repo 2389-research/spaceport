@@ -181,6 +181,9 @@ because that run's `publish` job creates the tag's release and this route attach
 takes an explicit `version` and an optional `tag`: with a tag whose release already exists
 it attaches the `.ipa`, and otherwise it keeps the `.ipa` as a workflow artifact.
 
+For an automatic upload, the workflow checks the release tag against the triggering commit
+and confirms the commit belongs to `main` before building its code.
+
 `build` runs `./mobile/build-apple --release` with no credentials and archives only what
 that produced — `mobile/.build/SpaceportMobileCore.xcframework`, `mobile/apple/Generated`
 and the generated `SpaceportMobile.xcodeproj` — under a `SHA256SUMS`. `sign` downloads
@@ -202,23 +205,17 @@ the upload:
   uploads a greater TestFlight build. `MARKETING_VERSION` stays `0.1` from
   `mobile/apple/project.yml`, which keeps the existing App Store Connect record and the
   export-compliance note in `mobile/README.md` valid.
-- Both App Store distribution profiles are written from base64 and installed under the
-  UUID each carries. `project.yml`'s Release settings read them through
-  `SPACEPORT_MOBILE_PROFILE` and `SPACEPORT_ACTIVITY_PROFILE`. Naming
-  `SPACEPORT_MOBILE_PROFILE_UUID` and `SPACEPORT_ACTIVITY_PROFILE_UUID` instead lets
-  xcodebuild resolve the profiles itself with `-allowProvisioningUpdates` through the
-  API key. The first form needs no Apple network round trip beyond the upload.
-- It archives the `SpaceportMobile` scheme's Release configuration for
-  `generic/platform=iOS` with manual signing, `DEVELOPMENT_TEAM`, a `CURRENT_PROJECT_VERSION`
-  override and the temporary keychain, then exports with an `exportOptions.plist` written
-  in-script: method `app-store`, manual signing with both profiles for both bundle
-  identifiers, the team ID, and `manageAppVersionAndBuildNumber` false so the uploaded
-  build number is the derived one.
-- Before uploading it verifies the shipped `.ipa`: both bundle identifiers, both build
-  numbers, `codesign --verify --deep --strict`, both signed Team identifiers, the App Group
-  in the signed entitlements of the app and its Agent Status extension, and — in both
-  embedded profiles — `application-identifier` for this Team, no `get-task-allow`, and
-  `group.ai.2389.spaceport.mobile.widget`.
+- Install an App Store distribution profile for each Release target. The app uses
+  `SPACEPORT_MOBILE_PROFILE` and Agent Status uses `SPACEPORT_ACTIVITY_PROFILE`.
+  Builds that include the Share extension also use `SPACEPORT_SHARE_PROFILE`.
+  Supply the profiles as base64 with the corresponding `_B64` environment variables.
+  For a local run, supply all required `_UUID` variables to use Xcode provisioning updates instead.
+- The script archives the Release scheme for `generic/platform=iOS` and exports with
+  manual signing. Each bundle identifier maps to its own profile in the export options.
+  Xcode preserves the build number derived from the tag.
+- Before upload, the script checks the exported app and its expected extensions. It verifies
+  their signatures, bundle identifiers, build numbers, Team and shared App Group.
+  Each embedded profile must match its bundle and disable development debugging.
 - It uploads with `xcrun altool --upload-app --type ios` and the App Store Connect key,
   then writes `Spaceport-VERSION-ios.ipa.json` beside the `.ipa` and its `.sha256` with the
   bundle id, build number, marketing version, Team, App Group, digest and upload result,
@@ -241,9 +238,7 @@ fail closed on missing inputs instead of uploading something unverified.
    exactly as the `android-release` environment requires. Required reviewers are optional —
    pushing the `v*` tag is the release decision, as it is for macOS and Android.
 2. Create this **variable** on that environment (not in a source file):
-   `SPACEPORT_APPLE_TEAM_ID` — the 10-character Apple Developer Team ID. Both bundle
-   identifiers, both profiles and the imported certificate must belong to it, and the
-   script refuses any other Team.
+   `SPACEPORT_APPLE_TEAM_ID` — the 10-character Apple Developer Team ID. Every bundle, provisioning profile and the distribution certificate must belong to this team.
 3. Create these **secrets** on that environment:
 
    | Secret | What it is |
@@ -252,6 +247,7 @@ fail closed on missing inputs instead of uploading something unverified.
    | `IOS_DISTRIBUTION_P12_PASSWORD` | That P12's export password. |
    | `SPACEPORT_MOBILE_PROFILE_B64` | Base64 of the App Store distribution profile for `ai.2389.spaceport.mobile`. |
    | `SPACEPORT_ACTIVITY_PROFILE_B64` | Base64 of the App Store distribution profile for `ai.2389.spaceport.mobile.agent-status`. |
+   | `SPACEPORT_SHARE_PROFILE_B64` | Base64 of the App Store distribution profile for `ai.2389.spaceport.mobile.share`. Required when the release includes ShareFile. |
    | `APPLE_API_PRIVATE_KEY` | The App Store Connect `.p8` contents. Reuse the macOS route's key. |
    | `APPLE_API_KEY_ID` | That key's ID. Reuse the macOS route's value. |
    | `APPLE_API_ISSUER_ID` | That key's issuer ID. Reuse the macOS route's value. |
@@ -262,11 +258,9 @@ fail closed on missing inputs instead of uploading something unverified.
    notarization can be Developer-only, which notarizes but cannot upload. Raise that key's
    role or add a second key and put it in this environment before the first tag.
 5. In the developer account, confirm the App Store Connect record
-   `ai.2389.spaceport.mobile` exists and both identifiers carry the App Group
-   `group.ai.2389.spaceport.mobile.widget`; the widget extension shares state with the app
-   only through it. Then create one App Store distribution profile for each identifier with
-   that capability enabled, and base64 each `.mobileprovision` file. The script probes both
-   profiles for the group and refuses a profile that lacks it or admits development installs.
+   `ai.2389.spaceport.mobile` exists. Enable `group.ai.2389.spaceport.mobile.widget`
+   for each shipped bundle identifier. Create a distribution profile for each target after
+   enabling the group. When a profile expires, replace its matching environment secret.
 6. Confirm the app record carries the export-compliance answer described in
    `mobile/README.md`; the Release plist already ships `ITSAppUsesNonExemptEncryption`
    `false`, and a build that Apple will not import is reported by the upload step.

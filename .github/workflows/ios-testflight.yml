@@ -52,13 +52,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          # Read release validation code from the workflow commit on main.
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - name: Validate the version and record the commit
         id: request
         env:
           INPUT_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          INPUT_SHA: ${{ github.event.workflow_run.head_sha }}
           INPUT_TAG: ${{ inputs.tag }}
           INPUT_VERSION: ${{ inputs.version }}
         run: |
@@ -74,6 +76,13 @@ jobs:
           fi
           version_check "$version"
           [[ -z "$tag" || "$tag" == "v$version" ]] || fail "The release tag must be v$version, not $tag"
+          if [[ "$GITHUB_EVENT_NAME" == workflow_run ]]; then
+            [[ $(git rev-parse --verify "refs/tags/$tag^{commit}") == "$INPUT_SHA" ]] ||
+              fail 'The release tag must name the triggering commit'
+            git merge-base --is-ancestor "$INPUT_SHA" refs/remotes/origin/main ||
+              fail 'The release commit must belong to main'
+            git checkout --detach "$INPUT_SHA"
+          fi
           sha=$(git rev-parse 'HEAD^{commit}')
           {
             printf 'version=%s\n' "$version"
@@ -135,7 +144,7 @@ jobs:
           shasum -a 256 -c SHA256SUMS
           tar -xzf SpaceportMobile.tar.gz -C "$GITHUB_WORKSPACE/mobile"
           mkdir -p "$GITHUB_WORKSPACE/target/ios-release"
-      # Only this job receives the distribution identity, the two profiles and
+      # Only this job receives the distribution identity, the provisioning profiles and
       # the App Store Connect key.
       - name: Sign, verify and upload this build to TestFlight
         env:
@@ -147,6 +156,7 @@ jobs:
           APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
           SPACEPORT_MOBILE_PROFILE_B64: ${{ secrets.SPACEPORT_MOBILE_PROFILE_B64 }}
           SPACEPORT_ACTIVITY_PROFILE_B64: ${{ secrets.SPACEPORT_ACTIVITY_PROFILE_B64 }}
+          SPACEPORT_SHARE_PROFILE_B64: ${{ secrets.SPACEPORT_SHARE_PROFILE_B64 }}
         run: bash scripts/release/sign-ios.sh "$VERSION" target/ios-release
       - name: Record the TestFlight upload in the job summary
         if: always()
