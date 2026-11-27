@@ -107,7 +107,7 @@ impl SpaceportWindow {
     fn save_shortcut_edit(&mut self, edit: Edit, window: &mut Window, cx: &mut Context<Self>) {
         self.save_shortcut_with(
             edit,
-            |name, binding| Config::save_keybinding(name, binding).map_err(crate::Error::from),
+            |name, binding| Config::save_keybinding(name, binding, crate::config::check_keymap),
             window,
             cx,
         );
