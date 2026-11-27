@@ -203,6 +203,7 @@ impl SpaceportWindow {
             toast_motion: Default::default(),
             toasts_hidden: false,
             tunnels: Default::default(),
+            usage: Default::default(),
             version_notice_shown: false,
             viewport_width: 0.,
             wake: endpoint::WakeClock::now(),

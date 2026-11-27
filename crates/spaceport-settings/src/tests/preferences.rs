@@ -1,11 +1,44 @@
 use super::*;
 
 #[test]
-fn show_agents_saves_in_place_and_keeps_other_settings() -> anyhow::Result<()> {
+fn usage_visibility_preserves_settings_and_rejects_invalid_tables() -> anyhow::Result<()> {
     let temp = TempDirectory::new()?;
     let path = temp.0.join("config.toml");
     let original =
-        "theme = 'Nord' # keep\nshow_agents = true # mine\n[sidebar]\nactivity_bar = false\n";
+        "theme = 'Nord' # keep\n[usage]\nshow = true # visibility\nhide_providers = ['claude']\n";
+    fs::write(&path, original)?;
+    Config::save_usage_visibility_path(false, &path)?;
+    assert_eq!(
+        fs::read_to_string(&path)?,
+        original.replace("show = true", "show = false")
+    );
+    assert!(!Config::parse(&fs::read_to_string(&path)?)?.usage.show);
+    Config::save_usage_visibility_path(true, &path)?;
+    assert_eq!(fs::read_to_string(&path)?, original);
+    for original in [
+        "theme = 'Nord'\n",
+        "usage = { show = true, topbar = false }\n",
+    ] {
+        fs::write(&path, original)?;
+        Config::save_usage_visibility_path(false, &path)?;
+        assert!(!Config::parse(&fs::read_to_string(&path)?)?.usage.show);
+    }
+    fs::write(&path, "usage = false\n")?;
+    let error = Config::save_usage_visibility_path(false, &path)
+        .err()
+        .context("invalid usage table must be rejected")?;
+    assert!(matches!(&error, Error::Path { path: failed, source }
+        if failed == &path && matches!(**source, Error::InvalidUsageTable)));
+    assert!(std::error::Error::source(&error).is_some());
+    assert_eq!(fs::read_to_string(&path)?, "usage = false\n");
+    Ok(())
+}
+
+#[test]
+fn show_agents_saves_in_place_and_keeps_other_settings() -> anyhow::Result<()> {
+    let temp = TempDirectory::new()?;
+    let path = temp.0.join("config.toml");
+    let original = "theme = 'Nord' # keep\nshow_agents = true # mine\n[usage]\nshow = false\n";
     fs::write(&path, original)?;
     Config::save_show_agents_path(false, &path)?;
     let saved = fs::read_to_string(&path)?;
@@ -15,16 +48,16 @@ fn show_agents_saves_in_place_and_keeps_other_settings() -> anyhow::Result<()> {
     );
     let config = Config::parse(&saved)?;
     assert!(!config.show_agents);
-    assert!(!config.sidebar_style.activity_bar);
+    assert!(!config.usage.show);
     Config::save_show_agents_path(true, &path)?;
     assert_eq!(fs::read_to_string(&path)?, original);
 
-    // A key added to a file with tables must stay top-level, not join [sidebar].
-    fs::write(&path, "theme = 'Nord'\n[sidebar]\nactivity_bar = false\n")?;
+    // A key added to a file with tables must stay top-level, not join [usage].
+    fs::write(&path, "theme = 'Nord'\n[usage]\nshow = true\n")?;
     Config::save_show_agents_path(false, &path)?;
     let config = Config::parse(&fs::read_to_string(&path)?)?;
     assert!(!config.show_agents);
-    assert!(!config.sidebar_style.activity_bar);
+    assert!(config.usage.show);
 
     fs::remove_file(&path)?;
     Config::save_show_agents_path(false, &path)?;
@@ -112,6 +145,14 @@ fn rejects_invalid_settings() {
         "[sidebar]\nsize = -inf",
         "[tabs]\nsize = '14'",
         "[tabs]\nfamily = 14",
+        "[github]\nclient_secret = 'not-allowed'",
+        "[github]\nprivate_key = 'not-allowed'",
+        "[github]\ntoken = 'not-allowed'",
+        "[github]\noauth_client_id = 123",
+        "[github]\noauth_client_id = ''",
+        "[github]\noauth_client_id = ' bad-id'",
+        "[github]\noauth_client_id = 'bad/id'",
+        "[github]\noauth_client_id = '\u{e9}'",
         "[features]\nsidebar_hover_menu = 'true'",
         "[features]\nsidebar_hover_menu = 1",
         "[layout]\nsidebar_gap = -1",

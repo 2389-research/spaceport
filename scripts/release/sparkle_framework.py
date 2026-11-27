@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# ABOUTME: Validate the pinned Sparkle SDK and preview bundle update policy.
+# ABOUTME: Validate the pinned Sparkle SDK and each signed channel's bundle update policy.
 # ABOUTME: Sign only the SDK's known nested code before its enclosing framework.
 import argparse
 import base64
@@ -9,15 +9,24 @@ import os
 from pathlib import Path
 import plistlib
 import shutil
+import re
 import subprocess
 import sys
 import tarfile
 import tempfile
+import urllib.parse
 
 VERSION = '2.10.1'
 SHA256 = '1a856d2a9edb8e628de88121d7be04cf0e2167f8641650b78fca00b14244cf27'
-FEED = 'https://github.com/2389-research/spaceport/releases/download/macos-preview-feed/appcast.xml'
 CONFIG = Path(__file__).with_name('sparkle.json')
+# The signed channels the app compiles, each with its own feed in sparkle.json.
+CHANNELS = ('macos-preview', 'production')
+DEFAULT_CHANNEL = 'macos-preview'
+# Preview and production are signed builds of one app identity.
+RELEASE_APP_ID = 'ai.2389.spaceport'
+# A channel's feed is its own fixed release asset, never a moved version tag.
+FEED_ASSET = '/appcast.xml'
+RELEASE_TAG = re.compile(r'[a-z0-9][a-z0-9-]{0,63}')
 CODE = (
     'Autoupdate',
     'Updater.app/Contents/MacOS/Updater',
@@ -41,15 +50,38 @@ def read_config(path=CONFIG):
     data = json.loads(Path(path).read_text())
     if data.get('sdk_version') != VERSION or data.get('sdk_sha256') != SHA256:
         raise ValueError('Sparkle SDK version/checksum configuration mismatch')
-    if data.get('feed_url') != FEED:
-        raise ValueError('Sparkle preview feed URL mismatch')
     try:
         key = base64.b64decode(data.get('public_key', ''), validate=True)
     except (ValueError, TypeError) as error:
         raise ValueError('Invalid Sparkle public key') from error
     if len(key) != 32:
         raise ValueError('Sparkle public key must contain 32 bytes')
+    feeds = data.get('feeds')
+    if not isinstance(feeds, dict) or set(feeds) != set(CHANNELS):
+        raise ValueError(f'Sparkle configuration must name the feeds of {", ".join(CHANNELS)}')
+    hosts = set()
+    for channel, feed in feeds.items():
+        if not isinstance(feed, dict) or set(feed) != {'release', 'url'}:
+            raise ValueError(f'Malformed Sparkle channel feed: {channel}')
+        release, url = feed['release'], feed['url']
+        if not isinstance(release, str) or not RELEASE_TAG.fullmatch(release) or not isinstance(url, str):
+            raise ValueError(f'Malformed Sparkle channel feed: {channel}')
+        split = urllib.parse.urlsplit(url)
+        # The app downloads this address, so it is https or it is not a feed.
+        if (split.scheme != 'https' or not split.hostname or split.username or split.password
+                or split.query or split.fragment
+                or not split.path.endswith(f'/releases/download/{release}{FEED_ASSET}')):
+            raise ValueError(f'Sparkle channel feed must be its https release asset: {channel}')
+        hosts.add(split.hostname)
+    if len(hosts) != 1:
+        raise ValueError('Sparkle channel feeds must be served from one host')
     return data
+
+
+def channel_feed(config, name=DEFAULT_CHANNEL):
+    if name not in CHANNELS:
+        raise ValueError(f'Unknown Sparkle channel: {name}')
+    return config['feeds'][name]
 
 
 def verify_archive(archive, config=CONFIG):
@@ -190,29 +222,30 @@ def validate_framework(framework, architecture):
             raise ValueError(f'Sparkle framework metadata mismatch: {name}')
 
 
-def bundle_policy(config):
-    return dict(POLICY, SUFeedURL=config['feed_url'], SUPublicEDKey=config['public_key'])
+def bundle_policy(config, name=DEFAULT_CHANNEL):
+    return dict(POLICY, SUFeedURL=channel_feed(config, name)['url'],
+                SUPublicEDKey=config['public_key'])
 
 
-def configure_bundle(app, config=CONFIG):
-    policy = bundle_policy(read_config(config))
+def configure_bundle(app, config=CONFIG, name=DEFAULT_CHANNEL):
+    policy = bundle_policy(read_config(config), name)
     info = Path(app) / 'Contents/Info.plist'
     metadata = plistlib.loads(info.read_bytes())
-    if metadata.get('CFBundleIdentifier') != 'ai.2389.spaceport':
-        raise ValueError('Sparkle preview bundle identity mismatch')
+    if metadata.get('CFBundleIdentifier') != RELEASE_APP_ID:
+        raise ValueError('Sparkle signed bundle identity mismatch')
     metadata.update(policy)
     # Absence permits Sparkle's native consent prompt.
     metadata.pop('SUEnableAutomaticChecks', None)
     info.write_bytes(plistlib.dumps(metadata))
 
 
-def validate_policy(app, config=CONFIG):
+def validate_policy(app, config=CONFIG, name=DEFAULT_CHANNEL):
     metadata = plistlib.loads((Path(app) / 'Contents/Info.plist').read_bytes())
-    if metadata.get('CFBundleIdentifier') != 'ai.2389.spaceport':
-        raise ValueError('Sparkle preview bundle identity mismatch')
-    for name, value in bundle_policy(read_config(config)).items():
-        if type(metadata.get(name)) is not type(value) or metadata[name] != value:
-            raise ValueError(f'Sparkle bundle configuration mismatch: {name}')
+    if metadata.get('CFBundleIdentifier') != RELEASE_APP_ID:
+        raise ValueError('Sparkle signed bundle identity mismatch')
+    for key, value in bundle_policy(read_config(config), name).items():
+        if type(metadata.get(key)) is not type(value) or metadata[key] != value:
+            raise ValueError(f'Sparkle bundle configuration mismatch: {key}')
     if 'SUEnableAutomaticChecks' in metadata:
         raise ValueError('Sparkle automatic checks require native consent')
 
@@ -232,6 +265,8 @@ def main():
     parser.add_argument('--architecture', choices=('arm64', 'universal'), default='universal')
     parser.add_argument('--config', type=Path, default=CONFIG)
     parser.add_argument('--archive', type=Path, help='Local SDK archive; otherwise download the pinned official release')
+    parser.add_argument('--channel', choices=CHANNELS, default=DEFAULT_CHANNEL,
+                        help='signed channel whose feed the bundle carries')
     args, options = parser.parse_known_args()
     if args.action != 'sign' and options:
         parser.error('Unexpected signing options')
@@ -241,9 +276,9 @@ def main():
         validate_sdk(args.path, args.config)
         validate_framework(args.path / 'Sparkle.framework', args.architecture)
     elif args.action == 'configure':
-        configure_bundle(args.path, args.config)
+        configure_bundle(args.path, args.config, args.channel)
     else:
-        validate_policy(args.path, args.config)
+        validate_policy(args.path, args.config, args.channel)
         directory = args.path / 'Contents/Frameworks'
         if (not directory.is_dir() or directory.is_symlink()
                 or {path.name for path in directory.iterdir()} != {'Sparkle.framework'}):

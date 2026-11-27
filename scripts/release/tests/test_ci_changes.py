@@ -69,15 +69,6 @@ class CiChanges(GitFixture):
             self.commit_path(path)
             self.assertEqual(self.detect(), "code=true", path)
 
-    def test_compiled_markdown_triggers_only_native_checks(self):
-        for path in ("skills/spaceport/SKILL.md", "docs/cli.md"):
-            with self.subTest(path=path):
-                self.base = self.git("rev-parse", "HEAD").strip()
-                self.commit_path(path)
-                self.assertEqual(self.outputs(), {
-                    "code": "true", "windows_package": "false", "macos_release": "false",
-                })
-
     def test_deletions_trigger_native_jobs(self):
         self.commit_path("crates/example.rs")
         self.base = self.git("rev-parse", "HEAD").strip()

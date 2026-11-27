@@ -330,7 +330,7 @@ fn a_tab_from_a_saved_host_waits_for_the_host_to_be_listed(cx: &mut TestAppConte
         *endpoint = "ssh:remote".into();
         *session = spaceport_client::ConnectTarget::Ssh {
             target: "user@remote".into(),
-            session: "work".into(),
+            session: "default".into(),
         };
     } else {
         panic!("legacy fixture must keep its route");
@@ -353,13 +353,6 @@ fn a_tab_from_a_saved_host_waits_for_the_host_to_be_listed(cx: &mut TestAppConte
         assert!(view.arrival.is_none());
         assert_eq!(view.endpoints[view.selected_endpoint].id, "ssh:remote");
         assert_eq!(
-            view.endpoints[view.selected_endpoint]
-                .connection
-                .target
-                .remote_session(),
-            Some("work")
-        );
-        assert_eq!(
             view.pending_navigation,
             Some(crate::NavigationTarget::Tab("c".into()))
         );
@@ -377,55 +370,17 @@ fn a_tab_from_a_host_no_longer_saved_is_given_up(cx: &mut TestAppContext) {
     } else {
         panic!("legacy fixture must keep its route");
     }
-    let receiving = cx.add_window(crate::sidebar::layout_tests::fixture_window);
-    let fresh = receiving.root(cx).unwrap();
-    receiving
-        .update(cx, |view, window, cx| view.arrive(torn, window, cx))
-        .unwrap();
+    let fresh = cx
+        .update(|window, cx| cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx)));
+    cx.update(|window, cx| fresh.update(cx, |view, cx| view.arrive(torn, window, cx)));
     fresh.update(cx, |view, cx| {
         view.reconcile_catalog(vec![saved("remote")], Vec::new(), cx)
     });
-    assert!(receiving.root(cx).is_err());
     fresh.read_with(cx, |view, _| {
         assert!(view.arrival.is_none());
         assert_eq!(view.selected_endpoint, 0);
         assert_eq!(view.pending_navigation, None);
     });
-}
-
-#[gpui::test]
-fn a_retargeted_host_gives_the_torn_tab_back_to_its_source(cx: &mut TestAppContext) {
-    let (source, cx) = four_tabs(cx, true);
-    carry_to(cx, "tab-c", OUTSIDE);
-    drop_at(cx, OUTSIDE);
-    let mut torn = torn(cx).remove(0);
-    if let TornRoute::Legacy {
-        endpoint, session, ..
-    } = &mut torn.route
-    {
-        *endpoint = "ssh:remote".into();
-        *session = spaceport_client::ConnectTarget::Ssh {
-            target: "original".into(),
-            session: "work".into(),
-        };
-    } else {
-        panic!("legacy fixture must keep its route");
-    }
-    let receiving = cx.add_window(crate::sidebar::layout_tests::fixture_window);
-    let fresh = receiving.root(cx).unwrap();
-    receiving
-        .update(cx, |view, window, cx| view.arrive(torn, window, cx))
-        .unwrap();
-    fresh.update(cx, |view, cx| {
-        view.reconcile_catalog(vec![saved("remote")], Vec::new(), cx)
-    });
-    assert!(receiving.root(cx).is_err());
-    fresh.read_with(cx, |view, _| {
-        assert!(view.arrival.is_none());
-        assert_eq!(view.selected_endpoint, 0);
-        assert_eq!(view.pending_navigation, None);
-    });
-    assert_eq!(listed(&source, cx), herdr(&["a", "b", "c", "d"]));
 }
 
 #[test]

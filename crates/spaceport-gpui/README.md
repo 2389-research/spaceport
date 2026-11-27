@@ -38,7 +38,7 @@ and an already trusted host key. For hosts that need MFA or a password, configur
 `ControlMaster auto` with a `ControlPath` in `~/.ssh/config` and authenticate once
 with `ssh HOST` in a terminal: the app reuses that master connection while it lives.
 Otherwise, on macOS and Linux, the app's own short commands on a host (Git reads,
-port scans, scripts) share one SSH login per host instead of a login each, so
+usage, scripts) share one SSH login per host instead of a login each, so
 hosts that rate-limit new SSH connections (a firewall `limit` rule, sshd's
 `MaxStartups`) are not flooded; large host transfers get a second
 login of their own, and terminals keep their own connection. These shared logins
@@ -153,11 +153,15 @@ are not restored. Geometry is stored in `window-state.json` under
 (`%LOCALAPPDATA%\herdr\gpui` on Windows when `HOME` is unset). Native
 test modes skip this state. Up to 64 main windows are restored.
 
-The inherited custom updater has been removed. App updates remain a required
-release gate; no replacement engine or package-manager ownership policy is
-configured. Development builds report `dev`, and `HERDR_RELEASE_VERSION`
-refuses compilation until Spaceport's independent release identity is configured.
-The removed `update` command and `[updates]` settings are rejected.
+The inherited custom updater has been removed, and no other updater was added in
+its place. Installed signed macOS builds update through Sparkle: a preview
+follows the preview appcast and a production build the stable one, each named
+for its channel in `scripts/release/sparkle.json`. Development and worktree
+builds never check, and Windows and Linux have no update route yet. Publishing
+the stable feed and the production release route itself remain separate
+decisions. Development builds report `dev`, and `HERDR_RELEASE_VERSION` refuses
+compilation until Spaceport's independent release identity is configured. The
+removed `update` command and `[updates]` settings are rejected.
 
 The **QA** menu is off by default in every build, including published
 releases; turn on **Settings > General > QA menu** (`qa_menu = true` under `[features]`) to show it. The menu bar
@@ -725,16 +729,16 @@ or turn off **Show repository icons** in **Settings > Sidebar**, to hide it
 and give the name its room. The Superset layout
 keeps its icon slot and draws its branch glyph there instead.
 
-`[usage]` provides independent switches in `config-gpui.local.toml` for the
-usage indicators the daemon reports:
+`[usage]` provides independent switches in `config-gpui.local.toml`:
 
 ```toml
 [usage]
+show = true     # Native bottom-bar usage
 topbar = true   # Daemon toolbar text, including plugin percentages
 inline = true   # Daemon sidebar rows, styles, and custom tokens
 ```
 
-Both default to `true` and apply on config reload. Set `topbar`
+All three default to `true` and apply on config reload. Set `topbar`
 to `false` to hide daemon text without hiding the Git/account controls. Set
 `inline` to `false` to use native sidebar layouts.
 These switches affect GPUI only; they do not change
@@ -872,6 +876,8 @@ On Linux and Windows it stays in the same position when the sidebar collapses
 to a rail. The leftmost tab strip takes the button when the sidebar is hidden
 or the rail cannot fit it beside macOS's traffic lights.
 It stays available when the sidebar is hidden; the existing View menu command and shortcut still work.
+In **Settings > Status bar**, toggle **Usage** to turn the bottom quota display on or off.
+The choice is saved to `config-gpui.local.toml` and follows the existing `[usage] show` setting.
 
 The app's own colored marks and labels (status dots and words, pull request
 badges, diff counts, usage warnings, online dots, toasts) keep a minimum
@@ -1695,6 +1701,9 @@ window at once, and `spaceport ui panel NAME` shows a section.
   column beside the list shows each host's agents, connectivity and ports;
   each host folds, and the column folds to a strip of load dots. The icon
   counts what needs you.
+- **Usage** shows every host's plan limits, one card per signed-in agent. Only
+  the selected host is read; another host shows what was read while it was
+  selected.
 
 When Overview or a section opens an agent's pane, the title bar's Back returns
 to it before walking back through panes.
@@ -3220,6 +3229,10 @@ catalog (`%LOCALAPPDATA%\herdr\client`), never in the catalog itself, whose
 strict schema cannot name one. The device you last chose, a distribution
 included, is selected again at startup.
 
+Plan usage is read through its own `wsl.exe` shell in the same way, as on an
+SSH host: the distribution's own agent sign-ins, read with its `python3` or
+`jq` and sent with its `curl`, so they never leave it.
+
 Listening ports are scanned with the distribution's own `ss` (or `lsof`)
 through another `wsl.exe` shell. WSL forwards a distribution's `localhost`
 ports to Windows, so a port opens at `http://localhost:<port>` on this machine
@@ -3284,7 +3297,7 @@ window, the main window exposes:
   and place, a device's name and connection), selected when focused, and
   expandable when they fold others, which Expand and Collapse do; **New
   workspace**, **Menu**, the agents' sort, the device picker, and **Sessions**;
-- the status bar as a status bar: the connection message, the model,
+- the status bar as a status bar: the connection message, the model, usage,
   and network readings by what they say, and its buttons
   (**Keep the display awake** as a switch);
 - every popup as a menu (context menus) or a dialog named by its title, with

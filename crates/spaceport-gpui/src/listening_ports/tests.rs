@@ -7,9 +7,8 @@ use super::{
     scan::{Bind, Link, MAX_PORTS, Origin, Port, Ports, parse},
     tunnel::{self, Key},
 };
-use crate::Error;
+use crate::{Error, usage::Host};
 use spaceport_client::ConnectTarget;
-use spaceport_remote::Host;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 mod en_xa;
@@ -195,12 +194,9 @@ fn only_a_different_scan_changes_what_is_shown() {
     assert!(reading.apply(Ok(found.clone())));
     assert!(!reading.apply(Ok(found.clone())));
     // A failed scan keeps the last ports and is not a change.
-    assert!(
-        !reading.apply(Err(super::Error::Scan(Box::new(
-            spaceport_remote::host_shell::Error::Unreachable.into()
-        ))
-        .into()))
-    );
+    assert!(!reading.apply(Err(
+        super::Error::Scan(Box::new(spaceport_usage::shell::Error::Unreachable.into())).into()
+    )));
     assert_eq!(reading.ports, found);
     let error = reading.error.clone().unwrap();
     assert!(

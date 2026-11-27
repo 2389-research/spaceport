@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""ABOUTME: Create and verify Spaceport's signed Sparkle preview appcast.
-ABOUTME: Bind feed entries to immutable preview artifacts and the public trust key.
+"""ABOUTME: Create and verify Spaceport's signed Sparkle appcast for one release channel.
+ABOUTME: Bind feed entries to immutable release artifacts and the public trust key.
 """
 
 import argparse
 import base64
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -17,14 +18,23 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "scripts/release/sparkle.json"
 NS = "http://www.andymatuschak.org/xml-namespaces/sparkle"
-PREFIX = "https://github.com/2389-research/spaceport/releases/download/"
 OPENSSL = os.environ.get("SPACEPORT_OPENSSL", "openssl")
 MAX_FEED = 1024 * 1024
+MAX_ARCHIVE = 1024 * 1024 * 1024
+# Previews are the channel a release run publishes unless it names another.
+DEFAULT_CHANNEL = "macos-preview"
 ET.register_namespace("sparkle", NS)
+CHANNEL_MODULE = importlib.util.spec_from_file_location("channels", Path(__file__).with_name("channels.py"))
+channels = importlib.util.module_from_spec(CHANNEL_MODULE)
+CHANNEL_MODULE.loader.exec_module(channels)
+
+
+def selected_channel(name=None):
+    return channels.channel(name or DEFAULT_CHANNEL)
 
 
 def version_tuple(version):
-    if not re.fullmatch(r"[1-9][0-9]{7}\.[1-9][0-9]*", version):
+    if not channels.is_version(version):
         raise ValueError("Version must be YYYYMMDD.COUNTER without leading zeros")
     return tuple(map(int, version.split(".")))
 
@@ -73,28 +83,29 @@ def verify_signature(content, signature, public_key):
             raise ValueError("Ed25519 signature verification failed (OpenSSL 3+ required)")
 
 
-def artifact_url(version):
-    version_tuple(version)
-    return f"{PREFIX}v{version}/Spaceport-{version}-arm64-apple-darwin.dmg"
+def artifact_url(version, channel=None):
+    return selected_channel(channel).download_url(version)
 
 
-def render(version, length, signature, notes):
-    url = artifact_url(version)
+def render(version, length, signature, notes, channel=None):
+    channel = selected_channel(channel)
+    download = channel.appcast_download
+    url = channel.download_url(version, download)
     decoded(signature, 64)
     if not isinstance(length, int) or length <= 0:
         raise ValueError("Archive length must be positive")
     rss = ET.Element("rss", {"version": "2.0"})
-    channel = ET.SubElement(rss, "channel")
-    ET.SubElement(channel, "title").text = "Spaceport macOS previews"
-    ET.SubElement(channel, "link").text = "https://github.com/2389-research/spaceport/releases"
-    item = ET.SubElement(channel, "item")
-    ET.SubElement(item, "title").text = f"Spaceport {version} (macOS arm64 preview)"
+    feed = ET.SubElement(rss, "channel")
+    ET.SubElement(feed, "title").text = channel.appcast_title
+    ET.SubElement(feed, "link").text = channel.releases_url
+    item = ET.SubElement(feed, "item")
+    ET.SubElement(item, "title").text = channel.item_title(version)
     ET.SubElement(item, "description", {f"{{{NS}}}format": "markdown"}).text = notes
-    ET.SubElement(item, f"{{{NS}}}minimumSystemVersion").text = "14.2"
+    ET.SubElement(item, f"{{{NS}}}minimumSystemVersion").text = download.minimum_system_version
     ET.SubElement(item, "enclosure", {
         "url": url, "length": str(length), "type": "application/octet-stream",
         f"{{{NS}}}version": version, f"{{{NS}}}shortVersionString": version,
-        f"{{{NS}}}edSignature": signature, f"{{{NS}}}os": "macos",
+        f"{{{NS}}}edSignature": signature, f"{{{NS}}}os": download.platform,
     })
     data = ET.tostring(rss, encoding="utf-8", xml_declaration=True) + b"\n"
     if len(data) > MAX_FEED:
@@ -102,7 +113,9 @@ def render(version, length, signature, notes):
     return data
 
 
-def parse(data, config):
+def parse(data, config, channel=None):
+    channel = selected_channel(channel)
+    download = channel.appcast_download
     if len(data) > MAX_FEED:
         raise ValueError("Feed exceeds size bound")
     match = re.fullmatch(
@@ -121,26 +134,27 @@ def parse(data, config):
     except ET.ParseError as error:
         raise ValueError("Invalid appcast XML") from error
     items = rss.findall("./channel/item")
-    if rss.tag != "rss" or len(items) != 1:
-        raise ValueError("Preview feed must have exactly one update")
+    if rss.tag != "rss" or rss.findtext("./channel/title", "") != channel.appcast_title or len(items) != 1:
+        raise ValueError(f"Feed must be the {channel.name} channel's one update")
     enclosures = items[0].findall("enclosure")
     if len(enclosures) != 1:
-        raise ValueError("Preview feed must have exactly one enclosure")
+        raise ValueError("Release feed must have exactly one enclosure")
     enclosure = enclosures[0]
     version = enclosure.get(f"{{{NS}}}version", "")
     url = enclosure.get("url")
-    if url != artifact_url(version):
-        raise ValueError("Unexpected preview download URL")
+    if url != channel.download_url(version, download):
+        raise ValueError("Unexpected release download URL")
     if (enclosure.get(f"{{{NS}}}shortVersionString") != version
-            or enclosure.get(f"{{{NS}}}os") != "macos"
-            or items[0].findtext(f"{{{NS}}}minimumSystemVersion") != "14.2"):
+            or items[0].findtext("title", "") != channel.item_title(version)
+            or enclosure.get(f"{{{NS}}}os") != download.platform
+            or items[0].findtext(f"{{{NS}}}minimumSystemVersion") != download.minimum_system_version):
         raise ValueError("Unexpected platform or version metadata")
     try:
         archive_length = int(enclosure.get("length", ""))
     except ValueError as error:
         raise ValueError("Invalid archive length") from error
-    if not 0 < archive_length <= 1024 * 1024 * 1024:
-        raise ValueError("Archive length outside preview bounds")
+    if not 0 < archive_length <= MAX_ARCHIVE:
+        raise ValueError("Archive length outside release bounds")
     archive_signature = enclosure.get(f"{{{NS}}}edSignature")
     decoded(archive_signature, 64)
     return {"version": version, "url": url, "length": archive_length,
@@ -153,14 +167,13 @@ def verify_archive(item, archive, public_key):
     verify_signature(archive, item["signature"], public_key)
 
 
-def publication_version(data, previous, config, published_tags):
-    version = parse(data, config)["version"]
-    versions = [version_tuple(tag[1:]) for tag in published_tags
-                if re.fullmatch(r"v[1-9][0-9]{7}\.[1-9][0-9]*", tag)]
+def publication_version(data, previous, config, published_tags, channel=None):
+    version = parse(data, config, channel)["version"]
+    versions = [version_tuple(tag[1:]) for tag in published_tags if channels.is_release_tag(tag)]
     if not versions or max(versions) != version_tuple(version):
-        raise ValueError("Feed must reference the newest published preview")
+        raise ValueError("Feed must reference the newest published release")
     if previous is not None:
-        require_newer(version, parse(previous, config)["version"])
+        require_newer(version, parse(previous, config, channel)["version"])
     return version
 
 
@@ -173,17 +186,24 @@ def sign(tool, archive, key):
 
 
 def create(args, config):
-    version_tuple(args.version)
+    channel = selected_channel(args.channel)
+    download = channel.appcast_download
+    channels.release_tag(args.version)
     if args.output.exists() or args.output.is_symlink():
         raise ValueError("Feed output already exists")
-    if args.archive.name != artifact_url(args.version).rsplit("/", 1)[-1]:
-        raise ValueError("Archive name does not match preview version")
-    metadata = json.loads(args.archive.with_suffix(".dmg.json").read_text())
+    if args.archive.name != download.asset(args.version):
+        raise ValueError("Archive name does not match the channel's artifact")
+    metadata = json.loads(args.archive.with_suffix(f".{download.format}.json").read_text())
     expected = {"app_id": "ai.2389.spaceport", "team_id": "HD9NM9NSMK",
-                "version": args.version, "architecture": "arm64",
-                "profile": "release", "kind": "signed-macos-preview"}
+                "version": args.version, "architecture": download.architecture,
+                "profile": "release", "kind": download.kind}
     if any(metadata.get(key) != value for key, value in expected.items()):
         raise ValueError("Signed artifact metadata mismatch")
+    # The app refuses any feed but its own channel's, so a feed is never created
+    # for an address the compiled table does not carry.
+    feeds = config.get("feeds")
+    if feeds is not None and feeds.get(channel.name, {}).get("url") != channel.feed_url:
+        raise ValueError("Channel feed must be the address the app checks")
     with args.archive.open("rb") as source:
         digest = hashlib.file_digest(source, "sha256").hexdigest()
     if digest != metadata["sha256"]:
@@ -193,9 +213,9 @@ def create(args, config):
         raise ValueError("SPARKLE_PRIVATE_KEY is required for signing")
     signature = sign(args.tool, args.archive, key)
     args.output.write_bytes(render(args.version, args.archive.stat().st_size,
-                                   signature, args.notes.read_text()))
+                                   signature, args.notes.read_text(), channel.name))
     sign(args.tool, args.output, key)
-    item = parse(read_feed(args.output), config)
+    item = parse(read_feed(args.output), config, channel.name)
     verify_archive(item, args.archive, config["public_key"])
 
 
@@ -203,7 +223,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=CONFIG)
     actions = parser.add_subparsers(dest="action", required=True)
-    make = actions.add_parser("create", help="sign verified final DMG and an appcast with SDK tool")
+    make = actions.add_parser("create", help="sign a verified final disk image and an appcast with the SDK tool")
     make.add_argument("version")
     make.add_argument("archive", type=Path)
     make.add_argument("notes", type=Path)
@@ -212,13 +232,16 @@ def main():
     verify = actions.add_parser("verify", help="verify signed feed and optional local archive")
     verify.add_argument("feed", type=Path)
     verify.add_argument("--archive", type=Path)
+    for action in (make, verify):
+        action.add_argument("--channel", default=DEFAULT_CHANNEL,
+                            help=f"release channel named in channels.json; default {DEFAULT_CHANNEL}")
     args = parser.parse_args()
     try:
         config = json.loads(args.config.read_text())
         if args.action == "create":
             create(args, config)
         else:
-            item = parse(read_feed(args.feed), config)
+            item = parse(read_feed(args.feed), config, args.channel)
             if args.archive:
                 verify_archive(item, args.archive, config["public_key"])
             print(json.dumps(item))

@@ -6,6 +6,7 @@ use super::*;
 mod feed_expiry;
 
 const FEED: &str = "https://example.test/appcast.xml";
+const STABLE_FEED: &str = "https://example.test/stable/appcast.xml";
 const KEY: &str = "public-key";
 
 // These tests pin the identity strings on purpose: the policy itself holds none.
@@ -33,6 +34,20 @@ fn preview_build() -> Build<'static> {
         id: PREVIEW_ID,
         version: "0.1.1",
         worktree: "0",
+    }
+}
+
+fn production_build() -> Build<'static> {
+    Build {
+        channel: Channel::Production,
+        ..preview_build()
+    }
+}
+
+fn stable() -> Bundle<'static> {
+    Bundle {
+        feed: STABLE_FEED,
+        ..preview()
     }
 }
 
@@ -149,13 +164,33 @@ fn preview_channel_follows_the_built_id_not_a_literal() {
 }
 
 #[test]
-fn this_build_updates_only_as_a_preview_outside_a_worktree() {
+fn each_signed_channel_updates_only_from_its_own_feed() {
+    assert!(eligible(&stable(), &production_build(), STABLE_FEED, KEY));
+    // The compiled channel decides which address the bundle has to carry.
+    assert!(!eligible(&preview(), &production_build(), STABLE_FEED, KEY));
+    assert!(!eligible(&stable(), &preview_build(), FEED, KEY));
+    assert!(!eligible(
+        &stable(),
+        &Build {
+            worktree: "1",
+            ..production_build()
+        },
+        STABLE_FEED,
+        KEY
+    ));
+}
+
+#[test]
+fn this_build_updates_only_as_a_signed_release_outside_a_worktree() {
     let build = Build::COMPILED;
     assert_eq!(build.id, crate::constants::APP_ID);
     assert_eq!(build.version, crate::constants::APP_VERSION);
     assert_eq!(
         build.can_update(),
-        crate::constants::CHANNEL == Channel::MacosPreview && env!("HERDR_BUILD_WORKTREE") == "0"
+        matches!(
+            crate::constants::CHANNEL,
+            Channel::MacosPreview | Channel::Production
+        ) && env!("HERDR_BUILD_WORKTREE") == "0"
     );
     let bundle = Bundle {
         id: build.id,

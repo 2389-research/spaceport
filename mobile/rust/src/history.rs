@@ -21,8 +21,6 @@ type Reply = mpsc::Sender<spaceport_client::Result<ScrollbackResponse>>;
 
 #[derive(Clone, Default)]
 pub(crate) struct HistoryInbox {
-    #[cfg(test)]
-    waiting: Option<mpsc::Sender<()>>,
     generation: u64,
     // Canceled requests keep only their ID until the ordered worker delivers the reply.
     replies: HashMap<String, Option<Reply>>,
@@ -111,7 +109,6 @@ impl MobileSession {
         let mut state = self.current(&target.boot_id)?;
         state.history_pane(&target)?;
         let generation = state.history.begin()?;
-        self.frames.notify_all();
         Ok(Arc::new(HistorySearch {
             session: self.clone(),
             target,
@@ -120,7 +117,7 @@ impl MobileSession {
     }
 }
 
-impl HistorySearch {
+impl MobileSession {
     /// The pane's content revision this search may name, waiting for the next
     /// frame while the pane is mid-write or still shows a revision the daemon
     /// already refused. The desktop window refuses the same two cases before
@@ -128,17 +125,18 @@ impl HistorySearch {
     ///
     /// Blocking: run on a background thread. The drain signals `frames` for
     /// every event it takes in, so this waits on a frame rather than polling.
-    fn settled_revision(&self, refused: Option<u64>) -> Result<u64, MobileError> {
+    fn settled_revision(
+        &self,
+        target: &InputTarget,
+        refused: Option<u64>,
+    ) -> Result<u64, MobileError> {
         let started = Instant::now();
-        let mut state = self.session.current(&self.target.boot_id)?;
+        let mut state = self.current(&target.boot_id)?;
         loop {
-            if state.disconnected || self.session.handle.is_disconnected() {
+            if state.disconnected || self.handle.is_disconnected() {
                 return Err(MobileError::Disconnected);
             }
-            if state.history.generation != self.generation {
-                return Err(MobileError::StaleView);
-            }
-            let revision = state.history_pane(&self.target)?.content_revision;
+            let revision = state.history_pane(target)?.content_revision;
             let ready = match refused {
                 Some(refused) => retryable_after(refused, revision),
                 None => content_settled(revision),
@@ -151,12 +149,7 @@ impl HistorySearch {
                 // Nothing settled: the phone's view keeps changing under it.
                 return Err(MobileError::StaleView);
             }
-            #[cfg(test)]
-            if let Some(waiting) = state.history.waiting.take() {
-                let _ = waiting.send(());
-            }
             let (released, _) = self
-                .session
                 .frames
                 .wait_timeout(state, waited)
                 .unwrap_or_else(PoisonError::into_inner);
@@ -178,7 +171,6 @@ impl HistorySearch {
         let mut state = super::lock(&self.session.projection);
         if state.history.generation == self.generation {
             state.history.cancel();
-            self.session.frames.notify_all();
         }
     }
 
@@ -192,13 +184,15 @@ impl HistorySearch {
         if query.is_empty() {
             return Ok(None);
         }
-        let revision = self.settled_revision(None)?;
+        let revision = self.session.settled_revision(&self.target, None)?;
         match self.find_at(&query, newer, previous.as_ref(), revision) {
             Err(Error::Changed) => {
                 // The daemon moved on between the frame read here and the
                 // request: wait for a frame the daemon has moved on to, then ask
                 // once more, as the window does.
-                let next = self.settled_revision(Some(revision))?;
+                let next = self
+                    .session
+                    .settled_revision(&self.target, Some(revision))?;
                 self.find_at(&query, newer, None, next).map_err(Into::into)
             }
             result => result.map_err(Into::into),
@@ -207,13 +201,6 @@ impl HistorySearch {
 }
 
 impl HistorySearch {
-    #[cfg(test)]
-    pub(crate) fn frame_wait_started(&self) -> mpsc::Receiver<()> {
-        let (tx, rx) = mpsc::channel();
-        super::lock(&self.session.projection).history.waiting = Some(tx);
-        rx
-    }
-
     fn find_at(
         &self,
         query: &str,

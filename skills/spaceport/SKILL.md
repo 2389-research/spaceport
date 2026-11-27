@@ -23,6 +23,7 @@ for what only Spaceport shows or keeps.
 | Keep a note on this worktree (repository and branch) | `spaceport notes set waiting on CI` |
 | Silence this worktree's notifications | `spaceport worktree mute` |
 | Silence a whole host's notifications | `spaceport host mute studio` |
+| Show the Automations section while Core has no job feed | `spaceport ui panel automations` |
 | Open a dev server in your system browser, forwarding a remote port to this machine first | `spaceport ports open 3000` |
 | See the processes under a pane, with CPU and memory | `spaceport processes` |
 | Start a chat with another agent in a new tab, shown as a native chat view | `spaceport chat new claude`, then `spaceport chat` for its status |
@@ -31,7 +32,7 @@ for what only Spaceport shows or keeps.
 | Block until something happens in the app | `spaceport wait tab-closed ID --timeout 600`, `spaceport events --wait 30` for the next event, `spaceport events --follow` for a stream |
 | Read or change a Spaceport setting | `spaceport config get KEY`, `spaceport config set KEY VALUE` |
 | Keep the machine awake during a long job | `spaceport caffeine on --for 2h` |
-| Check for a Spaceport preview update (installed macOS preview only) | `spaceport run check-for-updates` |
+| Check for a Spaceport update (installed signed macOS build only) | `spaceport run check-for-updates` |
 | Check whether the app runs, and which windows and hosts it has | `spaceport status` |
 
 Add `--json` after the command word for machine-readable output; errors then

@@ -1,6 +1,6 @@
 # Spaceport landing page
 
-The public page for Spaceport, at <https://spaceport.wtf/>.
+The public page for Spaceport, at <https://2389-research.github.io/spaceport/>.
 It is plain HTML, CSS and JavaScript with no build step. `site/` and
 `website/` hold the inherited Sheprd sites and are not published from here.
 
@@ -35,10 +35,12 @@ tests only. The repository's Pages source must be set to GitHub Actions.
 - The window on the page is an illustration and is labeled as one. Replace it
   only with real Spaceport screenshots; `docs/screenshots` is inherited from
   Sheprd.
-- Keep local asset paths relative so they work at the domain root and in previews.
+- Keep every path relative. The page is served under `/spaceport/`.
 - The download buttons ask the GitHub API for the newest preview disk image,
   because previews are prereleases. Without JavaScript they open the releases
-  list.
+  list. A stable release is not offered here yet: the names, labels and pages a
+  stable download link will need are the stable channel's entries in
+  `scripts/release/channels.json`.
 
 Product facts live in `PRODUCT.md`; the page's design contract lives in
 `.impeccable/surfaces/`.

@@ -1,0 +1,40 @@
+"""Excluded scheduler binaries must not enter desktop build or package routes."""
+
+from pathlib import Path
+import unittest
+
+
+ROOT = Path(__file__).resolve().parents[3]
+MANIFESTS = (
+    "Cargo.toml",
+    "flake.nix",
+    "site/install.ps1",
+    "website/site/install.ps1",
+    "website/herdrui/public/install.ps1",
+    "justfile",
+    ".github/workflows/ci.yml",
+    "scripts/release/build-macos.sh",
+    "scripts/release/package-macos.sh",
+    "scripts/release/package-windows.py",
+    "scripts/release/spaceport.iss",
+    "scripts/release/sign-macos.sh",
+    "scripts/release/windows-installer.py",
+    "scripts/release/windows-signing.py",
+)
+
+
+class AutomationAbsence(unittest.TestCase):
+    def test_scheduler_is_not_built_or_packaged(self):
+        for relative in MANIFESTS:
+            with self.subTest(path=relative):
+                path = ROOT / relative
+                self.assertIn(path.name, {entry.name for entry in path.parent.iterdir()},
+                              f"{relative} does not match the tracked filename's case")
+                self.assertFalse(
+                    "sheprd-automate" in path.read_text(),
+                    f"{relative} still builds or packages the scheduler",
+                )
+
+
+if __name__ == "__main__":
+    unittest.main()

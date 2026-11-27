@@ -1,4 +1,4 @@
-// ABOUTME: Validates the running preview bundle before starting native updates.
+// ABOUTME: Validates the running signed bundle before starting native updates.
 // ABOUTME: Keeps build identity and signed bundle trust settings consistent.
 use crate::constants::Channel;
 
@@ -35,11 +35,11 @@ impl Build<'static> {
 }
 
 impl Build<'_> {
-    /// Whether this kind of build may update at all: a signed macOS preview
-    /// built outside a worktree. Development builds never update, whatever
-    /// their ID or version text says.
+    /// Whether this kind of build may update at all: a signed macOS release
+    /// (the preview or the production channel) built outside a worktree.
+    /// Development builds never update, whatever their ID or version text says.
     pub(super) fn can_update(&self) -> bool {
-        self.channel == Channel::MacosPreview && self.worktree == "0"
+        matches!(self.channel, Channel::MacosPreview | Channel::Production) && self.worktree == "0"
     }
 }
 

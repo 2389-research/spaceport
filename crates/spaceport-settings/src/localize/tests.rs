@@ -43,6 +43,7 @@ fn every_config_variant_has_a_message() {
         Error::InvalidTerminalPadding("padding"),
         Error::InvalidThemePair,
         Error::InvalidThemePath,
+        Error::InvalidUsageTable,
         Error::InvalidZenFontSize,
         Error::InvalidZenWidth,
         Error::KeyNotTable {
@@ -53,6 +54,8 @@ fn every_config_variant_has_a_message() {
             local: PathBuf::from("/home/me/.config/herdr/config-gpui.local.toml"),
         },
         Error::PreferencesNotObject,
+        Error::RemovedChangeCounts,
+        Error::RemovedGitHub,
         Error::ThemeLine {
             line: 12,
             key: "background".into(),
@@ -75,10 +78,13 @@ fn every_config_variant_has_a_message() {
 #[test]
 fn a_message_names_the_settings_file_it_speaks_of() {
     set_locale(&Locale::FALLBACK);
-    let cases = [(
-        Error::UnknownKeys(vec!["colour".into()]),
-        "spaceport/config.toml",
-    )];
+    let cases = [
+        (Error::RemovedGitHub, "spaceport/config.local.toml"),
+        (
+            Error::UnknownKeys(vec!["colour".into()]),
+            "spaceport/config.toml",
+        ),
+    ];
     for (error, file) in cases {
         let shown = error.localize();
         assert!(shown.contains(file), "{shown}");

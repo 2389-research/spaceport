@@ -58,7 +58,11 @@ git push origin refs/tags/v20261110.6
 
 The push builds an optimized app, signs and notarizes it, and publishes a GitHub
 prerelease with the DMG and `SHA256SUMS`. It then replaces `appcast.xml` on the
-fixed `macos-preview-feed` release.
+fixed `macos-preview-feed` release. The artifact name, release title and appcast
+text the preview publishes are the `macos-preview` entries in
+`scripts/release/channels.json`; the feed address is in `scripts/release/sparkle.json`.
+Only the preview channel is published: the `production` entries describe a
+release no route builds or signs yet.
 
 A manual run on `main` (`workflow_dispatch` with an exact commit SHA and an
 explicit version) uploads workflow artifacts and publishes nothing.
