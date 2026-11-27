@@ -71,6 +71,8 @@ pub enum RowLift {
 /// the row's hover group, so it costs nothing per frame.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct RowState {
+    /// Agent rows use a full-width selection fill in every layout.
+    pub agent: bool,
     /// The focused workspace or agent.
     pub selected: bool,
     /// Marked as if hovered while the pointer is elsewhere, such as the row a
