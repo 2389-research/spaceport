@@ -10,14 +10,18 @@ struct SessionToolbar: View {
     @Binding var modifiers: UInt8
     let sendKey: (String, UInt8) -> Void
     let toggleKeyboard: () -> Void
+    var back: (() -> Void)?
+    var forward: (() -> Void)?
     @AppStorage(TerminalPreferences.toolbarKeys) private var keys = TerminalKeyPages.standard
     @State private var keyPage = 0
 
     var body: some View {
         let allKeys = Array(keys.pages.joined())
         HStack(spacing: 6) {
+            if let back { trailButton("Previous pane", symbol: "chevron.backward", action: back) }
+            if let forward { trailButton("Next pane in history", symbol: "chevron.forward", action: forward) }
             Group {
-                switch SessionLayout.keyRow(width: width, keyCount: allKeys.count) {
+                switch SessionLayout.keyRow(width: width - (back == nil ? 0 : 46) - (forward == nil ? 0 : 46), keyCount: allKeys.count) {
                 case .compact:
                     compactKeyStrip
                 case .paged:
@@ -46,6 +50,14 @@ struct SessionToolbar: View {
         .background((keyboard ? SessionChrome.keyboard : SessionChrome.terminal).ignoresSafeArea(edges: .bottom))
         .overlay(alignment: .top) { if keyboard { Divider() } }
         .onChange(of: keys) { _, updated in keyPage = min(keyPage, updated.pages.count - 1) }
+    }
+
+    private func trailButton(_ title: LocalizedStringKey, symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).frame(width: 40, height: Self.rowHeight).contentShape(Rectangle())
+        }
+        .accessibilityLabel(Text(title))
+        .terminalCapsule(docked: keyboard)
     }
 
     private var compactKeyStrip: some View {

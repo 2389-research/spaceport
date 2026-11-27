@@ -99,6 +99,23 @@ struct SavedHost: Codable, Equatable, Identifiable {
     var address: SSHAddress
     var login: LoginMethod
     var name: String?
+    var tags: [String]?
+
+    static func tags(from text: String) -> [String] {
+        var kept: [String] = []
+        for field in text.split(separator: ",") {
+            let words = field.split(whereSeparator: \.isWhitespace).filter {
+                !$0.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains)
+            }
+            let clipped = words.joined(separator: " ").unicodeScalars.prefix(24)
+            let tag = String(clipped).trimmingCharacters(in: .whitespaces)
+            if !tag.isEmpty && !kept.contains(where: { $0.lowercased() == tag.lowercased() }) {
+                kept.append(tag)
+                if kept.count == 8 { break }
+            }
+        }
+        return kept
+    }
 
     var title: String { name ?? address.hostname }
 
@@ -214,6 +231,19 @@ struct HostCatalog: Codable {
         sessions.first { $0.widgetDestination == destination && $0.lastStatus?.agentCounts != nil }?.id
     }
 
+    var availableTags: [String] {
+        var seen = Set<String>()
+        return hosts.flatMap { $0.tags ?? [] }.filter { seen.insert($0.lowercased()).inserted }
+            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
+    func filtered(by tag: String) -> Self {
+        let matching = hosts.filter { $0.tags?.contains(where: { $0.lowercased() == tag.lowercased() }) == true }
+        guard !matching.isEmpty else { return self }
+        let ids = Set(matching.map(\.id))
+        return Self(hosts: matching, sessions: sessions.filter { ids.contains($0.hostID) })
+    }
+
     var observedAgents: [HomeAgent] {
         let hostsByID = Dictionary(hosts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let rows = sessions.flatMap { session -> [HomeAgent] in
@@ -306,6 +336,13 @@ struct ProfileStore {
         try write(catalog)
     }
 
+    func tagHost(_ id: UUID, text: String) throws {
+        var catalog = try catalog()
+        guard let index = catalog.hosts.firstIndex(where: { $0.id == id }) else { throw ProfileError.missingHost }
+        catalog.hosts[index].tags = SavedHost.tags(from: text)
+        try write(catalog)
+    }
+
     func saveHost(_ host: SavedHost) throws {
         var catalog = try catalog()
         try catalog.update(host)
@@ -350,27 +387,47 @@ struct ProfileStore {
               let i = rows.firstIndex(where: {
                   $0.bootId == row.agent.bootId && $0.paneId == row.agent.paneId && $0.name == row.agent.name
               }) else { throw ProfileError.missingAgent }
-        if case .snooze = action, rows[i].status != row.agent.status || rows[i].stateChangeSeq != row.agent.stateChangeSeq {
-            throw ProfileError.missingAgent
+        switch action {
+        case .settle, .snooze:
+            guard rows[i].status == row.agent.status, rows[i].stateChangeSeq == row.agent.stateChangeSeq
+            else { throw ProfileError.missingAgent }
+        default: break
         }
         var marks = rows[i].marks ?? AgentMarks()
         marks.apply(action, status: rows[i].status)
-        if rows[i].marks == nil && (marks.pinned || marks.snoozeUntil != nil),
+        if rows[i].marks == nil && marks.hasMark,
            rows.filter({ $0.marks != nil }).count >= SeenAgent.markLimit {
             throw ProfileError.tooManyMarks
         }
-        rows[i].marks = marks.pinned || marks.snoozeUntil != nil ? marks : nil
+        rows[i].marks = marks.hasMark ? marks : nil
         snapshot.agents = rows
         catalog.sessions[session].lastStatus = snapshot
         try write(catalog)
     }
 
-    func recordSeen(profile: HostProfile, snapshot: SessionStatusSnapshot) throws {
+    enum ObservationSource {
+        case terminal
+        case home(previouslySeen: Date?)
+    }
+
+    func recordSeen(profile: HostProfile, snapshot: SessionStatusSnapshot, source: ObservationSource = .terminal) throws {
         var catalog = try catalog()
         guard let index = catalog.sessions.firstIndex(where: { $0.id == profile.id }),
               let saved = catalog.profile(catalog.sessions[index]),
-              saved.address == profile.address, saved.session == profile.session,
-              catalog.sessions[index].lastOpened.map({ $0 <= snapshot.seenAt }) ?? true else { return }
+              saved.address == profile.address, saved.session == profile.session else { return }
+        let session = catalog.sessions[index]
+        switch source {
+        case .home(let previouslySeen):
+            guard saved.login == profile.login, session.lastStatus?.seenAt == previouslySeen else { return }
+        case .terminal:
+            if snapshot.seenAt > (session.lastOpened ?? .distantPast) {
+                catalog.sessions[index].lastOpened = snapshot.seenAt
+            }
+        }
+        if snapshot.seenAt < (session.lastStatus?.seenAt ?? session.lastOpened ?? .distantPast) {
+            if catalog.sessions[index].lastOpened != session.lastOpened { try write(catalog) }
+            return
+        }
         var snapshot = snapshot
         if let previous = catalog.sessions[index].lastStatus, let rows = snapshot.agents {
             let oldRows = Dictionary((previous.agents ?? []).map { ($0.paneId, $0) }, uniquingKeysWith: { first, _ in first })
@@ -379,6 +436,10 @@ struct ProfileStore {
                 guard let old = oldRows[current.paneId], old.bootId == current.bootId, old.name == current.name
                 else { return current }
                 current.marks = old.marks?.observed(status: current.status, at: snapshot.seenAt)
+                if old.stateChangeSeq != current.stateChangeSeq, current.marks?.settled == true {
+                    current.marks?.settled = nil
+                    if current.marks?.hasMark == false { current.marks = nil }
+                }
                 if let seq = old.stateChangeSeq, seq > 0, seq == current.stateChangeSeq,
                    PaneActivity(old.status) == .idle, PaneActivity(current.status) == .idle {
                     // A matching daemon sequence confirms the streak across a detached session.
@@ -398,7 +459,6 @@ struct ProfileStore {
         if let rows = snapshot.agents {
             snapshot.agents = SeenAgent.cache(rows)
         }
-        catalog.sessions[index].lastOpened = snapshot.seenAt
         catalog.sessions[index].lastStatus = snapshot
         try write(catalog)
     }

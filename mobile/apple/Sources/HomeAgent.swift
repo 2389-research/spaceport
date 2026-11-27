@@ -3,13 +3,15 @@
 import Foundation
 
 enum HomeAgentSection: Int, CaseIterable {
-    case pinned, waiting, working, recentIdle, idleHours, oldIdle, idle, other, snoozed
+    case pinned, waiting, working, finished, recentIdle, idleHours, oldIdle, idle, quiet, other, snoozed
 
     var title: String {
         switch self {
         case .pinned: "Pinned"
         case .snoozed: "Snoozed"
         case .waiting: "Waiting for you"
+        case .finished: "Finished for review"
+        case .quiet: "Quiet"
         case .working: "Working"
         case .recentIdle: "Idle · under 1 hour"
         case .idleHours: "Idle · 1–5 hours"
@@ -46,16 +48,25 @@ struct HomeAgent: Identifiable {
         case .working: section = .working
         case nil: section = .other
         case .idle:
+            if agent.status == "done" {
+                section = .finished
+                ageLabel = nil
+                return
+            }
             let confirmed = Self.milliseconds(seenAt)
             let first = agent.changeObservedAt.map(Self.milliseconds)
             // Old catalogs have a local sort date but no reliable onset provenance.
             let knownFirst = agent.idleOnsetObserved == nil ? nil : first
-            switch idleAgeGroup(firstObservedMs: knownFirst, onsetObserved: agent.idleOnsetObserved == true,
-                                confirmedAtMs: confirmed) {
-            case .recent: section = .recentIdle
-            case .oneToFiveHours: section = .idleHours
-            case .fiveHoursOrMore: section = .oldIdle
-            case .unplaced: section = .idle
+            if let knownFirst, confirmed >= knownFirst, confirmed - knownFirst >= 86_400_000 {
+                section = .quiet
+            } else {
+                switch idleAgeGroup(firstObservedMs: knownFirst, onsetObserved: agent.idleOnsetObserved == true,
+                                   confirmedAtMs: confirmed) {
+                case .recent: section = .recentIdle
+                case .oneToFiveHours: section = .idleHours
+                case .fiveHoursOrMore: section = .oldIdle
+                case .unplaced: section = .idle
+                }
             }
             if section != .idle, let first {
                 let elapsed = confirmed >= first ? confirmed - first : 0

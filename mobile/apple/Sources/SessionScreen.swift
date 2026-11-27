@@ -15,6 +15,7 @@ struct SessionScreen: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.usesVerticalSessionToolbar) private var verticalToolbar
+    @State private var revealAgentsID: UUID?
     @State private var sidebarCollapsed = false
     @State private var expandedWhileTyping = false
     @State private var interrupt = WaitingInterrupt()
@@ -132,11 +133,8 @@ struct SessionScreen: View {
                 modifiers = 0
             }
         }
-        .overlay {
-            if scenePhase != .active {
-                Rectangle().fill(.background).overlay { Label("Spaceport", systemImage: "terminal").foregroundStyle(.secondary) }
-                    .ignoresSafeArea()
-            }
+        .background {
+            SessionPrivacyWindow(concealed: scenePhase != .active).allowsHitTesting(false)
         }
     }
 
@@ -203,6 +201,9 @@ struct SessionScreen: View {
                 .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
                 .disabled(connection.method == .password && connection.password.isEmpty)
                 if connection.phase == .closed {
+                    Button("Copy connection diagnostics", systemImage: "doc.on.doc") {
+                        UIPasteboard.general.string = connection.diagnosticReport()
+                    }
                     Button("Back to Sessions", action: home).frame(maxWidth: .infinity)
                 }
             }.listRowBackground(Color.clear)
@@ -239,7 +240,7 @@ struct SessionScreen: View {
                                   sidebar: .init(hide: { sidebarCollapsed = true; expandedWhileTyping = false },
                                                  expand: expandSidebar, hostDetails: hostDetails, rail: sidebar == .rail,
                                                  expandedWidth: expandedWidth,
-                                                 keyboard: $keyboard, request: $sidebarRequest, isVisible: sidebar != .hidden))
+                                                 keyboard: $keyboard, request: $sidebarRequest, revealAgentsID: revealAgentsID, isVisible: sidebar != .hidden))
                             .id(shortcutLayout)
                             .frame(width: sidebar.width, alignment: .leading)
                             .background(SessionChrome.sidebar).clipped()
@@ -263,7 +264,7 @@ struct SessionScreen: View {
                             send(.key(key, flags), target: target)
                         }, toggleKeyboard: {
                             if keyboard { keyboard = false } else { showKeyboard() }
-                        })
+                        }, back: historyAction(forward: false), forward: historyAction(forward: true))
                         .animation(sidebarAnimation) { toolbar in
                             toolbar.frame(width: width - inset)
                         }
@@ -316,6 +317,11 @@ struct SessionScreen: View {
         expandedWhileTyping = keyboard
     }
 
+    private func revealAgents() {
+        revealAgentsID = UUID()
+        expandSidebar()
+    }
+
     private func presentShortcut(_ id: UUID, wide: Bool) {
         guard connection.readyShortcutID == id,
               let action = connection.takeShortcut(from: presentation), let view = connection.view else { return }
@@ -348,7 +354,7 @@ struct SessionScreen: View {
             } else if wide {
                 shortcutLayout = id
                 navigation = nil
-                expandSidebar()
+                revealAgents()
             } else {
                 shortcutLayout = id
                 openNavigation(.agents, showEmptyAgents: true)
@@ -363,11 +369,21 @@ struct SessionScreen: View {
         composing = true
     }
 
-    private func select(_ row: GoToPane, in view: MobileView?, generation: UUID) {
+    private func historyAction(forward: Bool) -> (() -> Void)? {
+        guard let view = connection.view, let id = forward ? view.forwardPane : view.backPane,
+              let pane = view.panes.first(where: { $0.id == id }),
+              let tab = view.tabs.first(where: { $0.id == pane.tabId }),
+              let workspace = view.workspaces.first(where: { $0.id == tab.workspaceId }) else { return nil }
+        let row = GoToPane(workspace: workspace, tab: tab, pane: pane)
+        let token = connection.generation
+        return { select(row, in: view, generation: token, historyForward: forward) }
+    }
+
+    private func select(_ row: GoToPane, in view: MobileView?, generation: UUID, historyForward: Bool? = nil) {
         guard sidebarRequest == nil, let view, view.bootId == connection.view?.bootId,
               let jump = GoToSheet.Jump.begin(to: row, view: view, connection: connection,
                                               presentation: presentation, generation: generation,
-                                              expectedAgent: row.pane.agentName, restoreKeyboard: keyboard) else { return }
+                                              expectedAgent: historyForward == nil ? row.pane.agentName : nil, restoreKeyboard: keyboard, historyForward: historyForward) else { return }
         sidebarRequest = jump
         keyboard = false
         modifiers = 0
@@ -402,7 +418,7 @@ struct SessionScreen: View {
             let generation = connection.generation
             let openAgents = {
                 guard connection.acceptsInput(from: presentation), generation == connection.generation, !composing else { return }
-                if wide { expandSidebar() } else { openNavigation(.agents) }
+                if wide { revealAgents() } else { openNavigation(.agents) }
             }
             TerminalHeader(view: view, location: connection.draftDestination?.name ?? connection.profile.session,
                            address: connection.profile.address, folded: !wide, composing: composing, navigate: openAgents,

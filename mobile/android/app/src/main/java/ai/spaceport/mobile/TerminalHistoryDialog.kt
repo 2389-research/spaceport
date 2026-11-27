@@ -30,6 +30,7 @@ internal class TerminalHistoryDialog(
     private val onDismiss: () -> Unit
 ) {
     private var dialog: AlertDialog? = null
+    val isShowing get() = dialog?.isShowing == true
     private var original: InputTarget? = null
     private var search: HistorySearch? = null
 

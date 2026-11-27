@@ -61,18 +61,31 @@ class AgentBoardTest {
             )
         catalog.forget(host)
         try {
-            catalog.observe(host, AgentBoard.rows(host, view))
-            catalog.observe(host, AgentBoard.rows(host, view.copy(rosterObservedAtMs = null)))
+            catalog.observe(host, view)
+            catalog.observe(host, view.copy(rosterObservedAtMs = null))
             val row = AgentCatalog(context).rows(host).single()
             assertEquals(AgentSection.RECENT, AgentBoard.section(row, null, 7_200_000))
-            catalog.observe(host, AgentBoard.rows(host, view.copy(rosterObservedAtMs = 3_601_001u)))
+            catalog.observe(host, view.copy(rosterObservedAtMs = 3_601_001u))
             val refreshed = AgentCatalog(context).rows(host).single()
             assertEquals(AgentSection.HOURS, AgentBoard.section(refreshed, null, 7_200_000))
-            catalog.observe(host, AgentBoard.rows(host, view.copy(panes = emptyList())))
+            catalog.observe(host, view.copy(panes = emptyList(), rosterObservedAtMs = 3_601_002u))
             assertTrue(AgentCatalog(context).rows(host).isEmpty())
         } finally {
             catalog.forget(host)
         }
+    }
+
+    @Test
+    fun confirmedQuietAndFinishedReviewAreSeparate() {
+        val quiet = agent("overnight", "idle").copy(firstIdle = 100uL, seenAt = 86_400_100L)
+        assertEquals(AgentSection.QUIET, AgentBoard.section(quiet, null, Long.MAX_VALUE))
+        assertEquals(AgentSection.OLD, AgentBoard.section(quiet.copy(seenAt = requireNotNull(quiet.seenAt) - 1), null, Long.MAX_VALUE))
+        val done = agent("result", "done")
+        assertEquals(AgentSection.FINISHED, AgentBoard.section(done, null, 100))
+        val settled = AgentMark(settled = true)
+        assertEquals(AgentSection.QUIET, AgentBoard.section(done, settled, 100))
+        assertEquals(AgentMark(), settled.current("working", 101))
+        assertEquals(AgentMark(), settled.current("blocked", 101))
     }
 
     @Test
@@ -109,13 +122,33 @@ class AgentBoardTest {
         catalog.forget(host)
         try {
             val row = agent("Scout", "idle")
-            catalog.observe(host, listOf(row))
+            catalog.observe(host, listOf(row), row.seenAt)
             catalog.mark(row, AgentMark(pinned = true))
             val restored = AgentCatalog(context)
             assertEquals(listOf(row), restored.rows(host))
             assertEquals(true, restored.marks[row.key]?.pinned)
-            restored.observe(host, listOf(row.copy(boot = "new-boot")))
+            restored.observe(host, listOf(row.copy(boot = "new-boot")), 700000)
             assertFalse(restored.marks.containsKey(row.key))
+        } finally {
+            catalog.forget(host)
+        }
+    }
+
+    @Test
+    fun savingAnOlderOrUndatedFrameKeepsTheLastObservedRoster() {
+        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        val catalog = AgentCatalog(context)
+        catalog.forget(host)
+        try {
+            val row = agent("Scout", "working")
+            catalog.observe(host, listOf(row), row.seenAt)
+            catalog.observe(host, emptyList(), null)
+            catalog.observe(host, emptyList(), 599999)
+            assertEquals(listOf(row), AgentCatalog(context).rows(host))
+            catalog.observe(host, emptyList(), 700000)
+            val restored = AgentCatalog(context)
+            assertTrue(restored.rows(host).isEmpty())
+            assertEquals(700000L, restored.observedAt(host))
         } finally {
             catalog.forget(host)
         }

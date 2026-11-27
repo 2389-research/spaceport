@@ -10,11 +10,14 @@ struct DeviceVault {
 
     init(service: String = "ai.2389.spaceport.mobile.ssh") { self.service = service }
 
-    func securePhoneKey() throws -> SecurePhoneKey {
+    func savedPhoneKey() throws -> SecurePhoneKey? {
         guard SecurePhoneKey.isAvailable else { throw VaultError.enclaveUnavailable }
-        if let wrapped = try read(Self.enclaveAccount) {
-            return try SecurePhoneKey(SecureEnclave.P256.Signing.PrivateKey(dataRepresentation: wrapped))
-        }
+        guard let wrapped = try read(Self.enclaveAccount) else { return nil }
+        return try SecurePhoneKey(SecureEnclave.P256.Signing.PrivateKey(dataRepresentation: wrapped))
+    }
+
+    func securePhoneKey() throws -> SecurePhoneKey {
+        if let existing = try savedPhoneKey() { return existing }
         var error: Unmanaged<CFError>?
         guard let access = SecAccessControlCreateWithFlags(nil, kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
                                                           .privateKeyUsage, &error) else {

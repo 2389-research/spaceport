@@ -58,6 +58,14 @@ Forgetting a host key closes that host's open connections. You verify the finger
 On Home, swipe an agent toward the end to pin it, or toward the start to snooze it for an hour.
 Touch and hold for other snooze lengths, including until 9 AM tomorrow. TalkBack offers the same choices as actions.
 The terminal's **Home** button shows a dot when an agent in another pane needs you.
+Tap **+** beside Home to create a terminal in the current workspace. Each retained session keeps its own draft.
+Home shows the last observed roster while it refreshes over SSH in the foreground.
+A parked session can refresh directly. A cold refresh needs a saved host pin and an enrolled phone key.
+Choosing **Disconnect** pauses automatic refresh for that session until you sign in again.
+
+Hold the Android launcher icon to choose **Resume terminal** or **Next waiting agent**.
+The **Spaceport agents** widget shows cached counts and the time Spaceport observed them.
+Opening a shortcut returns to the saved session and checks its destination before selecting a pane.
 
 **Settings** shows the phone's public key with **Copy public key** and **Share**.
 **Install on a host** asks for the account's SSH password once. It installs the key and checks a fresh key-only login without starting Herdr.
@@ -106,8 +114,8 @@ For TestFlight, run `./mobile/build-apple --release` before archiving the Releas
 This packages optimized Rust libraries for both platforms. Archive for a generic iOS device.
 Use the 2389 Research distribution team and the `ai.2389.spaceport.mobile` App Store Connect record.
 Debug builds use `ai.2389.spaceport.mobile.development`.
-For device builds, enable App Groups on both the app and its Agent Status extension.
-Include `group.ai.2389.spaceport.mobile.widget` in both distribution profiles.
+For device builds, enable App Groups on the app, Agent Status extension, and Share File extension.
+Include `group.ai.2389.spaceport.mobile.widget` in all three distribution profiles.
 Debug profiles use `group.ai.2389.spaceport.mobile.development.widget`.
 
 ### TestFlight export compliance
@@ -137,7 +145,9 @@ Saved connections show a custom SSH port when one is set. Edit the host to chang
 Home puts pinned agents first, followed by **Waiting for you** and **Working**. Idle agents follow in three approximate age bands: under an hour, one to five hours, and five hours or longer.
 Agents first found idle appear under **Idle**, newest Herdr sequence first within each session. Once Spaceport confirms the same idle streak for an hour, its row shows a lower bound such as `2h+`.
 Home measures idle time through the last confirmed observation. A cached session keeps that age until it reconnects.
-Home and Go To show each agent’s terminal title above its name and location. Home keeps the last title observed for that session.
+Home and Go To show each agent’s terminal title above its name and location. Home shows saved agents immediately. A spinner appears while Home checks previously opened sessions, most recent first.
+It reuses parked SSH connections. For a saved Phone Key login, it can also check a running Herdr session after a cold launch.
+A password session needs an open connection or a manual login. An unreachable session keeps its last observation and timestamp.
 Tap an agent to reopen its session. Spaceport checks the daemon boot, workspace, tab, pane, and reported agent name before enabling input.
 Choose **Workspaces** underneath the agent list to browse a saved session’s live workspaces.
 Saved sessions appear next, grouped by host.
@@ -147,6 +157,11 @@ Open Host Detail using the info button to add sessions or manage the host’s si
 Opening a named session runs the installed Herdr bridge. Herdr starts the session if needed.
 Disconnecting closes the client's SSH channel. Herdr continues to own its terminals and agents.
 Native chat is deferred. Agent prompts and approvals use their original terminal.
+
+On either phone, add tags in host details and use the Home filter to show matching hosts.
+**Finished for review** collects completed work. Mark a result reviewed to move it into **Quiet**.
+Quiet also folds agents observed idle for at least a day. New work or a request for input brings them back.
+Use **Copy connection diagnostics** for a report with the build, connection stage, negotiated capabilities and last roster observation.
 
 ## Siri, Shortcuts, and the Action Button
 
@@ -175,6 +190,16 @@ Tap the widget to refresh that session over SSH and open its next waiting agent.
 If nobody is waiting, Spaceport opens the Agents list. The widget itself makes no network requests.
 It works independently of the Live Activities setting.
 
+## Review agents and filter hosts
+
+On iOS and Android, **Finished for review** shows completed agents. Hold a completed row and choose **Mark reviewed** to move it into **Quiet**. A new working or waiting observation clears the review mark. Quiet also folds idle agents with at least 24 hours of confirmed inactivity. Open its heading to see those agents.
+
+In Host Details, choose **Edit tags**. Separate tags with commas. The Home filter applies the selected tag to hosts, sessions and agents. Tags and review marks stay on the phone.
+
+Choose **Copy connection diagnostics** from the connected session menu or the connection failure screen. The report includes the build, connection stage, most recent failure stage, known negotiated capabilities and last roster observation.
+
+Debug builds also include a [loopback HTTP service preview](test-support/loopback-preview/README.md).
+
 ## Terminal rendering on iOS
 
 On iOS, Ghostty renders every terminal pane.
@@ -190,7 +215,8 @@ Xcode resolves its Swift sources and binary framework when building the app. The
 The app hosts the package’s UIKit view directly. Its SwiftUI state wrapper crashed during synchronous teardown on the iOS 26.2 simulator.
 When signing a manual archive, pass the app profile with `SPACEPORT_MOBILE_PROFILE`.
 Pass the separate `ai.2389.spaceport.mobile.agent-status` extension profile with `SPACEPORT_ACTIVITY_PROFILE`.
-Include both bundle IDs and their respective profiles in a manual export. The Ghostty resource bundle has its own signing settings.
+Pass the `ai.2389.spaceport.mobile.share` extension profile with `SPACEPORT_SHARE_PROFILE`.
+Include all three bundle IDs and their respective profiles in a manual export. The Ghostty resource bundle has its own signing settings.
 
 ## Install the iPhone key
 
@@ -245,7 +271,7 @@ Agent rows show the same agent artwork as the desktop app. The gold pane title l
 The workspace appears in teal and the agent name in purple.
 When Home needs to distinguish sessions or hosts, it shows the session in blue and the host in rose.
 Working dots pulse slowly. Waiting dots pulse twice, then pause. Idle dots stay still. Reduce Motion keeps every dot still.
-Search the sidebar by agent, pane, or workspace. Expand Workspaces to browse by location.
+Choose **Agents** or **Workspaces** at the top of the sidebar. Browsing a workspace leaves the live terminal beside it.
 On the wide display, opening the terminal keyboard slides the agent list into a rail. Closing the keyboard restores the list unless you collapsed it yourself.
 Turn on Reduce Motion in iOS to switch layouts immediately. Tap an initial to switch agents or expand the rail to see names.
 If another agent starts waiting while you type, **Later** dismisses the notice and **Jump** switches to that agent.
@@ -256,24 +282,29 @@ A narrow window gives the terminal the full width. Folding or resizing keeps the
 On the narrowest layouts, Escape stays visible and **More terminal keys** holds the other controls.
 
 In the compact layout, tap the pane name in the header to open Go To. Tap the waiting agent’s name to jump directly.
-In the Go To sheet, working agents appear first, followed by agents that need you. Idle and done agents follow, most recently changed first.
-Go To uses Herdr’s own change order within the connected session. Workspace, tab, and pane navigation follow the list.
-Search Go To by agent, terminal title, pane, workspace, or tab. Words can match across fields.
-The search uses the connected session’s roster. Recent visits break ties between equally strong matches.
-Touch and hold an agent or search result to peek without moving focus.
+In **Agents**, waiting agents appear first, followed by working and idle agents.
+Search by agent, terminal title, pane, workspace, or tab. Recent visits break ties between equally strong matches.
+In **Workspaces**, search for a workspace by name. Open it to see its panes grouped by tab.
+Search within that workspace by tab, pane, terminal title, or agent. Back returns to the workspace list.
+Choose a pane to switch terminals. Browsing, searching, and going back keep Herdr’s focus on the current terminal.
+In **Agents**, touch and hold a row or search result to peek without moving focus.
 Peek shows the current screen, a dated excerpt from a previous visit, or the pane’s details if no excerpt is available.
 These excerpts stay in memory and clear when the session parks or disconnects.
 Tap a waiting pane to jump to it. Input resumes when Herdr confirms the destination and its terminal surface.
 For split tabs, tap a tile on the pane map or choose a pane by name.
 Opening Go To leaves focus in place. Dismissing it restores the keyboard if it was open.
 Clients on the destination tab share its selected pane.
+Use **Previous pane** or **Next pane in history** on the terminal toolbar to revisit a confirmed focus.
+The trail skips closed panes and starts over when Herdr restarts. A swipe still opens Agents.
+Long-press a pane in Go To for **Split right**, **Split down**, **Zoom pane** or **Rename pane**.
+The menu offers actions supported by the connected Herdr. **Restore panes** ends zoom.
 
 In Go To, tap **Find in Terminal** to search the focused pane’s retained Herdr history.
 Find opens the newest match with its surrounding text. **Older** and **Newer** wrap between matches.
 **Copy match** copies the terminal’s original text. **Done** returns to the live terminal at its current position.
 
 Tap **Compose** to edit a multiline draft on the phone. Paste it into the named terminal when ready.
-Copy a screenshot, then tap **Paste** beside **Screenshot**. Review its thumbnail, add an optional note, and confirm the destination.
+Copy a screenshot, then tap the image paste button in Compose. Review its thumbnail, add an optional note, and confirm the destination.
 Spaceport stages the PNG in a private temporary directory on that SSH host. The terminal receives its path followed by your note.
 The host confirms the file before Spaceport pastes its path. Accepted files stay there until you or the host clears them.
 On a fresh install, **Send** pastes and presses Return. Turn off **Press Return After Pasting** to use **Paste**.
@@ -281,6 +312,17 @@ The switch shares its saved value with **Settings → Press Return After Pasting
 Send queues the paste and Return together for the same destination.
 Each retained session keeps its unsent draft in memory.
 If the destination changes, choose the new destination explicitly or switch back to the original pane.
+
+### Attach a file to a terminal
+
+Open Compose in the destination terminal and tap File on iOS or Choose file on Android.
+Select a document up to 16 MiB. Check the host, session and pane, then tap Paste or Send.
+Spaceport uploads the file over the active SSH connection and pastes its remote path.
+
+From another app, share a file to Spaceport and save it locally.
+Open Compose in the terminal and select Attach shared file.
+One incoming file can wait on each device. Attach or discard it to make room for another.
+Closing the composer during an upload cancels delivery and preserves the draft.
 
 Set the terminal text size and choose your toolbar keys in Settings. Swipe the keys for more controls. Drag vertically on the terminal to scroll.
 Each window keeps its two most recently opened sessions in memory. Go Home or switch agents to reuse the SSH login.
@@ -322,13 +364,17 @@ Configure the following test environment variables explicitly.
 | `SPACEPORT_TEST_SSH_PASSWORD` | Disposable account's password |
 | `SPACEPORT_TEST_SSH_FINGERPRINT` | Independently verified SSH host-key fingerprint |
 | `SPACEPORT_TEST_HERDR_SESSION` | Named Herdr fixture session |
+| `SPACEPORT_UI_FILE_SESSION`, `SPACEPORT_UI_SHARE_SESSION` | Fresh shell sessions for the picker and incoming share tests. Put `SpaceportFixture.txt` containing `verified-native-file-content` in On My iPhone. |
 | `SPACEPORT_TEST_SHORTCUT_SESSION` | Fresh session from `mobile/test-support/seed-agent-order` for warm and cold entry through Apple Shortcuts |
+| `SPACEPORT_TEST_HOME_ROSTER_SESSION` | Fresh session from `mobile/test-support/seed-attention` for refreshing a parked agent from Home |
 | `SPACEPORT_TEST_HOME_WIDGET_SESSION` | Fresh session from `mobile/test-support/seed-agent-order` for Home Screen gallery placement and tap-to-open testing |
 | `SPACEPORT_TEST_COMPOSE_SHORTCUT_SESSION` | Separate session from `mobile/test-support/seed-attention` for the draft and empty waiting queue workflows |
 | `SPACEPORT_TEST_SHELL_SESSION` | Disposable workspace with only shell panes for the new-terminal workflow |
 | `SPACEPORT_TEST_APPEARANCE_SESSION` | Disposable session focused on a shell for the light SSH terminal and Home appearance test |
 | `SPACEPORT_TEST_ACTIVITY_SESSION` | Fresh session from `mobile/test-support/seed-agent-order` for the Lock Screen and Dynamic Island test on a supported iPhone |
 | `SPACEPORT_TEST_ATTENTION_SESSION` | Separate seeded session for the cross-workspace UI test |
+| `SPACEPORT_TEST_WORKSPACE_DUO_SESSION` | Fresh session from `mobile/test-support/seed-attention` for browsing beside the live terminal on an unfolded Duo |
+| `SPACEPORT_TEST_WORKSPACE_PHONE_SESSION` | Fresh session from `mobile/test-support/seed-attention` for workspace search and keyboard restoration on iPhone |
 | `SPACEPORT_TEST_NEW_TERMINAL_SESSION` | Separate session from `mobile/test-support/seed-attention` for creating a terminal beside an agent |
 | `SPACEPORT_TEST_LIFECYCLE_SESSION` | Fresh disposable session name for testing drafts and transport recovery |
 | `SPACEPORT_TEST_SSH_WITNESS` | Set to `1` when running the fixture monitor `mobile/test-support/watch-ssh-continuity` |

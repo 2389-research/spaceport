@@ -23,6 +23,17 @@ class PagesTest : LiveMobileUi() {
         flushFixturePreferences()
     }
 
+    @Test fun tagsSurviveReloadWithoutChangingSessions() {
+        val store = HostStore(context)
+        store.replace(emptyList(), listOf(first, second, elsewhere))
+        store.tag(first.account, "Work, work, home")
+        val loaded = HostStore(context)
+        assertEquals(listOf("Work", "home"), loaded.tags(first.account))
+        assertEquals(setOf(first, second), loaded.filtered("WORK").toSet())
+        loaded.tag(first.account, "")
+        assertEquals(loaded.profiles(), loaded.filtered("Work"))
+    }
+
     @Test fun settingsSaveTextSizeAndToolbarKeys() {
         val preferences = TerminalPreferences(context)
         launchAtHome().use {

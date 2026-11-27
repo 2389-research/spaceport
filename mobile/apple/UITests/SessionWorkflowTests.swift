@@ -219,6 +219,12 @@ final class SessionWorkflowTests: XCTestCase {
             return
         }
         attachScreen("Workspaces from Home", in: app)
+        let flight = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label == %@", "goTo.workspace.", "Flight")).firstMatch
+        flight.tap()
+        XCTAssertTrue(app.buttons["goTo.workspace.back"].waitForExistence(timeout: 5))
+        attachScreen("Browse Flight while Mission is current", in: app)
+        app.buttons["goTo.workspace.back"].tap()
+        XCTAssertTrue(mission.isSelected)
         app.buttons["goTo.done"].tap()
         XCTAssertEqual(goTo.value as? String, origin)
         openSessionHome(in: app)
@@ -238,8 +244,11 @@ final class SessionWorkflowTests: XCTestCase {
             XCTAssertEqual(currentSSH, originalSSH, "Navigation and foregrounding must keep the same authenticated SSH worker.")
         }
         app.buttons["session.navigation"].tap()
+        app.segmentedControls["goTo.browse"].buttons["Workspaces"].tap()
         mission.tap()
-        app.buttons["goTo.done"].tap()
+        let console = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "goTo.pane.")).firstMatch
+        XCTAssertTrue(console.waitForExistence(timeout: 5))
+        console.tap()
         try await waitForText("Mission", in: goTo)
         goTo.tap()
         guard attention.waitForExistence(timeout: 5) else {
@@ -271,6 +280,7 @@ final class SessionWorkflowTests: XCTestCase {
 
         app.buttons["session.navigation"].tap()
         app.segmentedControls["goTo.browse"].buttons["Workspaces"].tap()
+        flight.tap()
         let sibling = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND selected == false", "pane.map.")).firstMatch
         reveal(sibling, in: app)
         XCTAssertEqual(sibling.label, "Logs")
@@ -509,6 +519,8 @@ final class SessionWorkflowTests: XCTestCase {
         XCTAssertFalse(path.isEmpty)
         app.buttons["session.navigation"].tap()
         app.segmentedControls["goTo.browse"].buttons["Workspaces"].tap()
+        let currentWorkspace = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND selected == true", "goTo.workspace.")).firstMatch
+        currentWorkspace.tap()
         let tiles = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "pane.map."))
         let needsSplit = !tiles.firstMatch.exists
         app.buttons["goTo.done"].tap()
@@ -523,6 +535,7 @@ final class SessionWorkflowTests: XCTestCase {
         }
         app.buttons["session.navigation"].tap()
         app.segmentedControls["goTo.browse"].buttons["Workspaces"].tap()
+        currentWorkspace.tap()
         let other = tiles.matching(NSPredicate(format: "selected == false")).firstMatch
         reveal(other, in: app)
         XCTAssertTrue(other.waitForExistence(timeout: 8))
@@ -531,6 +544,8 @@ final class SessionWorkflowTests: XCTestCase {
         other.tap()
         XCTAssertTrue(navigation.waitForExistence(timeout: 5))
         app.buttons["session.navigation"].tap()
+        app.segmentedControls["goTo.browse"].buttons["Workspaces"].tap()
+        currentWorkspace.tap()
         let selected = app.buttons[next]
         reveal(selected, in: app)
         let focused = expectation(for: NSPredicate(format: "selected == true"), evaluatedWith: selected)
@@ -555,7 +570,7 @@ final class SessionWorkflowTests: XCTestCase {
     }
 
     @MainActor
-    private func addHost(in app: XCUIApplication, hostname: String, port: String, user: String, session: String, password: Bool = false) {
+    func addHost(in app: XCUIApplication, hostname: String, port: String, user: String, session: String, password: Bool = false) {
         let destination = "\(user)@\(hostname)" + (port == "22" ? "" : ":\(port)")
         app.buttons.matching(identifier: "Add Host").firstMatch.tap()
         let address = app.textFields["Address"]

@@ -4,9 +4,14 @@ mod controller;
 pub(crate) use controller::history;
 mod idle;
 mod projection;
+mod roster;
+pub use roster::MobileRosterRequest;
 mod ssh;
 
-pub use controller::{MobileError, MobileSession};
+pub use controller::{
+    MobileError, MobileSession,
+    pane_tools::{MobilePaneAction, MobilePaneActions},
+};
 pub use history::{HistoryCursor, HistoryMatch, HistorySearch};
 pub use idle::{IdleAgeGroup, idle_age_group};
 pub use projection::{

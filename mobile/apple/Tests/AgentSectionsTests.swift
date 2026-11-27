@@ -78,6 +78,20 @@ final class AgentSectionsTests: XCTestCase {
         XCTAssertEqual(rows.map(\.ageLabel), ["<1m", "59m", "1h", "5h+", nil, nil])
     }
 
+    func testQuietUsesObservedDayAndFinishedWorkCanBeSettled() throws {
+        var idle = row("quiet", "idle", seq: 1)
+        idle.changeObservedAt = Date(timeIntervalSince1970: 10)
+        idle.idleOnsetObserved = false
+        let done = row("review", "done", seq: 2)
+        let rows = try catalog([idle, done], seenAt: 86_410).observedAgents
+        XCTAssertEqual(rows.map(\.section), [.finished, .quiet])
+        var marks = AgentMarks()
+        marks.apply(.settle(true), status: "done")
+        XCTAssertTrue(marks.observed(status: "done", at: .now)?.settled == true)
+        XCTAssertNil(marks.observed(status: "blocked", at: .now))
+        XCTAssertNil(marks.observed(status: "working", at: .now))
+    }
+
     func testReconnectConfirmsLowerBoundOnlyForTheSameIdleStreak() throws {
         let suite = "spaceport.mobile.idle.\(UUID())"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
@@ -96,7 +110,7 @@ final class AgentSectionsTests: XCTestCase {
         func saved() throws -> HomeAgent {
             try XCTUnwrap(ProfileStore(defaults: defaults).catalog().observedAgents.first)
         }
-        try observe("done", seq: 7, at: 1_000, legacy: true)
+        try observe("idle", seq: 7, at: 1_000, legacy: true)
         XCTAssertEqual(try saved().section, .idle)
         try observe("idle", seq: 7, at: 8_200)
         XCTAssertEqual(try saved().section, .idleHours)

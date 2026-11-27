@@ -49,6 +49,8 @@ impl Projection {
     pub(crate) fn cancel_go_to(&mut self) {
         // A focus request already queued still owns its fence.
         if self.route.take().is_some() {
+            self.pane_trail.observe(None, false);
+            self.observe_pane();
             self.version += 1;
         }
     }
@@ -92,6 +94,7 @@ impl Projection {
             Step::Arrived if arrived => {
                 self.go_to_arrival = Some(request_version);
                 self.route = None;
+                self.observe_pane();
                 self.version += 1;
                 Ok(None)
             }

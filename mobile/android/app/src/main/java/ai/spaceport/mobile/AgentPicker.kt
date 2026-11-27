@@ -127,16 +127,18 @@ internal class AgentPicker(
         }
         if (
             old != null &&
+                old.observedAt == view.observedAt &&
                 old.panes == view.panes &&
                 old.tabs == view.tabs &&
                 old.workspaces == view.workspaces &&
                 old.paneMap == view.paneMap &&
+                old.paneActions == view.paneActions &&
                 old.focusedPane == view.focusedPane &&
                 old.rosterObservedAtMs == view.rosterObservedAtMs &&
                 old.bootId == view.bootId
         )
             return
-        rows = AgentBoard.rows(host, view).orEmpty()
+        rows = AgentBoard.rows(host, view)
         draw()
     }
 
@@ -170,8 +172,9 @@ internal class AgentPicker(
             ui.row(
                 body,
                 row.headline,
-                row.path,
+                "${row.path} · ${observationLabel(row.seenAt, System.currentTimeMillis())}",
                 row.status,
+                brand = row,
                 action = { jumpTo(row) },
                 held = {
                     val latest = connection.view
@@ -198,6 +201,11 @@ internal class AgentPicker(
                                     }
                                 )
                         }
+                    PaneActionMenu(activity) { action ->
+                        preview?.dismiss()
+                        connection.editPane(view, row, action)
+                    }
+                        .addTo(content, view, row)
                     preview =
                         AlertDialog.Builder(activity)
                             .setTitle(row.headline)

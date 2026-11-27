@@ -3,16 +3,20 @@
 import Foundation
 
 enum AgentMarkAction {
-    case pin(Bool), snooze(Date), wake
+    case pin(Bool), snooze(Date), wake, settle(Bool)
 }
 
 struct AgentMarks: Hashable, Codable {
     var pinned = false
     var snoozeUntil: Date?
     var heldStatus: String?
+    var settled: Bool?
+
+    var hasMark: Bool { pinned || snoozeUntil != nil || settled == true }
 
     mutating func apply(_ action: AgentMarkAction, status: String) {
         switch action {
+        case .settle(let value): settled = value && status == "done" ? true : nil
         case .pin(let value): pinned = value
         case .snooze(let date):
             snoozeUntil = date
@@ -25,19 +29,21 @@ struct AgentMarks: Hashable, Codable {
 
     func observed(status: String, at time: Date) -> Self? {
         var marks = self
+        if status != "done" { marks.settled = nil }
         if let deadline = snoozeUntil {
             let activity = PaneActivity(status)
             if deadline <= time || (PaneActivity(heldStatus ?? "") != activity && (activity == .blocked || activity == .working)) {
                 marks.apply(.wake, status: status)
             }
         }
-        return marks.pinned || marks.snoozeUntil != nil ? marks : nil
+        return marks.hasMark ? marks : nil
     }
 }
 
 extension HomeAgent {
     func displaySection(at date: Date) -> HomeAgentSection {
         if let deadline = agent.marks?.snoozeUntil, deadline > date { return .snoozed }
-        return agent.marks?.pinned == true ? .pinned : section
+        if agent.marks?.pinned == true { return .pinned }
+        return agent.marks?.settled == true && section == .finished ? .quiet : section
     }
 }
