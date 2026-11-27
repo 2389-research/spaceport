@@ -27,11 +27,13 @@ pub(super) fn answer_worker() -> Worker<io::Cursor<Vec<u8>>> {
     let (outbound, queue) = crossbeam_channel::bounded(1);
     outbound.try_send(vec![]).unwrap();
     Worker {
+        closing: Vec::new(),
         decoder: Decoder::default(),
         queue,
         shared: Arc::new(Shared::default()),
         stop: Arc::new(AtomicBool::new(false)),
         stream: io::Cursor::new(Vec::new()),
+        written: 0,
     }
 }
 
