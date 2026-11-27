@@ -9,7 +9,7 @@ gate, `gated` = waiting on an owner decision or external event.
 
 | # | Ticket | Size | Depends on | Status |
 |---|--------|------|------------|--------|
-| A1 | **i18n stage 4**: move the 21 foreign-type `Localize` impls out of `crates/spaceport-gpui/src/i18n/errors/` to their owning crates (`spaceport_web_url`, `spaceport_settings`, `spaceport_widgets`, tunnel, `SshFailure`, …). The 36 app-`Error` impls stay. | S (~250 lines) | none — fully mapped | **next** |
+| A1 | **i18n stage 4**: move the 21 foreign-type `Localize` impls out of `crates/spaceport-gpui/src/i18n/errors/` to their owning crates (`spaceport_web_url`, `spaceport_settings`, `spaceport_widgets`, tunnel, `SshFailure`, …). The 36 app-`Error` impls stay. | S (~250 lines) | none — fully mapped | **done** — landed in #254, which moved every cross-crate mapping into its crate's `src/localize.rs` |
 | A2 | **Menu S6c**: workspace popover (~270 lines: header, tiles, mute toggle) → `spaceport-menu`, wording app-side, layout in-crate. | S | none | **next** |
 | A3 | **Settings stage 5**: theme browser (`themes.rs`, appearance/grid/system pages) — blocked on the appearance service extraction first (P5) and `SearchInput` (have it). Split: 5a appearance service → `spaceport-settings`, 5b the browser. | M | none for 5a | **next** |
 | A4 | **Text-field stage 2**: `DialogInput` + `MultilineInput` into `crates/spaceport-textfield` (facade keeps re-exports; app keeps messages). ~600 lines. | M | none — stage 1 proved out in production | **next wave 2** |
@@ -18,7 +18,7 @@ gate, `gated` = waiting on an owner decision or external event.
 | A7 | **Menu S6e part 2**: Add Device + WSL pages (fields are `Entity<SearchInput>` triples) — need endpoint-state `Hosts` prepared-values treatment, then move. | L | A4, endpoint Hosts pass | gated on A4 + a scout pass |
 | A8 | **Menu S6e part 3**: device picker, sessions management, host-menu forms (rename/tags/theme/forwards), theme picker, shortcut editor. The last and largest of the menus program. | L | A4 + A7's pattern | gated |
 | A9 | **Settings stage 6**: the eleven page modules + `controls/*` (3,692 lines) — the final settings push, P1 ruling now answered so wording can cross. | XL | A4 (DialogInput), staged like the menus program | gated |
-| A10 | **Chat stage 4** (wx65): attach over `spaceport-live` values — the last chat stage. | M | none | ready |
+| A10 | **Chat stage 4** (wx65): attach over `spaceport-live` values — the last chat stage. | M | none | **closed** — #234 landed the slice (owner decision); what is left of the stage is app-side paint, not a ticket |
 | A11 | **Endpoint residual**: drain split deferred at wx75 — revisit if the mailbox routing changes. | S | none | backlog |
 
 ## Track B — Release & qualification (the "Complete ..." backlog rows)
