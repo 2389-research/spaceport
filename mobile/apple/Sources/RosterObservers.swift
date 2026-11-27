@@ -18,6 +18,9 @@ final class RosterObservers: ObservableObject {
     @Published private var passiveLive: Set<HostProfile> = []
     @Published private var interactiveLive: Set<HostProfile> = []
 
+    @Published private(set) var connecting: Set<HostProfile> = []
+    @Published private(set) var failed: Set<HostProfile> = []
+
     func isLive(_ profile: HostProfile) -> Bool { passiveLive.contains(profile) || interactiveLive.contains(profile) }
     func canPause(_ profile: HostProfile) -> Bool { claims.desired.contains(profile) }
 
@@ -53,6 +56,8 @@ final class RosterObservers: ObservableObject {
     private func refresh() {
         let desired = claims.desired
         queue.replace(desired)
+        let failures = failed.intersection(desired)
+        if failed != failures { failed = failures }
         if interactiveLive != claims.live { interactiveLive = claims.live }
         for profile in readers.keys where !queue.running.contains(profile) {
             readers.removeValue(forKey: profile)?.task.cancel()
@@ -73,6 +78,7 @@ final class RosterObservers: ObservableObject {
             }
             readers[profile] = Reader(id: id, task: task)
         }
+        updateConnecting()
         if let next = queue.nextRetry {
             retry = Task { [weak self] in
                 do { try await Task.sleep(until: next, clock: .continuous) } catch { return }
@@ -86,8 +92,8 @@ final class RosterObservers: ObservableObject {
             try Task.checkCancellation()
             let vault = DeviceVault()
             let host = try vault.host(for: profile.address)
-            guard host.fingerprint != nil else { return true }
-            let auth = try vault.securePhoneKey().auth
+            guard let pin = host.fingerprint, let key = try vault.savedPhoneKey() else { return true }
+            let auth = key.auth
             try Task.checkCancellation()
             let reader = try MobileRoster.open(host: host, auth: auth, session: profile.session)
             defer { reader.disconnect() }
@@ -99,6 +105,7 @@ final class RosterObservers: ObservableObject {
                     version = view.version
                     if view.disconnected { return true }
                     if let snapshot = view.observedRoster(after: saved) {
+                        guard try vault.fingerprint(profile.pinAccount) == pin else { return true }
                         try await accept(snapshot, profile: profile, id: id)
                         saved = view
                     }
@@ -115,14 +122,24 @@ final class RosterObservers: ObservableObject {
 
     private func accept(_ snapshot: SessionStatusSnapshot, profile: HostProfile, id: UUID) throws {
         guard readers[profile]?.id == id else { return }
-        try store.recordObserved(profile: profile, snapshot: snapshot)
-        if !passiveLive.contains(profile) { passiveLive.insert(profile) }
+        guard try store.recordObserved(profile: profile, snapshot: snapshot) else { return }
+        if failed.contains(profile) { failed.remove(profile) }
+        if !passiveLive.contains(profile) {
+            passiveLive.insert(profile)
+            updateConnecting()
+        }
+    }
+
+    private func updateConnecting() {
+        let pending = queue.running.subtracting(passiveLive)
+        if connecting != pending { connecting = pending }
     }
 
     private func finished(_ profile: HostProfile, id: UUID, failed: Bool) {
         guard readers[profile]?.id == id else { return }
         readers.removeValue(forKey: profile)
         if passiveLive.contains(profile) { passiveLive.remove(profile) }
+        if failed && !self.failed.contains(profile) { self.failed.insert(profile) }
         queue.finish(profile, failed: failed, now: .now)
         schedule()
     }

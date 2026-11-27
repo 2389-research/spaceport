@@ -2,15 +2,50 @@
 // ABOUTME: Keeps terminal contents and SSH credentials out of local preferences.
 import Foundation
 
+struct RosterSaveAttempt {
+    private let boot: String
+    private let accepted: Bool
+    private let observedAt: UInt64?
+    private let panes: [MobilePane]
+    private let tabs: [MobileTab]
+    private let workspaces: [MobileWorkspace]
+
+    init(_ view: MobileView, accepted: Bool) {
+        self.accepted = accepted
+        observedAt = view.rosterObservedAtMs
+        boot = view.bootId
+        panes = view.panes
+        tabs = view.tabs
+        workspaces = view.workspaces
+    }
+
+    func matches(_ view: MobileView) -> Bool {
+        if let current = view.rosterObservedAtMs, let observedAt {
+            if accepted && current >= observedAt && current - observedAt >= 60_000 { return false }
+            if !accepted && current != observedAt { return false }
+        }
+        return boot == view.bootId && panes == view.panes &&
+            tabs.elementsEqual(view.tabs) {
+                $0.id == $1.id && $0.workspaceId == $1.workspaceId && $0.label == $1.label
+            } && workspaces.elementsEqual(view.workspaces) {
+                $0.id == $1.id && $0.label == $1.label
+            }
+    }
+}
+
 extension MobileView {
     /// An unchanged roster occasionally advances Last seen when the daemon confirms it.
-    func observedRoster(after saved: MobileView?, lastSavedAt: Date? = nil) -> SessionStatusSnapshot? {
+    func observedRoster(after saved: MobileView?) -> SessionStatusSnapshot? {
         guard !bootId.isEmpty, let date = rosterObservationDate else { return nil }
-        if let saved, let last = lastSavedAt ?? saved.rosterObservationDate, date.timeIntervalSince(last) < 60,
-           saved.bootId == bootId, saved.panes == panes, saved.tabs == tabs, saved.workspaces == workspaces,
+        if let saved, RosterSaveAttempt(saved, accepted: true).matches(self),
            saved.focusedWorkspace == focusedWorkspace, saved.focusedTab == focusedTab, saved.focusedPane == focusedPane {
             return nil
         }
+        return SessionStatusSnapshot(view: self, seenAt: date)
+    }
+
+    func changedAgentStatus(since attempt: RosterSaveAttempt?) -> SessionStatusSnapshot? {
+        guard !bootId.isEmpty, let date = rosterObservationDate, attempt?.matches(self) != true else { return nil }
         return SessionStatusSnapshot(view: self, seenAt: date)
     }
 

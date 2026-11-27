@@ -31,6 +31,8 @@ pub mod login_env;
 mod method;
 pub mod navigation;
 mod options;
+pub mod pane_action;
+pub mod pane_history;
 pub mod private_endpoint;
 mod process;
 pub mod projection;

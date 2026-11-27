@@ -20,6 +20,8 @@ final class SceneSessions: ObservableObject {
     private var readiness: AnyCancellable?
     private var currentReady = false
     private var enrollment: AnyCancellable?
+    @Published private var disconnected: Set<UUID> = []
+    @Published private var forgottenPins: Set<String> = []
     private var recent: [MobileConnection] = []
     @Published private(set) var current: SessionPresentation? {
         didSet {
@@ -52,6 +54,27 @@ final class SceneSessions: ObservableObject {
 
     func contains(_ profile: HostProfile) -> Bool { recent.contains { $0.profile == profile } }
 
+    func permitsHomeRefresh(_ profile: HostProfile) -> Bool {
+        !disconnected.contains(profile.id) && !forgottenPins.contains(profile.pinAccount)
+    }
+
+    func hasParkedSession(for profile: HostProfile) -> Bool {
+        recent.contains { $0.profile == profile && $0.presentationID == nil && $0.hasParkedSession }
+    }
+
+    func observeRetainedRoster(for profile: HostProfile) async throws -> MobileView? {
+        guard current == nil, permitsHomeRefresh(profile) else { throw CancellationError() }
+        let roster: MobileView?
+        do {
+            roster = try await recent.first { $0.profile == profile }?.observeParkedRoster()
+        } catch MobileError.Disconnected {
+            roster = nil
+        }
+        try Task.checkCancellation()
+        guard current == nil, permitsHomeRefresh(profile) else { throw CancellationError() }
+        return roster
+    }
+
     func connection(for profile: HostProfile) -> MobileConnection {
         discard { $0.profile.id == profile.id && $0.profile != profile }
         if let index = recent.firstIndex(where: { $0.profile == profile }) {
@@ -67,6 +90,8 @@ final class SceneSessions: ObservableObject {
     }
 
     func open(_ profile: HostProfile, agent: SeenAgent?) -> SessionPresentation {
+        disconnected.remove(profile.id)
+        forgottenPins.remove(profile.pinAccount)
         if let current {
             if current.connection.profile == profile {
                 current.connection.present(current.id, agent: agent, alreadyOpen: true)
@@ -93,6 +118,7 @@ final class SceneSessions: ObservableObject {
 
     func disconnect(_ profile: HostProfile) {
         RosterObservers.shared.pause(profile)
+        disconnected.insert(profile.id)
         discard { $0.profile == profile }
         updateObservers()
     }
@@ -101,6 +127,8 @@ final class SceneSessions: ObservableObject {
         self.profiles = profiles
         RosterObservers.shared.replaceCatalog(profiles)
         let saved = Set(profiles)
+        disconnected.formIntersection(profiles.map(\.id))
+        forgottenPins.formIntersection(profiles.map(\.pinAccount))
         discard { !saved.contains($0.profile) }
         updateObservers()
     }
@@ -109,6 +137,7 @@ final class SceneSessions: ObservableObject {
         for profile in profiles where profile.pinAccount == pinAccount {
             RosterObservers.shared.pause(profile)
         }
+        forgottenPins.insert(pinAccount)
         discard { $0.profile.pinAccount == pinAccount }
         updateObservers()
     }

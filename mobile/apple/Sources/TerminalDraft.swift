@@ -26,8 +26,9 @@ struct DraftDestination: Equatable {
 
 struct TerminalDraft {
     var text = ""
+    var file: DraftFile?
     var image: DraftImage?
-    var isEmpty: Bool { text.isEmpty && image == nil }
+    var isEmpty: Bool { text.isEmpty && image == nil && file == nil }
     private(set) var destination: DraftDestination?
 
     mutating func open(at current: DraftDestination?) {
@@ -50,7 +51,7 @@ struct TerminalDraft {
     }
 
     mutating func send(to current: InputTarget?, enqueuePaste: (String, InputTarget) -> Bool) -> Bool {
-        guard image == nil, let current, canSend(to: current), enqueuePaste(text, current) else { return false }
+        guard image == nil, file == nil, let current, canSend(to: current), enqueuePaste(text, current) else { return false }
         self = TerminalDraft()
         return true
     }

@@ -80,7 +80,11 @@ fn peer_with_surface(frame: PaneSurfaceFrame) -> (Arc<MobileSession>, Stream) {
         "pane.copy_search",
         "pane.selection.read"
     ]);
-    welcome["capabilities"] = json!(["surface_interest", "presentation_effects_fence"]);
+    welcome["capabilities"] = json!([
+        "surface_interest",
+        "presentation_effects_fence",
+        "not-for-the-clipboard"
+    ]);
     send(
         &mut peer,
         ServerMessage::EndpointControl {
@@ -101,6 +105,15 @@ fn peer_with_surface(frame: PaneSurfaceFrame) -> (Arc<MobileSession>, Stream) {
         ClientMessage::ClientShellFocus { focused: true }
     ));
     (session, peer)
+}
+
+#[test]
+fn diagnostic_capabilities_contain_only_known_handshake_fields() {
+    let (session, _socket) = peer();
+    assert_eq!(
+        session.diagnostic_capabilities().as_deref(),
+        Some("presentation_effects_fence, surface_interest")
+    );
 }
 
 #[test]
@@ -136,6 +149,70 @@ fn parking_releases_focus_and_surface_then_refocuses_after_verified_new_frame() 
         ClientMessage::ClientShellFocus { focused: true }
     ));
     assert!(session.poll(0).unwrap().input_target.is_some());
+}
+
+#[test]
+fn parked_roster_waits_for_the_acknowledged_snapshot_without_claiming_focus() {
+    let (session, mut peer) = peer();
+    session.park();
+    assert!(matches!(
+        read(&mut peer),
+        ClientMessage::ClientShellFocus { focused: false }
+    ));
+    let release = request(&mut peer, false);
+    let observation = session.begin_parked_roster("boot-v1".into()).unwrap();
+    reply(&mut peer, &release, interest(false));
+    assert_eq!(request(&mut peer, false), observation);
+    let mut acknowledged = interest(false);
+    acknowledged["projection_revision"] = json!(8);
+    reply(&mut peer, &observation, acknowledged);
+    let mut latest = snapshot();
+    latest.revision = 8;
+    latest.workspaces[0].label = "observed while parked".into();
+    send(
+        &mut peer,
+        ServerMessage::EndpointControl {
+            kind: endpoint::ENDPOINT_SNAPSHOT_KIND.into(),
+            data: serde_json::to_string(&latest).unwrap(),
+        },
+    );
+    let view = session
+        .wait_parked_roster("boot-v1".into(), observation.clone())
+        .unwrap();
+    assert_eq!(view.workspaces[0].label, "observed while parked");
+    assert!(view.terminal.is_none() && view.input_target.is_none());
+    assert!(matches!(
+        session.wait_parked_roster("boot-v1".into(), observation),
+        Err(MobileError::StaleView)
+    ));
+    let activation = session.begin_resume("boot-v1".into()).unwrap();
+    assert_eq!(request(&mut peer, true), activation);
+}
+
+#[test]
+fn cancelling_a_parked_roster_check_keeps_normal_resume_available() {
+    let (session, mut peer) = peer();
+    session.park();
+    assert!(matches!(
+        read(&mut peer),
+        ClientMessage::ClientShellFocus { focused: false }
+    ));
+    let release = request(&mut peer, false);
+    let observation = session.begin_parked_roster("boot-v1".into()).unwrap();
+    reply(&mut peer, &release, interest(false));
+    assert_eq!(request(&mut peer, false), observation);
+    session.cancel_parked_roster(observation.clone());
+    assert!(matches!(
+        session.wait_parked_roster("boot-v1".into(), observation.clone()),
+        Err(MobileError::StaleView)
+    ));
+    let activation = session.begin_resume("boot-v1".into()).unwrap();
+    reply(&mut peer, &observation, json!({}));
+    assert_eq!(request(&mut peer, true), activation);
+    assert!(matches!(
+        session.begin_parked_roster("boot-v1".into()),
+        Err(MobileError::StaleView)
+    ));
 }
 
 #[test]

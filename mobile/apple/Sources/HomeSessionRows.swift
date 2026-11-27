@@ -21,9 +21,12 @@ private extension SessionStatusSnapshot {
 
 struct HomeAgentsSection: View {
     let agents: [HomeAgent]
+    let reviewOnly: Bool
     let now: Date
     let mark: (HomeAgent, AgentMarkAction) -> Void
     let open: (HomeAgent) -> Void
+
+    @State private var showQuiet = false
 
     private struct LabelPath: Hashable {
         let hostname: String
@@ -47,13 +50,13 @@ struct HomeAgentsSection: View {
         let sections = HomeAgentSection.allCases.filter { bySection[$0] != nil }
         if agents.isEmpty {
             Section {
-                Text("Open a session to see its agents here.")
+                Text(reviewOnly ? "No agents have finished work to review." : "Open a session to see its agents here.")
                     .font(.subheadline).foregroundStyle(.secondary)
             } header: { Text("Across sessions") }
         }
         ForEach(sections, id: \.self) { section in
             Section {
-                ForEach(bySection[section] ?? []) { row in
+                ForEach(section == .quiet && !showQuiet ? [] : bySection[section] ?? []) { row in
                     let duplicates = groups[LabelPath(row)] ?? []
                     let hasSamePane = duplicates.contains { $0.agent.paneId == row.agent.paneId && $0.id != row.id }
                     let detail = [
@@ -100,7 +103,11 @@ struct HomeAgentsSection: View {
                     .modifier(AgentMarkActions(row: row, snoozed: section == .snoozed) { mark(row, $0) })
                 }
             } header: {
-                Text(section.title)
+                if section == .quiet {
+                    Button { showQuiet.toggle() } label: {
+                        Label("Quiet (\(bySection[section]?.count ?? 0))", systemImage: showQuiet ? "chevron.down" : "chevron.right")
+                    }.accessibilityValue(showQuiet ? "Expanded" : "Collapsed")
+                } else { Text(section.title) }
             } footer: {
                 if section == sections.last, let first = agents.first, let latest = agents.map(\.seenAt).max() {
                     if accountCount > 1 {
@@ -119,6 +126,7 @@ struct HomeAgentsSection: View {
 struct HomeSessionRow: View {
     let session: SavedSession
     var live = false
+    var refreshFailed = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -140,6 +148,7 @@ struct HomeSessionRow: View {
                         }
                     }
                     .font(.footnote).foregroundStyle(.secondary)
+                    if refreshFailed && !live { Text("Couldn’t refresh").font(.footnote).foregroundStyle(.secondary) }
                 } else {
                     Text("Not opened yet").font(.footnote).foregroundStyle(.secondary)
                 }

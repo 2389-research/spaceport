@@ -1,6 +1,11 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
-use crate::history::LIMIT;
+fn snapshot() -> ClientShellSnapshot {
+    serde_json::from_str(include_str!(
+        "../../../spaceport-protocol/tests/fixtures/endpoint-snapshot-v1.json"
+    ))
+    .unwrap()
+}
 
 /// A snapshot of `boot` with `panes` open and `focused` focused.
 fn at(boot: &str, panes: &[&str], focused: Option<&str>) -> ClientShellSnapshot {
