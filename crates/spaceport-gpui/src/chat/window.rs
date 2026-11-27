@@ -131,15 +131,8 @@ impl SpaceportWindow {
                 let input = pane.available().then(|| pane.input_focus(cx));
                 (pane.target.surface.clone(), input.flatten())
             });
-        match closed {
-            Some((_, Some(input))) => window.focus(&input, cx),
-            Some((super::Surface::Herdr, None)) => window.focus(&self.focus, cx),
-            Some((super::Surface::Core(terminal), None)) => {
-                if let Some(tab) = self.core_terminals.tab_of(&terminal, cx) {
-                    self.focus_core_terminal(tab, window, cx);
-                }
-            }
-            None => {}
+        if let Some((surface, input)) = closed {
+            self.restore_chat_input(surface, input, window, cx);
         }
         // Observed panes, whether a discovered agent or a `[chat.mirrors]`
         // entry, take their status from the daemon; live chats ignore it.
@@ -247,7 +240,14 @@ impl SpaceportWindow {
         let font = self.chat_font();
         let style = DiagramStyle::of(&self.theme, &font);
         let renderer = cx.svg_renderer();
+        let mut restore = None;
         for pane in self.chats.panes_mut() {
+            if let Some(viewer) = pane.release_missing_viewer() {
+                if viewer.focus().is_focused(window) {
+                    restore = Some((pane.target.surface.clone(), pane.input_focus(cx)));
+                }
+                cx.notify();
+            }
             for texture in pane.prepared.visuals.take_released() {
                 cx.drop_image(texture, Some(window));
             }
@@ -261,6 +261,27 @@ impl SpaceportWindow {
                     });
                 })
                 .detach();
+            }
+        }
+        if let Some((surface, input)) = restore {
+            self.restore_chat_input(surface, input, window, cx);
+        }
+    }
+
+    fn restore_chat_input(
+        &mut self,
+        surface: super::Surface,
+        input: Option<FocusHandle>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        match (surface, input) {
+            (_, Some(input)) => window.focus(&input, cx),
+            (super::Surface::Herdr, None) => window.focus(&self.focus, cx),
+            (super::Surface::Core(terminal), None) => {
+                if let Some(tab) = self.core_terminals.tab_of(&terminal, cx) {
+                    self.focus_core_terminal(tab, window, cx);
+                }
             }
         }
     }

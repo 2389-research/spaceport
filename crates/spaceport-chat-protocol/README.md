@@ -81,9 +81,10 @@ snapshot, and each change it could not read reaches it as `Change::Clients`
 with the count it already holds, so its cursor still moves one step at a time.
 
 Clients send `Command`s with a client-chosen `CommandId`; the program answers
-each once with `Ack`, and a command resent with an id it already handled is
-acknowledged again without running twice. An `Ack` means the program accepted
-the command, not that the agent finished acting on it.
+each once with `Ack`, and remembers recent command IDs in a bounded cache.
+After a disconnect, a client may send a frame it knows was never written.
+A written command without an acknowledgement has an unknown outcome. An `Ack`
+means the program accepted the command. The agent may still be acting on it.
 
 A client that falls behind is disconnected rather than buffered without bound;
 it reconnects with its cursor and gets the changes it missed, or a snapshot when

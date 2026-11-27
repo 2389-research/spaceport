@@ -27,7 +27,7 @@ fn held(cx: &mut TestAppContext) -> (Entity<SpaceportWindow>, MockPeer, &mut Vis
 
 fn hold_drop_then_enter(view: &mut SpaceportWindow, cx: &mut Context<SpaceportWindow>) {
     let at = DropAt::Pane(InputTarget::Pane(PANE.into()));
-    assert!(view.hold_drop(at, vec![PathBuf::from("C:/a")], cx));
+    assert!(view.hold_drop(at, &[PathBuf::from("C:/a")], cx));
     view.send(crate::menu::enter_key(), cx);
     assert_eq!(view.pending_input.len(), 2);
 }

@@ -132,10 +132,11 @@ internal class AgentPicker(
                 old.workspaces == view.workspaces &&
                 old.paneMap == view.paneMap &&
                 old.focusedPane == view.focusedPane &&
+                old.rosterObservedAtMs == view.rosterObservedAtMs &&
                 old.bootId == view.bootId
         )
             return
-        rows = AgentBoard.rows(host, view, System.currentTimeMillis())
+        rows = AgentBoard.rows(host, view).orEmpty()
         draw()
     }
 
