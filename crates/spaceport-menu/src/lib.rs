@@ -17,6 +17,7 @@ pub mod appear;
 pub mod bar;
 pub mod chrome;
 mod error;
+pub mod form;
 pub mod group;
 pub mod host;
 pub mod keybinds;
