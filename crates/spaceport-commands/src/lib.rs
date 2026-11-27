@@ -7,6 +7,10 @@
 // limit of 128 would cap the catalog at about that many rows. A numbered row
 // expands a step per number, and one more for the symbol each digit types.
 #![recursion_limit = "1024"]
+// 2026-11-27 quality gate: 1 function here is over clippy.toml's 100-line
+// ceiling. Split it, then delete this with the crate's entry in
+// docs/notes-quality-gate-sweep.md.
+#![allow(clippy::too_many_lines)]
 
 use serde_json::{Value, json};
 use spaceport_client::{Method, protocol::ClientShellSnapshot};

@@ -3,3 +3,20 @@ disallowed-methods = [
   # unless created without one; spaceport_client::new_command sets that once.
   { path = "std::process::Command::new", reason = "use spaceport_client::new_command, which opens no console window on Windows" },
 ]
+
+# The per-function ceilings `clippy::cognitive-complexity` and
+# `clippy::too-many-lines` read, both enabled in Cargo.toml's
+# `[workspace.lints.clippy]`. A file's 1,000-line ceiling is
+# scripts/check-file-size.sh's; these bound the function inside it.
+
+# Cognitive complexity counts nesting, not branches: 25 is a tangle (branches
+# inside branches inside loops, whose reading order has stopped being linear)
+# rather than merely a long match. Chosen as the starting value that reaches
+# the code this repository already writes without demanding a rewrite in the
+# change that adds the gate; lower it as the functions it reports are split.
+cognitive-complexity-threshold = 25
+
+# 100 lines is about two screens, past which a function is usually holding
+# several responsibilities. Chosen for the same reason as the complexity
+# ceiling: strict enough to name the real offenders, loose enough to triage.
+too-many-lines-threshold = 100

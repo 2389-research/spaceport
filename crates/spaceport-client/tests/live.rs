@@ -2,7 +2,14 @@
 //! The daemon under test is a POSIX process with a POSIX sandbox, so the whole
 //! harness compiles on Unix only.
 #![cfg(unix)]
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::disallowed_methods)]
+// 2026-11-27 quality gate: 1 function here is over clippy.toml's 100-line
+// ceiling (docs/notes-quality-gate-sweep.md).
+#![allow(
+    clippy::disallowed_methods,
+    clippy::expect_used,
+    clippy::too_many_lines,
+    clippy::unwrap_used
+)]
 #[path = "../../test-support/sandbox.rs"]
 mod sandbox;
 

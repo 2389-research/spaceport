@@ -1,4 +1,6 @@
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+// 2026-11-27 quality gate: 1 function here is over clippy.toml's
+// cognitive-complexity ceiling (docs/notes-quality-gate-sweep.md).
+#![allow(clippy::cognitive_complexity, clippy::expect_used, clippy::unwrap_used)]
 //! Optional surface encodings: Herdr encoder fixtures, malformed input,
 //! bounds, and revision fencing. Every rejection must leave the frame intact.
 

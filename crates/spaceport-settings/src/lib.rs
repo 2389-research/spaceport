@@ -12,6 +12,11 @@
 //! app keeps what acts on one — spawning a watcher, installing an SSH hook,
 //! painting, building the keymap from the raw tables, wording a diagnostic.
 
+// 2026-11-27 quality gate: 3 functions here are over clippy.toml's 100-line
+// ceiling and 1 over its cognitive-complexity ceiling. Split them, then delete
+// this with the crate's entry in docs/notes-quality-gate-sweep.md.
+#![allow(clippy::cognitive_complexity, clippy::too_many_lines)]
+
 pub mod accent;
 pub mod agent_skill;
 pub mod agents_placement;
