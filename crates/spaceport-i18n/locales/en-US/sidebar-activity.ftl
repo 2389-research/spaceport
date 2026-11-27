@@ -5,8 +5,6 @@
 sidebar-activity-bar = Activity
 sidebar-activity-overview = Overview
 sidebar-activity-workspaces = Workspaces
-sidebar-activity-automations = Automations
-sidebar-activity-usage = Usage
 sidebar-activity-settings = Settings
 # A screen reader's name for a button with a count: $label is the section,
 # $count how many items it holds.

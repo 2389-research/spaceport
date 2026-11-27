@@ -58,8 +58,6 @@ pub struct Text {
 pub struct Metrics {
     /// The height the titlebar and the application menu bar take at the top.
     pub chrome: f32,
-    /// The width the status bar's usage segment opens its panel at.
-    pub usage_width: f32,
     /// The window's viewport, as the frame being drawn was laid out in.
     pub viewport: Size<Pixels>,
 }
@@ -147,9 +145,7 @@ pub fn layer<K>(hosts: &Hosts<'_, K>, page: Page) -> Layer {
 /// Whether `page` is a dialog that dims the window behind it, rather than a
 /// popover beside what opened it.
 pub fn dims(page: Page, session_modal: bool) -> bool {
-    !footer_anchored(page, session_modal)
-        && !matches!(page, Page::Usage(_) | Page::Application)
-        && !page.pointer_anchored()
+    !footer_anchored(page, session_modal) && page != Page::Application && !page.pointer_anchored()
 }
 
 /// Whether `page` hangs above the window's foot as a panel of the footer that

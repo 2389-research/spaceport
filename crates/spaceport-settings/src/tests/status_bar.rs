@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     preferences::Preference,
-    status_bar::{Button, Detail, Edit},
+    status_bar::{Button, Edit},
 };
 
 #[test]
@@ -13,7 +13,6 @@ fn status_bar_items_default_to_the_full_bar() -> anyhow::Result<()> {
     ] {
         assert_eq!(config.status_bar, StatusBar::default());
         assert!(config.status_bar.show);
-        assert_eq!(config.status_bar.usage, Detail::Detailed);
         assert!(config.status_bar.keep_awake);
         assert_eq!(config.status_bar.theme, Button::Label);
     }
@@ -23,13 +22,12 @@ fn status_bar_items_default_to_the_full_bar() -> anyhow::Result<()> {
 #[test]
 fn status_bar_items_parse_and_report_unknown_keys() -> anyhow::Result<()> {
     let config = Config::parse(
-        "[status_bar]\nusage = 'compact'\nkeep_awake = false\ntheme = 'icon'\nshortcuts = 'hidden'\nreport_issue = 'icon'\nclock = true\n",
+        "[status_bar]\nkeep_awake = false\ntheme = 'icon'\nshortcuts = 'hidden'\nreport_issue = 'icon'\nclock = true\n",
     )?;
     assert_eq!(
         config.status_bar,
         StatusBar {
             show: true,
-            usage: Detail::Compact,
             keep_awake: false,
             keep_awake_scope: Default::default(),
             theme: Button::Icon,
@@ -39,7 +37,7 @@ fn status_bar_items_parse_and_report_unknown_keys() -> anyhow::Result<()> {
     );
     assert_eq!(config.unknown_keys, ["status_bar.clock"]);
     for invalid in [
-        "[status_bar]\nusage = 'tiny'\n",
+        "[status_bar]\nkeep_awake_scope = 'tiny'\n",
         "[status_bar]\ntheme = true\n",
         "[status_bar]\nkeep_awake = 'yes'\n",
         "status_bar = 'compact'\n",
@@ -58,7 +56,6 @@ fn status_bar_edits_round_trip_through_the_overrides_file() -> anyhow::Result<()
         "# mine\n[status_bar]\ntheme = 'label' # theme\nfuture = 1\n",
     )?;
     let edits = [
-        Edit::Usage(Detail::Compact),
         Edit::KeepAwake(false),
         Edit::Theme(Button::Icon),
         Edit::Shortcuts(Button::Hidden),
@@ -76,7 +73,6 @@ fn status_bar_edits_round_trip_through_the_overrides_file() -> anyhow::Result<()
         config.status_bar,
         StatusBar {
             show: true,
-            usage: Detail::Compact,
             keep_awake: false,
             keep_awake_scope: Default::default(),
             theme: Button::Icon,
@@ -84,15 +80,10 @@ fn status_bar_edits_round_trip_through_the_overrides_file() -> anyhow::Result<()
             report_issue: Button::Icon,
         }
     );
-    for edit in [
-        Edit::Usage(Detail::Detailed),
-        Edit::Theme(Button::Label),
-        Edit::KeepAwake(true),
-    ] {
+    for edit in [Edit::Theme(Button::Label), Edit::KeepAwake(true)] {
         Config::save_preference_path(Preference::StatusBar(edit), &path)?;
     }
     let config = Config::parse(&fs::read_to_string(&path)?)?;
-    assert_eq!(config.status_bar.usage, Detail::Detailed);
     assert_eq!(config.status_bar.theme, Button::Label);
     assert!(config.status_bar.keep_awake);
     Ok(())

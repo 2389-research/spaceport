@@ -121,7 +121,7 @@ pub(crate) fn chips(
                 .text_color(rgb(muted))
                 .child(format!(":{}", port.number))
                 .tooltip(move |_, cx| {
-                    cx.new(|_| crate::usage::Hint {
+                    cx.new(|_| crate::hint::Hint {
                         text: hint.clone(),
                         foreground,
                         surface,
@@ -188,7 +188,7 @@ pub(crate) fn close_button(
         )
         .hover(|style| style.bg(rgb(surface)))
         .tooltip(move |_, cx| {
-            cx.new(|_| crate::usage::Hint {
+            cx.new(|_| crate::hint::Hint {
                 text: hint.clone(),
                 foreground,
                 surface,

@@ -4,7 +4,7 @@
 //! users' files.
 use super::*;
 use crate::preferences::Preference;
-use crate::status_bar::{AwakeScope, Button, Detail, Edit};
+use crate::status_bar::{AwakeScope, Button, Edit};
 use spaceport_client::protocol::ToastHerdrPosition;
 
 /// A file that already holds unrelated keys, comments, and tables.
@@ -315,11 +315,6 @@ rows! {
             "[sidebar]\nactivity_bar = false\n", Tail("\n[sidebar]\nactivity_bar = false\n"),
             |c| !c.sidebar_style.activity_bar;
     }
-    SidebarAutomations {
-        Preference::SidebarAutomations(false) =>
-            "[sidebar]\nautomations = false\n", Tail("\n[sidebar]\nautomations = false\n"),
-            |c| !c.sidebar_style.automations;
-    }
     SidebarDeviceFooter {
         Preference::SidebarDeviceFooter(DeviceFooter::Always) =>
             "[sidebar]\ndevice_footer = \"always\"\n",
@@ -389,12 +384,6 @@ rows! {
             "[sound]\nvolume = 0\n", Tail("\n[sound]\nvolume = 0\n"), |c| c.sound.volume == 0;
     }
     StatusBar {
-        Preference::StatusBar(Edit::Usage(Detail::Detailed)) =>
-            "[status_bar]\nusage = \"detailed\"\n", Tail("\n[status_bar]\nusage = \"detailed\"\n"),
-            |c| c.status_bar.usage == Detail::Detailed;
-        Preference::StatusBar(Edit::Usage(Detail::Compact)) =>
-            "[status_bar]\nusage = \"compact\"\n", Tail("\n[status_bar]\nusage = \"compact\"\n"),
-            |c| c.status_bar.usage == Detail::Compact;
         Preference::StatusBar(Edit::KeepAwake(false)) =>
             "[status_bar]\nkeep_awake = false\n", Tail("\n[status_bar]\nkeep_awake = false\n"),
             |c| !c.status_bar.keep_awake;

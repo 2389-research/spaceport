@@ -260,7 +260,7 @@ app's chat tests stay at 408 and its bin suite still runs 3,632.
 5. **Messages are the app's** (`docs/i18n.md`): a crate below the app returns
    typed values and the app writes them. `spaceport-ago` names the unit and its
    count; `crates/spaceport-gpui/src/ago.rs` keeps `ago.ftl`'s IDs. A crate that
-   names message IDs as data instead follows `spaceport-commands`/`spaceport-usage`.
+   names message IDs as data instead follows `spaceport-commands`.
 6. **Wire and record.** Workspace `members`, `[workspace.dependencies]`,
    `spaceport-gpui`'s `[dependencies]`, the crate table in `AGENTS.md`, and the
    layout in `docs/i18n.md` when the module carries text.

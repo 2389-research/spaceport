@@ -182,7 +182,7 @@ impl SpaceportWindow {
             .aria_label(label.clone())
             .map(|control| self.chrome_stop(Region::TitleBar, control))
             .tooltip(move |_, cx| {
-                cx.new(|_| crate::usage::Hint {
+                cx.new(|_| crate::hint::Hint {
                     text: label.clone(),
                     foreground,
                     surface,

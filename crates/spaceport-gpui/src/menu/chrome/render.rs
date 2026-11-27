@@ -135,8 +135,6 @@ impl SpaceportWindow {
                 Some(_) => panel.child(self.render_session_edit(cx)),
                 None => panel.child(self.render_devices(cx)),
             };
-        } else if let Page::Usage(provider) = page {
-            panel = panel.child(self.render_usage_panel(provider, cx));
         } else if page == Page::AddDevice {
             panel = panel.child(self.render_add_device(layer.compact_rail, cx));
         } else if page == Page::AddWsl {
@@ -233,7 +231,6 @@ impl SpaceportWindow {
                 | Page::RenameTab
                 | Page::Tab
                 | Page::Themes
-                | Page::Usage(_)
                 | Page::VersionMismatch
                 | Page::Workspace => {}
             }

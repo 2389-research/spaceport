@@ -389,7 +389,6 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         ControlCommand::Host(command) => hosts::host(command, &context),
         ControlCommand::Ports(command) => hosts::ports(command, &context),
         ControlCommand::Processes { pane } => local::processes(pane.as_deref()),
-        ControlCommand::Usage => hosts::usage(&context),
         ControlCommand::Config(command) => settings::config(command, &context),
         ControlCommand::Theme(command) => settings::theme(command, &context),
         ControlCommand::Language(command) => settings::language(command, &context),

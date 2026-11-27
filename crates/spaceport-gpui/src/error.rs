@@ -220,9 +220,6 @@ pub enum Error {
     UnsupportedCommand,
     #[error(transparent)]
     Updates(#[from] crate::updates::Error),
-    /// A usage read failed, or the host shell a port scan ran its steps through.
-    #[error(transparent)]
-    Usage(#[from] spaceport_usage::Error),
     #[error(transparent)]
     WorkspaceDocument(#[from] crate::core_terminals::workspace_document::Error),
     #[error(transparent)]
@@ -230,11 +227,11 @@ pub enum Error {
     // keep-sorted end
 }
 
-/// A host shell's failure is kept as `spaceport-usage` wraps it, so it reaches
-/// a window by one path whichever feature ran the step.
-impl From<spaceport_usage::shell::Error> for Error {
-    fn from(error: spaceport_usage::shell::Error) -> Self {
-        Self::Usage(error.into())
+/// A host shell's failure is kept as `spaceport-remote` wraps it, so it
+/// reaches a window by one path whichever feature ran the step.
+impl From<spaceport_remote::host_shell::Error> for Error {
+    fn from(error: spaceport_remote::host_shell::Error) -> Self {
+        Self::Remote(error.into())
     }
 }
 

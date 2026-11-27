@@ -74,21 +74,15 @@ fn pending_enable_keeps_other_core_controls_and_search_results_hidden(cx: &mut T
             .collect();
         assert!(visible.contains(&"general-herdr-core"));
         assert!(!visible.contains(&"tabs-herdr-2"));
-        assert!(!visible.contains(&"sidebar-automations"));
         view.clear_search(cx);
     });
     cx.simulate_resize(size(px(960.), px(2200.)));
-    for (section, hidden) in [
-        (Section::Tabs, "tabs-herdr-2-toggle"),
-        (Section::Sidebar, "sidebar-automations-toggle"),
-    ] {
-        view.update(cx, |view, cx| {
-            view.section = section;
-            cx.notify();
-        });
-        cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
-        assert!(cx.debug_bounds(hidden).is_none());
-    }
+    view.update(cx, |view, cx| {
+        view.section = Section::Tabs;
+        cx.notify();
+    });
+    cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
+    assert!(cx.debug_bounds("tabs-herdr-2-toggle").is_none());
 }
 
 #[gpui::test]
@@ -96,19 +90,14 @@ fn pending_disable_preserves_core_controls_until_restart(cx: &mut TestAppContext
     cx.update(|cx| crate::core_feature::install(true, cx));
     let (view, cx) = cx.add_window_view(skill_fixture);
     cx.simulate_resize(size(px(960.), px(2200.)));
-    for (section, shown) in [
-        (Section::Tabs, "tabs-herdr-2-toggle"),
-        (Section::Sidebar, "sidebar-automations-toggle"),
-    ] {
-        view.update(cx, |view, cx| {
-            assert!(!view.config.herdr_core_enabled);
-            assert!(crate::core_feature::restart_required(false, cx));
-            view.section = section;
-            cx.notify();
-        });
-        cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
-        assert!(cx.debug_bounds(shown).is_some());
-    }
+    view.update(cx, |view, cx| {
+        assert!(!view.config.herdr_core_enabled);
+        assert!(crate::core_feature::restart_required(false, cx));
+        view.section = Section::Tabs;
+        cx.notify();
+    });
+    cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
+    assert!(cx.debug_bounds("tabs-herdr-2-toggle").is_some());
     view.update(cx, |view, cx| {
         view.set_search_query("core", cx);
         let visible: Vec<_> = view
@@ -116,7 +105,7 @@ fn pending_disable_preserves_core_controls_until_restart(cx: &mut TestAppContext
             .iter()
             .map(|index| catalog::CATALOG[*index].id)
             .collect();
-        for shown in ["general-herdr-core", "tabs-herdr-2", "sidebar-automations"] {
+        for shown in ["general-herdr-core", "tabs-herdr-2"] {
             assert!(visible.contains(&shown), "missing search result: {shown}");
         }
     });

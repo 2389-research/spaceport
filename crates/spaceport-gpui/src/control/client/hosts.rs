@@ -38,16 +38,3 @@ pub(super) fn ports(op: HostOp, context: &Context) -> crate::Result<Output> {
         response => Err(unexpected(response)),
     }
 }
-
-pub(super) fn usage(context: &Context) -> crate::Result<Output> {
-    match context.call(Request::Host, HostOp::Usage)? {
-        Response::Host {
-            reply: reply @ Reply::Usage { .. },
-        } => {
-            let empty = matches!(&reply, Reply::Usage { usage, .. } if usage.is_empty());
-            let output = Output::data(text::usage(&reply), &reply)?;
-            Ok(if empty { output.nothing() } else { output })
-        }
-        response => Err(unexpected(response)),
-    }
-}

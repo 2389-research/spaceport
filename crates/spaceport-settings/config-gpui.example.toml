@@ -350,23 +350,11 @@ size = 12
 # keep their shortcuts and command palette entries, and Devices Overview in
 # the palette still offers Add Device.
 # device_footer = "always"
-# Whose +added/-deleted line counts a worktree row shows: "pr" (its cached
-# pull request's) or "local" (the checkout's uncommitted changes against HEAD,
-# for checkouts on this machine, drawn inside the pencil chip that marks
-# uncommitted work). Only one set is shown. Local counts reuse
-# the uncommitted-work probe's slow schedule: one checkout at a time, each at
-# most every 30 seconds while the window is active.
-# change_counts = "pr"
 
 # The activity bar: an icon column at the window's left edge. Workspaces is
-# the sidebar beside the terminals; Overview, Automations, and Usage use
-# the window's body.
+# the sidebar beside the terminals; Overview uses the window's body.
 # Settings sits at its foot. false keeps the plain sidebar.
 # activity_bar = true
-
-# Show the Automations activity page. It reports unavailable until Core has
-# an authoritative job and run feed. false hides the page.
-# automations = true
 
 # A colour per host, keyed by the host's name in the sidebar, as #rgb or
 # #rrggbb. It washes the host's header, its workspace rows, and its agents'
@@ -500,15 +488,11 @@ size = 12
 # image = "~/Pictures/wallpaper.jpg"
 
 # What the status bar shows, also under Settings > Status bar.
-# Whether usage appears at all is [usage] show.
 # [status_bar]
 # The bar itself. false opens windows without it; Terminal > Toggle Status Bar,
 # or a `toggle_status_bar` binding, hides or shows it for the session. While
 # hidden, its connection message, prefix and resize badges show nowhere else.
 # show = true
-# "detailed" draws a meter and a service's two tightest windows; "compact"
-# shows each service's tightest limit as one share.
-# usage = "detailed"
 # The cup that keeps the machine awake; it stays while holding, so it can stop.
 # keep_awake = true
 # What the cup keeps awake: "display" holds the display and the system, so the
@@ -544,17 +528,3 @@ size = 12
 # Open a space's menu when the pointer rests on its sidebar row, without a
 # right click. Moving the pointer anywhere but into that menu closes it again.
 # sidebar_hover_menu = false
-
-# Plan usage presentation. No authoritative report feed is connected yet;
-# missing usage is unavailable, never zero. Provider sign-in is not supported.
-# [usage]
-# Also under Settings > Status bar.
-# show = true
-# Show the runtime's toolbar usage segments, independently of show.
-# topbar = true
-# Honor the runtime's inline sidebar usage rows.
-# inline = true
-# Include these display identities when a report is unavailable.
-# show_providers = ["cursor", "openrouter"]
-# Exclude these display identities.
-# hide_providers = []

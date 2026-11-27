@@ -725,16 +725,16 @@ or turn off **Show repository icons** in **Settings > Sidebar**, to hide it
 and give the name its room. The Superset layout
 keeps its icon slot and draws its branch glyph there instead.
 
-`[usage]` provides independent switches in `config-gpui.local.toml`:
+`[usage]` provides independent switches in `config-gpui.local.toml` for the
+usage indicators the daemon reports:
 
 ```toml
 [usage]
-show = true     # Native bottom-bar usage
 topbar = true   # Daemon toolbar text, including plugin percentages
 inline = true   # Daemon sidebar rows, styles, and custom tokens
 ```
 
-All three default to `true` and apply on config reload. Set `topbar`
+Both default to `true` and apply on config reload. Set `topbar`
 to `false` to hide daemon text without hiding the Git/account controls. Set
 `inline` to `false` to use native sidebar layouts.
 These switches affect GPUI only; they do not change
@@ -872,8 +872,6 @@ On Linux and Windows it stays in the same position when the sidebar collapses
 to a rail. The leftmost tab strip takes the button when the sidebar is hidden
 or the rail cannot fit it beside macOS's traffic lights.
 It stays available when the sidebar is hidden; the existing View menu command and shortcut still work.
-In **Settings > Status bar**, toggle **Usage** to turn the bottom quota display on or off.
-The choice is saved to `config-gpui.local.toml` and follows the existing `[usage] show` setting.
 
 The app's own colored marks and labels (status dots and words, pull request
 badges, diff counts, usage warnings, online dots, toasts) keep a minimum
@@ -3224,10 +3222,6 @@ Saved distributions are kept in `gpui-wsl.json` beside upstream's endpoint
 catalog (`%LOCALAPPDATA%\herdr\client`), never in the catalog itself, whose
 strict schema cannot name one. The device you last chose, a distribution
 included, is selected again at startup.
-
-Plan usage is read through its own `wsl.exe` shell in the same way, as on an
-SSH host: the distribution's own agent sign-ins, read with its `python3` or
-`jq` and sent with its `curl`, so they never leave it.
 
 Listening ports are scanned with the distribution's own `ss` (or `lsof`)
 through another `wsl.exe` shell. WSL forwards a distribution's `localhost`

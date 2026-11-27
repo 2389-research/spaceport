@@ -1,4 +1,4 @@
-//! `host`, `ports`, `usage`, and what the
+//! `host`, `ports`, and what the
 //! window gathers about its hosts, read from the state it already keeps.
 //! Nothing here starts a lookup, a scan, or a sample of its own; a request
 //! answers from the latest one, and says why when there is none.
@@ -15,11 +15,10 @@ use crate::{
     browser::PageOpened,
     control::protocol::{
         Call, Caller, ErrorCode, Response,
-        hosts::{HostOp, Reply, UsageInfo, UsageWindow},
+        hosts::{HostOp, Reply},
     },
 };
 use gpui::App;
-use std::time::SystemTime;
 
 pub(super) fn serve(
     call: Call<HostOp>,
@@ -49,7 +48,6 @@ pub(super) fn serve(
             ports::unforward(view, caller, port, cx)
         }),
         HostOp::OpenPort { port } => return ports::open(call.caller, port, incoming, watches, cx),
-        HostOp::Usage => in_window(caller, cx, |view, _, _| usage(view, SystemTime::now())),
     };
     incoming.respond(response);
 }
@@ -150,76 +148,6 @@ fn select(
         Err(_) => format!("Spaceport could not switch to {label}"),
     };
     Response::error(ErrorCode::Failed, reason)
-}
-
-fn selected_label(view: &SpaceportWindow) -> String {
-    view.endpoints
-        .get(view.selected_endpoint)
-        .map(|endpoint| endpoint.label.clone())
-        .unwrap_or_default()
-}
-
-/// Plan usage on the selected host, as the status bar shows it.
-fn usage(view: &SpaceportWindow, now: SystemTime) -> Response {
-    let host = selected_label(view);
-    let entry = view.usage.current();
-    let usage: Vec<UsageInfo> = entry
-        .map(|entry| {
-            entry
-                .visible_readings(&view.config.usage)
-                .map(|reading| usage_info(reading, now))
-                .collect()
-        })
-        .unwrap_or_default();
-    let note = if !view.config.usage.show {
-        Some("Usage is turned off ([usage] show in the settings)".to_owned())
-    } else if let Some(error) = entry.and_then(|entry| entry.error.as_deref()) {
-        Some(error.to_string())
-    } else if usage.is_empty() {
-        Some(format!(
-            "Plan usage is unavailable on {host}: no authoritative usage feed is connected"
-        ))
-    } else {
-        None
-    };
-    Response::Host {
-        reply: Reply::Usage { host, usage, note },
-    }
-}
-
-pub(super) fn usage_info(reading: &crate::usage::Reading, now: SystemTime) -> UsageInfo {
-    let report = reading.report.as_ref();
-    UsageInfo {
-        provider: reading.provider.name().to_owned(),
-        account: report.and_then(|report| {
-            report
-                .account
-                .email
-                .as_ref()
-                .map(crate::usage::text::english)
-        }),
-        plan: report.and_then(|report| {
-            report
-                .account
-                .plan
-                .as_ref()
-                .map(crate::usage::text::english)
-        }),
-        windows: report
-            .map(|report| {
-                report
-                    .windows
-                    .iter()
-                    .map(|window| UsageWindow {
-                        label: crate::usage::text::english_title(&window.kind),
-                        used_percent: window.used,
-                        resets_in_seconds: window.resets_in(now).map(|left| left.as_secs()),
-                    })
-                    .collect()
-            })
-            .unwrap_or_default(),
-        error: reading.error.as_ref().map(ToString::to_string),
-    }
 }
 
 /// The answer to a request that opened a URL with the system handler.

@@ -16,7 +16,6 @@ spaceport-client.workspace   = true
 spaceport-i18n.workspace     = true
 spaceport-motion.workspace   = true
 spaceport-settings.workspace = true
-spaceport-usage.workspace    = true
 spaceport-widgets.workspace  = true
 thiserror.workspace          = true
 

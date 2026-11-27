@@ -338,7 +338,6 @@ pub(crate) struct SpaceportWindow {
     pub(crate) toasts_hidden: bool,
     /// SSH tunnels to remote ports that listen on their host's loopback only.
     pub(crate) tunnels: crate::listening_ports::Tunnels,
-    pub(crate) usage: crate::usage::Usage,
     /// Whether the selected endpoint's refused handshake was announced. Reset
     /// once it has none, so a later refusal is announced again.
     pub(crate) version_notice_shown: bool,

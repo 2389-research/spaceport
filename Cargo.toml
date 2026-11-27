@@ -1,5 +1,5 @@
 [workspace]
-members  = ["crates/embed-resource", "crates/spaceport-acp", "crates/spaceport-activation", "crates/spaceport-ago", "crates/spaceport-backend", "crates/spaceport-browser", "crates/spaceport-chat-core", "crates/spaceport-chat-protocol", "crates/spaceport-client", "crates/spaceport-commands", "crates/spaceport-control-protocol", "crates/spaceport-core-client", "crates/spaceport-diagnostics", "crates/spaceport-endpoint", "crates/spaceport-gpui", "crates/spaceport-i18n", "crates/spaceport-icons", "crates/spaceport-keymap", "crates/spaceport-launcher", "crates/spaceport-lenient", "crates/spaceport-live", "crates/spaceport-menu", "crates/spaceport-motion", "crates/spaceport-osc52", "crates/spaceport-palette", "crates/spaceport-panes", "crates/spaceport-protocol", "crates/spaceport-release-notes", "crates/spaceport-remote", "crates/spaceport-reorder", "crates/spaceport-settings", "crates/spaceport-settings-window", "crates/spaceport-sidebar", "crates/spaceport-sound", "crates/spaceport-state-file", "crates/spaceport-terminal", "crates/spaceport-textfield", "crates/spaceport-truncate", "crates/spaceport-usage", "crates/spaceport-widgets", "crates/spaceport-words"]
+members  = ["crates/embed-resource", "crates/spaceport-acp", "crates/spaceport-activation", "crates/spaceport-ago", "crates/spaceport-backend", "crates/spaceport-browser", "crates/spaceport-chat-core", "crates/spaceport-chat-protocol", "crates/spaceport-client", "crates/spaceport-commands", "crates/spaceport-control-protocol", "crates/spaceport-core-client", "crates/spaceport-diagnostics", "crates/spaceport-endpoint", "crates/spaceport-gpui", "crates/spaceport-i18n", "crates/spaceport-icons", "crates/spaceport-keymap", "crates/spaceport-launcher", "crates/spaceport-lenient", "crates/spaceport-live", "crates/spaceport-menu", "crates/spaceport-motion", "crates/spaceport-osc52", "crates/spaceport-palette", "crates/spaceport-panes", "crates/spaceport-protocol", "crates/spaceport-release-notes", "crates/spaceport-remote", "crates/spaceport-reorder", "crates/spaceport-settings", "crates/spaceport-settings-window", "crates/spaceport-sidebar", "crates/spaceport-sound", "crates/spaceport-state-file", "crates/spaceport-terminal", "crates/spaceport-textfield", "crates/spaceport-truncate", "crates/spaceport-widgets", "crates/spaceport-words"]
 resolver = "2"
 
 [workspace.package]
@@ -102,7 +102,6 @@ spaceport-state-file    = { path = "crates/spaceport-state-file" }
 spaceport-truncate      = { path = "crates/spaceport-truncate" }
 spaceport-terminal      = { path = "crates/spaceport-terminal" }
 spaceport-textfield     = { path = "crates/spaceport-textfield" }
-spaceport-usage         = { path = "crates/spaceport-usage" }
 spaceport-web-url       = { path = "crates/spaceport-web-url" }
 spaceport-widgets       = { path = "crates/spaceport-widgets" }
 spaceport-words         = { path = "crates/spaceport-words" }

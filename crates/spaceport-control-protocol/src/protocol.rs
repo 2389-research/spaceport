@@ -40,7 +40,9 @@ use serde::{Deserialize, Serialize};
 /// 36: removed custom app updater operations and replies.
 /// 37: removed chat conversion requests and replies.
 /// 38: `chat new` waits for the created tab and pane, replying `created`.
-pub const PROTOCOL_VERSION: u32 = 38;
+/// 39: removed the usage request and reply, and the automations and usage
+/// activity panels.
+pub const PROTOCOL_VERSION: u32 = 39;
 
 /// Bounds a request and a response alike.
 pub const MAX_MESSAGE: usize = 256 * 1024;

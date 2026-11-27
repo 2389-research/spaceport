@@ -31,7 +31,7 @@ fn listening_ports_ride_under_their_row_without_resizing_it(cx: &mut gpui::TestA
         view.update(cx, |view, cx| {
             let ports = format!("L 1 *:3000 node\nL 1 127.0.0.1:5173 vite\nE 1 {id}\n");
             view.listening_ports.seed(
-                crate::usage::Host::Local,
+                spaceport_remote::Host::Local,
                 crate::listening_ports::parse(&ports).unwrap(),
             );
             cx.notify();

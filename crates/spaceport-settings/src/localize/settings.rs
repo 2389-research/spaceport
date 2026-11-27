@@ -58,7 +58,6 @@ impl Localize for Error {
             }
             Self::InvalidThemePair => fl!("error-config-invalid-theme-pair"),
             Self::InvalidThemePath => fl!("error-config-invalid-theme-path"),
-            Self::InvalidUsageTable => fl!("error-config-invalid-usage-table"),
             Self::InvalidWorktreeTint(tint) => fl!(
                 "error-worktree-identity-invalid-tint",
                 tint = format!("{tint:?}")

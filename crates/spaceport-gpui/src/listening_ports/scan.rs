@@ -8,7 +8,8 @@
 
 use super::Error;
 use super::tunnel::Key;
-use crate::{Result, browser::WebUrl, usage::Host};
+use crate::{Result, browser::WebUrl};
+use spaceport_remote::Host;
 use std::{collections::HashMap, net::IpAddr};
 
 /// Listener lines read from one answer; the rest are ignored.

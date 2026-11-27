@@ -6735,8 +6735,6 @@ dependencies = [
  "spaceport-state-file",
  "spaceport-textfield",
  "spaceport-truncate",
- "spaceport-usage",
- "spaceport-web-url",
  "spaceport-widgets",
  "spaceport-words",
  "sparkle-updater",
@@ -6844,7 +6842,6 @@ dependencies = [
  "spaceport-i18n",
  "spaceport-motion",
  "spaceport-settings",
- "spaceport-usage",
  "spaceport-widgets",
  "thiserror 2.0.21",
 ]
@@ -6909,8 +6906,10 @@ dependencies = [
  "serde_json",
  "spaceport-client",
  "spaceport-i18n",
+ "tempfile",
  "thiserror 2.0.21",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -6934,7 +6933,6 @@ dependencies = [
  "spaceport-commands",
  "spaceport-i18n",
  "spaceport-lenient",
- "spaceport-usage",
  "tempfile",
  "thiserror 2.0.21",
  "toml 1.1.6+spec-1.1.0",
@@ -7034,20 +7032,6 @@ dependencies = [
  "spaceport-client",
  "unicode-segmentation",
  "unicode-width",
-]
-
-[[package]]
-name = "spaceport-usage"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "spaceport-client",
- "spaceport-i18n",
- "tempfile",
- "thiserror 2.0.21",
- "toml 1.1.6+spec-1.1.0",
- "uuid",
 ]
 
 [[package]]

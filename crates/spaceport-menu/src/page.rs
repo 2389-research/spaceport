@@ -3,8 +3,6 @@
 //! What a menu popup is currently showing, and the workspace actions a row
 //! can trigger. Closed sets, so a page is never a string tag.
 
-use spaceport_usage::Provider;
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Page {
     // keep-sorted start
@@ -57,8 +55,6 @@ pub enum Page {
     Tab,
     Themes,
     Update,
-    /// Plan usage details for one agent on the selected host.
-    Usage(Provider),
     /// A daemon refused the handshake until one side is updated.
     VersionMismatch,
     Workspace,

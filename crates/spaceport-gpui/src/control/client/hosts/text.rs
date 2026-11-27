@@ -1,9 +1,6 @@
 //! How host answers read in a terminal. Pure, so the layout is tested
 //! without an app; `finish` makes the app's text safe to print.
-use crate::control::protocol::{
-    app::HostInfo,
-    hosts::{Ports, Reply},
-};
+use crate::control::protocol::{app::HostInfo, hosts::Ports};
 use std::fmt::Write as _;
 
 pub(super) fn hosts(hosts: &[HostInfo]) -> String {
@@ -71,51 +68,6 @@ pub(super) fn ports(ports: &Ports) -> String {
             let _ = write!(text, " ({reason})");
         }
         text.push('\n');
-    }
-    if let Some(note) = note {
-        text.push_str(note);
-    }
-    text.trim_end().to_owned()
-}
-
-/// `2h 53m`, `5m`, `3d 4h`: the two largest units.
-pub(super) fn duration(seconds: u64) -> String {
-    let (days, hours, minutes) = (seconds / 86_400, seconds / 3600 % 24, seconds / 60 % 60);
-    match (days, hours) {
-        (0, 0) => format!("{minutes}m"),
-        (0, _) => format!("{hours}h {minutes}m"),
-        _ => format!("{days}d {hours}h"),
-    }
-}
-
-pub(super) fn usage(reply: &Reply) -> String {
-    let Reply::Usage { host, usage, note } = reply else {
-        return String::new();
-    };
-    let mut text = String::new();
-    if usage.is_empty() && note.is_none() {
-        let _ = writeln!(text, "Plan usage unavailable on {host}");
-    }
-    for provider in usage {
-        let _ = write!(text, "{}", provider.provider);
-        for part in [&provider.plan, &provider.account].into_iter().flatten() {
-            let _ = write!(text, " · {part}");
-        }
-        text.push('\n');
-        for window in &provider.windows {
-            let _ = write!(
-                text,
-                "  {:<12} {:>3.0}% used",
-                window.label, window.used_percent
-            );
-            if let Some(left) = window.resets_in_seconds {
-                let _ = write!(text, ", resets in {}", duration(left));
-            }
-            text.push('\n');
-        }
-        if let Some(error) = &provider.error {
-            let _ = writeln!(text, "  {error}");
-        }
     }
     if let Some(note) = note {
         text.push_str(note);

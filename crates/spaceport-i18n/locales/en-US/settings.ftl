@@ -142,7 +142,6 @@ settings-fonts-sidebar = Sidebar
 settings-fonts-tabs = Tabs
 settings-fonts-ui = Interface
 settings-fonts-all-row = All faces
-settings-status-usage = Usage
 settings-status-network-quality = Network latency and loss
 settings-status-network-quality-description = Times one TCP connect to 1.1.1.1:443 every 15 seconds from this machine, about a megabyte a day.
 settings-status-keep-awake = Keep awake

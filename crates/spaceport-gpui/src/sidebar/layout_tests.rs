@@ -643,7 +643,6 @@ pub(crate) fn fixture_window(
         notice_overflow: Default::default(),
         overview: Default::default(),
         viewport_width: 0.,
-        usage: Default::default(),
         network_quality_seen: 0,
         devices_overview: Default::default(),
         port_forwards: Default::default(),

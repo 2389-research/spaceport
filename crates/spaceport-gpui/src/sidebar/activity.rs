@@ -4,11 +4,8 @@
 //! what the window shows. Workspaces is the sidebar beside the terminals, as
 //! it was; every other section takes the window's body, keeping the bar,
 //! title bar, and status bar: Overview what needs the user on every host
-//! (`crate::overview`),
-//! Automations the unavailable job feed (`crate::automations`),
-//! and Usage the plan limits of every host (`crate::usage::section`).
-//! `[sidebar] activity_bar = false` turns the bar off, and `[sidebar]
-//! automations = false` leaves Automations off it. With the bar on, the
+//! (`crate::overview`). `[sidebar] activity_bar = false` turns the bar off.
+//! With the bar on, the
 //! sidebar toggle sits at the end of the Workspaces title, and collapsing the
 //! sidebar keeps the bar, with the compact rail and the toggle beside it.
 
@@ -45,8 +42,6 @@ fn label(panel: ActivityPanel) -> SharedString {
     match panel {
         ActivityPanel::Overview => fl!("sidebar-activity-overview"),
         ActivityPanel::Workspaces => fl!("sidebar-activity-workspaces"),
-        ActivityPanel::Automations => fl!("sidebar-activity-automations"),
-        ActivityPanel::Usage => fl!("sidebar-activity-usage"),
     }
     .into()
 }
@@ -55,8 +50,6 @@ fn icon(panel: ActivityPanel) -> &'static str {
     match panel {
         ActivityPanel::Overview => "icons/pulse.svg",
         ActivityPanel::Workspaces => "icons/terminal.svg",
-        ActivityPanel::Automations => "icons/automations.svg",
-        ActivityPanel::Usage => "icons/chart.svg",
     }
 }
 
@@ -72,7 +65,7 @@ pub(crate) struct Activity {
     /// The section the window left for a pane it opened, which Back
     /// returns to before walking the focus trail.
     pub(crate) return_to: Option<ActivityPanel>,
-    /// What holds the keyboard while Overview or Usage is shown, so typing
+    /// What holds the keyboard while Overview is shown, so typing
     /// never reaches a terminal the section hides.
     pub(crate) section_focus: Option<FocusHandle>,
 }
@@ -148,23 +141,9 @@ impl SpaceportWindow {
         self.config.sidebar_style.activity_bar
     }
 
-    /// Whether the bar lists `panel`. A section turned off in the settings
-    /// is not listed, and a window left on it shows Workspaces.
-    pub(crate) fn activity_panel_listed(&self, panel: ActivityPanel) -> bool {
-        match panel {
-            ActivityPanel::Automations => {
-                self.core_enabled() && self.config.sidebar_style.automations
-            }
-            _ => true,
-        }
-    }
-
-    /// The section the bar marks: the one picked, or Workspaces when that
-    /// one is no longer listed.
+    /// The section the bar marks.
     fn activity_panel(&self) -> ActivityPanel {
-        Some(self.activity.panel)
-            .filter(|panel| self.activity_panel_listed(*panel))
-            .unwrap_or_default()
+        self.activity.panel
     }
 
     /// Whether the bar leads the left column, whatever the sidebar's state:
@@ -233,9 +212,6 @@ impl SpaceportWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if !self.activity_panel_listed(panel) {
-            return;
-        }
         if panel == ActivityPanel::Workspaces && !self.sidebar_visible {
             self.toggle_sidebar();
         }
@@ -260,8 +236,6 @@ impl SpaceportWindow {
         let section = match self.activity_section()? {
             ActivityPanel::Workspaces => return None,
             ActivityPanel::Overview => self.render_overview(cx),
-            ActivityPanel::Automations => self.render_automations_section(cx),
-            ActivityPanel::Usage => self.render_usage_section(cx),
         };
         let focus = self.activity.section_focus.clone();
         Some(
@@ -364,9 +338,6 @@ impl SpaceportWindow {
             .overflow_y_scroll();
         let shown = self.activity_panel();
         for &panel in ActivityPanel::ALL {
-            if !self.activity_panel_listed(panel) {
-                continue;
-            }
             let state = if panel == shown {
                 BarState::Selected
             } else {
@@ -636,7 +607,5 @@ fn panel_selector(panel: ActivityPanel) -> &'static str {
     match panel {
         ActivityPanel::Overview => "activity-overview",
         ActivityPanel::Workspaces => "activity-workspaces",
-        ActivityPanel::Automations => "activity-automations",
-        ActivityPanel::Usage => "activity-usage",
     }
 }

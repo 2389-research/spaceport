@@ -18,16 +18,13 @@ pub(crate) use error::Error;
 #[cfg(test)]
 mod tests;
 
-use crate::{
-    Result,
-    usage::{Host, Shell},
-    worker_stop::Stop,
-};
+use crate::{Result, worker_stop::Stop};
 pub(crate) use render::{chips, close_button};
 #[cfg(test)]
 pub(crate) use scan::{Bind, Owner};
 pub(crate) use scan::{Link, Origin, Port, Ports, parse};
 use spaceport_client::ConnectTarget;
+use spaceport_remote::{Host, Shell};
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},

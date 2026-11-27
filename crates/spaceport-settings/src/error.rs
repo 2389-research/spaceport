@@ -72,8 +72,6 @@ pub enum Error {
     InvalidThemePair,
     #[error("theme must be a name, absolute path, or ~/ path")]
     InvalidThemePath,
-    #[error("usage must be a TOML table")]
-    InvalidUsageTable,
     #[error("worktrees.tint must be a #rgb or #rrggbb colour, not {0:?}")]
     InvalidWorktreeTint(String),
     #[error("zen.font_size must be finite and between 8 and 48 logical pixels")]
