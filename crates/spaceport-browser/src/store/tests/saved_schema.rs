@@ -155,13 +155,15 @@ fn unknown_kinds_places_and_members_keep_their_outcome() {
 }
 
 #[test]
-fn a_retired_tab_is_dropped_whatever_its_payload() {
+fn malformed_retired_payloads_trigger_file_recovery() {
     for location in [
         r#"{"kind":"web"}"#,
         r#"{"kind":"web","url":"file:///etc/passwd"}"#,
         r#"{"kind":"local","file":"index.html"}"#,
         r#"{"kind":"review","checkout":{"branch":7}}"#,
         r#"{"kind":"orchestrator","repo":"relative"}"#,
+        r#"{"kind":"orchestrator","repo":{"checkout":"relative"}}"#,
+        r#"{"kind":"review","checkout":{"branch":"main"}}"#,
         r#"{"kind":"code","file":{"path":"","line":-1}}"#,
     ] {
         let bytes = file(
@@ -171,16 +173,10 @@ fn a_retired_tab_is_dropped_whatever_its_payload() {
             ],
             "",
         );
-        let store = Store::restored_for_test(&bytes).unwrap();
-        assert_eq!(
-            store
-                .tabs()
-                .map(|tab| u64::from(tab.id))
-                .collect::<Vec<_>>(),
-            [0],
+        assert!(
+            matches!(Store::restored_for_test(&bytes), Err(Error::Json(_))),
             "{location}"
         );
-        assert_eq!(store.next, 2, "{location}");
     }
 }
 
