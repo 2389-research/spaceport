@@ -47,7 +47,9 @@ class TestflightRoute(unittest.TestCase):
         self.assertIn('contents: write', route['publish'])
         self.assertNotIn('contents: write', route['build'] + route['sign'])
         self.assertIn('check-tag-unmoved.sh', route['publish'])
-        self.assertIn('gh release upload', route['publish'])
+        upload = route['publish'].split('gh release upload', 1)[1].split('--repo', 1)[0]
+        for suffix in ('', '.sha256', '.json'):
+            self.assertIn(f'"Spaceport-$VERSION-ios.ipa{suffix}"', upload)
         self.assertIn('sha256sum -c "Spaceport-$VERSION-ios.ipa.sha256"', route['publish'])
         self.assertIn("\"$GITHUB_STEP_SUMMARY\"", route['publish'])
 
@@ -93,10 +95,11 @@ class SignerScript(unittest.TestCase):
         self.assertIn('security delete-keychain "$keychain"', script)
 
     def test_usage_and_version_refusals(self):
-        script = SCRIPT.read_text()
         calls = [
             (['bash', str(SCRIPT)], 'Usage: bash sign-ios.sh VERSION OUTPUT_DIR'),
             (['bash', str(SCRIPT), '1.2', str(ROOT)], 'Version must be YYYYMMDD.COUNTER'),
+            (['bash', str(SCRIPT), '20261127.100', str(ROOT)], 'iOS counter must be 1 through 99'),
+            (['bash', str(SCRIPT), '20261127.' + '9' * 64, str(ROOT)], 'iOS counter must be 1 through 99'),
         ]
         for command, message in calls:
             with self.subTest(command=command):
@@ -106,7 +109,6 @@ class SignerScript(unittest.TestCase):
                                              if not key.startswith(('APPLE_API_', 'IOS_', 'SPACEPORT_'))})
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn(message, result.stderr)
-        self.assertIn('version_check "$1"', script)
 
 
 if __name__ == '__main__':

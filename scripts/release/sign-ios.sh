@@ -11,7 +11,7 @@ set -E
 trap 'printf "sign-ios.sh: failed at line %d\n" "$LINENO" >&2' ERR
 source "$(dirname -- "$0")/common.sh"
 [[ $# -eq 2 ]] || fail 'Usage: bash sign-ios.sh VERSION OUTPUT_DIR'
-version_check "$1"
+ios_version_check "$1"
 [[ $(uname -s) == Darwin ]] || fail 'macOS required'
 [[ -d $2 ]] || fail 'Existing output directory required'
 for tool in base64 codesign jq openssl plutil security shasum unzip xcodebuild xcrun; do

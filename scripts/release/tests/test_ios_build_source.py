@@ -47,6 +47,21 @@ class BuildSource(unittest.TestCase):
                            INPUT_SHA=sha, GITHUB_OUTPUT=str(repo / 'outputs'))
                 return subprocess.run(['bash', '-c', command], cwd=repo, env=env, capture_output=True)
 
+            def manual(supplied_tag, version='20261127.1'):
+                output = repo / 'manual-outputs'
+                output.write_text('')
+                env = dict(os.environ, GITHUB_EVENT_NAME='workflow_dispatch', INPUT_TAG=supplied_tag,
+                           INPUT_VERSION=version, GITHUB_OUTPUT=str(output))
+                result = subprocess.run(['bash', '-c', command], cwd=repo, env=env, capture_output=True)
+                return result.returncode, output.read_text().splitlines()
+
+            self.assertNotEqual(manual(tag)[0], 0, 'Manual tag is older than the selected main commit')
+            self.assertNotEqual(manual('v20261127.2', '20261127.2')[0], 0, 'Missing tag')
+            self.assertNotEqual(manual('', '20261127.100')[0], 0, 'Counter does not fit the build number')
+            self.assertEqual(manual('', '20261127.99'), (0, ['version=20261127.99', 'tag=', 'sha=' + latest]))
+            git('tag', '-f', '-a', tag, latest, '-m', 'Current main')
+            self.assertEqual(manual(tag), (0, ['version=20261127.1', 'tag=' + tag, 'sha=' + latest]))
+
             self.assertNotEqual(select(side).returncode, 0, 'Tag points elsewhere')
             git('tag', '-f', tag, side)
             self.assertNotEqual(select(side).returncode, 0, 'Tag selects an unmerged commit')

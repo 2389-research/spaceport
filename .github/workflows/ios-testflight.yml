@@ -74,16 +74,19 @@ jobs:
             tag="$INPUT_TAG"
             version="$INPUT_VERSION"
           fi
-          version_check "$version"
+          ios_version_check "$version"
           [[ -z "$tag" || "$tag" == "v$version" ]] || fail "The release tag must be v$version, not $tag"
-          if [[ "$GITHUB_EVENT_NAME" == workflow_run ]]; then
-            [[ $(git rev-parse --verify "refs/tags/$tag^{commit}") == "$INPUT_SHA" ]] ||
-              fail 'The release tag must name the triggering commit'
-            git merge-base --is-ancestor "$INPUT_SHA" refs/remotes/origin/main ||
-              fail 'The release commit must belong to main'
-            git checkout --detach "$INPUT_SHA"
-          fi
           sha=$(git rev-parse 'HEAD^{commit}')
+          if [[ "$GITHUB_EVENT_NAME" == workflow_run ]]; then
+            sha="$INPUT_SHA"
+          fi
+          if [[ -n "$tag" ]]; then
+            [[ $(git rev-parse --verify "refs/tags/$tag^{commit}") == "$sha" ]] ||
+              fail 'The release tag must name the selected commit'
+            git merge-base --is-ancestor "$sha" refs/remotes/origin/main ||
+              fail 'The release commit must belong to main'
+            git checkout --detach "$sha"
+          fi
           {
             printf 'version=%s\n' "$version"
             printf 'tag=%s\n' "$tag"
@@ -215,7 +218,7 @@ jobs:
           sha256sum -c "Spaceport-$VERSION-ios.ipa.sha256"
           jq -e '.testflight == "accepted"' "Spaceport-$VERSION-ios.ipa.json" > /dev/null
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            printf '### iOS TestFlight %s\n\nThe .ipa and its checksum are attached to the %s release.\n' \
+            printf '### iOS TestFlight %s\n\nPublishing the .ipa, checksum and upload receipt to the %s release.\n' \
               "$VERSION" "$TAG" >> "$GITHUB_STEP_SUMMARY"
           else
             [[ "$GITHUB_EVENT_NAME" != workflow_run ]] || {
@@ -226,11 +229,12 @@ jobs:
               "$VERSION" "$TAG" >> "$GITHUB_STEP_SUMMARY"
           fi
       # The upload happened in the signing job; this job publishes nothing else.
-      - name: Attach the .ipa and its checksum to the tag's release
+      - name: Attach the .ipa, checksum and upload receipt to the release
         run: |
           set -euo pipefail
           cd target/ios-release
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             gh release upload "$TAG" "Spaceport-$VERSION-ios.ipa" "Spaceport-$VERSION-ios.ipa.sha256" \
+              "Spaceport-$VERSION-ios.ipa.json" \
               --repo "$GITHUB_REPOSITORY"
           fi

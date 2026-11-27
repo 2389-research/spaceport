@@ -178,8 +178,8 @@ mobile route: it publishes no desktop artifact, and it changes neither the macOS
 nor the Android route. It runs when a tag-push run of `macOS signed preview` succeeds,
 because that run's `publish` job creates the tag's release and this route attaches its
 `.ipa` there. It never runs for a pull request or another repository. A manual run on main
-takes an explicit `version` and an optional `tag`: with a tag whose release already exists
-it attaches the `.ipa`, and otherwise it keeps the `.ipa` as a workflow artifact.
+takes an explicit `version`. A supplied tag must exist and point to the selected main commit.
+With no tag, the workflow uploads to TestFlight and keeps the files as workflow artifacts.
 
 For an automatic upload, the workflow checks the release tag against the triggering commit
 and confirms the commit belongs to `main` before building its code.
@@ -188,7 +188,8 @@ and confirms the commit belongs to `main` before building its code.
 that produced — `mobile/.build/SpaceportMobileCore.xcframework`, `mobile/apple/Generated`
 and the generated `SpaceportMobile.xcodeproj` — under a `SHA256SUMS`. `sign` downloads
 only that checksummed artifact and holds the credentials. `publish` re-proves the tag and
-attaches `Spaceport-VERSION-ios.ipa` and its `.sha256`; it publishes nothing else.
+attaches `Spaceport-VERSION-ios.ipa`, its `.sha256` checksum, and its `.json` upload receipt
+to the GitHub release if it exists.
 
 The iOS simulator suite is a **skipped gate**, not a silent pass. `mobile/README.md`'s
 verification target is Product → Test inside Xcode, whose live tests need a disposable SSH
@@ -199,7 +200,7 @@ absence with `TODO(ios-simulator-gate)` and runs nothing in its place.
 `bash scripts/release/sign-ios.sh VERSION OUTPUT_DIR` performs signing, verification and
 the upload:
 
-- VERSION is a calendar version. The iOS build number is that version as
+- VERSION is a calendar version with a counter from 1 through 99. The iOS build number is
   `YYYYMMDD*100+COUNTER`, the rule `android-request.py` applies to the Android
   `versionCode`, passed to xcodebuild as `CURRENT_PROJECT_VERSION` so every later tag
   uploads a greater TestFlight build. `MARKETING_VERSION` stays `0.1` from
@@ -230,8 +231,9 @@ the upload:
 
 ### Owner switch-on checklist
 
-Nothing here runs until the `ios-testflight` environment exists, so pushes and manual runs
-fail closed on missing inputs instead of uploading something unverified.
+The build job can run before you configure signing. GitHub can create a missing environment
+when a job references it. Missing signing inputs stop the sign job before upload.
+[GitHub deployment environments](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
 
 1. In **Settings → Environments**, create the environment `ios-testflight`. Allow `main`
    through its deployment rules: under `workflow_run` the job's ref is main, not the tag,
@@ -252,11 +254,11 @@ fail closed on missing inputs instead of uploading something unverified.
    | `APPLE_API_KEY_ID` | That key's ID. Reuse the macOS route's value. |
    | `APPLE_API_ISSUER_ID` | That key's issuer ID. Reuse the macOS route's value. |
 
-4. The App Store Connect API key needs the **Developer** role or better to manage
-   provisioning profiles, which the UUID form needs. Uploading a build with
-   `altool --upload-app` needs **App Manager** or **Admin**: a key created for macOS
-   notarization can be Developer-only, which notarizes but cannot upload. Raise that key's
-   role or add a second key and put it in this environment before the first tag.
+4. Use a **Developer** App Store Connect API key for this upload. The base64 profile route
+   uses pre-issued profiles. An Account Holder or Admin can create those profiles separately.
+   TestFlight tester management has its own role requirements.
+   [Apple build uploads](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds/)
+   · [App Store distribution profiles](https://developer.apple.com/help/account/provisioning-profiles/create-an-app-store-provisioning-profile/)
 5. In the developer account, confirm the App Store Connect record
    `ai.2389.spaceport.mobile` exists. Enable `group.ai.2389.spaceport.mobile.widget`
    for each shipped bundle identifier. Create a distribution profile for each target after
@@ -271,13 +273,9 @@ fail closed on missing inputs instead of uploading something unverified.
    git push origin refs/tags/v20261218.1
    ```
 
-   The macOS preview route publishes the release, then this route builds, signs, uploads to
-   TestFlight and attaches the `.ipa` and its checksum. The `sign` job's summary and the
-   `.ipa.json` receipt state the bundle id, build number and upload result; TestFlight
-   processing continues in App Store Connect after the job turns green. A manual run on the
-   default branch builds the commit it checks out and uploads the version it is given; when
-   it also names a tag whose release exists it attaches the `.ipa` there, and otherwise the
-   `.ipa` stays a workflow artifact.
+   After the macOS preview publishes the release, this workflow uploads the build to TestFlight
+   and attaches the IPA, checksum and upload receipt to the release. The receipt and the
+   signing job summary record Apple's upload result. Processing continues in App Store Connect.
 
 A rerun of the same tag rebuilds and re-uploads the same build number, which Apple refuses.
 Use a new version instead, and inspect the retained `.ipa` artifact and job log first. No
