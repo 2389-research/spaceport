@@ -510,6 +510,21 @@ waits for approval, approve it and confirm the platform jobs execute, then push
 another contributor commit and check approval is required again. Offline tests
 cover job eligibility and credential declarations, not GitHub's approval service.
 
+## Installation isolation
+
+`install-isolation.py` records where a released app may keep state and what the
+inherited Sheprd/Herdr installation owns, then compares two snapshots taken
+around a real install. It installs nothing, prints sizes and digests rather than
+file contents, and exits 1 when a surface Spaceport does not own changed. The
+procedure, the surfaced paths and the gates still needing a native run are in
+`docs/spaceport/evidence/c5-install-isolation.md`:
+
+```sh
+python3 scripts/release/install-isolation.py surfaces
+python3 scripts/release/install-isolation.py snapshot > before.json
+python3 scripts/release/install-isolation.py compare before.json after.json
+```
+
 ## Shared release helpers
 
 `_release_common.py` holds the rules more than one release script applies:
