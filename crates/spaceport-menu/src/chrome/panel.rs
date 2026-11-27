@@ -16,7 +16,7 @@ use spaceport_widgets::direction::{self, Logical};
 pub fn panel<K>(hosts: &Hosts<'_, K>, page: Page, layer: &Layer) -> Stateful<Div> {
     let panel = panel_anchored(hosts, page, layer);
     let panel = panel_sized(hosts, page, layer, panel);
-    panel_surface(hosts, layer, panel)
+    panel_surface(hosts, page, layer, panel)
 }
 
 /// Where the panel hangs and how much room it may take: a popover beside what
@@ -66,6 +66,29 @@ fn panel_anchored<K>(hosts: &Hosts<'_, K>, page: Page, layer: &Layer) -> Statefu
                     .absolute()
                     .inset_0(),
                 )
+        })
+        .when(matches!(page, Page::Usage(_)), |panel| {
+            // Rises from the status bar segment that opened it, kept inside
+            // the window and clear of the titlebar.
+            let chrome = px(chrome);
+            let width = px(hosts.metrics.usage_width)
+                .min((layer.viewport.width - px(2. * MENU_MARGIN)).max(px(0.)));
+            // The segment's own x, whichever side the bar starts on.
+            panel
+                .absolute()
+                .left(
+                    anchor
+                        .x
+                        .min(layer.viewport.width - width - px(MENU_MARGIN))
+                        .max(px(MENU_MARGIN)),
+                )
+                .bottom((layer.viewport.height - anchor.y).max(px(MENU_MARGIN)) - layer.lift)
+                .w(width)
+                .max_h((anchor.y - chrome - px(MENU_MARGIN)).max(px(60.)))
+                .flex()
+                .flex_col()
+                .overflow_hidden()
+                .shadow_lg()
         })
 }
 
@@ -125,7 +148,10 @@ fn panel_sized<K>(
             },
         )
         .when(
-            !layer.footer_anchored && !layer.pointer_anchored && !matches!(page, Page::Dialog(_)),
+            !layer.footer_anchored
+                && !matches!(page, Page::Usage(_))
+                && !layer.pointer_anchored
+                && !matches!(page, Page::Dialog(_)),
             |panel| {
                 panel
                     .w((layer.viewport.width - px(32.))
@@ -153,6 +179,7 @@ fn panel_sized<K>(
                     | Page::Palette
                     | Page::AddDevice
                     | Page::AddWsl
+                    | Page::Usage(_)
                     | Page::RenameDevice
                     | Page::ForwardPort
             ),
@@ -215,7 +242,12 @@ fn panel_sized<K>(
 }
 
 /// The panel's own surface, over whatever it holds.
-fn panel_surface<K>(hosts: &Hosts<'_, K>, layer: &Layer, panel: Stateful<Div>) -> Stateful<Div> {
+fn panel_surface<K>(
+    hosts: &Hosts<'_, K>,
+    page: Page,
+    layer: &Layer,
+    panel: Stateful<Div>,
+) -> Stateful<Div> {
     let theme = hosts.theme;
     let text = &hosts.text;
     let panel = panel
@@ -229,10 +261,11 @@ fn panel_surface<K>(hosts: &Hosts<'_, K>, layer: &Layer, panel: Stateful<Div>) -
         .line_height(px(text.line_height))
         .when(!layer.rises, |panel| panel.opacity(layer.shown))
         // A popover drops from the pointer that opened it; a dialog rises.
-        // Footer panels have slid already, by their own edge.
-        .when(!layer.footer_anchored, |panel| {
-            panel.top(if layer.dims { layer.lift } else { -layer.lift })
-        })
+        // Footer and usage panels have slid already, by their own edge.
+        .when(
+            !layer.footer_anchored && !matches!(page, Page::Usage(_)),
+            |panel| panel.top(if layer.dims { layer.lift } else { -layer.lift }),
+        )
         .occlude()
         .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
         .on_mouse_down(MouseButton::Right, |_, _, cx| cx.stop_propagation())

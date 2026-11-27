@@ -9,16 +9,25 @@ pub enum ActivityPanel {
     #[default]
     Workspaces,
     Overview,
+    Automations,
+    Usage,
 }
 
 impl ActivityPanel {
-    pub const ALL: &[Self] = &[Self::Workspaces, Self::Overview];
+    pub const ALL: &[Self] = &[
+        Self::Workspaces,
+        Self::Overview,
+        Self::Automations,
+        Self::Usage,
+    ];
 
     /// The name the CLI and the preferences file use.
     pub fn name(self) -> &'static str {
         match self {
             Self::Overview => "overview",
             Self::Workspaces => "workspaces",
+            Self::Automations => "automations",
+            Self::Usage => "usage",
         }
     }
 

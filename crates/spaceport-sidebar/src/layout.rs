@@ -328,10 +328,14 @@ impl SidebarLook {
         }
     }
 
-    /// Paints the focused agent behind its contents in the list and the rail.
-    pub fn agent_selection(&self, row: Div, theme: &Theme) -> Div {
-        row.rounded(px(self.density.radius))
-            .bg(rgb(agent_selection_background(theme)))
+    /// Frames the focused agent without moving its contents.
+    pub fn agent_outline(&self, theme: &Theme) -> Div {
+        div()
+            .absolute()
+            .inset_0()
+            .rounded(px(self.density.radius))
+            .border_2()
+            .border_color(rgb(theme.ink(theme.primary())))
     }
 
     /// Joins `row` to the hover group its highlight follows.
@@ -373,13 +377,6 @@ impl SidebarLook {
         let layer = layer
             .debug_selector(|| format!("highlight-{key}"))
             .rounded(px(raised.radius));
-        // The row itself paints the selected agent. Keep the inner frame's
-        // geometry so selection cannot shift the rail's icon columns.
-        if state.agent && focused {
-            return layer.when(self.density.highlight == Highlight::Outline, |layer| {
-                layer.border_1().border_color(rgba(0))
-            });
-        }
         match self.density.highlight {
             Highlight::Fill => {
                 let active = raised.fill;
@@ -430,11 +427,6 @@ impl SidebarLook {
             },
         }
     }
-}
-
-/// A neutral step from the sidebar toward its text, in either color scheme.
-pub(crate) fn agent_selection_background(theme: &Theme) -> u32 {
-    spaceport_settings::mix(theme.sidebar_background(), theme.foreground, 14)
 }
 
 /// Fill, stroke, and corner radius shared by a workspace badge and a host header.
@@ -492,9 +484,6 @@ impl SidebarLook {
         (state, host): (RowState, HostMark),
         theme: &Theme,
     ) -> Div {
-        let row = row.when(state.agent && state.selected, |row| {
-            self.agent_selection(row, theme)
-        });
         match state.lift {
             RowLift::Resting => self.washed(
                 self.hover_group(row),

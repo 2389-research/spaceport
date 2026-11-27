@@ -1,90 +1,33 @@
-// ABOUTME: Implements Settings grid interactions.
-// ABOUTME: Connects native controls to Settings state and persistence.
-//! Virtual row geometry and bounded, single-flight thumbnail preparation.
-use super::*;
-use crate::direction::Logical;
-use std::{collections::VecDeque, ops::Range};
+// ABOUTME: Loads the palettes the Theme page's card grid draws.
+// ABOUTME: Reports where a card painted for the native theme checks.
+//! The card grid's palettes: which ones a render needs, the bounded background
+//! load that prepares them, and the bounds a native test clicks by. The grid
+//! itself is the crate's; this window reads the themes off a worker.
+// i18n: migrated
+use super::{Scope, SettingsWindow};
+use crate::herdr_settings;
+use gpui::{prelude::*, *};
+use std::ops::Range;
 
-const CACHE_LIMIT: usize = 64;
+/// How many palettes one background batch prepares.
 const BATCH: usize = 12;
 
-pub(super) struct Grid {
-    pub columns: usize,
-    epoch: u64,
-    queued: bool,
-    pub(super) running: bool,
-    visible: Range<usize>,
-    palettes: VecDeque<(Choice, Option<Theme>)>,
-}
-
-impl Default for Grid {
-    fn default() -> Self {
-        Self {
-            columns: 2,
-            epoch: 0,
-            queued: false,
-            running: false,
-            visible: 0..0,
-            palettes: VecDeque::new(),
-        }
-    }
-}
-
-impl Grid {
-    pub fn invalidate(&mut self) {
-        self.epoch = self.epoch.wrapping_add(1);
-        self.palettes.clear();
-    }
-
-    fn finish(&mut self, epoch: u64, palettes: Vec<(Choice, Option<Theme>)>) {
-        self.running = false;
-        if self.epoch != epoch {
-            return;
-        }
-        for palette in palettes {
-            if self.palettes.len() == CACHE_LIMIT {
-                self.palettes.pop_front();
-            }
-            self.palettes.push_back(palette);
-        }
-    }
-}
-
-pub(super) fn columns(width: f32) -> usize {
-    ((width + 6.) / 174.).floor().clamp(2., 6.) as usize
-}
-
-pub(super) fn navigate(index: usize, count: usize, columns: usize, up: bool) -> usize {
-    if up {
-        index.saturating_sub(columns)
-    } else {
-        (index + columns).min(count.saturating_sub(1))
-    }
-}
+/// The crate's grid geometry, at the path this window names it by.
+pub(super) use spaceport_settings_window::themes::grid::{columns, navigate};
 
 impl SettingsWindow {
-    fn visible_palettes_cached(&self) -> bool {
-        let grid = &self.themes.grid;
-        self.themes
-            .filtered
-            .get(grid.visible.clone())
-            .unwrap_or_default()
-            .iter()
-            .all(|name| grid.palettes.iter().any(|(cached, _)| cached == name))
-    }
-
     /// True once no palette load is pending and every visible card has one.
     #[cfg(all(feature = "integration-test", target_os = "macos"))]
     pub(in crate::settings_window) fn grid_ready(&self) -> bool {
         let grid = &self.themes.grid;
-        !grid.running && !grid.queued && self.visible_palettes_cached()
+        !grid.running && !grid.queued && grid.covers(&self.themes.filtered)
     }
 
     pub(super) fn schedule_grid_palettes(&mut self, rows: Range<usize>, cx: &mut Context<Self>) {
         let columns = self.themes.grid.columns;
         self.themes.grid.visible =
             rows.start * columns..(rows.end * columns).min(self.themes.filtered.len());
-        if self.visible_palettes_cached() {
+        if self.themes.grid.covers(&self.themes.filtered) {
             return;
         }
         let grid = &mut self.themes.grid;
@@ -114,7 +57,7 @@ impl SettingsWindow {
             .get(grid.visible.clone())
             .unwrap_or_default()
             .iter()
-            .filter(|name| !grid.palettes.iter().any(|(cached, _)| cached == *name))
+            .filter(|choice| grid.palette(choice).is_none())
             .take(BATCH)
             .cloned()
             .collect();
@@ -163,47 +106,6 @@ impl SettingsWindow {
         })
         .detach();
     }
-
-    pub(super) fn grid_thumbnail(&self, choice: &Choice, index: usize) -> Div {
-        let palette = self
-            .themes
-            .grid
-            .palettes
-            .iter()
-            .find(|(cached, _)| cached == choice);
-        let thumbnail = div()
-            .debug_selector(move || format!("settings-theme-thumbnail-{index}"))
-            .h(px(26.))
-            .flex_none()
-            .w_full()
-            .rounded(px(3.))
-            .overflow_hidden();
-        match palette {
-            Some((_, Some(theme))) => thumbnail
-                .bg(rgb(theme.background))
-                .text_color(rgb(theme.foreground))
-                .px(px(4.))
-                .row()
-                .items_center()
-                .gap(px(3.))
-                // A glyph sample, the same in every language.
-                .child(div().text_size(px(10.)).child("Aa")) // i18n: data
-                .children(
-                    theme.palette[..8]
-                        .iter()
-                        .map(|color| div().flex_1().min_w_0().h(px(9.)).bg(rgb(*color))),
-                ),
-            _ => thumbnail
-                .bg(rgb(self.theme.surface))
-                .text_color(rgb(self.theme.subtext()))
-                .text_size(px(10.))
-                .child(if palette.is_some() {
-                    fl!("settings-theme-thumbnail-unavailable")
-                } else {
-                    fl!("settings-theme-thumbnail-loading")
-                }),
-        }
-    }
 }
 
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
@@ -240,13 +142,11 @@ impl SettingsWindow {
             .into_iter()
             .flat_map(|bounds| bounds.0.iter())
             .map(|(index, bounds)| {
-                let settled = self.themes.filtered.get(*index).is_some_and(|name| {
-                    self.themes
-                        .grid
-                        .palettes
-                        .iter()
-                        .any(|(cached, _)| cached == name)
-                });
+                let settled = self
+                    .themes
+                    .filtered
+                    .get(*index)
+                    .is_some_and(|choice| self.themes.grid.palette(choice).is_some());
                 (*index, *bounds, settled)
             })
             .collect()

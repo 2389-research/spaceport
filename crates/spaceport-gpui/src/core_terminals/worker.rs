@@ -68,31 +68,16 @@ pub(crate) struct Link {
 impl Link {
     #[cfg(test)]
     pub(crate) fn for_test() -> Self {
-        Self::test_queue(MAX_COMMANDS).0
+        let (commands, _queue) = std::sync::mpsc::sync_channel(MAX_COMMANDS);
+        Self {
+            commands,
+            mailbox: Arc::new(Mailbox::default()),
+        }
     }
 
-    #[cfg(test)]
-    pub(super) fn test_queue(capacity: usize) -> (Self, std::sync::mpsc::Receiver<Command>) {
-        let (commands, queue) = std::sync::mpsc::sync_channel(capacity);
-        (
-            Self {
-                commands,
-                mailbox: Arc::new(Mailbox::default()),
-            },
-            queue,
-        )
-    }
-
-    /// Whether the command entered the worker queue.
-    pub(crate) fn send(&self, command: Command) -> bool {
-        use std::sync::mpsc::TrySendError;
-        match self.commands.try_send(command) {
-            Ok(()) => true,
-            Err(TrySendError::Full(_)) => {
-                tracing::warn!("Command queue full for a herdr-core terminal");
-                false
-            }
-            Err(TrySendError::Disconnected(_)) => false,
+    pub(crate) fn send(&self, command: Command) {
+        if let Err(error) = self.commands.try_send(command) {
+            tracing::warn!(?error, "Dropped input for a herdr-core terminal");
         }
     }
 }

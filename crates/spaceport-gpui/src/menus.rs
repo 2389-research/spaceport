@@ -36,7 +36,7 @@ pub(crate) fn install(cx: &mut App) {
         .try_global::<crate::app::InitialAppearance>()
         .map_or_else(
             || menus(&Config::default()),
-            |appearance| menus(&appearance.config),
+            |appearance| menus(&appearance.shown.config),
         );
     for menu in &mut menus {
         for item in &mut menu.items {

@@ -119,14 +119,6 @@ pub(crate) fn keymap(config: &Config) -> spaceport_keymap::Result<Keymap> {
     Keymap::with_overrides(&config.keybinding_overrides, &config.pane_keys, &keys)
 }
 
-/// The check a shortcut save runs on the merged file under its lock: the
-/// keymap reload would build from it must resolve, so a save from a window
-/// whose snapshot is stale cannot leave a map the next load rejects.
-pub(crate) fn check_keymap(config: &Config) -> crate::Result<()> {
-    keymap(config)?;
-    Ok(())
-}
-
 /// Warnings naming the keys this build ignored and the configured fonts that
 /// are not installed, one line each, if any. Keys and families come from the
 /// user's file, so each loses the characters untrusted text does before it

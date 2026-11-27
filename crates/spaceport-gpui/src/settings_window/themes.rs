@@ -11,13 +11,16 @@ use crate::{
     search_input::{Changed, SearchInput},
 };
 use gpui::{prelude::*, *};
+use spaceport_settings::Appearance;
 pub(super) use spaceport_settings::theme::Scope;
-use spaceport_settings::theme::filter_names;
+// The theme browser's own values, state and paint, which
+// `spaceport-settings-window` draws.
+use spaceport_settings_window::themes as browser;
+pub(super) use spaceport_settings_window::themes::grid::Grid;
+pub(super) use spaceport_settings_window::themes::{Choice, ROW_HEIGHT, Sources};
 mod appearance;
 mod grid;
 mod system;
-
-const ROW_HEIGHT: f32 = 80.;
 
 #[derive(Clone)]
 pub(super) struct ThemeIntent {
@@ -49,19 +52,12 @@ type ThemeResolver = dyn Fn(&str) -> crate::Result<Theme> + Send + Sync;
 type ThemeWriter =
     dyn Fn(String, Option<herdr_settings::Settings>) -> crate::Result<()> + Send + Sync;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct Choice {
-    pub scope: Scope,
-    pub name: String,
-}
-
 pub(super) struct ThemeBrowser {
     pub(super) search: Entity<SearchInput>,
     _subscription: Subscription,
     names: Vec<String>,
     pub(super) filtered: Vec<Choice>,
-    pub(super) ghostty_enabled: bool,
-    pub(super) herdr_enabled: bool,
+    pub(super) sources: Sources,
     query: String,
     selected: Option<usize>,
     scroll: UniformListScrollHandle,
@@ -78,7 +74,7 @@ pub(super) struct ThemeBrowser {
     /// The card under the pointer; main windows show it until it leaves.
     hovered: Option<Choice>,
     contrast: Contrast,
-    grid: grid::Grid,
+    grid: Grid,
     /// Which side of a theme that follows the system the grid edits.
     pub(super) editing_light: bool,
 }
@@ -104,8 +100,7 @@ impl ThemeBrowser {
             _subscription: subscription,
             names: Vec::new(),
             filtered: Vec::new(),
-            ghostty_enabled: true,
-            herdr_enabled: true,
+            sources: Sources::ALL,
             query: String::new(),
             selected: None,
             scroll: UniformListScrollHandle::new(),
@@ -121,7 +116,7 @@ impl ThemeBrowser {
             preview_error: None,
             hovered: None,
             contrast: Contrast::Standard,
-            grid: grid::Grid::default(),
+            grid: Grid::default(),
             editing_light: false,
         }
     }
@@ -130,39 +125,10 @@ impl ThemeBrowser {
         self.filtered.get(self.selected?).cloned()
     }
 
-    fn source_enabled(&self, scope: Scope) -> bool {
-        match scope {
-            Scope::App => self.ghostty_enabled,
-            Scope::Herdr => self.herdr_enabled,
-        }
-    }
-
     fn filter(&mut self, preserve: Option<&Choice>) {
         self.grid.invalidate();
-        self.filtered.clear();
-        for scope in [Scope::App, Scope::Herdr] {
-            if !self.source_enabled(scope) {
-                continue;
-            }
-            let names = match scope {
-                Scope::App => filter_names(self.names.iter().map(String::as_str), &self.query),
-                Scope::Herdr => {
-                    filter_names(herdr_settings::THEME_NAMES.iter().copied(), &self.query)
-                }
-            };
-            self.filtered
-                .extend(names.into_iter().map(|name| Choice { scope, name }));
-        }
-        self.filtered.sort_by_cached_key(|choice| {
-            (
-                choice.name.to_lowercase(),
-                choice.scope == Scope::Herdr,
-                choice.name.clone(),
-            )
-        });
-        self.selected = preserve
-            .and_then(|choice| self.filtered.iter().position(|item| item == choice))
-            .or_else(|| (!self.filtered.is_empty()).then_some(0));
+        self.filtered = browser::listing(&self.names, &self.query, self.sources);
+        self.selected = browser::chosen(&self.filtered, preserve);
         self.scroll.scroll_to_item(
             self.selected.unwrap_or(0) / self.grid.columns,
             ScrollStrategy::Top,
@@ -496,10 +462,11 @@ impl SettingsWindow {
             .try_global::<crate::app::InitialAppearance>()
             .cloned()
             .unwrap_or_default();
-        appearance.config.theme = self.config.theme.clone();
-        appearance.config.contrast = self.config.contrast;
-        appearance.theme = self.theme.clone();
-        crate::log_window::set_appearance(&appearance.config, &appearance.theme, cx);
+        appearance.shown.config.theme = self.config.theme.clone();
+        appearance.shown.config.contrast = self.config.contrast;
+        appearance.shown.theme = self.theme.clone();
+        let Appearance { config, theme } = &appearance.shown;
+        crate::log_window::set_appearance(config, theme, cx);
         cx.set_global(appearance);
         self.themes.search.update(cx, |input, cx| {
             input.set_appearance(self.config.ui.clone(), self.theme.clone(), cx)
@@ -538,9 +505,8 @@ impl SettingsWindow {
             .iter()
             .map(|name| (*name).into())
             .collect();
-        self.themes.names.extend(self.selected_theme_names());
-        self.themes.names.sort();
-        self.themes.names.dedup();
+        let selected = self.selected_theme_names();
+        browser::merged(&mut self.themes.names, selected);
         self.themes.filter(Some(&Choice {
             scope: Scope::App,
             name: self.edited_theme().to_owned(),
@@ -555,17 +521,8 @@ impl SettingsWindow {
 
     pub(super) fn sync_theme_browser(&mut self, cx: &mut Context<Self>) {
         self.themes.contrast = self.config.contrast;
-        let missing: Vec<_> = self
-            .selected_theme_names()
-            .into_iter()
-            .filter(|name| !self.themes.names.contains(name))
-            .collect();
-        if !missing.is_empty() {
-            self.themes.names.extend(missing);
-            self.themes
-                .names
-                .sort_by_cached_key(|name| (name.to_lowercase(), name.clone()));
-        }
+        let chosen = self.selected_theme_names();
+        browser::merged(&mut self.themes.names, chosen);
         let selected = self.themes.choice();
         self.themes.filter(selected.as_ref());
         self.themes.search.update(cx, |search, cx| {
@@ -589,10 +546,12 @@ impl SettingsWindow {
             let _ = this.update(cx, |this, cx| {
                 this.themes.discovering = false;
                 match result {
-                    Ok(mut names) => {
-                        names.extend(this.selected_theme_names());
-                        names.retain(|name| name != FOLLOW_HERDR);
-                        names.sort_by_cached_key(|name| (name.to_lowercase(), name.clone()));
+                    Ok(names) => {
+                        let mut names: Vec<String> = names
+                            .into_iter()
+                            .filter(|name| name != FOLLOW_HERDR)
+                            .collect();
+                        browser::merged(&mut names, this.selected_theme_names());
                         names.dedup();
                         let selected = this.themes.choice();
                         this.themes.names = names;
@@ -618,12 +577,10 @@ impl SettingsWindow {
 
     /// Chooses which theme libraries the grid lists. Neither is never valid.
     pub(super) fn set_theme_sources(&mut self, ghostty: bool, herdr: bool, cx: &mut Context<Self>) {
-        if !ghostty && !herdr {
+        if !self.themes.sources.set(ghostty, herdr) {
             return;
         }
         let selected = self.themes.choice();
-        self.themes.ghostty_enabled = ghostty;
-        self.themes.herdr_enabled = herdr;
         self.themes.filter(selected.as_ref());
         self.request_theme_preview(cx);
     }

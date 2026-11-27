@@ -143,19 +143,21 @@ error InvalidValue("POINTS (8-48)"): Invalid POINTS (8-48)
 $ ui font-size big
 error InvalidValue("POINTS (8-48)"): Invalid POINTS (8-48)
 $ ui panel
-error MissingArgument { command: "ui", what: "workspaces|overview" }: ui requires workspaces|overview
+error MissingArgument { command: "ui", what: "workspaces|overview|automations|usage" }: ui requires workspaces|overview|automations|usage
 $ ui panel workspaces
 json=false window=none {"method":"ui","op":{"op":"panel","panel":"workspaces"}}
 $ ui panel overview
 json=false window=none {"method":"ui","op":{"op":"panel","panel":"overview"}}
-$ ui panel overview --json --window 5
-json=true window=5 {"method":"ui","op":{"op":"panel","panel":"overview"}}
+$ ui panel automations
+json=false window=none {"method":"ui","op":{"op":"panel","panel":"automations"}}
 $ ui panel usage
-error InvalidValue("workspaces|overview"): Invalid workspaces|overview
+json=false window=none {"method":"ui","op":{"op":"panel","panel":"usage"}}
+$ ui panel usage --json --window 5
+json=true window=5 {"method":"ui","op":{"op":"panel","panel":"usage"}}
 $ ui panel dashboard
-error InvalidValue("workspaces|overview"): Invalid workspaces|overview
+error InvalidValue("workspaces|overview|automations|usage"): Invalid workspaces|overview|automations|usage
 $ ui panel security
-error InvalidValue("workspaces|overview"): Invalid workspaces|overview
+error InvalidValue("workspaces|overview|automations|usage"): Invalid workspaces|overview|automations|usage
 $ ui explode
 error UnknownCommand { family: "ui", command: "explode" }: Unknown ui command: explode
 $ ui sidebar on extra

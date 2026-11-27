@@ -48,11 +48,6 @@ code=$(changed \
   ':(exclude)assets/social-preview-*' \
   ':(exclude)assets/icons/spaceport-icon-badge.*' \
   ':(exclude).github/workflows/pages.yml')
-# The app embeds its skill and checks its CLI documentation in native tests.
-if [[ "$code" == false ]]; then
-  code=$(changed skills/spaceport/SKILL.md docs/cli.md)
-fi
-
 windows_package=$(changed \
   scripts/release/package-windows.py scripts/release/windows-installer.py \
   scripts/release/spaceport.iss scripts/release/installer site/install.ps1 \

@@ -37,7 +37,7 @@ pub(super) fn fixture(window: &mut Window, cx: &mut Context<SettingsWindow>) -> 
 fn source_chips_preserve_search_identity_and_draft_without_writing(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(fixture);
     view.update(cx, |view, cx| {
-        assert!(view.themes.ghostty_enabled && view.themes.herdr_enabled);
+        assert!(view.themes.sources.ghostty && view.themes.sources.herdr);
         assert_eq!(
             view.themes.filtered.len(),
             400 + herdr_settings::THEME_NAMES.len()
@@ -90,8 +90,8 @@ fn source_chips_preserve_search_identity_and_draft_without_writing(cx: &mut Test
         cx.simulate_click(bounds.center(), Modifiers::default());
         cx.update(|window, cx| window.draw(cx).clear(cx));
         view.read_with(cx, |view, cx| {
-            assert_eq!(view.themes.ghostty_enabled, ghostty);
-            assert_eq!(view.themes.herdr_enabled, herdr);
+            assert_eq!(view.themes.sources.ghostty, ghostty);
+            assert_eq!(view.themes.sources.herdr, herdr);
             assert_eq!(view.themes.choice().map(|choice| choice.scope), selected);
             assert_eq!(view.themes.query, "nord");
             assert_eq!(view.themes.search.read(cx).text(), "nord");
@@ -230,7 +230,7 @@ fn scope_switch_cannot_accept_native_preview_for_shared_choice(cx: &mut TestAppC
         view.shared = Some(
             herdr_settings::Settings::parse_text("[theme.custom]\naccent='#123456'\n").unwrap(),
         );
-        view.themes.ghostty_enabled = false;
+        view.themes.sources.ghostty = false;
         view.themes.query = "nord".into();
         view.themes.filter(None);
         view.request_theme_preview(cx);
@@ -256,7 +256,7 @@ fn scope_switch_cannot_accept_native_preview_for_shared_choice(cx: &mut TestAppC
 fn row_click_and_keyboard_accept_intent_while_validation_is_held(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(fixture);
     view.update(cx, |view, _| {
-        view.themes.herdr_enabled = false;
+        view.themes.sources.herdr = false;
         view.themes.filter(None);
     });
     cx.simulate_resize(size(px(960.), px(1000.)));
@@ -288,7 +288,7 @@ fn worker_loads_only_latest_search_preview_without_applying_it(cx: &mut TestAppC
     let (view, cx) = cx.add_window_view(fixture);
     view.update(cx, |view, cx| {
         view.themes.names = vec!["Nord".into(), "Dracula".into()];
-        view.themes.herdr_enabled = false;
+        view.themes.sources.herdr = false;
         view.themes.filter(None);
         view.themes.selected = Some(0);
         view.request_theme_preview(cx);
@@ -345,7 +345,7 @@ fn normal_window_stacks_rows_search_and_grid_without_a_mock_preview(cx: &mut Tes
     assert!(cx.debug_bounds("settings-theme-empty").is_some());
     view.update(cx, |view, cx| view.set_theme_sources(false, false, cx));
     view.read_with(cx, |view, _| {
-        assert!(view.themes.ghostty_enabled && view.themes.herdr_enabled);
+        assert!(view.themes.sources.ghostty && view.themes.sources.herdr);
     });
 }
 

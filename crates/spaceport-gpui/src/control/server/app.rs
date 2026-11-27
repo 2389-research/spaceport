@@ -304,11 +304,25 @@ pub(super) fn ui(call: Call<UiOp>, cx: &mut App) -> Response {
             })
         }
         UiOp::Panel { panel } => {
+            if panel == crate::sidebar::ActivityPanel::Automations && !view.core_enabled() {
+                return Response::error(
+                    ErrorCode::Unsupported,
+                    crate::core_feature::disabled_message(),
+                );
+            }
             if !view.activity_bar_shown() {
                 return Response::error(
                     ErrorCode::Unsupported,
                     "The activity bar is off: [sidebar] activity_bar = false",
                 );
+            }
+            if !view.activity_panel_listed(panel) {
+                let why = format!(
+                    "{} is turned off: [sidebar] {} = false",
+                    panel.name(),
+                    panel.name()
+                );
+                return Response::error(ErrorCode::Unsupported, why);
             }
             view.show_activity_panel(panel, window, cx);
             Response::done(format!("Showing {}", panel.name()))

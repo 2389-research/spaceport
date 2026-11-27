@@ -53,7 +53,9 @@ spaceport-sidebar.workspace      = true
 spaceport-sound.workspace         = true
 spaceport-state-file.workspace    = true
 spaceport-textfield.workspace     = true
+spaceport-usage.workspace         = true
 spaceport-truncate.workspace      = true
+spaceport-web-url.workspace       = true
 spaceport-widgets.workspace      = true
 spaceport-words.workspace         = true
 image                          = { features = ["bmp", "tiff"], workspace = true }
@@ -73,6 +75,7 @@ thiserror.workspace            = true
 toml.workspace                 = true
 toml_edit.workspace            = true
 tracing.workspace              = true
+unicode-bidi.workspace = true
 unicode-properties.workspace = true
 unicode-segmentation.workspace = true
 unicode-width.workspace        = true
@@ -87,6 +90,8 @@ winresource.workspace = true
 flate2.workspace = true
 # `tests/live_gui/shutdown.rs` and `saved_state.rs` hash the sandbox state.
 sha2.workspace = true
+# `i18n/errors/tests/sound.rs` names the audio library's own error types.
+rodio.workspace    = true
 gpui = { features = ["test-support"], workspace = true }
 spaceport-browser = { features = ["test-support"], workspace = true }
 spaceport-client = { features = ["test-support"], workspace = true }
@@ -101,6 +106,7 @@ spaceport-control-protocol = { features = ["test-support"], workspace = true }
 spaceport-diagnostics = { features = ["test-support"], workspace = true }
 spaceport-i18n = { features = ["test-support"], workspace = true }
 spaceport-textfield = { features = ["test-support"], workspace = true }
+spaceport-usage = { features = ["test-support"], workspace = true }
 spaceport-endpoint = { features = ["test-support"], workspace = true }
 spaceport-keymap = { features = ["test-support"], workspace = true }
 spaceport-live = { features = ["test-support"], workspace = true }

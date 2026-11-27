@@ -5,6 +5,23 @@ mod control_commands;
 mod development_links;
 mod language;
 mod links;
+mod removed_automation;
+mod removed_browser;
+mod removed_checkpoint;
+mod removed_cloud;
+mod removed_code_edit;
+mod removed_github;
+mod removed_legacy_launch;
+mod removed_legacy_window_session;
+mod removed_mods;
+mod removed_orchestrator;
+mod removed_phone;
+mod removed_project_open;
+mod removed_px0;
+mod removed_review;
+mod removed_search;
+mod removed_system;
+mod removed_teleport;
 mod ui_panel;
 
 #[test]
@@ -117,3 +134,7 @@ fn test_modes_are_exclusive() {
         );
     }
 }
+
+mod removed_updater;
+
+mod removed_chat_lifecycle;

@@ -38,6 +38,13 @@ fn rejects_what_upstream_rejects() {
 }
 
 #[test]
+fn removed_git_status_token_is_rejected_without_losing_workspace_labels() {
+    assert!(layout("[ui.sidebar.spaces]\nrows = [[\"workspace\", \"git_status\"]]").is_err());
+    let retained = layout("[ui.sidebar.spaces]\nrows = [[\"workspace\"], [\"branch\"]]").unwrap();
+    assert_eq!(retained.spaces.rows.len(), 2);
+}
+
+#[test]
 fn rules_match_like_upstream() {
     let rule = |text: &str| -> TokenRule { toml::from_str(text).unwrap() };
     for (condition, yes, no) in [

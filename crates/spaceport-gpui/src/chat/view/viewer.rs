@@ -23,7 +23,8 @@ pub(crate) struct Viewer {
     /// Holds the keyboard while the picture shows, so typing never reaches
     /// the composer hidden behind it.
     focus: FocusHandle,
-    /// An animation starts over when another picture replaces this one.
+    /// Bumped for each picture opened, so a close timed for an earlier one
+    /// never lets a later one go, and each plays its own motion.
     generation: u64,
     id: VisualId,
 }
@@ -36,20 +37,6 @@ impl Viewer {
 
     pub(crate) fn focus(&self) -> &FocusHandle {
         &self.focus
-    }
-}
-
-impl ChatPane {
-    /// A pending render still owns its visual. A removed picture releases the viewer.
-    pub(in crate::chat) fn release_missing_viewer(&mut self) -> Option<Viewer> {
-        if self.viewer.as_ref().is_some_and(|viewer| {
-            !self.prepared.visuals.wants(viewer.id)
-                || matches!(self.prepared.visuals.shown(viewer.id), Shown::Failed(_))
-        }) {
-            self.viewer.take()
-        } else {
-            None
-        }
     }
 }
 
@@ -87,9 +74,9 @@ impl SpaceportWindow {
             .as_ref()
             .map_or(0, |viewer| viewer.generation + 1);
         pane.viewer = Some(Viewer {
-            generation,
             closing: false,
             focus: focus.clone(),
+            generation,
             id,
         });
         window.focus(&focus, cx);
@@ -112,7 +99,7 @@ impl SpaceportWindow {
             return false;
         };
         viewer.closing = true;
-        let closing_focus = viewer.focus.clone();
+        let generation = viewer.generation;
         if let Some(focus) = pane.input_focus(cx) {
             window.focus(&focus, cx);
         }
@@ -128,7 +115,7 @@ impl SpaceportWindow {
                 if pane
                     .viewer
                     .as_ref()
-                    .is_some_and(|viewer| viewer.closing && viewer.focus == closing_focus)
+                    .is_some_and(|viewer| viewer.closing && viewer.generation == generation)
                 {
                     pane.viewer = None;
                     this.redraw_terminal(cx);

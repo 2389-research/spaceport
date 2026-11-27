@@ -1,4 +1,5 @@
-//! Hosts and what the app gathers about them: listening and forwarded ports.
+//! Hosts and what the app gathers about them: listening and forwarded ports,
+//! and plan usage.
 use serde::{Deserialize, Serialize};
 
 /// How long `ports open` may wait for a new forward to listen.
@@ -39,6 +40,7 @@ pub enum HostOp {
     OpenPort {
         port: u16,
     },
+    Usage,
 }
 
 impl HostOp {
@@ -51,7 +53,8 @@ impl HostOp {
             | Self::Tag { .. }
             | Self::Ports
             | Self::Forward { .. }
-            | Self::Unforward { .. } => 0,
+            | Self::Unforward { .. }
+            | Self::Usage => 0,
         }
     }
 }
@@ -76,6 +79,22 @@ pub struct ForwardInfo {
     pub reason: Option<String>,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct UsageInfo {
+    pub provider: String,
+    pub account: Option<String>,
+    pub plan: Option<String>,
+    pub windows: Vec<UsageWindow>,
+    pub error: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct UsageWindow {
+    pub label: String,
+    pub used_percent: f32,
+    pub resets_in_seconds: Option<u64>,
+}
+
 /// A workspace's listening ports, and its host's forwards. Boxed in
 /// [`Reply`], which every response carries.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -92,8 +111,16 @@ pub struct Ports {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Reply {
-    Hosts { hosts: Vec<super::app::HostInfo> },
+    Hosts {
+        hosts: Vec<super::app::HostInfo>,
+    },
     Ports(Box<Ports>),
+    Usage {
+        host: String,
+        usage: Vec<UsageInfo>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        note: Option<String>,
+    },
 }
 
 #[cfg(test)]

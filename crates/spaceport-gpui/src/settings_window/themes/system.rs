@@ -1,19 +1,17 @@
+// ABOUTME: Follows the system appearance for themes written as light/dark pairs.
+// ABOUTME: Keeps the pair's naming in the crate and the previews on the window.
 //! Themes that follow the system appearance, written as Ghostty's
-//! `light:NAME,dark:NAME`: which side the grid edits, turning following on
-//! and off, and showing the side the current appearance calls for.
+//! `light:NAME,dark:NAME`: which side the grid edits, turning following on and
+//! off, and showing the side the current appearance calls for.
 use super::{Choice, Scope, SettingsWindow};
 use crate::settings_window::PageState;
 use crate::{
     config::{FOLLOW_HERDR, Theme, ThemeName},
-    contrast::{Contrast, luminance},
+    contrast::Contrast,
     i18n::{Localize, fl},
 };
 use gpui::{Context, ScrollStrategy};
-
-/// What a theme is paired with when following starts: the current theme
-/// keeps the side its background suits, and these fill the other.
-const LIGHT_PAIR: &str = "Catppuccin Latte"; // i18n: data
-const DARK_PAIR: &str = "Catppuccin Mocha"; // i18n: data
+use spaceport_settings_window::themes::system;
 
 impl SettingsWindow {
     /// The theme value the next choice builds on: an unsaved draft, else the
@@ -32,13 +30,7 @@ impl SettingsWindow {
 
     /// Chosen names the catalog lists even when no theme directory has them.
     pub(super) fn selected_theme_names(&self) -> Vec<String> {
-        let mut names = vec![
-            ThemeName::side(&self.config.theme, true).to_owned(),
-            ThemeName::side(&self.config.theme, false).to_owned(),
-        ];
-        names.dedup();
-        names.retain(|name| name != FOLLOW_HERDR);
-        names
+        system::selected_names(&self.config.theme)
     }
 
     /// The unadjusted colors for one side of `value`, when they need no disk
@@ -65,14 +57,7 @@ impl SettingsWindow {
             return;
         }
         let light = crate::app::light_appearance(cx);
-        let current = self.drafted_theme();
-        let name = if ThemeName::follows_system(current) {
-            ThemeName::side(current, light).to_owned()
-        } else if luminance(self.theme.background) > 0.4 {
-            ThemeName::system(current, DARK_PAIR)
-        } else {
-            ThemeName::system(LIGHT_PAIR, current)
-        };
+        let name = system::toggled(self.drafted_theme(), self.theme.background, light);
         self.themes.editing_light = light;
         self.accept_theme_choice(
             Choice {
@@ -102,15 +87,9 @@ impl SettingsWindow {
         if self.busy() {
             return;
         }
-        let current = self.drafted_theme().to_owned();
-        let name = if ThemeName::follows_system(&current) {
-            ThemeName::side(&current, light).to_owned()
-        } else if self.drafted_is_light(&PageState::of(self, cx), cx) == light {
+        let is_light = self.drafted_is_light(&PageState::of(self, cx), cx);
+        let Some(name) = system::single(self.drafted_theme(), light, is_light) else {
             return;
-        } else if light {
-            LIGHT_PAIR.to_owned()
-        } else {
-            DARK_PAIR.to_owned()
         };
         self.themes.editing_light = light;
         self.accept_theme_choice(
@@ -137,11 +116,8 @@ impl SettingsWindow {
             scope: Scope::App,
             name: ThemeName::side(self.drafted_theme(), self.themes.editing_light).to_owned(),
         };
-        if !self.themes.names.contains(&edited.name) && edited.name != FOLLOW_HERDR {
-            self.themes.names.push(edited.name.clone());
-            self.themes
-                .names
-                .sort_by_cached_key(|name| (name.to_lowercase(), name.clone()));
+        if edited.name != FOLLOW_HERDR {
+            super::browser::merged(&mut self.themes.names, [edited.name.clone()]);
         }
         self.themes.filter(Some(&edited));
         if let Some(index) = self.themes.selected {
