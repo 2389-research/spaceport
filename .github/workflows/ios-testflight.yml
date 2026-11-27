@@ -43,7 +43,7 @@ jobs:
         github.event.workflow_run.event == 'push' &&
         github.event.workflow_run.conclusion == 'success') ||
        (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 90
     outputs:
       version: ${{ steps.request.outputs.version }}
@@ -89,6 +89,8 @@ jobs:
             printf 'tag=%s\n' "$tag"
             printf 'sha=%s\n' "$sha"
           } >> "$GITHUB_OUTPUT"
+      - name: Install XcodeGen
+        run: brew install xcodegen
       - name: Build the optimized Rust libraries and the Xcode project
         run: ./mobile/build-apple --release
       # SKIPPED GATE: this route builds but does not run an iOS simulator suite.
@@ -124,7 +126,7 @@ jobs:
         github.event.workflow_run.conclusion == 'success') ||
        (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
     environment: ios-testflight
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 60
     env:
       VERSION: ${{ needs.build.outputs.version }}
