@@ -28,7 +28,7 @@ final class MobileConnection: ObservableObject {
     private(set) var reconnectFrame: MobileTerminal?
     private(set) var editorTarget: InputTarget?
     private(set) var panePreviews = PanePreviewCache()
-    private var savedAgentCounts: AgentCounts?
+    private var lastSavedAt: Date?
     @Published private(set) var directPane: DirectPaneAttachment?
     private var session: MobileSession?
     private var opening: Task<Void, Never>?
@@ -38,6 +38,9 @@ final class MobileConnection: ObservableObject {
     private var appliedViewport: Viewport?
     private var resumeRequested = false
     private var recovery = TransportRecovery()
+    private var parkedRoster: Task<Void, Never>?
+    private(set) var isObservingParkedRoster = false
+    var parkedRosterChanged: (() -> Void)?
     private var parkedBoot: String?
     private var verification: Task<Void, Never>?
 
@@ -107,6 +110,7 @@ final class MobileConnection: ObservableObject {
         if presentationID != id || agent != nil { reconnectFrame = nil }
         recovery = TransportRecovery()
         presentationID = id
+        observeParkedRoster(false)
         arrival = agent.map(AgentArrival.requested)
         if hasParkedSession {
             foreground()
@@ -313,7 +317,7 @@ final class MobileConnection: ObservableObject {
             if let arrival, !locate(arrival, in: update) { return }
             let previousReady = phase == .ready ? previous : nil
             phase = .ready
-            if let status = update.changedAgentStatus(after: previousReady, savedCounts: savedAgentCounts) {
+            if let status = update.observedRoster(after: previousReady, lastSavedAt: lastSavedAt) {
                 saveObservation(status)
             }
             syncDirectPane()
@@ -541,7 +545,7 @@ final class MobileConnection: ObservableObject {
     private func saveObservation(_ snapshot: SessionStatusSnapshot) {
         do {
             try ProfileStore().recordSeen(profile: profile, snapshot: snapshot)
-            savedAgentCounts = snapshot.agentCounts
+            lastSavedAt = snapshot.seenAt
         } catch { message = error.localizedDescription }
     }
 
@@ -580,6 +584,53 @@ final class MobileConnection: ObservableObject {
         clearView()
         reconnectFrame = lastFrame
         phase = .connecting
+    }
+
+    /// A parked terminal still receives snapshots without holding focus or a surface.
+    func observeParkedRoster(_ enabled: Bool) {
+        guard enabled, hasParkedSession, presentationID == nil, let session else {
+            parkedRoster?.cancel()
+            parkedRoster = nil
+            if isObservingParkedRoster {
+                isObservingParkedRoster = false
+                parkedRosterChanged?()
+            }
+            return
+        }
+        guard parkedRoster == nil else { return }
+        let token = generation
+        parkedRoster = Task.detached(priority: .utility) { [weak self] in
+            var version: UInt64 = 0
+            var saved: MobileView?
+            while !Task.isCancelled {
+                if let update = session.pollForAttach(after: version) {
+                    version = update.version
+                    guard !Task.isCancelled else { return }
+                    let snapshot = update.observedRoster(after: saved)
+                    await self?.receiveParkedRoster(update, snapshot: snapshot, token: token)
+                    if update.disconnected { return }
+                    if snapshot != nil { saved = update }
+                }
+                do { try await Task.sleep(for: .milliseconds(500)) } catch { return }
+            }
+        }
+    }
+
+    private func receiveParkedRoster(_ update: MobileView, snapshot: SessionStatusSnapshot?, token: UUID) {
+        guard !Task.isCancelled, generation == token, presentationID == nil, hasParkedSession else { return }
+        if update.disconnected {
+            let wasLive = isObservingParkedRoster
+            finishLoss(eligible: false, message: update.error ?? "Connection closed.")
+            if !wasLive { parkedRosterChanged?() }
+            return
+        }
+        guard let snapshot else { return }
+        do { try ProfileStore().recordObserved(profile: profile, snapshot: snapshot) }
+        catch { message = error.localizedDescription; return }
+        if !isObservingParkedRoster {
+            isObservingParkedRoster = true
+            parkedRosterChanged?()
+        }
     }
 
     func foreground() {
@@ -693,6 +744,7 @@ final class MobileConnection: ObservableObject {
         verification?.cancel()
         verification = nil
         parkedBoot = nil
+        observeParkedRoster(false)
         opening?.cancel()
         opening = nil
         polling?.cancel()

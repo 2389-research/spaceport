@@ -1,6 +1,9 @@
 // ABOUTME: Exercises the mobile controller against a disposable real SSH and Herdr host.
 // ABOUTME: Checks host trust, terminal input, phone key enrollment and session survival.
-use spaceport_mobile::{EnclaveSigner, MobileSession, MobileView, SshAuth, SshError, SshHost};
+use spaceport_mobile::{
+    EnclaveSigner, MobileRoster, MobileSession, MobileView, SshAuth, SshError, SshHost,
+    authorize_enclave_phone,
+};
 #[path = "support/signer.rs"]
 mod signer;
 use std::{
@@ -18,10 +21,18 @@ fn wait(
     description: &str,
     matches: impl Fn(&MobileView) -> bool,
 ) -> MobileView {
+    wait_for(|version| session.poll(version), description, matches)
+}
+
+fn wait_for(
+    poll: impl Fn(u64) -> Option<MobileView>,
+    description: &str,
+    matches: impl Fn(&MobileView) -> bool,
+) -> MobileView {
     let until = Instant::now() + Duration::from_secs(20);
     let mut version = 0;
     loop {
-        if let Some(view) = session.poll(version) {
+        if let Some(view) = poll(version) {
             version = view.version;
             if matches(&view) {
                 return view;
@@ -237,4 +248,56 @@ fn direct_attach_round_trips_shell_bytes_and_leaves_the_same_pane_alive() {
         Some(target)
     );
     session.disconnect();
+}
+
+#[test]
+#[ignore = "requires two disposable SSH hosts with running seed-attention sessions"]
+fn two_rosters_observe_separate_hosts_with_one_phone_key() {
+    let key = signer::TestSigner::new();
+    let mut readers = Vec::new();
+    for prefix in ["SPACEPORT_TEST", "SPACEPORT_TEST_SECOND"] {
+        let host = SshHost {
+            hostname: setting(&format!("{prefix}_SSH_HOST")),
+            port: setting(&format!("{prefix}_SSH_PORT")).parse().unwrap(),
+            username: setting(&format!("{prefix}_SSH_USER")),
+            fingerprint: Some(setting(&format!("{prefix}_SSH_FINGERPRINT"))),
+        };
+        authorize_enclave_phone(
+            host.clone(),
+            setting(&format!("{prefix}_SSH_PASSWORD")),
+            key.point(),
+            key.clone(),
+        )
+        .unwrap();
+        readers.push(
+            MobileRoster::open(
+                host,
+                key.auth(),
+                setting(&format!("{prefix}_MULTIHOST_SESSION")),
+            )
+            .unwrap(),
+        );
+    }
+    let rosters: Vec<_> = readers
+        .iter()
+        .map(|reader| {
+            let view = wait_for(
+                |version| reader.poll(version),
+                "passive reviewer",
+                |view| {
+                    view.panes
+                        .iter()
+                        .any(|pane| pane.agent_name.as_deref() == Some("Reviewer"))
+                },
+            );
+            assert!(view.roster_observed_at_ms.is_some());
+            assert!(view.terminal.is_none());
+            assert!(view.input_target.is_none());
+            view.boot_id
+        })
+        .collect();
+    assert_ne!(rosters[0], rosters[1]);
+    readers[0].disconnect();
+    assert!(readers[0].poll(0).unwrap().disconnected);
+    assert!(!readers[1].poll(0).unwrap().disconnected);
 }

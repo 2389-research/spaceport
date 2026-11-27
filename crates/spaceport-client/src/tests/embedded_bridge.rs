@@ -62,3 +62,54 @@ fn embedded_bridge_negotiates_then_refuses_daemon_without_health_checks() {
         .to_string()
     );
 }
+
+#[test]
+fn roster_bridge_requests_an_inactive_surface_at_hello() {
+    let (stream, mut peer) = Stream::pair().unwrap();
+    peer.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+    let client = observe_embedded_bridge("phone", move |_, _| Ok((stream, ()))).unwrap();
+    peer.write_all(b"{\"endpoint_protocol_generation\":1,\"endpoint_capabilities\":[\"surface_interest\",\"presentation_effects_fence\",\"health_check\"]}\nherdr-remote-output-ready:1\n").unwrap();
+    let mut list = [0; 5];
+    peer.read_exact(&mut list).unwrap();
+    assert_eq!(&list, b"list\n");
+    peer.write_all(
+        b"{\"sessions\":[{\"name\":\"phone\",\"running\":true}]}\nherdr-remote-output-ready:1\n",
+    )
+    .unwrap();
+    let mut choice = [0; 7];
+    peer.read_exact(&mut choice).unwrap();
+    assert_eq!(&choice, b"accept\n");
+    let ClientMessage::EndpointControl { data, .. } = receive(&mut peer) else {
+        panic!("hello")
+    };
+    let hello: EndpointClientHello = serde_json::from_str(&data).unwrap();
+    client.handle.disconnect();
+    assert!(!hello.surface_active);
+}
+
+#[test]
+fn roster_bridge_refuses_stopped_and_missing_sessions_before_accept() {
+    for sessions in [
+        json!([]),
+        json!([{"name":"phone", "running":false}, {"name":"other", "running":true}]),
+    ] {
+        let (stream, mut peer) = Stream::pair().unwrap();
+        peer.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+        let client = observe_embedded_bridge("phone", move |_, _| Ok((stream, ()))).unwrap();
+        peer.write_all(b"{\"endpoint_protocol_generation\":1,\"endpoint_capabilities\":[\"surface_interest\",\"presentation_effects_fence\",\"health_check\"]}\nherdr-remote-output-ready:1\n").unwrap();
+        let mut request = [0; 5];
+        peer.read_exact(&mut request).unwrap();
+        assert_eq!(&request, b"list\n");
+        writeln!(
+            peer,
+            "{}\nherdr-remote-output-ready:1",
+            json!({"sessions":sessions})
+        )
+        .unwrap();
+        let ClientEvent::Disconnected { reason, .. } = event(&client) else {
+            panic!("disconnect")
+        };
+        assert_eq!(reason, sessions::Error::NotRunning.to_string());
+        assert_eq!(peer.read(&mut request).unwrap(), 0);
+    }
+}

@@ -3,13 +3,15 @@
 import Foundation
 
 extension MobileView {
-    func changedAgentStatus(after previous: MobileView?, savedCounts: AgentCounts?) -> SessionStatusSnapshot? {
-        guard let date = rosterObservationDate else { return nil }
-        let first = previous?.bootId != bootId || savedCounts == nil
-        guard first || previous?.panes != panes || previous?.tabs != tabs || previous?.workspaces != workspaces
-        else { return nil }
-        let snapshot = SessionStatusSnapshot(view: self, seenAt: date)
-        return first || snapshot.agentCounts != savedCounts ? snapshot : nil
+    /// An unchanged roster occasionally advances Last seen when the daemon confirms it.
+    func observedRoster(after saved: MobileView?, lastSavedAt: Date? = nil) -> SessionStatusSnapshot? {
+        guard !bootId.isEmpty, let date = rosterObservationDate else { return nil }
+        if let saved, let last = lastSavedAt ?? saved.rosterObservationDate, date.timeIntervalSince(last) < 60,
+           saved.bootId == bootId, saved.panes == panes, saved.tabs == tabs, saved.workspaces == workspaces,
+           saved.focusedWorkspace == focusedWorkspace, saved.focusedTab == focusedTab, saved.focusedPane == focusedPane {
+            return nil
+        }
+        return SessionStatusSnapshot(view: self, seenAt: date)
     }
 
     var rosterObservationDate: Date? {

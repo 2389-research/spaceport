@@ -4,6 +4,7 @@ mod controller;
 pub(crate) use controller::history;
 mod idle;
 mod projection;
+mod roster;
 mod ssh;
 
 pub use controller::{MobileError, MobileSession};
@@ -13,6 +14,7 @@ pub use projection::{
     HostChallenge, InputTarget, MobileCell, MobilePane, MobilePaneMap, MobilePaneRect,
     MobileScroll, MobileTab, MobileTerminal, MobileView, MobileWorkspace,
 };
+pub use roster::MobileRoster;
 pub use ssh::*;
 uniffi::setup_scaffolding!();
 

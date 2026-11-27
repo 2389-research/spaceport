@@ -21,6 +21,7 @@ struct HostList: View {
     @StateObject private var appearance = WindowTerminalAppearance()
     private let store = ProfileStore()
     @StateObject private var sessions = SceneSessions()
+    @ObservedObject private var observers = RosterObservers.shared
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(ProfileStore.catalogKey) private var storedCatalog: Data?
     @State private var catalog = HostCatalog()
@@ -53,17 +54,17 @@ struct HostList: View {
                     Section {
                         ForEach(catalog.sessions.filter { $0.hostID == host.id }) { session in
                             let profile = host.profile(session: session)
-                            Button { open(profile) } label: { HomeSessionRow(session: session) }
+                            Button { open(profile) } label: { HomeSessionRow(session: session, live: observers.isLive(profile)) }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("\(host.address.endpoint), \(session.name)")
-                                .accessibilityValue(accessibilityStatus(session))
+                                .accessibilityValue(accessibilityStatus(session, live: observers.isLive(profile)))
                                 .swipeActions(allowsFullSwipe: false) {
                                     Button("Remove", role: .destructive) { removal = profile }
                                     Button("Edit") { sheet = .session(host, profile) }.tint(.blue)
                                 }
                                 .contextMenu {
                                     Button("Edit Session") { sheet = .session(host, profile) }
-                                    if sessions.contains(profile) {
+                                    if sessions.contains(profile) || observers.canPause(profile) {
                                         Button("Disconnect", systemImage: "power", role: .destructive) {
                                             sessions.disconnect(profile)
                                         }.accessibilityIdentifier("session.disconnect")
@@ -187,6 +188,7 @@ struct HostList: View {
         } message: { _ in Text("Its Herdr session keeps running on the host.") }
         .onAppear {
             reload()
+            sessions.scenePhaseChanged(scenePhase)
             if scenePhase == .active { activateShortcuts() }
         }
         .onOpenURL { url in
@@ -290,9 +292,9 @@ struct HostList: View {
         }
     }
 
-    private func accessibilityStatus(_ session: SavedSession) -> String {
+    private func accessibilityStatus(_ session: SavedSession, live: Bool) -> String {
         guard let status = session.lastStatus else { return "Not opened yet" }
-        return "\(status.blocked) need you, \(status.working) working, last seen \(status.seenAt.formatted(.relative(presentation: .named)))"
+        return (live ? "Live, " : "") + "\(status.blocked) need you, \(status.working) working, last seen \(status.seenAt.formatted(.relative(presentation: .named)))"
     }
 }
 

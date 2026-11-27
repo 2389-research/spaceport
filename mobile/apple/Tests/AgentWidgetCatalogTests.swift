@@ -11,24 +11,24 @@ final class AgentWidgetCatalogTests: XCTestCase {
                               paneMap: nil, focusedWorkspace: "w", focusedTab: "t", focusedPane: nil, terminal: nil,
                               inputTarget: nil, error: nil, disconnected: false, hostChallenge: nil,
                               goToPending: false, goToArrival: nil)
-        XCTAssertNil(view.changedAgentStatus(after: nil, savedCounts: nil))
+        XCTAssertNil(view.observedRoster(after: nil))
         view.rosterObservedAtMs = 2_500
-        let first = try XCTUnwrap(view.changedAgentStatus(after: nil, savedCounts: nil))
+        let first = try XCTUnwrap(view.observedRoster(after: nil))
         XCTAssertEqual(first.seenAt, Date(timeIntervalSince1970: 2.5))
         XCTAssertEqual(first.agentCounts, AgentCounts())
         let empty = view
         view.version += 1
         view.rosterObservedAtMs = 3_000
-        XCTAssertNil(view.changedAgentStatus(after: empty, savedCounts: first.agentCounts))
+        XCTAssertNil(view.observedRoster(after: empty, lastSavedAt: first.seenAt))
         view.panes = [.init(stateChangeSeq: nil, agentName: "Builder", id: "p", tabId: "t", label: "", status: "working")]
-        let busy = try XCTUnwrap(view.changedAgentStatus(after: empty, savedCounts: first.agentCounts))
+        let busy = try XCTUnwrap(view.observedRoster(after: empty, lastSavedAt: first.seenAt))
         XCTAssertEqual(busy.agentCounts, AgentCounts(working: 1))
         XCTAssertEqual(busy.seenAt, Date(timeIntervalSince1970: 3))
         let named = view
-        view.panes[0].label = "Compile"
-        XCTAssertNil(view.changedAgentStatus(after: named, savedCounts: busy.agentCounts))
+        view.panes[0].agentName = "Reviewer"
+        XCTAssertEqual(view.observedRoster(after: named, lastSavedAt: busy.seenAt)?.agents?.first?.name, "Reviewer")
         view.bootId = "replacement"
-        XCTAssertNotNil(view.changedAgentStatus(after: named, savedCounts: busy.agentCounts))
+        XCTAssertNotNil(view.observedRoster(after: named, lastSavedAt: busy.seenAt))
     }
 
     func testWidgetUsesTheFullNamedRosterBeforeSavingTheBoundedCache() throws {

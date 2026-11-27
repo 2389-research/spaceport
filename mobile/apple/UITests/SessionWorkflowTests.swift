@@ -439,13 +439,14 @@ final class SessionWorkflowTests: XCTestCase {
     }
 
     @MainActor
-    func connect(in app: XCUIApplication, sessionVariable: String, suffix: String = "", launch: Bool = true) throws -> (XCUIElement, XCUIElement) {
+    func connect(in app: XCUIApplication, sessionVariable: String, suffix: String = "", launch: Bool = true,
+                 fixture: String = "SPACEPORT_TEST") throws -> (XCUIElement, XCUIElement) {
         let env = ProcessInfo.processInfo.environment
-        guard let host = env["SPACEPORT_TEST_SSH_HOST"],
-              let port = env["SPACEPORT_TEST_SSH_PORT"],
-              let user = env["SPACEPORT_TEST_SSH_USER"],
-              let password = env["SPACEPORT_TEST_SSH_PASSWORD"],
-              let fingerprint = env["SPACEPORT_TEST_SSH_FINGERPRINT"],
+        guard let host = env[fixture + "_SSH_HOST"],
+              let port = env[fixture + "_SSH_PORT"],
+              let user = env[fixture + "_SSH_USER"],
+              let password = env[fixture + "_SSH_PASSWORD"],
+              let fingerprint = env[fixture + "_SSH_FINGERPRINT"],
               let sessionName = env[sessionVariable] else {
             throw XCTSkip("Select a disposable SSH host and configure \(sessionVariable) to run this workflow.")
         }

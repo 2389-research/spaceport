@@ -93,6 +93,11 @@ pub(crate) fn bridge_script(session: &str) -> String {
         esac
         printf '\nherdr-bridge-path:%s\n%s\n' "$resolved" 'herdr-remote-output-ready:1'
         IFS= read -r choice || exit 1
+        if [ "$choice" = list ]; then
+            "$path" session list --json </dev/null || exit 1
+            printf '\n%s\n' 'herdr-remote-output-ready:1'
+            IFS= read -r choice || exit 1
+        fi
         case "$choice" in
             accept) exec "$path" --session {session} remote-client-bridge;;
             accept-idle) exec "$path" --session {session} remote-client-bridge --idle-timeout-v1;;
@@ -597,12 +602,13 @@ fn spawn_bridge(mut command: Command) -> Result<(Stream, ChildGuard)> {
 /// When every candidate was skipped, the script exits and the first refusal
 /// says why, instead of the closed bridge every other failure also ends in.
 pub(crate) fn handshake(stream: &mut (impl Read + Write), stop: &AtomicBool) -> Result<()> {
-    handshake_with_path(stream, stop).map(drop)
+    handshake_with_path(stream, stop, None).map(drop)
 }
 
 pub(crate) fn handshake_with_path(
     stream: &mut (impl Read + Write),
     stop: &AtomicBool,
+    running_session: Option<&str>,
 ) -> Result<Option<String>> {
     let started = Instant::now();
     let mut refused = None;
@@ -614,6 +620,16 @@ pub(crate) fn handshake_with_path(
             result => result?,
         };
         if let Some(idle_timeout) = compatible_status(&status) {
+            if let Some(name) = running_session {
+                stream.write_all(b"list\n")?;
+                let listing = read_until_ready(stream, stop, started, crate::sessions::MAX_OUTPUT)?;
+                if !crate::sessions::parse_session_list(&listing)?
+                    .iter()
+                    .any(|session| session.running && session.name == name)
+                {
+                    return Err(crate::sessions::Error::NotRunning.into());
+                }
+            }
             stream.write_all(if idle_timeout {
                 b"accept-idle\n"
             } else {
@@ -693,6 +709,15 @@ fn await_ready(
     stop: &AtomicBool,
     started: Instant,
 ) -> Result<Vec<u8>> {
+    read_until_ready(stream, stop, started, 16_384)
+}
+
+fn read_until_ready(
+    stream: &mut (impl Read + ?Sized),
+    stop: &AtomicBool,
+    started: Instant,
+    limit: usize,
+) -> Result<Vec<u8>> {
     let mut line = Vec::new();
     let mut output = Vec::new();
     let mut total = 0;
@@ -710,7 +735,7 @@ fn await_ready(
             }
             Ok(_) => {
                 total += 1;
-                if total > 16384 {
+                if total > limit {
                     return Err(Error::OutputLimit.into());
                 }
                 line.push(byte[0]);

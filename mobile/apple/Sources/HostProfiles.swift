@@ -366,11 +366,25 @@ struct ProfileStore {
     }
 
     func recordSeen(profile: HostProfile, snapshot: SessionStatusSnapshot) throws {
+        try record(profile: profile, snapshot: snapshot, opened: true)
+    }
+
+    func recordObserved(profile: HostProfile, snapshot: SessionStatusSnapshot) throws {
+        try record(profile: profile, snapshot: snapshot, opened: false)
+    }
+
+    private func record(profile: HostProfile, snapshot: SessionStatusSnapshot, opened: Bool) throws {
         var catalog = try catalog()
         guard let index = catalog.sessions.firstIndex(where: { $0.id == profile.id }),
               let saved = catalog.profile(catalog.sessions[index]),
               saved.address == profile.address, saved.session == profile.session,
-              catalog.sessions[index].lastOpened.map({ $0 <= snapshot.seenAt }) ?? true else { return }
+              opened || saved.login == profile.login else { return }
+        let advancesOpen = opened && (catalog.sessions[index].lastOpened.map { $0 < snapshot.seenAt } ?? true)
+        if advancesOpen { catalog.sessions[index].lastOpened = snapshot.seenAt }
+        if let last = catalog.sessions[index].lastStatus, last.seenAt > snapshot.seenAt {
+            if advancesOpen { try write(catalog) }
+            return
+        }
         var snapshot = snapshot
         if let previous = catalog.sessions[index].lastStatus, let rows = snapshot.agents {
             let oldRows = Dictionary((previous.agents ?? []).map { ($0.paneId, $0) }, uniquingKeysWith: { first, _ in first })
@@ -398,7 +412,7 @@ struct ProfileStore {
         if let rows = snapshot.agents {
             snapshot.agents = SeenAgent.cache(rows)
         }
-        catalog.sessions[index].lastOpened = snapshot.seenAt
+        guard advancesOpen || catalog.sessions[index].lastStatus != snapshot else { return }
         catalog.sessions[index].lastStatus = snapshot
         try write(catalog)
     }

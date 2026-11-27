@@ -256,8 +256,7 @@ const DEADLINE: Duration = Duration::from_secs(15);
 
 /// A host listing `LIMIT` sessions with full socket paths stays well under this.
 /// More than that is not a session list, and it is refused instead of buffered.
-#[cfg(unix)]
-const MAX_OUTPUT: usize = 64 * 1024;
+pub(crate) const MAX_OUTPUT: usize = 64 * 1024;
 
 /// The `herdr session list --json` envelope. Only the entries are read: the
 /// host's `session_dir` and `socket_path` are its own filesystem, and the default

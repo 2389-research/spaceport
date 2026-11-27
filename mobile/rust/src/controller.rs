@@ -144,25 +144,7 @@ impl MobileSession {
                     Some(request),
                     Some((worker_routes, named_session)),
                 )
-                .map_err(|error| {
-                    let challenge = match &error {
-                        SshError::UnknownHost { fingerprint } => Some(HostChallenge {
-                            fingerprint: fingerprint.clone(),
-                            changed: false,
-                        }),
-                        SshError::ChangedHost { fingerprint } => Some(HostChallenge {
-                            fingerprint: fingerprint.clone(),
-                            changed: true,
-                        }),
-                        _ => None,
-                    };
-                    if let Some(challenge) = challenge {
-                        let mut state = lock(&connecting);
-                        state.challenge = Some(challenge);
-                        state.version += 1;
-                    }
-                    spaceport_client::Error::from(io::Error::other(error))
-                })
+                .map_err(|error| connection_error(&connecting, error))
             },
             move |path| path_routes.accept_path(path),
         )?;
@@ -638,7 +620,30 @@ fn fence_failure_reason(cause: Failure) -> String {
     }
 }
 
-fn lock<T>(state: &Mutex<T>) -> MutexGuard<'_, T> {
+pub(crate) fn connection_error(
+    state: &Mutex<Projection>,
+    error: SshError,
+) -> spaceport_client::Error {
+    let challenge = match &error {
+        SshError::UnknownHost { fingerprint } => Some(HostChallenge {
+            fingerprint: fingerprint.clone(),
+            changed: false,
+        }),
+        SshError::ChangedHost { fingerprint } => Some(HostChallenge {
+            fingerprint: fingerprint.clone(),
+            changed: true,
+        }),
+        _ => None,
+    };
+    if let Some(challenge) = challenge {
+        let mut state = lock(state);
+        state.challenge = Some(challenge);
+        state.version += 1;
+    }
+    spaceport_client::Error::from(io::Error::other(error))
+}
+
+pub(crate) fn lock<T>(state: &Mutex<T>) -> MutexGuard<'_, T> {
     state.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
