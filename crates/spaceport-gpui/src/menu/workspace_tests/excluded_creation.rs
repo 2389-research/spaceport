@@ -15,11 +15,11 @@ fn workspace_menu_has_no_worktree_creation_but_keeps_ordinary_actions(
     assert!(
         !actions
             .iter()
-            .any(|(_, label)| { label.english().contains("New worktree") })
+            .any(|item| item.name.contains("New worktree"))
     );
     assert!(
         actions
             .iter()
-            .any(|(action, _)| { *action == WorkspaceMenuAction::Dialog(WorkspaceAction::Rename) })
+            .any(|item| item.action == WorkspaceMenuAction::Dialog(WorkspaceAction::Rename))
     );
 }
