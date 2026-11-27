@@ -6,7 +6,7 @@
 # Save at $XDG_CONFIG_HOME/spaceport/config.toml (default ~/.config/spaceport/).
 # Omitted settings use defaults. Keys this build does not know, such as ones a
 # newer build reads, are ignored and named in a dismissible warning instead of
-# failing the load. The former [github] account table is rejected explicitly.
+# failing the load.
 # Font sizes are logical pixels, inclusive 8..48.
 # Font families below are examples; leave them commented to use platform defaults.
 # Fonts must be installed locally; none are bundled.
@@ -528,3 +528,11 @@ size = 12
 # Open a space's menu when the pointer rests on its sidebar row, without a
 # right click. Moving the pointer anywhere but into that menu closes it again.
 # sidebar_hover_menu = false
+
+# The usage indicators the daemon reports. These switches only show or hide
+# them; Herdr draws them itself.
+# [usage]
+# The daemon's tab bar segments, in the title bar.
+# topbar = true
+# The daemon's configured sidebar rows, and the workspace status they roll up.
+# inline = true

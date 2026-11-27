@@ -38,7 +38,7 @@ and an already trusted host key. For hosts that need MFA or a password, configur
 `ControlMaster auto` with a `ControlPath` in `~/.ssh/config` and authenticate once
 with `ssh HOST` in a terminal: the app reuses that master connection while it lives.
 Otherwise, on macOS and Linux, the app's own short commands on a host (Git reads,
-usage, scripts) share one SSH login per host instead of a login each, so
+port scans, scripts) share one SSH login per host instead of a login each, so
 hosts that rate-limit new SSH connections (a firewall `limit` rule, sshd's
 `MaxStartups`) are not flooded; large host transfers get a second
 login of their own, and terminals keep their own connection. These shared logins
@@ -1695,9 +1695,6 @@ window at once, and `spaceport ui panel NAME` shows a section.
   column beside the list shows each host's agents, connectivity and ports;
   each host folds, and the column folds to a strip of load dots. The icon
   counts what needs you.
-- **Usage** shows every host's plan limits, one card per signed-in agent. Only
-  the selected host is read; another host shows what was read while it was
-  selected.
 
 When Overview or a section opens an agent's pane, the title bar's Back returns
 to it before walking back through panes.
@@ -3287,7 +3284,7 @@ window, the main window exposes:
   and place, a device's name and connection), selected when focused, and
   expandable when they fold others, which Expand and Collapse do; **New
   workspace**, **Menu**, the agents' sort, the device picker, and **Sessions**;
-- the status bar as a status bar: the connection message, the model, usage,
+- the status bar as a status bar: the connection message, the model,
   and network readings by what they say, and its buttons
   (**Keep the display awake** as a switch);
 - every popup as a menu (context menus) or a dialog named by its title, with
