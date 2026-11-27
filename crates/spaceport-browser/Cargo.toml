@@ -25,7 +25,6 @@ spaceport-motion.workspace     = true
 spaceport-panes.workspace      = true
 spaceport-reorder.workspace    = true
 spaceport-state-file.workspace = true
-spaceport-truncate.workspace   = true
 spaceport-web-url.workspace    = true
 spaceport-widgets.workspace    = true
 thiserror.workspace            = true
