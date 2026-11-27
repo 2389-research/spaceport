@@ -255,11 +255,6 @@ pub fn wash(color: u32, alpha: u8) -> Rgba {
 /// passes stop answering hover, leaving the gap to mark where it lands.
 pub fn mark(row: Div, state: RowState, colors: (Rgba, Rgba), theme: &Theme) -> Div {
     let (fill, hover) = colors;
-    let fill = if state.selected && state.agent {
-        rgb(crate::layout::agent_selection_background(theme))
-    } else {
-        fill
-    };
     let selected = state.selected;
     match state.lift {
         // Only a border the layout already draws is colored: adding one

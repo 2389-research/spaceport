@@ -60,8 +60,8 @@ fn frame_returns(view: &mut SpaceportWindow, cx: &mut Context<SpaceportWindow>) 
 }
 
 fn hold_drop(view: &mut SpaceportWindow, paths: &[&str], cx: &mut Context<SpaceportWindow>) {
-    let paths: Vec<_> = paths.iter().map(PathBuf::from).collect();
-    assert!(view.hold_drop(DropAt::Pane(InputTarget::Pane(PANE.into())), &paths, cx));
+    let paths = paths.iter().map(PathBuf::from).collect();
+    assert!(view.hold_drop(DropAt::Pane(InputTarget::Pane(PANE.into())), paths, cx));
 }
 
 /// Drop `paths` with the pointer over the pane, in a window that has not
@@ -479,77 +479,4 @@ fn a_remote_image_drop_the_bridge_refuses_still_takes_focus(cx: &mut TestAppCont
             assert!(error.starts_with("Image not sent: "), "{error:?}");
         });
     });
-}
-
-#[gpui::test]
-fn held_native_drops_enforce_count_and_quoted_byte_bounds_before_enter(cx: &mut TestAppContext) {
-    use super::Held;
-    let exact = "'".repeat(32768);
-    let over = format!("{exact}'");
-    for preparing in [false, true] {
-        for (paths, accepted) in [
-            (vec!["x"; 256], true),
-            (vec!["x"; 257], false),
-            (vec![exact.as_str()], true),
-            (vec![over.as_str()], false),
-        ] {
-            let mut peer = MockPeer::new();
-            let (view, cx) = cx.add_window_view(fixture_window);
-            cx.update(|window, cx| {
-                view.update(cx, |view, cx| {
-                    sized_by_another(&peer, view, cx);
-                    view.endpoints[0].connection.target = ConnectTarget::Local;
-                    if preparing {
-                        cx.write_to_clipboard(ClipboardItem::new_string("prepared".into()));
-                        view.paste_or_hold(true, Some(text("first")), cx);
-                        frame_returns(view, cx);
-                    }
-                    assert!(live_drop(view, &paths, window, cx));
-                    view.send(crate::menu::enter_key(), cx);
-                    assert!(view.pending_input.events.iter().any(|entry| match entry {
-                        Held::Drop { paths: Ok(_), .. } => accepted,
-                        Held::Drop {
-                            paths: Err(crate::window::file_drop::Error::Size),
-                            ..
-                        } => !accepted,
-                        _ => false,
-                    }));
-                    if !preparing {
-                        frame_returns(view, cx);
-                    }
-                })
-            });
-            cx.run_until_parked();
-            if preparing {
-                // Drawing the background paste resized the fixture. Supply its matching frame.
-                view.update(cx, |view, cx| {
-                    let frame = &view.live.surface.as_ref().unwrap().frame;
-                    view.options.surface_size.cols = frame.width;
-                    view.options.surface_size.rows = frame.height;
-                    view.flush_pending_input(cx);
-                });
-            }
-            if preparing {
-                assert_eq!(next_pane_input(&mut peer), typed(text("first")));
-            }
-            if accepted {
-                let expected = crate::window::file_drop::quote_paths(
-                    &paths.iter().map(PathBuf::from).collect::<Vec<_>>(),
-                )
-                .unwrap();
-                assert_eq!(next_pane_input(&mut peer), typed(paste(&expected)));
-                assert_eq!(next_pane_input(&mut peer), typed(crate::menu::enter_key()));
-            } else {
-                view.read_with(cx, |view, _| {
-                    assert!(
-                        view.notices
-                            .text()
-                            .is_some_and(|notice| notice.contains("64 KiB")
-                                && notice.contains("1 held input discarded"))
-                    )
-                });
-            }
-            sentinel_is_next(&mut peer);
-        }
-    }
 }

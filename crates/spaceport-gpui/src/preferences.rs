@@ -269,13 +269,16 @@ fn read_chrome(path: &Path) -> crate::Result<Chrome> {
     })
 }
 
-/// A saved Activity choice restores as Workspaces: Overview opens only when
-/// picked. A section this build does not have is forgotten. Reading changes
-/// only the in-memory choice, not the saved file.
+/// Old Activity choices have no section after Orchestrator is retired.
+/// Reading them changes only the in-memory choice, not the saved file.
 fn retained_activity_panel(name: &str) -> Option<crate::sidebar::ActivityPanel> {
     use crate::sidebar::ActivityPanel;
+    if matches!(name, "pull-requests" | "issues" | "tasks") {
+        return Some(ActivityPanel::Workspaces);
+    }
     ActivityPanel::parse(name).map(|panel| match panel {
-        ActivityPanel::Workspaces | ActivityPanel::Overview => ActivityPanel::Workspaces,
+        ActivityPanel::Workspaces | ActivityPanel::Usage => panel,
+        ActivityPanel::Overview | ActivityPanel::Automations => ActivityPanel::Workspaces,
     })
 }
 

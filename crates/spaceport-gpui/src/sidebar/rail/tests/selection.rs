@@ -1,15 +1,15 @@
-// ABOUTME: Checks the focused agent's background in the expanded sidebar and collapsed rail.
+// ABOUTME: Checks the focused agent's outline in the expanded sidebar and collapsed rail.
 // ABOUTME: Reads the painted frame as focus moves between two agent panes.
 use super::*;
 
 #[gpui::test]
-fn only_the_focused_agent_has_a_row_wide_fill(cx: &mut TestAppContext) {
+fn only_the_focused_agent_has_a_row_wide_outline(cx: &mut TestAppContext) {
     let (view, cx) = rail_window(cx, 1);
     cx.simulate_resize(size(px(800.), px(1000.)));
     for expanded in [true, false] {
         for mode in LayoutMode::ALL {
             for focused in [0, 1] {
-                let (accent, fill) = view.update(cx, |view, cx| {
+                let accent = view.update(cx, |view, cx| {
                     view.live.status = crate::state::ConnectionStatus::Connected;
                     view.sidebar_visible = expanded;
                     view.sidebar_width = Some(160.);
@@ -19,14 +19,7 @@ fn only_the_focused_agent_has_a_row_wide_fill(cx: &mut TestAppContext) {
                         agent.focused = index == focused;
                     }
                     cx.notify();
-                    (
-                        Hsla::from(rgb(view.theme.ink(view.theme.primary()))),
-                        Hsla::from(rgb(spaceport_settings::mix(
-                            view.theme.sidebar_background(),
-                            view.theme.foreground,
-                            14,
-                        ))),
-                    )
+                    Hsla::from(rgb(view.theme.ink(view.theme.primary())))
                 });
                 cx.update(|window, cx| full_draw(window, cx).clear(cx));
                 let rows = if expanded {
@@ -34,31 +27,20 @@ fn only_the_focused_agent_has_a_row_wide_fill(cx: &mut TestAppContext) {
                 } else {
                     ["rail-agent-local-p0", "rail-agent-local-p1"]
                 };
-                let hovered = placed(cx, rows[1 - focused]).center();
-                cx.simulate_mouse_move(hovered, None, Modifiers::default());
-                cx.update(|window, cx| full_draw(window, cx).clear(cx));
                 for (index, selector) in rows.into_iter().enumerate() {
                     let row = cx.debug_bounds(selector).unwrap_or_else(|| {
                         panic!("{mode:?} {selector} missing, focused {focused}")
                     });
-                    let (outlined, filled) = cx.update(|window, _| {
+                    let outlined = cx.update(|window, _| {
                         let scale = window.scale_factor();
-                        let mut outlined = false;
-                        let mut filled = false;
-                        for quad in window.painted_quads() {
-                            if same_box(quad.bounds, row.scale(scale), px(2.).scale(scale)) {
-                                outlined |= quad.border_widths.top.0 > 0.
-                                    && matches_color(quad.border_color, accent);
-                                filled |= quad
-                                    .background
-                                    .as_solid()
-                                    .is_some_and(|color| matches_color(color, fill));
-                            }
-                        }
-                        (outlined, filled)
+                        window.painted_quads().into_iter().any(|quad| {
+                            same_box(quad.bounds, row.scale(scale), px(2.).scale(scale))
+                                && quad.border_widths.top.0 > 0.
+                                && quad.border_widths.bottom.0 > 0.
+                                && matches_color(quad.border_color, accent)
+                        })
                     });
-                    assert!(!outlined, "{mode:?} {selector} has an accent outline");
-                    assert_eq!(filled, index == focused, "{mode:?} {selector}");
+                    assert_eq!(outlined, index == focused, "{mode:?} {selector}");
                 }
             }
         }

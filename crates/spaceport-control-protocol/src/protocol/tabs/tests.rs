@@ -2,6 +2,12 @@
 use super::*;
 use crate::protocol::{Call, Caller, Request, Response};
 
+mod removed_browser;
+mod removed_code_edit;
+mod removed_orchestrator;
+mod removed_px0;
+mod removed_review;
+
 fn round_trip(op: TabOp) {
     let request = Request::Tab(Call {
         caller: Caller::default(),
@@ -45,6 +51,11 @@ fn tab_requests_have_a_stable_wire_form() {
     ] {
         assert!(serde_json::from_str::<TabOp>(invalid).is_err(), "{invalid}");
     }
+}
+
+#[test]
+fn removed_code_open_wire_operation_is_rejected() {
+    assert!(serde_json::from_str::<TabOp>(r#"{"op":"code","path":"/a.rs"}"#).is_err());
 }
 
 #[test]

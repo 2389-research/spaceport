@@ -1,7 +1,7 @@
 //! A failed port scan is shown with its host-shell cause, in words about
-//! the shell itself.
+//! the shell rather than plan usage, which the shell no longer reads.
 use super::*;
-use spaceport_remote::host_shell::{Error as Shell, START};
+use spaceport_usage::shell::{Error as Shell, START};
 
 /// What the window keeps for a scan that failed with `cause`: the scan's
 /// message followed by its localized causes.

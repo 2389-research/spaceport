@@ -48,8 +48,7 @@ internal class AgentCatalog(context: Context) {
             }
         }
 
-    fun observe(host: HostProfile, incoming: List<AgentRow>?) {
-        if (incoming == null) return
+    fun observe(host: HostProfile, incoming: List<AgentRow>) {
         val previous = rows(host).associateBy { it.key }
         val agents =
             incoming

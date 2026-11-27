@@ -213,13 +213,7 @@ fn cells_hand_their_state_and_data_to_the_layout() {
         vec![
             ("herdr".into(), state(false, false)),
             ("herdr".into(), state(true, false)),
-            (
-                "agent-p0".into(),
-                RowState {
-                    agent: true,
-                    ..state(false, true)
-                }
-            ),
+            ("agent-p0".into(), state(false, true)),
         ]
     );
 }

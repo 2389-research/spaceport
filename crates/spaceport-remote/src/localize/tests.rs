@@ -64,25 +64,3 @@ fn every_device_setup_variant_has_a_message() {
 fn an_unstarted_process_shows_the_system_text() {
     assert_verbatim(&[setup::Error::Io(io())]);
 }
-
-#[test]
-fn every_host_shell_variant_has_a_message() {
-    use crate::host_shell::{self, START};
-    assert_localized(&[Error::HostShell(host_shell::Error::Timeout)]);
-    let mut errors = vec![
-        host_shell::Error::Size,
-        host_shell::Error::Timeout,
-        host_shell::Error::Unreachable,
-        host_shell::Error::WslHostUnsupported,
-    ];
-    errors.extend(
-        [START, "read the moon"].map(|operation| host_shell::Error::Process {
-            operation,
-            source: std::io::Error::other("no such file"),
-        }),
-    );
-    assert_localized(&errors);
-    assert_localized(&[host_shell::Error::Client(
-        spaceport_client::Error::Disconnected,
-    )]);
-}

@@ -6,13 +6,15 @@ use crate::sidebar::ActivityPanel;
 fn the_activity_panel_round_trips_and_an_unknown_one_is_forgotten() {
     let directory = TestDirectory::new();
     let path = directory.0.join("preferences.json");
-    let chrome = Chrome {
-        activity_panel: Some(ActivityPanel::Workspaces),
-        sidebar_width: Some(250.),
-        ..Chrome::default()
-    };
-    write_chrome(&path, chrome.clone()).unwrap();
-    assert_eq!(read_chrome(&path).unwrap(), chrome);
+    for &panel in &[ActivityPanel::Workspaces, ActivityPanel::Usage] {
+        let chrome = Chrome {
+            activity_panel: Some(panel),
+            sidebar_width: Some(250.),
+            ..Chrome::default()
+        };
+        write_chrome(&path, chrome.clone()).unwrap();
+        assert_eq!(read_chrome(&path).unwrap(), chrome);
+    }
     // Files from earlier builds, and panels a later build added, read as none.
     for stored in [
         "",
@@ -27,10 +29,16 @@ fn the_activity_panel_round_trips_and_an_unknown_one_is_forgotten() {
 }
 
 #[core::prelude::v1::test]
-fn a_saved_choice_restores_as_workspaces_without_writing_on_read() {
+fn retired_activity_choice_falls_back_to_workspaces_in_memory() {
     let directory = TestDirectory::new();
     let path = directory.0.join("preferences.json");
-    for name in ["overview", "workspaces"] {
+    for name in [
+        "overview",
+        "pull-requests",
+        "issues",
+        "tasks",
+        "automations",
+    ] {
         let bytes = format!(r#"{{"sidebar_width_px":250,"activity_panel":"{name}"}}"#);
         fs::write(&path, &bytes).unwrap();
         assert_eq!(
@@ -40,9 +48,11 @@ fn a_saved_choice_restores_as_workspaces_without_writing_on_read() {
         );
         assert_eq!(fs::read_to_string(&path).unwrap(), bytes);
     }
-    // Sections earlier builds had are forgotten like any unknown one.
-    for name in ["issues", "automations", "usage"] {
+    for name in ["workspaces", "usage"] {
         fs::write(&path, format!(r#"{{"activity_panel":"{name}"}}"#)).unwrap();
-        assert_eq!(read_chrome(&path).unwrap().activity_panel, None, "{name}");
+        assert_eq!(
+            read_chrome(&path).unwrap().activity_panel,
+            ActivityPanel::parse(name)
+        );
     }
 }

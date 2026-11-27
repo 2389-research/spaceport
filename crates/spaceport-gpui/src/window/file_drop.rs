@@ -56,7 +56,7 @@ impl SpaceportWindow {
             // the image bridge or file copy then refuses them. Behind held
             // input that waits on a background paste, the drop waits too.
             let taken = if self.waits_behind_preparation() {
-                self.hold_drop_after_gap(target, paths.paths(), cx)
+                self.hold_drop_after_gap(target, paths.paths().to_vec(), cx)
             } else {
                 self.hand_off_files(target, paths.paths(), cx).is_some()
             };
@@ -76,7 +76,7 @@ impl SpaceportWindow {
         {
             return;
         }
-        if self.hold_drop(at, paths.paths(), cx) {
+        if self.hold_drop(at, paths.paths().to_vec(), cx) {
             window.focus(&self.focus, cx);
         }
     }
@@ -285,7 +285,27 @@ impl SpaceportWindow {
 /// before each character the shell would otherwise interpret. Validate the
 /// whole drop before allocating its output so failures never paste a prefix.
 pub(super) fn quote_paths(paths: &[PathBuf]) -> Result<String> {
-    let bytes = quoted_len(paths)?;
+    if paths.len() > MAX_PATHS {
+        return Err(Error::Size.into());
+    }
+    let mut bytes = paths.len().saturating_sub(1);
+    for path in paths {
+        // Bound UTF-8 validation and escape counting as well as output allocation.
+        if path.as_os_str().len() > MAX_PASTE_BYTES {
+            return Err(Error::Size.into());
+        }
+        let text = path.to_str().ok_or(Error::Encoding)?;
+        if text.is_empty() {
+            return Err(Error::EmptyPath.into());
+        }
+        if text.chars().any(char::is_control) {
+            return Err(Error::Control.into());
+        }
+        bytes += escaped_len(text);
+        if bytes > MAX_PASTE_BYTES {
+            return Err(Error::Size.into());
+        }
+    }
     let mut quoted = String::with_capacity(bytes);
     for path in paths {
         if !quoted.is_empty() {
@@ -294,32 +314,6 @@ pub(super) fn quote_paths(paths: &[PathBuf]) -> Result<String> {
         escape_into(path.to_str().ok_or(Error::Encoding)?, &mut quoted);
     }
     Ok(quoted)
-}
-
-/// Validate borrowed paths before retaining or encoding a drop.
-pub(super) fn quoted_len(paths: &[PathBuf]) -> Result<usize, Error> {
-    if paths.len() > MAX_PATHS {
-        return Err(Error::Size);
-    }
-    let mut bytes = paths.len().saturating_sub(1);
-    for path in paths {
-        // Bound UTF-8 validation and escape counting as well as output allocation.
-        if path.as_os_str().len() > MAX_PASTE_BYTES {
-            return Err(Error::Size);
-        }
-        let text = path.to_str().ok_or(Error::Encoding)?;
-        if text.is_empty() {
-            return Err(Error::EmptyPath);
-        }
-        if text.chars().any(char::is_control) {
-            return Err(Error::Control);
-        }
-        bytes += escaped_len(text);
-        if bytes > MAX_PASTE_BYTES {
-            return Err(Error::Size);
-        }
-    }
-    Ok(bytes)
 }
 
 #[cfg(test)]

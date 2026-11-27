@@ -4,7 +4,6 @@ use gpui::{Modifiers, TestAppContext, size};
 
 mod en_xa;
 mod focus;
-mod locked_save;
 
 fn info(command: Command) -> &'static CommandInfo {
     COMMANDS

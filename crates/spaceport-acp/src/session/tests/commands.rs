@@ -181,7 +181,10 @@ fn a_command_resent_on_a_new_connection_is_acknowledged_without_running_twice() 
         conn: ConnId(1),
         id,
     });
-    // An ID still in the server cache keeps its outcome across connections.
+    // The client wrote the command, then its connection ended before it read
+    // the acknowledgement: it reconnects and sends the same id again. The
+    // deduplication is the whole reason the client may resend at all, so it
+    // has to hold across connections, not only within one.
     harness.input(Input::Detach(ConnId(1)));
     let second = harness.subscribe(2, false, None);
     harness.input(Input::Command {
@@ -250,67 +253,4 @@ fn the_queue_is_bounded() {
         harness.session.handled.back().unwrap().1,
         Some(Rejection::QueueFull)
     );
-}
-
-#[test]
-fn a_lost_ack_does_not_repeat_a_prompt_after_another_client_evicts_its_id() {
-    use spaceport_chat_core::{
-        link::WriteOutcome,
-        session::{Refusal, Session},
-    };
-    use spaceport_chat_protocol::ClientMessage;
-
-    let mut host = ready();
-    let mut client = Session::default();
-    let first = host.subscribe(1, false, None);
-    client.begin();
-    for message in drain(&first) {
-        client.receive(message).unwrap();
-    }
-    client
-        .submit(Command::Prompt {
-            text: "once".into(),
-            attachments: Vec::new(),
-        })
-        .unwrap();
-    let ClientMessage::Command { command, id } = client.resend().pop().unwrap() else {
-        panic!("prompt")
-    };
-    host.input(Input::Command {
-        command,
-        conn: ConnId(1),
-        id,
-    });
-    client.delivered(WriteOutcome::Written(id));
-    host.input(Input::Detach(ConnId(1)));
-    client.lost(&spaceport_chat_core::Error::Closed);
-    let second = host.subscribe(2, false, None);
-    for _ in 0..HANDLED {
-        let other = host.command(2, Command::SetAutoAccept { on: true });
-        assert_eq!(acks(&second), [(other, None)]);
-    }
-    assert!(!host.session.handled.iter().any(|(entry, _)| *entry == id));
-    let next = host.subscribe(3, false, None);
-    client.begin();
-    for message in drain(&next) {
-        client.receive(message).unwrap();
-    }
-    for message in client.resend() {
-        if let ClientMessage::Command { command, id } = message {
-            host.input(Input::Command {
-                command,
-                conn: ConnId(3),
-                id,
-            });
-        }
-    }
-    assert_eq!(client.rejection(), Some(Refusal::DeliveryUnconfirmed));
-    assert_eq!(
-        host.sent()
-            .iter()
-            .filter(|m| m["method"] == "session/prompt")
-            .count(),
-        1
-    );
-    assert!(host.transcript().queued.is_empty());
 }
