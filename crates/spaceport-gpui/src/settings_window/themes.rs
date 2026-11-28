@@ -11,6 +11,7 @@ use crate::{
     search_input::{Changed, SearchInput},
 };
 use gpui::{prelude::*, *};
+use spaceport_settings::Appearance;
 pub(super) use spaceport_settings::theme::Scope;
 use spaceport_settings::theme::filter_names;
 mod appearance;
@@ -497,10 +498,11 @@ impl SettingsWindow {
             .try_global::<crate::app::InitialAppearance>()
             .cloned()
             .unwrap_or_default();
-        appearance.config.theme = self.config.theme.clone();
-        appearance.config.contrast = self.config.contrast;
-        appearance.theme = self.theme.clone();
-        crate::log_window::set_appearance(&appearance.config, &appearance.theme, cx);
+        appearance.shown.config.theme = self.config.theme.clone();
+        appearance.shown.config.contrast = self.config.contrast;
+        appearance.shown.theme = self.theme.clone();
+        let Appearance { config, theme } = &appearance.shown;
+        crate::log_window::set_appearance(config, theme, cx);
         cx.set_global(appearance);
         self.themes.search.update(cx, |input, cx| {
             input.set_appearance(self.config.ui.clone(), self.theme.clone(), cx)

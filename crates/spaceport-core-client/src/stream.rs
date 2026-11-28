@@ -7,6 +7,7 @@
 
 use crate::{
     Error, Result, Violation,
+    connection::Shared,
     event::{self, Lines, Notice},
     frame::{self, Kind, MAX_PAYLOAD},
     wire::{Display, Terminal},
@@ -15,7 +16,7 @@ use crossbeam_channel::{Receiver, Sender, TrySendError};
 use serde::Deserialize;
 use spaceport_backend::Size;
 use std::{
-    sync::{Mutex, MutexGuard, PoisonError},
+    sync::{Arc, Mutex, MutexGuard, PoisonError},
     time::Duration,
 };
 
@@ -201,7 +202,9 @@ impl Link {
 pub(crate) struct Stream {
     pub(crate) channel: u32,
     pub(crate) link: Link,
-    pub(crate) route: std::sync::Arc<Route>,
+    pub(crate) route: Arc<Route>,
+    /// Where dropping the stream records its release for the worker.
+    pub(crate) shared: Arc<Shared>,
 }
 
 impl Stream {
@@ -216,16 +219,13 @@ impl Stream {
         }
         Ok(chunk)
     }
-
-    fn close(&self) {
-        // A lost connection has nothing left to close.
-        let _ = self.link.send(self.channel, Kind::Close, &[]);
-    }
 }
 
 impl Drop for Stream {
+    /// The worker writes the CLOSE behind this stream's queued frames; a
+    /// destructor must not wait for a full queue or drop the close.
     fn drop(&mut self) {
-        self.close();
+        self.shared.release(self.channel, &self.route);
     }
 }
 

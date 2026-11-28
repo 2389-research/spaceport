@@ -48,7 +48,10 @@ fn a_missing_herdr_seen_after_its_stop_still_waits_the_longest_delay() {
 
     lose_herdr(&mut endpoint);
     let arrived = dropped + Duration::from_millis(16);
-    endpoint.poll(arrived);
+    wait_until(|| {
+        endpoint.poll(arrived);
+        endpoint.live().missing_installation
+    });
     assert_eq!(endpoint.outage(), Some(MISSING));
     assert_eq!(endpoint.retry_at(), arrived + MAX_RETRY_DELAY);
     assert!(endpoint.herdr_missing());

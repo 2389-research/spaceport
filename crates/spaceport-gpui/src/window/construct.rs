@@ -366,26 +366,25 @@ impl Startup {
             .unwrap_or_default();
         let indicators = sidebar::Indicators::new(
             None,
-            appearance.config.status_icons,
-            appearance.config.edge_rail,
+            appearance.shown.config.status_icons,
+            appearance.shown.config.edge_rail,
             matches!(
                 cx.window_appearance(),
                 WindowAppearance::Light | WindowAppearance::VibrantLight
             ),
-            &appearance.theme,
+            &appearance.shown.theme,
         );
         let crate::app::InitialAppearance {
-            config,
-            keymap,
-            theme,
             error,
+            keymap,
+            shown,
         } = appearance;
         Self {
-            config,
+            config: shown.config,
             error,
             indicators,
             keymap,
-            theme,
+            theme: shown.theme,
         }
     }
 }

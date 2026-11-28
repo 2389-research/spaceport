@@ -68,7 +68,7 @@ fn a_new_window_starts_with_the_configured_status_bar(cx: &mut TestAppContext) {
     for configured in [true, false] {
         cx.update(|cx| {
             let mut appearance = crate::app::InitialAppearance::default();
-            appearance.config.status_bar.show = configured;
+            appearance.shown.config.status_bar.show = configured;
             cx.set_global(appearance);
         });
         let (view, cx) = cx.add_window_view(|window, cx| {

@@ -50,6 +50,7 @@ use crate::{
     i18n::{Localize, fl},
 };
 use gpui::{prelude::*, *};
+use spaceport_settings::Appearance;
 
 actions!(settings_window, [Close]);
 
@@ -335,8 +336,8 @@ impl SettingsWindow {
                     && cx
                         .try_global::<crate::app::InitialAppearance>()
                         .is_some_and(|appearance| {
-                            appearance.config.theme != this.config.theme
-                                || appearance.theme != this.theme
+                            appearance.shown.config.theme != this.config.theme
+                                || appearance.shown.theme != this.theme
                         })
                 {
                     this.drive_theme_intent(cx);
@@ -345,7 +346,7 @@ impl SettingsWindow {
                     && cx
                         .try_global::<crate::app::InitialAppearance>()
                         .is_some_and(|appearance| {
-                            appearance.config.layout.mode != this.config.layout.mode
+                            appearance.shown.config.layout.mode != this.config.layout.mode
                         })
                 {
                     this.broadcast_layout(cx);
@@ -354,7 +355,8 @@ impl SettingsWindow {
                     && cx
                         .try_global::<crate::app::InitialAppearance>()
                         .is_some_and(|appearance| {
-                            SidebarIntent::of(&appearance.config) != SidebarIntent::of(&this.config)
+                            SidebarIntent::of(&appearance.shown.config)
+                                != SidebarIntent::of(&this.config)
                         })
                 {
                     this.broadcast_sidebar(cx);
@@ -440,19 +442,21 @@ impl SettingsWindow {
         }
         let previous = cx.try_global::<crate::app::InitialAppearance>();
         let keys_changed = previous.is_none_or(|previous| previous.keymap != self.keymap);
-        let menus_changed =
-            previous.is_some_and(|previous| crate::menus::changed(&previous.config, &self.config));
+        let menus_changed = previous
+            .is_some_and(|previous| crate::menus::changed(&previous.shown.config, &self.config));
         // Future windows inherit an explicit Settings draft, but not the source
         // window's cancellable hover preview. Logs follow live appearance.
         let previewing = self.source_window.theme_page_open;
         let mut appearance = crate::app::InitialAppearance {
-            config: self.config.clone(),
-            keymap: self.keymap.clone(),
-            theme: self.theme.clone(),
             error: None,
+            keymap: self.keymap.clone(),
+            shown: Appearance {
+                config: self.config.clone(),
+                theme: self.theme.clone(),
+            },
         };
         if let Some(drafts) = drafts::drafts(cx) {
-            drafts.apply_theme_draft(&mut appearance.config, &mut appearance.theme);
+            drafts.apply_theme_draft(&mut appearance.shown.config, &mut appearance.shown.theme);
         }
         cx.set_global(appearance);
         if !previewing {
