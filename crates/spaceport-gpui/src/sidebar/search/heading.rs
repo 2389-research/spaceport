@@ -7,6 +7,7 @@
 use crate::{
     SpaceportWindow,
     config::corners,
+    direction::Logical,
     i18n::fl,
     search_input::SearchInput,
     sidebar::{layout::SidebarLook, line_height, scaled},
@@ -175,9 +176,24 @@ impl SpaceportWindow {
                 .flex_none()
                 .h(px(height))
                 .px(px(look.inset()))
-                .flex()
+                .row()
                 .items_center()
-                .child(look.field_frame(field, open, theme)),
+                .child(look.field_frame(field, open, theme))
+                .when(heading == Heading::Spaces, |row| {
+                    row.child(
+                        self.workspace_disclosure(
+                            div()
+                                .flex_none()
+                                .w(px(24.))
+                                .h_full()
+                                .flex()
+                                .items_center()
+                                .justify_center(),
+                            true,
+                            cx,
+                        ),
+                    )
+                }),
         )
     }
 

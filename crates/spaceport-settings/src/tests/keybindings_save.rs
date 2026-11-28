@@ -1,151 +1,83 @@
 use super::*;
 use crate::Binding;
-use std::cell::Cell;
-
-/// What a caller's semantic check returns. The keymap's resolver lives in a
-/// crate that depends on this one, so these tests stand in for it; the
-/// app's tests run the real resolver through the same entry point.
-#[derive(Debug, thiserror::Error)]
-enum Check {
-    #[error("rejected")]
-    Rejected,
-    #[error(transparent)]
-    Settings(#[from] Error),
-}
-
-struct Files {
-    _temp: tempfile::TempDir,
-    managed: PathBuf,
-    local: PathBuf,
-    view: PathBuf,
-}
-
-fn files(local: Option<&str>) -> anyhow::Result<Files> {
-    let temp = tempfile::tempdir()?;
-    let managed = temp.path().join("config.toml");
-    let local_path = temp.path().join("config.local.toml");
-    if let Some(text) = local {
-        fs::write(&local_path, text)?;
-    }
-    Ok(Files {
-        managed,
-        local: local_path,
-        view: temp.path().join("view.toml"),
-        _temp: temp,
-    })
-}
-
-fn save(files: &Files, name: &str, binding: Option<Binding>) -> Result<(), Check> {
-    Config::save_keybinding_at(&files.managed, &files.view, name, binding, |_| Ok(()))
-}
+use std::fs;
 
 #[test]
 fn edit_unbind_and_reset_preserve_other_overrides_and_comments() -> anyhow::Result<()> {
-    let files = files(Some(
+    let temp = tempfile::tempdir()?;
+    let path = temp.path().join("config-gpui.local.toml");
+    fs::write(
+        &path,
         "# personal\ntheme = 'Nord'\n[keybindings]\nnew_tab = 'alt-t' # tab\nquit = 'alt-q'\n",
-    ))?;
-    let many = Binding::Many(vec!["ctrl-shift-t".into(), "alt-t".into()]);
-    save(&files, "new_tab", Some(many.clone()))?;
-    let text = fs::read_to_string(&files.local)?;
-    assert!(text.contains("# personal") && text.contains("# tab"));
-    let config = Config::load_fixture(&files.managed, &files.view)?;
-    assert_eq!(config.theme, "Nord");
-    assert_eq!(config.keybinding_overrides.get("new_tab"), Some(&many));
-    assert_eq!(
-        config.keybinding_overrides.get("quit"),
-        Some(&Binding::One("alt-q".into()))
-    );
-    // An empty list unbinds; reset removes the override entirely.
-    save(&files, "new_tab", Some(Binding::Many(vec![])))?;
-    let config = Config::load_fixture(&files.managed, &files.view)?;
-    assert_eq!(
-        config.keybinding_overrides.get("new_tab"),
-        Some(&Binding::Many(vec![]))
-    );
-    save(&files, "new_tab", None)?;
-    let config = Config::load_fixture(&files.managed, &files.view)?;
-    assert!(!config.keybinding_overrides.contains_key("new_tab"));
-    assert!(config.keybinding_overrides.contains_key("quit"));
-    Ok(())
-}
-
-#[test]
-fn validation_sees_the_merged_file_and_a_rejection_never_writes() -> anyhow::Result<()> {
-    // Another window saved `quit` after this caller's snapshot was taken.
-    let original = "[keybindings]\nquit = 'alt-q'\n";
-    let files = files(Some(original))?;
-    let checked = Cell::new(false);
-    let result = Config::save_keybinding_at(
-        &files.managed,
-        &files.view,
+    )?;
+    Config::save_keybinding_path(
         "new_tab",
-        Some(Binding::One("alt-t".into())),
-        |candidate| {
-            checked.set(true);
-            assert_eq!(
-                candidate.keybinding_overrides.get("quit"),
-                Some(&Binding::One("alt-q".into()))
-            );
-            assert_eq!(
-                candidate.keybinding_overrides.get("new_tab"),
-                Some(&Binding::One("alt-t".into()))
-            );
-            Err(Check::Rejected)
-        },
+        Some(Binding::Many(vec!["ctrl-shift-t".into(), "alt-t".into()])),
+        &path,
+    )?;
+    let text = fs::read_to_string(&path)?;
+    assert!(text.contains("# personal") && text.contains("# tab"));
+    let config = Config::parse(&text)?;
+    assert_eq!(config.theme, "Nord");
+    assert_eq!(crate::keymap(&config)?.primary(crate::Command::Quit), "alt-q");
+    assert_eq!(
+        crate::keymap(&config)?
+            .shortcuts(crate::Command::Tab)
+            .collect::<Vec<_>>(),
+        ["ctrl-shift-t", "alt-t"]
     );
-    assert!(checked.get());
-    assert!(matches!(result, Err(Check::Rejected)), "{result:?}");
-    assert_eq!(fs::read_to_string(&files.local)?, original);
+    Config::save_keybinding_path("new_tab", Some(Binding::Many(vec![])), &path)?;
+    assert_eq!(
+        crate::keymap(&Config::parse(&fs::read_to_string(&path)?)?)?
+            .primary(crate::Command::Tab),
+        ""
+    );
+    Config::save_keybinding_path("new_tab", None, &path)?;
+    let config = Config::parse(&fs::read_to_string(&path)?)?;
+    assert!(!config.keybinding_overrides.contains_key("new_tab"));
+    assert_eq!(
+        crate::keymap(&config)?.primary(crate::Command::Tab),
+        crate::controls::platform_default("cmd-t")
+    );
+    assert_eq!(crate::keymap(&config)?.primary(crate::Command::Quit), "alt-q");
     Ok(())
 }
 
 #[test]
-fn files_reload_would_reject_are_never_replaced_or_validated() -> anyhow::Result<()> {
-    // An unrelated bad setting and a broken file fail the reread itself.
-    for original in ["theme = ''\n", "[broken"] {
-        let files = files(Some(original))?;
-        let result = Config::save_keybinding_at(
-            &files.managed,
-            &files.view,
-            "new_tab",
-            None,
-            |_| -> Result<(), Check> { panic!("validated a file reload rejects") },
+fn invalid_or_conflicting_edits_never_replace_the_file() -> anyhow::Result<()> {
+    let temp = tempfile::tempdir()?;
+    let path = temp.path().join("config-gpui.local.toml");
+    let original = "[keybindings]\nquit = 'alt-q'\n[pane_keys]\n'ctrl-alt-l' = 'ctrl-l'\n";
+    fs::write(&path, original)?;
+    for key in ["t", "alt-q", "ctrl-alt-l", "ctrl-nope-t"] {
+        assert!(
+            Config::save_keybinding_path("new_tab", Some(Binding::One(key.into())), &path).is_err()
         );
-        assert!(matches!(result, Err(Check::Settings(_))), "{result:?}");
-        assert_eq!(fs::read_to_string(&files.local)?, original);
+        assert_eq!(fs::read_to_string(&path)?, original);
     }
-    let original = "[keybindings]\nquit = 'alt-q'\n";
-    let files = files(Some(original))?;
-    let result = save(&files, "unknown", None);
-    assert!(
-        matches!(
-            &result,
-            Err(Check::Settings(Error::Path { source, .. }))
-                if matches!(**source, Error::UnknownKeybinding(_))
-        ),
-        "{result:?}"
-    );
-    assert_eq!(fs::read_to_string(&files.local)?, original);
+    assert!(Config::save_keybinding_path("unknown", None, &path).is_err());
+    fs::write(&path, "[broken")?;
+    assert!(Config::save_keybinding_path("new_tab", None, &path).is_err());
+    assert_eq!(fs::read_to_string(&path)?, "[broken");
     Ok(())
 }
 
 #[test]
 fn inline_tables_and_missing_files_support_shortcut_edits() -> anyhow::Result<()> {
-    let files = files(None)?;
-    save(&files, "new_tab", Some(Binding::One("alt-t".into())))?;
+    let temp = tempfile::tempdir()?;
+    let path = temp.path().join("config-gpui.local.toml");
+    Config::save_keybinding_path("new_tab", Some(Binding::One("alt-t".into())), &path)?;
     assert_eq!(
-        Config::load_fixture(&files.managed, &files.view)?
-            .keybinding_overrides
-            .get("new_tab"),
-        Some(&Binding::One("alt-t".into()))
+        crate::keymap(&Config::parse(&fs::read_to_string(&path)?)?)?
+            .primary(crate::Command::Tab),
+        "alt-t"
     );
-    fs::write(
-        &files.local,
-        "keybindings = {new_tab = 'alt-t', quit = 'alt-q'}\n",
-    )?;
-    save(&files, "new_tab", None)?;
-    let config = Config::load_fixture(&files.managed, &files.view)?;
-    assert!(!config.keybinding_overrides.contains_key("new_tab"));
-    assert!(config.keybinding_overrides.contains_key("quit"));
+    fs::write(&path, "keybindings = {new_tab = 'alt-t', quit = 'alt-q'}\n")?;
+    Config::save_keybinding_path("new_tab", None, &path)?;
+    assert_eq!(
+        crate::keymap(&Config::parse(&fs::read_to_string(&path)?)?)?
+            .primary(crate::Command::Quit),
+        "alt-q"
+    );
     Ok(())
 }

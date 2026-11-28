@@ -6,6 +6,24 @@ import XCTest
 
 @MainActor
 final class HostProfilesTests: XCTestCase {
+    func testFilteringTagsPreservesSavedSessionIdentityAcrossReload() throws {
+        let suite = "spaceport.tags.\(UUID())"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = ProfileStore(defaults: defaults)
+        let a = try HostProfile.make(hostname: "one", port: "22", username: "u", session: "default")
+        let b = try HostProfile.make(hostname: "two", port: "22", username: "u", session: "default")
+        try store.save(a)
+        try store.save(b)
+        let id = try XCTUnwrap(store.catalog().hosts.first { $0.address == a.address }?.id)
+        try store.tagHost(id, text: "Work, work, home")
+        let loaded = try ProfileStore(defaults: defaults).catalog()
+        XCTAssertEqual(loaded.filtered(by: "WORK").profiles, [a])
+        XCTAssertEqual(loaded.hosts.first { $0.id == id }?.tags, ["Work", "home"])
+        try store.tagHost(id, text: "")
+        XCTAssertEqual(Set(try store.catalog().filtered(by: "Work").profiles), Set([a, b]))
+    }
+
     func testSavedHostHeadingShowsAnAccountOnlyToDistinguishLogins() throws {
         let address = try SSHAddress.parse("pilot@box")
         let host = SavedHost(id: UUID(), address: address, login: .password)

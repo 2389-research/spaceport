@@ -3,7 +3,8 @@
 Pulled from the crew board's icebox/backlog/ready rows and the split plan's open
 stages; stale rows verified against landed work and re-filed. Sequenced small to
 large inside each track. Status column: `next` = launch now, `soon` = behind one
-gate, `gated` = waiting on an owner decision or external event.
+gate, `gated` = waiting on an owner decision or external event, `closed` = the
+revisit found no work to do and the note records why.
 
 ## Track A — Finish the extraction programs (the split plan)
 
@@ -19,7 +20,7 @@ gate, `gated` = waiting on an owner decision or external event.
 | A8 | **Menu S6e part 3**: device picker, sessions management, host-menu forms (rename/tags/theme/forwards), theme picker, shortcut editor. The last and largest of the menus program. | L | A4 + A7's pattern | gated |
 | A9 | **Settings stage 6**: the eleven page modules + `controls/*` (3,692 lines) — the final settings push, P1 ruling now answered so wording can cross. | XL | A4 (DialogInput), staged like the menus program | gated |
 | A10 | **Chat stage 4** (wx65): attach over `spaceport-live` values — the last chat stage. | M | none | ready |
-| A11 | **Endpoint residual**: drain split deferred at wx75 — revisit if the mailbox routing changes. | S | none | backlog |
+| A11 | **Endpoint residual**: drain split deferred at wx75 — revisit if the mailbox routing changes. **Revisited: the routing did not change, and the desktop drain is already split — see [`notes-a11-endpoint-drain.md`](notes-a11-endpoint-drain.md); closed as still deferred.** | S | none | closed |
 
 ## Track B — Release & qualification (the "Complete ..." backlog rows)
 

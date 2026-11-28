@@ -35,6 +35,7 @@ struct ConnectionFlight: View {
 
     struct Frame: View {
         let step: Int
+        var fontSize: CGFloat = 12
         private static let stars = ["   +  ", "      ", " ·    ", "      ", "     .", "      ", "      "]
         private static let hull = [#"   /\   "#, #"  /  \  "#, "  |()|  ", #" /|  |\ "#, #"/_|__|_\"#]
 
@@ -53,7 +54,7 @@ struct ConnectionFlight: View {
                     }
                 }
             }
-            .font(.system(size: 12, weight: .bold, design: .monospaced))
+            .font(.system(size: fontSize, weight: .bold, design: .monospaced))
             .fixedSize()
         }
     }

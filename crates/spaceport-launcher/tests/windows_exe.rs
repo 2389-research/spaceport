@@ -1,6 +1,6 @@
 //! `spaceport-launcher.exe` is a windowed program, so Explorer and the Start menu open it
-//! without a console, and it carries the Herdr icon as resource 1 and the same manifest as
-//! herdr-gpui.
+//! without a console, and it carries the Spaceport icon as resource 1 and the same manifest as
+//! spaceport-gpui.
 #![cfg(windows)]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 #[path = "../../test-support/pe.rs"]

@@ -25,16 +25,16 @@ impl SpaceportWindow {
     /// The machines background monitors watch: this one always, a remote
     /// host while it is connected, so a dropped host is not dialled every
     /// few seconds.
-    pub(super) fn watched_hosts(&self) -> Vec<spaceport_remote::Host> {
-        self.connected_hosts(spaceport_remote::Host::of)
+    pub(super) fn watched_hosts(&self) -> Vec<crate::usage::Host> {
+        self.connected_hosts(crate::usage::Host::of)
     }
 
     /// The hosts `host` finds for the enabled endpoints `watched_hosts` would
     /// watch. Only connected hosts are sampled by a monitor.
     fn connected_hosts(
         &self,
-        host: fn(&spaceport_client::ConnectTarget) -> Option<spaceport_remote::Host>,
-    ) -> Vec<spaceport_remote::Host> {
+        host: fn(&spaceport_client::ConnectTarget) -> Option<crate::usage::Host>,
+    ) -> Vec<crate::usage::Host> {
         self.endpoints
             .iter()
             .enumerate()

@@ -2,9 +2,9 @@
 ; A translation is a copy of this file named for the app's language tag
 ; (installer/fr.isl), listed in spaceport.iss's [Languages] after the
 ; matching compiler:Languages\*.isl (docs/i18n.md). %1 is the argument the
-; script passes; keep every name, and keep "herdr-gpui" and file paths as
+; script passes; keep every name, and keep "spaceport" and file paths as
 ; they are.
 
 [CustomMessages]
-AddToPath=Add sheprd to PATH, for terminals and agents
+AddToPath=Add spaceport to PATH, for terminals and agents
 ; The folder context menu's command; %1 is the app's name.

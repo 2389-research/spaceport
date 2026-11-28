@@ -1,5 +1,5 @@
 // ABOUTME: Reads the saved tab file, including tab kinds the app no longer shows.
-// ABOUTME: Validates retired payloads so recovery backs up damaged files before replacement.
+// ABOUTME: Checks retired payloads as before, then yields only the tabs that restore.
 //! The schema of `browser-tabs.json` as any earlier build may have written
 //! it. Only this module can name a retired tab kind: it checks the whole
 //! file, reserves every ID in it, and hands the store the tabs that restore.
@@ -71,7 +71,8 @@ enum SavedLocation {
 enum SavedPlace {
     #[default]
     Group,
-    Retired,
+    Px0,
+    VsCode,
 }
 
 impl<'de> Deserialize<'de> for SavedPlace {
@@ -79,7 +80,8 @@ impl<'de> Deserialize<'de> for SavedPlace {
         let name = String::deserialize(deserializer)?;
         match name.as_str() {
             "group" => Ok(Self::Group),
-            "code" | "code_group" | "px0" => Ok(Self::Retired),
+            "code" | "code_group" => Ok(Self::VsCode),
+            "px0" => Ok(Self::Px0),
             _ => Err(serde::de::Error::unknown_variant(
                 &name,
                 &["group", "code", "code_group", "px0"],
@@ -103,8 +105,9 @@ impl SavedTab {
     /// The live tab, or `None` for a kind the app no longer shows: an
     /// editor tab, a page, or a blank tab outside a Core group.
     fn restore(self) -> Option<Tab> {
-        if self.place == SavedPlace::Retired {
-            return None;
+        match self.place {
+            SavedPlace::Group => {}
+            SavedPlace::Px0 | SavedPlace::VsCode => return None,
         }
         let location = match (self.location, &self.scope) {
             (Some(SavedLocation::Devices), _) => Some(Location::Devices),
@@ -203,7 +206,7 @@ impl TryFrom<RawSourceFile> for SourceFile {
 
     fn try_from(raw: RawSourceFile) -> Result<Self> {
         if !bounded_path(&raw.path) || !Path::new(&raw.path).is_absolute() {
-            return Err(Error::InvalidBrowserTabs);
+            return Err(Error::InvalidCodeFile);
         }
         Ok(Self)
     }
@@ -263,7 +266,7 @@ impl TryFrom<RawReviewCheckout> for ReviewCheckout {
             || !branch
             || raw.checkout.as_deref().is_some_and(|c| !path(c))
         {
-            return Err(Error::InvalidBrowserTabs);
+            return Err(Error::InvalidReviewCheckout);
         }
         Ok(Self)
     }
@@ -289,7 +292,7 @@ impl TryFrom<RawLocalFile> for LocalFile {
     fn try_from(raw: RawLocalFile) -> Result<Self> {
         let home = spaceport_client::local_path::home_dir();
         if !servable(&raw.root, &raw.entry, home.as_deref()) {
-            return Err(Error::InvalidBrowserTabs);
+            return Err(Error::InvalidLocalPage);
         }
         Ok(Self)
     }

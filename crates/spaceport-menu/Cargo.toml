@@ -16,8 +16,10 @@ spaceport-client.workspace   = true
 spaceport-i18n.workspace     = true
 spaceport-motion.workspace   = true
 spaceport-settings.workspace = true
+spaceport-usage.workspace    = true
 spaceport-widgets.workspace  = true
 thiserror.workspace          = true
 
 [dev-dependencies]
+gpui           = { features = ["test-support"], workspace = true }
 spaceport-i18n = { features = ["test-support"], workspace = true }

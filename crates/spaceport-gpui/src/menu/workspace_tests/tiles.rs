@@ -1,45 +1,5 @@
 use super::*;
-use crate::menu::workspace::popover::{Label, Tile, layout};
-
-fn tile(action: WorkspaceMenuAction, label: Label, enabled: bool) -> Tile {
-    Tile {
-        action,
-        label,
-        enabled,
-    }
-}
-
-#[test]
-fn every_slot_keeps_its_place_and_grays_what_is_unavailable() {
-    use WorkspaceMenuAction::*;
-    // A plain checkout keeps the ordinary workspace actions.
-    let items = [(Dialog(WorkspaceAction::Rename), Label::RENAME)];
-    let (tiles, rest) = layout(&items);
-    assert_eq!(
-        tiles,
-        [tile(Dialog(WorkspaceAction::Rename), Label::RENAME, true),]
-    );
-    assert!(rest.is_empty());
-}
-
-#[test]
-fn rows_follow_the_grid_in_order() {
-    use WorkspaceMenuAction::*;
-    let items = [
-        (Dialog(WorkspaceAction::Rename), Label::RENAME),
-        (Dialog(WorkspaceAction::Note), Label::NOTE),
-        (Collapse, Label::COLLAPSE_GROUP),
-    ];
-    let (tiles, rest) = layout(&items);
-    assert!(tiles[0].enabled);
-    assert_eq!(
-        rest,
-        [
-            (Dialog(WorkspaceAction::Note), Label::NOTE),
-            (Collapse, Label::COLLAPSE_GROUP),
-        ]
-    );
-}
+use spaceport_menu::workspace::popover::layout;
 
 #[gpui::test]
 fn the_keyboard_walks_actions_in_the_order_they_are_drawn(cx: &mut gpui::TestAppContext) {
@@ -51,33 +11,29 @@ fn the_keyboard_walks_actions_in_the_order_they_are_drawn(cx: &mut gpui::TestApp
         })
     });
     let items = cx.update(|_, cx| view.read(cx).workspace_items());
+    let actions: Vec<_> = items.iter().map(|item| item.action).collect();
     let (tiles, rest) = layout(&items);
     // The header's toggle, then the grid and the rows under it.
     let drawn: Vec<_> = items
         .iter()
-        .copied()
-        .filter(|(action, _)| action.in_header())
-        .chain(
-            tiles
-                .iter()
-                .filter(|tile| tile.enabled)
-                .map(|tile| (tile.action, tile.label)),
-        )
+        .filter(|item| item.action.in_header())
+        .chain(tiles)
         .chain(rest)
+        .map(|item| item.action)
         .collect();
-    assert_eq!(drawn, items, "keyboard order must match the drawn order");
+    assert_eq!(drawn, actions, "keyboard order must match the drawn order");
     // Right walks forward and left walks back, like down and up.
     for (key, expected) in [
         ("right", 0),
         ("right", 1),
         ("left", 0),
-        ("left", items.len() - 1),
+        ("left", actions.len() - 1),
     ] {
         cx.simulate_keystrokes(key);
         cx.update(|_, cx| {
             assert_eq!(
                 view.read(cx).menu.workspace_selected,
-                Some(items[expected].0),
+                Some(actions[expected]),
                 "{key}"
             );
         });

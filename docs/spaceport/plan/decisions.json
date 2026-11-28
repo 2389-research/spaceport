@@ -505,13 +505,6 @@
       "decision": "PR #142 removed the client's last live plugin-execution path reachable from an ordinary click: pane.link.activate could answer handled:true, meaning a [[link_handlers]] plugin had already run and claimed the click. Links now open read-only - Spaceport reads the target itself (URL to the browser, file to the default app) and no Herdr plugin handler runs, ever, from a link click. The removal is deliberate fork scope, not an incidental simplification, and matches the upstream no-surprise daemon lifecycle rule. It was never given a decision number; D72 records it.",
       "status": "active",
       "source": "Crew task apwa, Doctor Biz decision 2026-11-18; PR #142 merged. D-number assigned 2026-11-25 when the register reconciliation (crew task p3es) found the narrowing unrecorded."
-    },
-    {
-      "id": "D73",
-      "title": "Remove the unfed usage and automation views",
-      "decision": "Delete Spaceport's own plan-usage presentation (status bar segment, panel, Usage activity section, `spaceport usage`, the `[usage] show`/provider settings, the provider registry and its logos) and the Automations activity page. No supported feed reached either, so both only ever showed unavailable. The daemon-reported usage indicators stay: `[usage] topbar` and `[usage] inline` still show or hide Herdr's own tab bar segments and sidebar rows. This narrows D07 and D12 until G-OBS closes; a supported feed then needs new views built on it. The same change deletes the fork's absence and tombstone tests and the code that refused removed settings, keeping only the D72 link-activation guard.",
-      "status": "active",
-      "source": "Doctor Biz decision 2026-11-26, in the unused-code audit session; branch refactor/remove-dead-features."
     }
   ]
 }

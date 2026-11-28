@@ -59,7 +59,6 @@ pub mod tab_layout;
 mod tests;
 pub mod theme;
 mod toml_value;
-pub mod usage;
 pub mod worktrees;
 pub mod zen;
 

@@ -25,6 +25,7 @@ mod follow_focus;
 mod herdr_missing;
 mod legacy_terminal_fallback;
 mod padding;
+mod removed_remote_browser;
 mod report_issue;
 mod rtl;
 mod sound_volume;

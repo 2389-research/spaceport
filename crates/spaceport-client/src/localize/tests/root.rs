@@ -214,6 +214,7 @@ fn every_sessions_variant_has_a_message() {
         sessions::Error::DeleteFailed(status()),
         sessions::Error::DeleteTimeout,
         sessions::Error::Limit,
+        sessions::Error::NotRunning,
     ]);
 }
 

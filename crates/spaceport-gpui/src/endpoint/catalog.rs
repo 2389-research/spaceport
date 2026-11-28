@@ -122,7 +122,7 @@ impl SpaceportWindow {
                 .map(|endpoint| endpoint.id.as_str()),
         );
         // A tab torn off another window may belong to a host just listed.
-        self.resume_arrival(cx);
+        self.land_arrival(true, cx);
         cx.notify();
     }
 }

@@ -1,0 +1,39 @@
+#!/usr/bin/ruby
+# ABOUTME: Publishes one new agent on a disposable Herdr host when the iOS simulator requests it.
+# ABOUTME: Select the second seed-attention container and export the printed URL to the XCTest runner.
+require "open3"
+require "json"
+require "securerandom"
+require "webrick"
+
+abort "Usage: serve-multihost-roster DISPOSABLE_APPLE_CONTAINER SSH_USER SECOND_SESSION" unless ARGV.size == 3
+container, user, session = ARGV
+abort "Use a non-root fixture account" if ["root", "0"].include?(user)
+herdr = ["container", "exec", "--user", user, container, "herdr", "--session", session]
+
+def run(*command)
+  output, status = Open3.capture2e(*command)
+  abort "Fixture Herdr command failed: #{output}" unless status.success?
+  output
+end
+
+logs = JSON.parse(run(*herdr, "pane", "list")).fetch("result").fetch("panes").select { |pane| pane["label"] == "Logs" }
+abort "Expected the one Logs pane from seed-attention in the second session" unless logs.size == 1
+pane = logs.first.fetch("pane_id")
+name = "Signal-#{SecureRandom.hex(5)}"
+path = "/publish/#{SecureRandom.hex(16)}"
+server = WEBrick::HTTPServer.new(BindAddress: "127.0.0.1", Port: 0, AccessLog: [], Logger: WEBrick::Log.new($stderr))
+server.mount_proc("/") do |request, response|
+  raise WEBrick::HTTPStatus::NotFound unless request.path == path && request.request_method == "POST"
+  # Herdr tracks reports from a foreground program. Keep the reporter attached to its own pane.
+  run(*herdr, "pane", "run", pane,
+      %Q{sh -c 'herdr pane report-agent "$HERDR_PANE_ID" --source mobile-roster-qa --agent #{name} --state working --seq 1 && read answer'})
+  response["Content-Type"] = "text/plain"
+  response.body = name
+  server.shutdown
+end
+Signal.trap("INT") { server.shutdown }
+Signal.trap("TERM") { server.shutdown }
+$stdout.sync = true
+puts "export TEST_RUNNER_SPACEPORT_TEST_ROSTER_WITNESS=http://127.0.0.1:#{server.listeners.first.addr[1]}#{path}"
+server.start

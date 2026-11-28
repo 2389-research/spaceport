@@ -50,7 +50,7 @@ Offer prompt composition, attachments, permission answers, queues and slash-comm
 
 ### SP-011 — Activity, search and monitoring
 
-Preserve the current activity timeline rather than adding a new navigation model or history service. Search only the data available in that retained timeline. Keep supported agent status and the usage/rate-limit indicators the daemon reports. Ship no usage or automation view of Spaceport's own until a supported feed exists. Remove CPU/GPU/memory dashboards, provider polling/sign-in subsystems, automation execution/editing and repository indexing. Unavailable information is not zero, no history, or “no jobs.” [D07, D12, D17–D19, D49, D73]
+Preserve the current activity timeline rather than adding a new navigation model or history service. Search only the data available in that retained timeline. Keep supported agent status, usage/rate-limit reporting and read-only automation visibility. Remove CPU/GPU/memory dashboards, provider polling/sign-in subsystems, automation execution/editing and repository indexing. Unavailable information is not zero, no history, or “no jobs.” [D07, D12, D17–D19, D49]
 
 ### SP-012 — Notifications and lifecycle
 

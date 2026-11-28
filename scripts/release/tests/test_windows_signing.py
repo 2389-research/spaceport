@@ -20,7 +20,7 @@ INSTALLER = load("windows_installer", SCRIPTS / "windows-installer.py")
 PACKAGE = load("package_windows", SCRIPTS / "package-windows.py")
 VERSION = "20260920.3"
 TARGET = "x86_64-pc-windows-msvc"
-ROOT = f"Sheprd-{VERSION}-{TARGET}"
+ROOT = f"Spaceport-{VERSION}-{TARGET}"
 OPTIONAL = 0x40 + 24
 CHECKSUM = OPTIONAL + 64
 SECURITY = OPTIONAL + 112 + 4 * 8
@@ -155,7 +155,7 @@ class RepackTests(unittest.TestCase):
         (self.work / "tree").mkdir()
         with self.assertRaisesRegex(ValueError, "already exists"):
             SIGNING.unpack(self.archive, self.work / "tree")
-        foreign = self.work / f"Sheprd-{VERSION}-aarch64-pc-windows-msvc.zip"
+        foreign = self.work / f"Spaceport-{VERSION}-aarch64-pc-windows-msvc.zip"
         self.archive.rename(foreign)
         with self.assertRaisesRegex(ValueError, "outside its root"):
             SIGNING.unpack(foreign, self.work / "other")

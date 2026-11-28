@@ -60,6 +60,7 @@ pub enum ControlCommand {
     Processes {
         pane: Option<String>,
     },
+    Usage,
     Config(ConfigCommand),
     Theme(ThemeCommand),
     Font(ThemeCommand),
@@ -185,6 +186,12 @@ pub(crate) const FAMILIES: &[Family] = &[
         summary: "The processes running under a pane",
         usage: plain::PROCESSES_USAGE,
         parse: plain::processes,
+    },
+    Family {
+        name: "usage",
+        summary: "AI plan usage on the selected host",
+        usage: plain::USAGE_USAGE,
+        parse: plain::usage,
     },
     Family {
         name: "config",

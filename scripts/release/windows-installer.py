@@ -2,7 +2,7 @@
 """ABOUTME: Build and smoke the per-user Windows installer from packaged files.
 ABOUTME: Check installed artifacts while preserving external link-handler ownership.
 
-Build the per-user Windows installer, Sheprd-VERSION-TARGET-setup.exe.
+Build the per-user Windows installer, Spaceport-VERSION-TARGET-setup.exe.
 
   install-iscc DESTINATION_DIR
       Install the pinned Inno Setup compiler into DESTINATION_DIR after checking its SHA-256, and print the path of ISCC.exe.
@@ -13,7 +13,7 @@ Build the per-user Windows installer, Sheprd-VERSION-TARGET-setup.exe.
       uninstaller it embeds and Setup.exe through windows-sign-file.ps1.
       Nothing passes it: its only caller, the upstream release workflow's
       windows-sign job, was removed with that workflow, so every build here
-      stays unsigned (see README.md, Windows Signing).
+      stays unsigned (see README.md, Signing Gates).
   smoke [--signed] INSTALLER
       On Windows: install silently into a scratch directory with the PATH
       task, check the files, their subsystems, spaceport.exe's output, the
@@ -21,7 +21,7 @@ Build the per-user Windows installer, Sheprd-VERSION-TARGET-setup.exe.
       launcher), the user PATH, and the entry Settings lists under Installed
       apps; preserve URL handlers; write the startup entry Launch at login would, marked off in
       Startup apps; reinstall silently and check that state is preserved; then
-      uninstall and check its owned state is gone and URL handlers remain. With --signed,
+      uninstall and check its owned state is gone and URL handlers and an unowned desktop shortcut remain. With --signed,
       also require valid timestamped signatures from one signer on the
       installer and on everything it installed that runs, the uninstaller
       included. Changes this user's PATH and Start menu shortcut while it
@@ -33,6 +33,7 @@ Build the per-user Windows installer, Sheprd-VERSION-TARGET-setup.exe.
 Pure standard library, like package-windows.py, for the Windows runner.
 """
 import argparse
+from contextlib import contextmanager
 import hashlib
 import importlib.util
 import os
@@ -106,10 +107,10 @@ def build(version, target, archive, output_dir, iscc, sign=False):
     if not archive.is_file() or not output_dir.is_dir():
         raise ValueError("Release zip and existing output directory required")
     output_dir = output_dir.resolve()
-    output = output_dir / f"Sheprd-{version}-{target}-setup.exe"
+    output = output_dir / f"Spaceport-{version}-{target}-setup.exe"
     if output.exists() or output.is_symlink():
         raise ValueError(f"Output already exists: {output}")
-    root = f"Sheprd-{version}-{target}"
+    root = f"Spaceport-{version}-{target}"
     with tempfile.TemporaryDirectory() as temp:
         with zipfile.ZipFile(archive) as release:
             names = release.namelist()
@@ -148,6 +149,19 @@ def app_id():
     return re.search(r"^AppId=\{(\{[0-9A-F-]{36}\})$", SCRIPT.read_text(), re.MULTILINE)[1]
 
 
+def define(name):
+    """The value `spaceport.iss` gives one of its double-quoted defines."""
+    match = re.search(rf'^#define {name} "([^"]+)"$', SCRIPT.read_text(), re.M)
+    if not match:
+        raise ValueError(f"{SCRIPT.name} defines no {name}")
+    return match.group(1)
+
+
+def app_name():
+    """The product name the installer's display names and shortcuts use."""
+    return define("AppName")
+
+
 def uninstall_entry():
     """The values of the Uninstall key that Settings and Programs and Features
     list the installation by, or None when it is missing."""
@@ -167,7 +181,7 @@ def check_uninstall_entry(app):
         raise ValueError("Installer wrote no Uninstall entry")
     # Settings hides entries without a name, system components, and updates
     # of another entry.
-    if entry.get("DisplayName") != "Sheprd" or entry.get("SystemComponent") or entry.get("ParentKeyName"):
+    if entry.get("DisplayName") != app_name() or entry.get("SystemComponent") or entry.get("ParentKeyName"):
         raise ValueError(f"Settings would not list the Uninstall entry: {entry}")
     if Path(entry.get("UninstallString", "").strip('"')) != app / "unins000.exe":
         raise ValueError(f"Uninstall entry does not run the uninstaller: {entry}")
@@ -203,7 +217,11 @@ def verify_link_handlers(before, after):
 # switch, name the app; the installer creates neither and removes both.
 STARTUP_KEYS = (r"Software\Microsoft\Windows\CurrentVersion\Run",
                 r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run")
-STARTUP_NAME = "Herdr UI"
+# The name launch_at_login.rs writes, which spaceport.iss removes on uninstall.
+STARTUP_NAME = "Spaceport"
+# The inherited Sheprd installer's name for the same entry. Spaceport neither
+# writes nor adopts it, so an upgrade must not create a second startup identity.
+INHERITED_STARTUP_NAME = "Herdr UI"
 
 
 def startup_entries():
@@ -239,7 +257,7 @@ def check_startup_preserved(launcher):
             if winreg.QueryValueEx(key, STARTUP_NAME) != value:
                 raise ValueError("Upgrade changed the saved startup command or disabled state")
             try:
-                winreg.QueryValueEx(key, "Sheprd")
+                winreg.QueryValueEx(key, INHERITED_STARTUP_NAME)
             except FileNotFoundError:
                 continue
             raise ValueError("Upgrade created a second startup identity")
@@ -254,10 +272,36 @@ def check_signed(paths):
 
 def app_user_model_id():
     """The AppUserModelID the installer gives its shortcuts."""
-    match = re.search(r'^#define AppUserModelID "([^"]+)"$', SCRIPT.read_text(), re.M)
-    if not match:
-        raise ValueError(f"{SCRIPT.name} defines no AppUserModelID")
-    return match.group(1)
+    return define("AppUserModelID")
+
+
+# The build record cli.rs embeds in every executable, whatever the channel: the
+# app ID, version and profile the binary was built with.
+IDENTITY_PREFIX = b"\0SPACEPORT_PREVIEW_V1\n"
+
+
+def embedded_app_id(path):
+    """The app ID `path` carries, which its notifications and shortcuts group by.
+
+    The record is a NUL-terminated text run a packaging tool finds without
+    executing the program, as scripts/release/preview-identity.py does for a
+    bundle.
+    """
+    data = path.read_bytes()
+    found = set()
+    offset = data.find(IDENTITY_PREFIX)
+    while offset != -1:
+        start = offset + len(IDENTITY_PREFIX)
+        end = data.find(b"\0", start, start + 512)
+        if end == -1:
+            raise ValueError(f"{path.name} has no complete build identity record")
+        for line in data[start:end].decode("utf-8", "replace").splitlines():
+            if line.startswith("id="):
+                found.add(line.removeprefix("id="))
+        offset = data.find(IDENTITY_PREFIX, start)
+    if len(found) != 1:
+        raise ValueError(f"{path.name} carries {len(found)} build identities: {sorted(found)}")
+    return found.pop()
 
 
 def shell_identity(app):
@@ -267,7 +311,7 @@ def shell_identity(app):
         "$ErrorActionPreference = 'Stop';"
         "(Get-Item -LiteralPath $env:HERDR_SMOKE_APP).VersionInfo.FileDescription;"
         "$programs = [Environment]::GetFolderPath('Programs');"
-        "$link = (New-Object -ComObject Shell.Application).Namespace($programs).ParseName('Sheprd.lnk');"
+        "$link = (New-Object -ComObject Shell.Application).Namespace($programs).ParseName('Spaceport.lnk');"
         "$link.ExtendedProperty('System.AppUserModel.ID');"
         "$link.GetLink.Path"
     )
@@ -277,13 +321,43 @@ def shell_identity(app):
     return tuple(output.splitlines())
 
 
+@contextmanager
+def unowned_shortcut(shortcut):
+    """Seed an otherwise empty desktop and remove only the smoke's own marker."""
+    marker = os.urandom(32)
+    with shortcut.open("xb") as stream:
+        stream.write(marker)
+        original = os.fstat(stream.fileno())
+    try:
+        yield
+    finally:
+        try:
+            same_file = os.path.samestat(original, shortcut.lstat())
+            if same_file:
+                with shortcut.open("rb") as stream:
+                    same_file = stream.read(len(marker) + 1) == marker
+        except FileNotFoundError:
+            same_file = False
+        if not same_file:
+            raise ValueError("Install or uninstall changed the unowned desktop shortcut")
+        shortcut.unlink()
+
+
 def smoke(installer, signed=False):
     handlers = link_handlers()
-    with tempfile.TemporaryDirectory(prefix="herdr-installer-smoke-") as temp:
+    desktop = subprocess.check_output([
+        "powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
+        "[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false);"
+        "[Environment]::GetFolderPath('DesktopDirectory')",
+    ], encoding="utf-8", timeout=60).strip()
+    if not Path(desktop).is_absolute():
+        raise ValueError("Cannot locate the current user's desktop for the installer smoke")
+    with unowned_shortcut(Path(desktop) / f"{app_name()}.lnk"), \
+            tempfile.TemporaryDirectory(prefix="herdr-installer-smoke-") as temp:
         # Runners report %TEMP% as an 8.3 short path (C:\Users\RUNNER~1\...),
         # while the shell answers with long ones; resolving first keeps every
         # path the checks compare in one spelling.
-        app = Path(temp).resolve() / "Herdr UI"
+        app = Path(temp).resolve() / "Spaceport"
         subprocess.run([str(installer), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-",
                         "/TASKS=addtopath", f"/DIR={app}", f"/LOG={Path(temp) / 'setup.log'}"],
                        check=True, timeout=600)
@@ -292,11 +366,11 @@ def smoke(installer, signed=False):
         # uninstall entry never point into the deleted scratch directory.
         try:
             check_installation(app, installer if signed else None, handlers)
-            legacy_launcher = app / "herdr-gpui-launcher.exe"
-            enable_startup(legacy_launcher)
+            launcher = app / "spaceport-launcher.exe"
+            enable_startup(launcher)
             check_reinstall(installer, app, env)
             verify_link_handlers(handlers, link_handlers())
-            check_startup_preserved(legacy_launcher)
+            check_startup_preserved(launcher)
         finally:
             uninstall(app, env, handlers)
 
@@ -318,8 +392,13 @@ def check_installation(app, signed_installer, handlers):
     if not info.startswith("worktree="):
         raise ValueError(f"Installed spaceport.exe printed no build info:\n{info}")
     identity = shell_identity(exe)
-    if identity != ("Sheprd", app_user_model_id(), str(launcher)):
+    if identity != (app_name(), app_user_model_id(), str(launcher)):
         raise ValueError(f"Installed app or shortcut has the wrong identity: {identity}")
+    # Notifications and the taskbar group by the app ID the executable itself
+    # carries, so a shortcut naming another one would post its toasts apart.
+    built_id = embedded_app_id(exe)
+    if built_id != app_user_model_id():
+        raise ValueError(f"Executable carries app ID {built_id!r}, not {app_user_model_id()!r}")
     if signed_installer is not None:
         check_signed([signed_installer.resolve(), *(app / name for name in packaged_executables()),
                       app / "unins000.exe"])
@@ -358,7 +437,7 @@ def uninstall(app, env, handlers):
                    check=True, timeout=600, env=env)
     # The uninstaller hands off to a copy of itself and returns early.
     entry = str(app).lower()
-    shortcut = Path(os.environ["APPDATA"]) / "Microsoft/Windows/Start Menu/Programs/Sheprd.lnk"
+    shortcut = Path(os.environ["APPDATA"]) / "Microsoft/Windows/Start Menu/Programs/Spaceport.lnk"
     deadline = time.monotonic() + 120
     while (app.exists() or shortcut.exists() or entry in user_path_entries()
            or uninstall_entry() is not None

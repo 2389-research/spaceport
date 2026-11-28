@@ -7,6 +7,8 @@ struct PanePreviewCache {
         let pane: String
         let text: String
         let seenAt: Date
+        fileprivate let agent: String?
+        fileprivate var viewport: String?
     }
     let capacity: Int
     private var boot: String?
@@ -26,16 +28,24 @@ struct PanePreviewCache {
         if recent.count > capacity { recent.removeLast() }
     }
 
-    mutating func record(_ text: String, pane: String, boot: String, at date: Date = Date()) {
+    mutating func record(_ text: String, pane: String, boot: String, agent: String? = nil, at date: Date = Date()) {
         visit(pane, boot: boot)
         entries.removeAll { $0.pane == pane }
-        guard let text = Self.excerpt(text) else { return }
-        entries.insert(Entry(pane: pane, text: text, seenAt: date), at: 0)
+        guard let excerpt = Self.excerpt(text) else { return }
+        // Two screens cover A → B → A. Keep only the short Peek excerpt for older panes.
+        let viewport = text.utf8.count <= 64 * 1024 ? text : nil
+        entries.insert(Entry(pane: pane, text: excerpt, seenAt: date, agent: agent, viewport: viewport), at: 0)
+        if entries.count > 2 { entries[2].viewport = nil }
         if entries.count > capacity { entries.removeLast() }
     }
 
     func lastSeen(pane: String, boot: String) -> Entry? {
         self.boot == boot ? entries.first { $0.pane == pane } : nil
+    }
+
+    func viewport(pane: String, boot: String, agent: String? = nil) -> String? {
+        guard let entry = lastSeen(pane: pane, boot: boot), entry.agent == agent else { return nil }
+        return entry.viewport
     }
 
     static func excerpt(_ text: String) -> String? {

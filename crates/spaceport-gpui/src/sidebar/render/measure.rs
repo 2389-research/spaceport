@@ -37,6 +37,7 @@ pub(super) struct SidebarMeasure<'a> {
     pub(super) devices: bool,
     /// The spaces list stands in for by its search results.
     pub(super) searchable: bool,
+    pub(super) workspaces_collapsed: bool,
     /// The device tree narrows in place by its own field.
     pub(super) tree_search: bool,
     /// More than one host is listed, so rows carry their host.
@@ -87,7 +88,8 @@ impl SpaceportWindow {
         // replace the list, gives way to it; one setting hides either.
         let devices = !self.config.layout.mode.lists_workspaces();
         // A hidden field keeps whatever it held, but never filters the list.
-        let searchable = self.config.show_sidebar_search && !devices;
+        let workspaces_collapsed = !devices && !self.sidebar_workspaces_expanded;
+        let searchable = self.config.show_sidebar_search && !devices && !workspaces_collapsed;
         let tree_search = self.config.show_sidebar_search && devices;
         let multi = self.endpoints.len() > 1;
         let headed = multi || devices;
@@ -128,6 +130,7 @@ impl SpaceportWindow {
             spaces_custom,
             devices,
             searchable,
+            workspaces_collapsed,
             tree_search,
             multi,
             headed,

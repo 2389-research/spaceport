@@ -82,6 +82,9 @@ fn a_section_takes_the_body_beside_the_bar_and_workspaces_brings_it_back(
     // The status bar stays under it.
     let status = cx.debug_bounds("connection-status").unwrap();
     assert!(status.top() >= section.bottom());
+    click(cx, "activity-usage");
+    assert!(cx.debug_bounds("usage-section").is_some());
+    click(cx, "activity-overview");
     // A section picked again stays.
     click(cx, "activity-overview");
     assert!(cx.debug_bounds("overview").is_some());
@@ -151,15 +154,15 @@ fn a_stored_panel_yields_to_one_picked_before_it_loaded(cx: &mut gpui::TestAppCo
     view.update(cx, |view, _| {
         assert_eq!(view.activity.chosen(), None);
         view.activity
-            .restore(Some(ActivityPanel::Overview), &Default::default());
-        assert_eq!(view.activity.panel, ActivityPanel::Overview);
+            .restore(Some(ActivityPanel::Usage), &Default::default());
+        assert_eq!(view.activity.panel, ActivityPanel::Usage);
     });
     let (view, cx) = fixture(cx);
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.show_activity_panel(ActivityPanel::Overview, window, cx);
             view.activity
-                .restore(Some(ActivityPanel::Workspaces), &Default::default());
+                .restore(Some(ActivityPanel::Usage), &Default::default());
             assert_eq!(view.activity.panel, ActivityPanel::Overview);
             assert_eq!(view.activity.chosen(), Some(ActivityPanel::Overview));
         })
