@@ -129,6 +129,8 @@ mod text_width;
 #[cfg(test)]
 mod workspace_click_hover;
 #[cfg(test)]
+mod workspace_disclosure;
+#[cfg(test)]
 mod workspace_double_click;
 #[cfg(test)]
 mod workspace_menu;
@@ -753,6 +755,7 @@ pub(crate) fn fixture_window(
         version_notice_shown: false,
         wheel: WheelAccumulator::default(),
         sidebar_width: None,
+        sidebar_workspaces_expanded: true,
         sidebar_drag: None,
         workspace_drag: None,
         device_drag: None,

@@ -259,7 +259,7 @@ fn rounded_rows_keep_tree_lines_and_title_headers(cx: &mut gpui::TestAppContext)
     use crate::config::{Density, LayoutMode, Style};
     // A fresh window per mode: GPUI keeps debug bounds from earlier frames,
     // so absence is only observable when the element never rendered.
-    for (style, header) in [(Style::Rounded, "Spaces"), (Style::Flat, "spaces")] {
+    for (style, header) in [(Style::Rounded, "Workspaces"), (Style::Flat, "workspaces")] {
         let (view, cx) = cx.add_window_view(|window, cx| {
             let mut view = fixture_window(window, cx);
             view.live.snapshot = Some(Arc::new(snapshot(6)));

@@ -11,7 +11,7 @@ fn placeholder(view: &Entity<SpaceportWindow>, cx: &mut gpui::VisualTestContext)
 }
 
 #[gpui::test]
-fn the_heading_is_the_field_and_spans_a_rows_highlight(cx: &mut gpui::TestAppContext) {
+fn the_search_and_disclosure_share_the_width_of_a_row(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(connected);
     cx.simulate_resize(size(px(800.), px(700.)));
     cx.run_until_parked();
@@ -19,13 +19,15 @@ fn the_heading_is_the_field_and_spans_a_rows_highlight(cx: &mut gpui::TestAppCon
     let field = cx.debug_bounds("sidebar-search").unwrap();
     let highlight = cx.debug_bounds("highlight-herdr").unwrap();
     assert_eq!(field.left(), highlight.left());
-    assert_eq!(field.right(), highlight.right());
+    let disclosure = cx.debug_bounds("workspaces-disclosure").unwrap();
+    assert_eq!(field.right(), disclosure.left());
+    assert_eq!(disclosure.right(), highlight.right());
     let heading = cx.debug_bounds("header-spaces").unwrap();
     let list = cx.debug_bounds("spaces-scroll").unwrap();
     assert_eq!(list.top(), heading.bottom(), "no line besides the heading");
     // At rest it reads as the heading.
     let label = placeholder(&view, cx);
-    assert!(label.eq_ignore_ascii_case("spaces"), "{label}");
+    assert!(label.eq_ignore_ascii_case("workspaces"), "{label}");
     assert!(cx.debug_bounds("sidebar-search-clear").is_none());
 
     cx.update(|window, cx| {

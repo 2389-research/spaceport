@@ -54,7 +54,12 @@ fn the_default_menu_lists_its_rows_in_order(cx: &mut gpui::TestAppContext) {
 #[test]
 fn every_offered_row_draws_a_translated_label_not_its_key() {
     under_en_xa("footer menu labels", |cx, recorder| {
-        let (view, cx) = cx.add_window_view(fixture_window);
+        // GPUI reuses shaped text. Keep the sidebar from shaping the menu's Workspaces label first.
+        let (view, cx) = cx.add_window_view(|window, cx| {
+            let mut view = fixture_window(window, cx);
+            view.config.layout.mode = crate::config::LayoutMode::Devices;
+            view
+        });
         cx.simulate_resize(size(px(1000.), px(800.)));
         draw(cx);
         recorder.take();

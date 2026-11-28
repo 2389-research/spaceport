@@ -179,7 +179,7 @@ for the selected host's focused pane, whatever the delivery setting. Clicking it
 tests the normal focus and navigation path. On macOS it needs the `just run`
 bundle, and the first one asks for notification permission.
 
-Spaces lists Local first, then saved hosts in the upstream catalog's order.
+Workspaces lists Local first, then saved hosts in the upstream catalog's order.
 Enabled hosts connect in the background with inactive terminal surfaces; disabled
 hosts remain visible. Host and repository collapse state is endpoint-scoped, and
 Agents aggregates all connected endpoints with host labels. The catalog is read
@@ -202,7 +202,7 @@ in the status bar and do not undo the UI choice. Rename, remove, enable, and
 disable remain available through `herdr machine`.
 
 The fixed bottom-left device picker offers **All Devices**, **Local**, saved SSH
-devices, and **Add Device…**. All Devices shows Spaces and Agents across hosts
+devices, and **Add Device…**. All Devices shows Workspaces and Agents across hosts
 without changing the active terminal. Choosing a device filters both lists and
 switches the terminal through the existing surface handoff. To list a few
 devices instead of one, `Cmd`-click (`Ctrl`-click on Linux and Windows) each
@@ -300,7 +300,7 @@ take no new commands once it is gone.
 Enter an SSH target or alias and label directly. The form does not search for
 hosts or suggest targets. **Enter** adds exactly what the target field shows.
 
-Each device's header in the Spaces list starts with a mark for where it runs:
+Each device's header in the Workspaces list starts with a mark for where it runs:
 a monitor for this machine and a terminal for an SSH host or WSL
 distribution. An SSH host shows the
 Tailscale logo when it is a `*.ts.net` name or a Tailscale address
@@ -310,7 +310,7 @@ top-level `show_device_icons = false`, or turn off **Show device icons** under
 Settings > Sidebar, to leave it out everywhere; the name
 then starts where the mark was.
 
-Right-click a saved SSH device's header in the Spaces list to **Rename** it or
+Right-click a saved SSH device's header in the Workspaces list to **Rename** it or
 choose **Remove device…** to forget it. Renaming runs `herdr machine rename`;
 an empty name falls back to the SSH target, as when adding. Removal runs the installed `herdr machine remove`, which
 edits only the local catalog: the host's own Herdr keeps running. When the
@@ -695,7 +695,7 @@ on a prompt; tabs whose agents are idle or done, or that have none, close at
 once. Set top-level `confirm_close_tab = false` to never ask for tabs
 (including their running processes), `confirm_close_pane = false` to close
 panes without asking, and `show_agents = false` to hide the Agents
-section and give Spaces the full sidebar height. All three default to `true`.
+section and give Workspaces the full sidebar height. All three default to `true`.
 The pane dialog's **Do not ask again** checkbox (click it or press Space) saves
 `confirm_close_pane = false` to `config-gpui.local.toml` once the close is sent. Saved edits apply automatically. The
 **Show agents** control in **Settings > Sidebar** saves
@@ -706,15 +706,18 @@ order then follows Herdr's `ui.agent_panel_sort` (`priority` or `grouped`)
 unless it was toggled earlier or a plugin sets the agent view, which keeps the
 header shown while that view is active.
 
-Agents list in their own section below Spaces by default. Set top-level
+Click the arrow beside **Workspaces** to collapse or expand the list in this window.
+The Agents panel takes the freed space. Expanding Workspaces restores the previous split.
+
+Agents list in their own section below Workspaces by default. Set top-level
 `agents_placement = "nested"`, or pick **Under workspaces** for **Agents
 placement** in **Settings > Sidebar**, to list each agent under the workspace
-it runs in instead; Spaces then takes the full sidebar height. The collapsed
+it runs in instead; Workspaces then takes the full sidebar height. The collapsed
 rail keeps its own agents section either way.
 
 A search field at the top of the sidebar finds devices, worktrees, and
 branches by name; while it holds text, results grouped by kind replace the
-spaces list. Up and Down move through them, Enter opens one, and Escape
+workspace list. Up and Down move through them, Enter opens one, and Escape
 clears the search. Set top-level `show_sidebar_search = false`, or turn off
 **Show search** in **Settings > Sidebar**, to hide it.
 
@@ -2379,7 +2382,7 @@ it), so the app's own F6, F11, and tab keys carry its Ctrl prefix.
   end on one-line rows, Compact included. Minimal rows leave them off. They
   appear only while the daemon's `[ui.sidebar.spaces]` rows name `git_status`,
   as its defaults do, because the daemon computes them only then.
-- With several hosts listed, the Spaces list groups workspaces under a row per
+- With several hosts listed, the Workspaces list groups workspaces under a row per
   host, and the row of the host whose workspaces are at the top of the
   scrolled list stays pinned there, so you can always see which machine they
   are on, until the next host's row pushes it out. The pinned copy works like
@@ -2394,7 +2397,7 @@ it), so the app's own F6, F11, and tab keys carry its Ctrl prefix.
   recent change on any host. While any host shows an agent view, each host
   keeps its own order.
 - Resizable sidebar with width persisted per local daemon socket, shared across
-  host groups. Drag the divider between Spaces and Agents up or down to resize
+  host groups. Drag the divider between Workspaces and Agents up or down to resize
   their sections; double-click it to restore an even split. The split is saved
   across launches and retained while Agents is hidden.
   Checkout rows use a neutral repository icon on local and remote workspaces.

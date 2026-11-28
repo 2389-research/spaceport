@@ -189,6 +189,7 @@ impl SpaceportWindow {
             sidebar_view,
             sidebar_visible: true,
             sidebar_width: None,
+            sidebar_workspaces_expanded: true,
             sound: Default::default(),
             split_cursor: None,
             split_drag: None,
