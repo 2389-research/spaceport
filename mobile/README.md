@@ -88,7 +88,7 @@ These tests skip themselves when their fixture is absent.
 
 ## Build and run on iOS
 
-Use an Apple silicon Mac with Xcode, Rustup, the repository's pinned Rust toolchain, and XcodeGen.
+Use an Apple silicon Mac with Xcode 27.1 or newer, Rustup, the repository's pinned Rust toolchain, and XcodeGen.
 Run these commands from the repository root.
 
 ```sh
