@@ -127,8 +127,8 @@ fn short_and_empty_theme_grids_do_not_scroll_settings_page(cx: &mut TestAppConte
         for empty in [false, true] {
             view.update(cx, |view, cx| {
                 view.themes.names = vec!["Nord".into()];
-                view.themes.herdr_enabled = false;
-                view.themes.ghostty_enabled = !empty;
+                view.themes.sources.herdr = false;
+                view.themes.sources.ghostty = !empty;
                 view.themes.filter(None);
                 cx.notify();
             });

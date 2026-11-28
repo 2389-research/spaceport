@@ -228,7 +228,7 @@ impl SettingsWindow {
     }
 
     fn theme_source_row(&self, page: &PageState<'_>, cx: &mut Context<Self>) -> ui::Row {
-        let selected = match (self.themes.ghostty_enabled, self.themes.herdr_enabled) {
+        let selected = match (self.themes.sources.ghostty, self.themes.sources.herdr) {
             (true, true) => Library::All,
             (true, false) => Library::Ghostty,
             (false, _) => Library::Herdr,
