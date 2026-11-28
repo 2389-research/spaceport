@@ -123,7 +123,7 @@ pub(crate) fn changes(cx: &App) -> u64 {
 /// Forgets closed windows, so their last working agents keep nothing awake.
 pub(crate) fn install(cx: &mut App) {
     if let Some(appearance) = cx.try_global::<crate::app::InitialAppearance>() {
-        let scope = appearance.config.status_bar.keep_awake_scope;
+        let scope = appearance.shown.config.status_bar.keep_awake_scope;
         set_scope(scope, cx);
     }
     cx.on_window_closed(|cx, _| {
