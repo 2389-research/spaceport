@@ -18,13 +18,16 @@ SPEC = importlib.util.spec_from_file_location("sparkle_feed", Path(__file__).wit
 feed = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(feed)
 REPO = "2389-research/spaceport"
-MARKER = "macos-preview-feed"
+# Only the preview channel is published here; the stable channel's publication
+# needs its own owner authorization, so this script never writes its feed.
+CHANNEL = "macos-preview"
 
 
 def publish(source, expected_sha):
     if not common.is_commit(expected_sha):
         raise ValueError("Full expected source SHA required")
     config = json.loads(feed.CONFIG.read_text())
+    marker_tag = config["feeds"][CHANNEL]["release"]
     data = feed.read_feed(source)
     item = feed.parse(data, config)
     if source.name != "appcast.xml":
@@ -36,7 +39,7 @@ def publish(source, expected_sha):
     if not isinstance(pages, list) or any(not isinstance(page, list) for page in pages):
         raise ValueError("Malformed release history")
     releases = [release for page in pages for release in page if not release["draft"]]
-    marker = next((release for release in releases if release["tag_name"] == MARKER), None)
+    marker = next((release for release in releases if release["tag_name"] == marker_tag), None)
     version_release = next((release for release in releases
                             if release["tag_name"] == "v" + item["version"]), None)
     if version_release is None or not version_release["prerelease"]:
@@ -53,7 +56,7 @@ def publish(source, expected_sha):
             if len(feeds) != 1 or not 0 < feeds[0]["size"] <= feed.MAX_FEED:
                 raise ValueError("Missing or oversized existing preview feed asset")
             # An existing marker with a lost asset is an incident, not bootstrap.
-            common.gh("release", "download", MARKER, "--repo", REPO, "--pattern", "appcast.xml",
+            common.gh("release", "download", marker_tag, "--repo", REPO, "--pattern", "appcast.xml",
                       "--dir", str(root))
             previous = feed.read_feed(root / "appcast.xml")
         feed.publication_version(data, previous, config,
@@ -75,16 +78,16 @@ def publish(source, expected_sha):
             notes.write_text("Signed update metadata for Spaceport macOS previews. "
                              "Install the current version from its dated release.\n")
             # The fixed tag is created once. It is never moved or overwritten.
-            common.gh("release", "create", MARKER, str(source.resolve()), "--repo", REPO,
+            common.gh("release", "create", marker_tag, str(source.resolve()), "--repo", REPO,
                       "--target", expected_sha, "--prerelease", "--title", "macOS preview update feed",
                       "--notes-file", str(notes))
         else:
             # GitHub replaces assets using delete/upload, so a brief unavailable
             # feed is possible. Signature verification makes that fail closed.
-            common.gh("release", "upload", MARKER, str(source.resolve()), "--repo", REPO, "--clobber")
+            common.gh("release", "upload", marker_tag, str(source.resolve()), "--repo", REPO, "--clobber")
         verified = root / "published"
         verified.mkdir()
-        common.gh("release", "download", MARKER, "--repo", REPO, "--pattern", "appcast.xml",
+        common.gh("release", "download", marker_tag, "--repo", REPO, "--pattern", "appcast.xml",
                   "--dir", str(verified))
         if feed.read_feed(verified / "appcast.xml") != data:
             raise ValueError("Published feed bytes do not match the signed artifact")

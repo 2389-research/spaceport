@@ -1,8 +1,9 @@
-// ABOUTME: Binds the signed preview's Info.plist policy to Sparkle's safe wrapper.
+// ABOUTME: Binds the signed bundle's Info.plist policy to Sparkle's safe wrapper.
 // ABOUTME: Retains its controller on the AppKit main thread without replacing quit hooks.
 use super::{
     Error,
     policy::{self, Build, Bundle},
+    trust::Trust,
 };
 use gpui::{App, Global};
 use objc2_foundation::{NSBundle, NSNumber, NSString};
@@ -10,12 +11,6 @@ use sparkle_updater::{MainThreadMarker, SparkleUpdater, UpdaterConfig};
 
 struct Updates(SparkleUpdater);
 impl Global for Updates {}
-
-#[derive(serde::Deserialize)]
-struct Trust {
-    feed_url: String,
-    public_key: String,
-}
 
 fn string(bundle: &NSBundle, key: &str) -> String {
     bundle
@@ -36,22 +31,22 @@ pub(super) fn install(cx: &mut App) -> Result<(), Error> {
     if !build.can_update() {
         return Ok(());
     }
+    let trust = Trust::compiled()?;
+    let feed = trust.feed(build.channel).ok_or(Error::Unsupported)?;
     let Some(mtm) = MainThreadMarker::new() else {
         return Err(Error::Unsupported);
     };
-    let trust: Trust =
-        serde_json::from_str(include_str!("../../../../scripts/release/sparkle.json"))?;
     let bundle = NSBundle::mainBundle();
     let id = string(&bundle, "CFBundleIdentifier");
     let version = string(&bundle, "CFBundleVersion");
     let path = bundle.bundlePath().to_string();
-    let feed = string(&bundle, "SUFeedURL");
+    let actual_feed = string(&bundle, "SUFeedURL");
     let key = string(&bundle, "SUPublicEDKey");
     let actual = Bundle {
         id: &id,
         version: &version,
         path: &path,
-        feed: &feed,
+        feed: &actual_feed,
         key: &key,
         signed_feed: boolean(&bundle, "SURequireSignedFeed") == Some(true),
         signed_feed_failure_expiration: bundle
@@ -66,7 +61,7 @@ pub(super) fn install(cx: &mut App) -> Result<(), Error> {
             .objectForInfoDictionaryKey(&NSString::from_str("SUEnableAutomaticChecks"))
             .is_some(),
     };
-    if !policy::eligible(&actual, &build, &trust.feed_url, &trust.public_key) {
+    if !policy::eligible(&actual, &build, feed, &trust.public_key) {
         return Err(Error::Unsupported);
     }
     // Clear a stored feed override before startup so automatic checks use the signed bundle feed.

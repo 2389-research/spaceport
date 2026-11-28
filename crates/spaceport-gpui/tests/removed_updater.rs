@@ -55,7 +55,8 @@ fn app_constants_retain_development_identity_and_release_refusal() {
                 if preview { "20261109.1" } else { "dev" },
             )
             .env_remove("HERDR_RELEASE_VERSION")
-            .env_remove("SPACEPORT_MACOS_PREVIEW_VERSION");
+            .env_remove("SPACEPORT_MACOS_PREVIEW_VERSION")
+            .env_remove("SPACEPORT_PRODUCTION_VERSION");
         if release {
             command.env("HERDR_RELEASE_VERSION", "20990101.1");
         }

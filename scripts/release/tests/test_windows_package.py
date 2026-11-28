@@ -26,8 +26,8 @@ INSTALLER = load("windows_installer", INSTALLER_SCRIPT)
 ROOT = SCRIPT.parents[2]
 VERSION = "20260920.3"
 TARGET = "x86_64-pc-windows-msvc"
-# The build record cli.rs embeds in every executable it builds.
-IDENTITY = b"\0SPACEPORT_PREVIEW_V1\nid=spaceport.development\nversion=dev\nprofile=release\n\0"
+# The record build_info embeds in every executable.
+IDENTITY = b"\0SPACEPORT_PREVIEW_V1\nid=spaceport.development\nversion=dev\nprofile=release\nchannel=development\n\0"
 # Stands in for ISCC.exe: checks it was given the zip's tree and writes the
 # installer where the defines say.
 MOCK_ISCC = """#!/usr/bin/env python3

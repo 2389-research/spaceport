@@ -35,7 +35,7 @@ class PreviewSigning(unittest.TestCase):
         self.app = self.root / 'Spaceport.app'
         (self.app / 'Contents/MacOS').mkdir(parents=True)
         for binary in ('spaceport', 'sheprd-acp'):
-            (self.app / 'Contents/MacOS' / binary).write_bytes(b'never execute\0SPACEPORT_PREVIEW_V1\nid=ai.2389.spaceport\nversion=20261109.1\nprofile=debug\n\0')
+            (self.app / 'Contents/MacOS' / binary).write_bytes(b'never execute\0SPACEPORT_PREVIEW_V1\nid=ai.2389.spaceport\nversion=20261109.1\nprofile=debug\nchannel=macos-preview\n\0')
         self.plist = self.app / 'Contents/Info.plist'
         self.metadata = dict(CFBundleName='Spaceport', CFBundleDisplayName='Spaceport',
                              CFBundleIdentifier='ai.2389.spaceport', CFBundleExecutable='spaceport',
@@ -80,6 +80,15 @@ class PreviewSigning(unittest.TestCase):
             self.assertEqual(result.stdout, str(output) + '\n')
         self.assertFalse(list(self.root.glob('.herdr-sign.*')))
         return result
+
+    def test_channel_less_or_production_binary_fails_before_credentials(self):
+        binary = self.app / 'Contents/MacOS/spaceport'
+        preview = binary.read_bytes()
+        for channel in (b'', b'channel=production\n'):
+            with self.subTest(channel=channel):
+                binary.write_bytes(preview.replace(b'channel=macos-preview\n', channel))
+                self.assertIn('Preview binary', self.sign().stderr)
+                self.assertFalse(any(c[0] == 'security' for c in self.calls()))
 
     def test_missing_sparkle_framework_fails_before_credentials(self):
         shutil.rmtree(self.app / 'Contents/Frameworks')

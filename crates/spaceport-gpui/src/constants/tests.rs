@@ -1,5 +1,5 @@
 // ABOUTME: Checks app identities and launcher metadata against their canonical sources.
-// ABOUTME: Keeps development and signed preview contracts distinct.
+// ABOUTME: Keeps development, signed preview and production contracts distinct.
 use std::{fs, path::Path};
 
 use super::*;
@@ -10,7 +10,7 @@ use super::*;
 mod preview_identity;
 
 #[test]
-fn channel_parses_the_build_scripts_two_names_and_nothing_else() {
+fn channel_parses_the_build_scripts_names_and_nothing_else() {
     assert_eq!(
         Channel::parse(preview_identity::DEVELOPMENT),
         Some(Channel::Development)
@@ -18,6 +18,10 @@ fn channel_parses_the_build_scripts_two_names_and_nothing_else() {
     assert_eq!(
         Channel::parse(preview_identity::MACOS_PREVIEW),
         Some(Channel::MacosPreview)
+    );
+    assert_eq!(
+        Channel::parse(preview_identity::PRODUCTION),
+        Some(Channel::Production)
     );
     for name in [
         "",
@@ -27,6 +31,7 @@ fn channel_parses_the_build_scripts_two_names_and_nothing_else() {
         "macos_preview",
         "preview",
         "release",
+        "stable",
         "ai.2389.spaceport",
     ] {
         assert_eq!(Channel::parse(name), None, "{name:?}");
@@ -34,19 +39,35 @@ fn channel_parses_the_build_scripts_two_names_and_nothing_else() {
 }
 
 #[test]
+fn every_channel_names_itself_with_the_text_it_parses() {
+    for channel in [
+        Channel::Development,
+        Channel::MacosPreview,
+        Channel::Production,
+    ] {
+        assert_eq!(Channel::parse(channel.name()), Some(channel));
+    }
+}
+
+#[test]
 fn compiled_channel_is_the_one_the_selector_picks_for_this_build() {
-    let selected = preview_identity::select(
+    let requested = match (
         option_env!("SPACEPORT_MACOS_PREVIEW_VERSION"),
-        std::env::consts::OS,
-    )
-    .map(|identity| (Channel::parse(identity.channel), identity.app_id));
+        option_env!("SPACEPORT_PRODUCTION_VERSION"),
+    ) {
+        (Some(version), _) => preview_identity::Requested::MacosPreview(version),
+        (None, Some(version)) => preview_identity::Requested::Production(version),
+        (None, None) => preview_identity::Requested::Development,
+    };
+    let selected = preview_identity::select(requested, std::env::consts::OS)
+        .map(|identity| (Channel::parse(identity.channel), identity.app_id));
     assert_eq!(selected, Some((Some(CHANNEL), APP_ID)));
 }
 
 #[test]
 fn running_development_app_has_its_own_os_identity() {
     match CHANNEL {
-        Channel::MacosPreview => {
+        Channel::MacosPreview | Channel::Production => {
             assert_eq!(APP_ID, include_str!("../../macos-preview-app-id").trim());
         }
         Channel::Development => {

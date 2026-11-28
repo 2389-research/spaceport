@@ -12,9 +12,11 @@ mod windows_resource;
 /// building with no dependencies of its own.
 #[derive(Debug)]
 enum BuildError {
-    MissingManifestDir,
+    ConflictingChannels,
     InvalidPreview,
     InvalidPrNumber,
+    InvalidProduction,
+    MissingManifestDir,
     PrNumberEncoding(std::env::VarError),
     WindowsResource(std::io::Error),
 }
@@ -23,7 +25,11 @@ impl std::fmt::Display for BuildError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::MissingManifestDir => f.write_str("CARGO_MANIFEST_DIR is not set"),
+            Self::ConflictingChannels => f.write_str(
+                "SPACEPORT_MACOS_PREVIEW_VERSION and SPACEPORT_PRODUCTION_VERSION are mutually exclusive",
+            ),
             Self::InvalidPreview => f.write_str("SPACEPORT_MACOS_PREVIEW_VERSION requires macOS and YYYYMMDD.COUNTER (no leading zeros)"),
+            Self::InvalidProduction => f.write_str("SPACEPORT_PRODUCTION_VERSION requires macOS and YYYYMMDD.COUNTER (no leading zeros)"),
             Self::InvalidPrNumber => {
                 f.write_str("HERDR_BUILD_PR_NUMBER must be empty or a positive decimal integer")
             }
@@ -40,8 +46,21 @@ impl std::error::Error for BuildError {
         match self {
             Self::PrNumberEncoding(error) => Some(error),
             Self::WindowsResource(error) => Some(error),
-            Self::MissingManifestDir | Self::InvalidPrNumber | Self::InvalidPreview => None,
+            Self::MissingManifestDir
+            | Self::ConflictingChannels
+            | Self::InvalidPrNumber
+            | Self::InvalidPreview
+            | Self::InvalidProduction => None,
         }
+    }
+}
+
+/// A version a build was asked to carry, or `None` when its variable is absent.
+fn requested_version(name: &str, invalid: BuildError) -> Result<Option<String>, BuildError> {
+    match std::env::var(name) {
+        Ok(value) => Ok(Some(value)),
+        Err(std::env::VarError::NotPresent) => Ok(None),
+        Err(_) => Err(invalid),
     }
 }
 
@@ -61,17 +80,29 @@ fn main() -> Result<(), BuildError> {
         println!("cargo:rerun-if-changed={file}");
     }
     println!("cargo:rerun-if-env-changed=SPACEPORT_MACOS_PREVIEW_VERSION");
-    let preview = std::env::var("SPACEPORT_MACOS_PREVIEW_VERSION");
-    let preview = match &preview {
-        Ok(value) => Some(value.as_str()),
-        Err(std::env::VarError::NotPresent) => None,
-        Err(_) => return Err(BuildError::InvalidPreview),
+    println!("cargo:rerun-if-env-changed=SPACEPORT_PRODUCTION_VERSION");
+    let preview = requested_version(
+        "SPACEPORT_MACOS_PREVIEW_VERSION",
+        BuildError::InvalidPreview,
+    )?;
+    let production = requested_version(
+        "SPACEPORT_PRODUCTION_VERSION",
+        BuildError::InvalidProduction,
+    )?;
+    let target = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let identity = match (preview.as_deref(), production.as_deref()) {
+        (Some(_), Some(_)) => return Err(BuildError::ConflictingChannels),
+        (Some(version), None) => {
+            preview_identity::select(preview_identity::Requested::MacosPreview(version), &target)
+                .ok_or(BuildError::InvalidPreview)?
+        }
+        (None, Some(version)) => {
+            preview_identity::select(preview_identity::Requested::Production(version), &target)
+                .ok_or(BuildError::InvalidProduction)?
+        }
+        (None, None) => preview_identity::select(preview_identity::Requested::Development, &target)
+            .ok_or(BuildError::InvalidPreview)?,
     };
-    let identity = preview_identity::select(
-        preview,
-        &std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default(),
-    )
-    .ok_or(BuildError::InvalidPreview)?;
     println!(
         "cargo:rustc-env=SPACEPORT_BUILD_CHANNEL={}",
         identity.channel

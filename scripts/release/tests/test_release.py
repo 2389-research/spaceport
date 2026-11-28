@@ -17,7 +17,7 @@ SCRIPTS = ROOT / "scripts/release"
 
 
 def build_identity(worktree=False):
-    return (b"not executable\0SPACEPORT_PREVIEW_V1\nid=ai.2389.spaceport\nversion=20260920.3\nprofile=release\n\0HERDR_BUILD_IDENTITY_V1\nworktree="
+    return (b"not executable\0SPACEPORT_PREVIEW_V1\nid=ai.2389.spaceport\nversion=20260920.3\nprofile=release\nchannel=macos-preview\n\0HERDR_BUILD_IDENTITY_V1\nworktree="
             + (b"1\nbranch=feature/test\npr=42\n\0" if worktree else b"0\nbranch=\npr=\n\0"))
 
 
@@ -190,6 +190,20 @@ class ReleaseTests(unittest.TestCase):
         for source in ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons", "crates/spaceport-protocol/NOTICE.md", "crates/spaceport-sound/SOUND-NOTICE.md"):
             self.assertEqual((app / "Contents/Resources" / Path(source).name).read_bytes(), (ROOT / source).read_bytes())
         self.run_script("package-macos.sh", "20260920.3", arm, intel, self.work, self.notices, success=False)
+
+    def test_preview_packager_refuses_missing_or_wrong_channels_in_any_slice(self):
+        self.mock_tools()
+        arm, intel = self.macos_builds()
+        preview = intel.read_bytes()
+        for record in (preview.replace(b"channel=macos-preview\n", b""),
+                       preview.replace(b"channel=macos-preview", b"channel=production"),
+                       preview + preview.replace(b"channel=macos-preview", b"channel=production")):
+            with self.subTest(record=record[-70:]):
+                intel.write_bytes(record)
+                result = self.run_script("package-macos.sh", "20260920.3", arm, intel, self.work,
+                                         self.notices, success=False)
+                self.assertIn("Preview binary", result.stderr)
+                self.assertFalse((self.work / "Spaceport.app").exists())
 
     def test_assembly_requires_each_companion_beside_each_binary(self):
         self.mock_tools()

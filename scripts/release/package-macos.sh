@@ -78,8 +78,8 @@ plutil -lint "$app/Contents/Info.plist"
 mkdir "$app/Contents/Frameworks"
 # Copy the complete SDK framework, including version links and nested services.
 ditto "$SPARKLE_FRAMEWORK_PATH/Sparkle.framework" "$app/Contents/Frameworks/Sparkle.framework"
-python3 "$release_root/scripts/release/sparkle_framework.py" configure "$app"
-python3 "$release_root/scripts/release/sparkle_framework.py" validate-bundle "$app" --architecture "$bundle_architecture"
+python3 "$release_root/scripts/release/sparkle_framework.py" configure "$app" --channel macos-preview
+python3 "$release_root/scripts/release/sparkle_framework.py" validate-bundle "$app" --channel macos-preview --architecture "$bundle_architecture"
 cp "$icns" "$app/Contents/Resources/Sheprd.icns"
 cp "$catalog" "$app/Contents/Resources/Assets.car"
 cp "$release_root/crates/spaceport-protocol/LICENSE-APACHE" "$app/Contents/Resources/"

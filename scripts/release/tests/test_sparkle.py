@@ -22,11 +22,22 @@ class SparkleTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.config = self.root / 'sparkle.json'
-        self.config.write_text(json.dumps(dict(
-            sdk_version='2.10.1',
-            sdk_sha256='1a856d2a9edb8e628de88121d7be04cf0e2167f8641650b78fca00b14244cf27',
-            feed_url='https://github.com/2389-research/spaceport/releases/download/macos-preview-feed/appcast.xml',
-            public_key='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=')))
+        self.data = {
+            'sdk_version': '2.10.1',
+            'sdk_sha256': '1a856d2a9edb8e628de88121d7be04cf0e2167f8641650b78fca00b14244cf27',
+            'public_key': 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+            'feeds': {
+                'macos-preview': {
+                    'release': 'macos-preview-feed',
+                    'url': 'https://github.com/2389-research/spaceport/releases/download/macos-preview-feed/appcast.xml',
+                },
+                'production': {
+                    'release': 'macos-stable-feed',
+                    'url': 'https://github.com/2389-research/spaceport/releases/download/macos-stable-feed/appcast.xml',
+                },
+            },
+        }
+        self.config.write_text(json.dumps(self.data))
         spec = importlib.util.spec_from_file_location('sparkle_framework', SCRIPTS / 'sparkle_framework.py')
         self.assertTrue(Path(spec.origin).is_file(), 'Sparkle validation helper is missing')
         self.module = importlib.util.module_from_spec(spec)
@@ -132,6 +143,58 @@ class SparkleTests(unittest.TestCase):
                 info.write_bytes(plistlib.dumps(metadata))
                 with self.assertRaisesRegex(ValueError, 'SUSignedFeedFailureExpirationInterval'):
                     self.module.validate_policy(app, self.config)
+
+    def test_each_channel_configures_and_validates_its_own_feed(self):
+        for channel, release in (('macos-preview', 'macos-preview-feed'),
+                                 ('production', 'macos-stable-feed')):
+            with self.subTest(channel=channel):
+                app = self.root / channel / 'Spaceport.app'
+                (app / 'Contents').mkdir(parents=True)
+                info = app / 'Contents/Info.plist'
+                info.write_bytes(plistlib.dumps({'CFBundleIdentifier': 'ai.2389.spaceport'}))
+                self.module.configure_bundle(app, self.config, channel)
+                metadata = plistlib.loads(info.read_bytes())
+                self.assertEqual(metadata['SUFeedURL'], self.data['feeds'][channel]['url'])
+                self.assertIn(f'/{release}/appcast.xml', metadata['SUFeedURL'])
+                self.module.validate_policy(app, self.config, channel)
+                # A bundle configured for one channel never validates as the other.
+                other = 'production' if channel == 'macos-preview' else 'macos-preview'
+                with self.assertRaisesRegex(ValueError, 'SUFeedURL'):
+                    self.module.validate_policy(app, self.config, other)
+
+    def test_channel_feeds_are_https_release_assets_on_one_host(self):
+        for key, value in (
+            ('url', 'http://github.com/2389-research/spaceport/releases/download/macos-stable-feed/appcast.xml'),
+            ('url', 'https://github.com/2389-research/spaceport/releases/download/macos-preview-feed/appcast.xml'),
+            ('url', 'https://user@github.com/2389-research/spaceport/releases/download/macos-stable-feed/appcast.xml'),
+            ('url', 'https://github.com/2389-research/spaceport/releases/download/macos-stable-feed/appcast.xml?x=1'),
+            ('url', 'https://elsewhere.test/2389-research/spaceport/releases/download/macos-stable-feed/appcast.xml'),
+            ('release', 'macos stable'),
+        ):
+            with self.subTest(key=key, value=value):
+                data = json.loads(json.dumps(self.data))
+                data['feeds']['production'][key] = value
+                self.config.write_text(json.dumps(data))
+                with self.assertRaisesRegex(ValueError, 'feed'):
+                    self.module.read_config(self.config)
+
+    def test_channels_refuse_a_shared_feed_release(self):
+        self.data['feeds']['production'] = self.data['feeds']['macos-preview']
+        self.config.write_text(json.dumps(self.data))
+        with self.assertRaisesRegex(ValueError, 'distinct feed'):
+            self.module.read_config(self.config)
+
+    def test_missing_or_unknown_channels_are_refused(self):
+        for feeds in ({key: value for key, value in self.data['feeds'].items()
+                       if key != 'production'},
+                      {'macos-preview': self.data['feeds']['macos-preview'],
+                       'stable': self.data['feeds']['production']}):
+            with self.subTest(feeds=sorted(feeds)):
+                data = json.loads(json.dumps(self.data))
+                data['feeds'] = feeds
+                self.config.write_text(json.dumps(data))
+                with self.assertRaisesRegex(ValueError, 'feeds'):
+                    self.module.read_config(self.config)
 
     def test_development_bundle_cannot_be_configured(self):
         app = self.root / 'Spaceport.app'

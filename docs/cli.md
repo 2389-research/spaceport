@@ -110,7 +110,7 @@ Changing this preference never stops Core or its terminals.
 | `ui workspaces [on\|off\|toggle]` | Expand or collapse the workspace list for this window and session. The Devices layout returns exit 8. |
 | `ui panel workspaces\|overview\|automations\|usage` | Show an activity bar section: Workspaces with the sidebar expanded, Overview of what needs you on every host, an unavailable job and run feed, or every host's plan usage. Exits 8 when the activity bar is off (`[sidebar] activity_bar = false`), when that section is turned off in settings, or for `automations` while Core is off |
 | `ui agent-idle [--pane ID]` | Read this client’s idle estimate for a pane in the targeted workspace. Defaults to the caller’s pane, then the focused pane. JSON includes seconds and a lower-bound flag. Exits 4 when the client has no usable age. |
-| `run check-for-updates` | Open Sparkle’s native update check in an installed macOS preview; unsupported builds refuse it |
+| `run check-for-updates` | Open Sparkle’s native update check in an installed signed macOS build, preview or production; development, worktree and other-platform builds refuse it |
 | `run COMMAND` | Any app command by its `[keybindings]` name, as the palette runs it; an unknown name exits 5 |
 | `commands` | The names `run` accepts (no app needed) |
 
