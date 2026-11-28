@@ -641,6 +641,22 @@ waits for approval, approve it and confirm the platform jobs execute, then push
 another contributor commit and check approval is required again. Offline tests
 cover job eligibility and credential declarations, not GitHub's approval service.
 
+## Installation isolation
+
+`install-isolation.py` checks a fresh install and uninstall against three
+snapshots. Run `snapshot --package PATH` before installation, after first launch,
+and after uninstall. Select the macOS bundle, the Windows install directory,
+or the active Nix profile. The checker verifies installed files and monitors
+inherited state across both intervals. Snapshots include paths and link targets.
+
+```sh
+python3 scripts/release/install-isolation.py surfaces
+python3 scripts/release/install-isolation.py verify before.json installed.json removed.json
+```
+
+Follow the [side-by-side procedure](../../docs/spaceport/evidence/c5-install-isolation.md)
+to capture all three snapshots and verify native behavior.
+
 ## Shared release helpers
 
 `_release_common.py` holds the rules more than one release script applies:

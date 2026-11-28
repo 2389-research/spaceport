@@ -822,7 +822,7 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": ["evidence/release-identity-audit.md", "evidence/t01-diagnostics-identity.md", "evidence/t01-control-protocol-copy.md", "evidence/t01-theme-source-isolation.md", "evidence/t12-macos-preview-20261110.1.md"]
+          "evidence": ["evidence/c5-install-isolation.md", "evidence/release-identity-audit.md", "evidence/t01-diagnostics-identity.md", "evidence/t01-control-protocol-copy.md", "evidence/t01-theme-source-isolation.md", "evidence/t12-macos-preview-20261110.1.md"]
         },
         "core": {
           "status": "not_run",
