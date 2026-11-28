@@ -226,6 +226,13 @@ fn spawn_connection<G>(
     let worker_liveness = liveness.clone();
     let transport_lost = Arc::new(AtomicBool::new(false));
     let worker_transport_lost = transport_lost.clone();
+    #[cfg_attr(
+        target_os = "linux",
+        allow(
+            clippy::cognitive_complexity,
+            reason = "2026-11-27 Linux tracing baseline: complexity 38"
+        )
+    )]
     thread::Builder::new()
         .name("herdr-client-io".into())
         .spawn(move || {

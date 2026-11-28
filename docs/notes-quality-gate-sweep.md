@@ -38,8 +38,10 @@ one.
 At the integration with `5358a691c`, the macOS all-target, all-feature run reported
 199 findings in 189 functions. Ten functions exceeded both limits. Each function
 carries only the lint or lints it triggered, with its original measurement.
-The Linux accept loop has a separate Linux-only complexity exception. The compiler
-expands tracing macros differently across configurations.
+Linux enables the `log` feature on `tracing`. Its macro expansion also takes
+four client workers or handlers, the control accept loop, and three app functions
+over the complexity limit. Those exceptions apply only on Linux. Find the extra
+diagnostics from macOS by adding `--features tracing/log` to the Clippy command.
 
 | Crate | Complexity | Lines |
 | --- | ---: | ---: |

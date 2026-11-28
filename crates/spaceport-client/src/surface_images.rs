@@ -133,6 +133,13 @@ pub(crate) struct ImageStore {
 impl ImageStore {
     /// Moves a received surface's asset bytes into the store, leaving the
     /// surface with metadata only. Returns whether the published set changed.
+    #[cfg_attr(
+        target_os = "linux",
+        allow(
+            clippy::cognitive_complexity,
+            reason = "2026-11-27 Linux tracing baseline: complexity 27"
+        )
+    )]
     pub(crate) fn receive(&mut self, surface: &mut PaneSurfaceFrame) -> bool {
         let scene = &mut surface.graphics;
         if scene.placements.len() > MAX_PLACEMENTS {

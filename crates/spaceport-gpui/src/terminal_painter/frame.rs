@@ -29,6 +29,13 @@ impl TerminalPainter {
     /// the live surface, which a repaint may already have replaced.
     #[allow(clippy::too_many_arguments)]
     #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 299 lines")]
+    #[cfg_attr(
+        target_os = "linux",
+        allow(
+            clippy::cognitive_complexity,
+            reason = "2026-11-27 Linux tracing baseline: complexity 30"
+        )
+    )]
     pub fn paint_frame(
         &mut self,
         frame: &FrameData,

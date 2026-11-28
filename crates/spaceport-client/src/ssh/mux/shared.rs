@@ -301,6 +301,13 @@ impl Registry {
     fn start(self: &Arc<Self>, key: Key, generation: u64) -> bool {
         let registry = self.clone();
         let id = self.next.fetch_add(1, Ordering::Relaxed);
+        #[cfg_attr(
+            target_os = "linux",
+            allow(
+                clippy::cognitive_complexity,
+                reason = "2026-11-27 Linux tracing baseline: complexity 26"
+            )
+        )]
         thread::Builder::new()
             .name("herdr-ssh-mux".into())
             .spawn(move || {

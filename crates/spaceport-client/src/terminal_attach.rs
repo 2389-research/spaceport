@@ -312,6 +312,13 @@ fn timed_out(error: &io::Error) -> bool {
 
 /// Discards what Herdr sends and writes what the caller asked for, until
 /// the caller stops (then sends `Detach`) or Herdr closes the connection.
+#[cfg_attr(
+    target_os = "linux",
+    allow(
+        clippy::cognitive_complexity,
+        reason = "2026-11-27 Linux tracing baseline: complexity 26"
+    )
+)]
 fn drain(mut stream: Stream, shared: &Shared) {
     let mut buf = vec![0; 16 * 1024];
     loop {
