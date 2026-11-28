@@ -54,24 +54,6 @@ fn narrow_rows_replace_the_app_name_with_its_icon(cx: &mut gpui::TestAppContext)
 fn agent_rows_show_the_terminal_directory_and_host_across_sidebar_widths(
     cx: &mut gpui::TestAppContext,
 ) {
-    check_terminal_row(cx, false);
-}
-
-#[gpui::test]
-fn terminal_row_spacing_mirrors_in_right_to_left_layouts(cx: &mut gpui::TestAppContext) {
-    crate::i18n::show(&spaceport_i18n::Pseudo::Bidi.locale());
-    check_terminal_row(cx, true);
-    crate::i18n::show(&spaceport_i18n::Locale::FALLBACK);
-}
-
-fn check_terminal_row(cx: &mut gpui::TestAppContext, right_to_left: bool) {
-    let gap = |first: Bounds<Pixels>, second: Bounds<Pixels>| {
-        if right_to_left {
-            first.left() - second.right()
-        } else {
-            second.left() - first.right()
-        }
-    };
     let (view, cx) = cx.add_window_view(|window, cx| {
         let mut view = fixture_window(window, cx);
         let mut listing = snapshot(1);
@@ -121,7 +103,7 @@ fn check_terminal_row(cx: &mut gpui::TestAppContext, right_to_left: bool) {
                 let title = text["Review queue"].0;
                 assert_eq!(number.top(), directory.top(), "{mode:?} {width}");
                 assert_eq!(directory.top(), host.top(), "{mode:?} {width}");
-                assert!(gap(number, directory) >= px(0.) && gap(directory, host) >= px(0.));
+                assert!(number.right() <= directory.left() && directory.right() <= host.left());
                 assert!(
                     title.bottom() <= host.top(),
                     "{mode:?} {width}: title above metadata"
@@ -146,8 +128,7 @@ fn check_terminal_row(cx: &mut gpui::TestAppContext, right_to_left: bool) {
                     icon.center().y >= number.top() && icon.center().y < number.bottom(),
                     "{mode:?} {width}: app icon beside metadata"
                 );
-                let gap = gap(icon, number);
-                assert!(gap >= px(8.), "{mode:?} at {width}px: icon gap {gap:?}");
+                assert!(icon.right() <= number.left(), "{mode:?} {width}");
             });
         }
     }

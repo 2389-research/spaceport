@@ -113,8 +113,12 @@
         "G-FILE"
       ],
       "evidence_level": "scenario_verified_local_subset",
-      "runtime_test_status": "terminal_put_local_binary_nonoverwrite_and_private_two_core_remote_staging_passed_macos; full_file_ui_download_cancel_symlink_not_run",
-      "runtime_evidence": ["evidence/t07-terminal-put.md", "evidence/t07-file-route.md"]
+      "runtime_test_status": "upload_binary_overwrite_symlink_temp_and_cancel_passed_macos_deterministic; terminal_put_local_binary_nonoverwrite_and_private_two_core_remote_staging_passed_macos; no_download_route; core_pane_drop_not_wired",
+      "runtime_evidence": [
+        "evidence/b10-binary-transfer-matrix.md",
+        "evidence/t07-terminal-put.md",
+        "evidence/t07-file-route.md"
+      ]
     },
     {
       "id": "CAP-PORTS",

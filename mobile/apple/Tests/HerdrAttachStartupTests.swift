@@ -9,6 +9,25 @@ final class HerdrAttachStartupTests: XCTestCase {
     private let probe = "\u{1b}[?1016$p\u{1b}[c"
     private var modes: String { reset + "\u{1b}[?1049h" + reset + "\u{1b}[?2031l" }
 
+    func testCachedScreenSurvivesStartupUntilPaneOutputArrives() {
+        var startup = HerdrAttachStartup()
+        for byte in Data((modes + probe).utf8) {
+            _ = startup.receive(Data([byte]))
+            XCTAssertFalse(startup.hasPaneOutput)
+        }
+        _ = startup.receive(Data())
+        XCTAssertFalse(startup.hasPaneOutput)
+        _ = startup.receive(Data("live".utf8))
+        XCTAssertTrue(startup.hasPaneOutput)
+
+        var otherHost = HerdrAttachStartup()
+        _ = otherHost.receive(Data("prompt".utf8))
+        XCTAssertTrue(otherHost.hasPaneOutput)
+        var coalesced = HerdrAttachStartup()
+        _ = coalesced.receive(Data((modes + probe + "prompt").utf8))
+        XCTAssertTrue(coalesced.hasPaneOutput)
+    }
+
     func testOnlyTheOuterProbeIsRemovedAcrossEverySplit() {
         let pane = "\u{1b}[?2004h$ " + probe + "echo"
         let bytes = Data((modes + probe + pane).utf8)

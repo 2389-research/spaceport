@@ -1,7 +1,7 @@
 # Splitting `crates/spaceport-gpui`
 
-`crates/spaceport-gpui` is ~227k lines (128,266 production and 98,530 test) over
-1,483 Rust files under `src` and links the app's heaviest
+`crates/spaceport-gpui/src` held 257,612 lines in 1,652 tracked Rust files at
+`5358a691c`, including tests. The app links its heaviest
 dependencies (mermaid-rs-renderer, ratex-*, image, nucleo-matcher) for
 every change, whether or not it touches them. `syntect` left the app's own
 dependencies with stage 3a below and stays in the binary through
@@ -19,12 +19,12 @@ feature table's `sidebar` row), `spaceport-textfield` (`text-field`),
 `spaceport-keymap` ([`notes-keymap-extraction.md`](notes-keymap-extraction.md)) and
 `spaceport-icons`:
 
-| Crate | From | Dependencies | Files importing it |
+| Crate | From | Dependencies | Importers recorded at extraction |
 | --- | --- | --- | --- |
 | `crates/spaceport-ago` | `crates/sheprd-gpui/src/ago.rs` | none | 1 (`palette/render.rs`) |
 | `crates/spaceport-lenient` | `crates/sheprd-gpui/src/lenient.rs` | `serde`, `toml` | 4 settings files |
 | `crates/spaceport-osc52` | `crates/sheprd-gpui/src/osc52.rs` | none | 2 (`state.rs` and its tests) |
-| `crates/spaceport-settings` | `crates/sheprd-gpui/src/config*`, `src/contrast.rs` | `spaceport-client`, `spaceport-commands`, `spaceport-i18n`, `spaceport-lenient`, `serde`, `toml`, `thiserror`, … | 307 (through the `crate::config` façade in `src/config.rs`) |
+| `crates/spaceport-settings` | `crates/sheprd-gpui/src/config*`, `src/contrast.rs` | `spaceport-client`, `spaceport-commands`, `spaceport-i18n`, `spaceport-usage`, `spaceport-lenient`, `serde`, `toml`, `thiserror`, … | 307 (through the `crate::config` façade in `src/config.rs`) |
 | `crates/spaceport-sound` | `crates/sheprd-gpui/src/sound/` | `rodio`, `serde`, `spaceport-i18n`, `spaceport-lenient`, `spaceport-protocol`, `spaceport-settings`, `thiserror`, `toml`, `tracing` | 17 |
 | `crates/spaceport-words` | `crates/sheprd-gpui/src/words.rs` | `unicode-segmentation` | 2 (`multiline_input.rs`, `text_editing/keys.rs`) |
 | `crates/spaceport-panes` | `crates/sheprd-gpui/src/core_terminals/panes*` | `serde`, `spaceport-backend`, `thiserror` | 16 (through `spaceport_panes::`) |
@@ -34,7 +34,7 @@ feature table's `sidebar` row), `spaceport-textfield` (`text-field`),
 | `crates/spaceport-chat-core` | `crates/spaceport-gpui/src/chat/{env,list,existing,session,link,highlight,text}*`, and `chat/discovery.rs`'s `Route` and `route` (#234) | `pulldown-cmark`, `serde`, `serde_json`, `spaceport-chat-protocol`, `spaceport-client`, `spaceport-i18n`, `spaceport-live`, `spaceport-release-notes`, `spaceport-remote`, `spaceport-settings`, `spaceport-web-url`, `syntect`, `thiserror`, `unicode-width`, `uuid` | 30: 12 production files (the `chat.rs` façade, `chat.rs`'s neighbours `widgets`, `visual`, `chats`, `text`, `labels`, `rich`, `discovery`, `start`, `prepared`, `selection`, and `i18n/errors/chat.rs`) and 18 test files |
 | `crates/spaceport-widgets` | `crates/spaceport-gpui/src/{direction,toggles,accessibility}.rs` (#220), `fonts.rs` and `motion.rs`'s `pop_in` (#224), `browser::Thumb` (#230) | `gpui`, `spaceport-i18n`, `spaceport-motion`, `spaceport-settings`, `spaceport-sidebar` | 7 (through the app's own façades: `accessibility.rs`, `config.rs`, `direction.rs`, `fonts.rs`, `motion.rs`, `toggles.rs`, `i18n/current.rs`) |
 | `crates/spaceport-settings-window` | `crates/spaceport-gpui/src/settings_window/ui.rs` and `ui/{number,popover,swatches}.rs` (#224), then `settings_window/{navigation,scrollbar,inputs}.rs` (#230) | `gpui`, `spaceport-i18n`, `spaceport-settings`, `spaceport-widgets` | 10 (through the façades under `src/settings_window/`) |
-| `crates/spaceport-menu` | `crates/spaceport-gpui/src/menu/{page,workspace,appear,sessions,chrome}*`, `pane_menu.rs`, `tab_menu.rs`, `group_menu.rs` (#223, #225, #231), `menus/in_window/render.rs` (#231), `menu/page_title.rs` with the host command table and the one row kit (#256) | `gpui`, `serde_json`, `spaceport-client`, `spaceport-i18n`, `spaceport-motion`, `spaceport-settings`, `spaceport-widgets`, `thiserror` | 18 (through the façades in `src/menu/*` and `src/{pane_menu,tab_menu}.rs`, plus `error.rs` and the i18n files) |
+| `crates/spaceport-menu` | `crates/spaceport-gpui/src/menu/{page,workspace,appear,sessions,chrome}*`, `pane_menu.rs`, `tab_menu.rs`, `group_menu.rs` (#223, #225, #231), `menus/in_window/render.rs` (#231), `menu/page_title.rs` with the host command table and the one row kit (#256), the workspace popover (#303), the Keybinds page (#308) and rename and note forms (#309) | `gpui`, `serde_json`, `spaceport-client`, `spaceport-i18n`, `spaceport-motion`, `spaceport-settings`, `spaceport-usage`, `spaceport-widgets`, `thiserror` | 18 (through the façades in `src/menu/*` and `src/{pane_menu,tab_menu}.rs`, plus `error.rs` and the i18n files) |
 | `crates/spaceport-endpoint` | `crates/spaceport-gpui/src/endpoint/{history,wake,order,ids,follow,storage,catalog,fence,link,phase}*` and `origin.rs` (#226, #228, #233) | `spaceport-client`, `spaceport-i18n`, `spaceport-live`, `spaceport-reorder`, `thiserror`, `tracing` | 13 (through the `crate::endpoint` façade, plus `sidebar/rail/render.rs` and `sidebar/render/agent_rows.rs` reading `HostView`) |
 | `crates/spaceport-palette` | `crates/spaceport-gpui/src/palette.rs`'s ranking model, `palette/{search,agent_filter,error,frecency,projects,project_create}.rs`, `navigation.rs` (#229; it moved on to `spaceport-live` in #232) | `nucleo-matcher`, `serde`, `serde_json`, `spaceport-client`, `spaceport-commands`, `spaceport-i18n`, `spaceport-live`, `thiserror`, `unicode-segmentation` | 7 (through the façades in `src/palette/*`) |
 | `crates/spaceport-live` | `crates/spaceport-gpui/src/{state,notice,notifications}*`, `state/{activation,projection,agent_recency}.rs`, `navigation.rs` (#232); the fence and `Route` moved on to `crates/spaceport-activation` in #240, which the phone takes instead of this crate | `serde_json`, `spaceport-activation`, `spaceport-client`, `spaceport-i18n`, `spaceport-osc52`, `spaceport-sound`, `tracing` | 4 (through the `crate::state`, `crate::notice` and `crate::navigation` façades) |
@@ -268,7 +268,7 @@ app's chat tests stay at 408 and its bin suite still runs 3,632.
    returns an error words it beside itself. A crate that returns a value rather
    than a sentence still lets the app write it out, as `spaceport-ago` does with a
    unit and its count. A crate that names message IDs as data instead follows
-   `spaceport-commands`.
+   `spaceport-commands` or `spaceport-usage`.
 6. **Wire and record.** Workspace `members`, `[workspace.dependencies]`,
    `spaceport-gpui`'s `[dependencies]`, the crate table in `AGENTS.md`, and the
    layout in `docs/i18n.md` when the module carries text.
@@ -289,19 +289,19 @@ migration step.
 
 `chat`, `browser` and `sidebar` are the app's three large features and each is a
 program of its own; none can move before the state and text they read have
-homes. Counted today on each tree's `.rs` files, production lines first and the
-test lines under a `tests.rs` or a `tests/` directory second:
+homes. These counts use tracked Rust files under each crate’s `src/` at
+`5358a691c`, including tests. App module counts include both the named file
+and its directory. The stage notes preserve the original coupling measurements.
 
-| Feature | production / test lines | `gpui::`/entity uses | i18n messages | files importing it | what blocks it |
-| --- | --- | --- | --- | --- | --- |
-| `browser` | moved: `crates/spaceport-browser` holds 3,606 production and 2,549 test lines | — | 10 | 51 | done; 1,395 production lines stay in the app as the window's own (wrappers, element building, `group_shown`, the close driver) — see [`notes-browser-extraction.md`](notes-browser-extraction.md) |
-| `chat` | 16,043 production / 13,989 test lines stay in the app (`src/chat` with `chat.rs`), beside `crates/spaceport-chat-core`'s 5,378 / 3,336 (which names no `gpui` at all) | 74 | 141 | 30 (through the `crate::chat` façade) | stages 1-3d landed: the crate holds the attach model, the syntax spans and measurements, the prepared entry model with its widgets, the rich block model and parse, and the selectable text. Stage 4 closed with #234: `Route` and the local-daemon trust boundary now live in the crate over `spaceport-live`'s `LiveState`. What stays app-side is every painter (`view/` and `view.rs`, 10,005 lines with their tests), the `Visuals` workers, the `Prepared` shell that hands their wants over, the pane list with `Target`/`Source`/`Surface`, the start fence, the link classification, and the I/O and process paths — see [`notes-wx41.md`](notes-wx41.md) and [`notes-wx65.md`](notes-wx65.md) |
-| `endpoint` | 12,869 production / 1,791 test lines stay in the app (`src/endpoint` with `endpoint.rs`), beside `crates/spaceport-endpoint`'s 1,752 / 1,103 and `crates/spaceport-live`'s 1,594 / 77 (neither names `gpui` at all) | 3, all `Context<SpaceportWindow>`; nothing builds an element | 15 | 75 (through the `crate::endpoint` façade) | all five stages landed — #226, #228, #232, #233, #235, one per stage in the table below: the two crates hold the connection policy, the saved-host catalog, `LiveState` with its activation fence and notices, the link machine behind `Host`, and the `HostView` a sidebar row is handed. What stays app-side is the socket half and the window's own state: `ConnectionBridge` in `connection.rs` with `connection/reader.rs` (766 lines), `Release`, `Redraw`, `polling.rs` (496), `reset_selected`, the fences' reads, `catalog.rs`, `follow.rs` and every view. The 10,710-line socket-driving lifecycle suite stays with them forever — it opens real sockets and processes, and the design's [honest-remainder table](notes-endpoint-extraction.md) counts it as permanent — see [`notes-endpoint-extraction.md`](notes-endpoint-extraction.md) |
-| `sidebar` | 16,229 / 4,644 remain in the app, beside `crates/spaceport-sidebar`'s 6,683 / 1,632 (31 `gpui::` uses; the crate is a GPUI crate, like `spaceport-browser`) | 74 | 263 | — | stages 1–8a landed: the crate holds the row/agent models, geometry, layouts, tokens, row paint, the direction mirror, the interaction math (reorder, device drag, hover, order), the notes on checkouts (`worktree_notes`) and the tags on devices (`device_tags`, both #201); what stays app-side is window-owned glue (~680 lines of `impl SpaceportWindow` in `reorder.rs`, `device_drag.rs`, `hover.rs`, `order.rs`) that sends the crate's typed requests — the browser program's terminal shape, not a defect to fix.Two blockers are left before the render lane can follow: the menu page bodies (`menu` holds 13,834 production lines app-side, and its remaining pages wait on the P2 text-field crate — stage 1 landed in #252, `DialogInput` still app-side — and the P1 ruling, answered: the lookup lives in `spaceport-i18n`, and #256 took the page titles and the row kit) and `keymap` — which stopped being one: all four stages landed (#239, #243, #249). `endpoint` stopped being one in #235: the row and rail renderers read the crate's `HostView` now |
-| `text-field` | moved: `crates/spaceport-textfield` holds 1,875 production and 1,186 test lines (`SearchInput` with the shared caret, editing and key machinery) | — | 0 | — | stage 1 landed in #252: the crate holds `SearchInput` and the shared machinery; `DialogInput` and `MultilineInput` stay app-side behind the facade until stage 2 proves stage 1 out — see [`notes-wx82.md`](notes-wx82.md) |
+| Feature | Rust lines in the extracted crate | App ownership and stage |
+| --- | ---: | --- |
+| Browser | 6,448 in `spaceport-browser` | The window owns its wrappers, elements and close driver. See the [browser extraction](notes-browser-extraction.md). |
+| Chat | 8,711 in `spaceport-chat-core` | The app’s `chat` module holds 29,900 lines, including the painters, visual workers and pane list. The [attach route](notes-wx65.md) moved in #234. |
+| Endpoint | 2,544 in `spaceport-endpoint` and 1,671 in `spaceport-live` | The app’s `endpoint` module holds 14,660 lines, including socket ownership and its lifecycle tests. See the [endpoint design](notes-endpoint-extraction.md). |
+| Sidebar | 8,260 in `spaceport-sidebar` | The app’s `sidebar` module holds 21,249 lines, including window actions and menu integration. The crate owns row models, geometry, paint and drag math. |
+| Text fields | 5,089 in `spaceport-textfield` | #252 moved `SearchInput` and the editing model. #305 moved `DialogInput` and `MultilineInput`. The app still owns field contents, labels and actions. |
 
-Order that falls out of the counts: `browser` before `sidebar` (53 against 263
-importers), and `chat` only after `browser` and the shared paint/settings types
+The original extraction order put `browser` before `sidebar`, and `chat` after `browser` and the shared paint/settings types
 (`terminal_painter`, `config`, `notifications`) are below it. `sound` proved the
 pattern a feature needs: a value type for what the crate reads, and a parameter
 for what the app owns.
@@ -346,7 +346,7 @@ are `gpui`-free but reach the app, and split into the stages below.
   stage that was chat's to decide closed with #234: `Route` and the local-daemon
   trust boundary moved into `spaceport_chat_core::discovery`, reading
   `spaceport_live::LiveState`. What is left is the app's paint — everything that
-  holds an entity, `view/` alone being 10,005 lines with its tests — the pane
+  holds an entity — the pane
   list with `Target`/`Source`/`Surface` (which would drag
   `spaceport_backend::TerminalId` into the crate), and the start fence, which is
   the second and third spelling of `endpoint/fence.rs`'s value.
@@ -385,15 +385,10 @@ Three groups stay in the app, and the design's
 `terminal::InputTarget` and `config::Theme` all have homes — four other
 programs. `Release`, `Redraw`, `polling.rs` (496) and `reset_selected` stay
 because they are the window's own state and its agreement about a socket. The
-socket-driving lifecycle suite, 10,710 lines that open real sockets and
-processes, stays forever. So the app still holds 12,869 production and 1,791
-test lines of the endpoint tree, against `spaceport-endpoint`'s 1,752 production
-and 1,103 test lines and `spaceport-live`'s 1,594 and 77. Two follow-ups are open
-by decision, not by omission: 30 production sites still read `endpoint.live()`
-instead of `live_of(index)`, so the window's stamped copy and a host's copy can
-disagree between a poll and a reset — that is what `HostView` started to fix; and
-`Endpoint::generation` stays the window's, now that `spaceport-activation` holds
-the fence itself (#240).
+app retains the socket-driving lifecycle tests. The [drain review](notes-a11-endpoint-drain.md)
+records where endpoint, window and mobile polling belong, and when to reconsider them.
+`Endpoint::generation` stays with the window. The activation fence lives in
+`spaceport-activation` (#240).
 
 ### `menus`, in five stages
 
@@ -410,16 +405,15 @@ landed stage has its own note: [`wx55`](notes-wx55.md) (stage 1),
 | 4 | The popup chrome and the in-window bar; `spaceport-menu` gains `gpui` and becomes a GPUI crate | #231 | stage 2, and `spaceport-widgets` (#220) for the logical sides and the AccessKit helpers |
 | 5a | `menu/devices/setup.rs` and its error → `crates/spaceport-remote` | #236 | nothing: it is the one page body with no text field, endpoint state or keymap in it |
 | 5b, first slices | `menu/page_title.rs` with its `en-XA` test, the host command table, the one row kit the four surfaces drew by hand, and the tab, pane and group menus' row paint → `crates/spaceport-menu` | #256 | nothing: they are the pure tables and the paint that take rows the app prepares |
-| 5b, the rest | The rest of the page bodies, cheapest first: the workspace popover, the tab and group page bodies, `pane_menu`, the Keybinds page, then Add Device, WSL and the device picker | open | P2, the text-field crate (`DialogInput`, every form and picker — `SearchInput` and the shared editing model landed in `crates/spaceport-textfield` with wx82) and the owner's answer to P1, where a crate's words live — answered 2026-11-25 and landed: the lookup is `spaceport-i18n`'s (#250, #253, #254). |
+| 5b, workspace popover | The workspace header, title tiles and mute toggle | #303 | The app prepares the values and handles the actions. |
+| 5b, Keybinds | The shortcut list and keycaps | #308 | The app supplies the search field and shortcut editor. |
+| 5b, rename and note forms | The form body shared by workspace, tab and pane dialogs | #309 | The app supplies the draft field and handles submit and cancel. |
+| 5b, device pages | Add Device and WSL | #332 tracks this slice | The app supplies host data and actions. |
+| 5b, remaining pages | Device picker, session management, host forms, theme picker and shortcut editor | A8 in the [backlog](notes-backlog-2026-11-26.md) | Move each page after its window-owned inputs have a defined boundary. |
 
-The program was never going to move most of the module: the design counted
-~4,300–4,900 lines of 20.6k as movable, and the three-quarters that stay are the
-pickers and forms (endpoint state, text fields, workers), the dialogs and
-shortcut editor, the paint of every page, and the application menu bar. Today
-`spaceport-menu` holds 2,394 production and 1,052 test lines, `spaceport-palette`
-862 and 414, and 13,834 production lines are still app-side in `src/menu*`,
-`src/menus` and the two menu roots. So the sidebar's `menu` blocker is smaller by
-the page set and the ranking, not by the pickers.
+At `5358a691c`, `spaceport-menu/src` held 4,957 Rust lines and
+`spaceport-palette/src` held 1,276, including tests. The window owns each
+page’s live fields and actions. The stage table records which page bodies moved.
 
 ### `settings`, in seven stages
 
@@ -438,38 +432,16 @@ its stages have their own notes: [`wx48`](notes-wx48.md) (stage 1),
 | 2 | The row kit — `ui.rs`, `ui/{number,popover,swatches}.rs`, the row bounds, `control_card` and `control_switch` — → `crates/spaceport-settings-window`, with words as data and a `native.rs` probe for its own tests | #224 | P3 |
 | 3 | `PageState` and `PageText`: each page draws a prepared page instead of reading `self.config`, `self.shared` or `self.theme` | #227 | stage 2 |
 | 4 | The section list and footer, `scrollbar`'s `scroll_area`, the number and dropdown previews → `crates/spaceport-settings-window`, driven by two closures the window answers | #230 | stages 2-3. `panel_resize` (P6) and `SearchInput` (P2) stayed app-side, so `tests/navigation_resize.rs` and the input tests stayed with them |
-| 5 | The theme browser: `themes.rs` with its `appearance`, `grid` and `system` pages | open | P2 (it owns an `Entity<SearchInput>`) and P5 (the appearance service: `InitialAppearance`, `log_window`, `rebind_keys`) |
-| 6 | The eleven page modules and `controls/*`, 3,692 production lines | open | P1, the owner's decision on where the shown language's words live. If the answer is no, this stage does not happen and the extraction stops after stage 5 |
+| 5 | The appearance service and theme browser | #304 landed the service. #315 tracks the browser. | The app owns the live search field, intent and I/O. |
+| 6 | The settings pages and their controls | A9 in the [backlog](notes-backlog-2026-11-26.md) | P1 was settled in #250, #253 and #254. The crate can word the controls it draws. |
 | 7 | Record it: this row, `AGENTS.md`'s crate table, the stage tables above | part landed here | finishes when stage 6 does |
 
-`spaceport-settings-window` holds 1,761 production and 1,262 test lines, and
-`spaceport-widgets` 513 and 128. The app's `src/settings_window*` still holds
-10,382 production and 8,491 test lines. Whoever takes P6 should move
+At `5358a691c`, `spaceport-settings-window/src` held 3,023 Rust lines and
+`spaceport-widgets/src` held 641. The app’s `settings_window` module held
+19,063 lines. All three counts include tests. Whoever takes P6 should move
 `panel_resize` into `spaceport-widgets` and take `tests/navigation_resize.rs`
 with it: that test drags the settings navigation edge and asserts `PanelWidth`'s
 default and cap, so it is a `panel_resize` test wearing a settings name.
-
-## In flight, not in the tables above
-
-Every number, stage and row above was read on `main` (`925370ab1b`). These
-slices exist on branches only and are deliberately kept out of the tables until
-they merge; a row moves when its pull request lands.
-
-| Slice | What it moves | State |
-| --- | --- | --- |
-| Settings stage 5a, the appearance service (P5) | `InitialAppearance`, `log_window` and `rebind_keys` → `crates/spaceport-settings`, which is what the theme browser (stage 5b) waits on | branch only |
-| Settings stage 5b, the theme browser | `themes.rs` with its `appearance`, `grid` and `system` pages → `crates/spaceport-settings-window`, over that service | branch only, on top of 5a |
-| Text-field stage 2 | `DialogInput` and `MultilineInput` with the rest of the editing model → `crates/spaceport-textfield`, the app keeping the façades, the messages and the multi-line paint | branch only; it also drops the older of the two `spaceport-textfield` rows `AGENTS.md` still carries |
-| Menus stage 5b, the workspace popover | The header, tiles and mute toggle → `crates/spaceport-menu`, wording app-side | branch only, on top of the text-field branch |
-| Menus stage 5b, the Keybinds page | `render_keybinds` and its helpers → `crates/spaceport-menu::{keybinds,keybinds::render}`, the shortcut editor still injected as an element; the app's `en-XA` test reads `spaceport_menu::keybinds::render::keycaps` there, so `AGENTS.md`'s `spaceport-menu` row loses its "every page body" clause when it lands | branch only, on top of the text-field branch |
-| Menus stage 5b, the rename forms | The tab, pane and workspace rename and new dialogs, once `DialogInput` is crate-side | in progress, nothing to record yet |
-
-Chat stage 4 is closed where the [backlog
-note](notes-backlog-2026-11-26.md) puts it: #234 took the last slice that was
-chat's to decide (`Route` and the local-daemon trust boundary), and what the
-stage still lists — `view/` and the rest of the painters, the pane list with
-`Target`/`Source`/`Surface`, the start fence — waits on a home for the identity
-values or on the fences' own crate, not on chat's program.
 
 ## What this does not do
 

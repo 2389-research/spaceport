@@ -9,6 +9,8 @@ mod muting;
 mod ports;
 mod select_refused;
 mod strict;
+mod usage;
+mod usage_display_filter;
 mod wsl_forwards;
 
 fn caller(workspace: Option<&str>) -> Caller {

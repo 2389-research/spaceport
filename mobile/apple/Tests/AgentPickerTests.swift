@@ -117,6 +117,29 @@ final class AgentPickerTests: XCTestCase {
         XCTAssertEqual(ids("release", recent: ["b"]), ["b", "a"])
     }
 
+    func testSwitchBackKeepsTwoWholeViewportsWithinOneBoot() {
+        var cache = PanePreviewCache()
+        let first = (1...30).map { "row \($0)" }.joined(separator: "\n")
+        cache.record(first, pane: "a", boot: "boot")
+        cache.record("second", pane: "b", boot: "boot")
+        XCTAssertEqual(cache.viewport(pane: "a", boot: "boot"), first)
+        XCTAssertNil(cache.viewport(pane: "c", boot: "boot"))
+        XCTAssertNil(cache.viewport(pane: "a", boot: "other"))
+
+        cache.record("first updated", pane: "a", boot: "boot")
+        cache.record("third", pane: "c", boot: "boot")
+        XCTAssertNil(cache.viewport(pane: "b", boot: "boot"))
+        XCTAssertEqual(cache.viewport(pane: "a", boot: "boot"), "first updated")
+        cache.record(String(repeating: "🚀", count: 65_536), pane: "a", boot: "boot")
+        XCTAssertNil(cache.viewport(pane: "a", boot: "boot"))
+        cache.record("Claude's output", pane: "reused", boot: "boot", agent: "Claude")
+        XCTAssertEqual(cache.viewport(pane: "reused", boot: "boot", agent: "Claude"), "Claude's output")
+        XCTAssertNil(cache.viewport(pane: "reused", boot: "boot", agent: "Codex"))
+        XCTAssertNil(cache.viewport(pane: "reused", boot: "boot"))
+        cache.visit("c", boot: "restarted")
+        XCTAssertNil(cache.viewport(pane: "c", boot: "boot"))
+    }
+
     func testPreviewClipsOutputAndEvictsOlderPanes() throws {
         var cache = PanePreviewCache(capacity: 2)
         let seen = Date(timeIntervalSince1970: 123)

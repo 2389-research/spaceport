@@ -1,4 +1,4 @@
-; Per-user Windows installer for Sheprd, compiled by
+; Per-user Windows installer for Spaceport, compiled by
 ; `windows-installer.py build`, which passes the defines below. It installs the
 ; release zip's tree unchanged: spaceport.exe, a console program because it is
 ; also the command line terminals and agents run, spaceport-launcher.exe,
@@ -7,7 +7,9 @@
 ; Closing applications before replacing files also ends running chats, whose
 ; agents' sessions can be resumed. It never installs, starts, or stops the Herdr daemon, and uninstalling
 ; keeps settings and Herdr sessions.
-; The directory and shortcut match site/install.ps1, so either replaces the other.
+; The directory and shortcut are Spaceport's own. site/install.ps1 is still the
+; inherited Sheprd installer for a different product, so the two no longer
+; replace each other.
 
 #ifndef Version
   #error Pass /DVersion=YYYYMMDD.COUNTER
@@ -26,29 +28,38 @@
 #endif
 ; Optional: /DSignTool=NAME with a matching /SNAME=COMMAND makes ISCC
 ; Authenticode-sign the uninstaller and Setup.exe. Nothing passes them since
-; the upstream release workflow was removed, so every build stays unsigned.
+; the upstream release workflow was removed, so every build stays unsigned;
+; README.md's Signing Gates lists what Windows signing still needs.
 
-#define AppName "Sheprd"
-#define StartupName "Herdr UI"
+#define AppName "Spaceport"
+; The value Launch at login writes under Run, and Task Manager's Startup apps
+; shows. It is the same name, so an entry the app wrote is the one Setup removes.
+#define StartupName "Spaceport"
 #define AppExe "spaceport.exe"
 #define Launcher "spaceport-launcher.exe"
-; Inherited package AppUserModelID. Spaceport's production identity remains
-; unconfigured; this installer is not approved for Spaceport distribution.
-#define AppUserModelID "so.pen.herdr-gpui"
+; The app registers this AppUserModelID for notifications on its first launch,
+; and its shortcuts carry it, so it is the app ID the packaged executable
+; embeds in its build record. Windows publishes no released Spaceport identity
+; yet, so a package built today carries the development one; a shipped identity
+; replaces both together.
+#define AppUserModelID "spaceport.development"
 #define Icons "..\..\assets\icons"
 
 [Setup]
-; Never change: Windows finds an existing installation by it.
-AppId={{7FA70894-4FC0-4923-BDCB-B05F7475610A}
+; Never change: Windows finds an existing installation by it. This is
+; Spaceport's own AppId rather than the inherited Sheprd one, so Setup neither
+; upgrades nor adopts that other product's installation.
+AppId={{62B8722B-1FA2-48E0-9609-46AA5D431983}
 AppName={#AppName}
 AppVersion={#Version}
 AppVerName={#AppName} {#Version}
 ; winget matches the deployed publisher as well as the permanent AppId.
-AppPublisher=Herdr UI
-AppPublisherURL=https://sheprd.org
-AppSupportURL=https://github.com/sheprd-labs/sheprd/issues
-; Preserve the existing installation directory across package upgrades.
-DefaultDirName={localappdata}\Programs\Herdr UI
+AppPublisher=2389 Research, Inc.
+AppPublisherURL=https://github.com/2389-research/spaceport
+AppSupportURL=https://github.com/2389-research/spaceport/issues
+; A directory of this product's own, so an inherited Sheprd installation and its
+; PATH entry are left alone. Preserve this directory across Spaceport upgrades.
+DefaultDirName={localappdata}\Programs\Spaceport
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
@@ -61,11 +72,11 @@ ChangesEnvironment=yes
 CloseApplications=yes
 RestartApplications=no
 OutputDir={#OutputDir}
-OutputBaseFilename=Sheprd-{#Version}-{#Target}-setup
+OutputBaseFilename=Spaceport-{#Version}-{#Target}-setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
-; Sheprd's icon in place of Inno's stock box: the setup file's own icon, the
+; Spaceport's icon in place of Inno's stock box: the setup file's own icon, the
 ; corner image on every page, and, centered rather than stretched, the welcome
 ; and finish pages' panel. Each list runs from 100% to 250% DPI.
 SetupIconFile={#Icons}\Spaceport.ico
@@ -104,8 +115,6 @@ Source: "{#SourceDir}\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversi
 [UninstallDelete]
 Type: dirifempty; Name: "{app}\licenses"
 Type: dirifempty; Name: "{app}"
-; A pre-Setup install may have supplied the desktop shortcut we renamed.
-Type: files; Name: "{userdesktop}\{#AppName}.lnk"
 
 ; The app registers its AppUserModelID for notifications on first use; that
 ; key goes on uninstall. Protocol links need a separately owned installer ID.
@@ -179,34 +188,6 @@ begin
     RegWriteExpandStringValue(HKCU, EnvironmentKey, 'Path', Path);
 end;
 
-{ Only rename shortcuts owned by this installation. A legacy desktop shortcut
-  survives even when a fresh Setup run did not select the desktop task. }
-procedure RenameLegacyShortcut(Folder: String);
-var
-  OldPath, NewPath, Target, Name: String;
-  Shell, Link: Variant;
-begin
-  OldPath := Folder + '\Herdr UI.lnk';
-  NewPath := Folder + '\{#AppName}.lnk';
-  if not FileExists(OldPath) then
-    exit;
-  try
-    Shell := CreateOleObject('WScript.Shell');
-    Link := Shell.CreateShortcut(OldPath);
-    Target := Link.TargetPath;
-    Name := ExtractFileName(Target);
-    if (CompareText(RemoveBackslashUnlessRoot(ExtractFilePath(Target)), ExpandConstant('{app}')) <> 0) or
-       ((CompareText(Name, 'herdr-gpui.exe') <> 0) and
-        (CompareText(Name, 'herdr-gpui-launcher.exe') <> 0) and
-        (CompareText(Name, '{#AppExe}') <> 0) and (CompareText(Name, '{#Launcher}') <> 0)) then
-      exit;
-    if FileExists(NewPath) or FileCopy(OldPath, NewPath, True) then
-      DeleteFile(OldPath);
-  except
-    Log('Could not rename the legacy shortcut: ' + GetExceptionMessage);
-  end;
-end;
-
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   Path: String;
@@ -221,8 +202,6 @@ begin
     Path := Path + ExpandConstant('{app}');
   end;
   SetUserPath(Path);
-  RenameLegacyShortcut(ExpandConstant('{userprograms}'));
-  RenameLegacyShortcut(ExpandConstant('{userdesktop}'));
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

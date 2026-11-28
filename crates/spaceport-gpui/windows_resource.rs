@@ -1,7 +1,7 @@
-//! Embeds the Windows executable's resources: the Herdr icon as icon resource
-//! 1, which GPUI's Windows platform loads for the window class and Explorer and
-//! the taskbar show, the version information Windows shows for the file, and
-//! the application manifest (`windows.manifest`).
+//! Embeds the Windows executable's resources: the Spaceport icon as icon
+//! resource 1, which GPUI's Windows platform loads for the window class and
+//! Explorer and the taskbar show, the version information Windows shows for the
+//! file, and the application manifest (`windows.manifest`).
 
 use std::{
     io::{Error, ErrorKind},
@@ -13,8 +13,13 @@ use winresource::{VersionInfo, WindowsResource};
 
 const ICON: &str = "assets/icons/Spaceport.ico";
 const WORKTREE_ICON: &str = "assets/icons/Spaceport-worktree.ico";
-/// Windows shows FileDescription as the application name, as in Task Manager.
-const APP_NAME: &str = "Sheprd";
+/// Windows shows FileDescription as the application name, as in Task Manager,
+/// and the same name lists the installation in Settings, so the installer reads
+/// this constant's value in `spaceport.iss` rather than spelling it again.
+const APP_NAME: &str = "Spaceport";
+/// The publisher Explorer and Settings show for the app: the same company the
+/// About box names as its publisher.
+const COMPANY_NAME: &str = "2389 Research, Inc.";
 /// The version shown for builds outside the release pipeline, as in the app.
 const DEV_VERSION: &str = "dev";
 /// The application manifest: per-monitor DPI, long paths, the UTF-8 code
@@ -61,6 +66,7 @@ pub fn embed(manifest: &Path, worktree: bool) -> std::io::Result<()> {
         .set_manifest_file(manifest)
         .set("FileDescription", APP_NAME)
         .set("ProductName", APP_NAME)
+        .set("CompanyName", COMPANY_NAME)
         .set("FileVersion", &version)
         .set("ProductVersion", &version)
         .set_version_info(VersionInfo::FILEVERSION, numeric)

@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+# Spaceport's Linux application. Packaging installs it as `<app id>.desktop`
+# under share/applications — the id the build reports, spaceport.development
+# while packages carry the development identity — and the icon as
+# share/icons/hicolor/scalable/apps/spaceport.svg. StartupWMClass names the class
+# the app's window reports, which is that same id.
+Name=Spaceport
+# A translation adds Comment[TAG]= under Comment, TAG being the app's
+# language tag with an underscore (Comment[pt_BR]=), as the Desktop Entry
+# Specification spells locales. Name is the product's and stays as it is.
+Comment=Native client for an existing local Herdr daemon
+Exec=spaceport
+Icon=spaceport
+Terminal=false
+Categories=Development;
+StartupWMClass=spaceport.development

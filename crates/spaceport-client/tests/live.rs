@@ -25,6 +25,8 @@ use std::{
 
 const TIMEOUT: Duration = Duration::from_secs(20);
 
+#[path = "live/observer.rs"]
+mod observer;
 #[path = "live/plugins.rs"]
 mod plugins;
 

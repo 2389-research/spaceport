@@ -58,20 +58,23 @@ fn size(text: std::ffi::OsString) -> Result<Size, CliError> {
 }
 
 /// The panel names `ui panel` takes, as its errors and help name them.
-const PANELS: &str = "workspaces|overview";
+const PANELS: &str = "workspaces|overview|automations|usage";
 
-pub(super) const UI_USAGE: &str = "spaceport ui sidebar [on|off|toggle]\nspaceport ui statusbar [on|off|toggle]\nspaceport ui font-size +|-|reset|POINTS\nspaceport ui panel workspaces|overview\nspaceport ui agent-idle [--pane ID]\n    Read the agent idle time observed by this window.\n    For this window and session; settings are changed with `config`.";
+pub(super) const UI_USAGE: &str = "spaceport ui sidebar [on|off|toggle]\nspaceport ui workspaces [on|off|toggle]\nspaceport ui statusbar [on|off|toggle]\nspaceport ui font-size +|-|reset|POINTS\nspaceport ui panel workspaces|overview|automations|usage\nspaceport ui agent-idle [--pane ID]\n    Read the agent idle time observed by this window.\n    For this window and session; settings are changed with `config`.";
 
 pub(super) fn ui(args: &mut Args) -> Result<UiOp, CliError> {
     let verb = args.verb().ok_or(CliError::MissingArgument {
         command: "ui",
-        what: "sidebar|statusbar|font-size|panel|agent-idle",
+        what: "sidebar|workspaces|statusbar|font-size|panel|agent-idle",
     })?;
     Ok(match verb.to_str() {
         Some("agent-idle") => UiOp::AgentIdle {
             pane: args.text_option("--pane")?,
         },
         Some("sidebar") => UiOp::Sidebar {
+            switch: switch(args.positional())?,
+        },
+        Some("workspaces") => UiOp::Workspaces {
             switch: switch(args.positional())?,
         },
         Some("statusbar" | "status-bar") => UiOp::StatusBar {

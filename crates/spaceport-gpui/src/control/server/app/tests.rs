@@ -9,6 +9,7 @@ mod core_catalog;
 mod core_flag;
 mod core_window;
 mod core_window_new;
+mod workspaces;
 
 fn call<T>(op: T) -> Call<T> {
     Call {

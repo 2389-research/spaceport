@@ -1,4 +1,4 @@
-"""Inherited Windows installation identity stays consistent."""
+"""Windows packaging declares Spaceport's own installation identity."""
 import importlib.util
 from pathlib import Path
 import sys
@@ -21,14 +21,17 @@ INSTALLER = load("windows_installer", SCRIPTS / "windows-installer.py")
 PACKAGE = load("package_windows", SCRIPTS / "package-windows.py")
 
 
-class RebrandCompatibility(unittest.TestCase):
-    def test_installer_keeps_upgrade_and_startup_identities(self):
+class WindowsIdentity(unittest.TestCase):
+    def test_installer_declares_spaceports_own_identity(self):
         text = INSTALLER.SCRIPT.read_text()
-        for line in ('#define AppName "Sheprd"', '#define StartupName "Herdr UI"',
-                     '#define AppUserModelID "so.pen.herdr-gpui"', 'AppPublisher=Herdr UI',
-                     r'DefaultDirName={localappdata}\Programs\Herdr UI'):
+        for line in ('#define AppName "Spaceport"',
+                     '#define StartupName "Spaceport"',
+                     'AppPublisher=2389 Research, Inc.',
+                     r'DefaultDirName={localappdata}\Programs\Spaceport'):
             self.assertIn(line, text)
-        self.assertEqual(INSTALLER.app_id(), "{7FA70894-4FC0-4923-BDCB-B05F7475610A}")
+        self.assertEqual(INSTALLER.app_id(), "{62B8722B-1FA2-48E0-9609-46AA5D431983}")
+        # The smoke test seeds and checks the same value name.
+        self.assertEqual(INSTALLER.STARTUP_NAME, INSTALLER.define("StartupName"))
         startup = [line for line in text.splitlines() if line.startswith("Root:") and
                    ("CurrentVersion\\Run" in line or "StartupApproved\\Run" in line)]
         self.assertTrue(startup)
@@ -36,8 +39,18 @@ class RebrandCompatibility(unittest.TestCase):
             self.assertIn('ValueName: "{#StartupName}"', line)
             self.assertIn("uninsdeletevalue dontcreatekey", line)
             self.assertNotIn("ValueData:", line)
-        self.assertIn("CompareText(RemoveBackslashUnlessRoot(ExtractFilePath(Target))", text)
-        self.assertIn("FileExists(NewPath) or FileCopy(OldPath, NewPath, True)", text)
+
+    def test_installer_leaves_the_inherited_installation_alone(self):
+        text = INSTALLER.SCRIPT.read_text()
+        # Setup finds an installation by its AppId and replaces files in its own
+        # directory, so an inherited Sheprd install keeps all of these.
+        for inherited in ("{7FA70894-4FC0-4923-BDCB-B05F7475610A}",
+                          r"Programs\Herdr UI", "AppPublisher=Herdr UI",
+                          "Sheprd.lnk", "Herdr UI.lnk"):
+            with self.subTest(inherited=inherited):
+                self.assertNotIn(inherited, text)
+        # Renaming or copying another installation's shortcuts would adopt it.
+        self.assertNotIn("RenameLegacyShortcut", text)
 
     def test_every_packaged_executable_is_installed(self):
         text = INSTALLER.SCRIPT.read_text()
@@ -46,10 +59,10 @@ class RebrandCompatibility(unittest.TestCase):
                           }.get(name, name)
             self.assertIn(f'Source: "{{#SourceDir}}\\{definition}";', text)
 
-    def test_native_smoke_preserves_a_disabled_legacy_startup_entry(self):
-        launcher = Path("C:/Programs/Herdr UI/herdr-gpui-launcher.exe")
-        values = {INSTALLER.STARTUP_KEYS[0]: {"Herdr UI": (f'"{launcher}"', 1)},
-                  INSTALLER.STARTUP_KEYS[1]: {"Herdr UI": (bytes([3]) + bytes(11), 3)}}
+    def test_native_smoke_preserves_a_disabled_startup_entry(self):
+        launcher = Path("C:/Programs/Spaceport/spaceport-launcher.exe")
+        values = {INSTALLER.STARTUP_KEYS[0]: {INSTALLER.STARTUP_NAME: (f'"{launcher}"', 1)},
+                  INSTALLER.STARTUP_KEYS[1]: {INSTALLER.STARTUP_NAME: (bytes([3]) + bytes(11), 3)}}
 
         def query(key, name):
             if name not in values[key]:
@@ -65,10 +78,14 @@ class RebrandCompatibility(unittest.TestCase):
                                          OpenKey=open_key, QueryValueEx=query)
         with mock.patch.dict(sys.modules, {"winreg": registry}):
             INSTALLER.check_startup_preserved(launcher)
-            values[INSTALLER.STARTUP_KEYS[1]]["Herdr UI"] = (bytes([2]) + bytes(11), 3)
+            values[INSTALLER.STARTUP_KEYS[1]][INSTALLER.STARTUP_NAME] = (bytes([2]) + bytes(11), 3)
             with self.assertRaisesRegex(ValueError, "disabled state"):
                 INSTALLER.check_startup_preserved(launcher)
-            values[INSTALLER.STARTUP_KEYS[1]]["Herdr UI"] = (bytes([3]) + bytes(11), 3)
-            values[INSTALLER.STARTUP_KEYS[0]]["Sheprd"] = (f'"{launcher}"', 1)
+            values[INSTALLER.STARTUP_KEYS[1]][INSTALLER.STARTUP_NAME] = (bytes([3]) + bytes(11), 3)
+            values[INSTALLER.STARTUP_KEYS[0]][INSTALLER.INHERITED_STARTUP_NAME] = (f'"{launcher}"', 1)
             with self.assertRaisesRegex(ValueError, "second startup identity"):
                 INSTALLER.check_startup_preserved(launcher)
+
+
+if __name__ == "__main__":
+    unittest.main()

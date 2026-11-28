@@ -5,30 +5,71 @@ import XCTest
 
 @MainActor
 final class AgentWidgetCatalogTests: XCTestCase {
-    func testFirstReadyRosterAndCountChangesAreSavedWithoutRewritingQuietViews() throws {
+    func testRosterChangesAreSavedWithoutRewritingQuietViews() throws {
         var view = MobileView(version: 1, bootId: "boot", workspaces: [.init(id: "w", label: "", status: "")],
                               tabs: [.init(id: "t", workspaceId: "w", label: "", status: "")], panes: [],
                               paneMap: nil, focusedWorkspace: "w", focusedTab: "t", focusedPane: nil, terminal: nil,
                               inputTarget: nil, error: nil, disconnected: false, hostChallenge: nil,
                               goToPending: false, goToArrival: nil)
-        XCTAssertNil(view.changedAgentStatus(after: nil, savedCounts: nil))
+        XCTAssertNil(view.changedAgentStatus(since: nil))
         view.rosterObservedAtMs = 2_500
-        let first = try XCTUnwrap(view.changedAgentStatus(after: nil, savedCounts: nil))
+        let first = try XCTUnwrap(view.changedAgentStatus(since: nil))
         XCTAssertEqual(first.seenAt, Date(timeIntervalSince1970: 2.5))
         XCTAssertEqual(first.agentCounts, AgentCounts())
         let empty = view
         view.version += 1
         view.rosterObservedAtMs = 3_000
-        XCTAssertNil(view.changedAgentStatus(after: empty, savedCounts: first.agentCounts))
+        XCTAssertNil(view.changedAgentStatus(since: RosterSaveAttempt(empty, accepted: true)))
+        view.rosterObservedAtMs = 62_500
+        XCTAssertNotNil(view.changedAgentStatus(since: RosterSaveAttempt(empty, accepted: true)))
+        view.rosterObservedAtMs = 3_000
+        view.tabs[0].zoomed.toggle()
+        XCTAssertNil(view.changedAgentStatus(since: RosterSaveAttempt(empty, accepted: true)))
         view.panes = [.init(stateChangeSeq: nil, agentName: "Builder", id: "p", tabId: "t", label: "", status: "working")]
-        let busy = try XCTUnwrap(view.changedAgentStatus(after: empty, savedCounts: first.agentCounts))
+        let busy = try XCTUnwrap(view.changedAgentStatus(since: RosterSaveAttempt(empty, accepted: true)))
         XCTAssertEqual(busy.agentCounts, AgentCounts(working: 1))
         XCTAssertEqual(busy.seenAt, Date(timeIntervalSince1970: 3))
         let named = view
         view.panes[0].label = "Compile"
-        XCTAssertNil(view.changedAgentStatus(after: named, savedCounts: busy.agentCounts))
+        XCTAssertEqual(view.changedAgentStatus(since: RosterSaveAttempt(named, accepted: true))?.agents?.first?.paneTitle, "Compile")
         view.bootId = "replacement"
-        XCTAssertNotNil(view.changedAgentStatus(after: named, savedCounts: busy.agentCounts))
+        XCTAssertNotNil(view.changedAgentStatus(since: RosterSaveAttempt(named, accepted: true)))
+    }
+
+    func testSavedWaitingAgentFollowsASwapWithUnchangedCounts() throws {
+        let suite = "spaceport.waiting-swap." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = ProfileStore(defaults: defaults)
+        let profile = try HostProfile.make(hostname: "box", port: "22", username: "pilot", session: "test")
+        try store.save(profile)
+        var view = MobileView(version: 1, bootId: "boot", workspaces: [.init(id: "w", label: "Lab", status: "")],
+                              tabs: [.init(id: "t", workspaceId: "w", label: "Console", status: "")],
+                              panes: [.init(stateChangeSeq: 1, agentName: "Claude", id: "a", tabId: "t", label: "", status: "blocked"),
+                                      .init(stateChangeSeq: 2, agentName: "Codex", id: "b", tabId: "t", label: "", status: "idle")],
+                              paneMap: nil, focusedWorkspace: "w", focusedTab: "t", focusedPane: "a", terminal: nil,
+                              inputTarget: nil, error: nil, disconnected: false, hostChallenge: nil,
+                              goToPending: false, goToArrival: nil)
+        view.rosterObservedAtMs = 1_000
+        let first = try XCTUnwrap(view.changedAgentStatus(since: nil))
+        XCTAssertTrue(try store.recordSeen(profile: profile, snapshot: first))
+        let previous = view
+        view.panes[0].status = "idle"
+        view.panes[1].status = "blocked"
+        view.rosterObservedAtMs = 2_000
+        if let next = view.changedAgentStatus(since: RosterSaveAttempt(previous, accepted: true)) {
+            try store.recordSeen(profile: profile, snapshot: next)
+        }
+        let accepted = try store.recordSeen(profile: profile, snapshot: first)
+        XCTAssertFalse(accepted)
+        let lostRace = RosterSaveAttempt(previous, accepted: accepted)
+        XCTAssertNil(previous.changedAgentStatus(since: lostRace))
+        var fresh = previous
+        fresh.rosterObservedAtMs = 3_000
+        XCTAssertNotNil(fresh.changedAgentStatus(since: lostRace))
+        let catalog = try ProfileStore(defaults: defaults).catalog()
+        XCTAssertEqual(catalog.observedAgents.filter { $0.section == .waiting }.map(\.agent.name), ["Codex"])
+        XCTAssertEqual(catalog.agentWidgetSnapshot?.counts, first.agentCounts)
     }
 
     func testWidgetUsesTheFullNamedRosterBeforeSavingTheBoundedCache() throws {

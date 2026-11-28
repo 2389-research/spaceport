@@ -11,6 +11,7 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 use spaceport_client::Method;
+use spaceport_menu::form;
 use spaceport_menu::rows::Row;
 use spaceport_menu::tab::{Action, Offers, Target, render};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -565,7 +566,6 @@ impl SpaceportWindow {
         let Some(tab) = &self.menu.tab else {
             return div();
         };
-        let theme = &self.theme;
         let mut body = div().flex().flex_col();
         if tab.moving.is_some() {
             body = self.render_tab_move_pending();
@@ -601,53 +601,43 @@ impl SpaceportWindow {
                 },
             );
         } else {
-            body =
-                body.p(px(8.))
-                    .gap(px(12.))
-                    .child(
-                        div()
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .child(fl!("tab-menu-rename-title")),
-                    )
-                    .when_some(tab.input.clone(), |body, input| {
-                        if tab.pending.is_some() {
-                            body.child(div().child(input.read(cx).text().to_owned()))
-                        } else {
-                            body.child(input)
-                        }
-                    })
-                    .child(
-                        div()
-                            .flex()
-                            .justify_end()
-                            .gap(px(8.))
-                            .child(
-                                div()
-                                    .id("tab-rename-cancel")
-                                    .p(px(6.))
-                                    .cursor_pointer()
-                                    .child(fl!("tab-menu-cancel"))
-                                    .on_click(cx.listener(|this, _, window, cx| {
-                                        this.dismiss_menu(window, cx)
-                                    })),
-                            )
-                            .child(
-                                div()
-                                    .id("tab-rename-submit")
-                                    .p(px(6.))
-                                    .rounded(px(crate::config::corners::CONTROL))
-                                    .bg(rgb(theme.active))
-                                    .cursor_pointer()
-                                    .child(if tab.pending.is_some() {
-                                        fl!("tab-menu-renaming")
-                                    } else {
-                                        fl!("tab-menu-rename-submit")
-                                    })
-                                    .on_click(cx.listener(|this, _, window, cx| {
-                                        this.submit_tab_rename(window, cx)
-                                    })),
-                            ),
-                    );
+            // The form draws the refusal its last submit earned under itself.
+            let rename = form::Rename {
+                buttons: form::Buttons {
+                    cancel: fl!("tab-menu-cancel"),
+                    submit: if tab.pending.is_some() {
+                        fl!("tab-menu-renaming")
+                    } else {
+                        fl!("tab-menu-rename-submit")
+                    },
+                },
+                error: tab.error.clone(),
+                hint: None,
+                selector: "tab",
+                title: fl!("tab-menu-rename-title"),
+            };
+            let draft = tab.input.clone().map(|input| {
+                if tab.pending.is_some() {
+                    div()
+                        .child(input.read(cx).text().to_owned())
+                        .into_any_element()
+                } else {
+                    input.into_any_element()
+                }
+            });
+            return form::rename(
+                body,
+                &rename,
+                &self.theme,
+                draft,
+                |button, element| match button {
+                    form::Button::Cancel => element
+                        .on_click(cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx))),
+                    form::Button::Submit => element.on_click(
+                        cx.listener(|this, _, window, cx| this.submit_tab_rename(window, cx)),
+                    ),
+                },
+            );
         }
         body.when_some(tab.error.clone(), |body, error| {
             // No width of its own, so the labels set the panel's width and

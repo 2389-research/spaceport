@@ -78,6 +78,7 @@ fn usage_display_switches_apply_independently_on_reload(cx: &mut TestAppContext)
     ] {
         view.update(cx, |view, cx| {
             let mut config = view.config.clone();
+            config.usage.show = false;
             config.usage.topbar = topbar;
             config.usage.inline = inline;
             config.sidebar_layout = toml::from_str(

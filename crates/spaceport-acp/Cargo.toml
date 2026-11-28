@@ -32,7 +32,6 @@ url.workspace                 = true
 uuid.workspace                = true
 
 [dev-dependencies]
-spaceport-chat-core.workspace = true
 tempfile.workspace = true
 
 [target.'cfg(unix)'.dependencies]

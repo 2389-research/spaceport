@@ -51,6 +51,7 @@ struct DraftImage: Identifiable {
         thumbnail = try scaled(min(192, max(width, height)))
     }
 
+    @MainActor
     static func load(from provider: NSItemProvider) async throws -> DraftImage {
         guard let type = provider.registeredTypeIdentifiers.first(where: { UTType($0)?.conforms(to: .image) == true }) else {
             throw Failure.invalid

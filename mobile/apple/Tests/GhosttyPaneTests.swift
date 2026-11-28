@@ -6,6 +6,23 @@ import XCTest
 
 @MainActor
 final class GhosttyPaneTests: XCTestCase {
+    func testWarmSwitchWaitsForQueuedOutputToReachTheGhosttyGrid() async throws {
+        let surface = GhosttyPaneSurface(write: { _ in true }, resize: { _ in })
+        let parsed = expectation(description: "Incoming screen is readable")
+        surface.receive(Data("Incoming agent".utf8)) {
+            XCTAssertTrue(surface.visibleText?.contains("Incoming agent") == true)
+            parsed.fulfill()
+        }
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let host = UIHostingController(rootView: GhosttyPaneView(surface: surface, keyboard: .constant(false), modifiers: .constant(0)))
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = host
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        host.view.layoutIfNeeded()
+        await fulfillment(of: [parsed], timeout: 5)
+    }
+
     func testStartingFontSizeOnTheNativeTerminal() throws {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
         func fontSize(_ surface: GhosttyPaneSurface) throws -> Float {

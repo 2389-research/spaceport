@@ -54,7 +54,7 @@ LOCALIZED_KEY = re.compile(r"^\w+\[([^\]]+)\]=", re.MULTILINE)
 ENDONYM = "language-name"
 INFO_PLIST = Path("assets/macos/Info.plist")
 INSTALLER = Path("scripts/release/installer")
-DESKTOP_ENTRY = Path("scripts/release/org.sheprd.Sheprd.desktop")
+DESKTOP_ENTRY = Path("scripts/release/spaceport.desktop")
 MIGRATED = "// i18n: migrated"
 DATA = "// i18n: data"
 # A capitalized word, or two lowercase words with a space between, outside

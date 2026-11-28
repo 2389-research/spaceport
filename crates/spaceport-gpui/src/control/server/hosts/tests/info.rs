@@ -49,3 +49,36 @@ fn a_host_is_selected_by_id_or_label_and_a_refusal_says_why(cx: &mut TestAppCont
         })
     });
 }
+
+#[gpui::test]
+fn usage_says_why_it_is_empty(cx: &mut TestAppContext) {
+    let (view, cx) = window(cx);
+    cx.update(|_, cx| {
+        view.update(cx, |view, _| {
+            let Response::Host {
+                reply:
+                    Reply::Usage {
+                        host,
+                        usage: readings,
+                        note: Some(note),
+                    },
+            } = usage(view, SystemTime::now())
+            else {
+                panic!("expected usage");
+            };
+            assert_eq!(host, "Local");
+            assert!(readings.is_empty());
+            assert!(note.contains("unavailable"), "{note}");
+            view.config.usage.show = false;
+            let Response::Host {
+                reply: Reply::Usage {
+                    note: Some(note), ..
+                },
+            } = usage(view, SystemTime::now())
+            else {
+                panic!("expected usage");
+            };
+            assert!(note.contains("turned off"), "{note}");
+        })
+    });
+}
