@@ -88,6 +88,27 @@ class InstallerTests(unittest.TestCase):
                 self.build(self.release_zip(entries), success=False)
         self.assertEqual(list(self.work.glob("*-setup.exe")), [])
 
+    def test_smoke_refuses_to_touch_an_existing_desktop_shortcut(self):
+        shortcut = self.work / "Spaceport.lnk"
+        shortcut.write_bytes(b"someone else's shortcut")
+        with self.assertRaises(FileExistsError):
+            with INSTALLER.unowned_shortcut(shortcut):
+                self.fail("an existing desktop shortcut must stop the smoke before Setup")
+        self.assertEqual(shortcut.read_bytes(), b"someone else's shortcut")
+
+    def test_smoke_detects_a_deleted_or_replaced_shortcut(self):
+        shortcut = self.work / "Spaceport.lnk"
+        with INSTALLER.unowned_shortcut(shortcut):
+            self.assertTrue(shortcut.is_file())
+        self.assertFalse(shortcut.exists())
+        with self.assertRaisesRegex(ValueError, "desktop shortcut"):
+            with INSTALLER.unowned_shortcut(shortcut):
+                shortcut.unlink()
+        with self.assertRaisesRegex(ValueError, "desktop shortcut"):
+            with INSTALLER.unowned_shortcut(shortcut):
+                shortcut.write_bytes(b"replacement")
+        self.assertEqual(shortcut.read_bytes(), b"replacement")
+
     def test_compiler_arguments(self):
         arguments = INSTALLER.iscc_arguments(VERSION, "aarch64-pc-windows-msvc", "src", "out")
         self.assertIn("/DArchitecture=arm64", arguments)
