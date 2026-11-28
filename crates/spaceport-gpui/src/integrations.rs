@@ -359,6 +359,7 @@ impl SpaceportWindow {
         cx.notify();
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 138 lines")]
     pub(crate) fn render_filtered_integrations(&self, query: &str, cx: &mut Context<Self>) -> Div {
         let query = query.trim().to_lowercase();
         let state = &self.integrations;

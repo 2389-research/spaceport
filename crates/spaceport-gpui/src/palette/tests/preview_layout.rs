@@ -45,6 +45,7 @@ fn go_to_preview_sits_beside_the_list_when_there_is_room(cx: &mut TestAppContext
 
 /// The selected pane's cells are painted when its host streams its tab.
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 106 lines")]
 fn a_streamed_pane_previews_its_cells(cx: &mut TestAppContext) {
     use spaceport_client::protocol::{
         CellData, FrameData, PaneSurfaceFrame, PaneSurfacePane, SurfaceRect,

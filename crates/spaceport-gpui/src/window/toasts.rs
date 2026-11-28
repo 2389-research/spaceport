@@ -207,6 +207,7 @@ impl SpaceportWindow {
         )
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 128 lines")]
     pub(super) fn render_toasts(
         &mut self,
         window: &mut Window,

@@ -17,11 +17,10 @@ unsafe_code           = "deny"
 unused_qualifications = "deny"
 
 [workspace.lints.clippy]
-# Both are restriction lints: allow-by-default, so this table is what turns
+# Both lints are allow-by-default, so this table is what turns
 # them on, and `-D warnings` in `just lint` and CI turns them into failures.
 # A function that genuinely needs more carries a dated, scoped `#[allow]`.
-# Their thresholds live in clippy.toml. priority = 1 outranks the default-0
-# level a member's own `[lints]` table would otherwise set for the same lint.
+# Their thresholds live in clippy.toml.
 cognitive_complexity = { level = "warn", priority = 1 }
 expect_used           = "deny"
 too_many_lines       = { level = "warn", priority = 1 }

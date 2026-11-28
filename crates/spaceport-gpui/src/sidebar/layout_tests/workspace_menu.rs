@@ -62,6 +62,7 @@ fn workspace_right_click_survives_redraw_release_and_pointer_movement(
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 102 lines")]
 fn workspace_popover_header_and_right_click_retargeting(cx: &mut gpui::TestAppContext) {
     use crate::menu::{Page, workspace_tests::target_id};
     use gpui::MouseButton;
@@ -217,6 +218,7 @@ fn the_sidebar_menu_stays_clear_of_the_window_chrome(cx: &mut gpui::TestAppConte
 /// once, and only after the pointer has both moved and settled. The behavior
 /// is opt-in, so the test turns its feature flag on.
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 127 lines")]
 fn resting_on_a_workspace_opens_its_menu_once(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);

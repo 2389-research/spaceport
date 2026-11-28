@@ -138,6 +138,7 @@ fn collapsed_sidebar_is_a_rail_in_every_layout_that_navigates(cx: &mut TestAppCo
 /// the same left edge, size, and dot offset, with one highlight width around
 /// the glyph, the icon, and the dot.
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 124 lines")]
 fn collapsed_agent_rows_line_up_with_workspace_badges(cx: &mut TestAppContext) {
     let (view, cx) = rail_window(cx, 2);
     view.update(cx, |view, cx| {

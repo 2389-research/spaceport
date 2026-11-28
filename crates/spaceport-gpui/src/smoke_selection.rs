@@ -16,6 +16,7 @@ pub(super) async fn verify(handle: WindowHandle<SpaceportWindow>, cx: &mut Async
     result
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 141 lines")]
 async fn cases(handle: WindowHandle<SpaceportWindow>, cx: &mut AsyncApp) -> Result<()> {
     wait(handle, cx, "selection input readiness", |view, _, cx| {
         Ok(view.read(cx).input_ready().then_some(()))

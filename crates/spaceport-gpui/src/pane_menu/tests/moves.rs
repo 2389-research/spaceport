@@ -5,6 +5,7 @@ use crate::pane_move::{self, Destination};
 /// list every destination, refuse a destination that vanished, and let
 /// only the move a menu is waiting for settle it.
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 136 lines")]
 fn pane_moves_offer_destinations_and_settle_once(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);

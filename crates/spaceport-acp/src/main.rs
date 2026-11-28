@@ -3,11 +3,6 @@
 //! `herdr-acp`: runs an ACP agent in a terminal pane, draws the conversation
 //! there, and lets Spaceport attach to it.
 
-// 2026-11-27 quality gate: 5 functions here are over clippy.toml's 100-line
-// ceiling and 1 over its cognitive-complexity ceiling. Split them, then delete
-// this with the crate's entry in docs/notes-quality-gate-sweep.md.
-#![allow(clippy::cognitive_complexity, clippy::too_many_lines)]
-
 mod agents;
 mod app;
 mod attach;

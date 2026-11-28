@@ -277,6 +277,7 @@ impl ConnectionBridge {
         });
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 102 lines")]
     fn start(
         &mut self,
         options: ConnectOptions,

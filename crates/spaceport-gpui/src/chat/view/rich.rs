@@ -160,6 +160,7 @@ impl SpaceportWindow {
 
     /// Text words and formulas share one wrapping flow; an inline formula
     /// never becomes its own block. Words retain their whitespace and style.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 109 lines")]
     fn rich_inline(
         &self,
         content: &[Inline],

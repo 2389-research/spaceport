@@ -33,6 +33,7 @@ impl SpaceportWindow {
     }
 
     /// [`Self::poll_chats`], connecting through `connect`.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 180 lines")]
     pub(super) fn poll_chats_with(
         &mut self,
         connect: &mut Connect<'_>,

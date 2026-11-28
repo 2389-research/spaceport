@@ -35,6 +35,7 @@ pub fn parse_hex_input(text: &str) -> Option<u32> {
 /// hex text field when the view is editing one (the field's element and whether
 /// what it holds does not parse), and a reset glyph once the host has a colour.
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 138 lines")]
 pub fn swatch_row(
     theme: &Theme,
     host: &str,

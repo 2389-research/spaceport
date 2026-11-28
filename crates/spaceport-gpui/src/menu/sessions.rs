@@ -227,6 +227,7 @@ impl SpaceportWindow {
     /// One session row under its device. `row` counts the session rows painted
     /// so far and names the row's selectors; `ordinal` is its place among the
     /// picker's selectable lines, which hover and the keys address.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 150 lines")]
     pub(super) fn sessions_row(
         &self,
         row: usize,

@@ -10,6 +10,7 @@ fn split_request(server: &mut Server) -> serde_json::Value {
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 123 lines")]
 fn connected_split_drag_sends_coalesced_ratios_and_stops_on_layout_change(
     cx: &mut gpui::TestAppContext,
 ) {

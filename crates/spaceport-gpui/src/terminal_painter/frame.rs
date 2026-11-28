@@ -28,6 +28,7 @@ impl TerminalPainter {
     /// outside the frame are ignored: a selection or search was made against
     /// the live surface, which a repaint may already have replaced.
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 299 lines")]
     pub fn paint_frame(
         &mut self,
         frame: &FrameData,

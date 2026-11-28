@@ -367,6 +367,7 @@ impl SpaceportWindow {
         )
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 114 lines")]
     fn start_image_preparation(
         &mut self,
         target: InputTarget,

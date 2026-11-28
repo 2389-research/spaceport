@@ -287,6 +287,7 @@ impl SpaceportWindow {
         self.paste_or_hold(false, None, cx);
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 124 lines")]
     pub(crate) fn key_down(
         &mut self,
         event: &KeyDownEvent,

@@ -28,6 +28,7 @@ mod policy_tests;
 /// stage short of being posted to the OS, so muting also takes away a toast
 /// already showing. One dropped while muted never comes back on unmuting.
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 160 lines")]
 pub(crate) fn tick(
     endpoints: &mut [crate::endpoint::Endpoint],
     selected: usize,

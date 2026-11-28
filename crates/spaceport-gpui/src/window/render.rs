@@ -141,6 +141,7 @@ impl SpaceportWindow {
 
     /// What the cells paint and the boxes they sit in: the frame on screen,
     /// the highlights over it, and the cursors that follow the pointer.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 123 lines")]
     fn prepare_paint(&mut self, window: &mut Window, cx: &mut Context<Self>) -> (Paint, Areas) {
         let fill = self.fill();
         let ground = self.ground();

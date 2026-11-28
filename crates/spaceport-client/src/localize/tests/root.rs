@@ -34,6 +34,7 @@ fn every_client_variant_has_a_message() {
 }
 
 /// Every variant of the client's error, for the checks above.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 142 lines")]
 fn every_client_error() -> Vec<Error> {
     let newer = ENDPOINT_PROTOCOL_GENERATION + 1;
     vec![

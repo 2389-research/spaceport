@@ -17,6 +17,7 @@ use gpui::{prelude::*, *};
 
 impl SpaceportWindow {
     /// The results for `hits`, grouped under a heading per kind.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 107 lines")]
     pub(in crate::sidebar) fn sidebar_search_results(
         &self,
         hits: Vec<Hit>,

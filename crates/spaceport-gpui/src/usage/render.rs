@@ -96,6 +96,7 @@ impl SpaceportWindow {
         )
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 105 lines")]
     fn usage_segment(
         &self,
         reading: &Reading,

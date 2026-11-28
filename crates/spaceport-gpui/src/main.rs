@@ -4,10 +4,6 @@
 #![cfg_attr(feature = "integration-test", allow(unexpected_cfgs))]
 // Tests start real processes; production code builds them with `new_command`.
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
-// 2026-11-27 quality gate: 147 functions here are over clippy.toml's 100-line
-// ceiling and 8 over its cognitive-complexity ceiling; the sweep splits them a
-// module at a time (docs/notes-quality-gate-sweep.md) and shrinks this.
-#![allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 
 mod about;
 mod accessibility;

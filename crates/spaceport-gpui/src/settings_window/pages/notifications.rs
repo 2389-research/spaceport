@@ -13,6 +13,7 @@ use crate::{
 use gpui::{prelude::*, *};
 
 impl SettingsWindow {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 131 lines")]
     pub(in crate::settings_window) fn render_notifications(
         &self,
         page: &PageState<'_>,

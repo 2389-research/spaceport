@@ -14,6 +14,7 @@ fn cache_style_is_the_font_face_alone() {
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 153 lines")]
 fn cache_reuses_cells_invalidates_fonts_and_bounds_storage(cx: &mut TestAppContext) {
     let (_, cx) = cx.add_window_view(|_, _| Empty);
     let painter = std::rc::Rc::new(std::cell::RefCell::new(TerminalPainter::default()));

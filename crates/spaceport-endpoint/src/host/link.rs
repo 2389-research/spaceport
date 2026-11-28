@@ -165,6 +165,7 @@ pub(super) fn retry_delay(attempts: u32) -> Duration {
 impl Host {
     /// The only writer of `link`; every transport change enters here and comes
     /// back as the action the window performs on its socket.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 183 lines")]
     pub fn enter(&mut self, transition: Transition<'_>) -> Action {
         let retry_at = self.link.retry_at().unwrap_or_else(Instant::now);
         let why = self.link.why().cloned();

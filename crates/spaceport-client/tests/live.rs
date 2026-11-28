@@ -2,14 +2,7 @@
 //! The daemon under test is a POSIX process with a POSIX sandbox, so the whole
 //! harness compiles on Unix only.
 #![cfg(unix)]
-// 2026-11-27 quality gate: 1 function here is over clippy.toml's 100-line
-// ceiling (docs/notes-quality-gate-sweep.md).
-#![allow(
-    clippy::disallowed_methods,
-    clippy::expect_used,
-    clippy::too_many_lines,
-    clippy::unwrap_used
-)]
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::disallowed_methods)]
 #[path = "../../test-support/sandbox.rs"]
 mod sandbox;
 
@@ -286,6 +279,7 @@ impl Session {
 
 #[test]
 #[ignore = "requires explicit HERDR_TEST_BINARY; spawns an isolated live daemon"]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 128 lines")]
 fn stable_endpoint_live() {
     let mut daemon = Daemon::start();
     let mut session = Session::open(&daemon);

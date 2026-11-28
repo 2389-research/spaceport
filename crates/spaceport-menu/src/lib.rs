@@ -13,11 +13,6 @@
 //! app built, and the chrome around a page takes the page's own element from
 //! the app.
 
-// 2026-11-27 quality gate: 3 functions here are over clippy.toml's 100-line
-// ceiling. Split them, then delete this with the crate's entry in
-// docs/notes-quality-gate-sweep.md.
-#![allow(clippy::too_many_lines)]
-
 pub mod appear;
 pub mod bar;
 pub mod chrome;

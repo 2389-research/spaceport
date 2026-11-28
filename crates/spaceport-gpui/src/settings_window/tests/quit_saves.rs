@@ -209,6 +209,7 @@ fn quit_waits_for_current_save_then_drains_latest_sizes_once(cx: &mut TestAppCon
 
 #[cfg(unix)]
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 126 lines")]
 fn quit_shared_theme_uses_only_successfully_reconciled_preceding_snapshot(cx: &mut TestAppContext) {
     // Failed writes/loads must retain the original conflict boundary. A genuine
     // conflict after a successful handoff must surface, never reload and retry.

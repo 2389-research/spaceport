@@ -360,6 +360,7 @@ impl SpaceportWindow {
 
     /// All Devices, one device, or Add Device. `index` is the row's place in
     /// [`Self::choose_device`] and names its selectors.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 137 lines")]
     fn render_device_row(
         &self,
         line: &Line,

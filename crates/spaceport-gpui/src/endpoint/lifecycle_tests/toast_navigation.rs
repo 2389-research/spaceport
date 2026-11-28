@@ -64,6 +64,7 @@ fn toast_navigation_queues_typed_targets_and_fences_input(cx: &mut gpui::TestApp
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 107 lines")]
 fn wire_completion_waits_for_evidence_then_command_uses_original_pane(
     cx: &mut gpui::TestAppContext,
 ) {

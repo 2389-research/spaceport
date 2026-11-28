@@ -412,6 +412,7 @@ impl SpaceportWindow {
         )
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 105 lines")]
     fn bar_button(
         &self,
         id: &'static str,

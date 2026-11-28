@@ -206,6 +206,7 @@ pub(crate) fn start(handle: WindowHandle<SpaceportWindow>, cx: &mut App) {
     .detach();
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 135 lines")]
 async fn run(
     handle: WindowHandle<SpaceportWindow>,
     options: Options,
@@ -354,6 +355,11 @@ async fn run(
     Ok(())
 }
 
+#[allow(
+    clippy::cognitive_complexity,
+    clippy::too_many_lines,
+    reason = "2026-11-27 baseline: complexity 28, 223 lines"
+)]
 fn install(
     view: &mut SpaceportWindow,
     window: &mut Window,

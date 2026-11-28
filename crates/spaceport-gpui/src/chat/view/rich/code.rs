@@ -8,6 +8,7 @@ use crate::i18n::fl;
 use std::sync::Arc;
 
 impl SpaceportWindow {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 109 lines")]
     pub(super) fn rich_code(
         &self,
         id: VisualId,

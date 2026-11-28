@@ -1,6 +1,10 @@
 use super::*;
 
 #[test]
+#[allow(
+    clippy::cognitive_complexity,
+    reason = "2026-11-27 baseline: complexity 27"
+)]
 fn every_palette_status_overrides_and_auto_switch() -> anyhow::Result<()> {
     assert_eq!(THEME_NAMES.len(), 18);
     for name in THEME_NAMES {

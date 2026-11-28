@@ -354,6 +354,7 @@ impl SpaceportWindow {
 
     /// The composer's setting buttons: one per setting at hand, the agent's
     /// older modes when it has no mode setting, then one for the rest.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 133 lines")]
     pub(super) fn render_chat_settings_buttons(
         &self,
         chat: &ChatPane,
@@ -538,6 +539,7 @@ impl SpaceportWindow {
     }
 
     /// The menu `menu` opens, over the top of the chat.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 208 lines")]
     pub(super) fn render_chat_menu(
         &self,
         chat: &ChatPane,

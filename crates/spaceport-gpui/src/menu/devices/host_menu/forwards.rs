@@ -79,6 +79,7 @@ impl SpaceportWindow {
 
     /// The host's forwarded ports, each with its state and the actions it
     /// allows. Nothing at all when there are none.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 102 lines")]
     pub(super) fn render_forwards(&self, host: &HostMenu, cx: &mut Context<Self>) -> Div {
         use crate::port_forward::State;
         let theme = &self.theme;

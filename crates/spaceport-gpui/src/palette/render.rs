@@ -312,6 +312,7 @@ impl SpaceportWindow {
         }
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 109 lines")]
     pub(crate) fn render_palette(&self, viewport: Size<Pixels>, cx: &mut Context<Self>) -> Div {
         let Some(palette) = &self.menu.palette else {
             return div();

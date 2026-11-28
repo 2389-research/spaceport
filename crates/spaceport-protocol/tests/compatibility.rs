@@ -1,6 +1,4 @@
-// 2026-11-27 quality gate: 1 function here is over clippy.toml's 100-line
-// ceiling (docs/notes-quality-gate-sweep.md).
-#![allow(clippy::expect_used, clippy::too_many_lines, clippy::unwrap_used)]
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use serde::Serialize;
 use spaceport_protocol::{endpoint::*, *};
@@ -142,6 +140,7 @@ fn upstream_json_fixtures_and_future_values() {
 }
 
 #[test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 101 lines")]
 fn all_client_tags_match_frozen_source_order() {
     let size = ClientSurfaceSize { cols: 80, rows: 24 };
     let messages = vec![

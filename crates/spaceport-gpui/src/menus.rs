@@ -105,6 +105,7 @@ pub(crate) fn changed(old: &Config, new: &Config) -> bool {
 /// The menu bar, with the config's layout checked under View > Layout, its
 /// tab layout under View > Tab Layout, and its chat layout under View >
 /// Agent Layout, and QA last when `features.qa_menu` is on.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 302 lines")]
 pub(crate) fn menus(config: &Config) -> Vec<Menu> {
     let mut menus = vec![
         Menu {

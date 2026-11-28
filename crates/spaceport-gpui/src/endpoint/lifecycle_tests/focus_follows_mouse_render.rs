@@ -26,6 +26,7 @@ fn past_resizes(server: &mut Server) -> ClientMessage {
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 168 lines")]
 fn rendered_hover_resumes_typing_in_the_hovered_pane(cx: &mut gpui::TestAppContext) {
     let (endpoint, mut server) = connected_endpoint("ssh:hover-render");
     let (view, cx) = cx.add_window_view(fixture_window);

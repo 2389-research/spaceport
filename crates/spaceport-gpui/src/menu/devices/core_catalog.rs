@@ -52,6 +52,7 @@ pub(super) fn unavailable_reason(error: Option<&impl Display>) -> String {
 }
 
 impl SpaceportWindow {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 183 lines")]
     pub(super) fn render_core_machine_catalog(
         &self,
         cx: &mut Context<Self>,

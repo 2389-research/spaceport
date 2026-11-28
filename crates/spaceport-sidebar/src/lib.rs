@@ -33,11 +33,6 @@
 //! every row, and words every status; it reads these for the numbers, the order,
 //! the kinds, the marks, the drags, and the users' own words to draw.
 
-// 2026-11-27 quality gate: 2 functions here are over clippy.toml's 100-line
-// ceiling. Split them, then delete this with the crate's entry in
-// docs/notes-quality-gate-sweep.md.
-#![allow(clippy::too_many_lines)]
-
 mod error;
 
 pub use error::{Error, Result};

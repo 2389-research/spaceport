@@ -1,6 +1,4 @@
-// 2026-11-27 quality gate: 1 function here is over clippy.toml's
-// cognitive-complexity ceiling (docs/notes-quality-gate-sweep.md).
-#![allow(clippy::cognitive_complexity, clippy::expect_used, clippy::unwrap_used)]
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 //! Optional surface encodings: Herdr encoder fixtures, malformed input,
 //! bounds, and revision fencing. Every rejection must leave the frame intact.
 
@@ -415,6 +413,10 @@ fn delta_rebuilds_cells_and_popups_from_the_baseline() {
 }
 
 #[test]
+#[allow(
+    clippy::cognitive_complexity,
+    reason = "2026-11-27 baseline: complexity 32"
+)]
 fn delta_rejects_malformed_spans_and_metadata() {
     let base = surface();
     let bad_rows = [

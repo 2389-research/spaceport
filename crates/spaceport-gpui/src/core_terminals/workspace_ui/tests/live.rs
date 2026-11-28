@@ -182,6 +182,7 @@ fn draw_group(cx: &mut VisualTestContext, view: &gpui::Entity<crate::SpaceportWi
 
 #[gpui::test]
 #[ignore = "needs HERDR_CORE_TEST_BINARY"]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 148 lines")]
 fn ui_membership_rebases_disjoint_client_edit_without_touching_terminal(
     cx: &mut gpui::TestAppContext,
 ) {
@@ -339,6 +340,7 @@ fn ui_membership_rebases_disjoint_client_edit_without_touching_terminal(
 
 #[gpui::test]
 #[ignore = "needs HERDR_CORE_TEST_BINARY"]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 145 lines")]
 fn ui_refuses_same_group_conflict_and_fences_an_uncertain_version(cx: &mut gpui::TestAppContext) {
     let sandbox = Sandbox::start();
     let first = sandbox.connect();

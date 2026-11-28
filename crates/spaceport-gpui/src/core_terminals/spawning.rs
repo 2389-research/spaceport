@@ -52,6 +52,7 @@ pub(super) enum Outcome {
 
 impl Spawning {
     /// The only writer of the spawn lifecycle, including queued requests.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 113 lines")]
     pub(super) fn transition(&mut self, event: Event<'_>) -> Outcome {
         match event {
             Event::Queue(purpose, spawn, core_id, report) => {

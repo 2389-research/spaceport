@@ -5,6 +5,7 @@ use super::*;
 use crate::core_terminals::{Start, State as HubState};
 
 impl SpaceportWindow {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 165 lines")]
     pub(crate) fn core_workspace_rows(&self, cx: &mut Context<Self>) -> AnyElement {
         let theme = &self.theme;
         let mut section = div()
@@ -173,6 +174,7 @@ impl SpaceportWindow {
         section.into_any_element()
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 166 lines")]
     fn render_core_workspace_members(
         &self,
         workspace: &crate::core_terminals::workspace_document::Workspace,
@@ -346,6 +348,7 @@ impl SpaceportWindow {
         rows
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 112 lines")]
     pub(crate) fn render_core_workspace_actions(&self, cx: &mut Context<Self>) -> Div {
         let Some(target) = self.core_terminals.workspace_ui.target else {
             return div();
@@ -461,6 +464,7 @@ impl SpaceportWindow {
             )
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 126 lines")]
     pub(crate) fn render_core_workspace_dialog(&self, cx: &mut Context<Self>) -> Div {
         let theme = &self.theme;
         let status = if self.core_terminals.workspace_ui.pending.is_some() {

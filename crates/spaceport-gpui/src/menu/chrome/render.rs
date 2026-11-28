@@ -119,6 +119,11 @@ impl SpaceportWindow {
     }
 
     /// The page the menu is on, under the panel's own padding.
+    #[allow(
+        clippy::cognitive_complexity,
+        clippy::too_many_lines,
+        reason = "2026-11-27 baseline: complexity 31, 109 lines"
+    )]
     fn menu_page_body(
         &self,
         page: Page,

@@ -131,6 +131,7 @@ impl SpaceportWindow {
         true
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 134 lines")]
     pub(in crate::menu) fn render_add_device(
         &self,
         compact: bool,

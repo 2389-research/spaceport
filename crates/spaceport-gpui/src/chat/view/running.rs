@@ -179,6 +179,7 @@ impl SpaceportWindow {
 
     /// The table of what runs and what ended, opened from the row; it grows
     /// in and shrinks out, from where it is when turned around.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 124 lines")]
     pub(super) fn render_chat_running_table(&self, chat: &ChatPane) -> Option<AnyElement> {
         let look = self.chat_look();
         let now = motion::now();

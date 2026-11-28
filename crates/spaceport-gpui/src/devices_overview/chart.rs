@@ -49,6 +49,7 @@ fn slots(bounds: Bounds<Pixels>, count: usize) -> impl Iterator<Item = (usize, P
 }
 
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 149 lines")]
 pub(super) fn activity(
     look: &Look,
     history: &History,

@@ -30,6 +30,7 @@ fn snapshot() -> ClientShellSnapshot {
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 116 lines")]
 fn tab_moves_offer_workspaces_and_settle_once(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);

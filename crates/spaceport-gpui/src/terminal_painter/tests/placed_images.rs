@@ -1,6 +1,7 @@
 use super::*;
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 114 lines")]
 fn placed_images_decode_off_thread_then_paint_in_z_order(cx: &mut TestAppContext) {
     use spaceport_client::{
         SurfaceImages,

@@ -144,6 +144,7 @@ impl SpaceportWindow {
 
     /// The tabs the strip drew, each a drop target, with the closed tabs
     /// between them and the scroll thumb over them.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 106 lines")]
     fn strip_scroller(
         &mut self,
         slot: Slot,

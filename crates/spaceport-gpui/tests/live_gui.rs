@@ -1,13 +1,6 @@
 // ABOUTME: Runs isolated native GUI fixtures and explicitly selected daemon checks.
 // ABOUTME: Separates lock-safe routing checks from desktop focus and live-daemon qualification.
-// 2026-11-27 quality gate: 1 function here is over clippy.toml's 100-line
-// ceiling (docs/notes-quality-gate-sweep.md).
-#![allow(
-    clippy::disallowed_methods,
-    clippy::expect_used,
-    clippy::too_many_lines,
-    clippy::unwrap_used
-)]
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::disallowed_methods)]
 #[path = "../../test-support/sandbox.rs"]
 mod sandbox;
 
@@ -284,6 +277,7 @@ fn native_fixture(fixture: Fixture) {
     }));
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 114 lines")]
 fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
     let mut isolated = Isolated {
         sandbox: Sandbox::new(),

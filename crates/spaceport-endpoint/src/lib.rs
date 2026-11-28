@@ -15,10 +15,6 @@
 // The catalog's startup test starts the test binary again; production code
 // here starts no process at all.
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
-// 2026-11-27 quality gate: 1 function here is over clippy.toml's 100-line
-// ceiling. Split it, then delete this with the crate's entry in
-// docs/notes-quality-gate-sweep.md.
-#![allow(clippy::too_many_lines)]
 
 // keep-sorted start
 mod catalog;

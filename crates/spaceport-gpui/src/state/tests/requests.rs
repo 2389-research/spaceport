@@ -135,6 +135,7 @@ fn dialog_response_is_correlated_and_survives_coalescing() {
 }
 
 #[test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 109 lines")]
 fn rename_failures_stay_typed_and_shared_across_mailbox_clones() {
     let mut state = LiveState {
         tab_rename: Some(RenameResult {

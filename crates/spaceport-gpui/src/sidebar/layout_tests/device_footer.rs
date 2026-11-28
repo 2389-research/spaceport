@@ -4,6 +4,7 @@ use super::*;
 use spaceport_sidebar::device_scope::DeviceScope;
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 107 lines")]
 fn device_footer_filters_both_lists_and_keeps_settings_visible(cx: &mut gpui::TestAppContext) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);

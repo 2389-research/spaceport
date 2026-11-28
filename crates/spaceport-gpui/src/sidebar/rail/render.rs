@@ -205,6 +205,7 @@ impl SpaceportWindow {
 
     /// One workspace's mark, icon, and status dot, with the menu and click
     /// that navigate to it.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 109 lines")]
     fn rail_workspace_row(
         &self,
         measured: &RailMeasure<'_>,

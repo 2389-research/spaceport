@@ -24,6 +24,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 impl SpaceportWindow {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 203 lines")]
     pub(crate) fn new(
         launch: impl Into<WindowLaunch>,
         window: &mut Window,

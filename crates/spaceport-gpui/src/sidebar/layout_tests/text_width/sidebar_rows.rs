@@ -49,6 +49,10 @@ pub(super) fn check_text_allocation(cx: &mut gpui::VisualTestContext) {
     });
 }
 
+#[allow(
+    clippy::cognitive_complexity,
+    reason = "2026-11-27 baseline: complexity 32"
+)]
 pub(super) fn check_row_geometry(cx: &mut gpui::VisualTestContext) {
     let sidebar = cx.debug_bounds("sidebar").unwrap();
     let spaces = cx.debug_bounds("spaces-scroll").unwrap();

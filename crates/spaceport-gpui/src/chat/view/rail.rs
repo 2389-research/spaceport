@@ -116,6 +116,7 @@ impl SpaceportWindow {
         controls
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 133 lines")]
     pub(super) fn render_chat_rail(
         &self,
         chat: &ChatPane,

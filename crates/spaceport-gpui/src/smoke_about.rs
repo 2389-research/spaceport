@@ -9,6 +9,7 @@ use anyhow::{Context as _, Result, bail};
 use gpui::*;
 use std::time::Duration;
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 106 lines")]
 pub(super) async fn verify(handle: WindowHandle<SpaceportWindow>, cx: &mut AsyncApp) -> Result<()> {
     use crate::sidebar::layout_tests::PaintedProbes;
     let capture = std::env::var_os("HERDR_TEST_LOCAL_CONTROLS_CAPTURE");

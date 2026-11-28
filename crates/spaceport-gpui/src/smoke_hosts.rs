@@ -218,6 +218,7 @@ async fn await_activation(
 
 /// Clicks every host, agent and repository control the fixture shows, and holds
 /// each one to the selection, composition and scope it is meant to change.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 133 lines")]
 async fn clicks(
     handle: WindowHandle<SpaceportWindow>,
     decoy: WindowHandle<SpaceportWindow>,

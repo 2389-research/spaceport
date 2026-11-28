@@ -102,6 +102,7 @@ pub(super) fn place_line(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 223 lines")]
 pub fn row(
     // Rows are probed by key, not by label: an agent names its workspace, which
     // already names a row of its own.

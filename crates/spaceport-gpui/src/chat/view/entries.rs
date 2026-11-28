@@ -314,6 +314,7 @@ impl SpaceportWindow {
         div().child(self.chat_disclosure(header, pane_id, id, expanded, HeaderText::Body, cx))
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 162 lines")]
     fn render_chat_tool(
         &self,
         pane_id: &str,

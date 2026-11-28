@@ -131,6 +131,7 @@ impl SpaceportWindow {
     }
 
     /// `node` of the tab's tree, at `path` from its root.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 106 lines")]
     fn core_node(
         &self,
         draw: &Draw<'_>,

@@ -429,6 +429,7 @@ impl Config {
         Ok(loaded.try_deserialize()?)
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 139 lines")]
     pub(crate) fn parse_layers<'a>(
         texts: impl IntoIterator<Item = &'a str>,
         base: &Daemon,

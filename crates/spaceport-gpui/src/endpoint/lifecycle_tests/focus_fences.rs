@@ -109,6 +109,7 @@ fn startup_focus_waits_for_the_first_surface_without_flapping_on_later_updates(
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 219 lines")]
 fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
     cx: &mut gpui::TestAppContext,
 ) {

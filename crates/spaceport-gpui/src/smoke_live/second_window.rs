@@ -11,6 +11,7 @@ use std::{
 
 /// Two windows are two clients of one daemon. Each keeps its own focused space,
 /// and neither one's navigation may move the other.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 136 lines")]
 pub(super) async fn verify(first: WindowHandle<SpaceportWindow>, cx: &mut AsyncApp) -> Result<()> {
     // Observe a window without leasing its root: drawing updates that entity.
     fn observe(

@@ -375,6 +375,7 @@ impl SpaceportWindow {
         }
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 127 lines")]
     pub(super) fn render_device_theme(&self, host: &HostMenu, cx: &mut Context<Self>) -> Div {
         let Some(picker) = &host.theme else {
             return div();

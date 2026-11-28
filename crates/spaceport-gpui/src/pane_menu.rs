@@ -210,6 +210,7 @@ impl SpaceportWindow {
         cx.notify();
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 114 lines")]
     fn activate_pane_menu(&mut self, action: Action, window: &mut Window, cx: &mut Context<Self>) {
         if self
             .menu

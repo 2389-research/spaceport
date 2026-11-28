@@ -74,6 +74,7 @@ impl SpacesRows {
 impl SpaceportWindow {
     /// Builds the frame's rows: each listed host's header and workspace rows,
     /// the devices layout's agent rows in their place, and the agents panel.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 168 lines")]
     pub(super) fn sidebar_rows(
         &self,
         m: &SidebarMeasure<'_>,

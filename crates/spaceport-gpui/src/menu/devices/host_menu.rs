@@ -458,6 +458,7 @@ impl SpaceportWindow {
         }
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 179 lines")]
     pub(in crate::menu) fn render_host_menu(&self, cx: &mut Context<Self>) -> Div {
         let Some(host) = &self.menu.host else {
             return div();

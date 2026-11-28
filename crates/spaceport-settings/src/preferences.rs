@@ -104,6 +104,7 @@ impl Config {
         Self::save_preference_path(edit, &local)
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 189 lines")]
     pub fn save_preference_path(edit: Preference, path: &Path) -> Result<()> {
         let result = (|| -> Result<()> {
             let text = match fs::read_to_string(path) {

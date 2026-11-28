@@ -312,6 +312,11 @@ pub(crate) struct Signals<'a> {
     pub(crate) pace: Pace,
 }
 
+#[allow(
+    clippy::cognitive_complexity,
+    clippy::too_many_lines,
+    reason = "2026-11-27 baseline: complexity 27, 236 lines"
+)]
 pub(crate) fn run_connection(
     mut stream: Stream,
     options: ConnectOptions,
@@ -593,6 +598,7 @@ pub(crate) fn run_connection(
 }
 
 impl Session {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 176 lines")]
     pub(crate) fn handle_message(
         &mut self,
         message: ServerMessage,

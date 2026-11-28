@@ -148,6 +148,22 @@ fn json_escaping_and_many_fields_share_one_record_budget() {
     assert_eq!(row.fields.len(), 32);
 }
 
+fn emit_trace_through_info() {
+    tracing::trace!(target: "spaceport_client::worker", "trace");
+    tracing::debug!(target: "spaceport_gpui", "debug");
+    tracing::info!(target: "spaceport_protocol", "info");
+}
+
+fn emit_warnings_and_errors() {
+    tracing::warn!(target: "spaceport_client", "warn");
+    tracing::error!(target: "spaceport_gpui", "error");
+}
+
+fn emit_excluded_targets() {
+    tracing::error!(target: "herdr_gpui_impostor", "excluded");
+    tracing::error!(target: "gpui", "excluded");
+}
+
 #[test]
 fn levels_targets_and_span_context() {
     let (capture, queued, counters) = sink(QUEUE);
@@ -155,13 +171,9 @@ fn levels_targets_and_span_context() {
         let span =
             tracing::info_span!(target: "spaceport_client", "connection", secret = "not retained");
         let _entered = span.enter();
-        tracing::trace!(target: "spaceport_client::worker", "trace");
-        tracing::debug!(target: "spaceport_gpui", "debug");
-        tracing::info!(target: "spaceport_protocol", "info");
-        tracing::warn!(target: "spaceport_client", "warn");
-        tracing::error!(target: "spaceport_gpui", "error");
-        tracing::error!(target: "herdr_gpui_impostor", "excluded");
-        tracing::error!(target: "gpui", "excluded");
+        emit_trace_through_info();
+        emit_warnings_and_errors();
+        emit_excluded_targets();
     });
     let records = queued_records(&queued);
     assert_eq!(counts(&counters), (0, 0));

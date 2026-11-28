@@ -167,6 +167,7 @@ impl SpaceportWindow {
     /// A card whose rows all fit draws exactly as before, with no chevron.
     /// An open card gives up height in a short window, down to none for its
     /// lines, which then scroll.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 152 lines")]
     fn render_diagnostic_card(
         &self,
         card: Card<'_>,

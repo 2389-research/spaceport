@@ -3,6 +3,7 @@ use gpui::{Modifiers, px};
 use spaceport_chat_protocol::{Choice, ConfigOption, OptionCategory, OptionKind, Usage};
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 108 lines")]
 fn terminal_footer_keeps_all_controls_on_one_line(cx: &mut TestAppContext) {
     for status in [Status::Idle, Status::Working] {
         let (view, _peer, cx) = open(cx, ConnectTarget::Local);

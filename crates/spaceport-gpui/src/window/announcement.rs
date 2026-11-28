@@ -16,6 +16,7 @@ const MAX_BODY_HEIGHT: f32 = 240.;
 const MAX_TITLE: usize = 160;
 
 impl SpaceportWindow {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 106 lines")]
     pub(super) fn announcement_card(&self, cx: &mut Context<Self>) -> Option<Notice> {
         let announcement = self.live.product_announcement()?;
         let lines = self.daemon_text.announcement.lines(&announcement.body);

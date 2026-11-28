@@ -112,6 +112,7 @@ fn stepped_value(value: f32, delta: f32, range: &RangeInclusive<f32>) -> Option<
 #[derive(Clone, Copy, PartialEq)]
 struct SliderDrag(&'static str);
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 135 lines")]
 pub fn number(
     theme: &Theme,
     spec: Number,

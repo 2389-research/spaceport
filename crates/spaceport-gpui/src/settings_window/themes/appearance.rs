@@ -19,6 +19,7 @@ impl SettingsWindow {
             .child(self.themes.search.clone())
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 211 lines")]
     pub(in crate::settings_window) fn render_theme_results(
         &mut self,
         window: &Window,

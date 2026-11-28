@@ -38,6 +38,7 @@ fn tab_moves_are_not_offered_on_unsupported_platforms(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 158 lines")]
 fn inactive_tab_menu_rename_composition_cancel_and_fences(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);

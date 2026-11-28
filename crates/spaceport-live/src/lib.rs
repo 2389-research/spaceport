@@ -14,11 +14,6 @@
 //! `fn` items in [`words`]. Every effect — the pasteboard, a bell, a sound, a
 //! toast — is the app's.
 
-// 2026-11-27 quality gate: 2 functions here are over clippy.toml's 100-line
-// ceiling and 1 over its cognitive-complexity ceiling. Split them, then delete
-// this with the crate's entry in docs/notes-quality-gate-sweep.md.
-#![allow(clippy::cognitive_complexity, clippy::too_many_lines)]
-
 mod agent_recency;
 pub mod notice;
 pub mod notifications;

@@ -32,6 +32,7 @@ impl SpaceportWindow {
         self.endpoints[self.selected_endpoint].outage().is_some() || self.presentation.stale()
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 119 lines")]
     pub(super) fn render_reconnecting(&self, cx: &mut Context<Self>) -> Option<AnyElement> {
         if !self.reconnecting() {
             return None;

@@ -221,6 +221,10 @@ mod tests {
     }
 
     #[gpui::test]
+    #[allow(
+        clippy::cognitive_complexity,
+        reason = "2026-11-27 baseline: complexity 39"
+    )]
     fn the_prefix_runs_chords_and_swallows_other_keys(cx: &mut TestAppContext) {
         let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
         let table: toml::Table = "prefix = ['cmd+j', 'cmd+u']\ntoggle_sidebar = 'prefix+cmd+b'"

@@ -135,6 +135,7 @@ fn native_history(
     Some(crate::history::load(agent, load?, cwd))
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 110 lines")]
 pub(crate) fn run(options: Options) -> anyhow::Result<()> {
     let cwd = match options.cwd.clone() {
         Some(cwd) => cwd,

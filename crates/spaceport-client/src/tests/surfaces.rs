@@ -105,6 +105,7 @@ fn boot_change_in_partial_frame_prevents_queued_input() {
 }
 
 #[test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 101 lines")]
 fn snapshot_surface_patch_navigation_input_resize_and_response() {
     let (client, mut server, worker) = test_client();
     handshake(&mut server);
