@@ -7,14 +7,17 @@ mod projection;
 mod roster;
 mod ssh;
 
-pub use controller::{MobileError, MobileSession};
+pub use controller::{
+    MobileError, MobileSession,
+    pane_tools::{MobilePaneAction, MobilePaneActions},
+};
 pub use history::{HistoryCursor, HistoryMatch, HistorySearch};
 pub use idle::{IdleAgeGroup, idle_age_group};
 pub use projection::{
     HostChallenge, InputTarget, MobileCell, MobilePane, MobilePaneMap, MobilePaneRect,
     MobileScroll, MobileTab, MobileTerminal, MobileView, MobileWorkspace,
 };
-pub use roster::MobileRoster;
+pub use roster::{MobileRoster, MobileRosterRequest};
 pub use ssh::*;
 uniffi::setup_scaffolding!();
 

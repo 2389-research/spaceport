@@ -20,6 +20,12 @@ struct AgentMarkActions: ViewModifier {
         content
             .contextMenu {
                 pin
+                if row.agent.status == "done" {
+                    let settled = row.agent.marks?.settled == true
+                    Button(settled ? "Return to review" : "Mark reviewed", systemImage: "checkmark.circle") {
+                        change(.settle(!settled))
+                    }
+                }
                 if snoozed { wake }
                 Menu("Snooze", systemImage: "moon.zzz") {
                     Button("For 1 hour") { snooze(hours: 1) }

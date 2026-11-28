@@ -137,38 +137,57 @@ pub fn connect_embedded_bridge_with_path<G>(
     connector: impl FnOnce(&str, &AtomicBool) -> Result<(Stream, G)> + Send + 'static,
     accepted_path: impl FnOnce(String) + Send + 'static,
 ) -> Result<Client> {
-    embedded_bridge(session, options, true, connector, accepted_path)
+    let command = ssh::bridge_command(session);
+    embedded(
+        session,
+        options,
+        true,
+        connector,
+        command,
+        move |stream, stop| {
+            if let Some(path) = ssh::handshake_with_path(stream, stop)? {
+                accepted_path(path);
+            }
+            Ok(())
+        },
+    )
 }
 
-/// Observe an already running named session without claiming its terminal surface.
+/// Read snapshots from a running named session over a surface-inactive endpoint.
+/// The socket-only bridge fails if the session stops during discovery.
 #[cfg(unix)]
 pub fn observe_embedded_bridge<G>(
     session: &str,
     connector: impl FnOnce(&str, &AtomicBool) -> Result<(Stream, G)> + Send + 'static,
 ) -> Result<Client> {
-    embedded_bridge(session, ConnectOptions::default(), false, connector, |_| {})
+    let command = ssh::observe::command(session);
+    let name = session.to_owned();
+    embedded(
+        session,
+        ConnectOptions::default(),
+        false,
+        connector,
+        command,
+        move |stream, stop| ssh::observe::handshake(stream, stop, &name),
+    )
 }
 
 #[cfg(unix)]
-fn embedded_bridge<G>(
+fn embedded<G>(
     session: &str,
     options: ConnectOptions,
-    surface_active: bool,
+    active: bool,
     connector: impl FnOnce(&str, &AtomicBool) -> Result<(Stream, G)> + Send + 'static,
-    accepted_path: impl FnOnce(String) + Send + 'static,
+    command: String,
+    handshake: impl FnOnce(&mut Stream, &AtomicBool) -> Result<()> + Send + 'static,
 ) -> Result<Client> {
     options.validate()?;
     session_socket(std::path::Path::new(""), session)?;
-    let command = ssh::bridge_command(session);
-    let running_session = (!surface_active).then(|| session.to_owned());
-    spawn_connection(options, surface_active, "ssh", true, move |stop| {
+    spawn_connection(options, active, "ssh", true, move |stop| {
         let (mut stream, guard) = connector(&command, stop)?;
         stream.set_read_timeout(Some(crate::limits::POLL))?;
         stream.set_write_timeout(Some(std::time::Duration::from_secs(1)))?;
-        if let Some(path) = ssh::handshake_with_path(&mut stream, stop, running_session.as_deref())?
-        {
-            accepted_path(path);
-        }
+        handshake(&mut stream, stop)?;
         Ok((stream, guard, None))
     })
 }

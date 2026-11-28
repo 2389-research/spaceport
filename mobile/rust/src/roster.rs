@@ -88,5 +88,8 @@ fn collect(events: impl IntoIterator<Item = ClientEvent>, state: &Mutex<Projecti
     }
 }
 
+mod request;
+pub use request::MobileRosterRequest;
+
 #[cfg(test)]
 mod tests;

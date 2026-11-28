@@ -9,6 +9,43 @@ final class SceneSessionTests: XCTestCase {
         try HostProfile.make(hostname: "cache-test.invalid", port: "22", username: "test", session: name, login: .password)
     }
 
+    func testHomeObservationPreservesDraftsAndNeverCreatesASession() async throws {
+        let owner = SceneSessions()
+        let a = try profile("A"), b = try profile("B"), c = try profile("C")
+        let draft = owner.connection(for: a)
+        draft.draft.text = "unfinished"
+        _ = owner.connection(for: b)
+        let missing = try await owner.observeRetainedRoster(for: c)
+        let cached = try await owner.observeRetainedRoster(for: a)
+        XCTAssertNil(missing)
+        XCTAssertNil(cached)
+        XCTAssertNil(owner.current)
+        XCTAssertFalse(owner.contains(c))
+        XCTAssertEqual(draft.draft.text, "unfinished")
+        _ = owner.connection(for: c)
+        XCTAssertFalse(owner.contains(a), "Reading a draft must not change eviction order")
+    }
+
+    func testManualDisconnectSuppressesHomeRefreshUntilReopened() throws {
+        let owner = SceneSessions()
+        let a = try profile("A"), b = try profile("B")
+        owner.disconnect(a)
+        XCTAssertFalse(owner.permitsHomeRefresh(a))
+        XCTAssertTrue(owner.permitsHomeRefresh(b))
+        _ = owner.open(a, agent: nil)
+        XCTAssertTrue(owner.permitsHomeRefresh(a))
+    }
+
+    func testForgettingThePinStopsHomeReadsForUnopenedSessionsOnTheHost() throws {
+        let owner = SceneSessions()
+        let a = try profile("A"), b = try profile("B")
+        owner.forget(pinAccount: a.pinAccount)
+        XCTAssertFalse(owner.permitsHomeRefresh(a))
+        XCTAssertFalse(owner.permitsHomeRefresh(b))
+        _ = owner.open(a, agent: nil)
+        XCTAssertTrue(owner.permitsHomeRefresh(a))
+    }
+
     func testRevisitingAProtectsItWhenAThirdSessionEvictsB() throws {
         let owner = SceneSessions()
         let a = try profile("A"), b = try profile("B"), c = try profile("C")

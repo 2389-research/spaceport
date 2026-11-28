@@ -68,6 +68,13 @@ async fn lookup(channel: &mut SshChannel, herdr: &str, pane: &str) -> Result<Str
         .ok_or(MobileError::TerminalLookup)
 }
 
+async fn allocate_pty(ch: &mut SshChannel, (cols, rows): (u16, u16)) -> Result<(), MobileError> {
+    ch.request_pty(true, "xterm-256color", cols.into(), rows.into(), 0, 0, &[])
+        .await
+        .map_err(|_| MobileError::TerminalUnavailable)?;
+    ack(ch).await
+}
+
 pub(super) async fn run(
     request: &mut Request,
     opener: &Opener,
@@ -84,35 +91,55 @@ pub(super) async fn run(
         shell_quote(session)
     );
     let mut query = opener.open(&mut request.stop).await?;
-    let resolved = tokio::select! {
+    let mut terminal_channel = None;
+    let mut open_stop = request.stop.clone();
+    let reserve = async {
+        match opener.open(&mut open_stop).await {
+            Ok(channel) => allocate_pty(terminal_channel.insert(channel), request.size).await,
+            // Some hosts allow only the bridge plus one SSH session channel.
+            Err(MobileError::TerminalUnavailable) => Ok(()),
+            Err(error) => Err(error),
+        }
+    };
+    let preparation = async {
+        tokio::try_join!(
+            lookup(&mut query, &herdr, &request.binding.target.pane_id),
+            reserve
+        )
+    };
+    let prepared = tokio::select! {
         biased;
         _ = stopped(&mut request.stop) => Err(MobileError::TerminalEnded),
-        result = timeout(SETUP, lookup(&mut query, &herdr, &request.binding.target.pane_id)) =>
-            result.unwrap_or(Err(MobileError::TerminalTimeout)),
+        result = timeout(SETUP, preparation) => result.unwrap_or(Err(MobileError::TerminalTimeout)),
     };
     let _ = timeout(SETUP, query.close()).await;
-    let terminal = resolved?;
-    request.binding.current()?;
-    if *request.stop.borrow() {
-        return Ok(());
-    }
-    let mut ch = opener.open(&mut request.stop).await?;
-    let (cols, rows) = request.size;
-    let command = format!("{herdr} terminal attach {}", shell_quote(&terminal));
     let setup = async {
-        ch.request_pty(true, "xterm-256color", cols.into(), rows.into(), 0, 0, &[])
-            .await
-            .map_err(|_| MobileError::TerminalUnavailable)?;
-        ack(&mut ch).await?;
-        ch.exec(true, command)
-            .await
-            .map_err(|_| MobileError::TerminalUnavailable)?;
-        ack(&mut ch).await
+        let (terminal, ()) = prepared?;
+        let ch = match &mut terminal_channel {
+            Some(ch) => ch,
+            None => {
+                // The lookup has released its slot. Retry only the channel open.
+                let ch = terminal_channel.insert(opener.open(&mut open_stop).await?);
+                allocate_pty(ch, request.size).await?;
+                ch
+            }
+        };
+        request.binding.current()?;
+        ch.exec(
+            true,
+            format!("{herdr} terminal attach {}", shell_quote(&terminal)),
+        )
+        .await
+        .map_err(|_| MobileError::TerminalUnavailable)?;
+        ack(ch).await
     };
     let result = tokio::select! {
         biased;
         _ = stopped(&mut request.stop) => Err(MobileError::TerminalEnded),
         result = timeout(SETUP, setup) => result.unwrap_or(Err(MobileError::TerminalTimeout)),
+    };
+    let Some(ch) = terminal_channel else {
+        return result;
     };
     let (mut reader, writer) = ch.split();
     let result = match result {

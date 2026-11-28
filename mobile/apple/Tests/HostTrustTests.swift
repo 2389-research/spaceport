@@ -5,6 +5,24 @@ import XCTest
 @testable import SpaceportMobile
 
 final class HostTrustTests: XCTestCase {
+    @MainActor
+    func testCopiedDiagnosticsExcludeFailedHostDataAndPassword() async throws {
+        let profile = try HostProfile.make(hostname: "private-host.invalid", port: "22", username: "private-user",
+                                           session: "private-session", login: .password)
+        let connection = MobileConnection(profile: profile)
+        connection.password = "private-password"
+        let failed = expectation(description: "Host verification failed")
+        let observation = connection.$phase.filter { $0 == .closed }.first().sink { _ in failed.fulfill() }
+        connection.firstOpen { _ in throw NSError(domain: "private-remote-message", code: 7) }
+        await fulfillment(of: [failed], timeout: 5)
+        withExtendedLifetime(observation) {}
+        let report = connection.diagnosticReport()
+        XCTAssertTrue(report.contains("Last failure: SSH host verification"))
+        XCTAssertTrue(report.contains("Last roster observation: unknown"))
+        XCTAssertTrue(report.contains("Last negotiated capabilities: unavailable"))
+        XCTAssertFalse(report.contains("private-"))
+    }
+
     func testPinIsWriteOnceAcrossVaultInstancesAndRemovedOnlyByExplicitAction() throws {
         let service = "spaceport.mobile.tests.\(UUID())"
         let vault = DeviceVault(service: service)

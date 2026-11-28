@@ -5,6 +5,7 @@ use super::*;
 use std::io::{Read, Write};
 use std::sync::atomic::Ordering;
 mod peer;
+mod roster;
 
 fn open_bridge(
     host: SshHost,

@@ -68,17 +68,11 @@ fn roster_bridge_requests_an_inactive_surface_at_hello() {
     let (stream, mut peer) = Stream::pair().unwrap();
     peer.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
     let client = observe_embedded_bridge("phone", move |_, _| Ok((stream, ()))).unwrap();
-    peer.write_all(b"{\"endpoint_protocol_generation\":1,\"endpoint_capabilities\":[\"surface_interest\",\"presentation_effects_fence\",\"health_check\"]}\nherdr-remote-output-ready:1\n").unwrap();
-    let mut list = [0; 5];
-    peer.read_exact(&mut list).unwrap();
-    assert_eq!(&list, b"list\n");
-    peer.write_all(
-        b"{\"sessions\":[{\"name\":\"phone\",\"running\":true}]}\nherdr-remote-output-ready:1\n",
-    )
-    .unwrap();
-    let mut choice = [0; 7];
-    peer.read_exact(&mut choice).unwrap();
-    assert_eq!(&choice, b"accept\n");
+    observer_banner(&mut peer, true);
+    let socket = b"/private/session/herdr-client.sock\n";
+    let mut selected = vec![0; socket.len()];
+    peer.read_exact(&mut selected).unwrap();
+    assert_eq!(&selected, socket);
     let ClientMessage::EndpointControl { data, .. } = receive(&mut peer) else {
         panic!("hello")
     };
@@ -89,27 +83,23 @@ fn roster_bridge_requests_an_inactive_surface_at_hello() {
 
 #[test]
 fn roster_bridge_refuses_stopped_and_missing_sessions_before_accept() {
-    for sessions in [
-        json!([]),
-        json!([{"name":"phone", "running":false}, {"name":"other", "running":true}]),
-    ] {
-        let (stream, mut peer) = Stream::pair().unwrap();
-        peer.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
-        let client = observe_embedded_bridge("phone", move |_, _| Ok((stream, ()))).unwrap();
-        peer.write_all(b"{\"endpoint_protocol_generation\":1,\"endpoint_capabilities\":[\"surface_interest\",\"presentation_effects_fence\",\"health_check\"]}\nherdr-remote-output-ready:1\n").unwrap();
-        let mut request = [0; 5];
-        peer.read_exact(&mut request).unwrap();
-        assert_eq!(&request, b"list\n");
-        writeln!(
-            peer,
-            "{}\nherdr-remote-output-ready:1",
-            json!({"sessions":sessions})
-        )
-        .unwrap();
-        let ClientEvent::Disconnected { reason, .. } = event(&client) else {
-            panic!("disconnect")
-        };
-        assert_eq!(reason, sessions::Error::NotRunning.to_string());
-        assert_eq!(peer.read(&mut request).unwrap(), 0);
-    }
+    let (stream, mut peer) = Stream::pair().unwrap();
+    peer.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+    let client = observe_embedded_bridge("phone", move |_, _| Ok((stream, ()))).unwrap();
+    observer_banner(&mut peer, false);
+    let ClientEvent::Disconnected { reason, .. } = event(&client) else {
+        panic!("disconnect")
+    };
+    assert_eq!(reason, sessions::Error::NotRunning.to_string());
+    assert_eq!(peer.read(&mut [0; 1]).unwrap(), 0);
+}
+
+fn observer_banner(peer: &mut Stream, running: bool) {
+    let client = json!({"endpoint_protocol_generation":1,"endpoint_capabilities":["surface_interest","presentation_effects_fence","health_check"]});
+    let server = json!({"session":"phone","running":running,"endpoint_compatible":true,"socket":"/private/session/herdr.sock"});
+    writeln!(
+        peer,
+        "{client}\nherdr-observer:{server}\nherdr-remote-output-ready:1"
+    )
+    .unwrap();
 }

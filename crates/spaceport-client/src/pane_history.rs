@@ -3,7 +3,7 @@
 //! daemon's snapshots, so focus changed from anywhere (a key, the sidebar,
 //! another client) becomes a step, and pane IDs never outlive their boot.
 
-use spaceport_client::protocol::ClientShellSnapshot;
+use crate::protocol::ClientShellSnapshot;
 use std::collections::VecDeque;
 
 /// How many panes the trail remembers; older ones fall off the back.
@@ -18,7 +18,7 @@ pub enum Step {
 
 /// The panes a host has focused, oldest first, and where along them the
 /// window is.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct History {
     pub(crate) boot: String,
     pub(crate) panes: VecDeque<String>,
@@ -31,6 +31,10 @@ pub struct History {
 }
 
 impl History {
+    pub fn is_empty(&self) -> bool {
+        self.panes.is_empty()
+    }
+
     /// Records the snapshot's focus. A snapshot without one, such as the
     /// empty state between connections, leaves the trail alone.
     ///
@@ -119,3 +123,6 @@ impl History {
         self.panes.get(index).map(String::as_str)
     }
 }
+
+#[cfg(test)]
+mod tests;

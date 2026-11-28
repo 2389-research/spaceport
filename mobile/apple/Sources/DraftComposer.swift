@@ -15,6 +15,9 @@ struct DraftComposer: View {
     @State private var notice: String?
     @State private var choosingDestination = false
     @State private var operation: Task<Void, Never>?
+    @State private var choosingFile = false
+    @State private var sharedFile: URL?
+    @State private var transfer: MobileFileTransfer?
     @AppStorage(TerminalPreferences.composeReturn) private var pressReturn = TerminalPreferences.defaultComposeReturn
 
     var body: some View {
@@ -33,13 +36,15 @@ struct DraftComposer: View {
                     Text("Draft").font(.headline).accessibilityAddTraits(.isHeader)
                         .accessibilityIdentifier(inline ? "draft.inline" : "draft.sheet")
                     Spacer()
-                    Button("Close") { operation?.cancel(); close() }
+                    Button(transfer == nil ? "Close" : "Cancel upload") { operation?.cancel(); close() }
                         .frame(minWidth: 44, minHeight: 44)
                         .accessibilityIdentifier("draft.done")
                 }
                 .padding(.horizontal, 12)
                 VStack(alignment: .leading, spacing: 6) {
                     let current = connection.draftDestination
+                    Text(verbatim: "\(connection.profile.hostname) · \(connection.profile.session)")
+                        .font(.caption).foregroundStyle(.secondary)
                     Button { choosingDestination = true } label: {
                         HStack {
                             Text("To").foregroundStyle(.secondary)
@@ -74,7 +79,12 @@ struct DraftComposer: View {
                     DraftEditor(text: $draft.text, editing: editing, attach: attach)
                         .privacySensitive()
                     HStack {
-                        if let image = draft.image {
+                        if let file = draft.file {
+                            Label(file.name, systemImage: "doc").lineLimit(1)
+                            Spacer()
+                            Button("Remove", systemImage: "xmark.circle.fill") { draft.file = nil }
+                                .labelStyle(.iconOnly).accessibilityIdentifier("draft.removeFile")
+                        } else if let image = draft.image {
                             Image(decorative: image.thumbnail, scale: 1)
                                 .resizable().scaledToFit().frame(maxWidth: 68, maxHeight: 60)
                                 .clipShape(RoundedRectangle(cornerRadius: 6)).privacySensitive()
@@ -86,14 +96,30 @@ struct DraftComposer: View {
                             Button("Remove screenshot", systemImage: "xmark.circle.fill") { draft.image = nil }
                                 .labelStyle(.iconOnly).accessibilityIdentifier("draft.removeImage")
                         } else {
-                            Label("Screenshot", systemImage: "photo").font(.subheadline)
+                            Button("File", systemImage: "paperclip") { choosingFile = true }
+                                .accessibilityIdentifier("draft.chooseFile")
                             Spacer()
                             PasteButton(supportedContentTypes: [.image], payloadAction: attach)
                                 .accessibilityLabel("Paste screenshot").accessibilityIdentifier("draft.pasteImage")
                         }
                     }
                     .padding(.horizontal, 12).frame(minHeight: 44)
-                    if operation != nil { ProgressView().accessibilityLabel("Preparing screenshot") }
+                    if let sharedFile, draft.image == nil, draft.file == nil {
+                        HStack {
+                            Button("Attach shared file") { loadFile(sharedFile, shared: true) }
+                            Spacer()
+                            Button("Discard share", role: .destructive) {
+                                do { try SharedDraftInbox.remove(sharedFile); self.sharedFile = nil }
+                                catch { notice = error.localizedDescription }
+                            }
+                        }
+                    }
+                    if let transfer, let file = draft.file {
+                        TimelineView(.periodic(from: .now, by: 0.25)) { _ in
+                            ProgressView(value: Double(transfer.bytesSent()), total: Double(max(1, file.data.count)))
+                                .accessibilityLabel("Uploading file")
+                        }
+                    } else if operation != nil { ProgressView().accessibilityLabel("Preparing attachment") }
                     HStack(spacing: 10) {
                         Toggle(TerminalPreferences.pressReturnLabel, isOn: $pressReturn)
                             .font(.footnote).tint(.green)
@@ -114,6 +140,13 @@ struct DraftComposer: View {
             .background(Color(uiColor: .systemGroupedBackground))
             .accessibilityAction(.escape) { close() }
             .clipShape(RoundedRectangle(cornerRadius: inline ? 0 : 18))
+            .onAppear { sharedFile = SharedDraftInbox.directory.flatMap { SharedDraftInbox.pending(in: $0) } }
+            .fileImporter(isPresented: $choosingFile, allowedContentTypes: [.item]) { result in
+                switch result {
+                case .success(let url): loadFile(url, shared: false)
+                case .failure(let error): notice = error.localizedDescription
+                }
+            }
             .onDisappear { operation?.cancel() }
         } else {
             Color(uiColor: .systemBackground).ignoresSafeArea()
@@ -127,18 +160,20 @@ struct DraftComposer: View {
                 return
             }
             draft.text = text
-            if draft.image != nil {
+            if draft.image != nil || draft.file != nil {
                 operation = Task {
-                    defer { operation = nil }
+                    let transfer = MobileFileTransfer()
+                    self.transfer = transfer
+                    defer { operation = nil; self.transfer = nil }
                     do {
-                        try await connection.sendDraftImage(from: presentation, pressReturn: pressReturn)
+                        try await connection.sendDraftAttachment(from: presentation, pressReturn: pressReturn, transfer: transfer)
                         close()
                     } catch MobileError.ImageRetentionUnconfirmed {
-                        notice = "Couldn’t confirm the screenshot on the host. A temporary copy may remain. Your draft is still here."
+                        notice = "Couldn’t confirm the attachment on the host. A temporary copy may remain. Your draft is still here."
                     } catch MobileError.StaleView {
                         notice = "The destination changed. Check it before sending your draft."
                     } catch {
-                        notice = "Couldn’t paste the screenshot. Your draft is still here."
+                        notice = "Couldn’t paste the attachment. Your draft is still here."
                     }
                 }
             } else if draft.send(to: connection.view?.inputTarget, enqueuePaste: { text, target in
@@ -156,6 +191,25 @@ struct DraftComposer: View {
         .accessibilityIdentifier("draft.send")
     }
 
+    private func loadFile(_ url: URL, shared: Bool) {
+        guard operation == nil else { return }
+        let destination = draft.destination
+        operation = Task {
+            defer { operation = nil }
+            do {
+                let file = try await Task.detached(priority: .userInitiated) {
+                    try shared ? SharedDraftInbox.read(url) : DraftFile(url: url)
+                }.value
+                try Task.checkCancellation()
+                guard draft.destination == destination else { throw MobileError.StaleView }
+                if shared { try SharedDraftInbox.remove(url); sharedFile = nil }
+                draft.image = nil
+                draft.file = file
+                notice = nil
+            } catch { notice = error.localizedDescription }
+        }
+    }
+
     private func attach(_ providers: [NSItemProvider]) {
         guard operation == nil, let provider = providers.first else { return }
         let target = draft.destination?.target
@@ -166,6 +220,7 @@ struct DraftComposer: View {
                 let image = try await DraftImage.load(from: provider)
                 try Task.checkCancellation()
                 guard target == draft.destination?.target else { return }
+                draft.file = nil
                 draft.image = image
             } catch {
                 notice = error.localizedDescription

@@ -168,6 +168,8 @@ impl Selection {
 
 #[derive(Default)]
 pub(crate) struct PtyRoutes {
+    pub(crate) transport: super::transport::ConnectedSsh,
+    pub(crate) preview: super::service_preview::ServicePreview,
     pub(crate) images: super::images::ImageStager,
     path: OnceLock<String>,
     selection: Mutex<Selection>,
@@ -247,7 +249,7 @@ impl PtyRoutes {
     }
 
     pub(super) async fn serve(&self, handle: Arc<client::Handle<HostKey>>, session: &str) {
-        self.images.connect(&handle);
+        self.transport.connect(&handle);
         let opener = open::Opener::new(handle);
         loop {
             self.wake.notified().await;

@@ -23,22 +23,27 @@ struct HostList: View {
     @StateObject private var sessions = SceneSessions()
     @ObservedObject private var observers = RosterObservers.shared
     @Environment(\.scenePhase) private var scenePhase
-    @AppStorage(ProfileStore.catalogKey) private var storedCatalog: Data?
     @State private var catalog = HostCatalog()
     @State private var loadedCatalog = false
     @State private var shortcutWindow = UUID()
     @State private var sheet: CatalogSheet?
     @State private var sessionAfterSheet: HostProfile?
     @State private var path: [HomeRoute] = []
+    @AppStorage("home.hostTag") private var hostTag = ""
+    private var visibleCatalog: HostCatalog { catalog.filtered(by: hostTag) }
+    @State private var reviewOnly = false
     @State private var markClock = Date()
     @State private var notice: String?
     @State private var removal: HostProfile?
+    @State private var refreshing: HostProfile?
+    @State private var refreshPass = UUID()
+    @State private var refreshFailures: Set<UUID> = []
 
     var body: some View {
         NavigationStack(path: $path) {
             List {
                 if !catalog.hosts.isEmpty {
-                    HomeAgentsSection(agents: catalog.observedAgents, now: markClock, mark: { row, action in
+                    HomeAgentsSection(agents: visibleAgents, reviewOnly: reviewOnly, now: markClock, mark: { row, action in
                         do { try store.mark(action, row: row); reload() }
                         catch { notice = error.localizedDescription }
                     }) { row in
@@ -47,17 +52,20 @@ struct HostList: View {
                 }
                 if !catalog.sessions.isEmpty {
                     Section {
-                        workspaceBrowser(catalog.profiles)
+                        workspaceBrowser(visibleCatalog.profiles)
                     }
                 }
-                ForEach(catalog.hosts) { host in
+                ForEach(visibleCatalog.hosts) { host in
                     Section {
                         ForEach(catalog.sessions.filter { $0.hostID == host.id }) { session in
                             let profile = host.profile(session: session)
-                            Button { open(profile) } label: { HomeSessionRow(session: session, live: observers.isLive(profile)) }
+                            Button { open(profile) } label: {
+                                HomeSessionRow(session: session, live: observers.isLive(profile),
+                                               refreshFailed: refreshFailures.contains(profile.id) || observers.failed.contains(profile))
+                            }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("\(host.address.endpoint), \(session.name)")
-                                .accessibilityValue(accessibilityStatus(session, live: observers.isLive(profile)))
+                                .accessibilityValue(accessibilityStatus(session, profile: profile))
                                 .swipeActions(allowsFullSwipe: false) {
                                     Button("Remove", role: .destructive) { removal = profile }
                                     Button("Edit") { sheet = .session(host, profile) }.tint(.blue)
@@ -93,10 +101,29 @@ struct HostList: View {
             .navigationTitle(catalog.hosts.isEmpty ? "" : "Agents")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
+                    Menu {
+                        Toggle("Finished for review", isOn: $reviewOnly)
+                        if !catalog.availableTags.isEmpty {
+                            Picker("Host tag", selection: $hostTag) {
+                                Text("All hosts").tag("")
+                                ForEach(catalog.availableTags, id: \.self) { Text($0).tag($0.lowercased()) }
+                            }
+                        }
+                    } label: { Image(systemName: reviewOnly || !hostTag.isEmpty ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle") }
+                    .accessibilityLabel("Filter Home")
+                }
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Settings", systemImage: "gearshape") { path.append(.settings) }.accessibilityIdentifier("Settings")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Add Host", systemImage: "plus") { sheet = .addHost }.accessibilityIdentifier("Add Host")
+                }
+                if let refreshing = refreshing ?? catalog.profiles.first(where: observers.connecting.contains) {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        ProgressView().controlSize(.small)
+                            .accessibilityLabel("Refreshing agents in \(refreshing.session)")
+                            .accessibilityIdentifier("home.agents.refreshing")
+                    }
                 }
             }
             .navigationDestination(for: HomeRoute.self) { route in
@@ -104,7 +131,7 @@ struct HostList: View {
                 case .settings: MobileSettings(hosts: catalog.hosts, openHostDetails: { path = [.host($0)] })
                 case .chooseWorkspaceSession:
                     List {
-                        ForEach(catalog.hosts) { host in
+                        ForEach(visibleCatalog.hosts) { host in
                             let sessions = catalog.sessions.filter { $0.hostID == host.id }
                             if !sessions.isEmpty {
                                 Section(host.listHeading(in: catalog.hosts)) {
@@ -134,6 +161,7 @@ struct HostList: View {
                 case let .host(id):
                     if let host = catalog.hosts.first(where: { $0.id == id }) {
                         HostDetail(host: host, sessions: catalog.sessions.filter { $0.hostID == id },
+                                   saveTags: { try store.tagHost(id, text: $0); reload() },
                                    open: { open($0) }, edit: { sheet = .editHost(host) },
                                    add: { sheet = .session(host, nil) }, remove: {
                             try store.removeHost(id)
@@ -197,7 +225,7 @@ struct HostList: View {
             catch { notice = error.localizedDescription }
         }
         .onDisappear { SpaceportShortcutRouter.shared.deactivate(shortcutWindow) }
-        .onChange(of: storedCatalog) { reload() }
+        .background { CatalogObserver { reload(whileInSession: sessions.current != nil) } }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { markClock = Date() }
             sessions.scenePhaseChanged(phase)
@@ -207,7 +235,8 @@ struct HostList: View {
                 SpaceportShortcutRouter.shared.deactivate(shortcutWindow)
             }
         }
-        .onChange(of: path) { _, path in
+        .onChange(of: path) { previous, path in
+            if previous.last?.presentation != nil && path.last?.presentation == nil { reload() }
             if let current = sessions.current, !path.contains(where: { $0.presentation == current }) {
                 sessions.detach(current)
             }
@@ -220,6 +249,7 @@ struct HostList: View {
         }
         .environmentObject(appearance)
         .preferredColorScheme((appearance.reported ?? terminalMode).scheme)
+        .task(id: homeRefreshTargets) { await refreshRosters(homeRefreshTargets) }
         .onChange(of: terminalMode) { _, mode in
             appearance.reported = nil
             GhosttyPaneSurface.controller.setTheme(mode.theme)
@@ -235,6 +265,49 @@ struct HostList: View {
             }
         }
         .alert("Sessions", isPresented: $notice.presented) { Button("OK") { notice = nil } } message: { Text(notice ?? "") }
+    }
+
+    private var visibleAgents: [HomeAgent] {
+        let rows = visibleCatalog.observedAgents
+        guard reviewOnly else { return rows }
+        return rows.filter { $0.section == .finished && $0.agent.marks?.settled != true && $0.displaySection(at: markClock) != .snoozed }
+    }
+
+    private var homeRefreshTargets: [HostProfile] {
+        guard loadedCatalog, scenePhase == .active, path.isEmpty, sheet == nil, sessions.current == nil else { return [] }
+        return catalog.sessions.filter { $0.lastOpened != nil }.sorted {
+            ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast)
+        }.compactMap { catalog.profile($0) }.filter {
+            sessions.permitsHomeRefresh($0) && sessions.hasParkedSession(for: $0)
+        }
+    }
+
+    @MainActor
+    private func refreshRosters(_ targets: [HostProfile]) async {
+        let pass = UUID()
+        refreshPass = pass
+        refreshing = nil
+        refreshFailures = []
+        defer { if refreshPass == pass { refreshing = nil } }
+        for profile in targets {
+            guard !Task.isCancelled, refreshPass == pass, homeRefreshTargets.contains(profile) else { return }
+            refreshing = profile
+            do {
+                let previouslySeen = catalog.sessions.first { $0.id == profile.id }?.lastStatus?.seenAt
+                let roster = try await sessions.observeRetainedRoster(for: profile)
+                try Task.checkCancellation()
+                guard refreshPass == pass, homeRefreshTargets.contains(profile) else { return }
+                guard let roster, let date = roster.rosterObservationDate else {
+                    refreshFailures.insert(profile.id)
+                    continue
+                }
+                try store.recordSeen(profile: profile, snapshot: SessionStatusSnapshot(view: roster, seenAt: date),
+                                     source: .home(previouslySeen: previouslySeen))
+            } catch {
+                guard !Task.isCancelled, refreshPass == pass else { return }
+                refreshFailures.insert(profile.id)
+            }
+        }
     }
 
     private var snoozeDeadlines: [Date] {
@@ -279,9 +352,12 @@ struct HostList: View {
         if let presentation = path.last?.presentation, presentation != sessions.current { path = [] }
     }
 
-    private func reload() {
+    private func reload(whileInSession: Bool = false) {
         do {
-            catalog = try store.catalog()
+            let latest = try store.catalog()
+            if whileInSession && catalog.hosts == latest.hosts && catalog.profiles == latest.profiles { return }
+            catalog = latest
+            if !catalog.availableTags.contains(where: { $0.lowercased() == hostTag }) { hostTag = "" }
             loadedCatalog = true
             sessions.reconcile(catalog.profiles)
             closeInvalidPresentation()
@@ -292,9 +368,11 @@ struct HostList: View {
         }
     }
 
-    private func accessibilityStatus(_ session: SavedSession, live: Bool) -> String {
+    private func accessibilityStatus(_ session: SavedSession, profile: HostProfile) -> String {
         guard let status = session.lastStatus else { return "Not opened yet" }
-        return (live ? "Live, " : "") + "\(status.blocked) need you, \(status.working) working, last seen \(status.seenAt.formatted(.relative(presentation: .named)))"
+        let failed = refreshFailures.contains(session.id) || observers.failed.contains(profile)
+        let prefix = observers.isLive(profile) ? "Live, " : (failed ? "Couldn’t refresh, " : "")
+        return "\(prefix)\(status.blocked) need you, \(status.working) working, last seen \(status.seenAt.formatted(.relative(presentation: .named)))"
     }
 }
 
@@ -302,5 +380,14 @@ private extension HomeRoute {
     var presentation: SessionPresentation? {
         if case let .session(presentation, _) = self { return presentation }
         return nil
+    }
+}
+
+private struct CatalogObserver: View {
+    @AppStorage(ProfileStore.catalogKey) private var storedCatalog: Data?
+    let changed: () -> Void
+
+    var body: some View {
+        Color.clear.allowsHitTesting(false).onChange(of: storedCatalog) { changed() }
     }
 }
