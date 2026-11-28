@@ -1,3 +1,5 @@
+// ABOUTME: Exercises the local workspace menu after issue dispatch was retired.
+// ABOUTME: Checks the English action names exposed by the open popover.
 use super::*;
 
 #[gpui::test]
@@ -14,6 +16,6 @@ fn local_workspace_menu_has_no_issues_or_dispatch_action(cx: &mut gpui::TestAppC
     assert!(
         items
             .iter()
-            .all(|(_, label)| label.english() != "Issues and pull requests")
+            .all(|item| item.name != "Issues and pull requests")
     );
 }

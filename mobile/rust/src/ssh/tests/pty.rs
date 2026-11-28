@@ -86,3 +86,5 @@ fn direct_attach_uses_one_authenticated_session_and_pins_each_write() {
     bridge.read_exact(&mut buf).unwrap();
     assert_eq!(buf, *b"bridge still open");
 }
+
+mod setup;

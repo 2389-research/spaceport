@@ -17,6 +17,10 @@ pub(super) enum Visibility {
 }
 
 impl Projection {
+    pub(crate) fn is_parked(&self) -> bool {
+        matches!(self.visibility, Visibility::Parked)
+    }
+
     pub(crate) fn is_active(&self) -> bool {
         matches!(self.visibility, Visibility::Active)
     }
@@ -97,12 +101,19 @@ impl Projection {
             return Ok(false);
         }
         self.visibility = Visibility::Active;
+        self.confirm_roster();
+        self.focus_interrupted = false;
+        self.version += 1;
+        Ok(true)
+    }
+
+    pub(crate) fn confirm_roster(&mut self) {
         if let Some(snapshot) = &mut self.snapshot {
             snapshot.observed_at_ms = spaceport_client::agent_idle::now_ms();
             self.idle.observe(snapshot, snapshot.observed_at_ms);
         }
-        self.focus_interrupted = false;
-        self.version += 1;
-        Ok(true)
+        if self.is_parked() {
+            self.idle.interrupt();
+        }
     }
 }

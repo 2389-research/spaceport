@@ -15,6 +15,7 @@ impl Localize for Error {
             ),
             Self::DeleteTimeout => fl!("error-client-sessions-delete-timeout"),
             Self::Limit => fl!("error-client-sessions-limit"),
+            Self::NotRunning => fl!("error-client-sessions-not-running"),
             // keep-sorted end
         }
     }

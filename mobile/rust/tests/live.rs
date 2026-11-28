@@ -1,6 +1,9 @@
 // ABOUTME: Exercises the mobile controller against a disposable real SSH and Herdr host.
 // ABOUTME: Checks host trust, terminal input, phone key enrollment and session survival.
-use spaceport_mobile::{EnclaveSigner, MobileSession, MobileView, SshAuth, SshError, SshHost};
+use spaceport_mobile::{
+    EnclaveSigner, MobileRoster, MobileRosterRequest, MobileSession, MobileView, SshAuth, SshError,
+    SshHost, authorize_enclave_phone,
+};
 #[path = "support/signer.rs"]
 mod signer;
 use std::{
@@ -18,10 +21,18 @@ fn wait(
     description: &str,
     matches: impl Fn(&MobileView) -> bool,
 ) -> MobileView {
+    wait_for(|version| session.poll(version), description, matches)
+}
+
+fn wait_for(
+    poll: impl Fn(u64) -> Option<MobileView>,
+    description: &str,
+    matches: impl Fn(&MobileView) -> bool,
+) -> MobileView {
     let until = Instant::now() + Duration::from_secs(20);
     let mut version = 0;
     loop {
-        if let Some(view) = session.poll(version) {
+        if let Some(view) = poll(version) {
             version = view.version;
             if matches(&view) {
                 return view;
@@ -34,6 +45,55 @@ fn wait(
         );
         std::thread::sleep(Duration::from_millis(25));
     }
+}
+
+#[test]
+#[ignore = "requires an explicitly configured disposable SSH and Herdr fixture"]
+fn cold_observer_reads_running_session_without_claiming_its_terminal() {
+    let host = SshHost {
+        hostname: setting("SPACEPORT_TEST_SSH_HOST"),
+        port: setting("SPACEPORT_TEST_SSH_PORT").parse().unwrap(),
+        username: setting("SPACEPORT_TEST_SSH_USER"),
+        fingerprint: Some(setting("SPACEPORT_TEST_SSH_FINGERPRINT")),
+    };
+    let login = || SshAuth::Password {
+        password: setting("SPACEPORT_TEST_SSH_PASSWORD"),
+    };
+    let session = setting("SPACEPORT_TEST_HERDR_SESSION");
+    let observe = |session: String| MobileRosterRequest::new().read(host.clone(), login(), session);
+    assert!(observe(format!("missing-{}", std::process::id())).is_err());
+    let active =
+        MobileSession::open(host.clone(), login(), session.clone(), 101, 34, 8, 16).unwrap();
+    let ready = wait(&active, "writable pane", |view| view.input_target.is_some());
+    let before = ready.terminal.as_ref().unwrap();
+    let size = (before.width, before.height);
+    let passive = observe(session).unwrap();
+    assert_eq!(passive.boot_id, ready.boot_id);
+    assert_eq!(passive.focused_pane, ready.focused_pane);
+    assert!(passive.roster_observed_at_ms.is_some());
+    assert!(passive.input_target.is_none() && passive.terminal.is_none());
+    let target = ready.input_target.unwrap();
+    active
+        .send_text(target.clone(), "echo ROSTER-'OBSERVER-OK'".into())
+        .unwrap();
+    active.send_key(target, "Enter".into(), 0).unwrap();
+    let view = wait(
+        &active,
+        "original terminal still owns focus and size",
+        |view| {
+            view.terminal.as_ref().is_some_and(|t| {
+                t.cells.chunks(usize::from(t.width)).any(|row| {
+                    row.iter()
+                        .map(|c| c.symbol.as_str())
+                        .collect::<String>()
+                        .trim()
+                        == "ROSTER-OBSERVER-OK"
+                })
+            })
+        },
+    );
+    let after = view.terminal.unwrap();
+    assert_eq!((after.width, after.height), size);
 }
 
 #[test]
@@ -236,5 +296,246 @@ fn direct_attach_round_trips_shell_bytes_and_leaves_the_same_pane_alive() {
         session.poll_for_attach(0).unwrap().input_target,
         Some(target)
     );
+    session.disconnect();
+}
+
+#[test]
+#[ignore = "requires an explicitly configured disposable SSH and Herdr fixture"]
+fn continuous_roster_only_observes_a_running_session() {
+    let host = SshHost {
+        hostname: setting("SPACEPORT_TEST_SSH_HOST"),
+        port: setting("SPACEPORT_TEST_SSH_PORT").parse().unwrap(),
+        username: setting("SPACEPORT_TEST_SSH_USER"),
+        fingerprint: Some(setting("SPACEPORT_TEST_SSH_FINGERPRINT")),
+    };
+    let login = || SshAuth::Password {
+        password: setting("SPACEPORT_TEST_SSH_PASSWORD"),
+    };
+    let session = setting("SPACEPORT_TEST_HERDR_SESSION");
+    let reader = MobileRoster::open(host.clone(), login(), session).unwrap();
+    let running = wait_for(
+        |version| reader.poll(version),
+        "running passive roster",
+        |view| view.roster_observed_at_ms.is_some(),
+    );
+    assert!(!running.disconnected && !running.panes.is_empty());
+    assert!(running.terminal.is_none() && running.input_target.is_none());
+    let missing = format!("missing-roster-{}", std::process::id());
+    let absent = MobileRoster::open(host.clone(), login(), missing.clone()).unwrap();
+    let closed = wait_for(
+        |version| absent.poll(version),
+        "absent session",
+        |view| view.disconnected,
+    );
+    assert!(closed.roster_observed_at_ms.is_none());
+    assert!(
+        MobileRosterRequest::new()
+            .read(host, login(), missing)
+            .is_err()
+    );
+    assert!(!reader.poll(0).unwrap().disconnected);
+    reader.disconnect();
+}
+
+#[test]
+#[ignore = "requires two disposable SSH hosts with running seed-attention sessions"]
+fn two_rosters_observe_separate_hosts_with_one_phone_key() {
+    let key = signer::TestSigner::new();
+    let mut readers = Vec::new();
+    for prefix in ["SPACEPORT_TEST", "SPACEPORT_TEST_SECOND"] {
+        let host = SshHost {
+            hostname: setting(&format!("{prefix}_SSH_HOST")),
+            port: setting(&format!("{prefix}_SSH_PORT")).parse().unwrap(),
+            username: setting(&format!("{prefix}_SSH_USER")),
+            fingerprint: Some(setting(&format!("{prefix}_SSH_FINGERPRINT"))),
+        };
+        authorize_enclave_phone(
+            host.clone(),
+            setting(&format!("{prefix}_SSH_PASSWORD")),
+            key.point(),
+            key.clone(),
+        )
+        .unwrap();
+        readers.push(
+            MobileRoster::open(
+                host,
+                key.auth(),
+                setting(&format!("{prefix}_MULTIHOST_SESSION")),
+            )
+            .unwrap(),
+        );
+    }
+    let rosters: Vec<_> = readers
+        .iter()
+        .map(|reader| {
+            let view = wait_for(
+                |version| reader.poll(version),
+                "passive reviewer",
+                |view| {
+                    view.panes
+                        .iter()
+                        .any(|pane| pane.agent_name.as_deref() == Some("Reviewer"))
+                },
+            );
+            assert!(view.roster_observed_at_ms.is_some());
+            assert!(view.terminal.is_none());
+            assert!(view.input_target.is_none());
+            view.boot_id
+        })
+        .collect();
+    assert_ne!(rosters[0], rosters[1]);
+    readers[0].disconnect();
+    assert!(readers[0].poll(0).unwrap().disconnected);
+    assert!(!readers[1].poll(0).unwrap().disconnected);
+}
+
+#[test]
+#[ignore = "requires an explicitly configured disposable SSH and Herdr fixture"]
+fn file_delivery_confirms_bytes_and_rejects_the_previous_destination() {
+    use spaceport_mobile::{MobileError, MobileFileTransfer};
+    let session = MobileSession::open(
+        SshHost {
+            hostname: setting("SPACEPORT_TEST_SSH_HOST"),
+            port: setting("SPACEPORT_TEST_SSH_PORT").parse().unwrap(),
+            username: setting("SPACEPORT_TEST_SSH_USER"),
+            fingerprint: Some(setting("SPACEPORT_TEST_SSH_FINGERPRINT")),
+        },
+        SshAuth::Password {
+            password: setting("SPACEPORT_TEST_SSH_PASSWORD"),
+        },
+        setting("SPACEPORT_TEST_HERDR_SESSION"),
+        110,
+        28,
+        8,
+        16,
+    )
+    .unwrap();
+    let ready = wait(&session, "file destination", |view| {
+        view.input_target.is_some()
+    });
+    let original = ready.input_target.unwrap();
+    let transfer = MobileFileTransfer::new();
+    let bytes = b"SPACEPORT-VERIFIED-FILE".to_vec();
+    let file = session
+        .stage_draft_file(
+            original.clone(),
+            "agent's $notes.txt".into(),
+            bytes.clone(),
+            transfer.clone(),
+        )
+        .unwrap();
+    assert_eq!(transfer.bytes_sent(), bytes.len() as u64);
+    let path = file.paste_path();
+    session
+        .send_paste(
+            original.clone(),
+            format!("cat -- {path}; echo; rm -- {path}"),
+            true,
+        )
+        .unwrap();
+    file.keep();
+    wait(&session, "verified file content", |view| {
+        view.terminal.as_ref().is_some_and(|screen| {
+            screen.cells.chunks(usize::from(screen.width)).any(|row| {
+                row.iter()
+                    .map(|cell| cell.symbol.as_str())
+                    .collect::<String>()
+                    .trim()
+                    == "SPACEPORT-VERIFIED-FILE"
+            })
+        })
+    });
+    session
+        .create_tab(
+            ready.boot_id,
+            ready.focused_workspace.unwrap(),
+            ready.focused_tab.unwrap(),
+        )
+        .unwrap();
+    wait(&session, "different terminal", |v| {
+        v.input_target
+            .as_ref()
+            .is_some_and(|t| t.pane_id != original.pane_id)
+    });
+    assert!(matches!(
+        session.send_paste(original.clone(), path, false),
+        Err(MobileError::StaleView)
+    ));
+    assert!(matches!(
+        session.stage_draft_file(original, "stale".into(), bytes, MobileFileTransfer::new()),
+        Err(MobileError::StaleView)
+    ));
+    session.disconnect();
+}
+#[path = "support/pane_actions.rs"]
+mod pane_actions;
+fn page(port: u16) -> String {
+    use std::{
+        io::{Read, Write},
+        net::{Ipv4Addr, TcpStream},
+    };
+    let mut connection = TcpStream::connect((Ipv4Addr::LOCALHOST, port)).unwrap();
+    connection
+        .set_read_timeout(Some(Duration::from_secs(5)))
+        .unwrap();
+    connection
+        .write_all(b"GET / HTTP/1.0\r\nHost: localhost\r\n\r\n")
+        .unwrap();
+    let mut text = String::new();
+    connection.read_to_string(&mut text).unwrap();
+    text
+}
+
+#[test]
+#[ignore = "requires a disposable SSH host with the Spaceport loopback trial HTTP fixture"]
+fn chosen_service_survives_park_and_closes_on_stop() {
+    let setting = |name| env::var(name).unwrap();
+    let host = SshHost {
+        hostname: setting("SPACEPORT_TEST_SSH_HOST"),
+        port: setting("SPACEPORT_TEST_SSH_PORT").parse().unwrap(),
+        username: setting("SPACEPORT_TEST_SSH_USER"),
+        fingerprint: Some(setting("SPACEPORT_TEST_SSH_FINGERPRINT")),
+    };
+    let session = MobileSession::open(
+        host,
+        SshAuth::Password {
+            password: setting("SPACEPORT_TEST_SSH_PASSWORD"),
+        },
+        setting("SPACEPORT_TEST_HERDR_SESSION"),
+        80,
+        24,
+        8,
+        16,
+    )
+    .unwrap();
+    let target = setting("SPACEPORT_TEST_SERVICE_PORT").parse().unwrap();
+    wait(&session, "attached pane", |view| {
+        view.input_target.is_some()
+    });
+    assert!(session.start_service_preview(0).is_err());
+    let port = session.start_service_preview(target).unwrap();
+    assert!(session.start_service_preview(target).is_err());
+    assert!(page(port).contains("Spaceport loopback trial"));
+    session.park();
+    assert!(page(port).contains("Spaceport loopback trial"));
+    use std::io::{Read, Write};
+    use std::net::{Ipv4Addr, TcpStream};
+    let mut unfinished = TcpStream::connect((Ipv4Addr::LOCALHOST, port)).unwrap();
+    unfinished
+        .set_read_timeout(Some(Duration::from_secs(2)))
+        .unwrap();
+    unfinished.write_all(b"GET /partial HTTP/1.1\r\n").unwrap();
+    session.stop_service_preview().unwrap();
+    let mut byte = [0];
+    match unfinished.read(&mut byte) {
+        Ok(0) => {}
+        Err(error)
+            if matches!(
+                error.kind(),
+                std::io::ErrorKind::ConnectionReset | std::io::ErrorKind::ConnectionAborted
+            ) => {}
+        result => panic!("the existing browser connection survived stop: {result:?}"),
+    }
+    assert!(std::net::TcpStream::connect((std::net::Ipv4Addr::LOCALHOST, port)).is_err());
     session.disconnect();
 }

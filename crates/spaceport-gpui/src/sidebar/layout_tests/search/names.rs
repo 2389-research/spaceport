@@ -17,8 +17,8 @@ fn the_field_keeps_one_accessible_name_while_its_placeholder_swaps(cx: &mut gpui
     cx.run_until_parked();
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
     // At rest the placeholder is the heading, which alone names no action.
-    assert_eq!(label(&view, cx).as_deref(), Some("Search spaces"));
+    assert_eq!(label(&view, cx).as_deref(), Some("Search workspaces"));
 
     type_query(&view, "sidebar-child", cx);
-    assert_eq!(label(&view, cx).as_deref(), Some("Search spaces"));
+    assert_eq!(label(&view, cx).as_deref(), Some("Search workspaces"));
 }

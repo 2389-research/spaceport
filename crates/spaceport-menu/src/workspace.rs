@@ -1,4 +1,5 @@
-//! The workspace a menu row targets and the request its dialogs send.
+//! The workspace a menu row targets, the request its dialogs send, and the
+//! popover its actions are drawn in.
 
 use crate::{Error, Result};
 use serde_json::json;
@@ -8,6 +9,8 @@ use spaceport_client::{
 };
 
 use super::page::WorkspaceAction;
+
+pub mod popover;
 
 /// The workspace one menu is about, captured from the snapshot it opened under.
 #[derive(Clone, Debug, PartialEq, Eq)]

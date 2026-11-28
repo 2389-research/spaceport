@@ -74,6 +74,7 @@ spaceport window detach|reconnect
 
 === ui ===
 spaceport ui sidebar [on|off|toggle]
+spaceport ui workspaces [on|off|toggle]
 spaceport ui statusbar [on|off|toggle]
 spaceport ui font-size +|-|reset|POINTS
 spaceport ui panel workspaces|overview|automations|usage

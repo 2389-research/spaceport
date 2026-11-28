@@ -26,6 +26,8 @@ use std::{
 mod error;
 mod failure;
 pub(crate) mod mux;
+#[cfg(unix)]
+pub(crate) mod observe;
 mod unverified;
 pub use error::Error;
 pub use failure::SshFailure;

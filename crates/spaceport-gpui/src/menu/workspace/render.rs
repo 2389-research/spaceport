@@ -1,5 +1,6 @@
-//! Painting a workspace dialog: its header, the body each action asks for,
-//! and the footer whose submit button sends it.
+//! Painting a workspace dialog: the words its action asks for, this window's
+//! field, and the handlers its two buttons run. The form itself is
+//! `spaceport_menu::form`'s.
 
 use crate::{
     SpaceportWindow,
@@ -7,6 +8,7 @@ use crate::{
     menu::{WorkspaceAction, WorkspaceMenuAction, danger, workspace_action_icon},
 };
 use gpui::{prelude::*, *};
+use spaceport_menu::form::{self, Button, Buttons, Dialog};
 
 impl SpaceportWindow {
     pub(in crate::menu) fn render_workspace_dialog(
@@ -17,158 +19,60 @@ impl SpaceportWindow {
         let Some(target) = &self.menu.target else {
             return div();
         };
-        let theme = &self.theme;
-        let font = &self.config.ui;
-        let danger = danger(theme);
-        let (title, submit): (String, SharedString) = match action {
+        let (title, note, submit): (String, String, String) = match action {
             WorkspaceAction::Rename => (
                 fl!("workspace-dialog-rename-title"),
-                fl!("workspace-dialog-rename").into(),
+                fl!("workspace-dialog-rename-note"),
+                fl!("workspace-dialog-rename"),
             ),
             WorkspaceAction::NewTab => (
                 fl!("workspace-dialog-new-tab-title"),
-                fl!("workspace-dialog-create").into(),
+                fl!("workspace-dialog-new-tab-note"),
+                fl!("workspace-dialog-create"),
             ),
             WorkspaceAction::NewWorkspace => (
                 fl!("workspace-dialog-new-workspace-title"),
-                fl!("workspace-dialog-create").into(),
+                fl!("workspace-dialog-new-workspace-note"),
+                fl!("workspace-dialog-create"),
             ),
             WorkspaceAction::Note => (
                 fl!("workspace-dialog-note-title"),
-                fl!("workspace-dialog-save").into(),
+                fl!("workspace-dialog-note-note"),
+                fl!("workspace-dialog-save"),
             ),
         };
-        let mut body = div().flex().flex_col().gap(px(10.)).px(px(16.)).py(px(12.));
-        body = match action {
-            WorkspaceAction::Rename => body.child(
-                div()
-                    .text_color(rgb(theme.subtext()))
-                    .child(fl!("workspace-dialog-rename-note")),
-            ),
-            WorkspaceAction::Note => body.child(
-                div()
-                    .text_color(rgb(theme.subtext()))
-                    .child(fl!("workspace-dialog-note-note")),
-            ),
-            WorkspaceAction::NewTab => body.child(
-                div()
-                    .text_color(rgb(theme.subtext()))
-                    .child(fl!("workspace-dialog-new-tab-note")),
-            ),
-            WorkspaceAction::NewWorkspace => body.child(
-                div()
-                    .text_color(rgb(theme.subtext()))
-                    .child(fl!("workspace-dialog-new-workspace-note")),
-            ),
+        let dialog = Dialog {
+            buttons: Buttons {
+                cancel: fl!("workspace-dialog-cancel"),
+                submit,
+            },
+            error: self.menu.error.clone(),
+            icon: workspace_action_icon(WorkspaceMenuAction::Dialog(action)),
+            note,
+            target: target.label.clone(),
+            title,
         };
-        if self.menu.input.is_some() {
-            body = body.child(self.render_dialog_input(cx));
-        }
-        if let Some(error) = &self.menu.error {
-            body = body.child(
-                div()
-                    .debug_selector(|| "dialog-error".into())
-                    .rounded(px(crate::config::corners::CONTROL))
-                    .bg(rgb(theme.active))
-                    .px(px(10.))
-                    .py(px(6.))
-                    .text_color(danger)
-                    .child(error.clone()),
-            );
-        }
-        let button = |id: &'static str| {
-            div()
-                .id(id)
-                .debug_selector(move || id.into())
-                .px(px(12.))
-                .py(px(6.))
-                .rounded(px(crate::config::corners::CONTROL))
-                .border_1()
-                .cursor_pointer()
-        };
-        div()
-            .flex()
-            .flex_col()
-            .child(
-                div()
-                    .debug_selector(|| "dialog-header".into())
-                    .flex()
-                    .items_center()
-                    .gap(px(10.))
-                    .px(px(16.))
-                    .py(px(12.))
-                    .border_b_1()
-                    .border_color(rgb(theme.active))
-                    .when_some(
-                        workspace_action_icon(WorkspaceMenuAction::Dialog(action)),
-                        |header, icon| {
-                            header.child(
-                                svg()
-                                    .path(icon)
-                                    .size(px(16.))
-                                    .flex_none()
-                                    .text_color(rgb(theme.muted)),
-                            )
-                        },
-                    )
-                    .child(
-                        div()
-                            .flex()
-                            .flex_col()
-                            .flex_1()
-                            .min_w_0()
-                            .child(
-                                div()
-                                    .debug_selector(|| "dialog-title".into())
-                                    .text_size(px(font.size * 1.35))
-                                    .font_weight(FontWeight::SEMIBOLD)
-                                    .child(title),
-                            )
-                            .child(
-                                div()
-                                    .truncate()
-                                    .text_color(rgb(theme.muted))
-                                    .child(target.label.clone()),
-                            ),
-                    ),
-            )
-            .child(body)
-            .child(
-                div()
-                    .debug_selector(|| "dialog-footer".into())
-                    .flex()
-                    .justify_end()
-                    .gap(px(8.))
-                    .px(px(16.))
-                    .py(px(12.))
-                    .border_t_1()
-                    .border_color(rgb(theme.active))
-                    .child(
-                        button("dialog-cancel")
-                            .role(Role::Button)
-                            .aria_label(fl!("workspace-dialog-cancel"))
-                            .border_color(rgb(theme.active))
-                            .hover(|button| button.bg(rgb(theme.active)))
-                            .child(fl!("workspace-dialog-cancel"))
-                            .on_click(cx.listener(|this, _, window, cx| {
-                                cx.stop_propagation();
-                                this.dismiss_menu(window, cx);
-                            })),
-                    )
-                    .child(
-                        button("dialog-submit")
-                            .role(Role::DefaultButton)
-                            .aria_label(submit.clone())
-                            .border_color(rgb(theme.foreground))
-                            .bg(rgb(theme.active))
-                            .text_color(rgb(theme.foreground))
-                            .child(submit)
-                            .hover(|button| button.bg(rgb(theme.active)))
-                            .on_click(cx.listener(|this, _, window, cx| {
-                                cx.stop_propagation();
-                                this.submit_workspace_dialog(window, cx);
-                            })),
-                    ),
-            )
+        let field = self
+            .menu
+            .input
+            .is_some()
+            .then(|| self.render_dialog_input(cx).into_any_element());
+        form::dialog(
+            &dialog,
+            &crate::menu::chrome::text(&self.config.ui),
+            &self.theme,
+            danger(&self.theme),
+            field,
+            |button, element| match button {
+                Button::Cancel => element.on_click(cx.listener(|this, _, window, cx| {
+                    cx.stop_propagation();
+                    this.dismiss_menu(window, cx);
+                })),
+                Button::Submit => element.on_click(cx.listener(|this, _, window, cx| {
+                    cx.stop_propagation();
+                    this.submit_workspace_dialog(window, cx);
+                })),
+            },
+        )
     }
 }

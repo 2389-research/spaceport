@@ -212,6 +212,37 @@ fn short_and_growing_sources_are_rejected_and_prior_success_is_removed() {
     }
 }
 
+/// The length `prepare` measured is the contract: a file rewritten after that
+/// measurement must fail its copy instead of delivering a prefix or extra
+/// bytes. Proven at the seam that decides, so this holds on CI too, where the
+/// end-to-end `short_and_growing` case above is ignored.
+#[test]
+fn copy_refuses_a_source_that_shrank_or_grew_after_it_was_measured() {
+    let temp = Temp::new();
+    let path = temp.file("measured", b"measured bytes");
+    let measured = fs::metadata(&path).unwrap().len();
+    for content in [
+        &b"short"[..],
+        b"much longer than the length measured when the copy began",
+    ] {
+        fs::write(&path, content).unwrap();
+        let error = copy(
+            &mut File::open(&path).unwrap(),
+            &mut io::sink(),
+            measured,
+            &AtomicBool::new(false),
+            &mut Instant::now(),
+            |_| {},
+        )
+        .unwrap_err();
+        assert!(
+            matches!(error, Error::UploadSourceChanged),
+            "{content:?}: {error:?}"
+        );
+    }
+    assert_eq!(measured, 14);
+}
+
 #[test]
 fn remote_short_receive_trap_removes_file_and_directory() {
     let temp = Temp::new();

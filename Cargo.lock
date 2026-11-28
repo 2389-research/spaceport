@@ -7023,6 +7023,7 @@ dependencies = [
  "spaceport-settings",
  "spaceport-widgets",
  "spaceport-words",
+ "tracing",
  "unicode-bidi",
  "unicode-segmentation",
 ]

@@ -45,6 +45,11 @@ struct AgentRail: View {
     let expand: () -> Void
     let select: (GoToPane) -> Void
 
+    static func groups(in view: MobileView?) -> [Section] {
+        guard let view else { return [] }
+        return groups(GoToPane.agents(workspaces: view.workspaces, tabs: view.tabs, panes: view.panes))
+    }
+
     nonisolated static func groups(_ agents: [GoToPane]) -> [Section] {
         let grouped = Dictionary(grouping: agents) { row -> HomeAgentSection in
             switch PaneActivity(row.pane.status) {
@@ -79,20 +84,25 @@ struct AgentRail: View {
             .accessibilityLabel("Expand agents sidebar")
             .accessibilityIdentifier("session.rail.expand")
             Divider().padding(.horizontal, 8)
-            ScrollView {
-                LazyVStack(spacing: 10) {
-                    ForEach(sections) { section in
-                        VStack(spacing: 2) {
-                            ForEach(section.rows) { row in agentButton(row) }
-                        }
-                    }
-                }.padding(.vertical, 8)
-            }
+            rows(content: agentButton)
         }
         .buttonStyle(.plain)
         .background(SessionChrome.sidebar)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("session.rail")
+    }
+
+    func rows<Row: View>(@ViewBuilder content: @escaping (GoToPane) -> Row) -> some View {
+        ScrollView {
+            LazyVStack(spacing: 2) {
+                ForEach(sections) { section in
+                    ForEach(section.rows) { row in
+                        content(row)
+                            .padding(.top, section.id != sections.first?.id && row.id == section.rows.first?.id ? 8 : 0)
+                    }
+                }
+            }.padding(.vertical, 8)
+        }
     }
 
     private func agentButton(_ row: GoToPane) -> some View {

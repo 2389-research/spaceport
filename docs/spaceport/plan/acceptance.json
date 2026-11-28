@@ -485,7 +485,10 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": ["evidence/t07-terminal-put.md"]
+          "evidence": [
+            "evidence/b10-binary-transfer-matrix.md",
+            "evidence/t07-terminal-put.md"
+          ]
         },
         "core": {
           "status": "not_run",
@@ -505,7 +508,11 @@
       "legs": {
         "herdr1": {
           "status": "not_run",
-          "evidence": ["evidence/t07-file-route.md", "evidence/t07-terminal-put.md"]
+          "evidence": [
+            "evidence/b10-binary-transfer-matrix.md",
+            "evidence/t07-file-route.md",
+            "evidence/t07-terminal-put.md"
+          ]
         },
         "core": {
           "status": "not_run",

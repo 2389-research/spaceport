@@ -327,6 +327,21 @@ pub(super) fn ui(call: Call<UiOp>, cx: &mut App) -> Response {
             view.show_activity_panel(panel, window, cx);
             Response::done(format!("Showing {}", panel.name()))
         }
+        UiOp::Workspaces { switch } => {
+            if !view.config.layout.mode.lists_workspaces() {
+                return Response::error(
+                    ErrorCode::Unsupported,
+                    "The Devices layout has no Workspaces list",
+                );
+            }
+            let expanded = switch.apply(view.sidebar_workspaces_expanded);
+            view.set_workspaces_expanded(expanded, window, cx);
+            Response::done(if expanded {
+                "Workspaces expanded"
+            } else {
+                "Workspaces collapsed"
+            })
+        }
         UiOp::StatusBar { switch } => {
             let visible = switch.apply(view.status_bar_visible);
             if visible != view.status_bar_visible {
