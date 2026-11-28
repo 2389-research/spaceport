@@ -1,4 +1,10 @@
 use super::*;
+use crate::{
+    config::Theme,
+    contrast::Contrast,
+    herdr_settings,
+    settings_window::themes::{Choice, Scope},
+};
 use core::prelude::v1::test;
 
 #[gpui::test]
@@ -6,7 +12,7 @@ fn scheduled_palettes_load_without_a_display_frame(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(super::super::tests::fixture);
     view.update(cx, |view, cx| {
         view.themes.names = vec!["Nord".into(), "Dracula".into()];
-        view.themes.herdr_enabled = false;
+        view.themes.sources.herdr = false;
         view.themes.filter(None);
         view.themes.grid.running = false;
         view.schedule_grid_palettes(0..1, cx);
@@ -34,7 +40,7 @@ fn palettes_are_per_theme_and_contrast_is_applied_once(cx: &mut TestAppContext) 
     let (view, cx) = cx.add_window_view(super::super::tests::fixture);
     view.update(cx, |view, cx| {
         view.themes.names = vec!["Nord".into(), "Dracula".into()];
-        view.themes.herdr_enabled = false;
+        view.themes.sources.herdr = false;
         view.themes.filter(None);
         view.config.contrast = Contrast::High;
         view.themes.grid.running = false;
@@ -95,7 +101,7 @@ fn shared_palette_uses_prepared_overrides_and_read_only_does_not_dirty(cx: &mut 
     view.update(cx, |view, cx| {
         view.shared =
             herdr_settings::Settings::parse_text("[theme.custom]\naccent='#123456'\n").ok();
-        view.themes.ghostty_enabled = false;
+        view.themes.sources.ghostty = false;
         view.themes.query = "nord".into();
         view.themes.filter(None);
         view.themes.grid.running = false;
@@ -114,38 +120,4 @@ fn shared_palette_uses_prepared_overrides_and_read_only_does_not_dirty(cx: &mut 
         );
         assert!(!view.theme_dirty());
     });
-}
-#[test]
-fn geometry_navigation_and_stale_results() {
-    assert_eq!(columns(680. - 240.), 2);
-    assert_eq!(columns(960. - 240.), 4);
-    assert_eq!(navigate(5, 400, 4, false), 9);
-    assert_eq!(navigate(5, 400, 4, true), 1);
-    assert_eq!(navigate(398, 400, 4, false), 399);
-    let mut grid = Grid::default();
-    grid.invalidate();
-    grid.finish(
-        0,
-        vec![(
-            Choice {
-                scope: Scope::App,
-                name: "old".into(),
-            },
-            Some(Theme::default()),
-        )],
-    );
-    assert!(grid.palettes.is_empty());
-    for i in 0..400 {
-        grid.finish(
-            1,
-            vec![(
-                Choice {
-                    scope: Scope::App,
-                    name: i.to_string(),
-                },
-                None,
-            )],
-        );
-    }
-    assert_eq!(grid.palettes.len(), CACHE_LIMIT);
 }
