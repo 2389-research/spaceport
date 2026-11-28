@@ -34,7 +34,7 @@
         "S01",
         "S03"
       ],
-      "issue": "Core has terminal.put and file/exec primitives; complete retained upload/download/overwrite/cancel behavior was not exercised.",
+      "issue": "The retained Herdr 1 upload route's binary, overwrite, symlink, temporary-file and cancellation cases are proved by deterministic client tests; no retained client route downloads a file, and Core exposes no binary read beyond a text-only file.read. A Core pane also has no post-terminal.put handoff. See evidence/b10-binary-transfer-matrix.md.",
       "required_evidence": "Route-specific binary and safety scenarios A25–A26.",
       "forbidden_workaround": "Treating text file methods as full transfer parity or installing a new host file service."
     },
@@ -72,7 +72,7 @@
         "S03",
         "S09"
       ],
-      "issue": "Current Sheprd visibility depends in part on its own provider probes and automation daemon, both excluded. No equivalent complete Core feed is established. Under D73 Spaceport ships no usage or automation view of its own until one is.",
+      "issue": "Current Sheprd visibility depends in part on its own provider probes and automation daemon, both excluded. No equivalent complete Core feed is established.",
       "required_evidence": "Supported source contract and A20 without removed collectors/schedulers; document the exact coverage.",
       "forbidden_workaround": "Retain a hidden scheduler/provider login, scrape secrets or present unavailable values as zero/empty."
     },

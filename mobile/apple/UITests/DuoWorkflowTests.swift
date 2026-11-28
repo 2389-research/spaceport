@@ -4,6 +4,55 @@ import XCTest
 
 extension SessionWorkflowTests {
     @MainActor
+    func testRailSwitchKeepsKeyboardAndRoutesInputToEachAgent() async throws {
+        let app = XCUIApplication()
+        let (terminal, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_DUO_SESSION")
+        let sidebar = app.buttons["session.sidebar.hide"]
+        let rail = app.buttons["session.rail.expand"]
+        let location = app.buttons["session.navigation"]
+        let toggle = app.buttons["terminal.keyboard.toggle"]
+        let keyboard = app.keyboards.firstMatch
+        let agents = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "session.rail.agent."))
+        func agent(_ name: String) -> XCUIElement {
+            agents.matching(NSPredicate(format: "label BEGINSWITH %@", name + ",")).firstMatch
+        }
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 5), "Run on an unfolded Duo.")
+        toggle.tap()
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+        let nonce = UUID().uuidString.prefix(6).lowercased()
+        let scoutText = "scout-" + nonce
+        let reviewText = "review-" + nonce
+
+        for (name, text) in [("Scout", scoutText), ("Reviewer", reviewText)] {
+            XCTContext.runActivity(named: "Switch to \(name) with keyboard open") { _ in
+                agent(name).tap()
+                XCTAssertTrue(keyboard.exists)
+                XCTAssertTrue(rail.isHittable)
+                XCTAssertFalse(sidebar.exists)
+            }
+            try await waitForText(name, in: location)
+            app.typeText(text)
+            try await waitForText(text, in: terminal)
+        }
+        XCTAssertFalse((terminal.value as? String ?? "").contains(scoutText))
+        agent("Scout").tap()
+        try await waitForText(scoutText, in: terminal)
+        XCTAssertFalse((terminal.value as? String ?? "").contains(reviewText))
+        XCTAssertTrue(keyboard.exists)
+        app.typeText("-back")
+        try await waitForText(scoutText + "-back", in: terminal)
+
+        toggle.tap()
+        XCTAssertTrue(keyboard.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 5))
+        sidebar.tap()
+        agent("Reviewer").tap()
+        try await waitForText(reviewText, in: terminal)
+        XCTAssertFalse(keyboard.exists)
+        XCTAssertTrue(rail.isHittable)
+    }
+
+    @MainActor
     func testKeyboardTransitionKeepsTerminalFocusAndSidebarChoice() async throws {
         let app = XCUIApplication()
         let (surface, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_DUO_SESSION")

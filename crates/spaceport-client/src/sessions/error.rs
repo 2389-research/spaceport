@@ -15,6 +15,8 @@ pub enum Error {
     DeleteTimeout,
     #[error("too many sessions to list")]
     Limit,
+    #[error("The saved Herdr session is not running")]
+    NotRunning,
     // keep-sorted end
 }
 
@@ -22,6 +24,7 @@ impl Error {
     /// The transport retry/cancellation category `crate::Error::kind` reports.
     pub(crate) fn kind(&self) -> io::ErrorKind {
         match self {
+            Self::NotRunning => io::ErrorKind::NotConnected,
             Self::DeleteDefault => io::ErrorKind::InvalidInput,
             Self::DeleteTimeout => io::ErrorKind::TimedOut,
             Self::DeleteFailed(_) | Self::Limit => io::ErrorKind::InvalidData,

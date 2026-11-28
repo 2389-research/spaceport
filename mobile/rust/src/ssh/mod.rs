@@ -59,7 +59,7 @@ fn runtime() -> std::io::Result<tokio::runtime::Runtime> {
 }
 
 mod images;
-pub use images::StagedImage;
+pub use images::{MobileFileTransfer, StagedImage};
 mod pty;
 pub use pty::MobilePty;
 pub(crate) use pty::PtyRoutes;
@@ -68,6 +68,7 @@ pub use enclave::{EnclaveSigner, enclave_public_key};
 mod enroll;
 pub(crate) use enroll::EnrollmentRequest;
 pub use enroll::authorize_enclave_phone;
+mod service_preview;
 mod transport;
 pub(crate) use transport::open_bridge;
 #[cfg(test)]

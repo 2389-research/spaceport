@@ -220,7 +220,7 @@ fn unknown_keys_are_ignored_and_reported() -> anyhow::Result<()> {
             "layout.shadow",
             "notifications.sound",
             "terminal.ligatures",
-            "usage.show_providers",
+            "usage.show_providers.future",
         ]
     );
     assert_eq!(
@@ -233,6 +233,13 @@ fn unknown_keys_are_ignored_and_reported() -> anyhow::Result<()> {
             .unknown_keys
             .is_empty()
     );
+    // Old account settings, including pasted secrets, are rejected without edits.
+    for name in ["client_secret", "private_key", "token"] {
+        assert!(matches!(
+            Config::parse(&format!("[github]\n{name} = 'x'")),
+            Err(Error::RemovedGitHub)
+        ));
+    }
 
     // Loading from disk keeps going too, and leaves the file alone.
     let temp = TempDirectory::new()?;
@@ -389,16 +396,4 @@ fn refreshes_managed_config_and_loads_absolute_theme() -> anyhow::Result<()> {
     })();
     fs::remove_dir_all(directory)?;
     result
-}
-
-#[test]
-fn usage_indicators_are_on_unless_turned_off() -> anyhow::Result<()> {
-    assert_eq!(Config::default().usage, usage::Indicators::default());
-    let config = Config::parse("[usage]\ntopbar = false\nshow = true\n")?;
-    assert!(!config.usage.topbar);
-    assert!(config.usage.inline);
-    // Plan-usage keys of earlier builds are reported, not refused.
-    assert_eq!(config.unknown_keys, ["usage.show"]);
-    assert!(Config::parse("[usage]\ninline = 'no'\n").is_err());
-    Ok(())
 }

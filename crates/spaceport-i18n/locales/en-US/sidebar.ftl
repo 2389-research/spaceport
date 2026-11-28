@@ -4,7 +4,7 @@
 
 # Headings over the lists. Lowercase in English; a layout with title case
 # capitalizes the first letter.
-sidebar-header-spaces = spaces
+sidebar-header-spaces = workspaces
 sidebar-header-devices = devices
 sidebar-header-agents = agents
 # What a screen reader calls each list.

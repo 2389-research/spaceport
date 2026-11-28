@@ -20,7 +20,8 @@ impl Counts {
     fn count(self, panel: ActivityPanel) -> Option<Count> {
         match panel {
             ActivityPanel::Overview => Some(self.needs),
-            ActivityPanel::Workspaces => None,
+            ActivityPanel::Workspaces | ActivityPanel::Usage => None,
+            ActivityPanel::Automations => None,
         }
     }
 

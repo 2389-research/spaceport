@@ -13,6 +13,7 @@ spaceport COMMAND ... [--json] [--window ID]
   host          List the window's hosts, show one, or mute one
   ports         Listening ports, and forwarding them to this machine
   processes     The processes running under a pane
+  usage         AI plan usage on the selected host
   config        Spaceport settings: path, get, set, reload, check
   theme         List or choose a color theme
   font          List or choose the terminal font
@@ -38,9 +39,9 @@ or `caffeine`, only checks that the window is there. By default a command acts
 in the window showing the caller's workspace (HERDR_WORKSPACE_ID), and exits 5
 when no window shows it; outside Herdr, in the frontmost window.
 Exit status: 0 done, 1 refused, 2 invalid arguments, 3 Spaceport not running,
-4 nothing yet (no notes, no events, no chat panes, no ports, no log, a key not
-set, or the wait not met), 5 not found, 6 busy (a dialog is open), 7 timed
-out, 8 unsupported on this platform or by this app version.
+4 nothing yet (no notes, no events, no chat panes, no ports, no usage, no log,
+a key not set, or the wait not met), 5 not found, 6 busy (a dialog is open),
+7 timed out, 8 unsupported on this platform or by this app version.
 
 === status ===
 spaceport status
@@ -73,9 +74,10 @@ spaceport window detach|reconnect
 
 === ui ===
 spaceport ui sidebar [on|off|toggle]
+spaceport ui workspaces [on|off|toggle]
 spaceport ui statusbar [on|off|toggle]
 spaceport ui font-size +|-|reset|POINTS
-spaceport ui panel workspaces|overview
+spaceport ui panel workspaces|overview|automations|usage
 spaceport ui agent-idle [--pane ID]
     Read the agent idle time observed by this window.
     For this window and session; settings are changed with `config`.
@@ -153,6 +155,10 @@ spaceport ports open PORT
 spaceport processes [--pane ID]
     The processes under a pane (default HERDR_PANE_ID), with CPU and
     memory. Runs here; Spaceport need not run.
+
+=== usage ===
+spaceport usage
+    Plan usage on the selected host when Core supplies a feed; currently unavailable.
 
 === config ===
 spaceport config [path]

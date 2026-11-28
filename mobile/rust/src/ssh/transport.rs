@@ -2,17 +2,34 @@
 // ABOUTME: The Herdr worker owns the socket and cancels the SSH pump through its guard.
 
 use super::*;
+use crate::MobileError;
 use russh::{
     Channel, ChannelMsg, client,
     keys::{HashAlg, PublicKeyOrCertificate},
 };
+use std::sync::{OnceLock, Weak};
 use std::{future::Future, sync::atomic::Ordering};
+use tokio::runtime::Handle;
 use tokio::{
     io::copy,
     time::{sleep, timeout},
 };
 
 pub(super) struct HostKey(Option<String>);
+
+#[derive(Default)]
+pub(crate) struct ConnectedSsh(OnceLock<(Handle, Weak<client::Handle<HostKey>>)>);
+
+impl ConnectedSsh {
+    pub(super) fn connect(&self, session: &Arc<client::Handle<HostKey>>) {
+        let _ = self.0.set((Handle::current(), Arc::downgrade(session)));
+    }
+
+    pub(super) fn get(&self) -> Result<(&Handle, Arc<client::Handle<HostKey>>), MobileError> {
+        let (runtime, handle) = self.0.get().ok_or(MobileError::Disconnected)?;
+        Ok((runtime, handle.upgrade().ok_or(MobileError::Disconnected)?))
+    }
+}
 
 impl From<russh::Error> for SshError {
     fn from(_: russh::Error) -> Self {

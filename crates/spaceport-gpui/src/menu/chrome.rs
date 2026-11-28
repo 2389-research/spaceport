@@ -261,6 +261,7 @@ pub(crate) fn text(ui: &FontConfig) -> Text {
 pub(crate) fn metrics(viewport: Size<Pixels>) -> Metrics {
     Metrics {
         chrome: crate::titlebar::HEIGHT,
+        usage_width: crate::usage::PANEL_WIDTH,
         viewport,
     }
 }

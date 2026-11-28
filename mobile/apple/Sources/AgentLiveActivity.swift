@@ -45,7 +45,7 @@ final class AgentLiveActivity: ObservableObject {
 
     private var feed = AgentActivityFeed()
     private var owner: UUID?
-    private var activity: StatusActivity?
+    private var activityID: String?
     private var worker: Task<Void, Never>?
     private var pending = false
 
@@ -53,9 +53,9 @@ final class AgentLiveActivity: ObservableObject {
         self.defaults = defaults
         isEnabled = defaults.object(forKey: Self.preference) as? Bool ?? true
         // A new process has no SSH presentation to update activities left by its predecessor.
-        let orphaned = StatusActivity.activities
+        let orphaned = Set(StatusActivity.activities.map(\.id))
         worker = Task {
-            for orphan in orphaned { await orphan.end(nil, dismissalPolicy: .immediate) }
+            await Self.endActivities(orphaned)
             await drain()
         }
     }
@@ -108,7 +108,7 @@ final class AgentLiveActivity: ObservableObject {
     }
 
     private func schedule() {
-        guard isEnabled || activity != nil else { return }
+        guard isEnabled || activityID != nil else { return }
         pending = true
         if worker == nil { worker = Task { await drain() } }
     }
@@ -117,22 +117,20 @@ final class AgentLiveActivity: ObservableObject {
         while pending {
             pending = false
             if !isEnabled || owner != feed.selected {
-                if let activity { await activity.end(nil, dismissalPolicy: .immediate) }
-                activity = nil
+                if let activityID { await Self.endActivities([activityID]) }
+                activityID = nil
                 owner = feed.selected
             }
             guard isEnabled, let content = feed.content else { continue }
             let update = ActivityContent(state: content, staleDate: content.staleDate)
-            if let activity {
-                // Keep the dismissed handle until this presentation ends, so a swipe stays dismissed.
-                if activity.activityState == .active || activity.activityState == .stale {
-                    await activity.update(update)
-                }
+            if let activityID {
+                // Keep the ID until this presentation ends, so a swipe stays dismissed.
+                await Self.updateActivity(activityID, with: update)
             } else if !content.paused, content.counts != AgentCounts(),
                       ActivityAuthorizationInfo().areActivitiesEnabled,
                       UIApplication.shared.applicationState == .active {
                 do {
-                    activity = try StatusActivity.request(attributes: AgentStatusAttributes(), content: update)
+                    activityID = try StatusActivity.request(attributes: AgentStatusAttributes(), content: update).id
                 } catch {
                     Logger(subsystem: "ai.2389.spaceport.mobile", category: "LiveActivity")
                         .notice("Could not start agent status: \(error.localizedDescription, privacy: .private)")
@@ -140,5 +138,19 @@ final class AgentLiveActivity: ObservableObject {
             }
         }
         worker = nil
+    }
+
+    nonisolated private static func endActivities(_ ids: Set<String>) async {
+        for activity in StatusActivity.activities where ids.contains(activity.id) {
+            await activity.end(nil, dismissalPolicy: .immediate)
+        }
+    }
+
+    nonisolated private static func updateActivity(
+        _ id: String, with content: ActivityContent<AgentStatusAttributes.ContentState>
+    ) async {
+        guard let activity = StatusActivity.activities.first(where: { $0.id == id }),
+              activity.activityState == .active || activity.activityState == .stale else { return }
+        await activity.update(content)
     }
 }

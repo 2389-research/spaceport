@@ -120,7 +120,9 @@ impl SpaceportWindow {
         let mut nested_focus = None;
         // A plugin view hid every agent, rather than there being none.
         let filtered = self.config.show_agents && self.filtered_agent_view();
-        for (endpoint_index, endpoint, live) in self.listed_hosts() {
+        for (endpoint_index, endpoint, live) in
+            self.listed_hosts().take_while(|_| !m.workspaces_collapsed)
+        {
             if m.devices && !self.device_listed(endpoint_index, &m.query) {
                 continue;
             }
@@ -207,7 +209,7 @@ impl SpaceportWindow {
             spaces = next;
             nested_focus = nested_focus.or(focused);
         }
-        if self.core_enabled() && !m.devices && search.is_none() {
+        if self.core_enabled() && !m.devices && !m.workspaces_collapsed && search.is_none() {
             spaces.list = spaces.list.child(self.core_workspace_rows(cx));
         }
         let mut agent_count = 0;

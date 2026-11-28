@@ -151,7 +151,7 @@ class MainActivity : ComponentActivity(), Pages {
     private fun observe(host: HostProfile, c: SessionController) {
         if (c.phase != ConnectionPhase.Connected) return
         val view = c.view?.takeIf { it.bootId.isNotEmpty() && !it.disconnected } ?: return
-        phone.catalog.observe(host, AgentBoard.rows(host, view))
+        phone.catalog.observe(host, AgentBoard.rows(host, view, System.currentTimeMillis()))
     }
 
     private fun open(host: HostProfile, agent: AgentRow? = null, workspaces: Boolean = false) {

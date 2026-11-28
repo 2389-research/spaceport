@@ -8,12 +8,16 @@ use std::{
     process::Stdio,
 };
 
+fn valid_path(path: &str) -> bool {
+    is_staged_file(path, NAME)
+}
+
 #[test]
 fn confirmed_file_survives_disconnect_and_only_an_explicit_discard_removes_it() {
     let png = b"\x89PNG\r\n\x1a\n\x00\xff\nretain\n";
     for (retain, discard) in [(false, false), (true, false), (true, true)] {
         let mut child = spaceport_client::new_command("/bin/sh")
-            .args(["-c", &command(png.len())])
+            .args(["-c", &command(NAME, png.len())])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
@@ -50,7 +54,7 @@ fn confirmed_file_survives_disconnect_and_only_an_explicit_discard_removes_it() 
 #[test]
 fn partial_transfer_is_never_offered_for_paste() {
     let mut child = spaceport_client::new_command("/bin/sh")
-        .args(["-c", &command(123)])
+        .args(["-c", &command(NAME, 123)])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()

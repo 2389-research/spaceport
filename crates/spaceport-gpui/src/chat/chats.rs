@@ -372,7 +372,7 @@ impl ChatPane {
     }
 
     /// Queue success only transfers ownership to the writer. Its receipt
-    /// distinguishes an unsent command from an uncertain delivery.
+    /// decides whether a retry consumed a write attempt.
     fn dispatch(&mut self) {
         let Phase::Linked(link) = &self.phase else {
             return;

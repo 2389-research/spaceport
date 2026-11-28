@@ -8,6 +8,7 @@ use core::prelude::v1::test;
 
 mod activity_bar;
 mod agents_placement;
+mod automations;
 mod backdrop;
 mod chat_width;
 mod core_flag;

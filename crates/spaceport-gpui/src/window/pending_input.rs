@@ -79,10 +79,7 @@ enum Held {
         fallback: Option<ClientPaneInputEvent>,
     },
     /// Files dropped on the panes.
-    Drop {
-        at: DropAt,
-        paths: Result<Vec<PathBuf>, super::file_drop::Error>,
-    },
+    Drop { at: DropAt, paths: Vec<PathBuf> },
     /// Where a paste or drop was refused because too many waited: the input
     /// the gap held after it is discarded rather than sent without it.
     Refused,
@@ -90,13 +87,6 @@ enum Held {
     /// paste: what follows was made after the gap, so a refusal mark ahead
     /// does not discard it.
     FrameReturned,
-}
-
-impl Held {
-    fn file_drop(at: DropAt, paths: &[PathBuf]) -> Self {
-        let paths = super::file_drop::quoted_len(paths).map(|_| paths.to_vec());
-        Self::Drop { at, paths }
-    }
 }
 
 /// Where held files go.
@@ -266,10 +256,10 @@ impl SpaceportWindow {
     pub(super) fn hold_drop(
         &mut self,
         at: DropAt,
-        paths: &[PathBuf],
+        paths: Vec<PathBuf>,
         cx: &mut Context<Self>,
     ) -> bool {
-        self.hold(Held::file_drop(at, paths), cx)
+        self.hold(Held::Drop { at, paths }, cx)
     }
 
     /// Hold files dropped once the frame returned, behind held input that
@@ -277,11 +267,11 @@ impl SpaceportWindow {
     pub(super) fn hold_drop_after_gap(
         &mut self,
         target: InputTarget,
-        paths: &[PathBuf],
+        paths: Vec<PathBuf>,
         cx: &mut Context<Self>,
     ) -> bool {
         let at = DropAt::Pane(target);
-        self.hold_after_gap(Held::file_drop(at, paths), cx)
+        self.hold_after_gap(Held::Drop { at, paths }, cx)
     }
 
     /// Hold input made once the frame returned behind held input that waits
@@ -429,17 +419,7 @@ impl SpaceportWindow {
                 }
                 Held::Drop { at, paths } => {
                     let shown = self.notices.take();
-                    let delivery = match paths {
-                        Ok(paths) => self.deliver_held_drop(at, &paths, cx),
-                        Err(error) => {
-                            self.notices.show(
-                                crate::notice::Cause::Transfer,
-                                fl!("window-input-files-failed", error = error.localize()),
-                            );
-                            cx.notify();
-                            Delivery::Refused
-                        }
-                    };
+                    let delivery = self.deliver_held_drop(at, &paths, cx);
                     self.keep_shown_error(shown, delivery, held.len());
                     delivery
                 }

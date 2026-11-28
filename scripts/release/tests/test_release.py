@@ -59,8 +59,8 @@ class ReleaseTests(unittest.TestCase):
         with zipfile.ZipFile(output) as archive:
             executables = {Path(name).name for name in archive.namelist() if name.endswith(".exe")}
             self.assertEqual(executables, {"spaceport.exe", "spaceport-launcher.exe", "sheprd-acp.exe"})
-        self.assertEqual(output, self.work.resolve() / f"Sheprd-20260920.3-{target}.zip")
-        base = f"Sheprd-20260920.3-{target}/"
+        self.assertEqual(output, self.work.resolve() / f"Spaceport-20260920.3-{target}.zip")
+        base = f"Spaceport-20260920.3-{target}/"
         with zipfile.ZipFile(output) as archive:
             self.assertIsNone(archive.testzip())
             self.assertEqual(set(archive.namelist()), {base + p for p in [
@@ -84,7 +84,7 @@ class ReleaseTests(unittest.TestCase):
         output.unlink()
         arm = Path(self.run_windows("20260920.3", "aarch64-pc-windows-msvc", binary, launcher, self.work,
                                     self.notices).stdout.strip())
-        self.assertEqual(arm, self.work.resolve() / "Sheprd-20260920.3-aarch64-pc-windows-msvc.zip")
+        self.assertEqual(arm, self.work.resolve() / "Spaceport-20260920.3-aarch64-pc-windows-msvc.zip")
         arm.unlink()
         result = self.run_windows("20260920.3", target, binary, self.work / "missing-launcher.exe", self.work,
                                   self.notices, success=False)

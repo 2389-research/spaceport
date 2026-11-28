@@ -40,7 +40,8 @@ extension SessionWorkflowTests {
         XCTAssertTrue(app.buttons["session.rail.expand"].waitForExistence(timeout: 5))
         terminal.swipeRight()
         XCTAssertTrue(sidebar.waitForExistence(timeout: 3))
-        XCTAssertFalse(app.segmentedControls["goTo.browse"].exists)
+        XCTAssertTrue(app.segmentedControls["goTo.browse"].buttons["Agents"].isSelected)
+        XCTAssertFalse(app.buttons["goTo.done"].exists)
         XCTAssertTrue(terminal.exists)
     }
 }

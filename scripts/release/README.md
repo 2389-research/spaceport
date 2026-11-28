@@ -1,7 +1,9 @@
 # Release Packaging
 
-**Spaceport development status:** The only release route in this fork is the
-macOS preview route below. The inherited upstream production route (its release
+**Spaceport development status:** The only desktop release route in this fork is the
+macOS preview route below. The separate [iOS TestFlight route](#ios-testflight-route)
+uploads the mobile client to TestFlight and publishes no desktop artifact. The inherited
+upstream production route (its release
 and promotion workflows, Linux packages, Homebrew, winget, artifact signing and
 SBOM) has been removed; restore it from git history when the release gate
 opens. The current release build rejects
@@ -196,6 +198,117 @@ Anyone who may push a `v*` tag can therefore cause a signed Android build.
 If they differ, the protected `android-release` environment signs a release APK, and the workflow attaches it to the tag's release.
 `mobile/README.md` lists the environment's secrets and the pinned certificate variable.
 
+## iOS TestFlight route
+
+`ios-testflight.yml` signs the Spaceport Mobile app and uploads it to TestFlight. It is a
+mobile route: it publishes no desktop artifact, and it changes neither the macOS preview
+nor the Android route. It runs when a tag-push run of `macOS signed preview` succeeds,
+because that run's `publish` job creates the tag's release and this route attaches its
+`.ipa` there. It never runs for a pull request or another repository. A manual run on main
+takes an explicit `version`. A supplied tag must exist and point to the selected main commit.
+With no tag, the workflow uploads to TestFlight and keeps the files as workflow artifacts.
+
+For an automatic upload, the workflow checks the release tag against the triggering commit
+and confirms the commit belongs to `main` before building its code.
+
+`build` runs `./mobile/build-apple --release` with no credentials and archives only what
+that produced — `mobile/.build/SpaceportMobileCore.xcframework`, `mobile/apple/Generated`
+and the generated `SpaceportMobile.xcodeproj` — under a `SHA256SUMS`. `sign` downloads
+only that checksummed artifact and holds the credentials. `publish` re-proves the tag and
+attaches `Spaceport-VERSION-ios.ipa`, its `.sha256` checksum, and its `.json` upload receipt
+to the GitHub release if it exists.
+
+The iOS simulator suite is a **skipped gate**, not a silent pass. `mobile/README.md`'s
+verification target is Product → Test inside Xcode, whose live tests need a disposable SSH
+host, seeded Herdr sessions and a hand-driven Duo fold, and `just test-ios-duo` needs an
+open simulator on a desktop. Neither is a CI-runnable suite, so the build job records the
+absence with `TODO(ios-simulator-gate)` and runs nothing in its place.
+
+`bash scripts/release/sign-ios.sh VERSION OUTPUT_DIR` performs signing, verification and
+the upload:
+
+- VERSION is a calendar version with a counter from 1 through 99. The iOS build number is
+  `YYYYMMDD*100+COUNTER`, the rule `android-request.py` applies to the Android
+  `versionCode`, passed to xcodebuild as `CURRENT_PROJECT_VERSION` so every later tag
+  uploads a greater TestFlight build. `MARKETING_VERSION` stays `0.1` from
+  `mobile/apple/project.yml`, which keeps the existing App Store Connect record and the
+  export-compliance note in `mobile/README.md` valid.
+- Install an App Store distribution profile for each Release target. The app uses
+  `SPACEPORT_MOBILE_PROFILE` and Agent Status uses `SPACEPORT_ACTIVITY_PROFILE`.
+  Builds that include the Share extension also use `SPACEPORT_SHARE_PROFILE`.
+  Supply the profiles as base64 with the corresponding `_B64` environment variables.
+  For a local run, supply all required `_UUID` variables to use Xcode provisioning updates instead.
+- The script archives the Release scheme for `generic/platform=iOS` and exports with
+  manual signing. Each bundle identifier maps to its own profile in the export options.
+  Xcode preserves the build number derived from the tag.
+- Before upload, the script checks the exported app and its expected extensions. It verifies
+  their signatures, bundle identifiers, build numbers, Team and shared App Group.
+  Each embedded profile must match its bundle and disable development debugging.
+- It uploads with `xcrun altool --upload-app --type ios` and the App Store Connect key,
+  then writes `Spaceport-VERSION-ios.ipa.json` beside the `.ipa` and its `.sha256` with the
+  bundle id, build number, marketing version, Team, App Group, digest and upload result,
+  and prints the same facts as `key=value` lines. altool's exit status is the result; a
+  failure reports Apple's product errors and refuses a second upload of that build number.
+- Credentials follow `sign-macos.sh`: the P12 is imported into a temporary keychain inside
+  a private temporary directory, the user keychain search list is restored, the `.p8` sits
+  under a private `private_keys` directory that `altool` reads, and exit/INT/TERM remove the
+  keychain, the profiles this run installed and the directory. SIGKILL and power loss cannot
+  run cleanup, and Apple's tools receive the P12 password as an argument, so the runner must
+  have no untrusted local users. Existing outputs are refused before credentials are read.
+
+### Owner switch-on checklist
+
+The build job can run before you configure signing. GitHub can create a missing environment
+when a job references it. Missing signing inputs stop the sign job before upload.
+[GitHub deployment environments](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
+
+1. In **Settings → Environments**, create the environment `ios-testflight`. Allow `main`
+   through its deployment rules: under `workflow_run` the job's ref is main, not the tag,
+   exactly as the `android-release` environment requires. Required reviewers are optional —
+   pushing the `v*` tag is the release decision, as it is for macOS and Android.
+2. Create this **variable** on that environment (not in a source file):
+   `SPACEPORT_APPLE_TEAM_ID` — the 10-character Apple Developer Team ID. Every bundle, provisioning profile and the distribution certificate must belong to this team.
+3. Create these **secrets** on that environment:
+
+   | Secret | What it is |
+   | --- | --- |
+   | `IOS_DISTRIBUTION_P12_BASE64` | Base64 of an `Apple Distribution: 2389 Research, Inc (TEAMID)` certificate exported from the team's developer account as a `.p12` with its private key. The script rejects a P12 holding more than one identity. This is not the macOS Developer ID certificate. |
+   | `IOS_DISTRIBUTION_P12_PASSWORD` | That P12's export password. |
+   | `SPACEPORT_MOBILE_PROFILE_B64` | Base64 of the App Store distribution profile for `ai.2389.spaceport.mobile`. |
+   | `SPACEPORT_ACTIVITY_PROFILE_B64` | Base64 of the App Store distribution profile for `ai.2389.spaceport.mobile.agent-status`. |
+   | `SPACEPORT_SHARE_PROFILE_B64` | Base64 of the App Store distribution profile for `ai.2389.spaceport.mobile.share`. Required when the release includes ShareFile. |
+   | `APPLE_API_PRIVATE_KEY` | The App Store Connect `.p8` contents. Reuse the macOS route's key. |
+   | `APPLE_API_KEY_ID` | That key's ID. Reuse the macOS route's value. |
+   | `APPLE_API_ISSUER_ID` | That key's issuer ID. Reuse the macOS route's value. |
+
+4. Use a **Developer** App Store Connect API key for this upload. The base64 profile route
+   uses pre-issued profiles. An Account Holder or Admin can create those profiles separately.
+   TestFlight tester management has its own role requirements.
+   [Apple build uploads](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds/)
+   · [App Store distribution profiles](https://developer.apple.com/help/account/provisioning-profiles/create-an-app-store-provisioning-profile/)
+5. In the developer account, confirm the App Store Connect record
+   `ai.2389.spaceport.mobile` exists. Enable `group.ai.2389.spaceport.mobile.widget`
+   for each shipped bundle identifier. Create a distribution profile for each target after
+   enabling the group. When a profile expires, replace its matching environment secret.
+6. Confirm the app record carries the export-compliance answer described in
+   `mobile/README.md`; the Release plist already ships `ITSAppUsesNonExemptEncryption`
+   `false`, and a build that Apple will not import is reported by the upload step.
+7. Push a `v` tag for a commit whose macOS preview run succeeds:
+
+   ```sh
+   git tag -a v20261218.1 FULL_MAIN_COMMIT_SHA -m 'Spaceport 20261218.1'
+   git push origin refs/tags/v20261218.1
+   ```
+
+   After the macOS preview publishes the release, this workflow uploads the build to TestFlight
+   and attaches the IPA, checksum and upload receipt to the release. The receipt and the
+   signing job summary record Apple's upload result. Processing continues in App Store Connect.
+
+A rerun of the same tag rebuilds and re-uploads the same build number, which Apple refuses.
+Use a new version instead, and inspect the retained `.ipa` artifact and job log first. No
+receipt here proves native behavior on a device: the skipped simulator gate above covers
+what this route does not.
+
 ## Build Identity
 
 Packaging and `just bundle` require Python 3 and read a versioned identity record
@@ -314,61 +427,79 @@ The Windows targets are `x86_64-pc-windows-msvc` and
 `windows-package` job, paused for the fork under D66, is the only caller of
 these scripts. `scripts/release/package-windows.py VERSION TARGET BINARY LAUNCHER
 OUTPUT_DIR THIRD_PARTY_NOTICES` (standard-library Python, since the runner has no
-zip tool) writes one `Sheprd-VERSION-TARGET.zip` per target with a same-named root
+zip tool) writes one `Spaceport-VERSION-TARGET.zip` per target with a same-named root
 containing `spaceport.exe`, the windowed `spaceport-launcher.exe` that the
 installer's Start menu shortcut opens, `sheprd-acp.exe`, which the app starts
-chats with (taken from beside `BINARY`), real legacy executable
-and helper copies, and `licenses/` holding the license
+chats with (taken from beside `BINARY`), and `licenses/` holding the license
 and notice files. Entries carry a fixed timestamp.
 
 `scripts/release/windows-installer.py` then installs the pinned Inno Setup
 compiler (`install-iscc`, checked against its SHA-256), compiles
 `spaceport.iss` over the extracted zip tree into
-`Sheprd-VERSION-TARGET-setup.exe` (`build`), and installs and uninstalls it on
+`Spaceport-VERSION-TARGET-setup.exe` (`build`), and installs and uninstalls it on
 the runner (`smoke`), checking the files, their subsystems, `spaceport.exe`'s
 output, the Start menu shortcut's target (the launcher) and AppUserModelID,
+that the AppUserModelID is the one build record the executable itself carries,
 the user `PATH` and Settings entries, and a silent reinstall that preserves
 startup settings without launching the app.
 CI's `windows-package` job runs the same
 optimized build, packaging, installer build, and install/uninstall check on
 `windows-2025` for any pull request that changes their inputs
 (`scripts/ci-changes.sh` lists them), and the required gate then requires it. The installer is per-user (no elevation),
-installs to `%LOCALAPPDATA%\Programs\Herdr UI` as `site/install.ps1` does, adds
-that directory to the user `PATH`, and creates the Start menu shortcut to the
-launcher.
-The smoke test seeds a disabled `Herdr UI` startup entry targeting the legacy
+installs to `%LOCALAPPDATA%\Programs\Spaceport`, adds that directory to the
+user `PATH`, and creates the Start menu shortcut to the launcher.
+The smoke test seeds a disabled `Spaceport` startup entry naming the installed
 launcher and requires the command and `StartupApproved` bytes to survive the
-upgrade unchanged. Setup renames only shortcuts targeting this installation;
-it preserves a preexisting desktop shortcut even without a new desktop task.
+upgrade unchanged. Setup leaves a preexisting desktop shortcut alone even when a
+run does not select the desktop task.
 
-## Windows Signing
+## Signing Gates
 
-Every Windows zip and installer built here is unsigned: `windows-installer.py
-build` signs only when given `--sign`, and `spaceport.iss` only sets `SignTool`
-when ISCC receives one. The upstream release workflow's `windows-sign` job was
-the only caller of that mode and was removed with that workflow.
-`windows-signing.py` (`unpack`, `repack`, `verify`), `windows-sign-file.ps1`,
-and the installer's `--sign` and `smoke --signed` modes remain with their
-tests, and nothing calls them. Restoring Authenticode signing needs a new
-protected signing job and its Azure Artifact Signing setup.
+Signing is scaffolding here: the steps exist, no build signs, and no credential
+lives in the repository. A signed artifact needs all of the following for its
+platform.
 
-## Retained Identities
+| Platform | Mechanism | Credential, and where the step plugs in | State |
+| --- | --- | --- | --- |
+| macOS | Developer ID signature with hardened runtime, notarization, stapling | A 2389 Research Developer ID certificate for Team `HD9NM9NSMK`, `notarytool` credentials for the same team, and the Spaceport Sparkle Ed25519 key, all in the protected `macos-preview` environment. `sign-macos.sh` and the preview workflow run them. | Configured for previews (D61, D64, D65). |
+| Windows | Authenticode with an RFC 3161 timestamp on the executables and the installer | An Azure Artifact Signing endpoint, account and certificate profile plus an Azure CLI OIDC login, named by `ARTIFACT_SIGNING_ENDPOINT`, `ARTIFACT_SIGNING_ACCOUNT` and `ARTIFACT_SIGNING_PROFILE`. `windows-installer.py build --sign` points ISCC at `windows-sign-file.ps1` for Setup.exe and its uninstaller; `windows-signing.py unpack`, `repack` and `verify` sign and check the zip's tree. | Nothing calls them (D61 defers Windows signing); a protected signing job must set up that login and the three variables first. |
+| Linux | Detached signature over the published archive and its checksum list | No key exists, and no archive is published: this repository builds the `spaceport` binary and the Nix package only. A `.deb`, `.rpm` or AppImage and its signing arrive with the Linux update route. | Not started. |
 
-The retained packaging scripts keep inherited Sheprd identities on purpose:
+Every path stays unsigned until then, and each is tested: `windows-package` CI
+builds the zip and the installer with no sign tool and runs `smoke` (unsigned)
+on them, the macOS preview route refuses an unsigned input before packaging,
+and `--sign`, `smoke --signed` and `windows-signing.py verify` reject an
+artifact without a valid timestamped signature from one signer.
+`test-release-security.py` keeps signing credentials out of every workflow, so
+restoring signing needs a signing job, not a code change here.
 
-- macOS preview bundles are `Spaceport.app`, with `spaceport` and `sheprd-acp`,
-  signed for Team `HD9NM9NSMK`. The preview approves no other public release
+## Package Identities
+
+- macOS preview bundles are `Spaceport.app` under `ai.2389.spaceport`, Team
+  `HD9NM9NSMK`, signed and notarized as above; ordinary development bundles
+  keep `spaceport.development`. The preview approves no other public release
   identity.
-- The Linux desktop ID is `org.sheprd.Sheprd`, matching the app's Wayland app ID
-  and X11 `WM_CLASS`. The chat helper remains `sheprd-acp`. Nix wraps the
-  `spaceport` command.
-- Windows retains AppId `{7FA70894-4FC0-4923-BDCB-B05F7475610A}`,
-  `%LOCALAPPDATA%\Programs\Herdr UI`, AppUserModelID `so.pen.herdr-gpui` and
-  publisher `Herdr UI`. ZIPs and installers ship `spaceport.exe`,
-  `spaceport-launcher.exe` and `sheprd-acp.exe`. Shortcuts and Explorer text
-  show Sheprd. The installer registers neither inherited `sheprd://` nor
-  `herdr-gpui://` scheme. Setup gracefully stops automation running under
-  either executable name.
+- Windows packages are Spaceport's own: product name `Spaceport`, AppId
+  `{62B8722B-1FA2-48E0-9609-46AA5D431983}`, `%LOCALAPPDATA%\Programs\Spaceport`,
+  publisher `2389 Research, Inc.`, and `Spaceport-VERSION-TARGET` archive and
+  installer names. The Start menu shortcut and the executable's `FileDescription`
+  are both `Spaceport`. The installer's AppUserModelID is the app ID the shipped
+  executable embeds in its build record — `spaceport.development` while packages
+  carry the development identity — so notifications and taskbar grouping stay
+  together. Setup neither upgrades nor adopts an inherited Sheprd installation:
+  that one keeps its AppId, directory, shortcuts and startup entry. The installer
+  registers neither inherited `sheprd://` nor `herdr-gpui://` scheme, and
+  `CloseApplications` stops only the executables it replaces.
+- Linux packaging installs `scripts/release/spaceport.desktop` as
+  `spaceport.development.desktop` under `share/applications` and the icon as
+  `share/icons/hicolor/scalable/apps/spaceport.svg`, both by Nix
+  (`flake.nix`); `Icon=spaceport`, `Categories=Development;` and
+  `StartupWMClass` naming the app ID the window reports. The chat helper remains
+  `sheprd-acp`. A distribution package (`.deb`, `.rpm`, AppImage) does not exist
+  yet, and its package name is `spaceport` when it does.
+- `site/install.ps1` is still the inherited Sheprd installer, for a different
+  product than these packages, so the two no longer share a directory, a
+  shortcut or an AppUserModelID.
 - Runtime service/state identities and the upstream `herdr-core` / `hc` and
   `herdr` command remain compatible. Preview signing uses the explicit environment
   interface above; no local `.envrc` or signing hook is sourced.

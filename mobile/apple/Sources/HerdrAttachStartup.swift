@@ -11,18 +11,25 @@ struct HerdrAttachStartup {
     }()
     private static let preamble = modes + Data("\u{1b}[?1016$p\u{1b}[c".utf8)
     private var matched: Int? = 0
+    private(set) var hasPaneOutput = false
 
     mutating func receive(_ bytes: Data) -> Data {
-        guard let offset = matched else { return bytes }
+        guard !bytes.isEmpty else { return bytes }
+        guard let offset = matched else {
+            hasPaneOutput = true
+            return bytes
+        }
         let count = min(bytes.count, Self.preamble.count - offset)
         let end = offset + count
         guard Self.preamble[offset..<end].elementsEqual(bytes.prefix(count)) else {
+            hasPaneOutput = true
             return finish() + bytes
         }
         // Mode changes flow immediately. Withhold only the incomplete query pair.
         var output = Data(bytes.prefix(min(count, max(0, Self.modes.count - offset))))
         if end == Self.preamble.count {
             matched = nil
+            hasPaneOutput = bytes.count > count
             output.append(bytes.dropFirst(count))
         } else {
             matched = end

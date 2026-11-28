@@ -10,7 +10,7 @@ use crate::{
         events::{Condition, Event, EventKind, EventsOp, Reply},
     },
 };
-use gpui::{App, Global, WindowHandle};
+use gpui::{App, Global};
 use std::{
     collections::{BTreeMap, VecDeque},
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -182,32 +182,21 @@ pub(super) fn record(cx: &mut App) {
 /// resolved once, before the request parks: a caller in a session no window
 /// shows is refused now, rather than told the wait was not met after watching
 /// another session's window for the whole timeout.
-#[derive(Debug)]
-enum WaitFor {
-    Window,
-    TabClosed(u64),
-    Online(WindowHandle<crate::SpaceportWindow>),
+fn online_window(caller: &Caller, cx: &mut App) -> Result<(), Response> {
+    window_for(caller, cx).map(|_| ())
 }
 
-impl WaitFor {
-    fn resolve(condition: Condition, caller: &Caller, cx: &mut App) -> Result<Self, Response> {
-        Ok(match condition {
-            Condition::Window => Self::Window,
-            Condition::TabClosed { id } => Self::TabClosed(id),
-            Condition::Online => Self::Online(window_for(caller, cx)?),
-        })
-    }
-
-    fn met(&self, cx: &App) -> bool {
-        match self {
-            Self::Window => !main_windows(cx).is_empty(),
-            Self::TabClosed(id) => cx
-                .try_global::<Store>()
-                .is_none_or(|store| store.get((*id).into()).is_none()),
-            Self::Online(handle) => handle
+fn condition_holds(condition: Condition, caller: &Caller, cx: &mut App) -> bool {
+    match condition {
+        Condition::Window => !main_windows(cx).is_empty(),
+        Condition::TabClosed { id } => cx
+            .try_global::<Store>()
+            .is_none_or(|store| store.get(id.into()).is_none()),
+        Condition::Online => window_for(caller, cx).is_ok_and(|handle| {
+            handle
                 .read_with(cx, |view, _| view.live.status.is_connected())
-                .unwrap_or(false),
-        }
+                .unwrap_or(false)
+        }),
     }
 }
 
@@ -255,15 +244,18 @@ pub(super) fn serve(
             condition,
             wait_seconds,
         } => {
-            let target = match WaitFor::resolve(condition, &call.caller, cx) {
-                Ok(target) => target,
-                Err(response) => return incoming.respond(response),
-            };
+            let caller = call.caller;
+            if condition == Condition::Online
+                && let Err(response) = online_window(&caller, cx)
+            {
+                incoming.respond(response);
+                return;
+            }
             watches.add(
                 incoming,
                 Duration::from_secs(wait_seconds),
                 move |cx| {
-                    target.met(cx).then_some(Response::Events {
+                    condition_holds(condition, &caller, cx).then_some(Response::Events {
                         reply: Reply::Waited { met: true },
                     })
                 },

@@ -28,8 +28,10 @@ pub(crate) fn start(handle: WindowHandle<SpaceportWindow>, cx: &mut App) {
     verify_child_geometry(cx, true);
     if std::env::var_os("HERDR_TEST_SIDEBAR_PROBE_FAILURE").is_some() {
         let _ = handle.update(cx, |view, _, cx| {
-            // Exercise the real native paint failure path with a column that
-            // intentionally violates the fixed-width initial fixture.
+            // Exercise the real native paint failure path: a legitimately narrow
+            // sidebar, held to the default column the probe once assumed for
+            // every frame, so the next frame's child row is one it must reject.
+            cx.set_global(sidebar::layout_tests::ExpectDefaultChildColumn(true));
             view.sidebar_width = Some(180.);
             cx.notify();
         });
@@ -122,23 +124,23 @@ async fn bidi_shaping(handle: WindowHandle<SpaceportWindow>, cx: &mut AsyncApp) 
     }
 }
 
-/// The native Agents setting decides whether agent rows are painted, and it
-/// leaves the workspace rows alone either way.
+/// The native sidebar paints each list independently and keeps its menu available.
 async fn agents_visibility(handle: WindowHandle<SpaceportWindow>, cx: &mut AsyncApp) -> Result<()> {
-    for show_agents in [false, true] {
+    for (show_agents, expanded) in [(false, true), (false, false), (true, false), (true, true)] {
         with_root(handle, cx, |view, window, cx| -> Result<()> {
             view.update(cx, |view, cx| {
                 view.config.show_agents = show_agents;
+                view.set_workspaces_expanded(expanded, window, cx);
                 cx.notify();
             });
             clear_probes(cx);
             draw(window, cx);
             let probes = &cx.default_global::<sidebar::layout_tests::PaintedProbes>().0;
             if probes.contains_key("tab 1") != show_agents
-                || !probes.contains_key("herdr")
+                || probes.contains_key("sidebar-child") != expanded
                 || !probes.contains_key("menu")
             {
-                bail!("native Agents visibility did not follow configuration");
+                bail!("native sidebar visibility differed for agents={show_agents}, workspaces={expanded}: {:?}", probes.keys().collect::<Vec<_>>());
             }
             Ok(())
         })?;

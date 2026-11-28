@@ -259,5 +259,6 @@ mod close_others;
 mod closed_elsewhere;
 mod en_xa;
 mod new_tabs;
+mod removed_orchestrator;
 #[cfg(unix)]
 mod tunnels;

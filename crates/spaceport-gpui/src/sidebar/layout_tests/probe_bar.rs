@@ -16,9 +16,17 @@ fn native_child_probe_expects_the_label_beside_the_activity_bar() {
         width: px(94.),
         clipped: false,
     };
-    probe.verify_child("sidebar-child", mode, bar, 1.).unwrap();
+    probe
+        .verify_child(
+            "sidebar-child",
+            mode,
+            crate::sidebar::SIDEBAR_WIDTH,
+            bar,
+            1.,
+        )
+        .unwrap();
     let error = probe
-        .verify_child("sidebar-child", mode, 0., 1.)
+        .verify_child("sidebar-child", mode, crate::sidebar::SIDEBAR_WIDTH, 0., 1.)
         .unwrap_err();
     assert!(error.to_string().contains("child label left: actual"));
 }

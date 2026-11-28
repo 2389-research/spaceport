@@ -304,14 +304,43 @@ pub(super) fn ui(call: Call<UiOp>, cx: &mut App) -> Response {
             })
         }
         UiOp::Panel { panel } => {
+            if panel == crate::sidebar::ActivityPanel::Automations && !view.core_enabled() {
+                return Response::error(
+                    ErrorCode::Unsupported,
+                    crate::core_feature::disabled_message(),
+                );
+            }
             if !view.activity_bar_shown() {
                 return Response::error(
                     ErrorCode::Unsupported,
                     "The activity bar is off: [sidebar] activity_bar = false",
                 );
             }
+            if !view.activity_panel_listed(panel) {
+                let why = format!(
+                    "{} is turned off: [sidebar] {} = false",
+                    panel.name(),
+                    panel.name()
+                );
+                return Response::error(ErrorCode::Unsupported, why);
+            }
             view.show_activity_panel(panel, window, cx);
             Response::done(format!("Showing {}", panel.name()))
+        }
+        UiOp::Workspaces { switch } => {
+            if !view.config.layout.mode.lists_workspaces() {
+                return Response::error(
+                    ErrorCode::Unsupported,
+                    "The Devices layout has no Workspaces list",
+                );
+            }
+            let expanded = switch.apply(view.sidebar_workspaces_expanded);
+            view.set_workspaces_expanded(expanded, window, cx);
+            Response::done(if expanded {
+                "Workspaces expanded"
+            } else {
+                "Workspaces collapsed"
+            })
         }
         UiOp::StatusBar { switch } => {
             let visible = switch.apply(view.status_bar_visible);

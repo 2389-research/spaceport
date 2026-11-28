@@ -269,4 +269,5 @@ mod direct_terminal;
 
 mod cell_fields;
 mod new_terminal;
+mod pane_tools;
 mod roster_observation;

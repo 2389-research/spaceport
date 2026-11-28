@@ -49,6 +49,7 @@ impl Fixture {
             leaving: None,
             metrics: Metrics {
                 chrome: 36.,
+                usage_width: 340.,
                 viewport: window,
             },
             now: Instant::now(),
