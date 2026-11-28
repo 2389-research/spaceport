@@ -21,7 +21,7 @@ Build the per-user Windows installer, Spaceport-VERSION-TARGET-setup.exe.
       launcher), the user PATH, and the entry Settings lists under Installed
       apps; preserve URL handlers; write the startup entry Launch at login would, marked off in
       Startup apps; reinstall silently and check that state is preserved; then
-      uninstall and check its owned state is gone and URL handlers remain. With --signed,
+      uninstall and check its owned state is gone and URL handlers and an unowned desktop shortcut remain. With --signed,
       also require valid timestamped signatures from one signer on the
       installer and on everything it installed that runs, the uninstaller
       included. Changes this user's PATH and Start menu shortcut while it
@@ -33,6 +33,7 @@ Build the per-user Windows installer, Spaceport-VERSION-TARGET-setup.exe.
 Pure standard library, like package-windows.py, for the Windows runner.
 """
 import argparse
+from contextlib import contextmanager
 import hashlib
 import importlib.util
 import os
@@ -320,9 +321,39 @@ def shell_identity(app):
     return tuple(output.splitlines())
 
 
+@contextmanager
+def unowned_shortcut(shortcut):
+    """Seed an otherwise empty desktop and remove only the smoke's own marker."""
+    marker = os.urandom(32)
+    with shortcut.open("xb") as stream:
+        stream.write(marker)
+        original = os.fstat(stream.fileno())
+    try:
+        yield
+    finally:
+        try:
+            same_file = os.path.samestat(original, shortcut.lstat())
+            if same_file:
+                with shortcut.open("rb") as stream:
+                    same_file = stream.read(len(marker) + 1) == marker
+        except FileNotFoundError:
+            same_file = False
+        if not same_file:
+            raise ValueError("Install or uninstall changed the unowned desktop shortcut")
+        shortcut.unlink()
+
+
 def smoke(installer, signed=False):
     handlers = link_handlers()
-    with tempfile.TemporaryDirectory(prefix="herdr-installer-smoke-") as temp:
+    desktop = subprocess.check_output([
+        "powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
+        "[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false);"
+        "[Environment]::GetFolderPath('DesktopDirectory')",
+    ], encoding="utf-8", timeout=60).strip()
+    if not Path(desktop).is_absolute():
+        raise ValueError("Cannot locate the current user's desktop for the installer smoke")
+    with unowned_shortcut(Path(desktop) / f"{app_name()}.lnk"), \
+            tempfile.TemporaryDirectory(prefix="herdr-installer-smoke-") as temp:
         # Runners report %TEMP% as an 8.3 short path (C:\Users\RUNNER~1\...),
         # while the shell answers with long ones; resolving first keeps every
         # path the checks compare in one spelling.

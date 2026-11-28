@@ -115,8 +115,6 @@ Source: "{#SourceDir}\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversi
 [UninstallDelete]
 Type: dirifempty; Name: "{app}\licenses"
 Type: dirifempty; Name: "{app}"
-; A pre-Setup copy of this installer may have supplied the desktop shortcut.
-Type: files; Name: "{userdesktop}\{#AppName}.lnk"
 
 ; The app registers its AppUserModelID for notifications on first use; that
 ; key goes on uninstall. Protocol links need a separately owned installer ID.
