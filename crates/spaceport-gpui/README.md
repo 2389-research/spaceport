@@ -3140,19 +3140,19 @@ and the Windows CI jobs run only while the repository variable
 `WINDOWS_ENABLED` is `true` (it is off). When on, CI's `windows-package` job,
 when its inputs change, builds and CLI-tests the
 optimized x86_64 executable, packages
-`Sheprd-VERSION-x86_64-pc-windows-msvc.zip`, and installs and uninstalls its
+`Spaceport-VERSION-x86_64-pc-windows-msvc.zip`, and installs and uninstalls its
 unsigned installer (see `scripts/release/README.md`). The zip also holds
-`spaceport-launcher.exe` (`crates/sheprd-launcher`), a windowed program
+`spaceport-launcher.exe` (`crates/spaceport-launcher`), a windowed program
 that starts the console-subsystem `spaceport.exe` from its own directory with
 `CREATE_NO_WINDOW` and exits. The GUI then shows no console window, and console
 programs it starts (git, gh, `wsl.exe`) share its hidden console instead of
 each opening one. `spaceport.exe` stays a console program so the command line
 keeps its output, exit codes, and a shell that waits for it. When the GUI
 cannot be started, the launcher shows the error in a message box. When the
-launcher sits beside it, every Herdr window carries the AppUserModelID
-`so.pen.herdr-gpui` and relaunch properties naming the launcher
+launcher sits beside it, every Herdr window carries the build's app ID as its
+AppUserModelID and relaunch properties naming the launcher
 (`src/taskbar.rs`), so pinning a running window to the taskbar pins
-`spaceport-launcher.exe` as **Sheprd**, and the pin and the running window
+`spaceport-launcher.exe` as **Spaceport**, and the pin and the running window
 share one taskbar button. The properties are cleared as each window closes. Local
 connections use the named pipe the Windows
 daemon binds, derived from the same socket path string upstream uses, so
