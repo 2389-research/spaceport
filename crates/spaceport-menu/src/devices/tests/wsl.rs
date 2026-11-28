@@ -35,3 +35,17 @@ fn nothing_steps_where_nothing_can_be_added() {
     assert_eq!(stepped(&saved, None, true), None);
     assert_eq!(stepped(&[], None, false), None);
 }
+
+#[test]
+fn arrows_continue_from_the_chosen_distribution_after_it_is_saved() {
+    let rows = distros(&["Arch"]);
+    assert_eq!(stepped(&rows, Some("Arch"), true), Some("Debian"));
+    assert_eq!(stepped(&rows, Some("Arch"), false), Some("Ubuntu"));
+}
+
+#[test]
+fn a_choice_no_longer_listed_starts_from_either_end() {
+    let rows = distros(&["Arch"]);
+    assert_eq!(stepped(&rows, Some("Fedora"), true), Some("Ubuntu"));
+    assert_eq!(stepped(&rows, Some("Fedora"), false), Some("Debian"));
+}

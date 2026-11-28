@@ -70,18 +70,16 @@ pub enum Action {
 /// The distribution the arrow keys step to from `chosen`: only those that can
 /// still be added, as a press on a row allows, wrapping at either end.
 pub fn stepped<'a>(distros: &'a [Distro], chosen: Option<&str>, forward: bool) -> Option<&'a str> {
-    let addable: Vec<&Distro> = distros.iter().filter(|distro| distro.addable()).collect();
-    if addable.is_empty() {
-        return None;
-    }
-    let at = chosen.and_then(|chosen| addable.iter().position(|distro| distro.name == chosen));
-    let next = match (at, forward) {
-        (None, false) => addable.len() - 1,
-        (None, true) => 0,
-        (Some(at), false) => (at + addable.len() - 1) % addable.len(),
-        (Some(at), true) => (at + 1) % addable.len(),
+    let chosen = chosen.and_then(|name| distros.iter().position(|row| row.name == name));
+    let start = chosen.map_or(0, |index| if forward { index + 1 } else { index });
+    let (before, after) = distros.split_at(start);
+    let mut addable = after.iter().chain(before).filter(|row| row.addable());
+    let next = if forward {
+        addable.next()
+    } else {
+        addable.next_back()
     };
-    addable.get(next).map(|distro| distro.name.as_str())
+    next.map(|row| row.name.as_str())
 }
 
 /// The form under the dialog's frame. `interact` takes each painted row and
