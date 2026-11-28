@@ -33,3 +33,24 @@ class BinaryIdentity(unittest.TestCase):
                     self.assertEqual(result.returncode == 0, channel == "macos-preview", result.stderr)
                     if channel == "production":
                         self.assertIn("channel mismatch", result.stderr)
+
+    @unittest.skipUnless(sys.platform == "darwin", "requires Apple's Mach-O compiler and lipo")
+    def test_each_architecture_has_its_own_preview_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            version = "20261128.1"
+            record = (r'\0SPACEPORT_PREVIEW_V1\nid=ai.2389.spaceport\nversion='
+                      + version + r'\nprofile=release\nchannel=macos-preview\n')
+            arm, intel, universal = (root / name for name in ("arm.o", "intel.o", "universal"))
+            def compile_slice(arch, contents, output):
+                source = f'const char identity[] = "{contents}";\n'
+                subprocess.run(["/usr/bin/clang", "-arch", arch, "-c", "-x", "c", "-",
+                                "-o", output], input=source, text=True, check=True)
+            compile_slice("arm64", record, arm)
+            for contents in ("unrelated", record.replace("macos-preview", "production"), record):
+                with self.subTest(contents=contents):
+                    compile_slice("x86_64", contents, intel)
+                    subprocess.run(["/usr/bin/lipo", "-create", arm, intel, "-output", universal], check=True)
+                    result = subprocess.run([sys.executable, CHECK, version, "release", universal],
+                                            capture_output=True, text=True)
+                    self.assertEqual(result.returncode == 0, contents == record, result.stderr)
