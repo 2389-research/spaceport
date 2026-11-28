@@ -32,10 +32,15 @@ internal class TerminalScreen(
     private val surface = TerminalSurface(context, ::route, ::resize, ::claimSize, ::holdMenu, preferences.textSize)
     private val draft = TerminalDraftDialog(activity, connection, executor, ::restoreKeyboard)
     private val history = TerminalHistoryDialog(activity, connection, executor, ::restoreKeyboard)
+    fun refreshDraft() = draft.refreshAttachment()
+    val isEditing get() = draft.isShowing || history.isShowing
     private var currentView: MobileView? = null
     private var previousSession: MobileSession? = null
     private var previousSize: GridSize? = null
     private var priorIme: Boolean? = null
+    private val compose: Button
+    private val back: Button
+    private val forward: Button
     private var disposed = false
 
     init {
@@ -64,7 +69,9 @@ internal class TerminalScreen(
             }
         }
         action("Go To", block = onGoTo)
-        action("Compose", block = ::showCompose)
+        back = action("‹", "Previous pane") { travel(false) }
+        forward = action("›", "Next pane in history") { travel(true) }
+        compose = action("Compose", block = ::showCompose).apply { isEnabled = false }
         action("Find", block = ::showFind)
         action("Keys", "Keyboard") {
             if (keyboardVisible()) imm().hideSoftInputFromWindow(surface.windowToken, 0) else surface.performClick()
@@ -137,10 +144,19 @@ internal class TerminalScreen(
         }
     }
 
+    private fun travel(forward: Boolean) {
+        val view = currentView ?: return
+        val pane = (if (forward) view.forwardPane else view.backPane) ?: return
+        connection.travel(view, pane, forward)
+    }
+
     fun render(view: MobileView?) {
         if (disposed) return
         currentView = view
+        back.visibility = if (view?.backPane != null) VISIBLE else GONE
+        forward.visibility = if (view?.forwardPane != null) VISIBLE else GONE
         val target = view?.inputTarget?.takeUnless { view.disconnected || view.goToPending }
+        compose.isEnabled = target != null
         surface.update(view?.terminal, target)
         history.update(target)
         draft.update(target)

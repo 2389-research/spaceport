@@ -4,6 +4,7 @@ package ai.spaceport.mobile
 
 import android.app.AlertDialog
 import android.app.Application
+import android.content.Intent
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.os.Build
@@ -15,6 +16,7 @@ import android.view.Gravity
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.*
+import androidx.core.net.toUri
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.lifecycle.AndroidViewModel
@@ -32,7 +34,10 @@ internal class RetainedPhone(app: Application) : AndroidViewModel(app) {
     var pending: AgentRow? = null
     var routed = false
     var revision: ULong? = null
+    var pickingFileFor: Pair<SessionDraft, uniffi.spaceport_mobile.InputTarget>? = null
     var toWorkspaces = false
+    var nextWaiting = false
+    var parkedShortcutHost: HostProfile? = null
     var routeError: String? = null
     /** Screens opened above Home, newest last. */
     val pages = mutableListOf<Page>()
@@ -51,21 +56,53 @@ class MainActivity : ComponentActivity(), Pages {
     private var terminal: TerminalScreen? = null
     private var terminalBar: TextView? = null
     private var homeButton: Button? = null
+    private var createButton: Button? = null
     private var picker: AgentPicker? = null
     private var page = ""
     private var password: EditText? = null
+    private var hostEditor: AlertDialog? = null
     private var refreshPhoneKey: (() -> Unit)? = null
     private var lastNotice: String? = null
     private var pageToken = 0L
+    private var foreground = false
+    private var updateHomeRefresh: (() -> Unit)? = null
+    private lateinit var rosterRefresh: HomeRosterRefresh
     private var install: KeyInstallScreen? = null
     private val handler = Handler(Looper.getMainLooper())
     private val refresh = Runnable { if (page == "home" && !isFinishing) showHome() }
     private val active
         get() = phone.sessions[phone.selected]
 
+    private val filePicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        val owner = phone.pickingFileFor
+        phone.pickingFileFor = null
+        if (uri != null && owner != null) {
+            val (draft, target) = owner
+            phone.work.execute {
+                val result = runCatching { DraftFile.read(applicationContext, uri) }
+                runOnUiThread {
+                    if (draft.destination == target) result.onSuccess { draft.file = it; draft.png = null }
+                    if (!isDestroyed) {
+                        terminal?.refreshDraft()
+                        Toast.makeText(this, result.exceptionOrNull()?.message ?: "Check your attachment in Compose.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
+    internal fun pickDraftFile(draft: SessionDraft) {
+        val target = draft.destination ?: return
+        phone.pickingFileFor = draft to target
+        filePicker.launch(arrayOf("*/*"))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         phone = ViewModelProvider(this)[RetainedPhone::class.java]
+        rosterRefresh = HomeRosterRefresh(phone.hosts, phone.catalog, phone.sessions, phone.work) {
+            if (foreground && page == "home" && phone.selected == null) updateHomeRefresh?.invoke()
+        }
         ui = PhoneUi(this)
         root =
             ui.column().apply {
@@ -102,17 +139,54 @@ class MainActivity : ComponentActivity(), Pages {
         setContentView(root)
         phone.sessions.forEach { (host, c) -> listen(host, c) }
         if (phone.selected == null) showHome() else render()
+        publishAgentShortcuts(this)
+        if (savedInstanceState == null) launchShortcut(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        launchShortcut(intent)
+    }
+
+    private fun shortcutBlocked() = phone.pending != null || hostEditor != null || picker != null ||
+        terminal?.isEditing == true || phone.pickingFileFor != null
+
+    private fun launchShortcut(intent: Intent) {
+        val action = LauncherAction.from(this, intent) ?: return
+        val widget = intent.data?.schemeSpecificPart
+        if (widget == null) getSystemService(android.content.pm.ShortcutManager::class.java).reportShortcutUsed(action.id)
+        val host = if (widget == null) phone.selected ?: phone.hosts.lastOpened() else phone.hosts.lastOpened(widget)
+        if (host == null || host !in phone.hosts.profiles()) {
+            toast(if (widget == null) "Open a saved session first." else "This widget’s session has changed. Choose a saved session.")
+            return
+        }
+        val resuming = phone.parkedShortcutHost == host && phone.selected == host
+        if (shortcutBlocked() || (!resuming && page !in setOf("home", "terminal"))) {
+            toast("Finish the current action, then try the shortcut again.")
+            return
+        }
+        if (resuming) {
+            if (action == LauncherAction.NEXT) phone.nextWaiting = true
+            return
+        }
+        if (phone.selected == host && page == "terminal" && action == LauncherAction.RESUME) return
+        if (phone.selected != null) goHome()
+        open(host, nextWaiting = action == LauncherAction.NEXT)
     }
 
     override fun onStart() {
         super.onStart()
+        foreground = true
         active?.let { if (it.phase == ConnectionPhase.Parked) it.resume() }
         // Pages keep their own state across a trip to the background; only Home refreshes.
-        if (phone.selected == null && page == "home") showHome()
+        if (phone.selected == null && page == "home" && hostEditor == null) rosterRefresh.start()
     }
 
     override fun onStop() {
+        foreground = false
+        rosterRefresh.cancel()
         if (!isChangingConfigurations) {
+            phone.parkedShortcutHost = phone.selected?.takeIf { page == "terminal" && !shortcutBlocked() }
             if (phone.pending != null && phone.routed)
                 phone.routeError = "The session paused. Select the agent again."
             phone.sessions.forEach { (host, c) ->
@@ -151,10 +225,11 @@ class MainActivity : ComponentActivity(), Pages {
     private fun observe(host: HostProfile, c: SessionController) {
         if (c.phase != ConnectionPhase.Connected) return
         val view = c.view?.takeIf { it.bootId.isNotEmpty() && !it.disconnected } ?: return
-        phone.catalog.observe(host, AgentBoard.rows(host, view, System.currentTimeMillis()))
+        phone.catalog.observe(host, view)
     }
 
-    private fun open(host: HostProfile, agent: AgentRow? = null, workspaces: Boolean = false) {
+    private fun open(host: HostProfile, agent: AgentRow? = null, workspaces: Boolean = false, nextWaiting: Boolean = false) {
+        rosterRefresh.cancel()
         handler.removeCallbacks(refresh)
         phone.selected = host
         phone.pending = agent
@@ -162,6 +237,7 @@ class MainActivity : ComponentActivity(), Pages {
         phone.revision = null
         phone.routeError = null
         phone.toWorkspaces = workspaces
+        phone.nextWaiting = nextWaiting
         lastNotice = null
         val reused = phone.sessions.remove(host)
         val c = reused ?: SessionController(applicationContext)
@@ -188,12 +264,14 @@ class MainActivity : ComponentActivity(), Pages {
 
     private fun clear(next: String) {
         pageToken++
+        updateHomeRefresh = null
         install?.dispose()
         install = null
         if (page == "terminal") terminal?.dispose()
         terminal = null
         terminalBar = null
         homeButton = null
+        createButton = null
         password = null
         page = next
         root.removeAllViews()
@@ -206,9 +284,11 @@ class MainActivity : ComponentActivity(), Pages {
         picker?.dismiss()
         if (phone.pending != null && phone.routed) controller?.cancelGoTo()
         phone.selected = null
+        phone.parkedShortcutHost = null
         phone.pending = null
         phone.routeError = null
         phone.toWorkspaces = false
+        phone.nextWaiting = false
         if (controller?.phase == ConnectionPhase.Connected) {
             controller.park()
         } else if (
@@ -222,23 +302,58 @@ class MainActivity : ComponentActivity(), Pages {
         showHome()
     }
 
+    private var reviewOnly = false
+    private var showQuiet = false
+
     private fun showHome() {
         phone.pages.lastOrNull()?.let { return showPage(it) }
+        val entering = page != "home"
+        val previousScroll = if (entering) 0 else (root.getChildAt(1) as? ScrollView)?.scrollY ?: 0
         clear("home")
-        val profiles = phone.hosts.profiles()
+        val allProfiles = phone.hosts.profiles()
+        val tags = phone.hosts.availableTags(allProfiles)
+        val selected = phone.hosts.selectedTag
+        if (selected.isNotEmpty() && tags.none { it.equals(selected, true) }) phone.hosts.selectedTag = ""
+        val profiles = phone.hosts.filtered(phone.hosts.selectedTag, allProfiles)
         val tiles = profiles.flatMap(phone.catalog::rows)
         val now = System.currentTimeMillis()
         val header = ui.line().apply { setPadding(ui.dp(18), ui.dp(8), ui.dp(8), ui.dp(4)) }
         header.addView(ui.text("Agents", 30, ui.ink, true), LinearLayout.LayoutParams(0, -2, 1f))
+        val spinner = ProgressBar(this)
+        header.addView(spinner, LinearLayout.LayoutParams(ui.dp(24), ui.dp(24)))
+        val sessionLabels = mutableMapOf<HostProfile, TextView>()
         header.addView(ui.button("Settings") { go(Page.Settings) })
         header.addView(ui.button("Add host") { editHost() })
         root.addView(header)
         val body = ui.column().apply { setPadding(ui.dp(14), 0, ui.dp(14), ui.dp(24)) }
-        root.addView(ScrollView(this).apply { addView(body) })
-        if (tiles.isEmpty()) {
+        root.addView(ScrollView(this).apply {
+            addView(body)
+            if (previousScroll != 0) post { scrollTo(0, previousScroll) }
+        })
+        if (tags.isNotEmpty()) {
+            val choices = listOf("All hosts") + tags
+            body.addView(ui.button(phone.hosts.selectedTag.ifEmpty { "All hosts" }) {
+                AlertDialog.Builder(this).setTitle("Filter hosts by tag")
+                    .setItems(choices.toTypedArray()) { _, index ->
+                        phone.hosts.selectedTag = if (index == 0) "" else choices[index]
+                        showHome()
+                    }.show()
+            })
+        }
+        if (tiles.any { it.status == "done" } || reviewOnly) {
+            body.addView(ui.button(if (reviewOnly) "Show all agents" else "Finished for review") {
+                reviewOnly = !reviewOnly
+                showHome()
+            })
+        }
+        val visible = AgentBoard.sorted(tiles, phone.catalog.marks, now)
+            .filter { !reviewOnly || (it.status == "done" && phone.catalog.marks[it.key]?.settled != true &&
+                AgentBoard.section(it, phone.catalog.marks[it.key], now) != AgentSection.SNOOZED) }
+        if (visible.isEmpty()) {
             body.addView(
                 ui.text(
-                        if (profiles.isEmpty()) "Connect an SSH host to see its Herdr agents."
+                        if (reviewOnly) "No agents have finished work to review."
+                        else if (profiles.isEmpty()) "Connect an SSH host to see its Herdr agents."
                         else "Open a session to see its agents here.",
                         16,
                         ui.muted,
@@ -246,22 +361,20 @@ class MainActivity : ComponentActivity(), Pages {
                     .apply { setPadding(ui.dp(4), ui.dp(24), ui.dp(4), ui.dp(16)) }
             )
         }
-        AgentBoard.sorted(tiles, phone.catalog.marks, now)
+        visible
             .groupBy { AgentBoard.section(it, phone.catalog.marks[it.key], now) }
             .forEach { (section, rows) ->
-                ui.heading(body, section.label)
+                if (section == AgentSection.QUIET) {
+                    body.addView(ui.button("Quiet (${rows.size}) · " + if (showQuiet) "Hide" else "Show") {
+                        showQuiet = !showQuiet
+                        showHome()
+                    })
+                    if (!showQuiet) return@forEach
+                } else ui.heading(body, section.label)
                 rows.forEach { row ->
                     val details = buildList {
                         add(row.path)
-                        if (now - row.seenAt >= 60_000)
-                            add(
-                                "Seen " +
-                                    android.text.format.DateUtils.getRelativeTimeSpanString(
-                                        row.seenAt,
-                                        now,
-                                        60_000,
-                                    )
-                            )
+                        add(observationLabel(row.seenAt, now))
                         if (profiles.size > 1) add("${row.host.destination} · ${row.host.session}")
                         if (section == AgentSection.SNOOZED)
                             phone.catalog.marks[row.key]?.let {
@@ -281,6 +394,7 @@ class MainActivity : ComponentActivity(), Pages {
                         row.status,
                         { open(row.host, row) },
                         { marks(row) },
+                        brand = row,
                         swiped = { towardEnd -> swiped(row, towardEnd) },
                         actions = markChoices(row).map { (label, next) -> label to { mark(row, next) } },
                     )
@@ -317,8 +431,9 @@ class MainActivity : ComponentActivity(), Pages {
                 })
                 body.addView(heading)
                 group.sessions.forEach { host ->
-                    ui.row(body, host.session, if (phone.sessions.containsKey(host)) "Connected" else "Saved session",
+                    val row = ui.row(body, host.session, "Saved session",
                         action = { open(host) }, held = { go(Page.HostDetail(group.account)) })
+                    sessionLabels[host] = row.findViewById(android.R.id.text2)
                 }
                 body.addView(ui.button("New session") {
                     ui.askSessionName("New session", "") { name ->
@@ -334,6 +449,27 @@ class MainActivity : ComponentActivity(), Pages {
             .filter { it > now }
             .minOrNull()
             ?.let { handler.postDelayed(refresh, it - now + 1) }
+        fun displayed(rows: List<AgentRow>, clock: Long) = rows.map { row ->
+            Triple(row.copy(seenAt = null), observationLabel(row.seenAt, clock),
+                AgentBoard.section(row, phone.catalog.marks[row.key], clock))
+        }
+        val drawn = displayed(tiles, now)
+        updateHomeRefresh = {
+            val checking = rosterRefresh.checking
+            spinner.visibility = if (checking == null) android.view.View.GONE else android.view.View.VISIBLE
+            spinner.contentDescription = checking?.let { "Checking agents on ${it.hostname}" }
+            for ((host, label) in sessionLabels) {
+                label.text = when {
+                    host in rosterRefresh.failed -> "Last check unavailable"
+                    host in phone.sessions -> "Connected"
+                    else -> "Saved session"
+                }
+            }
+            // Keep the active touch and accessible row alive when only the check indicator changes.
+            if (displayed(profiles.flatMap(phone.catalog::rows), System.currentTimeMillis()) != drawn) showHome()
+        }
+        updateHomeRefresh?.invoke()
+        if (foreground && entering) rosterRefresh.start()
     }
 
     /** Every mark change offered for [row], in menu order. The first two are the swipe actions. */
@@ -354,6 +490,7 @@ class MainActivity : ComponentActivity(), Pages {
             add("Snooze for 1 hour" to snooze(now + 3_600_000L))
             add("Snooze for 3 hours" to snooze(now + 3 * 3_600_000L))
             add("Snooze until tomorrow at 9 AM" to snooze(morning))
+            if (row.status == "done") add((if (mark.settled) "Return to review" else "Mark reviewed") to mark.copy(settled = !mark.settled))
         }
     }
 
@@ -377,6 +514,8 @@ class MainActivity : ComponentActivity(), Pages {
     }
 
     private fun editHost() {
+        rosterRefresh.cancel()
+        showHome()
         val form = ui.column().apply { setPadding(ui.dp(20), 0, ui.dp(20), 0) }
         fun field(
             hint: String,
@@ -403,6 +542,11 @@ class MainActivity : ComponentActivity(), Pages {
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Connect", null)
                 .create()
+        hostEditor = dlg
+        dlg.setOnDismissListener {
+            hostEditor = null
+            if (foreground && page == "home" && phone.selected == null) rosterRefresh.start()
+        }
         dlg.show()
         dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val raw = host.text.toString().trim()
@@ -419,8 +563,8 @@ class MainActivity : ComponentActivity(), Pages {
                 return@setOnClickListener
             }
             phone.hosts.save(profile)
-            dlg.dismiss()
             open(profile)
+            dlg.dismiss()
         }
     }
 
@@ -460,16 +604,32 @@ class MainActivity : ComponentActivity(), Pages {
     private fun render() {
         val c = active ?: return
         val host = phone.selected ?: return
+        if (phone.parkedShortcutHost != null && c.phase != ConnectionPhase.Parked && c.phase != ConnectionPhase.Connecting) {
+            if (c.phase != ConnectionPhase.Connected) phone.nextWaiting = false
+            phone.parkedShortcutHost = null
+        }
         if (c.phase != ConnectionPhase.Connected && picker != null) picker?.dismiss()
         when (c.phase) {
             ConnectionPhase.Connected -> {
                 val view = c.view ?: return
+                if (phone.nextWaiting && view.inputTarget != null && c.sessionFor(view) != null) {
+                    phone.nextWaiting = false
+                    val waiting = AgentBoard.rows(host, view).filter { it.name != null && it.status == "blocked" }
+                    val focused = waiting.indexOfFirst { it.id == view.focusedPane }
+                    if (waiting.isEmpty()) toast("No agents are waiting in this session.")
+                    else {
+                        val next = waiting[(focused + 1) % waiting.size]
+                        if (next.id != view.focusedPane) phone.pending = next
+                    }
+                }
                 if (!confirmArrival(c, host, view)) return
                 if (page != "terminal") {
                     clear("terminal")
                     val bar = ui.line()
                     homeButton = ui.button("Home", ::goHome)
                     bar.addView(homeButton)
+                    createButton = ui.button("+") { }.apply { contentDescription = "New terminal" }
+                    bar.addView(createButton)
                     terminalBar =
                         ui.text(host.session, 16, ui.ink, true).apply {
                             gravity = Gravity.CENTER
@@ -485,6 +645,14 @@ class MainActivity : ComponentActivity(), Pages {
                     view.panes
                         .firstOrNull { it.id == view.focusedPane }
                         ?.let { it.terminalTitle ?: it.agentName ?: it.label } ?: host.session
+                createButton?.apply {
+                    isEnabled = c.sessionFor(view) != null && view.inputTarget != null &&
+                        view.focusedWorkspace != null && view.focusedTab != null
+                    setOnClickListener {
+                        isEnabled = false
+                        c.createTab(view)
+                    }
+                }
                 val elsewhere = view.panes.any { it.agentName != null && it.status == "blocked" && it.id != view.focusedPane }
                 homeButton?.apply {
                     text = if (elsewhere) "● Home" else "Home"
@@ -590,6 +758,7 @@ class MainActivity : ComponentActivity(), Pages {
                     actions.add("Reconnect" to { c.connect(host) })
                     actions.add("Use password" to { c.usePassword() })
                 }
+                actions.add("Copy connection diagnostics" to { copyDiagnostics(c, host) })
                 actions.add("Back to agents" to ::goHome)
                 drawStatus("Connection closed", c.message.orEmpty(), actions)
             }
@@ -636,15 +805,62 @@ class MainActivity : ComponentActivity(), Pages {
         picker?.show(workspaces)
     }
 
+    private fun copyDiagnostics(c: SessionController, host: HostProfile) {
+        val info = packageManager.getPackageInfo(packageName, 0)
+        @Suppress("DEPRECATION")
+        val build = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
+        val observed = phone.catalog.observedAt(host)
+        getSystemService(ClipboardManager::class.java).setPrimaryClip(
+            ClipData.newPlainText("Spaceport diagnostics", c.diagnosticReport(build, observed)))
+        toast("Copied connection diagnostics")
+    }
+
+    private fun openServicePreview(c: SessionController) {
+        val port = EditText(this).apply {
+            hint = "Remote port"
+            inputType = InputType.TYPE_CLASS_NUMBER
+        }
+        val dialog = AlertDialog.Builder(this).setTitle("Preview loopback service").setView(port)
+            .setMessage("Open one HTTP port on this SSH host in your browser.")
+            .setNegativeButton("Cancel", null).setPositiveButton("Open", null).create()
+        dialog.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val remote = port.text.toString().toIntOrNull()
+            if (remote == null || remote !in 1..65535) {
+                port.error = "Enter a port from 1 to 65535"
+                return@setOnClickListener
+            }
+            if (active !== c || c.phase != ConnectionPhase.Connected) {
+                dialog.dismiss()
+                return@setOnClickListener
+            }
+            try {
+                val local = c.startServicePreview(remote)
+                startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,
+                    "http://127.0.0.1:$local/".toUri()))
+                dialog.dismiss()
+            } catch (e: Exception) {
+                c.stopServicePreview(::toast)
+                toast(e.localizedMessage ?: "Could not open the browser")
+            }
+        }
+    }
+
     private fun sessionMenu(c: SessionController, host: HostProfile) {
-        val options = mutableListOf("Workspaces", "Phone key", "Disconnect")
+        val options = mutableListOf("Workspaces", "Phone key", "Disconnect", "Copy connection diagnostics")
+        if (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            options.add(if (c.previewPort == null) "Preview loopback service" else "Stop service preview")
+        }
         AlertDialog.Builder(this)
             .setTitle(host.destination)
             .setItems(options.toTypedArray()) { _, i ->
                 when (i) {
+                    4 -> if (c.previewPort == null) openServicePreview(c) else c.stopServicePreview(::toast)
+                    3 -> copyDiagnostics(c, host)
                     0 -> openPicker(true)
                     1 -> phoneKey(c)
                     2 -> {
+                        phone.hosts.allowHomeObservation(host, false)
                         goHome()
                         phone.sessions.remove(host)
                         phone.previews.remove(host)
@@ -707,6 +923,7 @@ class MainActivity : ComponentActivity(), Pages {
     override val hosts get() = phone.hosts
 
     override fun go(page: Page) {
+        rosterRefresh.cancel()
         phone.pages.add(page)
         showPage(page)
     }
@@ -732,14 +949,9 @@ class MainActivity : ComponentActivity(), Pages {
         phone.catalog.forget(host)
     }
 
-    override fun closeEndpoint(endpoint: String) =
-        phone.sessions.keys.filter { it.endpoint == endpoint }.forEach { host ->
-            phone.sessions.remove(host)?.let {
-                it.changed = null
-                it.close()
-            }
-            phone.previews.remove(host)
-        }
+    override fun closeEndpoint(endpoint: String) {
+        forget((phone.hosts.profiles() + phone.sessions.keys).filter { it.endpoint == endpoint }.distinct())
+    }
 
     override fun <T> background(work: () -> T, done: (T) -> Unit) {
         val token = pageToken

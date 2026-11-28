@@ -1,6 +1,6 @@
 # Mobile browser preview trial
 
-Debug builds can open one HTTP service on the connected SSH host. In the iOS agent picker, choose **Preview loopback service**. Enter the port. Spaceport opens the system browser. Return to the same menu and choose **Stop service preview** to close the listener and every browser connection.
+Debug builds can open one HTTP service on the connected SSH host. In the iOS agent picker or the Android Session menu, choose **Preview loopback service**. Enter the port. Spaceport opens the system browser. Return to the same menu and choose **Stop service preview** to close the listener and every browser connection.
 
 The listener binds an ephemeral IPv4 loopback port. Each browser socket opens a direct TCP channel to the selected port on the remote IPv4 loopback address. The SSH server must permit TCP forwarding. The client limits each preview to eight browser sockets. Any local process that knows the port can reach it while the preview runs.
 
@@ -8,12 +8,13 @@ The listener binds an ephemeral IPv4 loopback port. Each browser socket opens a 
 
 Copy the two HTML files in this directory into a disposable SSH account. Serve them from that directory with `python3 -m http.server --bind 127.0.0.1 0`. Read the chosen port from its output. A production host needs only its existing web application and ordinary SSH.
 
-Use the existing mobile SSH fixture variables. For the Rust live test, also set `SPACEPORT_TEST_SERVICE_PORT`. For the iOS workflow, set `SPACEPORT_TEST_SERVICE_PORT` and `SPACEPORT_TEST_SERVICE_SESSION` in the test runner. Finish system browser onboarding before running UI automation.
+Use the existing mobile SSH fixture variables. For the Rust live test, also set `SPACEPORT_TEST_SERVICE_PORT`. For the iOS workflow, set `SPACEPORT_TEST_SERVICE_PORT` and `SPACEPORT_TEST_SERVICE_SESSION` in the test runner. On Android use `herdrServicePort` and `herdrServiceSession` as instrumentation arguments. Finish system browser onboarding before running UI automation.
 
 | Check | What it exercises |
 | --- | --- |
 | Rust live test `chosen_service_survives_park_and_closes_on_stop` | Reads the selected service before and after parking. Rejects a second preview. Checks that Stop closes an existing socket and immediately refuses new connections. |
 | iOS `testLoopbackServiceInSafari` | Opens Safari, follows a link, returns to Spaceport, reopens the agent picker, and stops the preview. |
+| Android `ServicePreviewTest.browseAndStop` | Opens the default browser, follows a link, returns to the terminal, and stops the preview through its Session menu. |
 
 ## Release decision
 

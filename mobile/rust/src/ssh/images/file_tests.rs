@@ -34,6 +34,20 @@ fn cancelled_file_never_opens_a_transport() {
 }
 
 #[test]
+fn cancelled_screenshot_never_opens_a_transport() {
+    let transfer = MobileFileTransfer::new();
+    transfer.cancel();
+    assert!(matches!(
+        ImageStager::default().stage(
+            &ConnectedSsh::default(),
+            b"\x89PNG\r\n\x1a\n".to_vec(),
+            transfer
+        ),
+        Err(MobileError::FileCancelled)
+    ));
+}
+
+#[test]
 fn shell_paste_names_exact_file() {
     let path = "/tmp/herdr-upload.Ab1234567890/my agent's $report.pdf";
     let staged = StagedImage {

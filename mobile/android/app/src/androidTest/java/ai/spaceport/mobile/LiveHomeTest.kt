@@ -49,7 +49,21 @@ class LiveHomeTest : LiveMobileUi() {
                 after("SSH login", { click("Trust and connect") }, { label("Sign in") != null })
                 input(requireNotNull(args.getString("herdrPassword")))
                 after("connected terminal", { click("Sign in") }, { label("Go To") != null && label("Terminal") != null })
-                after("cached agents", { click("Home") }, { label("Add host") != null && actionable(reviewer, long = true) != null })
+                val widget = requireNotNull(store.widgetToken())
+                app.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
+                after("parked terminal opens its next waiting agent", {
+                    context.startActivity(LauncherAction.NEXT.intent(context, widget)
+                        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                }, {
+                    node { it.contentDescription == "Terminal" && it.text?.contains("Review is ready") == true } != null
+                })
+                after("cached agents", { tapHome() }, { label("Add host") != null && actionable(reviewer, long = true) != null })
+                app.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
+                val observed = requireNotNull(AgentCatalog(context).observedAt(profile))
+                after("parked roster verified again", { app.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED) }, {
+                    val latest = AgentCatalog(context).observedAt(profile)
+                    latest != null && latest > observed && actionable(reviewer, long = true) != null
+                })
                 val home = labels(app)
                 val expectedOrder = listOf("Waiting for you", reviewer, "Working", "Scout", "Zephyr", "Atlas", "Workspaces")
                 // A remote shell may set a terminal title; the row then shows the agent name in its path.
@@ -61,6 +75,12 @@ class LiveHomeTest : LiveMobileUi() {
                 assertTrue(home.any { it.startsWith("Idle") })
                 after("agent actions", { click(reviewer, long = true) }, { label("Pin") != null })
                 after("Pinned section", { click("Pin") }, { label("Pinned") != null })
+                after("launcher opens a waiting agent", {
+                    app.onActivity { it.startActivity(LauncherAction.NEXT.intent(it)) }
+                }, {
+                    node { it.contentDescription == "Terminal" && it.text?.contains("Review is ready") == true } != null
+                })
+                after("return from launcher destination", { tapHome() }, { label("Pinned") != null })
                 after("jump to Reviewer", { click(reviewer) }, {
                     label(reviewer) != null && node {
                         it.contentDescription == "Terminal" && it.text?.contains("Review is ready") == true

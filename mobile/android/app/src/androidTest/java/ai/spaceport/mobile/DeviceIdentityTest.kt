@@ -16,6 +16,8 @@ class DeviceIdentityTest {
         val alias = "spaceport-test-${UUID.randomUUID()}"
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         try {
+            assertThrows(HardwareKeyUnavailable::class.java) { PhoneKey.open(alias, createIfMissing = false) }
+            assertFalse(store.containsAlias(alias))
             if (Build.VERSION.SDK_INT < 28) {
                 assertThrows(HardwareKeyUnavailable::class.java) { PhoneKey.open(alias) }
                 assertFalse(store.containsAlias(alias))
