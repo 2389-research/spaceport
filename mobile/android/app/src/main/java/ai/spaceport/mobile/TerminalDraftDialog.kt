@@ -216,7 +216,7 @@ internal class TerminalDraftDialog(
             executor.execute {
                 val outcome = runCatching {
                     if (file != null) session.stageDraftFile(original, file.name, file.bytes, transfer)
-                    else session.stageDraftImage(original, requireNotNull(image))
+                    else session.stageDraftImage(original, requireNotNull(image), transfer)
                 }
                 activity.runOnUiThread {
                     if (activeTransfer === transfer) activeTransfer = null
