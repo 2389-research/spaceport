@@ -1,0 +1,5 @@
+# ABOUTME: Registers the hosted runner labels the workflow linter does not recognize.
+# ABOUTME: GitHub's xcode-27 image includes the SDK used by the iPhone Duo toolbar.
+self-hosted-runner:
+  labels:
+    - xcode-27

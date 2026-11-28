@@ -116,6 +116,9 @@ pub enum UiOp {
     Sidebar {
         switch: Switch,
     },
+    Workspaces {
+        switch: Switch,
+    },
     StatusBar {
         switch: Switch,
     },

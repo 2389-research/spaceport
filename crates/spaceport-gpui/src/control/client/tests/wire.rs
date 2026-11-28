@@ -93,6 +93,7 @@ const ROWS: &[&[&str]] = &[
     &["ui", "sidebar", "show"],
     &["ui", "sidebar", "hide"],
     &["ui", "sidebar", "maybe"],
+    &["ui", "workspaces", "off", "--json", "--window", "5"],
     &["ui", "statusbar"],
     &["ui", "statusbar", "on"],
     &["ui", "status-bar", "off"],

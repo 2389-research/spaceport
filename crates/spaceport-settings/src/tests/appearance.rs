@@ -30,7 +30,8 @@ fn a_theme_that_names_no_file_resolves_to_nothing() {
 
 #[test]
 fn both_sides_resolve_before_the_first_frame() -> anyhow::Result<()> {
-    let sides = ThemeSides::of(Appearance::of(pair(), false)?);
+    let (sides, error) = ThemeSides::of(Appearance::of(pair(), false)?);
+    assert!(error.is_none());
     assert_eq!(
         Theme::builtin("Nord"),
         Some(sides.clone().select(false).theme)
@@ -40,13 +41,26 @@ fn both_sides_resolve_before_the_first_frame() -> anyhow::Result<()> {
         Some(sides.select(true).theme)
     );
     // A theme naming one side shows it either way, and reads no second file.
-    let single = ThemeSides::of(Appearance::of(
+    let (single, error) = ThemeSides::of(Appearance::of(
         Config {
             theme: "Nord".into(),
             ..Default::default()
         },
         false,
     )?);
+    assert!(error.is_none());
     assert_eq!(Theme::builtin("Nord"), Some(single.select(true).theme));
+    Ok(())
+}
+
+#[test]
+fn a_failed_light_theme_returns_its_error_and_keeps_the_dark_theme() -> anyhow::Result<()> {
+    let config = Config {
+        theme: "light:../invalid,dark:Nord".into(),
+        ..Default::default()
+    };
+    let (sides, error) = ThemeSides::of(Appearance::of(config, false)?);
+    assert!(matches!(error, Some(Error::InvalidThemePath)));
+    assert_eq!(Some(sides.select(true).theme), Theme::builtin("Nord"));
     Ok(())
 }

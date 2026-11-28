@@ -331,48 +331,6 @@ fn config_load_is_coherent_bounded_and_cancellable(cx: &mut gpui::TestAppContext
     });
 }
 
-#[test]
-fn shortcut_search_matches_labels_keys_and_sections() {
-    for query in ["", "pane close", "CMD+W", "cmd-w", "workspaces"] {
-        assert!(super::shortcut_matches(
-            query,
-            "cmd-w",
-            "Close Pane",
-            "WORKSPACES & PANES"
-        ));
-    }
-    assert!(!super::shortcut_matches(
-        "zoom",
-        "cmd-w",
-        "Close Pane",
-        "WORKSPACES & PANES"
-    ));
-    assert!(super::shortcut_matches(
-        "cmd shift p",
-        "cmd-shift-p",
-        "Command Palette",
-        "APPLICATION"
-    ));
-    assert!(!super::shortcut_matches(
-        "cmd+p",
-        "cmd-d",
-        "Split Right",
-        "WORKSPACES & PANES"
-    ));
-}
-
-#[test]
-fn keycaps_split_modifiers_from_the_key() {
-    let caps = |keystroke| super::keycaps(keystroke).collect::<Vec<_>>();
-    assert_eq!(caps("cmd-shift-t"), ["Cmd", "Shift", "T"]);
-    assert_eq!(caps("cmd--"), ["Cmd", "-"]);
-    assert_eq!(caps("cmd-+"), ["Cmd", "+"]);
-    assert_eq!(caps("f5"), ["F5"]);
-    assert_eq!(caps("ctrl-b c"), ["Ctrl", "B", "C"]);
-    assert_eq!(caps("ctrl-b -"), ["Ctrl", "B", "-"]);
-    assert_eq!(caps("ctrl-b shift-tab"), ["Ctrl", "B", "Shift", "Tab"]);
-}
-
 /// A saved `[keybindings]` change must reach the live keymap, the palette,
 /// and the keybindings page without restarting, and keep the console keys.
 #[gpui::test]

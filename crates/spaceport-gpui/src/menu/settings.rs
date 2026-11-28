@@ -9,14 +9,15 @@ use super::{Page, accent};
 use crate::i18n::fl;
 use crate::{
     SpaceportWindow,
-    config::{Config, FontConfig, ThemeName},
-    controls::{COMMANDS, Command, CommandInfo},
+    config::{Config, ThemeName},
+    controls::{COMMANDS, Command},
 };
 use gpui::{prelude::*, *};
 use spaceport_client::protocol::ClientShellCommand;
 use spaceport_keymap::Reach;
+use spaceport_menu::keybinds::render::{self, Action, Hosts, Words};
+use spaceport_menu::keybinds::{self, Binding, Row, Section};
 use spaceport_settings::Appearance;
-use std::borrow::Cow;
 
 /// The semantic paste row, which no keymap command holds.
 fn paste_label() -> String {
@@ -279,70 +280,97 @@ impl SpaceportWindow {
 
 impl SpaceportWindow {
     pub(super) fn render_keybinds(&self, cx: &mut Context<Self>) -> Div {
-        let font = &self.config.ui;
         let query = self
             .menu
             .keybinds_search
             .as_ref()
             .map(|search| search.read(cx).text().to_owned())
             .unwrap_or_default();
-        let groups = self.keybind_groups();
-        let total: usize = groups.iter().map(|(_, rows)| rows.len()).sum();
-        let body = div()
-            .id("keybinds-body")
-            .debug_selector(|| "keybinds-body".into())
-            .flex_1()
-            .min_h_0()
-            .overflow_y_scroll()
-            .track_scroll(&self.menu.keybinds_scroll)
-            .px(px(16.))
-            .py(px(8.))
-            .children(self.render_shortcut_editor(cx));
-        let (body, count) = self.keybind_body(body, groups, &query, cx);
-        div()
-            .flex()
-            .flex_col()
-            .size_full()
-            .min_h_0()
-            .child(self.keybind_header(cx))
-            .child(self.keybind_search_area(count, total, font))
-            .child(body)
-            .child(Self::keybind_footer())
+        let mut sections = self.keybind_sections();
+        let total = keybinds::total(&sections);
+        let count = keybinds::filter(&mut sections, &query);
+        let words = Words {
+            close: fl!("menu-settings-close"),
+            count: fl!("menu-settings-count", count = count, total = total),
+            edit: fl!("menu-settings-edit"),
+            empty: fl!("menu-settings-no-match"),
+            footer: fl!("menu-settings-footer"),
+            no_shortcut: fl!("menu-settings-no-shortcut"),
+            note: fl!("menu-settings-note"),
+            subtitle: fl!("menu-settings-subtitle"),
+            title: fl!("menu-settings-title"),
+        };
+        let text = crate::menu::chrome::text(&self.config.ui);
+        render::panel(
+            Hosts {
+                accent: accent(&self.theme),
+                editor: self
+                    .render_shortcut_editor(cx)
+                    .map(IntoElement::into_any_element),
+                scroll: &self.menu.keybinds_scroll,
+                search: self
+                    .menu
+                    .keybinds_search
+                    .clone()
+                    .map(IntoElement::into_any_element),
+                sections: &sections,
+                text: &text,
+                theme: &self.theme,
+                words: &words,
+            },
+            |action, button| match action {
+                Action::Close => button
+                    .on_click(cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx))),
+                Action::Edit(name) => button.on_click(cx.listener(move |this, _, window, cx| {
+                    if let Some(info) = COMMANDS.iter().find(|info| info.name == name) {
+                        this.edit_shortcut(info, window, cx);
+                    }
+                })),
+            },
+        )
     }
 
     /// Every row the page lists, by section: the catalog's commands with the
     /// keys the keymap gives them, then the daemon's own commands.
-    fn keybind_groups<'a>(&'a self) -> Vec<(String, Vec<KeybindRow<'a>>)> {
+    fn keybind_sections(&self) -> Vec<Section> {
         let paste = paste_label();
-        let mut groups = vec![
-            (fl!("menu-settings-workspaces"), Vec::new()),
-            (fl!("menu-settings-navigation"), Vec::new()),
-            (
+        let headed = |heading: String, rows: Vec<Row>| Section { heading, rows };
+        let mut sections = vec![
+            headed(fl!("menu-settings-workspaces"), Vec::new()),
+            headed(fl!("menu-settings-navigation"), Vec::new()),
+            headed(
                 fl!("menu-settings-application"),
-                vec![KeybindRow {
+                vec![Row {
                     description: paste.clone(),
-                    info: None,
-                    keys: vec![(Cow::Borrowed(crate::actions::EDIT_KEYS[2]), None)],
+                    bindings: vec![Binding {
+                        keys: crate::actions::EDIT_KEYS[2].to_owned(),
+                        note: None,
+                    }],
+                    edit: None,
                 }],
             ),
-            (fl!("menu-settings-commands"), Vec::new()),
+            headed(fl!("menu-settings-commands"), Vec::new()),
         ];
         for info in COMMANDS {
             if !self.core_enabled() && crate::core_feature::command_requires_core(info.command) {
                 continue;
             }
-            let mut keys: Vec<&'a str> = self.keymap().shortcuts(info.command).collect();
+            let mut keys: Vec<String> = self
+                .keymap()
+                .shortcuts(info.command)
+                .map(str::to_owned)
+                .collect();
             if info.command == Command::Palette && self.config.palette.double_shift {
-                keys.push("shift shift"); // i18n: data
+                keys.push("shift shift".to_owned()); // i18n: data
             }
             let section = keybind_section(info.command);
-            groups[section].1.push(KeybindRow {
+            sections[section].rows.push(Row {
                 description: crate::i18n::command(info),
-                info: Some(info),
-                keys: keys
+                bindings: keys
                     .into_iter()
-                    .map(|key| (Cow::Borrowed(key), None))
+                    .map(|keys| Binding { keys, note: None })
                     .collect(),
+                edit: Some(info.name),
             });
         }
         if let Some(snapshot) = self
@@ -354,8 +382,8 @@ impl SpaceportWindow {
             let commands: Vec<_> =
                 spaceport_keymap::available_commands(&snapshot.commands).collect();
             let bindings = self.keymap().custom_bindings(commands.iter().copied());
-            groups[3]
-                .1
+            sections[3]
+                .rows
                 .extend(commands.iter().zip(bindings).enumerate().map(
                     |(index, (command, bindings))| {
                         let description = command_name(command);
@@ -376,269 +404,22 @@ impl SpaceportWindow {
                             0 => description.to_owned(),
                             earlier => format!("{description} ({})", earlier + 1),
                         };
-                        KeybindRow {
+                        Row {
                             description,
-                            info: None,
-                            keys: bindings
+                            bindings: bindings
                                 .into_iter()
-                                .map(|binding| {
-                                    (Cow::Owned(binding.label), reach_note(binding.reach))
+                                .map(|binding| Binding {
+                                    keys: binding.label,
+                                    note: reach_note(binding.reach),
                                 })
                                 .collect(),
+                            edit: None,
                         }
                     },
                 ));
         }
-        groups
+        sections
     }
-
-    /// The rows `query` keeps, under their sections, and how many matched.
-    fn keybind_body(
-        &self,
-        body: Stateful<Div>,
-        groups: Vec<(String, Vec<KeybindRow<'_>>)>,
-        query: &str,
-        cx: &mut Context<Self>,
-    ) -> (Stateful<Div>, usize) {
-        let mut body = body;
-        let mut count = 0;
-        for (section, rows) in groups {
-            let rows: Vec<_> = rows
-                .into_iter()
-                .filter(|row| {
-                    shortcut_matches(query, "", &row.description, &section)
-                        || row.keys.iter().any(|(keys, _)| {
-                            shortcut_matches(query, keys, &row.description, &section)
-                        })
-                })
-                .collect();
-            if rows.is_empty() {
-                continue;
-            }
-            count += rows.len();
-            body = body.child(self.keybind_section_heading(&section));
-            for row in rows {
-                body = body.child(self.keybind_row(row, cx));
-            }
-        }
-        if count == 0 {
-            let theme = &self.theme;
-            body = body.child(
-                div()
-                    .debug_selector(|| "keybinds-empty".into())
-                    .py(px(20.))
-                    .text_color(rgb(theme.muted))
-                    .child(fl!("menu-settings-no-match")),
-            );
-        }
-        let theme = &self.theme;
-        (
-            body.child(
-                div()
-                    .py(px(14.))
-                    .text_color(rgb(theme.subtext()))
-                    .child(fl!("menu-settings-note")),
-            ),
-            count,
-        )
-    }
-
-    /// A section's heading, above the rows that list under it.
-    fn keybind_section_heading(&self, section: &str) -> Div {
-        let font = &self.config.ui;
-        div()
-            .pt(px(12.))
-            .pb(px(6.))
-            .text_size(px(font.size * 0.85))
-            .font_weight(FontWeight::SEMIBOLD)
-            .text_color(accent(&self.theme))
-            .child(section.to_owned())
-    }
-
-    /// One command: every way to reach it, what it is called, and the button
-    /// that edits its shortcut.
-    fn keybind_row(&self, row: KeybindRow<'_>, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
-        let font = &self.config.ui;
-        let accent = accent(theme);
-        let KeybindRow {
-            description,
-            info,
-            keys,
-        } = row;
-        div()
-            .debug_selector(|| format!("shortcut-{description}"))
-            .flex()
-            .items_center()
-            .gap(px(12.))
-            .py(px(7.))
-            .border_b_1()
-            .border_color(rgb(theme.active))
-            .child(
-                div()
-                    .debug_selector(|| format!("keys-{description}"))
-                    .w(relative(0.45))
-                    .flex_none()
-                    .flex()
-                    .flex_wrap()
-                    .gap(px(10.))
-                    .when(keys.is_empty(), |column| {
-                        column.child(
-                            div()
-                                .text_color(rgb(theme.muted))
-                                .child(fl!("menu-settings-no-shortcut")),
-                        )
-                    })
-                    .children(keys.into_iter().map(|(keys, note)| {
-                        div()
-                            .flex()
-                            .flex_col()
-                            .gap(px(3.))
-                            .child(div().flex().flex_wrap().gap(px(4.)).children(
-                                keycaps(&keys).map(|key| {
-                                    div()
-                                        .flex_none()
-                                        .px(px(6.))
-                                        .py(px(2.))
-                                        .rounded(px(crate::config::corners::SMALL))
-                                        .border_1()
-                                        .border_color(rgb(theme.active))
-                                        .bg(rgb(theme.background))
-                                        .text_size(px(font.size * 0.9))
-                                        .font_weight(FontWeight::MEDIUM)
-                                        .child(key)
-                                }),
-                            ))
-                            .when_some(note, |binding, note| {
-                                binding.child(
-                                    div()
-                                        .text_size(px(font.size * 0.85))
-                                        .text_color(rgb(theme.muted))
-                                        .child(note),
-                                )
-                            })
-                    })),
-            )
-            .child(
-                div()
-                    .debug_selector(|| format!("description-{description}"))
-                    .flex_1()
-                    .min_w_0()
-                    .child(description),
-            )
-            .when_some(info, |row, info| {
-                row.child(
-                    div()
-                        .id(SharedString::from(format!("edit-shortcut-{}", info.name)))
-                        .debug_selector(move || format!("edit-shortcut-{}", info.name))
-                        .flex_none()
-                        .px(px(6.))
-                        .py(px(4.))
-                        .cursor_pointer()
-                        .text_color(accent)
-                        .child(fl!("menu-settings-edit"))
-                        .on_click(cx.listener(move |this, _, window, cx| {
-                            this.edit_shortcut(info, window, cx)
-                        })),
-                )
-            })
-    }
-
-    /// The page's title, what it is for, and the button that closes it.
-    fn keybind_header(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
-        let font = &self.config.ui;
-        let accent = accent(theme);
-        div()
-            .debug_selector(|| "keybinds-header".into())
-            .flex()
-            .items_center()
-            .flex_none()
-            .gap(px(12.))
-            .p(px(16.))
-            .border_b_1()
-            .border_color(rgb(theme.active))
-            .child(
-                div()
-                    .w(px(3.))
-                    .h(px(font.size * 2.5))
-                    .rounded_full()
-                    .bg(accent),
-            )
-            .child(
-                div()
-                    .flex_1()
-                    .min_w_0()
-                    .child(
-                        div()
-                            .text_size(px(font.size * 1.35))
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .child(fl!("menu-settings-title")),
-                    )
-                    .child(
-                        div()
-                            .text_color(rgb(theme.muted))
-                            .child(fl!("menu-settings-subtitle")),
-                    ),
-            )
-            .child(
-                div()
-                    .id("menu-close")
-                    .debug_selector(|| "keybinds-close".into())
-                    .flex_none()
-                    .px(px(8.))
-                    .py(px(4.))
-                    .rounded(px(crate::config::corners::CONTROL))
-                    .cursor_pointer()
-                    .text_color(rgb(theme.muted))
-                    .hover(|style| {
-                        style
-                            .bg(rgb(theme.active))
-                            .text_color(rgb(theme.foreground))
-                    })
-                    .child(fl!("menu-settings-close"))
-                    .on_click(cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx))),
-            )
-    }
-
-    /// The field that narrows the page, and how many rows it has left.
-    fn keybind_search_area(&self, count: usize, total: usize, font: &FontConfig) -> Div {
-        let theme = &self.theme;
-        div()
-            .debug_selector(|| "keybinds-search-area".into())
-            .flex_none()
-            .px(px(16.))
-            .py(px(8.))
-            .when_some(self.menu.keybinds_search.clone(), |area, search| {
-                area.child(search)
-            })
-            .child(
-                div()
-                    .debug_selector(|| "keybinds-count".into())
-                    .pt(px(4.))
-                    .text_size(px(font.size * 0.85))
-                    .text_color(rgb(theme.muted))
-                    .child(fl!("menu-settings-count", count = count, total = total)),
-            )
-    }
-
-    /// What the page notes at its foot, under every section.
-    fn keybind_footer() -> Div {
-        div()
-            .debug_selector(|| "keybinds-footer".into())
-            .flex_none()
-            .px(px(16.))
-            .py(px(10.))
-            .child(fl!("menu-settings-footer"))
-    }
-}
-
-/// One row of the Keybinds page: every way to reach the command, what it is
-/// called, and the catalog entry its Edit button opens.
-struct KeybindRow<'a> {
-    description: String,
-    info: Option<&'static CommandInfo>,
-    keys: Vec<(Cow<'a, str>, Option<String>)>,
 }
 
 /// Which section of the page a command's shortcut lists under.
@@ -727,9 +508,6 @@ fn keybind_section(command: Command) -> usize {
     }
 }
 
-/// The keycaps of a shortcut, capitalized for display, a prefix chord's
-/// keystrokes in turn. `cmd--` splits into `cmd` and a `-` key rather than an
-/// empty cap, as does a chord's bare `-`.
 /// A custom command's row name: its description, or its ID without one.
 fn command_name(command: &ClientShellCommand) -> &str {
     command
@@ -750,51 +528,6 @@ fn reach_note(reach: Reach) -> Option<String> {
         Reach::OverLimit => fl!("menu-settings-over-limit", limit = 8),
         Reach::Unsupported => fl!("menu-settings-unsupported"),
     })
-}
-
-pub(super) fn keycaps(shortcut: &str) -> impl Iterator<Item = String> + '_ {
-    shortcut
-        .split(' ')
-        .flat_map(|keystroke| {
-            let (modifiers, key) = match keystroke.strip_suffix('-') {
-                Some(modifiers) if modifiers.is_empty() || modifiers.ends_with('-') => {
-                    (modifiers, "-")
-                }
-                _ => keystroke.rsplit_once('-').unwrap_or(("", keystroke)),
-            };
-            modifiers
-                .split('-')
-                .filter(|modifier| !modifier.is_empty())
-                .chain(std::iter::once(key))
-        })
-        .map(|key| {
-            let mut chars = key.chars();
-            chars
-                .next()
-                .map(|first| first.to_ascii_uppercase())
-                .into_iter()
-                .chain(chars)
-                .collect()
-        })
-}
-
-fn shortcut_matches(query: &str, keys: &str, description: &str, section: &str) -> bool {
-    let query = query.to_lowercase().replace(['-', '+'], " ");
-    if query
-        .split_whitespace()
-        .next()
-        .is_some_and(|token| matches!(token, "cmd" | "ctrl" | "alt" | "shift"))
-    {
-        // A key combination should match keycaps, not letters in an action's name.
-        let keys = keys.to_lowercase();
-        return query
-            .split_whitespace()
-            .all(|token| keys.split(['-', '+', ' ']).any(|key| key == token));
-    }
-    let text = format!("{keys} {description} {section}")
-        .to_lowercase()
-        .replace(['-', '+'], " ");
-    query.split_whitespace().all(|token| text.contains(token))
 }
 
 #[cfg(test)]

@@ -5,3 +5,4 @@ error-client-sessions-delete-default = The default session cannot be deleted
 error-client-sessions-delete-failed = Herdr refused session deletion ({ $status }); the session may be running, inaccessible, or unsupported by the installed CLI
 error-client-sessions-delete-timeout = Session deletion timed out; refresh the list before trying again
 error-client-sessions-limit = too many sessions to list
+error-client-sessions-not-running = The saved Herdr session is not running

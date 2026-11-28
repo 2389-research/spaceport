@@ -4,7 +4,7 @@
 
 use crate::{Error, Result};
 use serde_json::{Value, json};
-use spaceport_client::{Method, protocol::ClientShellSnapshot};
+use spaceport_client::{Method, pane_action, protocol::ClientShellSnapshot};
 
 pub mod render;
 
@@ -90,7 +90,7 @@ impl Target {
     }
 
     pub fn rename_params(&self, label: &str) -> Value {
-        json!({"pane_id": self.pane, "label": label.trim()})
+        pane_action::Action::Rename(label).request(&self.pane).1
     }
 
     /// The rows this menu offers, in Herdr's order: a swap needs another pane
@@ -130,14 +130,8 @@ pub enum Action {
 impl Action {
     pub fn request(self, target: &Target) -> Option<(Method, Value)> {
         Some(match self {
-            Self::SplitRight | Self::SplitDown => (
-                Method::PaneSplit,
-                json!({
-                    "target_pane_id": target.pane,
-                    "direction": if matches!(self, Self::SplitRight) { "right" } else { "down" },
-                    "focus": true,
-                }),
-            ),
+            Self::SplitRight => pane_action::Action::SplitRight.request(&target.pane),
+            Self::SplitDown => pane_action::Action::SplitDown.request(&target.pane),
             // The focused pane moves to this one's place and keeps focus,
             // as Herdr's directional swaps move it.
             Self::Swap => (
@@ -146,10 +140,7 @@ impl Action {
             ),
             // An explicit mode, so a zoom another client changed meanwhile
             // leaves the pane as the row promised rather than flipping it.
-            Self::Zoom => (
-                Method::PaneZoom,
-                json!({"pane_id": target.pane, "mode": if target.zoomed { "off" } else { "on" }}),
-            ),
+            Self::Zoom => pane_action::Action::SetZoom(!target.zoomed).request(&target.pane),
             Self::RightClick => (
                 Method::PaneInputSet,
                 json!({

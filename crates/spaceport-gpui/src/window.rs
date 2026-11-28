@@ -309,6 +309,7 @@ pub(crate) struct SpaceportWindow {
     /// `ui.sidebar_collapsed_mode` chooses (see `sidebar_mode`).
     pub(crate) sidebar_visible: bool,
     pub(crate) sidebar_width: Option<f32>,
+    pub(crate) sidebar_workspaces_expanded: bool,
     /// Shared by every window; see `app::shared_sound`.
     pub(crate) sound: std::rc::Rc<spaceport_sound::Service>,
     /// The resize cursor of the pane border under the pointer, if any.

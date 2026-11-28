@@ -1,24 +1,40 @@
 use super::*;
-use crate::menu::workspace::popover::Label;
+use crate::menu::workspace::popover::{Label, item};
 use crate::notification_mutes::{Daemon, Mutes};
 use gpui::{
     Element, IntoElement,
     accesskit::{Node, Role},
 };
+use spaceport_menu::workspace::popover;
 
 #[gpui::test]
 fn the_header_toggle_names_what_it_does(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
     cx.update(|_, cx| {
-        view.update(cx, |view, cx| {
-            for (action, name) in [
-                (WorkspaceMenuAction::Mute, Label::MUTE),
-                (WorkspaceMenuAction::Unmute, Label::UNMUTE),
+        view.update(cx, |view, _cx| {
+            let text = crate::menu::chrome::text(&view.config.ui);
+            let accent = crate::menu::accent(&view.theme);
+            for (action, name, caption) in [
+                (WorkspaceMenuAction::Mute, Label::MUTE, Label::MUTE_BUTTON),
+                (
+                    WorkspaceMenuAction::Unmute,
+                    Label::UNMUTE,
+                    Label::UNMUTE_BUTTON,
+                ),
             ] {
-                let element = view.render_workspace_mute(action, name, cx).into_element();
+                let toggle = popover::toggle(
+                    &view.theme,
+                    &text,
+                    accent,
+                    &item(action, name, Some(caption)),
+                    false,
+                );
+                let element = toggle.into_element();
                 let mut node = Node::new(element.a11y_role().unwrap());
                 element.write_a11y_info(&mut node);
                 assert_eq!(node.role(), Role::Button);
+                // The toggle says "Mute"; a screen reader hears the whole of
+                // what it leaves out.
                 assert_eq!(node.label(), Some(name.english().as_str()));
             }
         })
@@ -79,8 +95,9 @@ fn the_arrow_keys_reach_the_toggle_first(cx: &mut gpui::TestAppContext) {
             view.update(cx, |view, cx| {
                 view.open_workspace_menu("w3", Default::default(), window, cx);
                 assert_eq!(view.workspace_menu_actions().first(), Some(&action));
-                let (_, rest) = crate::menu::workspace::popover::layout(&view.workspace_items());
-                assert!(!rest.iter().any(|(action, _)| action.in_header()));
+                let items = view.workspace_items();
+                let (_, rest) = popover::layout(&items);
+                assert!(!rest.iter().any(|item| item.action.in_header()));
             })
         });
         cx.update(|window, cx| {

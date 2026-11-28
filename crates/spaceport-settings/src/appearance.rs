@@ -7,7 +7,7 @@
 //! is what stops a window drawing a theme its config did not name.
 
 use crate::theme::ThemeName;
-use crate::{Config, Result, Theme};
+use crate::{Config, Error, Result, Theme};
 
 /// A config and the theme resolved from it, which only make sense together.
 #[derive(Clone, Debug, Default)]
@@ -38,17 +38,15 @@ pub struct ThemeSides {
 
 impl ThemeSides {
     /// `dark` resolved, plus the other side when its config follows the system.
-    /// A light side that cannot load is logged and dropped, so the app still
-    /// opens on the dark one.
-    pub fn of(dark: Appearance) -> Self {
+    /// If the light side fails, return its error and keep the dark fallback.
+    pub fn of(dark: Appearance) -> (Self, Option<Error>) {
         let light = ThemeName::follows_system(&dark.config.theme)
             .then(|| dark.config.theme(true))
-            .and_then(|theme| {
-                theme
-                    .inspect_err(|error| tracing::warn!(%error, "Could not load the light theme"))
-                    .ok()
-            });
-        Self { dark, light }
+            .transpose();
+        match light {
+            Ok(light) => (Self { dark, light }, None),
+            Err(error) => (Self { dark, light: None }, Some(error)),
+        }
     }
 
     /// The pair resolved for the dark side, which a launch reads before the

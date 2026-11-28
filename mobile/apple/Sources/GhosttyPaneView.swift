@@ -67,7 +67,23 @@ final class GhosttyPaneSurface: TerminalSurfaceOpenURLHandlingDelegate, Terminal
 
     var visibleText: String? { session.readViewportText() }
 
-    func receive(_ data: Data) {
+    func holdKeyboard(using handoff: PaneKeyboardHandoff) -> Bool {
+        guard let nativeView else { return false }
+        return handoff.hold(from: nativeView)
+    }
+
+    func receive(_ data: Data, whenParsed: (@MainActor @Sendable () -> Void)? = nil) {
+        if let whenParsed {
+            // A fresh native view can still be mounting. Ghostty drains buffered bytes after it attaches.
+            session.setOutputBacklogHandler(highWater: 1, lowWater: 0) { [weak self] waiting in
+                guard !waiting else { return }
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.session.setOutputBacklogHandler(highWater: 1, lowWater: 0, nil)
+                    whenParsed()
+                }
+            }
+        }
         session.receive(data)
     }
 

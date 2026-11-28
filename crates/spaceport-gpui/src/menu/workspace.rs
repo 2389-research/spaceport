@@ -8,7 +8,7 @@ mod requests;
 use super::{Page, WorkspaceAction, WorkspaceMenuAction};
 use crate::{SpaceportWindow, dialog_input::DialogInput};
 use gpui::{prelude::*, *};
-use popover::Label;
+use popover::{Item, Label};
 
 pub(crate) use spaceport_menu::workspace::{
     WorkspaceTarget, chosen_label, suggested_tab_name, suggested_workspace_name,
@@ -157,26 +157,42 @@ impl SpaceportWindow {
     /// The actions this workspace offers, in the order the popover shows them
     /// and arrow keys walk them: the header's mute toggle, the tile grid row
     /// by row, then the plain rows.
-    pub(super) fn workspace_items(&self) -> Vec<(WorkspaceMenuAction, Label)> {
+    pub(super) fn workspace_items(&self) -> Vec<Item> {
         use WorkspaceMenuAction::Dialog;
         let Some(target) = &self.menu.target else {
             return vec![];
         };
         let mut items = vec![if target.muted {
-            (WorkspaceMenuAction::Unmute, Label::UNMUTE)
+            popover::item(
+                WorkspaceMenuAction::Unmute,
+                Label::UNMUTE,
+                Some(Label::UNMUTE_BUTTON),
+            )
         } else {
-            (WorkspaceMenuAction::Mute, Label::MUTE)
+            popover::item(
+                WorkspaceMenuAction::Mute,
+                Label::MUTE,
+                Some(Label::MUTE_BUTTON),
+            )
         }];
-        items.push((Dialog(WorkspaceAction::Rename), Label::RENAME));
+        items.push(popover::item(
+            Dialog(WorkspaceAction::Rename),
+            Label::RENAME,
+            Some(Label::RENAME_TILE),
+        ));
         if self.note_checkout().is_some() {
-            items.push((Dialog(WorkspaceAction::Note), Label::NOTE));
+            items.push(popover::item(
+                Dialog(WorkspaceAction::Note),
+                Label::NOTE,
+                None,
+            ));
         }
         // Only a workspace that heads a group of checkouts can fold anything.
         if let Some(key) = target.group_key() {
             items.push(if self.collapsed_repos_for_selection().contains(key) {
-                (WorkspaceMenuAction::Expand, Label::EXPAND_GROUP)
+                popover::item(WorkspaceMenuAction::Expand, Label::EXPAND_GROUP, None)
             } else {
-                (WorkspaceMenuAction::Collapse, Label::COLLAPSE_GROUP)
+                popover::item(WorkspaceMenuAction::Collapse, Label::COLLAPSE_GROUP, None)
             });
         }
         items
@@ -250,12 +266,10 @@ impl SpaceportWindow {
     }
 
     pub(super) fn workspace_menu_actions(&self) -> Vec<WorkspaceMenuAction> {
-        let actions: Vec<_> = self
-            .workspace_items()
+        self.workspace_items()
             .into_iter()
-            .map(|(action, _)| action)
-            .collect();
-        actions
+            .map(|item| item.action)
+            .collect()
     }
 
     pub(super) fn activate_workspace_menu(

@@ -93,7 +93,7 @@ pub(super) fn check(window: &mut Window) -> Result<Report> {
         // word goes left, toward the Latin after it.
         let mixed = "ab \u{5d0}\u{5d1} cd";
         let line = shape(mixed, window);
-        let carets = crate::caret::Carets::new(mixed, &line);
+        let carets = spaceport_textfield::caret::Carets::new(mixed, &line);
         if carets.x(3) <= carets.x(5) || carets.x(5) >= carets.x(7) {
             bail!(
                 "caret does not follow the Hebrew run: {:?} {:?} {:?}",

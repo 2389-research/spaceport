@@ -104,7 +104,11 @@ impl StartupAppearance {
             // resolve: nothing the user saved failed to load twice.
             ThemeSides::default()
         } else {
-            ThemeSides::of(shown)
+            let (sides, light_error) = ThemeSides::of(shown);
+            if let Some(error) = light_error {
+                tracing::warn!(%error, "Could not load the light theme");
+            }
+            sides
         };
         Self {
             error,
