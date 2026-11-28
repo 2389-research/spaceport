@@ -38,6 +38,7 @@ internal class TerminalScreen(
     private var previousSession: MobileSession? = null
     private var previousSize: GridSize? = null
     private var priorIme: Boolean? = null
+    private val compose: Button
     private val back: Button
     private val forward: Button
     private var disposed = false
@@ -70,7 +71,7 @@ internal class TerminalScreen(
         action("Go To", block = onGoTo)
         back = action("‹", "Previous pane") { travel(false) }
         forward = action("›", "Next pane in history") { travel(true) }
-        action("Compose", block = ::showCompose)
+        compose = action("Compose", block = ::showCompose).apply { isEnabled = false }
         action("Find", block = ::showFind)
         action("Keys", "Keyboard") {
             if (keyboardVisible()) imm().hideSoftInputFromWindow(surface.windowToken, 0) else surface.performClick()
@@ -155,6 +156,7 @@ internal class TerminalScreen(
         back.visibility = if (view?.backPane != null) VISIBLE else GONE
         forward.visibility = if (view?.forwardPane != null) VISIBLE else GONE
         val target = view?.inputTarget?.takeUnless { view.disconnected || view.goToPending }
+        compose.isEnabled = target != null
         surface.update(view?.terminal, target)
         history.update(target)
         draft.update(target)
