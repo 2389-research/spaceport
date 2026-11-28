@@ -49,6 +49,14 @@ class LiveHomeTest : LiveMobileUi() {
                 after("SSH login", { click("Trust and connect") }, { label("Sign in") != null })
                 input(requireNotNull(args.getString("herdrPassword")))
                 after("connected terminal", { click("Sign in") }, { label("Go To") != null && label("Terminal") != null })
+                val widget = requireNotNull(store.widgetToken())
+                app.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
+                after("parked terminal opens its next waiting agent", {
+                    context.startActivity(LauncherAction.NEXT.intent(context, widget)
+                        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                }, {
+                    node { it.contentDescription == "Terminal" && it.text?.contains("Review is ready") == true } != null
+                })
                 after("cached agents", { tapHome() }, { label("Add host") != null && actionable(reviewer, long = true) != null })
                 app.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
                 val observed = requireNotNull(AgentCatalog(context).observedAt(profile))

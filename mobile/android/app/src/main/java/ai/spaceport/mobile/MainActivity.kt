@@ -37,6 +37,7 @@ internal class RetainedPhone(app: Application) : AndroidViewModel(app) {
     var pickingFileFor: Pair<SessionDraft, uniffi.spaceport_mobile.InputTarget>? = null
     var toWorkspaces = false
     var nextWaiting = false
+    var parkedShortcutHost: HostProfile? = null
     var routeError: String? = null
     /** Screens opened above Home, newest last. */
     val pages = mutableListOf<Page>()
@@ -147,6 +148,9 @@ class MainActivity : ComponentActivity(), Pages {
         launchShortcut(intent)
     }
 
+    private fun shortcutBlocked() = phone.pending != null || hostEditor != null || picker != null ||
+        terminal?.isEditing == true || phone.pickingFileFor != null
+
     private fun launchShortcut(intent: Intent) {
         val action = LauncherAction.from(this, intent) ?: return
         val widget = intent.data?.schemeSpecificPart
@@ -156,8 +160,13 @@ class MainActivity : ComponentActivity(), Pages {
             toast(if (widget == null) "Open a saved session first." else "This widget’s session has changed. Choose a saved session.")
             return
         }
-        if (phone.pending != null || page !in setOf("home", "terminal") || hostEditor != null || picker != null || terminal?.isEditing == true) {
+        val resuming = phone.parkedShortcutHost == host && phone.selected == host
+        if (shortcutBlocked() || (!resuming && page !in setOf("home", "terminal"))) {
             toast("Finish the current action, then try the shortcut again.")
+            return
+        }
+        if (resuming) {
+            if (action == LauncherAction.NEXT) phone.nextWaiting = true
             return
         }
         if (phone.selected == host && page == "terminal" && action == LauncherAction.RESUME) return
@@ -177,6 +186,7 @@ class MainActivity : ComponentActivity(), Pages {
         foreground = false
         rosterRefresh.cancel()
         if (!isChangingConfigurations) {
+            phone.parkedShortcutHost = phone.selected?.takeIf { page == "terminal" && !shortcutBlocked() }
             if (phone.pending != null && phone.routed)
                 phone.routeError = "The session paused. Select the agent again."
             phone.sessions.forEach { (host, c) ->
@@ -274,6 +284,7 @@ class MainActivity : ComponentActivity(), Pages {
         picker?.dismiss()
         if (phone.pending != null && phone.routed) controller?.cancelGoTo()
         phone.selected = null
+        phone.parkedShortcutHost = null
         phone.pending = null
         phone.routeError = null
         phone.toWorkspaces = false
@@ -593,6 +604,10 @@ class MainActivity : ComponentActivity(), Pages {
     private fun render() {
         val c = active ?: return
         val host = phone.selected ?: return
+        if (phone.parkedShortcutHost != null && c.phase != ConnectionPhase.Parked && c.phase != ConnectionPhase.Connecting) {
+            if (c.phase != ConnectionPhase.Connected) phone.nextWaiting = false
+            phone.parkedShortcutHost = null
+        }
         if (c.phase != ConnectionPhase.Connected && picker != null) picker?.dismiss()
         when (c.phase) {
             ConnectionPhase.Connected -> {
