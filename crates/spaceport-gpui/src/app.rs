@@ -8,11 +8,7 @@
 use crate::i18n::{Localize, fl};
 use crate::{
     APP_VERSION, Hide, HideOthers, Quit, ShowAll, ShowLogs, SpaceportWindow, WINDOW_TITLE,
-    app_icon, bind_keys,
-    browser::CoreGroupKey,
-    cli,
-    config::{Config, Theme},
-    core_terminals::Start,
+    app_icon, bind_keys, browser::CoreGroupKey, cli, config::Config, core_terminals::Start,
     diagnostics, log_window, menus, titlebar,
 };
 #[cfg(feature = "integration-test")]
@@ -21,6 +17,7 @@ use anyhow::Result;
 use gpui::{prelude::*, *};
 use spaceport_client::ConnectTarget;
 use spaceport_keymap::Keymap;
+use spaceport_settings::{Appearance, ThemeSides};
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum WindowLaunch {
@@ -38,12 +35,14 @@ impl From<ConnectTarget> for WindowLaunch {
 /// Load before the UI event loop; later windows reuse the last validated pair.
 #[derive(Clone, Default)]
 pub(crate) struct InitialAppearance {
-    pub config: Config,
-    /// The keymap `config` was resolved into when it loaded, so a window's
-    /// keys and its settings never disagree.
-    pub keymap: Keymap,
-    pub theme: Theme,
+    /// What went wrong reading the user's settings; the defaults are drawn
+    /// instead, and the sentence says so.
     pub error: Option<String>,
+    /// The keymap `shown.config` was resolved into when it loaded, so a
+    /// window's keys and its settings never disagree.
+    pub keymap: Keymap,
+    /// The config and theme every window draws with.
+    pub shown: Appearance,
 }
 
 impl Global for InitialAppearance {}
@@ -57,12 +56,11 @@ fn load_startup_settings() -> crate::Result<(Config, Keymap)> {
 
 impl InitialAppearance {
     fn load(load: impl FnOnce() -> crate::Result<(Config, Keymap)>, light: bool) -> Self {
-        match load().and_then(|(config, keymap)| Ok((config.theme(light)?, config, keymap))) {
-            Ok((theme, config, keymap)) => Self {
-                config,
-                keymap,
-                theme,
+        match load().and_then(|(config, keymap)| Ok((Appearance::of(config, light)?, keymap))) {
+            Ok((shown, keymap)) => Self {
                 error: None,
+                keymap,
+                shown,
             },
             Err(error) => Self {
                 error: Some(fl!("app-load-config-failed", error = error.localize())),
@@ -84,29 +82,46 @@ pub(crate) fn light_appearance(cx: &App) -> bool {
 /// Startup reads settings before the event loop, when the system appearance
 /// is not yet known, so a theme that follows it has both sides resolved and
 /// the first frame picks one without any disk work on the UI thread.
+#[derive(Default)]
 struct StartupAppearance {
-    dark: InitialAppearance,
-    light: Option<Theme>,
+    /// The sentence a failed read shows in place of the user's settings.
+    error: Option<String>,
+    /// The keymap the config resolved into, carried to the first window.
+    keymap: Keymap,
+    /// Both sides of the theme the settings named.
+    sides: ThemeSides,
 }
 
 impl StartupAppearance {
     fn load(load: impl FnOnce() -> crate::Result<(Config, Keymap)>) -> Self {
-        let dark = InitialAppearance::load(load, false);
-        let light = (dark.error.is_none()
-            && crate::config::ThemeName::follows_system(&dark.config.theme))
-        .then(|| dark.config.theme(true))
-        .and_then(|theme| {
-            theme
-                .inspect_err(|error| tracing::warn!(%error, "Could not load the light theme"))
-                .ok()
-        });
-        Self { dark, light }
+        let InitialAppearance {
+            error,
+            keymap,
+            shown,
+        } = InitialAppearance::load(load, false);
+        let sides = if error.is_some() {
+            // The defaults are drawn instead, and they name no other side to
+            // resolve: nothing the user saved failed to load twice.
+            ThemeSides::default()
+        } else {
+            let (sides, light_error) = ThemeSides::of(shown);
+            if let Some(error) = light_error {
+                tracing::warn!(%error, "Could not load the light theme");
+            }
+            sides
+        };
+        Self {
+            error,
+            keymap,
+            sides,
+        }
     }
 
     fn select(self, light: bool) -> InitialAppearance {
-        match self.light {
-            Some(theme) if light => InitialAppearance { theme, ..self.dark },
-            _ => self.dark,
+        InitialAppearance {
+            error: self.error,
+            keymap: self.keymap,
+            shown: self.sides.select(light),
         }
     }
 }
@@ -450,10 +465,7 @@ pub(crate) fn run() -> std::process::ExitCode {
         );
         appearance
     } else {
-        StartupAppearance {
-            dark: InitialAppearance::default(),
-            light: None,
-        }
+        StartupAppearance::default()
     };
     let failed = startup_failed.clone();
     let window_state = (mode == LaunchMode::Normal).then(crate::window_state::WindowState::load);
@@ -507,7 +519,7 @@ pub(crate) fn run() -> std::process::ExitCode {
     gpui_platform::application()
         .with_assets(spaceport_icons::Icons)
         .run(move |cx| {
-            crate::core_feature::install(appearance.dark.config.herdr_core_enabled, cx);
+            crate::core_feature::install(appearance.sides.dark().config.herdr_core_enabled, cx);
             let window_count = window_state.as_ref().map_or(1, |state| state.count());
             if let Some(state) = window_state {
                 state.install(cx);
@@ -537,10 +549,15 @@ pub(crate) fn run() -> std::process::ExitCode {
             cx.set_global(appearance.select(light_appearance(cx)));
             // Only the user's own app follows their saved SSH host choices.
             if mode == LaunchMode::Normal {
-                let ssh = cx.global::<InitialAppearance>().config.ssh.clone();
+                let ssh = cx.global::<InitialAppearance>().shown.config.ssh.clone();
                 crate::config::ssh_hosts::install(&ssh, cx);
             }
-            let language = cx.global::<InitialAppearance>().config.language.clone();
+            let language = cx
+                .global::<InitialAppearance>()
+                .shown
+                .config
+                .language
+                .clone();
             crate::i18n::install(&language, cx);
             if mode == LaunchMode::Normal {
                 crate::updates::install(cx);

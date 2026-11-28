@@ -26,13 +26,17 @@ fn followed_theme_updates_startup_cache_without_persisting_session_font_size(
     cx.run_until_parked();
     view.read_with(cx, |view, cx| {
         assert_eq!(view.theme, expected);
-        assert_eq!(cx.global::<crate::app::InitialAppearance>().theme, expected);
+        assert_eq!(
+            cx.global::<crate::app::InitialAppearance>().shown.theme,
+            expected
+        );
     });
     let shared = Settings::parse_text("[theme]\nname = 'dracula'").unwrap();
     let expected = shared.theme(false).unwrap();
     view.update(cx, |view, cx| {
         let saved_size = cx
             .global::<crate::app::InitialAppearance>()
+            .shown
             .config
             .terminal
             .size;
@@ -40,8 +44,8 @@ fn followed_theme_updates_startup_cache_without_persisting_session_font_size(
         view.settings.shared = Some(shared);
         view.apply_shared_theme(cx);
         let appearance = cx.global::<crate::app::InitialAppearance>();
-        assert_eq!(appearance.theme, expected);
-        assert_eq!(appearance.config.terminal.size, saved_size);
+        assert_eq!(appearance.shown.theme, expected);
+        assert_eq!(appearance.shown.config.terminal.size, saved_size);
     });
 }
 

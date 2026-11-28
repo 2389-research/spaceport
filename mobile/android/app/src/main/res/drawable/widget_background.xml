@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ABOUTME: Gives the local status widget a readable surface on any wallpaper. -->
+<!-- ABOUTME: Leaves its rounded corners transparent for the home screen. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#222229"/>
+    <corners android:radius="16dp"/>
+</shape>

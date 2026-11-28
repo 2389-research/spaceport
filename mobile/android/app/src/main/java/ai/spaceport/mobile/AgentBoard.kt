@@ -9,6 +9,9 @@ import uniffi.spaceport_mobile.MobilePane
 import uniffi.spaceport_mobile.MobileView
 import uniffi.spaceport_mobile.idleAgeGroup
 
+internal val MobileView.observedAt: Long?
+    get() = rosterObservedAtMs?.takeIf { it > 0u && it <= Long.MAX_VALUE.toULong() }?.toLong()
+
 internal data class AgentId(
     val host: HostProfile,
     val boot: String,
@@ -31,7 +34,8 @@ internal data class AgentRow(
     val seq: ULong?,
     val firstIdle: ULong?,
     val witnessed: Boolean,
-    val seenAt: Long,
+    val seenAt: Long?,
+    val identity: String? = null,
 ) {
     val key
         get() = AgentId(host, boot, id, name)
@@ -66,14 +70,16 @@ internal data class AgentMark(
     val pinned: Boolean = false,
     val until: Long = 0,
     val held: String = "",
+    val settled: Boolean = false,
 ) {
     fun current(status: String, now: Long): AgentMark {
+        val observed = if (settled && status != "done") copy(settled = false) else this
         return if (
             until > 0 &&
                 (now >= until || (held != status && status in listOf("blocked", "working")))
         )
-            copy(until = 0, held = "")
-        else this
+            observed.copy(until = 0, held = "")
+        else observed
     }
 }
 
@@ -81,16 +87,19 @@ internal enum class AgentSection(val label: String) {
     PINNED("Pinned"),
     WAITING("Waiting for you"),
     WORKING("Working"),
+    FINISHED("Finished for review"),
     RECENT("Idle · under 1 hour"),
     HOURS("Idle · 1–5 hours"),
     OLD("Idle · 5+ hours"),
     IDLE("Idle"),
+    QUIET("Quiet"),
     OTHER("Other agents"),
     SNOOZED("Snoozed"),
 }
 
 internal object AgentBoard {
-    fun rows(host: HostProfile, view: MobileView, at: Long): List<AgentRow> {
+    fun rows(host: HostProfile, view: MobileView): List<AgentRow> {
+        val at = view.observedAt ?: return emptyList()
         val tabs = view.tabs.associateBy { it.id }
         val spaces = view.workspaces.associateBy { it.id }
         return view.panes.mapNotNull { pane ->
@@ -112,6 +121,7 @@ internal object AgentBoard {
                 pane.idleFirstObservedMs,
                 pane.idleOnsetObserved,
                 at,
+                pane.agentIdentity,
             )
         }
     }
@@ -123,9 +133,11 @@ internal object AgentBoard {
         return when (row.status) {
             "blocked" -> AgentSection.WAITING
             "working" -> AgentSection.WORKING
-            "idle",
-            "done" ->
-                if (row.firstIdle == null) AgentSection.IDLE
+            "done" -> if (current?.settled == true) AgentSection.QUIET else AgentSection.FINISHED
+            "idle" ->
+                if (row.firstIdle == null || row.seenAt == null) AgentSection.IDLE
+                else if (row.seenAt.toULong() >= row.firstIdle && row.seenAt.toULong() - row.firstIdle >= 86_400_000uL)
+                    AgentSection.QUIET
                 else
                     when (idleAgeGroup(row.firstIdle, row.witnessed, row.seenAt.toULong())) {
                         IdleAgeGroup.RECENT -> AgentSection.RECENT
@@ -191,4 +203,10 @@ internal object AgentBoard {
             )
             .map { it.first }
     }
+}
+
+internal fun observationLabel(at: Long?, now: Long): String {
+    if (at == null) return "Observation time unavailable"
+    if (now - at in 0 until 60_000) return "Seen just now"
+    return "Seen " + android.text.format.DateUtils.getRelativeTimeSpanString(at, now, 60_000)
 }

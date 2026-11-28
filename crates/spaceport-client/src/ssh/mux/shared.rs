@@ -57,6 +57,10 @@ exit "$status""#;
 /// while. Only logged.
 #[derive(Debug, thiserror::Error)]
 enum StartError {
+    #[error("could not check for the user's SSH master: {0}")]
+    Check(#[source] crate::Error),
+    #[error("the SSH master check was interrupted ({0})")]
+    CheckInterrupted(ExitStatus),
     #[error("could not create the control socket directory")]
     Directory(#[source] io::Error),
     #[error("could not start ssh")]
@@ -421,9 +425,14 @@ const CHECK_TIMEOUT: Duration = Duration::from_secs(5);
 fn launch(program: &OsString, target: &str, lane: Lane, id: u64) -> Result<Master, StartError> {
     let mut check = crate::environment::command(&program.to_string_lossy());
     check.args(["-O", "check", "--", target]);
-    let checked = crate::ssh::run(&mut check, CHECK_TIMEOUT, || false);
-    if matches!(checked, Ok((status, _)) if status.success()) {
-        return Err(StartError::UserMaster);
+    let (status, _) =
+        crate::ssh::run(&mut check, CHECK_TIMEOUT, || false).map_err(StartError::Check)?;
+    // Only a completed negative check lets us choose a private socket over
+    // the user's configured ControlPath.
+    match status.code() {
+        Some(0) => return Err(StartError::UserMaster),
+        None => return Err(StartError::CheckInterrupted(status)),
+        Some(_) => {}
     }
     let dir = ControlDir::create("herdr-mux").map_err(StartError::Directory)?;
     let socket = dir.socket();

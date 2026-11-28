@@ -80,7 +80,7 @@ impl SettingsWindow {
             .try_global::<crate::app::InitialAppearance>()
             .cloned()
             .unwrap_or_default();
-        intent.apply(&mut appearance.config);
+        intent.apply(&mut appearance.shown.config);
         cx.set_global(appearance);
         cx.notify();
     }

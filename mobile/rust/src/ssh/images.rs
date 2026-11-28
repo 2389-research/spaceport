@@ -124,13 +124,14 @@ impl ImageStager {
         &self,
         transport: &ConnectedSsh,
         png: Vec<u8>,
+        transfer: Arc<MobileFileTransfer>,
     ) -> Result<Arc<StagedImage>, MobileError> {
         if !png.starts_with(b"\x89PNG\r\n\x1a\n")
             || png.len() > spaceport_client::protocol::MAX_CLIPBOARD_IMAGE_PAYLOAD
         {
             return Err(UNAVAILABLE);
         }
-        self.stage_file(transport, NAME.to_owned(), png, MobileFileTransfer::new())
+        self.stage_file(transport, NAME.to_owned(), png, transfer)
     }
 
     pub(crate) fn stage_file(

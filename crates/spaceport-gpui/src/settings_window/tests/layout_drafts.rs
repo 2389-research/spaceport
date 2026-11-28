@@ -47,6 +47,7 @@ fn layout_clicks_apply_live_without_writing_and_close_commits_only_final(cx: &mu
             }
             assert_eq!(
                 cx.global::<crate::app::InitialAppearance>()
+                    .shown
                     .config
                     .layout
                     .mode,
@@ -126,6 +127,7 @@ fn layout_draft_survives_settings_and_main_reloads_and_other_saves(cx: &mut Test
         assert_eq!(view.layout_intent, Some(LayoutMode::Orca));
         assert_eq!(
             cx.global::<crate::app::InitialAppearance>()
+                .shown
                 .config
                 .layout
                 .mode,

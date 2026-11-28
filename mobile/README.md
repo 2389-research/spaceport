@@ -58,6 +58,14 @@ Forgetting a host key closes that host's open connections. You verify the finger
 On Home, swipe an agent toward the end to pin it, or toward the start to snooze it for an hour.
 Touch and hold for other snooze lengths, including until 9 AM tomorrow. TalkBack offers the same choices as actions.
 The terminal's **Home** button shows a dot when an agent in another pane needs you.
+Tap **+** beside Home to create a terminal in the current workspace. Each retained session keeps its own draft.
+Home shows the last observed roster while it refreshes over SSH in the foreground.
+A parked session can refresh directly. A cold refresh needs a saved host pin and an enrolled phone key.
+Choosing **Disconnect** pauses automatic refresh for that session until you sign in again.
+
+Hold the Android launcher icon to choose **Resume terminal** or **Next waiting agent**.
+The **Spaceport agents** widget shows cached counts and the time Spaceport observed them.
+Opening a shortcut returns to the saved session and checks its destination before selecting a pane.
 
 **Settings** shows the phone's public key with **Copy public key** and **Share**.
 **Install on a host** asks for the account's SSH password once. It installs the key and checks a fresh key-only login without starting Herdr.
@@ -157,6 +165,11 @@ Opening a named session runs the installed Herdr bridge. Herdr starts the sessio
 Disconnecting closes the client's SSH channel. Herdr continues to own its terminals and agents.
 Native chat is deferred. Agent prompts and approvals use their original terminal.
 
+On either phone, add tags in host details and use the Home filter to show matching hosts.
+**Finished for review** collects completed work. Mark a result reviewed to move it into **Quiet**.
+Quiet also folds agents observed idle for at least a day. New work or a request for input brings them back.
+Use **Copy connection diagnostics** for a report with the build, connection stage, negotiated capabilities and last roster observation.
+
 ## Siri, Shortcuts, and the Action Button
 
 In Shortcuts, choose **Spaceport** to see its five actions.
@@ -186,7 +199,7 @@ It works independently of the Live Activities setting.
 
 ## Review agents and filter hosts
 
-On iOS, **Finished for review** shows completed agents. Hold a completed row and choose **Mark reviewed** to move it into **Quiet**. A new working or waiting observation clears the review mark. Quiet also folds idle agents with at least 24 hours of confirmed inactivity. Open its heading to see those agents.
+On iOS and Android, **Finished for review** shows completed agents. Hold a completed row and choose **Mark reviewed** to move it into **Quiet**. A new working or waiting observation clears the review mark. Quiet also folds idle agents with at least 24 hours of confirmed inactivity. Open its heading to see those agents.
 
 In Host Details, choose **Edit tags**. Separate tags with commas. The Home filter applies the selected tag to hosts, sessions and agents. Tags and review marks stay on the phone.
 
@@ -312,7 +325,7 @@ If the destination changes, choose the new destination explicitly or switch back
 
 ### Attach a file to a terminal
 
-Open Compose in the destination terminal and tap File on iOS.
+Open Compose in the destination terminal and tap File on iOS or Choose file on Android.
 Select a document up to 16 MiB. Check the host, session and pane, then tap Paste or Send.
 Spaceport uploads the file over the active SSH connection and pastes its remote path.
 

@@ -70,9 +70,9 @@ impl SourceWindow {
     /// gone before it opened: there is no window left to read.
     pub(super) fn from_appearance(appearance: &crate::app::InitialAppearance) -> Self {
         Self {
-            config: appearance.config.clone(),
+            config: appearance.shown.config.clone(),
             keymap: appearance.keymap.clone(),
-            theme: appearance.theme.clone(),
+            theme: appearance.shown.theme.clone(),
             shared: None,
             target: None,
             integrations_busy: false,

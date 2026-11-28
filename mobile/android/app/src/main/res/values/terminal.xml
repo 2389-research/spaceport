@@ -18,4 +18,6 @@
     <string name="install_password_again">Enter the SSH password again.</string>
     <string name="install_checking">Checking SSH access…</string>
     <string name="install_changed_host">The host key changed. Confirm the change with the host administrator, then forget the old key in Host details.</string>
+    <string name="draft_attach_shared">Attach shared file</string>
+    <string name="draft_upload_progress">Uploading %1$s: %2$s / %3$s</string>
 </resources>

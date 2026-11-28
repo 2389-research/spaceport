@@ -66,6 +66,9 @@ class LiveTerminalTest : LiveMobileUi() {
                 input("accepted-android-flight")
                 after("history match", { click("Find") }, { node { it.text?.startsWith("Match 1 of ") == true } != null })
                 assertNotNull(label("Copy match"))
+                after("terminal after Find", { instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK) }, { label("New terminal") != null })
+                val before = requireNotNull(selectedPane())
+                after("new terminal", { click("New terminal") }, { selectedPane()?.let { it != before } == true })
             }
         } finally {
             AgentCatalog(instrumentation.targetContext).forget(profile)
