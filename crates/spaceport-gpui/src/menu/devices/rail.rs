@@ -1,11 +1,13 @@
-//! The Add Device dialog's frame: one title, a rail of what can be added (this
-//! platform's own hosts), and the chosen source's form beside it. Each source keeps its own form state,
-//! so switching back and forth does not lose what was typed.
+//! The Add Device dialog's sources: which of them this platform offers, the
+//! words naming each, and the page each form belongs to. The frame around the
+//! chosen one is `spaceport_menu::devices::dialog`'s; opening a source and
+//! stepping through the rail are the window's.
 
 use super::super::Page;
 use crate::SpaceportWindow;
 use crate::i18n::fl;
 use gpui::{prelude::*, *};
+use spaceport_menu::devices::dialog;
 
 /// One entry of the rail.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -137,9 +139,10 @@ impl SpaceportWindow {
         true
     }
 
-    /// The whole dialog: the shared header, the rail, and `pane`, which draws
-    /// its own body and footer. `selector` and `close` keep each source's
-    /// own debug names for its frame and Close button.
+    /// The whole dialog, as `spaceport_menu` paints it: the shared header, the
+    /// rail of this platform's sources, and `pane`, which draws its own body
+    /// and footer. `selector` and `close` keep each source's own debug names
+    /// for its frame and Close button.
     pub(in crate::menu) fn add_device_frame(
         &self,
         selector: &'static str,
@@ -148,130 +151,42 @@ impl SpaceportWindow {
         pane: impl IntoElement,
         cx: &mut Context<Self>,
     ) -> Div {
-        let theme = &self.theme;
-        let header = div()
-            .debug_selector(|| "device-setup-header".into())
-            .flex_none()
-            .p(px(16.))
-            .border_b_1()
-            .border_color(rgb(theme.active))
-            .flex()
-            .items_center()
-            .gap(px(12.))
-            .child(
-                div()
-                    .flex_1()
-                    .text_size(px(self.config.ui.size * 1.35))
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .child(fl!("add-device-title")),
-            )
-            .child(
-                div()
-                    .id(close)
-                    .debug_selector(move || close.into())
-                    .px_2()
-                    .py_1()
-                    .cursor_pointer()
-                    .rounded(px(crate::config::corners::CONTROL))
-                    .hover(|s| s.bg(rgb(theme.active)))
-                    .child(fl!("add-device-close"))
-                    .on_click(cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx))),
-            );
         let sources = self.rail_sources();
-        let body = div().flex_1().min_h_0().flex();
-        // A lone source needs no rail.
-        let body = if sources.len() > 1 {
-            body.child(self.render_add_device_rail(&sources, compact, cx))
-        } else {
-            body
-        };
-        div()
-            .debug_selector(move || selector.into())
-            .flex_1()
-            .flex()
-            .flex_col()
-            .min_h_0()
-            .child(header)
-            .child(
-                body.child(
-                    div()
-                        .flex_1()
-                        .min_w_0()
-                        .min_h_0()
-                        .flex()
-                        .flex_col()
-                        .child(pane),
-                ),
-            )
-    }
-
-    fn render_add_device_rail(
-        &self,
-        sources: &[Source],
-        compact: bool,
-        cx: &mut Context<Self>,
-    ) -> Div {
-        let theme = &self.theme;
         let current = self.menu.page.and_then(Source::of);
-        // A provider's pane opened from elsewhere belongs under Add provider
-        // while the rail omits it.
-        let mut rail = div()
-            .debug_selector(|| "add-device-rail".into())
-            .flex_none()
-            // Wide enough for its names in any language, up to a limit.
-            .when(compact, |rail| rail.w(px(52.)))
-            .when(!compact, |rail| rail.min_w(px(172.)).max_w(px(240.)))
-            .p(px(8.))
-            .flex()
-            .flex_col()
-            .gap(px(2.))
-            .border_r_1()
-            .border_color(rgb(theme.active));
-        for &source in sources {
-            let on = current == Some(source);
-            let id = source.id();
-            let icon = div()
-                .flex_none()
-                .size(px(24.))
-                .rounded(px(crate::config::corners::SMALL))
-                .bg(rgb(theme.active))
-                .flex()
-                .items_center()
-                .justify_center()
-                .child(
-                    svg()
-                        .path(source.icon())
-                        .size(px(14.))
-                        .text_color(rgb(theme.foreground)),
-                );
-            rail = rail.child(
-                div()
-                    .id(id)
-                    .debug_selector(move || id.into())
-                    .p(px(6.))
-                    .flex()
-                    .items_center()
-                    .gap(px(8.))
-                    .rounded(px(crate::config::corners::CONTROL))
-                    .cursor_pointer()
-                    .when(on, |row| row.bg(rgb(theme.primary_wash())))
-                    .when(!on, |row| row.hover(|s| s.bg(rgb(theme.active))))
-                    .child(icon)
-                    .when(!compact, |row| {
-                        // Its own width counts, so the rail widens to fit it.
-                        row.child(
-                            div()
-                                .flex_grow(1.)
-                                .min_w_0()
-                                .truncate()
-                                .child(source.name()),
-                        )
-                    })
-                    .on_click(cx.listener(move |this, _, window, cx| {
-                        this.open_source(source, window, cx);
-                    })),
-            );
-        }
-        rail
+        let frame = dialog::Frame {
+            dialog: selector.to_owned(),
+            close: close.to_owned(),
+            title: fl!("add-device-title"),
+            close_label: fl!("add-device-close"),
+            sources: sources
+                .iter()
+                .map(|&source| dialog::Source {
+                    selector: source.id().to_owned(),
+                    icon: source.icon().to_owned(),
+                    label: source.name(),
+                    current: current == Some(source),
+                })
+                .collect(),
+            compact,
+        };
+        let text = crate::menu::chrome::text(&self.config.ui);
+        dialog::frame(
+            &text,
+            &self.theme,
+            frame,
+            pane,
+            move |action, control| match action {
+                dialog::Action::Close => control
+                    .on_click(cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx))),
+                dialog::Action::Source(index) => match sources.get(index) {
+                    Some(&source) => {
+                        control.on_click(cx.listener(move |this, _, window, cx| {
+                            this.open_source(source, window, cx)
+                        }))
+                    }
+                    None => control,
+                },
+            },
+        )
     }
 }

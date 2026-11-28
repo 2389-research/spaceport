@@ -1,7 +1,8 @@
 // ABOUTME: Owns the device setup form and its confirmed background work.
 // ABOUTME: Keeps the Core host form closed when the running app has Core disabled.
-//! The Add Device dialog: its form, and the Core request that adds the
-//! machine off the UI thread (see `core`).
+//! The Add Device dialog: its form's state, the words it says, and the Core
+//! request that adds the machine off the UI thread (see `core`). The paint is
+//! `spaceport_menu::devices`'s.
 
 use super::Page;
 
@@ -11,6 +12,8 @@ use crate::i18n::fl;
 use crate::{SpaceportWindow, search_input::SearchInput};
 use gpui::{prelude::*, *};
 use spaceport_client::protocol::{ClientKeyCode, ClientKeyKind, ClientPaneInputEvent};
+use spaceport_menu::devices::add_device::{self, Action, Form};
+use spaceport_menu::devices::{Field, Submit, Value};
 
 pub(in crate::menu) struct Setup {
     pub(super) fields: [Entity<SearchInput>; 3],
@@ -33,6 +36,14 @@ pub(super) enum Step {
     CoreUnknown,
     /// Saved; the next frame closes the dialog (see `poll_device_setup`).
     Saved,
+}
+
+impl Step {
+    /// Whether a request was submitted: what the fields hold now is not what
+    /// it carries.
+    fn pending(&self) -> bool {
+        !matches!(self, Self::Form | Self::Saved)
+    }
 }
 
 impl SpaceportWindow {
@@ -93,13 +104,7 @@ impl SpaceportWindow {
         let Some(form) = &self.menu.device_setup else {
             return false;
         };
-        if matches!(
-            form.step,
-            Step::CoreConnecting(_)
-                | Step::CoreAdding { .. }
-                | Step::CoreWaiting(_)
-                | Step::CoreUnknown
-        ) {
+        if form.step.pending() {
             if event.keystroke.key == "escape" {
                 self.dismiss_menu(window, cx);
             }
@@ -131,75 +136,11 @@ impl SpaceportWindow {
         true
     }
 
-    pub(in crate::menu) fn render_add_device(
-        &self,
-        compact: bool,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement {
-        let theme = &self.theme;
-        let frame = |pane: Div, cx: &mut Context<Self>| {
-            self.add_device_frame(
-                "device-setup-dialog",
-                "device-setup-close",
-                compact,
-                pane,
-                cx,
-            )
-        };
-        let Some(setup) = &self.menu.device_setup else {
-            return frame(div(), cx);
-        };
-        let mut body = div()
-            .id("device-setup-body")
-            .debug_selector(|| "device-setup-body".into())
-            .flex_1()
-            .min_h_0()
-            .overflow_y_scroll()
-            .p(px(16.))
-            .flex()
-            .flex_col()
-            .gap(px(12.))
-            .child(
-                div()
-                    .flex_none()
-                    .text_color(rgb(theme.subtext()))
-                    .child(fl!("add-device-core-intro")),
-            );
-        for (label, field) in [
-            fl!("add-device-target"),
-            fl!("add-device-label"),
-            fl!("add-device-session"),
-        ]
-        .into_iter()
-        .zip(&setup.fields)
-        {
-            let row = div().flex_none().flex().flex_col().gap(px(6.)).child(label);
-            let core_pending = matches!(
-                setup.step,
-                Step::CoreConnecting(_)
-                    | Step::CoreAdding { .. }
-                    | Step::CoreWaiting(_)
-                    | Step::CoreUnknown
-            );
-            body = body.child(if core_pending {
-                row.child(spaceport_client::text::safe_text(
-                    field.read(cx).text(),
-                    160,
-                ))
-            } else {
-                row.child(field.clone())
-            });
-        }
-        if let Some(error) = &setup.error {
-            body = body.child(
-                div()
-                    .flex_none()
-                    .text_color(crate::menu::danger(theme))
-                    .child(error.clone()),
-            );
-        }
+    /// The form, as `spaceport_menu` paints it.
+    fn device_form(&self, setup: &Setup, cx: &App) -> Form {
+        let pending = setup.step.pending();
+        let ready = matches!(setup.step, Step::Form);
         let status = match &setup.step {
-            Step::Form | Step::CoreUnknown | Step::Saved => None,
             Step::CoreConnecting(request) => Some(fl!(
                 "add-device-core-connecting",
                 target = spaceport_client::text::safe_text(&request.target, 160)
@@ -212,62 +153,63 @@ impl SpaceportWindow {
                 "add-device-core-waiting",
                 target = spaceport_client::text::safe_text(&request.target, 160)
             )),
+            _ => None,
         };
-        if let Some(status) = status {
-            body = body.child(
-                div()
-                    .debug_selector(|| "device-setup-status".into())
-                    .flex_none()
-                    .text_color(rgb(theme.muted))
-                    .child(status),
-            );
+        Form {
+            intro: fl!("add-device-core-intro"),
+            fields: [
+                fl!("add-device-target"),
+                fl!("add-device-label"),
+                fl!("add-device-session"),
+            ]
+            .into_iter()
+            .zip(&setup.fields)
+            .map(|(label, field)| Field {
+                label,
+                // A request was sent: it carries what was typed, not what the
+                // fields hold now.
+                value: match pending {
+                    true => Value::Typed(spaceport_client::text::safe_text(
+                        field.read(cx).text(),
+                        160,
+                    )),
+                    false => Value::Input(field.clone().into_any_element()),
+                },
+            })
+            .collect(),
+            error: setup.error.clone(),
+            status,
+            submit: Submit {
+                selector: "device-setup-submit".to_owned(),
+                label: match ready {
+                    true => fl!("add-device-submit"),
+                    false => fl!("add-device-submit-checking"),
+                },
+                enabled: ready,
+            },
+            danger: crate::menu::danger(&self.theme),
         }
-        let button = |id: &'static str, label: SharedString, enabled: bool| {
-            div()
-                .id(id)
-                .debug_selector(move || id.into())
-                .p(px(8.))
-                .rounded(px(crate::config::corners::CONTROL))
-                .bg(rgb(theme.active))
-                .when(enabled, |button| {
-                    button.cursor_pointer().hover(|s| {
-                        s.bg(rgb(theme.active).blend(rgba((theme.foreground << 8) | 0x20)))
-                    })
-                })
-                .when(!enabled, |button| button.text_color(rgb(theme.muted)))
-                .child(label)
+    }
+
+    pub(in crate::menu) fn render_add_device(&self, compact: bool, cx: &mut Context<Self>) -> Div {
+        let pane = match self
+            .menu
+            .device_setup
+            .as_ref()
+            .map(|setup| self.device_form(setup, cx))
+        {
+            Some(form) => add_device::body(&self.theme, form, |action, submit| match action {
+                Action::Submit => submit.on_click(
+                    cx.listener(|this, _, window, cx| this.submit_core_device(window, cx)),
+                ),
+            }),
+            None => div(),
         };
-        let ready = matches!(setup.step, Step::Form);
-        let footer = div()
-            .debug_selector(|| "device-setup-footer".into())
-            .flex_none()
-            .p(px(16.))
-            .border_t_1()
-            .border_color(rgb(theme.active))
-            .flex()
-            .justify_end()
-            .gap(px(8.))
-            .child(
-                button(
-                    "device-setup-submit",
-                    if ready {
-                        fl!("add-device-submit")
-                    } else {
-                        fl!("add-device-submit-checking")
-                    }
-                    .into(),
-                    ready,
-                )
-                .on_click(cx.listener(|this, _, window, cx| this.submit_core_device(window, cx))),
-            );
-        frame(
-            div()
-                .flex_1()
-                .min_h_0()
-                .flex()
-                .flex_col()
-                .child(body)
-                .child(footer),
+        self.add_device_frame(
+            "device-setup-dialog",
+            "device-setup-close",
+            compact,
+            pane,
             cx,
         )
     }
