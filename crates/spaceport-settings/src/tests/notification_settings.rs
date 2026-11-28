@@ -188,6 +188,7 @@ fn bell_defaults_to_attention_and_rejects_unknown_keys() -> anyhow::Result<()> {
 /// The daemon's own answer is the starting point, each GUI key overrides
 /// it alone, and the file this GUI writes for a new user pins neither.
 #[test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 109 lines")]
 fn clipboard_toast_layers_the_daemon_config_under_the_gui_config() -> anyhow::Result<()> {
     use ClipboardToastPosition::*;
     let temp = TempDirectory::new()?;

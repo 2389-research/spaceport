@@ -6,6 +6,7 @@ use super::super::themes;
 use super::*;
 
 /// Returns the filtered and unfiltered catalog sizes for the pass summary.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 345 lines")]
 pub(super) async fn verify_themes(
     settings: WindowHandle<SettingsWindow>,
     source: WindowHandle<SpaceportWindow>,

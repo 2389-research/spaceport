@@ -67,6 +67,13 @@ impl HostMenu {
 }
 
 impl SpaceportWindow {
+    #[cfg_attr(
+        target_os = "linux",
+        allow(
+            clippy::cognitive_complexity,
+            reason = "2026-11-27 Linux tracing baseline: complexity 54"
+        )
+    )]
     pub(crate) fn open_host_menu(
         &mut self,
         id: &str,
@@ -458,6 +465,7 @@ impl SpaceportWindow {
         }
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 179 lines")]
     pub(in crate::menu) fn render_host_menu(&self, cx: &mut Context<Self>) -> Div {
         let Some(host) = &self.menu.host else {
             return div();

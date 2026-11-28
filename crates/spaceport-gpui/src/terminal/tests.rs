@@ -41,6 +41,7 @@ fn wheel_pane(mouse_reporting: bool) -> PaneSurfacePane {
 }
 
 #[test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 104 lines")]
 fn pane_context_hit_testing_uses_canvas_origin_and_rects_not_focus() {
     use spaceport_client::protocol::*;
     let frame = FrameData {
@@ -151,6 +152,11 @@ fn pane_context_hit_testing_uses_canvas_origin_and_rects_not_focus() {
 }
 
 #[test]
+#[allow(
+    clippy::cognitive_complexity,
+    clippy::too_many_lines,
+    reason = "2026-11-27 baseline: complexity 32, 192 lines"
+)]
 fn wheel_hits_inner_pane_and_uses_relative_coordinates_and_semantic_modes() {
     use spaceport_client::protocol::*;
     let frame = FrameData {

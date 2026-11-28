@@ -23,6 +23,11 @@ impl SpaceportWindow {
         }
     }
 
+    #[allow(
+        clippy::cognitive_complexity,
+        clippy::too_many_lines,
+        reason = "2026-11-27 baseline: complexity 44, 218 lines"
+    )]
     pub(super) fn menu_key_down(
         &mut self,
         event: &KeyDownEvent,

@@ -41,6 +41,7 @@ pub(crate) fn target_id(view: &SpaceportWindow) -> Option<&str> {
     view.menu.target.as_ref().map(|target| target.id.as_str())
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 119 lines")]
 pub(crate) fn check_menu_interactions(
     view: &gpui::Entity<SpaceportWindow>,
     cx: &mut gpui::VisualTestContext,

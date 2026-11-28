@@ -82,6 +82,7 @@ impl SettingsWindow {
         self.controls.ruler.saving = self.persistence.saving().then_some(opacity);
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 140 lines")]
     pub(in crate::settings_window) fn backdrop_ruler(&self, cx: &mut Context<Self>) -> Div {
         let theme = &self.theme;
         let accent = crate::menu::accent(theme);

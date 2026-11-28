@@ -208,6 +208,7 @@ fn narrow_layout_renders_search_and_virtualized_rows(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 112 lines")]
 fn wrapped_rows_reflow_keep_columns_and_tail_without_changing_exports(cx: &mut TestAppContext) {
     let body = "x".repeat(160);
     let (view, cx) = cx.add_window_view(|window, cx| {

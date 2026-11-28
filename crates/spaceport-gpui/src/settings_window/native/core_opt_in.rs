@@ -26,6 +26,7 @@ async fn settle(settings: WindowHandle<SettingsWindow>, cx: &mut AsyncApp) -> Re
     }
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 107 lines")]
 pub(crate) async fn verify(source: WindowHandle<SpaceportWindow>, cx: &mut AsyncApp) -> Result<()> {
     let theme = if std::env::var_os("HERDR_TEST_LOCAL_CONTROLS_LIGHT").is_some() {
         "Catppuccin Latte" // i18n: data

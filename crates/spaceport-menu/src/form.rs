@@ -140,6 +140,7 @@ pub fn rename(
 /// the footer whose submit button sends it. `field` is the draft the action
 /// asked for, `danger` the refusal colour, and `interact` takes each footer
 /// button back wired with what pressing it does.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 109 lines")]
 pub fn dialog(
     hosts: &Dialog,
     text: &Text,

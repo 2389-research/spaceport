@@ -7,6 +7,7 @@ use spaceport_chat_protocol::{Cursor, Status, Transcript};
 
 #[test]
 #[ignore = "needs HERDR_CORE_TEST_BINARY and SHEPRD_ACP_TEST_BINARY"]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 126 lines")]
 fn a_core_owned_adapter_survives_all_clients_detaching() {
     let core_binary = std::env::var_os("HERDR_CORE_TEST_BINARY").expect("HERDR_CORE_TEST_BINARY");
     let adapter_binary =

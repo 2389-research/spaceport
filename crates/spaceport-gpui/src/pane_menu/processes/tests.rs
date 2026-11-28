@@ -54,6 +54,7 @@ fn numbers_and_reports_read_as_sentences() {
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 113 lines")]
 fn choosing_confirming_and_ending_exact_processes(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);

@@ -349,6 +349,7 @@ impl SpaceportWindow {
 
     /// Rebuilds the entries; the caller ranks them once the palette is back
     /// in the menu.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 124 lines")]
     fn prepare_palette_entries(
         &self,
         palette: &mut Palette,

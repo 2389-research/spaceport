@@ -19,6 +19,7 @@ use crate::{
 use gpui::{prelude::*, *};
 
 impl SettingsWindow {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 218 lines")]
     pub(in crate::settings_window) fn render_general(
         &self,
         page: &PageState<'_>,

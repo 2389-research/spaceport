@@ -93,6 +93,7 @@ fn panel_anchored<K>(hosts: &Hosts<'_, K>, page: Page, layer: &Layer) -> Statefu
 }
 
 /// The width and height each kind of page takes.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 125 lines")]
 fn panel_sized<K>(
     hosts: &Hosts<'_, K>,
     page: Page,

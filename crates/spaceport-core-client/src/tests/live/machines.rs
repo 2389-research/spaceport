@@ -44,6 +44,11 @@ fn a_real_core_stages_distinct_binary_files_for_one_terminal() {
 
 #[test]
 #[ignore = "needs HERDR_CORE_TEST_BINARY"]
+#[allow(
+    clippy::cognitive_complexity,
+    clippy::too_many_lines,
+    reason = "2026-11-27 baseline: complexity 37, 185 lines"
+)]
 fn a_real_core_aggregates_a_fixture_machine() {
     let binary = std::env::var_os("HERDR_CORE_TEST_BINARY").expect("HERDR_CORE_TEST_BINARY");
     let mut remote = Sandbox::start(binary.clone());

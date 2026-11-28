@@ -163,6 +163,7 @@ impl SpaceportWindow {
     /// place: the agent of endpoint `index`, drawn in `row_cx`, that shows
     /// its pane when clicked.
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 121 lines")]
     pub(super) fn agent_cell(
         &self,
         index: usize,

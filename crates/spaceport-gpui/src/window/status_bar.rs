@@ -37,6 +37,7 @@ impl SpaceportWindow {
         (self.config.ui.size * 1.5 + 4.).max(22.)
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 126 lines")]
     pub(super) fn render_status_bar(&self, cx: &mut Context<Self>) -> Stateful<Div> {
         // One instant for the whole bar: a notice's deadline is compared with
         // the moment this frame is drawn, never a second reading mid-render.

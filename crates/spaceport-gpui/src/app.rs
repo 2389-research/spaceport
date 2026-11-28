@@ -338,6 +338,14 @@ pub(crate) fn open_additional_core_window_then(
     });
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 271 lines")]
+#[cfg_attr(
+    target_os = "linux",
+    allow(
+        clippy::cognitive_complexity,
+        reason = "2026-11-27 Linux tracing baseline: complexity 39"
+    )
+)]
 pub(crate) fn run() -> std::process::ExitCode {
     use cli::{LaunchMode, LaunchOptions};
     let mut args: Vec<_> = std::env::args_os().skip(1).collect();

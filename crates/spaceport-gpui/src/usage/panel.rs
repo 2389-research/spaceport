@@ -67,6 +67,7 @@ impl SpaceportWindow {
         true
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 142 lines")]
     pub(crate) fn render_usage_panel(
         &self,
         provider: Provider,

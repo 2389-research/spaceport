@@ -97,6 +97,11 @@ async fn capture_settings(
     Ok(())
 }
 
+#[allow(
+    clippy::cognitive_complexity,
+    clippy::too_many_lines,
+    reason = "2026-11-27 baseline: complexity 27, 282 lines"
+)]
 pub(crate) async fn verify_native(
     source: WindowHandle<SpaceportWindow>,
     cx: &mut AsyncApp,

@@ -427,6 +427,7 @@ pub fn answers_text(answers: &[QuestionAnswer]) -> String {
 /// but only an agent's reply can become a live card or a page preview:
 /// pasting an earlier reply must not turn the user's bubble into a form that
 /// sends prompts.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 107 lines")]
 fn message(
     text: &str,
     author: Author,

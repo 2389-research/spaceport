@@ -139,6 +139,7 @@ impl SpaceportWindow {
             ))
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 136 lines")]
     fn overview_list(&self, frame: &Frame, sections: &Sections, cx: &mut Context<Self>) -> Div {
         let look = &frame.look;
         let theme = look.theme;
@@ -347,6 +348,7 @@ impl SpaceportWindow {
             }))
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 143 lines")]
     fn overview_row(
         &self,
         frame: &Frame,
@@ -501,6 +503,7 @@ impl SpaceportWindow {
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 160 lines")]
     fn overview_actions(
         &self,
         row: &Row,

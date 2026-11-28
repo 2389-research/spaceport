@@ -237,6 +237,7 @@ struct SettingsWindow {
 }
 
 impl SettingsWindow {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 121 lines")]
     fn new(source: WeakEntity<SpaceportWindow>, cx: &mut Context<Self>) -> Self {
         let appearance = cx
             .try_global::<crate::app::InitialAppearance>()
@@ -620,6 +621,7 @@ impl SettingsWindow {
 }
 
 impl Render for SettingsWindow {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 104 lines")]
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.caption.sync(window, &self.theme);
         let searching = self.search_results.clone();

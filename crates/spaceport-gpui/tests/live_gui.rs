@@ -277,6 +277,7 @@ fn native_fixture(fixture: Fixture) {
     }));
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 114 lines")]
 fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
     let mut isolated = Isolated {
         sandbox: Sandbox::new(),

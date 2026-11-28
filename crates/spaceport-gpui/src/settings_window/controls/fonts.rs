@@ -327,6 +327,7 @@ impl SettingsWindow {
             )
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 161 lines")]
     pub(in crate::settings_window) fn render_control_font_picker(
         &self,
         window: &mut Window,

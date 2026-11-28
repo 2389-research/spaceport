@@ -40,6 +40,7 @@ impl Command {
     }
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 180 lines")]
 pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Method, Value)> {
     let workspace = snapshot
         .workspaces

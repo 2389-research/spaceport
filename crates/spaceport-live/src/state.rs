@@ -281,6 +281,7 @@ impl LiveState {
     /// Whether `next` repaints only the terminal: everything else the window
     /// draws from, the sidebar above all, reads as it did in `self`. Every
     /// field is named so a new one must decide whether it can change quietly.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 113 lines")]
     pub fn only_surface_changed(&self, next: &Self) -> bool {
         let Self {
             sound_events,
@@ -479,6 +480,11 @@ impl LiveState {
         self.outer_focused = Some(focused);
     }
 
+    #[allow(
+        clippy::cognitive_complexity,
+        clippy::too_many_lines,
+        reason = "2026-11-27 baseline: complexity 32, 235 lines"
+    )]
     pub fn apply(&mut self, event: ClientEvent, describe: Describe, localize: Localize) {
         match event {
             // Ahead of the handshake it belongs to, which is what shows the

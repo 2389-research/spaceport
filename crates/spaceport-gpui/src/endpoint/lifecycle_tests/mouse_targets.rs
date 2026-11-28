@@ -175,6 +175,7 @@ fn connected_mouse_inactive_pane_receives_first_click_before_focus_fence(
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 124 lines")]
 fn connected_mouse_popup_uses_popup_relative_pixel_coordinates_and_blocks_covered_panes(
     cx: &mut gpui::TestAppContext,
 ) {

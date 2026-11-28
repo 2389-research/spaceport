@@ -188,6 +188,7 @@ impl SpaceportWindow {
     }
 
     /// The only writer of transfer phases and their displayed progress.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 136 lines")]
     fn transition_file_transfer(
         &mut self,
         event: Event<'_>,
@@ -349,6 +350,7 @@ impl SpaceportWindow {
         )
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 103 lines")]
     fn start_file_transfer_with(
         &mut self,
         target: InputTarget,

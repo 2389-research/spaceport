@@ -7,6 +7,7 @@ use std::os::unix::fs::PermissionsExt as _;
 
 #[test]
 #[ignore = "needs HERDR_CORE_TEST_BINARY"]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 164 lines")]
 fn remote_document_reloads_by_core_id_after_hub_and_machine_reconnect() {
     let binary = std::env::var_os("HERDR_CORE_TEST_BINARY").expect("HERDR_CORE_TEST_BINARY");
     let mut remote = Sandbox::start(binary.clone());

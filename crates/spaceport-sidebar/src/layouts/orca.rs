@@ -144,6 +144,7 @@ fn status_column(child: impl IntoElement, cx: &RowContext<'_>) -> Div {
 const REMOVING_OPACITY: f32 = 0.5;
 
 impl RowLayout for Orca {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 151 lines")]
     fn workspace(&self, row: WorkspaceRow<'_>, state: RowState, cx: &RowContext<'_>) -> Div {
         // Its marks fade with it, though the moving ones draw outside it.
         let faded = row.removing.then(|| RowContext {

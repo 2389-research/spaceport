@@ -622,6 +622,7 @@ impl Render for MultilineInput {
 /// marked range's wavy underline (carried by the text system), the ghost
 /// completion, and the caret. Registers the input method for the bounds.
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 178 lines")]
 fn paint_field(
     input: &mut MultilineInput,
     bounds: Bounds<Pixels>,

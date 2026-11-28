@@ -218,6 +218,7 @@ impl Source {
     }
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 113 lines")]
 fn prepare_bytes(
     extension: &'static str,
     bytes: Vec<u8>,

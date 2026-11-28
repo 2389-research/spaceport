@@ -39,6 +39,7 @@ impl SpaceportWindow {
     /// the note, ports and nested agents that ride under it, and returns the
     /// list with the key of the focused nested agent among them, for the
     /// reveal.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 390 lines")]
     pub(super) fn append_workspace_rows(
         &self,
         mut spaces: SpacesRows,

@@ -130,6 +130,7 @@ fn minimal_layout_fits_the_sidebar(cx: &mut gpui::TestAppContext) {
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 113 lines")]
 fn sidebar_densities_keep_details_and_marks_within_their_rows(cx: &mut gpui::TestAppContext) {
     use crate::config::{Density, LayoutMode, Style};
     let (view, cx) = cx.add_window_view(|window, cx| {

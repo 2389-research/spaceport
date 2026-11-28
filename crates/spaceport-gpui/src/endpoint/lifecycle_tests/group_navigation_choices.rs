@@ -7,6 +7,7 @@ enum Choice {
     Page,
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 103 lines")]
 fn newer_choice(cx: &mut gpui::TestAppContext, choice: Choice) {
     let (endpoint, mut server) = connected_endpoint("newer-group-choice");
     let (fixture, cx) = cx.add_window_view(|window, cx| {

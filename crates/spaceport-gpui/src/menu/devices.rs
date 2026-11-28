@@ -160,6 +160,7 @@ impl SpaceportWindow {
         .size_full()
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 173 lines")]
     pub(crate) fn render_device_footer(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let button_bounds = std::rc::Rc::new(std::cell::Cell::new(Bounds::<Pixels>::default()));
         let painted_bounds = button_bounds.clone();

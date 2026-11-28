@@ -334,6 +334,7 @@ impl SpaceportWindow {
         true
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 187 lines")]
     pub(super) fn render_pane_processes(&self, pane: &PaneMenu, cx: &mut Context<Self>) -> Div {
         let Some(processes) = &pane.processes else {
             return div();

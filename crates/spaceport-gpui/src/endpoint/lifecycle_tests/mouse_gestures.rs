@@ -1,6 +1,7 @@
 use super::*;
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 132 lines")]
 fn connected_mouse_cancels_stale_gestures_before_drag_or_release(cx: &mut gpui::TestAppContext) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
         Fixture(cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx)))
@@ -138,6 +139,7 @@ fn connected_mouse_cancels_stale_gestures_before_drag_or_release(cx: &mut gpui::
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 109 lines")]
 fn connected_mouse_external_drag_cleans_up_once_without_forwarding_synthetic_input(
     cx: &mut gpui::TestAppContext,
 ) {

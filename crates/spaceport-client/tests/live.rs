@@ -279,6 +279,7 @@ impl Session {
 
 #[test]
 #[ignore = "requires explicit HERDR_TEST_BINARY; spawns an isolated live daemon"]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 128 lines")]
 fn stable_endpoint_live() {
     let mut daemon = Daemon::start();
     let mut session = Session::open(&daemon);

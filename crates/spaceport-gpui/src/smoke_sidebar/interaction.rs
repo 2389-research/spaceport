@@ -11,6 +11,7 @@ use std::{sync::Arc, time::Duration};
 
 /// Collapses and expands a host, opens the menu from the footer, and proves the
 /// open menu does not pass its keys on to the terminal.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 112 lines")]
 pub(super) async fn menu_isolation(
     handle: WindowHandle<SpaceportWindow>,
     cx: &mut AsyncApp,

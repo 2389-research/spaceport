@@ -201,6 +201,7 @@ impl LogWindow {
         cx.notify();
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 143 lines")]
     fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let search = cx.new(SearchInput::new);
         let appearance = cx.default_global::<Appearance>().clone();
@@ -493,6 +494,7 @@ fn styled_body(record: &Record, theme: &Theme) -> StyledText {
 }
 
 impl Render for LogWindow {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 260 lines")]
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         if self.following {
             self.scroll.scroll_to(ListOffset {

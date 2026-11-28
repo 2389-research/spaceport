@@ -7,6 +7,7 @@ use gpui::*;
 use spaceport_client::{Method, protocol::ClientShellCommandAction};
 
 impl SpaceportWindow {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 122 lines")]
     pub(super) fn activate_palette(
         &mut self,
         action: Action,

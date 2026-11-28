@@ -281,6 +281,11 @@ impl View {
         None
     }
 
+    #[allow(
+        clippy::cognitive_complexity,
+        clippy::too_many_lines,
+        reason = "2026-11-27 baseline: complexity 28, 123 lines"
+    )]
     pub(crate) fn key(&mut self, key: KeyEvent) -> Option<Out> {
         if key.kind == KeyEventKind::Release {
             return None;

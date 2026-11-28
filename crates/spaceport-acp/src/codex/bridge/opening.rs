@@ -89,6 +89,7 @@ impl State {
     }
 
     /// The sole writer of handshake, model-list, and opening state.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 111 lines")]
     pub(super) fn transition(&mut self, event: Event) -> Vec<Effect> {
         let mut effects = Vec::new();
         match event {

@@ -49,6 +49,7 @@ pub(super) fn status_badge(status: AgentStatus) -> String {
 /// One host's Go To rows: each workspace, its tabs when it has a choice of
 /// them, then every pane, one row per agent or terminal so no split is hidden
 /// behind its tab.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 138 lines")]
 pub(super) fn go_to_entries(
     endpoint: &str,
     host: Option<&str>,

@@ -74,6 +74,7 @@ pub(super) fn symbol_cascade(window: &mut Window, cx: &mut App) -> Result<&'stat
 /// Draws the Menlo fixture in flat and rounded normal, compact and comfortable
 /// layouts at four viewport sizes, and answers how many frames fitted the
 /// display.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 112 lines")]
 pub(super) async fn frames(handle: WindowHandle<SpaceportWindow>, cx: &mut AsyncApp) -> Result<u64> {
     let mut drawn = 0;
     for frame in 0..72 {

@@ -13,7 +13,7 @@ struct Word<'a> {
     bottom: u32,
 }
 
-pub(super) fn locate(tsv: &str, size: (u32, u32)) -> Result<(u32, u32)> {
+fn parse_lines(tsv: &str, size: (u32, u32)) -> Result<Vec<Vec<Word<'_>>>> {
     let mut rows = tsv.lines();
     ensure!(
         rows.next() == Some(HEADER),
@@ -100,6 +100,11 @@ pub(super) fn locate(tsv: &str, size: (u32, u32)) -> Result<(u32, u32)> {
         });
     }
 
+    Ok(lines)
+}
+
+pub(super) fn locate(tsv: &str, size: (u32, u32)) -> Result<(u32, u32)> {
+    let lines = parse_lines(tsv, size)?;
     let mut click = None;
     for words in &lines {
         for pair in words.windows(2) {

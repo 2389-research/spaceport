@@ -1,6 +1,7 @@
 use super::*;
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 101 lines")]
 fn connected_horizontal_wheel_reaches_only_mouse_reporting_panes_and_popups(
     cx: &mut gpui::TestAppContext,
 ) {

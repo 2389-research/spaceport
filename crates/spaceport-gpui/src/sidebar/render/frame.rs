@@ -18,6 +18,7 @@ impl SpaceportWindow {
     /// Paints the panel: the spaces section with its heading, list and footer,
     /// the agents section below it, and the edges that resize them, with the
     /// pointer handlers that carry a drag on outside the panel.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 273 lines")]
     pub(super) fn sidebar_frame(
         &self,
         m: &SidebarMeasure<'_>,

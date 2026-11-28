@@ -13,7 +13,7 @@ recipe rather than a note.
 | Recipe | What it does |
 | --- | --- |
 | `just format-check` | rustfmt across the workspace |
-| `just lint` | clippy, default and no-default-features, warnings denied |
+| `just lint` | clippy, default and no-default-features, warnings denied — this is where each function's cognitive-complexity (25) and line (100) ceilings, set in `clippy.toml`, are enforced |
 | `just test` | the whole workspace test suite, default and all-features |
 | `just nextest *args` | the same suites under cargo-nextest |
 | `just check-file-size` | the 1,000-line source-file ceiling |

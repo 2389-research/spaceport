@@ -133,6 +133,7 @@ impl Fence {
     }
 
     /// The only writer for the activation lifecycle, on both inbox and UI clones.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 141 lines")]
     pub fn transition(&mut self, event: Transition<'_>) {
         match event {
             #[cfg(any(test, feature = "test-support"))]

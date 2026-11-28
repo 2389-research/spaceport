@@ -1,6 +1,7 @@
 use super::*;
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 108 lines")]
 fn newer_same_endpoint_navigation_cannot_replay_a_pending_toast(cx: &mut gpui::TestAppContext) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
         Fixture(cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx)))
@@ -114,6 +115,7 @@ fn newer_same_endpoint_navigation_cannot_replay_a_pending_toast(cx: &mut gpui::T
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 104 lines")]
 fn toast_handoff_retains_busy_validation_and_revalidates_before_queueing(
     cx: &mut gpui::TestAppContext,
 ) {
@@ -227,6 +229,7 @@ fn toast_handoff_retains_busy_validation_and_revalidates_before_queueing(
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 127 lines")]
 fn accepted_toast_survives_expiry_but_not_invalidation(cx: &mut gpui::TestAppContext) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
         Fixture(cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx)))

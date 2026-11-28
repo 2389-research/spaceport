@@ -1,6 +1,7 @@
 use super::*;
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 108 lines")]
 fn the_sidebar_follows_the_selection_without_undoing_manual_scrolling(
     cx: &mut gpui::TestAppContext,
 ) {

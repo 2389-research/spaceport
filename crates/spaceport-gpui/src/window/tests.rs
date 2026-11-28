@@ -121,6 +121,7 @@ fn a_held_key_repeats_in_the_terminal_but_keeps_accents_in_menus(cx: &mut gpui::
 /// snapshot, then only what a theme change altered, and a replacement
 /// connection hears all of it again.
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 158 lines")]
 fn host_theme_reaches_each_connection_and_follows_theme_changes(cx: &mut gpui::TestAppContext) {
     use gpui::AppContext;
     use spaceport_client::{

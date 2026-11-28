@@ -118,6 +118,7 @@ impl Reporter {
     }
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 111 lines")]
 fn run(
     target: &Target,
     display: &str,

@@ -471,6 +471,7 @@ impl SpaceportWindow {
         }
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 116 lines")]
     fn tick(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(chrome) = self.sidebar_preferences.as_mut().and_then(|p| p.loaded()) {
             self.apply_stored_chrome(chrome);

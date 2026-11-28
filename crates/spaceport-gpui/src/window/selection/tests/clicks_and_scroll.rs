@@ -45,6 +45,7 @@ fn double_and_triple_clicks_copy_the_word_and_the_row(cx: &mut TestAppContext) {
 /// and a selection that ends up reaching rows off the screen is read
 /// from the daemon on release instead of from the painted cells.
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 106 lines")]
 fn a_drag_past_the_pane_scrolls_and_copies_through_the_daemon(cx: &mut TestAppContext) {
     use crate::window::MockPeer;
     use serde_json::{Value, json};

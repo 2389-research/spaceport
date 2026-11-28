@@ -52,6 +52,7 @@ fn the_rows_say_what_the_panes_own_state_makes_them_do() {
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 114 lines")]
 fn menu_isolation_rename_composition_close_and_endpoint_fences(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);
@@ -393,6 +394,7 @@ fn right_click_follows_the_panes_routing(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 104 lines")]
 fn pane_rename_correlates_responses_and_preserves_other_dialogs(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(|window, cx| {
         let mut view = crate::sidebar::layout_tests::fixture_window(window, cx);

@@ -7,6 +7,7 @@ use super::*;
 ///
 /// These baseline widths reserve the border, padding, arrow, gaps and status.
 /// The host's device icon takes additional room measured from the painted row.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 102 lines")]
 pub(super) async fn resized(
     handle: WindowHandle<SpaceportWindow>,
     focus: Focus,

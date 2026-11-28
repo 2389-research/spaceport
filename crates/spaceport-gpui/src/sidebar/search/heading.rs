@@ -77,6 +77,7 @@ impl SpaceportWindow {
 
     /// The heading for `heading`'s list, or `None` while the Devices layout's
     /// field has yet to be made.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 106 lines")]
     pub(in crate::sidebar) fn search_heading(
         &self,
         heading: Heading,

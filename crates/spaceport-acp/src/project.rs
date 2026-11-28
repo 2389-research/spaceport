@@ -355,6 +355,7 @@ impl Projector {
             .collect()
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 109 lines")]
     pub(crate) fn update(
         &mut self,
         transcript: &Transcript,

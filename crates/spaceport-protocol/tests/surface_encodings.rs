@@ -413,6 +413,10 @@ fn delta_rebuilds_cells_and_popups_from_the_baseline() {
 }
 
 #[test]
+#[allow(
+    clippy::cognitive_complexity,
+    reason = "2026-11-27 baseline: complexity 32"
+)]
 fn delta_rejects_malformed_spans_and_metadata() {
     let base = surface();
     let bad_rows = [

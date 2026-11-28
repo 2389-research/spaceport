@@ -110,6 +110,7 @@ fn create_external_workspace(
 }
 
 /// Entry: the live daemon fixture behind `--integration-test`.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 266 lines")]
 pub(crate) fn start(handle: WindowHandle<SpaceportWindow>, cx: &mut App) {
     let timer = cx.background_executor().clone();
     cx.spawn(async move |cx| {

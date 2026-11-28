@@ -605,6 +605,7 @@ fn run(
     running.store(false, Ordering::Release);
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 103 lines")]
 fn watch(
     backend: CoreBackend,
     epoch: u64,

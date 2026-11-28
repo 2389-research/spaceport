@@ -259,6 +259,7 @@ impl SpaceportWindow {
             .into_any_element()
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 190 lines")]
     pub(super) fn render_chat(
         &self,
         chat: &ChatPane,
@@ -524,6 +525,7 @@ impl SpaceportWindow {
     /// The agent and its status, Stop while a turn runs, and the buttons
     /// for the layout, the rail, and the terminal. `rail_fits` says whether the pane is
     /// wide enough to show the rail at all.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 128 lines")]
     fn render_chat_header(&self, chat: &ChatPane, rail_fits: bool, cx: &mut Context<Self>) -> Div {
         let theme = &self.theme;
         let hues = Hues::of(theme);

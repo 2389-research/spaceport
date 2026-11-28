@@ -96,6 +96,7 @@ fn report(label: &str, samples: &mut [f64]) -> f64 {
     percentile(95)
 }
 
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 289 lines")]
 pub fn start(handle: WindowHandle<SpaceportWindow>, cx: &mut App) {
     // AppKit termination can exit(0) inside cx.quit(), before main returns its
     // ExitCode. This daemon-free driver must exit explicitly on pass AND fail.

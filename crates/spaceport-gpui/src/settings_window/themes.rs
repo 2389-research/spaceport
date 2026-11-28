@@ -296,6 +296,7 @@ impl SettingsWindow {
         self.drive_theme_intent(cx);
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 138 lines")]
     pub(super) fn drive_theme_intent(&mut self, cx: &mut Context<Self>) {
         if self.persistence.quitting() {
             return;

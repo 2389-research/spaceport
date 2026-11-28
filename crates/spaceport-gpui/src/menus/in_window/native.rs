@@ -35,6 +35,31 @@ pub(crate) fn start(handle: WindowHandle<SpaceportWindow>, cx: &mut App) {
     .detach();
 }
 
+fn verify_open_menu(view: &SpaceportWindow, window: &Window) -> Result<()> {
+    ensure!(
+        view.menu.page == Some(Page::Application),
+        "button did not open menu"
+    );
+    ensure!(view.menu.focus.is_focused(window), "menu lost focus");
+    let crate::menu::Cover::Panel(panel) = view.menu.cover.get() else {
+        anyhow::bail!("menu did not paint")
+    };
+    // The cover includes the eight-pixel shadow margin.
+    ensure!(
+        panel.right() <= window.viewport_size().width + px(8.),
+        "dropdown horizontal overflow: {panel:?}, viewport {:?}, bar {:?}",
+        window.viewport_size(),
+        view.menu.application_bar.bar.get()
+    );
+    ensure!(
+        panel.bottom() <= window.viewport_size().height + px(8.),
+        "dropdown vertical overflow: {panel:?}, viewport {:?}, bar {:?}",
+        window.viewport_size(),
+        view.menu.application_bar.bar.get()
+    );
+    Ok(())
+}
+
 pub(crate) async fn run(handle: WindowHandle<SpaceportWindow>, cx: &mut AsyncApp) -> Result<()> {
     for width in [1200., 360.] {
         handle.update(cx, |view, window, cx| {
@@ -96,30 +121,7 @@ pub(crate) async fn run(handle: WindowHandle<SpaceportWindow>, cx: &mut AsyncApp
             key(handle, "enter", cx)?;
             settle(cx).await;
         }
-        handle.update(cx, |view, window, _| -> Result<()> {
-            ensure!(
-                view.menu.page == Some(Page::Application),
-                "button did not open menu"
-            );
-            ensure!(view.menu.focus.is_focused(window), "menu lost focus");
-            let crate::menu::Cover::Panel(panel) = view.menu.cover.get() else {
-                anyhow::bail!("menu did not paint")
-            };
-            // The cover includes the eight-pixel shadow margin.
-            ensure!(
-                panel.right() <= window.viewport_size().width + px(8.),
-                "dropdown horizontal overflow: {panel:?}, viewport {:?}, bar {:?}",
-                window.viewport_size(),
-                view.menu.application_bar.bar.get()
-            );
-            ensure!(
-                panel.bottom() <= window.viewport_size().height + px(8.),
-                "dropdown vertical overflow: {panel:?}, viewport {:?}, bar {:?}",
-                window.viewport_size(),
-                view.menu.application_bar.bar.get()
-            );
-            Ok(())
-        })??;
+        handle.update(cx, |view, window, _| verify_open_menu(view, window))??;
         let before = handle.update(cx, |view, _, _| view.input_probe)?;
         key(handle, "a", cx)?;
         key(handle, "down", cx)?;

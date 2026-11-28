@@ -2,6 +2,7 @@ use super::*;
 use crate::browser::Pick;
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 109 lines")]
 fn close_sequence_waits_for_the_previous_closes_ack_and_surface(cx: &mut gpui::TestAppContext) {
     for ack_first in [true, false] {
         let (endpoint, mut server) = connected_endpoint("close-sequence");

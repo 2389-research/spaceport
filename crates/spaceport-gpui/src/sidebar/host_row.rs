@@ -49,6 +49,7 @@ impl SpaceportWindow {
     /// instead of the one inside it: the same row under `sticky-` ids, so the
     /// two never share element state, with an opaque background for the rows
     /// scrolling beneath it.
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 223 lines")]
     pub(super) fn host_row(
         &self,
         endpoint: &Endpoint,

@@ -177,6 +177,7 @@ impl SpaceportWindow {
         cx.notify();
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 113 lines")]
     fn submit_session_edit(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.sessions.mutation.is_some() {
             return;
@@ -329,6 +330,7 @@ impl SpaceportWindow {
         }
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 115 lines")]
     pub(in crate::menu) fn render_session_edit(&self, cx: &mut Context<Self>) -> Div {
         let theme = &self.theme;
         let mut view = div()

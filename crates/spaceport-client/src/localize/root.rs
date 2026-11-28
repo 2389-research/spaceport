@@ -28,6 +28,7 @@ fn fix(generation: u32) -> &'static str {
 }
 
 impl Localize for Error {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 163 lines")]
     fn localize(&self) -> String {
         match self {
             // keep-sorted start

@@ -140,6 +140,7 @@ fn upstream_json_fixtures_and_future_values() {
 }
 
 #[test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 101 lines")]
 fn all_client_tags_match_frozen_source_order() {
     let size = ClientSurfaceSize { cols: 80, rows: 24 };
     let messages = vec![

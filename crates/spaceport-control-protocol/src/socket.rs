@@ -126,6 +126,13 @@ impl Server {
         let (sender, requests) = mpsc::sync_channel(QUEUE);
         // The worker blocks in accept for the life of the process. Nothing
         // joins it: the UI must never wait on it, and exit reclaims it.
+        #[cfg_attr(
+            target_os = "linux",
+            allow(
+                clippy::cognitive_complexity,
+                reason = "2026-11-27 Linux accept-loop baseline"
+            )
+        )]
         thread::Builder::new()
             .name("control-socket".into())
             .spawn(move || {

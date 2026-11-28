@@ -81,6 +81,7 @@ impl SpaceportWindow {
             .into_any_element()
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 112 lines")]
     fn usage_host(&self, index: usize, label: &str, host: &Host, ui: &Ui) -> Div {
         let theme = &self.theme;
         let small = ui.small();

@@ -447,6 +447,7 @@ impl EntityInputHandler for SearchInput {
 }
 
 impl Render for SearchInput {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 216 lines")]
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let input = cx.entity();
         let painter = input.clone();

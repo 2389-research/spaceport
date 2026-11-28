@@ -99,6 +99,11 @@ Closing or detaching the GUI must leave the daemons and their terminals running.
   tests included; `just check-file-size` enforces it in `just ci` and CI's checks job.
   There is no allowlist: when a change would cross the limit, split the file by
   responsibility in the same change rather than adding an exception.
+- **Function ceilings: cognitive complexity 25, 100 lines.**
+  `clippy::cognitive-complexity` and `clippy::too-many-lines` are enabled in the root
+  `Cargo.toml`'s `[workspace.lints.clippy]` and read their thresholds from `clippy.toml`,
+  so `just lint` and CI fail on a function past either. Split the function; where splitting
+  it would be worse, scope an `#[allow]` to that one function, dated, saying why.
 - Split modules by responsibility; the line limit is a ceiling, not a reason for arbitrary cuts. Prefer wiring and exports in entry points as code grows; do not perform unrelated file reshuffles.
 - Keep APIs narrow. Use private items by default and `pub(super)` or `pub(crate)` only where needed; do not expose every field merely to ease extraction.
 - Define shared types once in the lowest appropriate layer and re-export them. Do not create mirror enums or convert between them through strings.
@@ -234,7 +239,7 @@ agents in Herdr panes can use what only this client shows or keeps
 
 - Put dependency versions in root `[workspace.dependencies]`; member crates inherit with `{ workspace = true }`.
 - Use the pinned `rust-toolchain.toml` and GPUI version. Do not copy toolchain, feature, or release assumptions from Moltis/Arbor.
-- Keep workspace lint inheritance and fix warnings rather than widening allowances.
+- Keep workspace lint inheritance and fix warnings rather than widening allowances; an allowance that is genuinely needed is scoped to the item, dated, and says why.
 - Keep `integration-test` opt-in. Gate imports, modules, and call sites consistently, and verify both default and all-feature builds.
 - Do not introduce Tokio or another runtime to wrap the existing blocking socket worker.
 - Avoid unrelated lockfile upgrades. Use `--locked` for reproducible verification.

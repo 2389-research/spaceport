@@ -297,6 +297,7 @@ impl Focusable for CoreTerminalView {
 }
 
 impl Render for CoreTerminalView {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 107 lines")]
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.report_focus(window);
         let entity = cx.entity();

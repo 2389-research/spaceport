@@ -92,6 +92,7 @@ impl CellSeparator {
 }
 
 impl Graphic {
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 116 lines")]
     pub(crate) fn from_symbol(symbol: &str) -> Option<Self> {
         // Every graphic below is one character in U+2500..=U+259F, three UTF-8
         // bytes; this rejects ASCII, most of any grid, before decoding.

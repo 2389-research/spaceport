@@ -594,6 +594,7 @@ pub(crate) fn run_frames(
 }
 
 #[cfg(test)]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 194 lines")]
 pub(crate) fn fixture_window(
     window: &mut Window,
     cx: &mut Context<SpaceportWindow>,

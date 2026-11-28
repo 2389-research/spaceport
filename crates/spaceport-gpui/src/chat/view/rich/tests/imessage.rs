@@ -5,6 +5,7 @@ use core::prelude::v1::test;
 use std::sync::Arc;
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 137 lines")]
 fn imessage_prose_inherits_its_bubble_while_rich_surfaces_keep_theme_ink(cx: &mut TestAppContext) {
     let renderer = cx.update(|cx| cx.svg_renderer());
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);

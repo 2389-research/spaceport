@@ -120,6 +120,7 @@ fn adjacent_background_spans_share_snapped_edges(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 148 lines")]
 fn separator_caps_use_cell_geometry_without_shaping(cx: &mut TestAppContext) {
     use spaceport_client::{
         SurfaceImages,
@@ -275,6 +276,7 @@ fn separator_caps_use_cell_geometry_without_shaping(cx: &mut TestAppContext) {
 
 #[cfg(feature = "integration-test")]
 #[gpui::test]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 104 lines")]
 fn separator_region_paints_only_requested_layer_and_cells(cx: &mut TestAppContext) {
     let (_, cx) = cx.add_window_view(|_, _| Empty);
     for layer in Layer::ALL {

@@ -367,6 +367,7 @@ impl SpaceportWindow {
         }
     }
 
+    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 107 lines")]
     pub(super) fn render_close_confirmation(&self, cx: &mut Context<Self>) -> Div {
         let Some(close) = &self.menu.close else {
             return div();

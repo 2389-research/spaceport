@@ -6,6 +6,7 @@ use std::os::unix::fs::PermissionsExt as _;
 
 #[test]
 #[ignore = "needs HERDR_CORE_TEST_BINARY"]
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 106 lines")]
 fn run_and_attach_route_to_selected_remote_session_by_id() {
     let binary = std::env::var_os("HERDR_CORE_TEST_BINARY").expect("HERDR_CORE_TEST_BINARY");
     let mut remote = Sandbox::start_with(binary.clone(), vec![("HC_SESSION", "target".into())]);

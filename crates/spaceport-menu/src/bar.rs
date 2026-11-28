@@ -187,6 +187,7 @@ fn compact(hosts: &Hosts<'_>) -> bool {
 /// The bar's headings, each an entry the window offers, laid over the window's
 /// content. `interact` takes one heading's button back wired with what resting
 /// on it and pressing it do, which only the window knows.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 111 lines")]
 pub fn bar(
     hosts: &Hosts<'_>,
     layer: Layer,
@@ -324,6 +325,7 @@ fn panel_width(hosts: &Hosts<'_>) -> Pixels {
 /// The panel under an open heading: the row that goes back, then the rows
 /// themselves. `interact` takes one row back wired with what resting on and
 /// pressing it do.
+#[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 112 lines")]
 pub fn dropdown(
     hosts: &Hosts<'_>,
     rows: Vec<Row>,
