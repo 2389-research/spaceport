@@ -17,6 +17,7 @@ use spaceport_client::protocol::ClientShellCommand;
 use spaceport_keymap::Reach;
 use spaceport_menu::keybinds::render::{self, Action, Hosts, Words};
 use spaceport_menu::keybinds::{self, Binding, Row, Section};
+use spaceport_settings::Appearance;
 
 /// The semantic paste row, which no keymap command holds.
 fn paste_label() -> String {
@@ -202,10 +203,12 @@ impl SpaceportWindow {
                         // A reload discards session zoom.
                         this.configured_terminal_size = config.terminal.size;
                         cx.set_global(crate::app::InitialAppearance {
-                            config: config.clone(),
-                            keymap: keymap.clone(),
-                            theme: theme.clone(),
                             error: None,
+                            keymap: keymap.clone(),
+                            shown: Appearance {
+                                config: config.clone(),
+                                theme: theme.clone(),
+                            },
                         });
                         crate::caffeine::set_scope(config.status_bar.keep_awake_scope, cx);
                         crate::i18n::follow_config(&config.language, cx);
@@ -241,10 +244,12 @@ impl SpaceportWindow {
                         }
                         crate::settings_window::apply_loaded_theme(&mut this.config, &mut this.theme, theme_revision, cx);
                         cx.set_global(crate::app::InitialAppearance {
-                            config: this.config.clone(),
-                            keymap: this.keymap.clone(),
-                            theme: this.theme.clone(),
                             error: None,
+                            keymap: this.keymap.clone(),
+                            shown: Appearance {
+                                config: this.config.clone(),
+                                theme: this.theme.clone(),
+                            },
                         });
                         this.config = config;
                         this.sound.set_volume(this.config.sound.volume);

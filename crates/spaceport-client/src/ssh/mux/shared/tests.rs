@@ -386,6 +386,26 @@ fn a_host_with_the_users_own_master_gets_none_of_ours() {
 }
 
 #[test]
+fn an_inconclusive_control_check_leaves_the_users_control_path_in_charge() {
+    // The probe exceeds its output bound even though the stand-in reports a
+    // live master. An unreadable reply is no reason to start another one.
+    let check = format!(
+        "dd if=/dev/zero bs={} count=1 2>/dev/null; exit 0",
+        crate::ssh::PROBE_OUTPUT_LIMIT + 1
+    );
+    let (registry, fixture) = fake_with("check-error", &check, READY, IDLE);
+    assert!(open(&registry, Lane::Quick).is_none());
+    assert_eq!(fixture.starts(), 0);
+}
+
+#[test]
+fn an_interrupted_control_check_does_not_start_a_private_master() {
+    let (registry, fixture) = fake_with("check-interrupted", "kill -KILL $$", READY, IDLE);
+    assert!(open(&registry, Lane::Quick).is_none());
+    assert_eq!(fixture.starts(), 0);
+}
+
+#[test]
 fn repeated_failures_back_off_longer_up_to_a_ceiling() {
     assert_eq!(backoff(1), BACKOFF);
     assert_eq!(backoff(2), BACKOFF * 2);

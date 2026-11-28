@@ -185,7 +185,7 @@ fn theme_draft_paints_all_windows_and_allows_non_theme_reload(cx: &mut TestAppCo
         assert_eq!(first.read(cx).unwrap().config.terminal.size, 29.);
         assert_eq!(second.read(cx).unwrap().config.ui.size, 23.);
         assert_eq!(
-            cx.global::<crate::app::InitialAppearance>().theme,
+            cx.global::<crate::app::InitialAppearance>().shown.theme,
             Theme::builtin("Nord").unwrap()
         );
     });
@@ -274,7 +274,7 @@ fn theme_close_failure_keeps_window_and_draft_without_retrying(cx: &mut TestAppC
             Theme::builtin("Nord").unwrap()
         );
         assert_eq!(
-            cx.global::<crate::app::InitialAppearance>().theme,
+            cx.global::<crate::app::InitialAppearance>().shown.theme,
             Theme::builtin("Nord").unwrap()
         );
     });
