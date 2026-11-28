@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ABOUTME: Validate preview identity records without executing a packaged program.
-# ABOUTME: Keep bundle metadata consistent with the build's app ID, version and profile.
+# ABOUTME: Keep bundle metadata consistent with the build's app ID, version, profile and channel.
 import mmap
 from pathlib import Path
 import sys
@@ -11,7 +11,7 @@ PREFIX = b'\0SPACEPORT_PREVIEW_V1\n'
 
 def check(binary, version, profile):
     app_id = (ROOT / 'crates/spaceport-gpui/macos-preview-app-id').read_text().strip()
-    expected = f'id={app_id}\nversion={version}\nprofile={profile}\n'.encode()
+    expected = f'id={app_id}\nversion={version}\nprofile={profile}\nchannel=macos-preview\n'.encode()
     with open(binary, 'rb') as stream, mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ) as data:
         records = []
         offset = data.find(PREFIX)
@@ -21,7 +21,7 @@ def check(binary, version, profile):
             records.append(data[start:end] if end != -1 else None)
             offset = data.find(PREFIX, start)
         if not records or any(record != expected for record in records):
-            raise ValueError(f'Preview binary identity/version/profile mismatch: {binary}')
+            raise ValueError(f'Preview binary identity, version, profile or channel mismatch: {binary}')
 
 
 if __name__ == '__main__':

@@ -144,7 +144,10 @@ signed channel, each the fixed release asset named beside it.
 }
 ```
 
-Packaging writes the bundle's channel's URL as `SUFeedURL`; the app checks it
+The preview packager and signer require `channel=macos-preview` in each
+compiled identity record before accepting a binary. Rebuild unsigned inputs
+that predate this field. Existing published previews still read the same signed
+feed. The preview packager writes its URL as `SUFeedURL`; the app checks it
 against the same table at startup, so a preview never follows the stable feed and
 a production build never follows the preview's. Feed URLs are https release
 assets served from one host, and a bundle carrying any other address refuses to
