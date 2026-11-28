@@ -1,0 +1,48 @@
+{
+  "repository": "2389-research/spaceport",
+  "url": "https://github.com/2389-research/spaceport",
+  "channels": {
+    "macos-preview": {
+      "release": {
+        "prerelease": true,
+        "title": "Spaceport {version} (macOS preview)"
+      },
+      "appcast": {
+        "title": "Spaceport macOS previews",
+        "item": "Spaceport {version} (macOS arm64 preview)"
+      },
+      "downloads": [
+        {
+          "name": "Spaceport-{version}-arm64-apple-darwin.dmg",
+          "kind": "signed-macos-preview",
+          "label": "macOS 14.2 or later, Apple silicon",
+          "platform": "macos",
+          "architecture": "arm64",
+          "format": "dmg",
+          "minimum_system_version": "14.2"
+        }
+      ]
+    },
+    "production": {
+      "release": {
+        "prerelease": false,
+        "title": "Spaceport {version}"
+      },
+      "appcast": {
+        "title": "Spaceport macOS releases",
+        "item": "Spaceport {version} (macOS arm64)"
+      },
+      "downloads": [
+        {
+          "name": "Spaceport-{version}-arm64-apple-darwin.dmg",
+          "kind": "signed-macos-production",
+          "label": "macOS 14.2 or later, Apple silicon",
+          "platform": "macos",
+          "architecture": "arm64",
+          "format": "dmg",
+          "minimum_system_version": "14.2"
+        }
+      ]
+    }
+  }
+}

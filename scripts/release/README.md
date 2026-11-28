@@ -154,6 +154,61 @@ assets served from one host, and a bundle carrying any other address refuses to
 start the updater. `sparkle_framework.py configure --channel production` writes
 the stable channel, which no release route invokes yet.
 
+### Release channels and download metadata
+
+`scripts/release/channels.json` is the table of what each channel publishes: its
+release title and whether that release is a prerelease, the appcast's channel and
+item titles, and every artifact a download link can offer - its file name, the
+signed-artifact `kind` a release must carry, the label a page shows, and the
+platform, architecture, format and minimum system version the appcast repeats.
+`channels.py` validates that table and derives every address from it, so no URL
+is written twice: an artifact is
+`https://github.com/2389-research/spaceport/releases/download/vVERSION/NAME`, its
+release page is `.../releases/tag/vVERSION`, and the appcast stays the fixed
+release asset `sparkle.json` names. The table's channels must be exactly the
+app's feed channels, its base URL must serve those feeds, and each feed must be a
+release asset of the same repository. `download_page_url` is the releases list
+for a prerelease channel and `/releases/latest` for a published one, because
+GitHub names no prerelease latest.
+
+Both channels publish one naming scheme:
+
+| Piece | Shape |
+| --- | --- |
+| Version | `YYYYMMDD.COUNTER`, one immutable version per release, never reused |
+| Tag | `vVERSION`, the tag an operator pushes and GitHub keeps |
+| Preview release | `Spaceport VERSION (macOS preview)`, a GitHub prerelease |
+| Stable release | `Spaceport VERSION`, a published release |
+| Artifact | `Spaceport-VERSION-arm64-apple-darwin.dmg`, the name signing writes |
+| Appcast | `appcast.xml` on the fixed `macos-preview-feed` or `macos-stable-feed` release |
+
+Previews and production share that version space - `preview_identity` accepts the
+same calendar version for both - so one ordering and one validator cover both
+channels, and a version is published once. Only the tag differs in meaning: a
+preview tag builds a prerelease, a stable tag a publication.
+
+A release page carries, for either channel, the disk image named in the channel's
+download entry and unchanged since signing, `SHA256SUMS` beside it, and the
+generated release notes as its body; its prerelease flag matches the channel,
+because GitHub's latest release and every `releases/latest/download/...` link
+resolve to published releases only. The fixed feed releases stay prereleases in
+both channels, so a feed marker never becomes GitHub's latest release or takes a
+download link away from the release it describes.
+
+The landing page still offers the preview and its lookup takes the newest
+prerelease carrying a disk image. A stable download link needs only the stable
+channel's download entry (its file name and label) and its `download_page_url`;
+`channels.py` answers a published channel with `/releases/latest` and a
+prerelease channel with the releases list.
+
+`sparkle-feed.py create` and `verify` take `--channel`, defaulting to
+`macos-preview`, so each channel's appcast names the artifact from the same table
+and never verifies as the other channel's appcast. Creating and
+publishing `macos-stable-feed`, a production build/sign/packaging route that also
+writes the `signed-macos-production` artifact kind, and any tagged production
+publication remain open gates: `publish-sparkle-feed.py` publishes only the
+preview channel.
+
 Only the protected signing job receives `SPARKLE_PRIVATE_KEY`, over the SDK
 signer's stdin. It signs the final stapled DMG and appcast. Publication verifies
 those signatures with the public key, publishes the immutable dated prerelease,
@@ -676,8 +731,10 @@ cover job eligibility and credential declarations, not GitHub's approval service
 `_release_common.py` holds the rules more than one release script applies:
 the calendar-version and full-commit patterns behind `is_version` and
 `is_commit`, and `gh`, which captures stderr and bounds each GitHub CLI call
-by timeout. Scripts load it by file path, as they already load each other,
-because their dashed names are not importable modules. Add a helper there only
+by timeout. `channels.py` reuses `is_version` for the `vVERSION` tag it derives,
+and loads `sparkle_framework.py` for the app's feed table. Scripts load it by file
+path, as they already load each other, because their dashed names are not
+importable modules. Add a helper there only
 when a second script needs the same rule; each script keeps its own refusal
 messages, size bounds and timeouts.
 

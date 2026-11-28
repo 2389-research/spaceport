@@ -42,9 +42,9 @@ class SparkleFeedTests(unittest.TestCase):
         return base64.b64encode(self.run_crypto(
             "pkeyutl", "-sign", "-inkey", self.private, "-rawin", "-in", content)).decode()
 
-    def signed_feed(self, version="20261111.1", notes="Fix <terminal> & save state"):
+    def signed_feed(self, version="20261111.1", notes="Fix <terminal> & save state", channel=None):
         xml = feed.render(version, self.archive.stat().st_size,
-                          self.sign(self.archive.read_bytes()), notes)
+                          self.sign(self.archive.read_bytes()), notes, channel)
         signature = self.sign(xml)
         return xml + (f"<!-- sparkle-signatures:\nedSignature: {signature}\n"
                       f"length: {len(xml)}\n-->\n").encode()
@@ -147,6 +147,72 @@ class SparkleFeedTests(unittest.TestCase):
                                (None, ["v20261111.1"])):
             with self.subTest(tags=tags), self.assertRaises(ValueError):
                 feed.publication_version(new, previous, self.config, tags)
+
+    def test_each_channel_renders_its_own_appcast(self):
+        expected = {
+            "macos-preview": ("Spaceport macOS previews",
+                              "Spaceport 20261111.1 (macOS arm64 preview)"),
+            "production": ("Spaceport macOS releases", "Spaceport 20261111.1 (macOS arm64)"),
+        }
+        for channel, (title, item) in expected.items():
+            with self.subTest(channel=channel):
+                data = self.signed_feed(channel=channel)
+                parsed = feed.parse(data, self.config, channel)
+                self.assertEqual(parsed["url"],
+                                 "https://github.com/2389-research/spaceport/releases/"
+                                 "download/v20261111.1/Spaceport-20261111.1-arm64-apple-darwin.dmg")
+                root = ET.fromstring(data.split(b"<!-- sparkle-signatures:")[0])
+                self.assertEqual(root.findtext("./channel/title"), title)
+                self.assertEqual(root.findtext("./channel/item/title"), item)
+
+    def test_one_channels_appcast_is_refused_as_the_other(self):
+        stable = self.signed_feed(channel="production")
+        with self.assertRaisesRegex(ValueError, "macos-preview channel"):
+            feed.parse(stable, self.config, "macos-preview")
+        with self.assertRaisesRegex(ValueError, "production channel"):
+            feed.parse(self.signed_feed(), self.config, "production")
+
+    def test_unknown_channel_is_refused_before_signing(self):
+        notes = self.root / "notes.md"
+        notes.write_text("## Added\nFixture")
+        result = subprocess.run(["python3", str(SCRIPT), "create", "20261111.1", str(self.archive),
+                                 str(notes), str(self.root / "appcast.xml"),
+                                 "--channel", "stable", "--tool", str(self.root / "no-tool")],
+                                capture_output=True, text=True, timeout=10)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Unknown release channel", result.stderr)
+
+    def test_create_refuses_an_artifact_signed_for_the_other_channel(self):
+        metadata = {"app_id": "ai.2389.spaceport", "team_id": "HD9NM9NSMK", "version": "20261111.1",
+                    "architecture": "arm64", "profile": "release", "kind": "signed-macos-preview",
+                    "sha256": hashlib.sha256(self.archive.read_bytes()).hexdigest()}
+        self.archive.with_suffix(".dmg.json").write_text(json.dumps(metadata))
+        config = self.root / "sparkle.json"
+        config.write_text(json.dumps(self.config))
+        notes = self.root / "notes.md"
+        notes.write_text("## Added\nFixture")
+        output = self.root / "stable.xml"
+        result = subprocess.run(["python3", str(SCRIPT), "--config", str(config), "create",
+                                 "20261111.1", str(self.archive), str(notes), str(output),
+                                 "--channel", "production", "--tool", str(self.root / "no-tool")],
+                                capture_output=True, text=True, timeout=10)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("metadata mismatch", result.stderr)
+        self.assertFalse(output.exists())
+
+    def test_cli_verifies_a_stable_appcast_only_as_its_own_channel(self):
+        feed_path = self.root / "stable.xml"
+        feed_path.write_bytes(self.signed_feed(channel="production"))
+        config = self.root / "sparkle.json"
+        config.write_text(json.dumps(self.config))
+        command = ["python3", str(SCRIPT), "--config", str(config), "verify", str(feed_path)]
+        accepted = subprocess.run(command + ["--channel", "production"],
+                                  capture_output=True, text=True, timeout=10)
+        self.assertEqual(accepted.returncode, 0, accepted.stderr)
+        self.assertEqual(json.loads(accepted.stdout)["version"], "20261111.1")
+        refused = subprocess.run(command, capture_output=True, text=True, timeout=10)
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertIn("macos-preview channel", refused.stderr)
 
     def test_official_sdk_signatures_verify_with_public_key(self):
         sdk = os.environ.get("SPARKLE_TEST_SDK")
