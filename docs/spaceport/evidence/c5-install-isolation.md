@@ -27,7 +27,7 @@ install.
    installer identity, and install location.
 4. Turn 1–3 into a repeatable before/after check:
    `scripts/release/install-isolation.py` snapshots the owned and inherited
-   surfaces and compares two snapshots after a real install.
+   surfaces before the install, after first launch and after uninstall.
 5. Write down what only a real install can settle.
 
 ## What the app reads and writes
@@ -43,13 +43,13 @@ inherited application's state this app must not touch.
 | Agent skill, only after the user accepts the offer, only marker-owned files | `~/.claude/skills/spaceport/SKILL.md`, `~/.agents/skills/spaceport/SKILL.md` | write with consent | `spaceport-gpui/src/agent_skill.rs` | own |
 | Daemon client socket | `<config>/herdr[-dev]/herdr-client.sock` and `sessions/<name>/herdr-client.sock` | connect | `spaceport-client/src/discovery.rs::session_socket` | shared by design |
 | Daemon session names | `<config>/herdr[-dev]/sessions/` | read | `spaceport-client/src/sessions.rs` | shared by design |
-| Saved-device catalog, selected device, SSH metadata | `<state>/herdr[-dev]/client/{endpoints.json,endpoint-selection.json,ssh-metadata/}` | read at startup, write on a device edit; `ssh-metadata/` is neither read nor written by this build | `spaceport-client/src/catalog.rs::catalog_path` | shared with the inherited tree (finding 3) |
+| Saved-device catalog, selected device, SSH metadata | `<state>/herdr[-dev]/client/{endpoints.json,endpoint-selection.json,ssh-metadata/}` | read at startup, write on a device edit; `ssh-metadata/` is neither read nor written by this build | `spaceport-client/src/catalog.rs::catalog_path` | shared with the inherited tree |
 | Chat attach sockets | `<state>/herdr/acp/<id>.sock`, or `\\.\pipe\herdr-acp-<id>` | create, connect | `spaceport-chat-protocol/src/endpoint.rs` | shared directory, random id per chat |
 | Herdr Core session and config | `HC_SOCKET`, `<state>/herdr-core/<session>`, `<config>/herdr-core/config.toml` | connect, read | `spaceport-core-client/src/endpoint.rs` | shared by design |
 | Windows control pipe | `\\.\pipe\spaceport-control-<sid>[-hash]` | create | `spaceport-control-protocol/src/socket.rs` | own |
 | macOS preference domain (the updater's settings) | `~/Library/Preferences/ai.2389.spaceport.plist` | read, write | Sparkle, through the preview bundle's ID | own |
 | Windows notification identity | `HKCU\Software\Classes\AppUserModelId\<app ID>` | create on first toast | `spaceport-gpui/src/window/system_notifications/toast.rs` | own |
-| Windows Launch at login | `HKCU\...\CurrentVersion\Run\Spaceport` and `...\Explorer\StartupApproved\Run\Spaceport` | write when enabled | `spaceport-gpui/src/launch_at_login.rs` | own (finding 2) |
+| Windows Launch at login | `HKCU\...\CurrentVersion\Run\Spaceport` and `...\Explorer\StartupApproved\Run\Spaceport` | write when enabled | `spaceport-gpui/src/launch_at_login.rs` | own |
 | Linux desktop entry | `$out/share/applications/spaceport.development.desktop` in the Nix store | write at package time | `flake.nix` | own |
 
 The app stores nothing of its own in `NSUserDefaults`: the preview's preference
@@ -73,7 +73,7 @@ left behind. No production path names either.
 
 What is left outside `<state>/spaceport` and `<config>/spaceport` is the
 selected runtime's own state — its sockets, its session names, its Core session
-— which D58 makes the point of the app, plus the saved-device catalog, finding 3.
+— which D58 makes the point of the app, plus the shared saved-device catalog.
 
 ## Channel identities
 
@@ -81,9 +81,9 @@ selected runtime's own state — its sockets, its session names, its Core sessio
 | --- | --- | --- | --- |
 | macOS signed preview | `ai.2389.spaceport`, Team `HD9NM9NSMK` (`package-macos.sh` inserts `crates/spaceport-gpui/macos-preview-app-id`) | `/Applications/Spaceport.app` by drag from the DMG (`sign-macos.sh` links `/Applications`) | installed bundle on this machine verifies; see below |
 | macOS development build | `spaceport.development` (`just bundle`) | `target/{release,debug}/Spaceport.app`, never installed | source and recipe only |
-| Windows installer and `site/install.ps1` | inherited `so.pen.herdr-gpui` AppUserModelID, AppId `{7FA70894-4FC0-4923-BDCB-B05F7475610A}`, publisher `Herdr UI` | `%LOCALAPPDATA%\Programs\Herdr UI` | CI smoke only (finding 1) |
+| Spaceport Windows installer | AppUserModelID `spaceport.development`, AppId `{62B8722B-1FA2-48E0-9609-46AA5D431983}`, publisher `2389 Research, Inc.` | `%LOCALAPPDATA%\Programs\Spaceport` | C4 installer smoke on a clean runner |
 | Linux Nix flake | development ID; store path, immutable | the Nix profile | recipe and flake only |
-| `site/install.sh` | — | — | installs *Sheprd* from `sheprd-labs/sheprd`; not a Spaceport channel (finding 4) |
+| `site/install.sh` | — | — | installs the upstream product (see below) |
 
 `build.rs` selects between the two IDs in one place
 (`crates/spaceport-gpui/preview_identity.rs::select`): no version means
@@ -113,8 +113,10 @@ registration, and is recorded so it is not re-filed as an isolation failure.
 ## Executed checks
 
 `scripts/release/install-isolation.py` is the repeatable half of this record. It
-is standard-library Python, installs nothing, and prints file sizes and SHA-256
-digests only — never file contents — so a snapshot can be handed to a reviewer.
+uses standard-library Python and installs nothing. Its snapshots contain paths,
+link targets, sizes and digests. Check filenames for private details before
+sharing a snapshot. The following census and test counts describe the original
+snapshot format. Capture fresh snapshots with the same checker for each run.
 
 | Check | Command | Result |
 | --- | --- | --- |
@@ -138,7 +140,7 @@ The state this machine does have, for orientation:
 | `~/.local/state/spaceport/` — `control.sock`, `editor-groups.json`, `local-<hash>.json`, `window-state.json`, `logs/spaceport.jsonl` plus one rotation | the app's own state, and nothing else |
 | `~/.config/spaceport/` — `config.toml`, `config.local.toml`, `config.lock`, `view.toml`, `.view.toml.gpui-lock` | the app's own settings; `view.toml` is 36 bytes holding one toast-delivery setting |
 | `~/.config/herdr/` — `config.toml` and one `config.toml.bak-*`, sockets, logs, `session.json`, `session-snapshots/` | the daemon's, untouched by the app |
-| `~/.local/state/herdr/client/` — `endpoints.json`, `endpoint-selection.json`, `ssh-metadata/` | finding 3 |
+| `~/.local/state/herdr/client/` — `endpoints.json`, `endpoint-selection.json`, `ssh-metadata/` | shared device selection |
 | `~/Library/Preferences/ai.2389.spaceport.plist`, `~/Library/Caches/ai.2389.spaceport` | the preview's own updater state |
 | the preview process itself, `20261126.1`, running from `/Applications/Spaceport.app` | an install that was already there; this record did not create it |
 
@@ -155,26 +157,35 @@ daemon with saved sessions. Stop agents first: a live daemon rewrites its own
 logs and `session.json`, which the snapshot rules leave out, but nothing else
 should be moving during the run.
 
-For every channel the shape is the same:
+Use the same absolute package path throughout. For macOS, use the app bundle.
+For Windows, use the Spaceport install directory. For Linux, use the active Nix
+profile, which can contain other packages. Keep all three snapshot files outside
+the checked paths. For example, on a disposable macOS preview test machine:
 
 ```sh
-python3 scripts/release/install-isolation.py snapshot > before.json
-# install the channel, open the app once, let it reach a workspace, quit it
-python3 scripts/release/install-isolation.py snapshot > after.json
-python3 scripts/release/install-isolation.py compare before.json after.json   # must exit 0
-# uninstall, then
-python3 scripts/release/install-isolation.py snapshot > removed.json
-python3 scripts/release/install-isolation.py compare before.json removed.json # exit 0
+package=/Applications/Spaceport.app
+python3 scripts/release/install-isolation.py snapshot --package "$package" > before.json
+# Install, start the app, open a workspace, then quit.
+python3 scripts/release/install-isolation.py snapshot --package "$package" > installed.json
+# Uninstall the selected package.
+python3 scripts/release/install-isolation.py snapshot --package "$package" > removed.json
+python3 scripts/release/install-isolation.py verify before.json installed.json removed.json
 ```
 
-Expected outcomes, and what a failure looks like:
+The package must start absent. All expected files must appear after installation
+and disappear after removal. The macOS bundle or Windows install directory must
+also disappear. The Nix profile may retain unrelated packages. The checker
+compares inherited state across both intervals. `compare` alone checks changes
+to inherited surfaces and cannot qualify an install.
+
+Expected outcomes for each channel:
 
 | Channel | Install | First launch | Uninstall | Failure looks like |
 | --- | --- | --- | --- | --- |
 | macOS signed preview | verify the DMG, drag `Spaceport.app` to `/Applications`; `plutil -p` shows `ai.2389.spaceport`; the previous `Sheprd.app` still present and still verifies | one window, one workspace list from the running daemon; `~/Library/Preferences/ai.2389.spaceport.plist` appears or updates; no `so.pen.herdr-gpui` change | quit, move the bundle to the trash; LaunchServices forgets it | `inherited-app` or `inherited-prefs` changed; `own-state` did not appear |
 | macOS development | `just bundle release`, open `target/release/Spaceport.app` | same, with sockets from `herdr-dev` if that daemon is running | delete the bundle | a development build touching the release daemon's catalog |
-| Windows installer / `site/install.ps1` | install beside the inherited product; expect finding 1 to bite | one window; `Run\Spaceport` only when Launch at login is turned on | run the uninstaller; then check finding 2 | the inherited install's files or Start menu shortcut gone; a leftover `Run\Spaceport` |
-| Linux (Nix) | `nix profile install .#spaceport`, or `nix run` | one window, development identity | `nix profile remove spaceport` | any write under `$XDG_CONFIG_HOME/herdr`'s sockets or sessions |
+| Windows installer | install beside inherited Sheprd | one window; `Run\Spaceport` only when Launch at login is turned on | run the uninstaller and inspect the registry | the inherited install's files or Start menu shortcut gone; a leftover `Run\Spaceport` |
+| Linux (Nix) | `nix profile install .#spaceport`, in a test profile | one window, development identity | `nix profile remove spaceport` | any write under `$XDG_CONFIG_HOME/herdr`'s sockets or sessions |
 
 Registry checks for the Windows run — the snapshot tool covers the filesystem,
 and these are read by hand before and after each step:
@@ -198,36 +209,15 @@ AppUserModelId key appears on first toast and is removed by uninstall.
 
 ## Findings
 
-These are the places where isolation does **not** hold today. None is fixed
-here: the two Windows ones need C4's package identity, and the catalog one needs
-an owner decision, so this ticket records them.
+### Windows package and startup identity
 
-### 1. The Windows package is still the inherited package
+C4 gave Spaceport its own install directory, shortcut, AppId and startup
+value. The checker treats the Spaceport Start menu shortcut as owned. It
+monitors the inherited Sheprd shortcuts and install directory for changes.
+The registry commands above remain manual checks. The Windows smoke test
+covers a clean installation and removal. The side-by-side run remains open.
 
-`scripts/release/spaceport.iss` keeps the inherited `AppId`
-`{7FA70894-4FC0-4923-BDCB-B05F7475610A}`, the install directory
-`%LOCALAPPDATA%\Programs\Herdr UI`, the publisher `Herdr UI`, and the
-AppUserModelID `so.pen.herdr-gpui`, while installing `spaceport.exe`,
-`spaceport-launcher.exe` and `sheprd-acp.exe`. Windows therefore treats it as
-the same product as an inherited Sheprd installation: an install replaces it in
-place rather than sitting beside it, and uninstalling removes that directory —
-including the inherited install's `sheprd-acp.exe`, which has the same name. The
-comment at the top of the file says as much. `site/install.ps1` targets the same
-directory with `sheprd.exe`. This is C4's work and is why the Windows row of
-every table above says *inherited*.
-
-### 2. The Windows startup entry does not round-trip
-
-The app writes `HKCU\...\Run\Spaceport` when Launch at login is turned on
-(`spaceport-gpui/src/launch_at_login.rs`, `VALUE = "Spaceport"`), but the
-installer's uninstall deletes `{#StartupName}` = `Herdr UI` in both `Run` and
-`StartupApproved\Run` (`spaceport.iss`, `[Registry]`). So a user who turns the
-setting on and later uninstalls is left with a `Run\Spaceport` value naming a
-deleted launcher, and an inherited install that still had a `Herdr UI` entry
-loses it. Renaming the value is a packaging identity change, so it belongs with
-finding 1 rather than here.
-
-### 3. The saved-device catalog lives in the inherited state tree
+### The saved-device catalog lives in the inherited state tree
 
 The catalog and the selected device resolve to
 `<state>/herdr/client/endpoints.json` and `endpoint-selection.json`
@@ -240,11 +230,12 @@ device. It is not a migration and it is not a copy — one file, two readers.
 Either the app separates it, or the sharing is accepted as the same choice D58
 makes for the sockets; that decision is not this ticket's.
 
-### 4. `site/install.sh` is not a Spaceport installer
+### The inherited install scripts
 
-It downloads from `sheprd-labs/sheprd` and installs the upstream product; its
+`site/install.sh` downloads from `sheprd-labs/sheprd` and installs the upstream product; its
 header says so. Reading the landing page as a Spaceport channel would install
-the inherited app. No Spaceport Linux package exists yet: the Nix flake is the
+the inherited app. `site/install.ps1` likewise installs the upstream Windows product.
+No Spaceport Linux distribution package exists yet: the Nix flake is the
 only Linux route, and it installs from the store without writing user
 configuration.
 
@@ -272,8 +263,8 @@ Each of these needs a real install on a machine with inherited state present:
 2. macOS development bundle beside the same install, to prove
    `spaceport.development` and `herdr-dev` stay separate.
 3. Windows: install, first launch, Launch at login on then off, reinstall, and
-   uninstall on a machine with an inherited installation — expect findings 1 and
-   2, and record the registry before and after each step.
+   uninstall on a machine with an inherited installation. Record its registry
+   entries before and after each step.
 4. Linux: `nix profile install` then `nix profile remove` with a daemon running,
    checking the daemon's config, state and sockets are untouched.
 5. Keychain and login-item negatives on a machine that has an inherited install:
@@ -284,6 +275,5 @@ Each of these needs a real install on a machine with inherited state present:
    install. The update path itself is T12's, and its native fixtures are
    recorded in `t12-sparkle-preview.md`.
 
-C5 does not pass A42: with findings 1–3 open, "upstream settings untouched" is
-true for macOS today and false on Windows, and the shared catalog is a decision
-still to be made.
+A42 remains `not_run`. Each platform needs a side-by-side install and the
+saved-device catalog still needs an ownership decision.

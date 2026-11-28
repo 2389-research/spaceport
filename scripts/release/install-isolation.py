@@ -3,23 +3,21 @@
 ABOUTME: Prove one real install keeps Spaceport's own state and leaves inherited state untouched.
 
 Standard library only, so the same script runs on macOS, Windows and Linux. It
-installs nothing and edits nothing: `snapshot` only reads, and `compare` only
-reads its two arguments. Files are recorded by size and SHA-256; their contents
-are never printed, so a snapshot is safe to hand to a reviewer.
+installs nothing and edits nothing. Files are recorded by size and SHA-256; their contents
+are never printed, but names and link targets may identify a user or project.
 
     python3 scripts/release/install-isolation.py surfaces
-    python3 scripts/release/install-isolation.py snapshot > before.json
-    # install, launch once, quit, uninstall
-    python3 scripts/release/install-isolation.py snapshot > after.json
-    python3 scripts/release/install-isolation.py compare before.json after.json
+    python3 scripts/release/install-isolation.py snapshot --package PATH > before.json
+    # For a fresh install, capture all three snapshots with --package PATH.
+    python3 scripts/release/install-isolation.py verify before.json installed.json removed.json
 
 A surface is `own` when Spaceport alone writes it, so a change there is the
 install working; `inherited` when the inherited Sheprd or Herdr installation owns
 it, so a change there is a failure; and `shared` when the two really do share the
 path today, which is reported so a reviewer sees it rather than fails.
 
-Exit codes: 0 nothing inherited changed, 1 something inherited changed, 2 a
-usage or unreadable-snapshot error.
+Exit codes: 0 passed, 1 changed inherited state or failed package transition,
+2 invalid arguments, incompatible snapshots or a read failure.
 """
 import argparse
 import fnmatch
@@ -30,10 +28,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-FORMAT = 1
-# Bigger files are recorded by size alone; a hash of one proves nothing a
-# second install run would keep stable, and reading it costs more than it is worth.
-DIGEST_LIMIT = 1 << 20
+FORMAT = 2
 
 # While the selected daemon runs it owns these under its configuration root.
 DAEMON_CONFIG = (
@@ -103,6 +98,11 @@ def state_root() -> Path:
     if sys.platform == "win32":
         return variable("LOCALAPPDATA") or home() / "AppData" / "Local"
     return home() / ".local" / "state"
+
+
+def windows_programs() -> Path:
+    roaming = variable("APPDATA") or home() / "AppData" / "Roaming"
+    return roaming / "Microsoft" / "Windows" / "Start Menu" / "Programs"
 
 
 def surfaces() -> list[Surface]:
@@ -225,8 +225,6 @@ def surfaces() -> list[Surface]:
                 "inherited",
                 Path("/Applications/Sheprd.app"),
                 "an inherited app bundle installed beside Spaceport",
-                walk=False,
-                files=("Contents/Info.plist",),
             ),
             Surface(
                 "inherited-prefs",
@@ -249,15 +247,16 @@ def surfaces() -> list[Surface]:
                 "windows-install-dir",
                 "inherited",
                 local / "Programs" / "Herdr UI",
-                "the inherited installer's directory, which Spaceport's package still installs into; it is expected to fail until C4",
+                "the inherited installer's directory",
             ),
+            Surface("own-windows-install", "own", local / "Programs" / "Spaceport"),
+            Surface("own-start-menu", "own", windows_programs() / "Spaceport.lnk"),
             Surface(
                 "start-menu",
                 "inherited",
-                variable("APPDATA") or home() / "AppData" / "Roaming"
-                / "Microsoft" / "Windows" / "Start Menu" / "Programs",
-                "the Start menu shortcuts either app creates",
-                match=("*Spaceport*", "*Sheprd*", "*Herdr*"),
+                windows_programs(),
+                "the inherited Start menu shortcuts",
+                match=("*Sheprd*", "*Herdr*"),
             ),
         ]
     else:
@@ -315,11 +314,9 @@ def describe(path: Path) -> dict[str, object]:
     if path.is_dir():
         return {"kind": "dir"}
     if path.is_file():
-        size = path.stat().st_size
-        entry: dict[str, object] = {"kind": "file", "size": size}
-        if size <= DIGEST_LIMIT:
-            entry["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
-        return entry
+        with path.open("rb") as stream:
+            digest = hashlib.file_digest(stream, "sha256")
+            return {"kind": "file", "size": os.fstat(stream.fileno()).st_size, "sha256": digest.hexdigest()}
     return {"kind": "other"}
 
 
@@ -332,7 +329,8 @@ def collect(surface: Surface) -> tuple[dict[str, dict[str, object]], int]:
     if not (root.is_dir() and not root.is_symlink()):
         entries["."] = describe(root)
         return entries, 0
-    entries["."] = describe(root)
+    if not surface.match:
+        entries["."] = describe(root)
     if not surface.walk:
         for member in surface.files:
             path = root / member
@@ -340,7 +338,11 @@ def collect(surface: Surface) -> tuple[dict[str, dict[str, object]], int]:
                 entries[member] = describe(path)
         return entries, 0
     skipped = 0
-    for directory, children, names in os.walk(root, followlinks=False):
+
+    def unreadable(error):
+        raise error
+
+    for directory, children, names in os.walk(root, onerror=unreadable, followlinks=False):
         base = Path(directory)
         kept = []
         for name in children:
@@ -348,7 +350,11 @@ def collect(surface: Surface) -> tuple[dict[str, dict[str, object]], int]:
             if ignored(relative, surface.ignore):
                 skipped += 1
             else:
-                kept.append(name)
+                child = base / name
+                if not surface.match or selected(surface, name):
+                    entries[relative] = describe(child)
+                if not child.is_symlink():
+                    kept.append(name)
         children[:] = kept
         for name in names:
             relative = (base / name).relative_to(root).as_posix()
@@ -362,7 +368,34 @@ def collect(surface: Surface) -> tuple[dict[str, dict[str, object]], int]:
     return entries, skipped
 
 
-def snapshot() -> dict[str, object]:
+def package_files(root: Path) -> dict[str, str]:
+    """Record each package artifact needed for a fresh install and clean uninstall."""
+    root = root.absolute()
+    if sys.platform == "win32":
+        files = [root / name for name in ("spaceport.exe", "spaceport-launcher.exe", "sheprd-acp.exe")]
+        files.append(windows_programs() / "Spaceport.lnk")
+    elif sys.platform == "darwin":
+        files = [root / name for name in ("Contents/Info.plist", "Contents/MacOS/spaceport", "Contents/MacOS/sheprd-acp")]
+    else:
+        files = [root / name for name in (
+            "bin/spaceport", "bin/sheprd-acp", "share/applications/spaceport.development.desktop",
+            "share/icons/hicolor/scalable/apps/spaceport.svg",
+        )]
+    def status(path, expected):
+        if expected:
+            return "installed"
+        if os.path.lexists(path):
+            return "invalid"
+        return "absent"
+
+    states = {str(path): status(path, path.is_file()) for path in files}
+    # The Nix profile survives removal of a single package.
+    if sys.platform in ("win32", "darwin"):
+        states[str(root)] = status(root, root.is_dir())
+    return states
+
+
+def snapshot(package: Path | None = None) -> dict[str, object]:
     recorded = {}
     for surface in surfaces():
         if surface.match and not (surface.path.is_dir() and surface.path.exists()):
@@ -380,6 +413,7 @@ def snapshot() -> dict[str, object]:
     return {
         "format": FORMAT,
         "platform": sys.platform,
+        "package": package_files(package) if package is not None else {},
         "surfaces": recorded,
     }
 
@@ -456,6 +490,33 @@ def report(out, before: dict[str, object], after: dict[str, object]) -> int:
     return 0
 
 
+def verify(out, before, installed, removed) -> int:
+    """Check the full fresh install and both intervals of inherited-state isolation."""
+    snapshots = (before, installed, removed)
+    original = before.get("package")
+    if not isinstance(original, dict) or not original:
+        raise Usage("verify requires all snapshots to select the package with --package")
+
+    def scope(document):
+        return {name: (row["owner"], row["path"]) for name, row in document["surfaces"].items()}
+
+    for document in snapshots[1:]:
+        if (document["platform"] != before["platform"] or scope(document) != scope(before)
+                or not isinstance(document.get("package"), dict)
+                or document["package"].keys() != original.keys()):
+            raise Usage("snapshots must cover the same platform, package and surface paths")
+
+    failed = False
+    for path in original:
+        states = [document["package"][path] for document in snapshots]
+        if states != ["absent", "installed", "absent"]:
+            failed = True
+            print(f"{path}: expected absent, installed, absent; saw {', '.join(map(str, states))}", file=out)
+    first = report(out, before, installed)
+    second = report(out, installed, removed)
+    return int(bool(failed or first or second))
+
+
 def listing(out) -> None:
     for surface in surfaces():
         owner = surface.owner
@@ -467,7 +528,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("surfaces", help="Print the surfaces this check records")
-    commands.add_parser("snapshot", help="Print this user's snapshot as JSON")
+    take = commands.add_parser("snapshot", help="Print this user's snapshot as JSON")
+    take.add_argument("--package", type=Path, help="App bundle, Windows install directory or Nix profile to verify")
+    check = commands.add_parser("verify", help="Verify a fresh install, uninstall and inherited state")
+    for phase in ("before", "installed", "removed"):
+        check.add_argument(phase, type=Path)
     compare = commands.add_parser("compare", help="Compare two snapshots")
     compare.add_argument("before", type=Path)
     compare.add_argument("after", type=Path)
@@ -477,11 +542,13 @@ def main(argv: list[str] | None = None) -> int:
             listing(sys.stdout)
             return 0
         if arguments.command == "snapshot":
-            json.dump(snapshot(), sys.stdout, indent=1, sort_keys=True)
+            json.dump(snapshot(arguments.package), sys.stdout, indent=1, sort_keys=True)
             sys.stdout.write("\n")
             return 0
+        if arguments.command == "verify":
+            return verify(sys.stdout, load(arguments.before), load(arguments.installed), load(arguments.removed))
         return report(sys.stdout, load(arguments.before), load(arguments.after))
-    except Usage as error:
+    except (Usage, OSError) as error:
         print(f"install-isolation: {error}", file=sys.stderr)
         return 2
 
