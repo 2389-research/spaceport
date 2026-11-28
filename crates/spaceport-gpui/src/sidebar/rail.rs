@@ -4,8 +4,8 @@
 //! its own shape and wears the workspace badge's chrome: the same fill,
 //! stroke, and corner as the selected workspace number, one step quieter on
 //! every other host. Workspace badges and agent rows share one borderless
-//! grid, centered on that box. A neutral background marks the focused agent
-//! across the full row. Each mark navigates where its expanded row would. Its tooltip
+//! grid, centered on that box. The focused agent has an accent outline across
+//! the full row. Each mark navigates where its expanded row would. Its tooltip
 //! names what the narrow column cannot.
 
 use super::{

@@ -406,19 +406,28 @@ struct ProfileStore {
     }
 
     enum ObservationSource {
+        case observer
         case terminal
         case home(previouslySeen: Date?)
     }
 
-    func recordSeen(profile: HostProfile, snapshot: SessionStatusSnapshot, source: ObservationSource = .terminal) throws {
+    @discardableResult
+    func recordObserved(profile: HostProfile, snapshot: SessionStatusSnapshot) throws -> Bool {
+        try recordSeen(profile: profile, snapshot: snapshot, source: .observer)
+    }
+
+    @discardableResult
+    func recordSeen(profile: HostProfile, snapshot: SessionStatusSnapshot, source: ObservationSource = .terminal) throws -> Bool {
         var catalog = try catalog()
         guard let index = catalog.sessions.firstIndex(where: { $0.id == profile.id }),
               let saved = catalog.profile(catalog.sessions[index]),
-              saved.address == profile.address, saved.session == profile.session else { return }
+              saved.address == profile.address, saved.session == profile.session else { return false }
         let session = catalog.sessions[index]
         switch source {
         case .home(let previouslySeen):
-            guard saved.login == profile.login, session.lastStatus?.seenAt == previouslySeen else { return }
+            guard saved.login == profile.login, session.lastStatus?.seenAt == previouslySeen else { return false }
+        case .observer:
+            guard saved.login == profile.login else { return false }
         case .terminal:
             if snapshot.seenAt > (session.lastOpened ?? .distantPast) {
                 catalog.sessions[index].lastOpened = snapshot.seenAt
@@ -426,7 +435,7 @@ struct ProfileStore {
         }
         if snapshot.seenAt < (session.lastStatus?.seenAt ?? session.lastOpened ?? .distantPast) {
             if catalog.sessions[index].lastOpened != session.lastOpened { try write(catalog) }
-            return
+            return false
         }
         var snapshot = snapshot
         if let previous = catalog.sessions[index].lastStatus, let rows = snapshot.agents {
@@ -459,8 +468,10 @@ struct ProfileStore {
         if let rows = snapshot.agents {
             snapshot.agents = SeenAgent.cache(rows)
         }
+        guard catalog.sessions[index].lastOpened != session.lastOpened || session.lastStatus != snapshot else { return true }
         catalog.sessions[index].lastStatus = snapshot
         try write(catalog)
+        return true
     }
 
     func remove(_ profile: HostProfile) throws {

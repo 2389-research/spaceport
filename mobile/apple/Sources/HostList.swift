@@ -21,8 +21,8 @@ struct HostList: View {
     @StateObject private var appearance = WindowTerminalAppearance()
     private let store = ProfileStore()
     @StateObject private var sessions = SceneSessions()
+    @ObservedObject private var observers = RosterObservers.shared
     @Environment(\.scenePhase) private var scenePhase
-    @AppStorage(ProfileStore.catalogKey) private var storedCatalog: Data?
     @State private var catalog = HostCatalog()
     @State private var loadedCatalog = false
     @State private var shortcutWindow = UUID()
@@ -60,18 +60,19 @@ struct HostList: View {
                         ForEach(catalog.sessions.filter { $0.hostID == host.id }) { session in
                             let profile = host.profile(session: session)
                             Button { open(profile) } label: {
-                                HomeSessionRow(session: session, refreshFailed: refreshFailures.contains(profile.id))
+                                HomeSessionRow(session: session, live: observers.isLive(profile),
+                                               refreshFailed: refreshFailures.contains(profile.id) || observers.failed.contains(profile))
                             }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("\(host.address.endpoint), \(session.name)")
-                                .accessibilityValue(accessibilityStatus(session))
+                                .accessibilityValue(accessibilityStatus(session, profile: profile))
                                 .swipeActions(allowsFullSwipe: false) {
                                     Button("Remove", role: .destructive) { removal = profile }
                                     Button("Edit") { sheet = .session(host, profile) }.tint(.blue)
                                 }
                                 .contextMenu {
                                     Button("Edit Session") { sheet = .session(host, profile) }
-                                    if sessions.contains(profile) {
+                                    if sessions.contains(profile) || observers.canPause(profile) {
                                         Button("Disconnect", systemImage: "power", role: .destructive) {
                                             sessions.disconnect(profile)
                                         }.accessibilityIdentifier("session.disconnect")
@@ -110,12 +111,14 @@ struct HostList: View {
                         }
                     } label: { Image(systemName: reviewOnly || !hostTag.isEmpty ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle") }
                     .accessibilityLabel("Filter Home")
+                }
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Settings", systemImage: "gearshape") { path.append(.settings) }.accessibilityIdentifier("Settings")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Add Host", systemImage: "plus") { sheet = .addHost }.accessibilityIdentifier("Add Host")
                 }
-                if let refreshing {
+                if let refreshing = refreshing ?? catalog.profiles.first(where: observers.connecting.contains) {
                     ToolbarItem(placement: .topBarTrailing) {
                         ProgressView().controlSize(.small)
                             .accessibilityLabel("Refreshing agents in \(refreshing.session)")
@@ -213,6 +216,7 @@ struct HostList: View {
         } message: { _ in Text("Its Herdr session keeps running on the host.") }
         .onAppear {
             reload()
+            sessions.scenePhaseChanged(scenePhase)
             if scenePhase == .active { activateShortcuts() }
         }
         .onOpenURL { url in
@@ -221,7 +225,7 @@ struct HostList: View {
             catch { notice = error.localizedDescription }
         }
         .onDisappear { SpaceportShortcutRouter.shared.deactivate(shortcutWindow) }
-        .onChange(of: storedCatalog) { reload() }
+        .background { CatalogObserver { reload(whileInSession: sessions.current != nil) } }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { markClock = Date() }
             sessions.scenePhaseChanged(phase)
@@ -231,7 +235,8 @@ struct HostList: View {
                 SpaceportShortcutRouter.shared.deactivate(shortcutWindow)
             }
         }
-        .onChange(of: path) { _, path in
+        .onChange(of: path) { previous, path in
+            if previous.last?.presentation != nil && path.last?.presentation == nil { reload() }
             if let current = sessions.current, !path.contains(where: { $0.presentation == current }) {
                 sessions.detach(current)
             }
@@ -273,7 +278,7 @@ struct HostList: View {
         return catalog.sessions.filter { $0.lastOpened != nil }.sorted {
             ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast)
         }.compactMap { catalog.profile($0) }.filter {
-            sessions.permitsHomeRefresh($0) && (sessions.hasParkedSession(for: $0) || $0.login == .phoneKey)
+            sessions.permitsHomeRefresh($0) && sessions.hasParkedSession(for: $0)
         }
     }
 
@@ -289,15 +294,7 @@ struct HostList: View {
             refreshing = profile
             do {
                 let previouslySeen = catalog.sessions.first { $0.id == profile.id }?.lastStatus?.seenAt
-                let roster: MobileView?
-                if let retained = try await sessions.observeRetainedRoster(for: profile) {
-                    roster = retained
-                } else if profile.login == .phoneKey {
-                    try Task.checkCancellation()
-                    roster = try await HomeRosterProbe.read(profile)
-                } else {
-                    roster = nil
-                }
+                let roster = try await sessions.observeRetainedRoster(for: profile)
                 try Task.checkCancellation()
                 guard refreshPass == pass, homeRefreshTargets.contains(profile) else { return }
                 guard let roster, let date = roster.rosterObservationDate else {
@@ -355,9 +352,11 @@ struct HostList: View {
         if let presentation = path.last?.presentation, presentation != sessions.current { path = [] }
     }
 
-    private func reload() {
+    private func reload(whileInSession: Bool = false) {
         do {
-            catalog = try store.catalog()
+            let latest = try store.catalog()
+            if whileInSession && catalog.hosts == latest.hosts && catalog.profiles == latest.profiles { return }
+            catalog = latest
             if !catalog.availableTags.contains(where: { $0.lowercased() == hostTag }) { hostTag = "" }
             loadedCatalog = true
             sessions.reconcile(catalog.profiles)
@@ -369,10 +368,11 @@ struct HostList: View {
         }
     }
 
-    private func accessibilityStatus(_ session: SavedSession) -> String {
+    private func accessibilityStatus(_ session: SavedSession, profile: HostProfile) -> String {
         guard let status = session.lastStatus else { return "Not opened yet" }
-        let failure = refreshFailures.contains(session.id) ? "Couldn’t refresh, " : ""
-        return "\(failure)\(status.blocked) need you, \(status.working) working, last seen \(status.seenAt.formatted(.relative(presentation: .named)))"
+        let failed = refreshFailures.contains(session.id) || observers.failed.contains(profile)
+        let prefix = observers.isLive(profile) ? "Live, " : (failed ? "Couldn’t refresh, " : "")
+        return "\(prefix)\(status.blocked) need you, \(status.working) working, last seen \(status.seenAt.formatted(.relative(presentation: .named)))"
     }
 }
 
@@ -380,5 +380,14 @@ private extension HomeRoute {
     var presentation: SessionPresentation? {
         if case let .session(presentation, _) = self { return presentation }
         return nil
+    }
+}
+
+private struct CatalogObserver: View {
+    @AppStorage(ProfileStore.catalogKey) private var storedCatalog: Data?
+    let changed: () -> Void
+
+    var body: some View {
+        Color.clear.allowsHitTesting(false).onChange(of: storedCatalog) { changed() }
     }
 }

@@ -125,6 +125,7 @@ struct HomeAgentsSection: View {
 
 struct HomeSessionRow: View {
     let session: SavedSession
+    var live = false
     var refreshFailed = false
 
     var body: some View {
@@ -139,9 +140,15 @@ struct HomeSessionRow: View {
                 Text(session.name).foregroundStyle(.primary)
                 if let status = session.lastStatus {
                     let labels = status.labels.joined(separator: " · ")
-                    Text("\(labels.isEmpty ? "" : labels + " · ")Last seen \(status.seenAt, format: .relative(presentation: .named))")
-                        .font(.footnote).foregroundStyle(.secondary)
-                    if refreshFailed { Text("Couldn’t refresh").font(.footnote).foregroundStyle(.secondary) }
+                    Group {
+                        if live {
+                            Text(labels.isEmpty ? "Live" : "Live · " + labels)
+                        } else {
+                            Text("\(labels.isEmpty ? "" : labels + " · ")Last seen \(status.seenAt, format: .relative(presentation: .named))")
+                        }
+                    }
+                    .font(.footnote).foregroundStyle(.secondary)
+                    if refreshFailed && !live { Text("Couldn’t refresh").font(.footnote).foregroundStyle(.secondary) }
                 } else {
                     Text("Not opened yet").font(.footnote).foregroundStyle(.secondary)
                 }

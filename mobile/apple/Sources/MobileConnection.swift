@@ -76,7 +76,7 @@ final class MobileConnection: ObservableObject {
     private(set) var reconnectFrame: MobileTerminal?
     private(set) var editorTarget: InputTarget?
     private(set) var panePreviews = PanePreviewCache()
-    private var savedAgentCounts: AgentCounts?
+    private var lastRosterSave: RosterSaveAttempt?
     @Published private(set) var directPane: DirectPaneAttachment?
     private var session: MobileSession?
     private var paneTrail: MobilePaneTrail?
@@ -87,6 +87,9 @@ final class MobileConnection: ObservableObject {
     private var appliedViewport: Viewport?
     private var resumeRequested = false
     private var recovery = TransportRecovery()
+    private var parkedRoster: Task<Void, Never>?
+    private(set) var isObservingParkedRoster = false
+    var parkedRosterChanged: (() -> Void)?
     private var parkedBoot: String?
     private var verification: Task<Void, Never>?
 
@@ -173,6 +176,7 @@ final class MobileConnection: ObservableObject {
         if presentationID != id || agent != nil { reconnectFrame = nil }
         recovery = TransportRecovery()
         presentationID = id
+        observeParkedRoster(false)
         arrival = agent.map(AgentArrival.requested)
         if hasParkedSession {
             foreground()
@@ -373,7 +377,8 @@ final class MobileConnection: ObservableObject {
         let changedPane = view?.focusedPaneTarget?.paneId != update.focusedPaneTarget?.paneId
         if changedPane, let outgoing = view, let target = outgoing.focusedPaneTarget,
            let terminal = outgoing.terminal, outgoing.bootId == update.bootId {
-            panePreviews.record(terminal.visibleText, pane: target.paneId, boot: target.bootId)
+            let agent = outgoing.panes.first { $0.id == target.paneId }?.agentName
+            panePreviews.record(terminal.visibleText, pane: target.paneId, boot: target.bootId, agent: agent)
         }
         if view?.bootId != update.bootId { panePreviews = PanePreviewCache() }
         let previous = view
@@ -386,10 +391,10 @@ final class MobileConnection: ObservableObject {
             }
             reconnectFrame = nil
             if let arrival, !locate(arrival, in: update) { return }
-            let previousReady = phase == .ready ? previous : nil
+            if phase != .ready { lastRosterSave = nil }
             phase = .ready
-            if let status = update.changedAgentStatus(after: previousReady, savedCounts: savedAgentCounts) {
-                saveObservation(status)
+            if let status = update.changedAgentStatus(since: lastRosterSave) {
+                saveObservation(status, view: update)
             }
             syncDirectPane()
             if changedPane, let target = update.focusedPaneTarget { panePreviews.visit(target.paneId, boot: target.bootId) }
@@ -462,13 +467,19 @@ final class MobileConnection: ObservableObject {
            attached.target.bootId != view.bootId || attached.target.paneId != view.focusedPane {
             endDirectPane()
         }
+        if let attached = directPane, attached.cachedViewport != nil,
+           !view.panes.contains(where: { $0.id == attached.target.paneId && $0.agentName == attached.agent }) {
+            attached.dismissCachedViewport()
+        }
         // A partial projection can briefly lack a target. Rust checks the latest
         // focus before every write, so a short gap needn't tear down the renderer.
         guard let target = view.inputTarget else { return }
         guard target.popupId == nil else { endDirectPane(); return }
         guard directPane?.target != target else { return }
         endDirectPane()
-        directPane = DirectPaneAttachment(session: session, target: target, size: viewport)
+        let agent = view.panes.first { $0.id == target.paneId }?.agentName
+        let cached = panePreviews.viewport(pane: target.paneId, boot: target.bootId, agent: agent)
+        directPane = DirectPaneAttachment(session: session, target: target, size: viewport, agent: agent, cachedViewport: cached)
     }
 
     func retryDirectPane() {
@@ -478,8 +489,10 @@ final class MobileConnection: ObservableObject {
 
     private func endDirectPane() {
         guard let directPane else { return }
-        if view?.bootId == directPane.target.bootId, let text = directPane.surface?.visibleText {
-            panePreviews.record(text, pane: directPane.target.paneId, boot: directPane.target.bootId)
+        if directPane.hasPaneOutput, let view, view.bootId == directPane.target.bootId,
+           let pane = view.panes.first(where: { $0.id == directPane.target.paneId }), pane.agentName == directPane.agent,
+           let text = directPane.surface?.visibleText {
+            panePreviews.record(text, pane: pane.id, boot: view.bootId, agent: pane.agentName)
         }
         directPane.close()
         self.directPane = nil
@@ -616,13 +629,13 @@ final class MobileConnection: ObservableObject {
 
     private func recordLastSeen() {
         guard phase == .ready, let view, !view.bootId.isEmpty, let date = view.rosterObservationDate else { return }
-        saveObservation(SessionStatusSnapshot(view: view, seenAt: date))
+        saveObservation(SessionStatusSnapshot(view: view, seenAt: date), view: view)
     }
 
-    private func saveObservation(_ snapshot: SessionStatusSnapshot) {
+    private func saveObservation(_ snapshot: SessionStatusSnapshot, view: MobileView) {
         do {
-            try ProfileStore().recordSeen(profile: profile, snapshot: snapshot)
-            savedAgentCounts = snapshot.agentCounts
+            let saved = try ProfileStore().recordSeen(profile: profile, snapshot: snapshot)
+            lastRosterSave = RosterSaveAttempt(view, accepted: saved)
         } catch { message = error.localizedDescription }
     }
 
@@ -661,6 +674,54 @@ final class MobileConnection: ObservableObject {
         clearView()
         reconnectFrame = lastFrame
         phase = .connecting
+    }
+
+    /// A parked terminal still receives snapshots without holding focus or a surface.
+    func observeParkedRoster(_ enabled: Bool) {
+        guard enabled, hasParkedSession, presentationID == nil, let session else {
+            parkedRoster?.cancel()
+            parkedRoster = nil
+            if isObservingParkedRoster {
+                isObservingParkedRoster = false
+                parkedRosterChanged?()
+            }
+            return
+        }
+        guard parkedRoster == nil else { return }
+        let token = generation
+        parkedRoster = Task.detached(priority: .utility) { [weak self] in
+            var version: UInt64 = 0
+            var saved: MobileView?
+            while !Task.isCancelled {
+                if let update = session.pollForAttach(after: version) {
+                    version = update.version
+                    guard !Task.isCancelled else { return }
+                    let snapshot = update.observedRoster(after: saved)
+                    await self?.receiveParkedRoster(update, snapshot: snapshot, token: token)
+                    if update.disconnected { return }
+                    if snapshot != nil { saved = update }
+                }
+                do { try await Task.sleep(for: .milliseconds(500)) } catch { return }
+            }
+        }
+    }
+
+    private func receiveParkedRoster(_ update: MobileView, snapshot: SessionStatusSnapshot?, token: UUID) {
+        guard !Task.isCancelled, generation == token, presentationID == nil, hasParkedSession else { return }
+        if update.disconnected {
+            let wasLive = isObservingParkedRoster
+            finishLoss(eligible: false, message: update.error ?? "Connection closed.")
+            if !wasLive { parkedRosterChanged?() }
+            return
+        }
+        guard let snapshot else { return }
+        do {
+            guard try ProfileStore().recordObserved(profile: profile, snapshot: snapshot) else { return }
+        } catch { message = error.localizedDescription; return }
+        if !isObservingParkedRoster {
+            isObservingParkedRoster = true
+            parkedRosterChanged?()
+        }
     }
 
     func foreground() {
@@ -779,6 +840,7 @@ final class MobileConnection: ObservableObject {
         verification?.cancel()
         verification = nil
         parkedBoot = nil
+        observeParkedRoster(false)
         opening?.cancel()
         opening = nil
         polling?.cancel()
@@ -793,6 +855,7 @@ final class MobileConnection: ObservableObject {
     private func clearView() {
         panePreviews = PanePreviewCache()
         view = nil
+        lastRosterSave = nil
         reconnectFrame = nil
         challenge = nil
         inputStatus = nil

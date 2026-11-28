@@ -27,6 +27,21 @@ final class DraftImageTests: XCTestCase {
         XCTAssertNotNil(draft.image)
     }
 
+    @MainActor
+    func testComposerLoadsAFileBackedImageProvider() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID()).png")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let pixels = UIGraphicsImageRenderer(size: CGSize(width: 12, height: 9), format: format)
+        try pixels.pngData { context in context.fill(CGRect(x: 0, y: 0, width: 12, height: 9)) }.write(to: url)
+        let provider = try XCTUnwrap(NSItemProvider(contentsOf: url))
+        let image = try await DraftImage.load(from: provider)
+        XCTAssertEqual(image.thumbnail.width, 12)
+        XCTAssertEqual(image.thumbnail.height, 9)
+        XCTAssertNotNil(UIImage(data: image.png))
+    }
+
     func testRejectsInvalidAndOversizedInput() {
         XCTAssertThrowsError(try DraftImage(data: Data([1, 2, 3])))
         XCTAssertThrowsError(try DraftImage(data: Data(repeating: 0, count: 16 * 1024 * 1024 + 1)))

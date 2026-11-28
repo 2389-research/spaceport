@@ -9,9 +9,9 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 PUBLIC = Path(__file__).resolve().parent.parent / "public"
-SITE_URL = "https://spaceport.wtf/"
+SITE_URL = "https://2389-research.github.io/spaceport/"
 ALLOWED_HOSTS = {
-    "spaceport.wtf",
+    "2389-research.github.io",
     "api.github.com",
     "github.com",
     "herdr.dev",
@@ -57,7 +57,7 @@ class LandingPageTest(unittest.TestCase):
             self.assertTrue((PUBLIC / url).is_file(), f"index.html names a missing file: {url}")
 
     def test_paths_are_relative(self):
-        # Relative paths also work when previewing the site under a subdirectory.
+        # The page is served under /spaceport/, so a root path would miss it.
         for url in self.page.urls:
             self.assertFalse(url.startswith("/"), f"root-absolute path breaks under /spaceport/: {url}")
 

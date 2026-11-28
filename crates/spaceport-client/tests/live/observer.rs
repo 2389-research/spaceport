@@ -20,7 +20,7 @@ impl Drop for Forwarder {
 
 fn observe(sandbox: &Sandbox, session: &str) -> Client {
     let mut shell = sandbox.command("/bin/sh", "observer.log");
-    spaceport_client::connect_embedded_observer(session, move |command, _| {
+    spaceport_client::observe_embedded_bridge(session, move |command, _| {
         let (client, peer) = UnixStream::pair()?;
         let child = shell
             .arg("-c")

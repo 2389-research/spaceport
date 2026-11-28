@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Package the Windows executable as Sheprd-VERSION-TARGET.zip.
+"""Package the Windows executable as Spaceport-VERSION-TARGET.zip.
 
 Pure standard library so the Windows runner needs no zip tool. The layout
 holds the executable plus the license and notice files.
@@ -49,7 +49,7 @@ def package(version, target, binary, launcher, output_dir, notices):
             raise ValueError(f"A {companion.name} beside the binary required")
     if not notices.is_file() or not notices.stat().st_size:
         raise ValueError("Nonempty third-party notices file required")
-    name = f"Sheprd-{version}-{target}"
+    name = f"Spaceport-{version}-{target}"
     output = output_dir.resolve() / f"{name}.zip"
     if output.exists() or output.is_symlink():
         raise ValueError(f"Output already exists: {output}")

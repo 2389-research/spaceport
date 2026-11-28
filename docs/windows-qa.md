@@ -4,6 +4,9 @@ This is an inherited Sheprd release prompt. Spaceport's release build is
 blocked by T12/G-RELEASE; do not run these installer steps as Spaceport QA.
 Use the current [native platform results](spaceport/evidence/native-platform-results.md)
 and [release identity audit](spaceport/evidence/release-identity-audit.md).
+The package identity below is Sheprd's: Spaceport's Windows package is
+`Spaceport` under its own AppId, directory and publisher, as
+`scripts/release/README.md` records under Package Identities.
 
 A prompt for a coding agent running on a Windows machine with this repository
 checked out, to test the launcher, the command line, and the installer.

@@ -11,10 +11,10 @@ import unittest
 ROOT = Path(__file__).resolve().parents[3]
 INSTALL = ROOT / "site/install.ps1"
 ISS = ROOT / "scripts/release/spaceport.iss"
-
-
-def app_id():
-    return re.search(r'#define AppUserModelID "([^"]+)"', ISS.read_text())[1]
+# site/install.ps1 is still the inherited Sheprd installer for another product,
+# so its shortcut keeps that product's AppUserModelID. Spaceport's own installer
+# declares its own; test_windows_package.py checks that one.
+INHERITED_APP_ID = "so.pen.herdr-gpui"
 
 
 def snippet():
@@ -40,11 +40,11 @@ def installed_filename(variable):
 
 
 class InstallScriptTests(unittest.TestCase):
-    def test_shortcut_and_installer_keep_packaging_user_model_id(self):
+    def test_shortcut_and_script_keep_one_user_model_id(self):
         install = INSTALL.read_text(encoding="utf-8")
-        self.assertIn(f"[HerdrShortcut]::SetAppUserModelId($shortcut, '{app_id()}')", install)
-        iss = ISS.read_text(encoding="utf-8")
-        self.assertIn(f'#define AppUserModelID "{app_id()}"\n', iss)
+        self.assertIn(f"[HerdrShortcut]::SetAppUserModelId($shortcut, '{INHERITED_APP_ID}')", install)
+        # Spaceport's installer owns its own identity, not this one.
+        self.assertNotIn(INHERITED_APP_ID, ISS.read_text(encoding="utf-8"))
 
     @unittest.skipUnless(sys.platform == "win32" and shutil.which("powershell.exe"), "needs Windows PowerShell")
     def test_snippet_writes_the_id_windows_reads_back(self):
@@ -66,7 +66,7 @@ class InstallScriptTests(unittest.TestCase):
                 capture_output=True, text=True, timeout=120,
                 env={**os.environ, "HERDR_TEST_DIR": temp})
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(result.stdout.strip(), app_id())
+            self.assertEqual(result.stdout.strip(), INHERITED_APP_ID)
 
     def test_installer_does_not_start_or_stop_scheduler(self):
         for source in (INSTALL, ISS):

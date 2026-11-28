@@ -13,7 +13,7 @@ fn keycaps(view: &SpaceportWindow) -> Vec<String> {
         .flat_map(|info| keymap.shortcuts(info.command))
         .chain(crate::actions::EDIT_KEYS)
         .chain(["shift shift"])
-        .flat_map(crate::menu::settings::keycaps)
+        .flat_map(spaceport_menu::keybinds::render::keycaps)
         .collect()
 }
 

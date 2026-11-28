@@ -9,6 +9,8 @@ enum GoToSection: String, Identifiable {
 }
 
 struct GoToSheet: View {
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dismiss) private var dismiss
     @ObservedObject var connection: MobileConnection
     let presentation: UUID
     let initialSection: GoToSection
@@ -24,14 +26,13 @@ struct GoToSheet: View {
         let rail: Bool
         let expandedWidth: CGFloat?
         let keyboard: Binding<Bool>
+        let keyboardHandoff: PaneKeyboardHandoff
         let request: Binding<Jump?>
         let revealAgentsID: UUID?
         let isVisible: Bool
     }
 
     var sidebar: Sidebar?
-    @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var browsed: BrowsedWorkspace?
     @State private var sheetSearching = false
@@ -56,7 +57,6 @@ struct GoToSheet: View {
         }
     }
     @State private var issue: String?
-    @State private var showsProgress = false
 
     struct Jump {
         let started: ContinuousClock.Instant
@@ -65,26 +65,34 @@ struct GoToSheet: View {
         let boot: String
         let generation: UUID
         let revision: UInt64
-        let restoreKeyboard: Bool
+        enum Keyboard {
+            case closed, restoreOnArrival, held
+
+            @MainActor func showOnArrival(requested: Bool, handoff: PaneKeyboardHandoff, hasSurface: Bool) -> Bool {
+                switch self {
+                case .closed: requested
+                case .restoreOnArrival: true
+                case .held: requested && hasSurface && handoff.isFirstResponder
+                }
+            }
+        }
+        let keyboard: Keyboard
 
         @MainActor static func begin(to pane: GoToPane, view: MobileView, connection: MobileConnection,
-                                     presentation: UUID, generation: UUID, expectedAgent: String?, restoreKeyboard: Bool, historyForward: Bool? = nil) -> Self? {
+                                     presentation: UUID, generation: UUID, expectedAgent: String?, restoreKeyboard: Bool, handoff: PaneKeyboardHandoff?, historyForward: Bool? = nil) -> Self? {
             guard connection.acceptsInput(from: presentation) else { return nil }
+            let outgoing = connection.directPane?.surface
             let started = ContinuousClock.now
             guard let revision = connection.goTo(pane, boot: view.bootId, generation: generation, expectedAgent: expectedAgent, historyForward: historyForward) else { return nil }
+            var keyboard: Keyboard = restoreKeyboard ? .restoreOnArrival : .closed
+            if restoreKeyboard, let handoff, outgoing?.holdKeyboard(using: handoff) == true { keyboard = .held }
             return Jump(started: started, pane: pane, expectedAgent: expectedAgent, boot: view.bootId,
-                        generation: generation, revision: revision, restoreKeyboard: restoreKeyboard)
+                        generation: generation, revision: revision, keyboard: keyboard)
         }
     }
 
     var body: some View {
         VStack(spacing: 0) { picker }
-            .task(id: request?.revision) {
-                showsProgress = false
-                guard request != nil else { return }
-                do { try await Task.sleep(for: .milliseconds(180)) } catch { return }
-                showsProgress = true
-            }
             .onChange(of: request?.revision, initial: true) { _, _ in checkArrival() }
             .onChange(of: connection.view?.version) { _, _ in checkArrival() }
             .onChange(of: sidebar?.revealAgentsID) { _, id in
@@ -111,15 +119,15 @@ struct GoToSheet: View {
             }
             .onDisappear {
                 if connection.presentationID == presentation, let request {
+                    endKeyboardHandoff(request)
                     self.request = nil
                     connection.cancelGoTo(generation: request.generation)
                 }
             }
             .overlay(alignment: .bottom) {
-                if showsProgress, let request {
-                    ProgressView("Opening \(request.expectedAgent ?? request.pane.pane.label)…")
-                        .lineLimit(1).truncationMode(.middle)
-                        .padding(8).frame(maxWidth: .infinity).background(.bar)
+                if let request {
+                    GoToProgress(name: request.expectedAgent ?? request.pane.pane.label)
+                        .id(request.revision)
                 }
             }
             .sheet(item: $peek) { item in
@@ -140,22 +148,26 @@ struct GoToSheet: View {
                 Button("OK") { issue = nil }
             } message: { Text(issue ?? "") }
     }
+}
 
+// MARK: - Picker
+
+extension GoToSheet {
     private var agentSections: [AgentRail.Section] {
-        guard let view = connection.view else { return [] }
-        return AgentRail.groups(GoToPane.agents(workspaces: view.workspaces, tabs: view.tabs, panes: view.panes))
+        return AgentRail.groups(in: connection.view)
+    }
+
+    private var workspacePicker: WorkspacePicker? {
+        guard selectedPage == .workspaces, let view = connection.view else { return nil }
+        return WorkspacePicker(workspaces: view.workspaces, tabs: view.tabs, panes: view.panes)
     }
 
     @ViewBuilder private var picker: some View {
-        let workspaces = selectedPage == .workspaces ? connection.view.map {
-            WorkspacePicker(workspaces: $0.workspaces, tabs: $0.tabs, panes: $0.panes)
-        } : nil
         if let sidebar {
-            let sections = agentSections
             if sidebar.rail {
                 let view = connection.view
                 let token = connection.generation
-                AgentRail(sections: sections,
+                AgentRail(sections: agentSections,
                           focused: view?.focusedPane, expand: sidebar.expand) { row in
                     guard let view else { return }
                     jump(to: row, view: view, token: token, expectedAgent: row.pane.agentName)
@@ -163,6 +175,7 @@ struct GoToSheet: View {
                 .frame(width: SessionLayout.Sidebar.rail.width)
                 .transition(.opacity)
             } else {
+                let workspaces = workspacePicker
                 VStack(spacing: 0) {
                     sidebarHeader(sidebar)
                     pagePicker
@@ -179,8 +192,7 @@ struct GoToSheet: View {
                         }
                     }
                     sidebarSearch
-                    choices(sections, workspaces: workspaces).listStyle(.plain).scrollContentBackground(.hidden)
-                    sidebarFooter(sidebar, sections: sections, workspaces: workspaces)
+                    choices(workspaces: workspaces).listStyle(.plain).scrollContentBackground(.hidden)
                 }
                 // Keep row labels at their reading width as the outer column clips them.
                 .frame(width: sidebar.expandedWidth)
@@ -188,7 +200,7 @@ struct GoToSheet: View {
                 .transition(.opacity)
             }
         } else {
-            NavigationStack { sheetContent(workspaces: workspaces) }
+            NavigationStack { sheetContent(workspaces: workspacePicker) }
                 .presentationCornerRadius(34)
                 .presentationDragIndicator(.visible)
         }
@@ -345,7 +357,7 @@ struct GoToSheet: View {
                 counts(for: browsed, in: workspaces)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal)
             }
-            choices(agentSections, workspaces: workspaces)
+            choices(workspaces: workspaces)
             if browsed != nil, let workspaces {
                 Divider()
                 currentTerminal(in: workspaces)
@@ -382,7 +394,25 @@ struct GoToSheet: View {
             }
     }
 
-    private func choices(_ sections: [AgentRail.Section], workspaces: WorkspacePicker?) -> some View {
+    @ViewBuilder private func choices(workspaces: WorkspacePicker?) -> some View {
+        if let view = connection.view, workspaces == nil, !isSearching {
+            LiveAgentList(connection: connection, presentation: presentation, focus: view.focusedPane, actions: view.paneActions,
+                          ready: connection.phase == .ready, navigating: request != nil) { rows in
+                navigationList(rows, workspaces: nil).disabled(request != nil)
+                if let sidebar { sidebarFooter(sidebar, sections: rows, workspaces: nil) }
+            }
+            .equatable()
+            .id(connection.generation)
+            .id(view.bootId)
+        } else {
+            navigationList([], workspaces: workspaces).disabled(request != nil)
+            if let sidebar {
+                sidebarFooter(sidebar, sections: browsed == nil ? agentSections : [], workspaces: workspaces)
+            }
+        }
+    }
+
+    private func navigationList(_ sections: [AgentRail.Section], workspaces: WorkspacePicker?) -> some View {
         List {
             if let view = connection.view {
                 let token = connection.generation
@@ -424,7 +454,6 @@ struct GoToSheet: View {
                 }
             }
         }
-        .disabled(request != nil)
     }
 
     private var selectedPage: GoToSection {
@@ -453,9 +482,14 @@ struct GoToSheet: View {
     }
 
     private func destinationRow(_ row: GoToPane, in view: MobileView, token: UUID) -> some View {
-        agentRow(row, here: row.isFocused(in: view)) {
+        Button {
             jump(to: row, view: view, token: token, expectedAgent: row.pane.agentName)
+        } label: {
+            GoToPaneRow(row: row, address: connection.profile.address, here: row.isFocused(in: view),
+                        sidebar: sidebar != nil, searching: isSearching, age: row.sidebarAge)
+                .equatable()
         }
+        .buttonStyle(.plain)
         .listRowBackground(sidebar == nil ? nil : Color.clear)
         .listRowSeparator(sidebar == nil ? .automatic : .hidden)
         .listRowInsets(sidebar == nil ? nil : EdgeInsets(top: 1, leading: 8, bottom: 1, trailing: 8))
@@ -482,7 +516,11 @@ struct GoToSheet: View {
             connection.preview(pane: item.row.id, boot: item.boot)
         }
     }
+}
 
+// MARK: - Navigation
+
+extension GoToSheet {
     private func jump(to pane: GoToPane, view: MobileView, token: UUID, expectedAgent: String? = nil) {
         guard connection.acceptsInput(from: presentation), request == nil else { return }
         let name = AgentSelectorLabel.displayTitle(pane.pane.terminalTitle, address: connection.profile.address) ?? pane.pane.label
@@ -494,14 +532,14 @@ struct GoToSheet: View {
         let restoreKeyboard = sidebar?.keyboard.wrappedValue == true ||
             (searchReturnTarget != nil && searchReturnTarget == connection.view?.focusedPaneTarget)
         guard let jump = Jump.begin(to: pane, view: view, connection: connection, presentation: presentation,
-                                    generation: token, expectedAgent: expectedAgent, restoreKeyboard: restoreKeyboard) else {
+                                    generation: token, expectedAgent: expectedAgent, restoreKeyboard: restoreKeyboard, handoff: sidebar?.keyboardHandoff) else {
             issue = connection.message ?? "The selected terminal changed."
             connection.message = nil
             return
         }
         searchReturnTarget = nil
         searching = false
-        sidebar?.keyboard.wrappedValue = false
+        if jump.keyboard != .held { sidebar?.keyboard.wrappedValue = false }
         request = jump
         checkArrival()
     }
@@ -510,6 +548,7 @@ struct GoToSheet: View {
         guard let request else { return }
         guard connection.acceptsInput(from: presentation), let view = connection.view,
               view.bootId == request.boot, connection.generation == request.generation else {
+            endKeyboardHandoff(request)
             self.request = nil
             if sidebar == nil { dismiss() }
             return
@@ -527,12 +566,15 @@ struct GoToSheet: View {
             #endif
             onArrival?()
             if let sidebar {
-                if request.restoreKeyboard, scenePhase == .active, connection.acceptsInput(from: presentation) {
-                    sidebar.keyboard.wrappedValue = true
-                }
+                let show = scenePhase == .active && request.keyboard.showOnArrival(
+                    requested: sidebar.keyboard.wrappedValue, handoff: sidebar.keyboardHandoff,
+                    hasSurface: connection.directPane?.surface != nil)
+                sidebar.keyboard.wrappedValue = show
+                if !show { sidebar.keyboardHandoff.cancel() }
             } else { dismiss() }
         } else {
             let name = AgentSelectorLabel.displayTitle(request.pane.pane.terminalTitle, address: connection.profile.address) ?? request.pane.pane.label
+            endKeyboardHandoff(request)
             let stillPresent = view.panes.contains { $0.id == request.pane.id && $0.tabId == request.pane.tab.id }
             let failure = stillPresent ? (view.error ?? "Herdr could not confirm focus on “\(name)”.") : "“\(name)” is no longer available."
             if sidebar?.isVisible == false {
@@ -544,69 +586,10 @@ struct GoToSheet: View {
         }
     }
 
-    @ViewBuilder private func agentRow(_ row: GoToPane, here: Bool, action: @escaping () -> Void) -> some View {
-        let activity = PaneActivity(row.pane.status)
-        let role = row.pane.agentName == nil ? "result" : (activity == .blocked ? "needsYou" : "agent")
-        let status = activity?.title
-        let name = row.pane.agentName.flatMap { $0.isEmpty ? nil : $0 } ?? row.pane.label
-        let path = row.location
-        let label = AgentSelectorLabel(name: name, terminalTitle: row.pane.terminalTitle,
-                                       workspace: row.workspace.label, tab: row.tab.label, font: .body.weight(.medium),
-                                       paneTitle: row.pane.displayPaneTitle, isAgent: row.pane.agentName != nil, address: connection.profile.address)
-        if sidebar != nil {
-            Button(action: action) {
-                HStack(spacing: 6) {
-                    if row.pane.agentName != nil {
-                        AgentRowBadge(identity: row.pane.agentIdentity, activity: activity,
-                                      background: here ? SessionChrome.selected : SessionChrome.sidebar,
-                                      statusColor: activity?.sessionColor ?? .secondary)
-                    } else if let activity { activity.sessionDot }
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(label.heading).font(.subheadline.weight(.semibold)).lineLimit(1)
-                        Text(label.subtitle(includingName: row.pane.agentName != nil)).font(.caption).lineLimit(2)
-                    }
-                    Spacer(minLength: 2)
-                    if let age = row.sidebarAge {
-                        Text(verbatim: age).font(.caption).foregroundStyle(SessionChrome.secondary)
-                    }
-                }
-                .padding(.horizontal, 8).padding(.vertical, 6).frame(minHeight: 44)
-                .background(here ? SessionChrome.selected : .clear, in: RoundedRectangle(cornerRadius: 10))
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).accessibilityLabel(Text(verbatim: name))
-            .accessibilityValue(Text(verbatim: [String(label.heading.characters), path, status, here ? "Here" : nil].compactMap { $0 }.joined(separator: ", ")))
-            .accessibilityAddTraits(here ? .isSelected : [])
-            .accessibilityIdentifier("goTo.\(role).\(row.id)")
-        } else {
-            Button(action: action) {
-                HStack(spacing: 10) {
-                    if row.pane.agentName != nil {
-                        AgentRowBadge(identity: row.pane.agentIdentity, activity: activity,
-                                      background: Color(uiColor: .secondarySystemGroupedBackground),
-                                      statusColor: activity?.color ?? .secondary)
-                    }
-                    label
-                    Spacer(minLength: 4)
-                    VStack(alignment: .trailing, spacing: 3) {
-                        HStack(spacing: 4) {
-                            if isSearching, let activity {
-                                Text(activity.title).foregroundStyle(activity.textColor)
-                            } else if let age = row.sidebarAge, activity == .idle {
-                                Text(verbatim: age).monospacedDigit()
-                            }
-                        }
-                        if here { Text("Here").accessibilityIdentifier("goTo.here") }
-                    }
-                    .font(.footnote).foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 2).frame(minHeight: 44).contentShape(Rectangle())
-            }
-            .foregroundStyle(.primary)
-            .accessibilityLabel(Text(verbatim: name == row.pane.label ? name : "\(name), \(row.pane.label)"))
-            .accessibilityValue(Text(verbatim: [String(label.heading.characters), path, status, here ? "Here" : nil].compactMap { $0 }.joined(separator: ", ")))
-            .accessibilityIdentifier("goTo.\(role).\(row.id)")
-        }
+    private func endKeyboardHandoff(_ jump: Jump) {
+        guard jump.keyboard == .held, let sidebar else { return }
+        sidebar.keyboard.wrappedValue = false
+        sidebar.keyboardHandoff.cancel()
     }
 
 }

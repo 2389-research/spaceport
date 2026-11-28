@@ -6,7 +6,6 @@ use super::{
 };
 use crate::{
     agents::status_mark,
-    direction::Logical,
     metrics::{ICON_RESERVE, glyph_width, line_height, scaled},
     tokens::{ResolvedToken, TextRole, TokenKind, budgets, separator},
 };
@@ -30,25 +29,20 @@ fn token_appearance(kind: &TokenKind, look: TokenLook, cx: &RowContext<'_>) -> (
         TokenKind::StateIcon | TokenKind::Text(_, TextRole::Status) => {
             (cx.indicators.color(look.status), FontWeight::NORMAL)
         }
-        TokenKind::Text(_, TextRole::Directory) => (directory_ink(theme), FontWeight::NORMAL),
+        TokenKind::Text(_, TextRole::Directory) => (
+            spaceport_settings::contrast::ink_on_chrome(
+                theme.palette[4],
+                [theme.sidebar_background(), theme.surface, theme.active],
+                4.5,
+            ),
+            FontWeight::NORMAL,
+        ),
         TokenKind::Text(_, TextRole::Workspace) => (name, weight),
         TokenKind::Text(_, TextRole::Secondary | TextRole::Agent) => {
             (secondary, FontWeight::NORMAL)
         }
         _ => (theme.muted, FontWeight::NORMAL),
     }
-}
-
-fn directory_ink(theme: &Theme) -> u32 {
-    spaceport_settings::contrast::ink_on_chrome(
-        spaceport_settings::mix(theme.subtext(), theme.palette[4], 20),
-        [
-            theme.sidebar_background(),
-            theme.active,
-            crate::layout::agent_selection_background(theme),
-        ],
-        4.5,
-    )
 }
 
 /// A token's base color and weight with its configured `fg`, `dim`, and `bold`.
@@ -83,7 +77,7 @@ fn fixed_glyphs(kind: &TokenKind, glyph: f32, status_width: f32) -> usize {
 fn token_line(row: &[ResolvedToken], look: TokenLook, width: f32, cx: &RowContext<'_>) -> Div {
     // Herdr places the app icon on its configured line before budgeting text.
     let compact;
-    let (row, icon_gap) = if cx.icon_only_agent
+    let row = if cx.icon_only_agent
         && row
             .iter()
             .any(|token| matches!(token.kind, TokenKind::Text(_, TextRole::Agent)))
@@ -93,18 +87,17 @@ fn token_line(row: &[ResolvedToken], look: TokenLook, width: f32, cx: &RowContex
             .filter(|token| !matches!(token.kind, TokenKind::Text(_, TextRole::Agent)))
             .cloned()
             .collect::<Vec<_>>();
-        (compact.as_slice(), scaled(cx.font, 4.).min(width.max(0.)))
+        compact.as_slice()
     } else {
-        (row, 0.)
+        row
     };
-    let text_width = (width - icon_gap).max(0.);
     let status = look.status;
     let (font, theme) = (cx.font, cx.theme);
     let glyph = glyph_width(font);
     let budgets = budgets(
         row,
         |kind| fixed_glyphs(kind, glyph, cx.indicators.width(font)),
-        (text_width / glyph).floor() as usize,
+        (width / glyph).floor() as usize,
     );
     let visible: Vec<_> = row
         .iter()
@@ -116,7 +109,7 @@ fn token_line(row: &[ResolvedToken], look: TokenLook, width: f32, cx: &RowContex
             .windows(2)
             .map(|pair| separator(pair[0].0, pair[1].0).chars().count())
             .sum::<usize>();
-    let slack = (text_width - used as f32 * glyph).max(0.);
+    let slack = (width - used as f32 * glyph).max(0.);
     let last_text = visible
         .iter()
         .rposition(|(token, _)| token.kind.text().is_some());
@@ -163,7 +156,7 @@ fn token_line(row: &[ResolvedToken], look: TokenLook, width: f32, cx: &RowContex
         };
         (gap, advance, cell)
     });
-    place_line(parts, width, icon_gap, cx)
+    place_line(parts, width, cx)
 }
 
 /// The `state_icon` leading a configured row's first line. It takes the row's
@@ -296,12 +289,9 @@ pub(super) fn configured_lines(
         text = text.child(
             token_line(line_tokens(index, line), look, text_width, cx)
                 .debug_selector(|| selector.clone())
-                .ms(cx.right_to_left, px(reserve.min(label_width))),
+                .ml(px(reserve.min(label_width))),
         );
         column = column.child(text);
     }
     column
 }
-
-#[cfg(test)]
-mod tests;

@@ -96,7 +96,7 @@ These tests skip themselves when their fixture is absent.
 
 ## Build and run on iOS
 
-Use an Apple silicon Mac with Xcode, Rustup, the repository's pinned Rust toolchain, and XcodeGen.
+Use an Apple silicon Mac with Xcode 27.1 or newer, Rustup, the repository's pinned Rust toolchain, and XcodeGen.
 Run these commands from the repository root.
 
 ```sh
@@ -144,11 +144,18 @@ Saved connections show a custom SSH port when one is set. Edit the host to chang
 
 Home puts pinned agents first, followed by **Waiting for you** and **Working**. Idle agents follow in three approximate age bands: under an hour, one to five hours, and five hours or longer.
 Agents first found idle appear under **Idle**, newest Herdr sequence first within each session. Once Spaceport confirms the same idle streak for an hour, its row shows a lower bound such as `2h+`.
+While Spaceport is active, Home connects directly to the hosts and named sessions saved on this iPhone or iPad.
+A trusted host configured for Phone Key can report agents from a running session before you open its terminal.
+Home observes the running session through its existing socket. If the session stops, Home keeps its last observation.
+For password sign-in, open the session once. Returning Home keeps its SSH login available for roster updates.
+Home shows **Live** beside a session while it receives updates. Other sessions show their last observation.
+The phone can observe four Phone Key sessions at once and rotates through additional saved sessions.
+Tap an agent to open its terminal on the host shown in its row.
+Backgrounding the app pauses observation. Choosing **Disconnect** on a session pauses it until you open it again.
+
 Home measures idle time through the last confirmed observation. A cached session keeps that age until it reconnects.
-Home and Go To show each agent’s terminal title above its name and location. Home shows saved agents immediately. A spinner appears while Home checks previously opened sessions, most recent first.
-It reuses parked SSH connections. For a saved Phone Key login, it can also check a running Herdr session after a cold launch.
-A password session needs an open connection or a manual login. An unreachable session keeps its last observation and timestamp.
-Tap an agent to reopen its session. Spaceport checks the daemon boot, workspace, tab, pane, and reported agent name before enabling input.
+Home and Go To show each agent’s terminal title above its name and location. Home keeps the last title observed for that session.
+Spaceport checks the daemon boot, workspace, tab, pane, and reported agent name before enabling input.
 Choose **Workspaces** underneath the agent list to browse a saved session’s live workspaces.
 Saved sessions appear next, grouped by host.
 The time beside an activity count tells you when the phone last observed it.
@@ -207,6 +214,7 @@ The native Agents and Workspaces lists still use the existing session connection
 Spaceport resolves the selected pane in that named session and runs Herdr’s direct attach on a second SSH channel.
 Herdr 0.9.5 gives its startup terminal probe 250 ms. Spaceport lets that probe expire because late replies can land in the shell.
 This uses Herdr’s cell-based mouse coordinates for that attachment. Queries from programs in the pane still reach Ghostty.
+Spaceport prepares the next terminal channel while Herdr looks up the pane.
 Switching panes releases the old channel. Herdr handles input ownership without a forced takeover.
 Herdr supplies popups as cell snapshots. Spaceport draws them in a separate Ghostty surface and sends popup input to Herdr.
 
@@ -273,6 +281,7 @@ When Home needs to distinguish sessions or hosts, it shows the session in blue a
 Working dots pulse slowly. Waiting dots pulse twice, then pause. Idle dots stay still. Reduce Motion keeps every dot still.
 Choose **Agents** or **Workspaces** at the top of the sidebar. Browsing a workspace leaves the live terminal beside it.
 On the wide display, opening the terminal keyboard slides the agent list into a rail. Closing the keyboard restores the list unless you collapsed it yourself.
+Tap another agent in the rail to switch with the keyboard open. Spaceport discards keystrokes during the switch and accepts input once Herdr confirms the new pane.
 Turn on Reduce Motion in iOS to switch layouts immediately. Tap an initial to switch agents or expand the rail to see names.
 If another agent starts waiting while you type, **Later** dismisses the notice and **Jump** switches to that agent.
 Your half-typed line stays in the original pane.
@@ -289,7 +298,8 @@ Search within that workspace by tab, pane, terminal title, or agent. Back return
 Choose a pane to switch terminals. Browsing, searching, and going back keep Herdr’s focus on the current terminal.
 In **Agents**, touch and hold a row or search result to peek without moving focus.
 Peek shows the current screen, a dated excerpt from a previous visit, or the pane’s details if no excerpt is available.
-These excerpts stay in memory and clear when the session parks or disconnects.
+When you switch back, **Last screen** shows the saved text while Ghostty attaches.
+iOS keeps up to two recent screens in memory and clears them with the excerpts when the session parks or disconnects.
 Tap a waiting pane to jump to it. Input resumes when Herdr confirms the destination and its terminal surface.
 For split tabs, tap a tile on the pane map or choose a pane by name.
 Opening Go To leaves focus in place. Dismissing it restores the keyboard if it was open.
@@ -397,6 +407,13 @@ Give the UI test runner these same variables and a separate session for its keyb
 To exercise **Agents**, run `mobile/test-support/seed-attention NEW_DISPOSABLE_SESSION` on the disposable host with Herdr and jq installed.
 Set `SPACEPORT_TEST_ATTENTION_SESSION` to that name. The test starts in Mission and replies to Review in Flight.
 When running xcodebuild from a shell, prefix the variables with `TEST_RUNNER_`.
+
+For the two-host checks, seed two disposable SSH endpoints with `mobile/test-support/seed-attention`.
+Provide the second endpoint and its fingerprint using the same SSH variables with the prefix `SPACEPORT_TEST_SECOND_SSH_`.
+Set `SPACEPORT_TEST_MULTIHOST_SESSION` and `SPACEPORT_TEST_SECOND_MULTIHOST_SESSION` to the two distinct session names.
+The Rust live test `two_rosters_observe_separate_hosts_with_one_phone_key` enrolls one disposable signing key on both accounts.
+For the simulator workflow, run `mobile/test-support/serve-multihost-roster CONTAINER USER SECOND_SESSION` for the second fixture.
+Export the URL it prints to the XCTest runner. The workflow publishes an agent while both terminals are parked and checks its appearance on Home.
 For the fold test, open an iPhone Duo simulator in Device Hub and unfold it.
 Run `just test-ios-duo SIMULATOR_UDID` with the five SSH fixture variables and the Duo session set.
 At the three Scout prompts, report the requested state from a second shell on the fixture host.

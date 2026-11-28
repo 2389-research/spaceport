@@ -87,7 +87,7 @@ final class SessionWorkflowTests: XCTestCase {
         landscape.lifetime = .keepAlways
         add(landscape)
         if let authenticated {
-            let after = try await sshWitness("sample")
+            let after = try await Self.sshWitness("sample")
             XCTAssertEqual(after, authenticated, "Choosing two agents in this session must reuse its SSH login.")
         }
         app.buttons["session.header.home"].tap()
@@ -240,7 +240,7 @@ final class SessionWorkflowTests: XCTestCase {
         app.activate()
         try await waitForText("Review is ready.", in: terminal)
         if let originalSSH {
-            let currentSSH = try await sshWitness("sample")
+            let currentSSH = try await Self.sshWitness("sample")
             XCTAssertEqual(currentSSH, originalSSH, "Navigation and foregrounding must keep the same authenticated SSH worker.")
         }
         app.buttons["session.navigation"].tap()
@@ -449,13 +449,14 @@ final class SessionWorkflowTests: XCTestCase {
     }
 
     @MainActor
-    func connect(in app: XCUIApplication, sessionVariable: String, suffix: String = "", launch: Bool = true) throws -> (XCUIElement, XCUIElement) {
+    func connect(in app: XCUIApplication, sessionVariable: String, suffix: String = "", launch: Bool = true,
+                 fixture: String = "SPACEPORT_TEST") throws -> (XCUIElement, XCUIElement) {
         let env = ProcessInfo.processInfo.environment
-        guard let host = env["SPACEPORT_TEST_SSH_HOST"],
-              let port = env["SPACEPORT_TEST_SSH_PORT"],
-              let user = env["SPACEPORT_TEST_SSH_USER"],
-              let password = env["SPACEPORT_TEST_SSH_PASSWORD"],
-              let fingerprint = env["SPACEPORT_TEST_SSH_FINGERPRINT"],
+        guard let host = env[fixture + "_SSH_HOST"],
+              let port = env[fixture + "_SSH_PORT"],
+              let user = env[fixture + "_SSH_USER"],
+              let password = env[fixture + "_SSH_PASSWORD"],
+              let fingerprint = env[fixture + "_SSH_FINGERPRINT"],
               let sessionName = env[sessionVariable] else {
             throw XCTSkip("Select a disposable SSH host and configure \(sessionVariable) to run this workflow.")
         }
@@ -612,7 +613,7 @@ extension SessionWorkflowTests {
         _ = try connect(in: app, sessionVariable: "SPACEPORT_TEST_LIFECYCLE_SESSION", suffix: "-b", launch: false)
         var bothLogins: SSHWitness?
         if let firstLogin {
-            let sample = try await sshWitness("sample")
+            let sample = try await Self.sshWitness("sample")
             XCTAssertEqual(sample.accepted, firstLogin.accepted + 1)
             XCTAssertEqual(sample.workers.count, 2)
             XCTAssertTrue(Set(firstLogin.workers).isSubset(of: Set(sample.workers)))
@@ -629,7 +630,7 @@ extension SessionWorkflowTests {
             return
         }
         if let bothLogins {
-            let returned = try await sshWitness("sample")
+            let returned = try await Self.sshWitness("sample")
             XCTAssertEqual(returned, bothLogins)
         }
         XCTAssertFalse((terminal.value as? String ?? "").contains(text))
@@ -642,10 +643,10 @@ extension SessionWorkflowTests {
             let disconnect = app.buttons["session.disconnect"]
             reveal(disconnect, in: app)
             disconnect.tap()
-            var closed = try await sshWitness("sample")
+            var closed = try await Self.sshWitness("sample")
             for _ in 0..<10 where closed.workers == bothLogins.workers {
                 try await Task.sleep(for: .milliseconds(200))
-                closed = try await sshWitness("sample")
+                closed = try await Self.sshWitness("sample")
             }
             XCTAssertEqual(closed.accepted, bothLogins.accepted)
             XCTAssertEqual(Set(closed.workers), Set(bothLogins.workers).subtracting(firstLogin.workers))
@@ -660,12 +661,12 @@ extension SessionWorkflowTests {
     @MainActor
     private func sampleSSHIfConfigured() async throws -> SSHWitness? {
         guard ProcessInfo.processInfo.environment["SPACEPORT_TEST_SSH_WITNESS"] == "1" else { return nil }
-        let sample = try await sshWitness("sample")
+        let sample = try await Self.sshWitness("sample")
         XCTAssertEqual(sample.workers.count, 1)
         return sample
     }
 
-    private func sshWitness(_ action: String) async throws -> SSHWitness {
+    private static func sshWitness(_ action: String) async throws -> SSHWitness {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("spaceport-ssh-witness")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let id = UUID().uuidString
@@ -702,7 +703,7 @@ extension SessionWorkflowTests {
                           "Start the host-side witness to interrupt the disposable SSH transport.")
         let app = XCUIApplication()
         let (terminal, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_LIFECYCLE_SESSION", suffix: suffix)
-        let before = try await sshWitness("sample")
+        let before = try await Self.sshWitness("sample")
         XCTAssertEqual(before.workers.count, 1)
         let draft = "unsent-" + UUID().uuidString.prefix(8)
         let compose = app.buttons["session.compose"]
@@ -716,13 +717,13 @@ extension SessionWorkflowTests {
             XCTAssertTrue(app.state == .runningBackgroundSuspended || app.wait(for: .runningBackground, timeout: 5))
             try await Task.sleep(for: .seconds(3))
         }
-        let detached = try await sshWitness("drop")
+        let detached = try await Self.sshWitness("drop")
         XCTAssertEqual(detached, before)
         app.activate()
-        var after = try await sshWitness("sample")
+        var after = try await Self.sshWitness("sample")
         for _ in 0..<20 where after.workers.isEmpty || after == before {
             try await Task.sleep(for: .milliseconds(400))
-            after = try await sshWitness("sample")
+            after = try await Self.sshWitness("sample")
         }
         XCTAssertEqual(after.accepted, before.accepted + 1)
         XCTAssertEqual(after.workers.count, 1)

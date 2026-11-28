@@ -6,15 +6,20 @@ import SwiftUI
 final class DirectPaneAttachment: ObservableObject, Identifiable {
     let id = UUID()
     let target: InputTarget
+    let agent: String?
     private let channel: MobilePty?
     private(set) var surface: GhosttyPaneSurface?
     private var startup = HerdrAttachStartup()
     private var closed = false
+    @Published private(set) var cachedViewport: String?
+    var hasPaneOutput: Bool { startup.hasPaneOutput }
     @Published private(set) var inputWarning: String?
     @Published private(set) var failure: String?
 
-    init(session: MobileSession, target: InputTarget, size: Viewport) {
+    init(session: MobileSession, target: InputTarget, size: Viewport, agent: String?, cachedViewport: String?) {
         self.target = target
+        self.agent = agent
+        self.cachedViewport = cachedViewport
         do {
             let pty = try session.attachTerminal(target: target, cols: size.columns, rows: size.rows)
             channel = pty
@@ -55,8 +60,18 @@ final class DirectPaneAttachment: ObservableObject, Identifiable {
 
     private func display(_ bytes: Data) {
         guard !closed else { return }
+        let awaitingScreen = cachedViewport != nil && !hasPaneOutput
         let output = startup.receive(bytes)
-        if !output.isEmpty { surface?.receive(output) }
+        guard !output.isEmpty else { return }
+        if awaitingScreen, hasPaneOutput {
+            surface?.receive(output) { [weak self] in self?.dismissCachedViewport() }
+        } else {
+            surface?.receive(output)
+        }
+    }
+
+    func dismissCachedViewport() {
+        if cachedViewport != nil { cachedViewport = nil }
     }
 
     private func finish(_ error: Error) {
@@ -107,6 +122,7 @@ struct DirectPaneDisplay: View {
     @ObservedObject var pane: DirectPaneAttachment
     @Binding var keyboard: Bool
     @Binding var modifiers: UInt8
+    let pointSize: CGFloat
     let retry: () -> Void
     let openAgents: () -> Void
 
@@ -122,6 +138,9 @@ struct DirectPaneDisplay: View {
                 }
             } else if let surface = pane.surface {
                 GhosttyPaneView(surface: surface, keyboard: $keyboard, modifiers: $modifiers, openAgents: openAgents)
+                    .overlay {
+                        if let screen = pane.cachedViewport { CachedPaneViewport(text: screen, pointSize: pointSize) }
+                    }
                     .onReceive(surface.$reportedAppearance) { mode in
                         if appearance.reported != mode { appearance.reported = mode }
                     }
@@ -137,5 +156,27 @@ struct DirectPaneDisplay: View {
             }
         }
         .task(id: pane.id) { await pane.readOutput() }
+    }
+}
+
+struct CachedPaneViewport: View {
+    let text: String
+    let pointSize: CGFloat
+
+    var body: some View {
+        Text(verbatim: text)
+            .font(.system(size: pointSize, design: .monospaced))
+            .fixedSize()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .clipped()
+            .background(TerminalDisplay.background)
+            .overlay(alignment: .topTrailing) {
+                Label("Last screen", systemImage: "clock")
+                    .font(.caption2).padding(5).background(.regularMaterial, in: Capsule()).padding(4)
+            }
+            .allowsHitTesting(false)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Last terminal screen")
+            .accessibilityValue(Text(verbatim: text))
     }
 }

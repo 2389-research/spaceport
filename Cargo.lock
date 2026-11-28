@@ -6479,7 +6479,6 @@ dependencies = [
  "rustix",
  "serde",
  "serde_json",
- "spaceport-chat-core",
  "spaceport-chat-protocol",
  "spaceport-client",
  "tempfile",
@@ -7024,6 +7023,7 @@ dependencies = [
  "spaceport-settings",
  "spaceport-widgets",
  "spaceport-words",
+ "tracing",
  "unicode-bidi",
  "unicode-segmentation",
 ]

@@ -4,33 +4,29 @@ import SwiftUI
 import UIKit
 
 struct SessionScreen: View {
-    @ObservedObject private var connection: MobileConnection
-    private let presentation: UUID
-    private let hostDetails: () -> Void
-    private let home: () -> Void
-    private let disconnect: () -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.usesVerticalSessionToolbar) private var verticalToolbar
+    @Environment(\.displayScale) private var displayScale
+    @ObservedObject private var connection: MobileConnection
+    private let presentation: UUID
+    private let hostDetails: () -> Void
+    private let home: () -> Void
+    private let disconnect: () -> Void
     @State private var revealAgentsID: UUID?
     @State private var sidebarCollapsed = false
     @State private var expandedWhileTyping = false
     @State private var interrupt = WaitingInterrupt()
-    @State private var continuity: Continuity?
     @State private var historyTarget: InputTarget?
 
-    private struct Continuity: Identifiable {
-        let id = UUID()
-        let message: String
-    }
     @State private var sidebarRequest: GoToSheet.Jump?
     @State private var shortcutLayout: UUID?
     @State private var showEmptyAgents = false
-    @Environment(\.displayScale) private var displayScale
     @State private var keyboard = false
+    @StateObject private var keyboardHandoff = PaneKeyboardHandoff()
     @State private var measured = false
     @State private var navigation: GoToSection?
     @State private var navigationExit: NavigationExit?
@@ -42,6 +38,15 @@ struct SessionScreen: View {
     @State private var selectedText: String?
     private enum NavigationExit { case home, disconnect }
 
+    @AppStorage(TerminalPreferences.textSize) private var savedTextSize: Int?
+    private var showsDirectPane: Bool { connection.view?.terminal == nil }
+    private var metrics: TerminalMetrics { TerminalMetrics(textSize: savedTextSize ?? TerminalPreferences.defaultTextSize) }
+
+    private var showsTerminal: Bool {
+        connection.phase == .ready || connection.phase == .locatingAgent || connection.hasParkedSession
+            || (connection.phase == .connecting && connection.reconnectFrame != nil)
+    }
+
     init(presentation: SessionPresentation, initialNavigation: GoToSection? = nil,
          hostDetails: @escaping () -> Void, home: @escaping () -> Void, disconnect: @escaping () -> Void) {
         self.presentation = presentation.id
@@ -50,11 +55,6 @@ struct SessionScreen: View {
         self.disconnect = disconnect
         _requestedNavigation = State(initialValue: initialNavigation)
         _connection = ObservedObject(wrappedValue: presentation.connection)
-    }
-
-    private var showsTerminal: Bool {
-        connection.phase == .ready || connection.phase == .locatingAgent || connection.hasParkedSession
-            || (connection.phase == .connecting && connection.reconnectFrame != nil)
     }
 
     var body: some View {
@@ -72,6 +72,8 @@ struct SessionScreen: View {
                 terminal
             }
         }
+        // A sheet’s keyboard must not resize the terminal and invalidate its history cursor.
+        .ignoresSafeArea(.keyboard, edges: keyboardBeforeNavigation == nil ? [] : .bottom)
         .navigationTitle(showsTerminal ? (verticalToolbar ? "" : connection.profile.session) : "Connect")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(showsTerminal && verticalToolbar)
@@ -117,7 +119,10 @@ struct SessionScreen: View {
                 .padding().background(.regularMaterial, in: .rect(cornerRadius: 16)).padding()
             }
         }
-        .onDisappear { keyboard = false }
+        .onDisappear {
+            keyboard = false
+            keyboardHandoff.cancel()
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background {
                 keyboardBeforeNavigation = nil
@@ -125,7 +130,6 @@ struct SessionScreen: View {
                 navigationExit = nil
                 navigation = nil
                 historyTarget = nil
-                continuity = nil
                 interrupt.dismiss()
                 composing = false
                 selectedText = nil
@@ -137,7 +141,11 @@ struct SessionScreen: View {
             SessionPrivacyWindow(concealed: scenePhase != .active).allowsHitTesting(false)
         }
     }
+}
 
+// MARK: - Connection
+
+extension SessionScreen {
     private var transition: some View {
         ConnectionWait {
             VStack(spacing: 8) {
@@ -215,11 +223,11 @@ struct SessionScreen: View {
               connection.method == .phoneKey || !connection.password.isEmpty else { return }
         connection.connect()
     }
+}
 
-    @AppStorage(TerminalPreferences.textSize) private var savedTextSize: Int?
-    private var showsDirectPane: Bool { connection.view?.terminal == nil }
-    private var metrics: TerminalMetrics { TerminalMetrics(textSize: savedTextSize ?? TerminalPreferences.defaultTextSize) }
+// MARK: - Session layout
 
+extension SessionScreen {
     private var terminal: some View {
         GeometryReader { geometry in
             let width = geometry.size.width
@@ -240,7 +248,7 @@ struct SessionScreen: View {
                                   sidebar: .init(hide: { sidebarCollapsed = true; expandedWhileTyping = false },
                                                  expand: expandSidebar, hostDetails: hostDetails, rail: sidebar == .rail,
                                                  expandedWidth: expandedWidth,
-                                                 keyboard: $keyboard, request: $sidebarRequest, revealAgentsID: revealAgentsID, isVisible: sidebar != .hidden))
+                                                 keyboard: $keyboard, keyboardHandoff: keyboardHandoff, request: $sidebarRequest, revealAgentsID: revealAgentsID, isVisible: sidebar != .hidden))
                             .id(shortcutLayout)
                             .frame(width: sidebar.width, alignment: .leading)
                             .background(SessionChrome.sidebar).clipped()
@@ -252,6 +260,7 @@ struct SessionScreen: View {
                     if column > 0 { Divider() }
                     terminalContent(wide: wide)
                         .padding(.bottom, composing ? 0 : SessionToolbar.rowHeight)
+                        .background(TerminalDisplay.background.ignoresSafeArea(edges: .bottom))
                         .disabled(composing)
                 }
                 .animation(sidebarAnimation, value: sidebar == .rail)
@@ -259,7 +268,7 @@ struct SessionScreen: View {
                     if !composing {
                         let inset = keyboard || column == 0 ? 0 : column + 1
                         SessionToolbar(width: width - inset, keyboard: keyboard, modifiers: $modifiers, sendKey: { key, flags in
-                            guard connection.acceptsInput(from: presentation) else { return }
+                            guard sidebarRequest == nil, connection.acceptsInput(from: presentation) else { return }
                             guard let target = connection.view?.inputTarget else { connection.inputUnavailable(); return }
                             send(.key(key, flags), target: target)
                         }, toggleKeyboard: {
@@ -283,11 +292,9 @@ struct SessionScreen: View {
                 }
             }
             .overlay(alignment: .bottom) {
-                if let continuity {
-                    Label(continuity.message, systemImage: "checkmark")
-                        .font(.caption).padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(.regularMaterial, in: Capsule())
-                        .padding(.bottom, 54).allowsHitTesting(false)
+                SessionContinuityNotice(wide: wide) {
+                    guard connection.phase == .ready, connection.view?.focusedPaneTarget != nil else { return nil }
+                    return connection.draft.isEmpty ? "Same pane" : "Draft kept"
                 }
             }
             .padding(.bottom, useBottomInset ? min(12, geometry.safeAreaInsets.bottom) : 0)
@@ -295,20 +302,14 @@ struct SessionScreen: View {
             .onChange(of: scenePhase == .active ? connection.readyShortcutID : nil, initial: true) { _, request in
                 if let request { presentShortcut(request, wide: wide) }
             }
-            .onChange(of: wide) { _, _ in
-                guard connection.phase == .ready, connection.view?.focusedPaneTarget != nil else { return }
-                let message = connection.draft.isEmpty ? "Same pane" : "Draft kept"
-                continuity = Continuity(message: message)
-            }
-            .task(id: continuity?.id) {
-                guard continuity != nil else { return }
-                do { try await Task.sleep(for: .seconds(2)) } catch { return }
-                continuity = nil
-            }
         }
         .onChange(of: connection.view?.version, initial: true) { _, _ in updateInterrupt() }
         .onChange(of: keyboard) { _, active in
-            if !active { expandedWhileTyping = false; interrupt.dismiss() }
+            if !active {
+                keyboardHandoff.cancel()
+                expandedWhileTyping = false
+                interrupt.dismiss()
+            }
         }
     }
 
@@ -383,9 +384,9 @@ struct SessionScreen: View {
         guard sidebarRequest == nil, let view, view.bootId == connection.view?.bootId,
               let jump = GoToSheet.Jump.begin(to: row, view: view, connection: connection,
                                               presentation: presentation, generation: generation,
-                                              expectedAgent: historyForward == nil ? row.pane.agentName : nil, restoreKeyboard: keyboard, historyForward: historyForward) else { return }
+                                              expectedAgent: historyForward == nil ? row.pane.agentName : nil, restoreKeyboard: keyboard, handoff: keyboardHandoff, historyForward: historyForward) else { return }
         sidebarRequest = jump
-        keyboard = false
+        if jump.keyboard != .held { keyboard = false }
         modifiers = 0
         interrupt.dismiss()
     }
@@ -467,10 +468,15 @@ struct SessionScreen: View {
                     } else if connection.phase != .ready {
                         transition
                     } else if showsDirectPane {
-                        if let pane = connection.directPane {
+                        if sidebarRequest == nil, let pane = connection.directPane {
                             DirectPaneDisplay(pane: pane, keyboard: $keyboard, modifiers: $modifiers,
-                                              retry: connection.retryDirectPane, openAgents: openAgents)
+                                              pointSize: metrics.pointSize, retry: connection.retryDirectPane, openAgents: openAgents)
                                 .id(pane.id)
+                        } else if let jump = sidebarRequest, jump.generation == generation, jump.boot == view?.bootId,
+                                  let pane = view?.panes.first(where: { $0.id == jump.pane.id }),
+                                  jump.expectedAgent == nil || pane.agentName == jump.expectedAgent,
+                                  let screen = connection.panePreviews.viewport(pane: pane.id, boot: jump.boot, agent: pane.agentName) {
+                            CachedPaneViewport(text: screen, pointSize: metrics.pointSize)
                         } else {
                             ConnectionWait { Text("Waiting for the terminal…").font(.headline) }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -539,7 +545,7 @@ struct SessionScreen: View {
             }
             if !showsDirectPane {
                 let editorTarget = connection.editorTarget
-                TerminalInput(target: editorTarget, keyboard: keyboard && connection.phase == .ready, pointSize: metrics.pointSize, ready: connection.view?.inputTarget != nil,
+                TerminalInput(target: editorTarget, keyboard: sidebarRequest == nil && keyboard && connection.phase == .ready, pointSize: metrics.pointSize, ready: connection.view?.inputTarget != nil,
                               send: { input, target in send(input, target: target) },
                               dismissed: { if editorTarget == connection.editorTarget { keyboard = false } })
                     .id(editorTarget)
@@ -556,7 +562,11 @@ struct SessionScreen: View {
         guard !showsDirectPane, connection.phase == .ready, keyboardBeforeNavigation == nil, size.width > 0, size.height > 0 else { return nil }
         return metrics.viewport(size: size, scale: displayScale)
     }
+}
 
+// MARK: - Navigation and input
+
+extension SessionScreen {
     private func openNavigation(_ section: GoToSection, showEmptyAgents: Bool = false) {
         self.showEmptyAgents = showEmptyAgents
         keyboardBeforeNavigation = keyboard
@@ -591,7 +601,7 @@ struct SessionScreen: View {
     }
 
     private func showKeyboard() {
-        guard connection.acceptsInput(from: presentation) else { return }
+        guard sidebarRequest == nil, connection.acceptsInput(from: presentation) else { return }
         guard connection.editorTarget != nil else { connection.inputUnavailable(); return }
         if !showsDirectPane { connection.claimSize() }
         keyboard = true
@@ -617,6 +627,7 @@ struct SessionScreen: View {
     }
 
     private func send(_ input: MobileConnection.Input, target: InputTarget) {
+        guard sidebarRequest == nil else { return }
         switch input {
         case let .text(text) where modifiers != 0 && text.count == 1:
             connection.send(.key(text, modifiers), to: target, from: presentation)

@@ -52,6 +52,18 @@ final class AgentLiveActivityTests: XCTestCase {
         await manager.setEnabled(true)?.value
         let live = try XCTUnwrap(Status.activities.first)
         XCTAssertEqual(live.content.state.counts.working, 1)
+        let paused = expectation(description: "The same Live Activity receives the paused observation")
+        let updates = live.contentUpdates
+        let observer = Task {
+            for await content in updates where content.state.paused {
+                paused.fulfill()
+                return
+            }
+        }
+        defer { observer.cancel() }
+        manager.pause(id)
+        let received = await XCTWaiter.fulfillment(of: [paused], timeout: 5)
+        XCTAssertEqual(received, .completed)
         await manager.setEnabled(false)?.value
         XCTAssertFalse(Status.activities.contains { $0.id == live.id })
         XCTAssertFalse(AgentLiveActivity(defaults: defaults).isEnabled)

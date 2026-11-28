@@ -16,8 +16,26 @@ struct SessionToolbar: View {
     @State private var keyPage = 0
 
     var body: some View {
+        Group {
+            if #available(iOS 26.0, *) {
+                GlassEffectContainer(spacing: 0) { controls }
+            } else {
+                controls
+            }
+        }
+        .padding(.horizontal, 8)
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+        .background {
+            if keyboard { SessionChrome.keyboard.ignoresSafeArea(edges: .bottom) }
+        }
+        .overlay(alignment: .top) { if keyboard { Divider() } }
+        .onChange(of: keys) { _, updated in keyPage = min(keyPage, updated.pages.count - 1) }
+    }
+
+    private var controls: some View {
         let allKeys = Array(keys.pages.joined())
-        HStack(spacing: 6) {
+        return HStack(spacing: 6) {
             if let back { trailButton("Previous pane", symbol: "chevron.backward", action: back) }
             if let forward { trailButton("Next pane in history", symbol: "chevron.forward", action: forward) }
             Group {
@@ -42,14 +60,8 @@ struct SessionToolbar: View {
             }
             .accessibilityLabel(keyboard ? "Hide keyboard" : "Show keyboard")
             .accessibilityIdentifier("terminal.keyboard.toggle")
-            .terminalCapsule(docked: keyboard)
+            .terminalCapsule(docked: keyboard, interactive: true)
         }
-        .padding(.horizontal, 8)
-        .buttonStyle(.plain)
-        .foregroundStyle(.primary)
-        .background((keyboard ? SessionChrome.keyboard : SessionChrome.terminal).ignoresSafeArea(edges: .bottom))
-        .overlay(alignment: .top) { if keyboard { Divider() } }
-        .onChange(of: keys) { _, updated in keyPage = min(keyPage, updated.pages.count - 1) }
     }
 
     private func trailButton(_ title: LocalizedStringKey, symbol: String, action: @escaping () -> Void) -> some View {
@@ -57,7 +69,7 @@ struct SessionToolbar: View {
             Image(systemName: symbol).frame(width: 40, height: Self.rowHeight).contentShape(Rectangle())
         }
         .accessibilityLabel(Text(title))
-        .terminalCapsule(docked: keyboard)
+        .terminalCapsule(docked: keyboard, interactive: true)
     }
 
     private var compactKeyStrip: some View {
@@ -128,7 +140,7 @@ struct SessionToolbar: View {
                 .lineLimit(1)
                 .foregroundStyle(armed ? Color(uiColor: .systemBackground) : .primary)
                 .frame(width: 32, height: 32)
-                .background(armed ? Color.primary : Color.clear, in: Circle())
+                .background(armed ? Color(uiColor: .label) : Color.clear, in: Circle())
                 .frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .accessibilityLabel(key.title)
@@ -138,9 +150,11 @@ struct SessionToolbar: View {
 }
 
 private extension View {
-    @ViewBuilder func terminalCapsule(docked: Bool) -> some View {
-        if docked { self } else if #available(iOS 26.0, *) {
-            glassEffect(.regular, in: Capsule())
+    @ViewBuilder func terminalCapsule(docked: Bool, interactive: Bool = false) -> some View {
+        if #available(iOS 26.0, *) {
+            glassEffect(docked ? .identity : .regular.interactive(interactive), in: Capsule())
+        } else if docked {
+            self
         } else {
             background(Color(uiColor: .secondarySystemBackground), in: Capsule())
                 .overlay { Capsule().strokeBorder(.primary.opacity(0.14), lineWidth: 0.5).allowsHitTesting(false) }

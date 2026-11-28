@@ -130,7 +130,7 @@ pub(crate) struct SpaceportWindow {
     /// including after a config reload, as upstream's manual override does.
     pub(crate) agent_sort_modified: bool,
     /// A tab torn off another window, waiting for its host to be listed.
-    pub(crate) arrival: Option<(tab_tear::TornTab, AnyWindowHandle)>,
+    pub(crate) arrival: Option<tab_tear::TornTab>,
     /// The picture and platform appearance `[backdrop]` asks for.
     pub(crate) backdrop: backdrop::State,
     pub(crate) bell: crate::bell::Bell,
@@ -309,6 +309,7 @@ pub(crate) struct SpaceportWindow {
     /// `ui.sidebar_collapsed_mode` chooses (see `sidebar_mode`).
     pub(crate) sidebar_visible: bool,
     pub(crate) sidebar_width: Option<f32>,
+    pub(crate) sidebar_workspaces_expanded: bool,
     /// Shared by every window; see `app::shared_sound`.
     pub(crate) sound: std::rc::Rc<spaceport_sound::Service>,
     /// The resize cursor of the pane border under the pointer, if any.

@@ -28,7 +28,13 @@ exit 1"#,
     format!("/bin/sh -c {}", quote(&script))
 }
 
-fn client_socket(banner: &[u8], session: &str) -> Option<String> {
+#[derive(Debug, PartialEq, Eq)]
+enum Endpoint {
+    Stopped,
+    Socket(String),
+}
+
+fn endpoint(banner: &[u8], session: &str) -> Option<Endpoint> {
     compatible_status(banner)?;
     let status = banner
         .split(|byte| *byte == b'\n')
@@ -40,7 +46,13 @@ fn client_socket(banner: &[u8], session: &str) -> Option<String> {
     } else {
         named.as_str() == Some(session)
     };
-    if server["running"] != true || server["endpoint_compatible"] != true || !matches_session {
+    if !matches_session {
+        return None;
+    }
+    if server["running"] == false {
+        return Some(Endpoint::Stopped);
+    }
+    if server["running"] != true || server["endpoint_compatible"] != true {
         return None;
     }
     let socket = server["socket"].as_str()?;
@@ -54,7 +66,7 @@ fn client_socket(banner: &[u8], session: &str) -> Option<String> {
     }
     path.with_file_name("herdr-client.sock")
         .to_str()
-        .map(str::to_owned)
+        .map(|socket| Endpoint::Socket(socket.to_owned()))
 }
 
 pub(crate) fn handshake(
@@ -65,11 +77,14 @@ pub(crate) fn handshake(
     let started = Instant::now();
     loop {
         let banner = await_ready(stream, stop, started)?;
-        if let Some(socket) = client_socket(&banner, session) {
-            writeln!(stream, "{socket}")?;
-            return Ok(());
+        match endpoint(&banner, session) {
+            Some(Endpoint::Socket(socket)) => {
+                writeln!(stream, "{socket}")?;
+                return Ok(());
+            }
+            Some(Endpoint::Stopped) => return Err(crate::sessions::Error::NotRunning.into()),
+            None => stream.write_all(b"skip\n")?,
         }
-        stream.write_all(b"skip\n")?;
     }
 }
 

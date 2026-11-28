@@ -33,11 +33,12 @@ final class ShareController: UIViewController {
         save.isEnabled = false
         cancel.isEnabled = false
         isModalInPresentation = true
+        let suggestedName = provider.suggestedName
         provider.loadFileRepresentation(forTypeIdentifier: type) { url, error in
             do {
                 if let error { throw error }
                 guard let url else { throw DraftFile.FileError.unreadable }
-                try SharedDraftInbox.save(DraftFile(url: url, suggestedName: provider.suggestedName), in: directory)
+                try SharedDraftInbox.save(DraftFile(url: url, suggestedName: suggestedName), in: directory)
                 DispatchQueue.main.async { self.extensionContext?.completeRequest(returningItems: nil) }
             } catch {
                 DispatchQueue.main.async { self.message.text = error.localizedDescription; self.save.isEnabled = true; self.cancel.isEnabled = true; self.isModalInPresentation = false }

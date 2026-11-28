@@ -1,7 +1,8 @@
 // ABOUTME: Exercises the mobile controller against a disposable real SSH and Herdr host.
 // ABOUTME: Checks host trust, terminal input, phone key enrollment and session survival.
 use spaceport_mobile::{
-    EnclaveSigner, MobileRosterRequest, MobileSession, MobileView, SshAuth, SshError, SshHost,
+    EnclaveSigner, MobileRoster, MobileRosterRequest, MobileSession, MobileView, SshAuth, SshError,
+    SshHost, authorize_enclave_phone,
 };
 #[path = "support/signer.rs"]
 mod signer;
@@ -20,10 +21,18 @@ fn wait(
     description: &str,
     matches: impl Fn(&MobileView) -> bool,
 ) -> MobileView {
+    wait_for(|version| session.poll(version), description, matches)
+}
+
+fn wait_for(
+    poll: impl Fn(u64) -> Option<MobileView>,
+    description: &str,
+    matches: impl Fn(&MobileView) -> bool,
+) -> MobileView {
     let until = Instant::now() + Duration::from_secs(20);
     let mut version = 0;
     loop {
-        if let Some(view) = session.poll(version) {
+        if let Some(view) = poll(version) {
             version = view.version;
             if matches(&view) {
                 return view;
@@ -288,6 +297,96 @@ fn direct_attach_round_trips_shell_bytes_and_leaves_the_same_pane_alive() {
         Some(target)
     );
     session.disconnect();
+}
+
+#[test]
+#[ignore = "requires an explicitly configured disposable SSH and Herdr fixture"]
+fn continuous_roster_only_observes_a_running_session() {
+    let host = SshHost {
+        hostname: setting("SPACEPORT_TEST_SSH_HOST"),
+        port: setting("SPACEPORT_TEST_SSH_PORT").parse().unwrap(),
+        username: setting("SPACEPORT_TEST_SSH_USER"),
+        fingerprint: Some(setting("SPACEPORT_TEST_SSH_FINGERPRINT")),
+    };
+    let login = || SshAuth::Password {
+        password: setting("SPACEPORT_TEST_SSH_PASSWORD"),
+    };
+    let session = setting("SPACEPORT_TEST_HERDR_SESSION");
+    let reader = MobileRoster::open(host.clone(), login(), session).unwrap();
+    let running = wait_for(
+        |version| reader.poll(version),
+        "running passive roster",
+        |view| view.roster_observed_at_ms.is_some(),
+    );
+    assert!(!running.disconnected && !running.panes.is_empty());
+    assert!(running.terminal.is_none() && running.input_target.is_none());
+    let missing = format!("missing-roster-{}", std::process::id());
+    let absent = MobileRoster::open(host.clone(), login(), missing.clone()).unwrap();
+    let closed = wait_for(
+        |version| absent.poll(version),
+        "absent session",
+        |view| view.disconnected,
+    );
+    assert!(closed.roster_observed_at_ms.is_none());
+    assert!(
+        MobileRosterRequest::new()
+            .read(host, login(), missing)
+            .is_err()
+    );
+    assert!(!reader.poll(0).unwrap().disconnected);
+    reader.disconnect();
+}
+
+#[test]
+#[ignore = "requires two disposable SSH hosts with running seed-attention sessions"]
+fn two_rosters_observe_separate_hosts_with_one_phone_key() {
+    let key = signer::TestSigner::new();
+    let mut readers = Vec::new();
+    for prefix in ["SPACEPORT_TEST", "SPACEPORT_TEST_SECOND"] {
+        let host = SshHost {
+            hostname: setting(&format!("{prefix}_SSH_HOST")),
+            port: setting(&format!("{prefix}_SSH_PORT")).parse().unwrap(),
+            username: setting(&format!("{prefix}_SSH_USER")),
+            fingerprint: Some(setting(&format!("{prefix}_SSH_FINGERPRINT"))),
+        };
+        authorize_enclave_phone(
+            host.clone(),
+            setting(&format!("{prefix}_SSH_PASSWORD")),
+            key.point(),
+            key.clone(),
+        )
+        .unwrap();
+        readers.push(
+            MobileRoster::open(
+                host,
+                key.auth(),
+                setting(&format!("{prefix}_MULTIHOST_SESSION")),
+            )
+            .unwrap(),
+        );
+    }
+    let rosters: Vec<_> = readers
+        .iter()
+        .map(|reader| {
+            let view = wait_for(
+                |version| reader.poll(version),
+                "passive reviewer",
+                |view| {
+                    view.panes
+                        .iter()
+                        .any(|pane| pane.agent_name.as_deref() == Some("Reviewer"))
+                },
+            );
+            assert!(view.roster_observed_at_ms.is_some());
+            assert!(view.terminal.is_none());
+            assert!(view.input_target.is_none());
+            view.boot_id
+        })
+        .collect();
+    assert_ne!(rosters[0], rosters[1]);
+    readers[0].disconnect();
+    assert!(readers[0].poll(0).unwrap().disconnected);
+    assert!(!readers[1].poll(0).unwrap().disconnected);
 }
 
 #[test]

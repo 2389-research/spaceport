@@ -37,7 +37,8 @@ struct TerminalGestures: UIViewRepresentable {
 
     func updateUIView(_ uiView: UIView, context: Context) { context.coordinator.callbacks = self }
 
-    final class Coordinator: NSObject, UIEditMenuInteractionDelegate {
+    @MainActor
+    final class Coordinator: NSObject, @MainActor UIEditMenuInteractionDelegate {
         var callbacks: TerminalGestures
         weak var editMenu: UIEditMenuInteraction?
         private var menu: UIMenu?

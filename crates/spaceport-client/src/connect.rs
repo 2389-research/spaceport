@@ -156,7 +156,7 @@ pub fn connect_embedded_bridge_with_path<G>(
 /// Read snapshots from a running named session over a surface-inactive endpoint.
 /// The socket-only bridge fails if the session stops during discovery.
 #[cfg(unix)]
-pub fn connect_embedded_observer<G>(
+pub fn observe_embedded_bridge<G>(
     session: &str,
     connector: impl FnOnce(&str, &AtomicBool) -> Result<(Stream, G)> + Send + 'static,
 ) -> Result<Client> {
