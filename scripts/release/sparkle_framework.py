@@ -73,6 +73,8 @@ def read_config(path=CONFIG):
                 or not split.path.endswith(f'/releases/download/{release}{FEED_ASSET}')):
             raise ValueError(f'Sparkle channel feed must be its https release asset: {channel}')
         hosts.add(split.hostname)
+    if len({feed['release'] for feed in feeds.values()}) != len(feeds):
+        raise ValueError('Sparkle channels must use distinct feed releases')
     if len(hosts) != 1:
         raise ValueError('Sparkle channel feeds must be served from one host')
     return data

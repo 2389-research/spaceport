@@ -178,6 +178,12 @@ class SparkleTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'feed'):
                     self.module.read_config(self.config)
 
+    def test_channels_refuse_a_shared_feed_release(self):
+        self.data['feeds']['production'] = self.data['feeds']['macos-preview']
+        self.config.write_text(json.dumps(self.data))
+        with self.assertRaisesRegex(ValueError, 'distinct feed'):
+            self.module.read_config(self.config)
+
     def test_missing_or_unknown_channels_are_refused(self):
         for feeds in ({key: value for key, value in self.data['feeds'].items()
                        if key != 'production'},
