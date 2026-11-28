@@ -1,0 +1,27 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "spaceport-usage"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+spaceport-client.workspace = true
+spaceport-i18n.workspace   = true
+serde.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+spaceport-i18n = { features = ["test-support"], workspace = true }
+serde_json.workspace = true
+tempfile.workspace = true
+toml.workspace     = true
+
+[features]
+# `Usage::showing`, for the app's status bar and panel tests.
+test-support = []

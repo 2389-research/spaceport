@@ -10,9 +10,9 @@ use crate::{
     },
     listening_ports::{Daemon, Link, Origin, Port, Tunnels},
     port_forward::{Forward, State},
+    usage::Host,
 };
 use gpui::{App, Context, Window};
-use spaceport_remote::Host;
 use std::{num::NonZeroU16, time::Duration};
 
 /// `port` as `ports` lists it. A remote port has a local address once this

@@ -26,7 +26,7 @@ fn seed(view: &Entity<SpaceportWindow>, cx: &mut VisualTestContext, scan: &str) 
     cx.update(|_, cx| {
         view.update(cx, |view, cx| {
             view.listening_ports.seed(
-                spaceport_remote::Host::Local,
+                crate::usage::Host::Local,
                 crate::listening_ports::parse(scan).unwrap(),
             );
             cx.notify();

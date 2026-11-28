@@ -87,7 +87,7 @@ final class SessionWorkflowTests: XCTestCase {
         landscape.lifetime = .keepAlways
         add(landscape)
         if let authenticated {
-            let after = try await sshWitness("sample")
+            let after = try await Self.sshWitness("sample")
             XCTAssertEqual(after, authenticated, "Choosing two agents in this session must reuse its SSH login.")
         }
         app.buttons["session.header.home"].tap()
@@ -219,6 +219,12 @@ final class SessionWorkflowTests: XCTestCase {
             return
         }
         attachScreen("Workspaces from Home", in: app)
+        let flight = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label == %@", "goTo.workspace.", "Flight")).firstMatch
+        flight.tap()
+        XCTAssertTrue(app.buttons["goTo.workspace.back"].waitForExistence(timeout: 5))
+        attachScreen("Browse Flight while Mission is current", in: app)
+        app.buttons["goTo.workspace.back"].tap()
+        XCTAssertTrue(mission.isSelected)
         app.buttons["goTo.done"].tap()
         XCTAssertEqual(goTo.value as? String, origin)
         openSessionHome(in: app)
@@ -234,12 +240,15 @@ final class SessionWorkflowTests: XCTestCase {
         app.activate()
         try await waitForText("Review is ready.", in: terminal)
         if let originalSSH {
-            let currentSSH = try await sshWitness("sample")
+            let currentSSH = try await Self.sshWitness("sample")
             XCTAssertEqual(currentSSH, originalSSH, "Navigation and foregrounding must keep the same authenticated SSH worker.")
         }
         app.buttons["session.navigation"].tap()
+        app.segmentedControls["goTo.browse"].buttons["Workspaces"].tap()
         mission.tap()
-        app.buttons["goTo.done"].tap()
+        let console = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "goTo.pane.")).firstMatch
+        XCTAssertTrue(console.waitForExistence(timeout: 5))
+        console.tap()
         try await waitForText("Mission", in: goTo)
         goTo.tap()
         guard attention.waitForExistence(timeout: 5) else {
@@ -271,6 +280,7 @@ final class SessionWorkflowTests: XCTestCase {
 
         app.buttons["session.navigation"].tap()
         app.segmentedControls["goTo.browse"].buttons["Workspaces"].tap()
+        flight.tap()
         let sibling = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND selected == false", "pane.map.")).firstMatch
         reveal(sibling, in: app)
         XCTAssertEqual(sibling.label, "Logs")
@@ -439,13 +449,14 @@ final class SessionWorkflowTests: XCTestCase {
     }
 
     @MainActor
-    func connect(in app: XCUIApplication, sessionVariable: String, suffix: String = "", launch: Bool = true) throws -> (XCUIElement, XCUIElement) {
+    func connect(in app: XCUIApplication, sessionVariable: String, suffix: String = "", launch: Bool = true,
+                 fixture: String = "SPACEPORT_TEST") throws -> (XCUIElement, XCUIElement) {
         let env = ProcessInfo.processInfo.environment
-        guard let host = env["SPACEPORT_TEST_SSH_HOST"],
-              let port = env["SPACEPORT_TEST_SSH_PORT"],
-              let user = env["SPACEPORT_TEST_SSH_USER"],
-              let password = env["SPACEPORT_TEST_SSH_PASSWORD"],
-              let fingerprint = env["SPACEPORT_TEST_SSH_FINGERPRINT"],
+        guard let host = env[fixture + "_SSH_HOST"],
+              let port = env[fixture + "_SSH_PORT"],
+              let user = env[fixture + "_SSH_USER"],
+              let password = env[fixture + "_SSH_PASSWORD"],
+              let fingerprint = env[fixture + "_SSH_FINGERPRINT"],
               let sessionName = env[sessionVariable] else {
             throw XCTSkip("Select a disposable SSH host and configure \(sessionVariable) to run this workflow.")
         }
@@ -509,6 +520,8 @@ final class SessionWorkflowTests: XCTestCase {
         XCTAssertFalse(path.isEmpty)
         app.buttons["session.navigation"].tap()
         app.segmentedControls["goTo.browse"].buttons["Workspaces"].tap()
+        let currentWorkspace = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND selected == true", "goTo.workspace.")).firstMatch
+        currentWorkspace.tap()
         let tiles = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "pane.map."))
         let needsSplit = !tiles.firstMatch.exists
         app.buttons["goTo.done"].tap()
@@ -523,6 +536,7 @@ final class SessionWorkflowTests: XCTestCase {
         }
         app.buttons["session.navigation"].tap()
         app.segmentedControls["goTo.browse"].buttons["Workspaces"].tap()
+        currentWorkspace.tap()
         let other = tiles.matching(NSPredicate(format: "selected == false")).firstMatch
         reveal(other, in: app)
         XCTAssertTrue(other.waitForExistence(timeout: 8))
@@ -531,6 +545,8 @@ final class SessionWorkflowTests: XCTestCase {
         other.tap()
         XCTAssertTrue(navigation.waitForExistence(timeout: 5))
         app.buttons["session.navigation"].tap()
+        app.segmentedControls["goTo.browse"].buttons["Workspaces"].tap()
+        currentWorkspace.tap()
         let selected = app.buttons[next]
         reveal(selected, in: app)
         let focused = expectation(for: NSPredicate(format: "selected == true"), evaluatedWith: selected)
@@ -555,7 +571,7 @@ final class SessionWorkflowTests: XCTestCase {
     }
 
     @MainActor
-    private func addHost(in app: XCUIApplication, hostname: String, port: String, user: String, session: String, password: Bool = false) {
+    func addHost(in app: XCUIApplication, hostname: String, port: String, user: String, session: String, password: Bool = false) {
         let destination = "\(user)@\(hostname)" + (port == "22" ? "" : ":\(port)")
         app.buttons.matching(identifier: "Add Host").firstMatch.tap()
         let address = app.textFields["Address"]
@@ -597,7 +613,7 @@ extension SessionWorkflowTests {
         _ = try connect(in: app, sessionVariable: "SPACEPORT_TEST_LIFECYCLE_SESSION", suffix: "-b", launch: false)
         var bothLogins: SSHWitness?
         if let firstLogin {
-            let sample = try await sshWitness("sample")
+            let sample = try await Self.sshWitness("sample")
             XCTAssertEqual(sample.accepted, firstLogin.accepted + 1)
             XCTAssertEqual(sample.workers.count, 2)
             XCTAssertTrue(Set(firstLogin.workers).isSubset(of: Set(sample.workers)))
@@ -614,7 +630,7 @@ extension SessionWorkflowTests {
             return
         }
         if let bothLogins {
-            let returned = try await sshWitness("sample")
+            let returned = try await Self.sshWitness("sample")
             XCTAssertEqual(returned, bothLogins)
         }
         XCTAssertFalse((terminal.value as? String ?? "").contains(text))
@@ -627,10 +643,10 @@ extension SessionWorkflowTests {
             let disconnect = app.buttons["session.disconnect"]
             reveal(disconnect, in: app)
             disconnect.tap()
-            var closed = try await sshWitness("sample")
+            var closed = try await Self.sshWitness("sample")
             for _ in 0..<10 where closed.workers == bothLogins.workers {
                 try await Task.sleep(for: .milliseconds(200))
-                closed = try await sshWitness("sample")
+                closed = try await Self.sshWitness("sample")
             }
             XCTAssertEqual(closed.accepted, bothLogins.accepted)
             XCTAssertEqual(Set(closed.workers), Set(bothLogins.workers).subtracting(firstLogin.workers))
@@ -645,12 +661,12 @@ extension SessionWorkflowTests {
     @MainActor
     private func sampleSSHIfConfigured() async throws -> SSHWitness? {
         guard ProcessInfo.processInfo.environment["SPACEPORT_TEST_SSH_WITNESS"] == "1" else { return nil }
-        let sample = try await sshWitness("sample")
+        let sample = try await Self.sshWitness("sample")
         XCTAssertEqual(sample.workers.count, 1)
         return sample
     }
 
-    private func sshWitness(_ action: String) async throws -> SSHWitness {
+    private static func sshWitness(_ action: String) async throws -> SSHWitness {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("spaceport-ssh-witness")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let id = UUID().uuidString
@@ -687,7 +703,7 @@ extension SessionWorkflowTests {
                           "Start the host-side witness to interrupt the disposable SSH transport.")
         let app = XCUIApplication()
         let (terminal, _) = try connect(in: app, sessionVariable: "SPACEPORT_TEST_LIFECYCLE_SESSION", suffix: suffix)
-        let before = try await sshWitness("sample")
+        let before = try await Self.sshWitness("sample")
         XCTAssertEqual(before.workers.count, 1)
         let draft = "unsent-" + UUID().uuidString.prefix(8)
         let compose = app.buttons["session.compose"]
@@ -701,13 +717,13 @@ extension SessionWorkflowTests {
             XCTAssertTrue(app.state == .runningBackgroundSuspended || app.wait(for: .runningBackground, timeout: 5))
             try await Task.sleep(for: .seconds(3))
         }
-        let detached = try await sshWitness("drop")
+        let detached = try await Self.sshWitness("drop")
         XCTAssertEqual(detached, before)
         app.activate()
-        var after = try await sshWitness("sample")
+        var after = try await Self.sshWitness("sample")
         for _ in 0..<20 where after.workers.isEmpty || after == before {
             try await Task.sleep(for: .milliseconds(400))
-            after = try await sshWitness("sample")
+            after = try await Self.sshWitness("sample")
         }
         XCTAssertEqual(after.accepted, before.accepted + 1)
         XCTAssertEqual(after.workers.count, 1)

@@ -1,6 +1,8 @@
 //! The app's text fields: the single-line field a search box is built from
-//! ([`search_input`]), the editing model every field shares — a grapheme- and
-//! bidi-aware caret and selection ([`caret`]), the UTF-16 mapping the
+//! ([`search_input`]), the single-line draft a dialog is typed into
+//! ([`dialog_input`]), the multi-line composer that keeps the newlines
+//! ([`multiline_input`]), the editing model every field shares — a grapheme-
+//! and bidi-aware caret and selection ([`caret`]), the UTF-16 mapping the
 //! platform's input API speaks and the text newlines are normalized in
 //! ([`text_editing`]), and which edit a key asks for ([`text_editing::keys`]) —
 //! the platform input handler GPUI is handed ([`input`]), the app's notice that
@@ -20,7 +22,9 @@
 
 pub mod actions;
 pub mod caret;
+pub mod dialog_input;
 pub mod input;
 pub mod locale;
+pub mod multiline_input;
 pub mod search_input;
 pub mod text_editing;

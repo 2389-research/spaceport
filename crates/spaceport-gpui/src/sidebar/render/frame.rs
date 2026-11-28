@@ -74,6 +74,9 @@ impl SpaceportWindow {
                         section.style().flex_grow = Some(if m.agents_panel { m.split } else { 1. });
                         section
                     })
+                    .when(m.workspaces_collapsed && m.agents_panel, |section| {
+                        section.flex_none()
+                    })
                     .min_h_0()
                     .overflow_hidden()
                     // With search on, the heading is its field.
@@ -88,27 +91,44 @@ impl SpaceportWindow {
                                 } else {
                                     ("spaces", fl!("sidebar-header-spaces"))
                                 };
-                                header(key, &label, font, theme, m.look)
+                                let title = header(key, &label, font, theme, m.look);
+                                if m.devices {
+                                    title
+                                } else {
+                                    div().debug_selector(|| "header-spaces".into()).child(
+                                        self.workspace_disclosure(
+                                            title.justify_between(),
+                                            !m.workspaces_collapsed,
+                                            cx,
+                                        ),
+                                    )
+                                }
                             }),
                     )
-                    .children(m.headed.then(|| self.tag_switch(cx)).flatten())
+                    .children(
+                        (m.headed && !m.workspaces_collapsed)
+                            .then(|| self.tag_switch(cx))
+                            .flatten(),
+                    )
                     // The wrapper clips the pinned header as the next host's
                     // pushes it up, so it never paints over the title above.
-                    .child(
-                        div()
-                            .relative()
-                            .flex_1()
-                            .min_h_0()
-                            .flex()
-                            .flex_col()
-                            .overflow_hidden()
-                            .map(|list| match results {
-                                Some(results) => list.child(results),
-                                None => list
-                                    .child(spaces)
-                                    .children(pinned_host.map(crate::mark_layer::covering)),
-                            }),
-                    )
+                    .when(!m.workspaces_collapsed, |section| {
+                        section.child(
+                            div()
+                                .relative()
+                                .flex_1()
+                                .min_h_0()
+                                .flex()
+                                .flex_col()
+                                .overflow_hidden()
+                                .map(|list| match results {
+                                    Some(results) => list.child(results),
+                                    None => list
+                                        .child(spaces)
+                                        .children(pinned_host.map(crate::mark_layer::covering)),
+                                }),
+                        )
+                    })
                     .child(
                         div()
                             .flex_none()
@@ -153,36 +173,44 @@ impl SpaceportWindow {
                     ),
             )
             .when(m.agents_panel, |sidebar| {
-                sidebar.child(self.sidebar_split_edge(theme, cx)).child(
-                    div()
-                        .debug_selector(|| "agents-section".into())
-                        .flex()
-                        .flex_col()
-                        .flex_1()
-                        .map(|mut section| {
-                            section.style().flex_grow = Some(1. - m.split);
-                            section
-                        })
-                        .min_h_0()
-                        .overflow_hidden()
-                        // A plugin view on any listed host filters the
-                        // rows, so the header stays to say so.
-                        .when(self.config.show_agents_header || filtered, |section| {
-                            section.child(
-                                header(
-                                    "agents",
-                                    &fl!("sidebar-header-agents"),
-                                    font,
-                                    theme,
-                                    m.look,
+                sidebar
+                    .when(!m.workspaces_collapsed, |sidebar| {
+                        sidebar.child(self.sidebar_split_edge(theme, cx))
+                    })
+                    .child(
+                        div()
+                            .debug_selector(|| "agents-section".into())
+                            .flex()
+                            .flex_col()
+                            .flex_1()
+                            .map(|mut section| {
+                                section.style().flex_grow = Some(if m.workspaces_collapsed {
+                                    1.
+                                } else {
+                                    1. - m.split
+                                });
+                                section
+                            })
+                            .min_h_0()
+                            .overflow_hidden()
+                            // A plugin view on any listed host filters the
+                            // rows, so the header stays to say so.
+                            .when(self.config.show_agents_header || filtered, |section| {
+                                section.child(
+                                    header(
+                                        "agents",
+                                        &fl!("sidebar-header-agents"),
+                                        font,
+                                        theme,
+                                        m.look,
+                                    )
+                                    .justify_between()
+                                    .child(agents_sort(self, cx)),
                                 )
-                                .justify_between()
-                                .child(agents_sort(self, cx)),
-                            )
-                        })
-                        .child(agents)
-                        .children(self.core_sidebar_rows(cx)),
-                )
+                            })
+                            .child(agents)
+                            .children(self.core_sidebar_rows(cx)),
+                    )
             })
             .map(|sidebar| {
                 if self.device_footer_shown() {

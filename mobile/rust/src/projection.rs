@@ -2,6 +2,9 @@
 // ABOUTME: Binds input to a connection, daemon boot, focused pane and popup.
 mod go_to;
 mod pane_map;
+mod pane_trail;
+use crate::controller::pane_tools::MobilePaneActions;
+use spaceport_client::pane_history::{History, Step};
 mod resume;
 mod wheel;
 pub use pane_map::{MobilePaneMap, MobilePaneRect};
@@ -84,6 +87,8 @@ pub struct MobileTab {
     pub workspace_id: String,
     pub label: String,
     pub status: String,
+    #[uniffi(default = false)]
+    pub zoomed: bool,
 }
 
 #[derive(uniffi::Record)]
@@ -130,6 +135,12 @@ pub struct MobileView {
     pub go_to_arrival: Option<u64>,
     #[uniffi(default = None)]
     pub roster_observed_at_ms: Option<u64>,
+    #[uniffi(default = None)]
+    pub back_pane: Option<String>,
+    #[uniffi(default = None)]
+    pub forward_pane: Option<String>,
+    #[uniffi(default = None)]
+    pub pane_actions: Option<MobilePaneActions>,
 }
 
 pub(crate) enum FocusAction {
@@ -184,12 +195,17 @@ impl std::ops::Deref for ObservedSnapshot {
 
 #[derive(Clone)]
 pub(crate) struct Projection {
+    pub(crate) diagnostic_capabilities: Option<String>,
     pub(crate) direct_attach: bool,
     pub(crate) history: crate::history::HistoryInbox,
+    pane_trail: History,
+    pub(crate) trail_host: Option<crate::controller::pane_tools::TrailHost>,
+    pub(crate) pane_actions: MobilePaneActions,
     idle: IdleTracker,
     connection: u64,
     input_epoch: u64,
     visibility: resume::Visibility,
+    pub(crate) parked_roster: Option<crate::controller::ParkedRosterCheck>,
     pub(crate) release_request: Option<String>,
     pub(crate) version: u64,
     pub(crate) options: ConnectOptions,
@@ -215,12 +231,17 @@ impl Projection {
     pub(crate) fn new(options: ConnectOptions) -> Self {
         static NEXT: AtomicU64 = AtomicU64::new(1);
         Self {
+            diagnostic_capabilities: None,
             direct_attach: false,
             history: Default::default(),
+            pane_trail: History::default(),
+            trail_host: None,
+            pane_actions: Default::default(),
             idle: IdleTracker::default(),
             connection: NEXT.fetch_add(1, Ordering::Relaxed),
             input_epoch: 0,
             visibility: resume::Visibility::Active,
+            parked_roster: None,
             release_request: None,
             version: 1,
             options,
@@ -393,14 +414,24 @@ impl Projection {
         action: impl Into<FocusAction>,
         barrier: Result<String, spaceport_client::SendError>,
     ) {
-        self.surface = None;
-        if let Some(pending) = self.pending.take() {
-            self.adopt_snapshot(pending)
-        }
         let (focus, creating_from) = match action.into() {
             FocusAction::Select(target) => (Some(target), None),
             FocusAction::CreateTab { source_tab, .. } => (None, Some(source_tab)),
         };
+        self.start_activation(request, focus, creating_from, barrier);
+    }
+
+    pub(crate) fn start_activation(
+        &mut self,
+        request: String,
+        focus: Option<OwnedNavigationTarget>,
+        creating_from: Option<String>,
+        barrier: Result<String, spaceport_client::SendError>,
+    ) {
+        self.surface = None;
+        if let Some(pending) = self.pending.take() {
+            self.adopt_snapshot(pending);
+        }
         self.focus_request = Some(FocusRequest {
             id: request,
             creating_from,
@@ -463,10 +494,22 @@ impl Projection {
         {
             self.fence.transition(Transition::Opened);
         }
+        self.observe_pane();
     }
 
     pub(crate) fn receipt(&mut self, id: &str, payload: &serde_json::Value) {
         let result = response::result(payload);
+        if self.parked_roster.as_mut().is_some_and(|check| {
+            check.reply(
+                id,
+                result
+                    .as_ref()
+                    .ok()
+                    .and_then(|r| surface_revision(r, false)),
+            )
+        }) {
+            return;
+        }
         if self.release_request.as_deref() == Some(id) {
             self.release_request = None;
             if result
@@ -536,6 +579,11 @@ impl Projection {
     }
 
     pub(crate) fn rejected(&mut self, id: Option<&str>, message: String) {
+        if let (Some(check), Some(id)) = (&mut self.parked_roster, id)
+            && check.reply(id, None)
+        {
+            return;
+        }
         if id.is_some() && self.release_request.as_deref() == id {
             self.end(message);
             return;
@@ -658,6 +706,13 @@ impl Projection {
             .map(|a| (a.pane_id.as_str(), a))
             .collect();
         MobileView {
+            back_pane: self.trail_destination(Step::Back),
+            forward_pane: self.trail_destination(Step::Forward),
+            pane_actions: (!self.disconnected
+                && self.is_active()
+                && !self.navigating()
+                && !self.go_to_pending())
+            .then_some(self.pane_actions),
             version: self.version,
             roster_observed_at_ms: self.snapshot.as_ref().map(|s| s.observed_at_ms),
             go_to_pending: self.route.is_some(),
@@ -676,6 +731,7 @@ impl Projection {
                 .into_iter()
                 .flat_map(|s| &s.tabs)
                 .map(|t| MobileTab {
+                    zoomed: t.zoomed,
                     id: t.tab_id.clone(),
                     workspace_id: t.workspace_id.clone(),
                     label: t.label.clone(),

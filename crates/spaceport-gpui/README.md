@@ -38,7 +38,7 @@ and an already trusted host key. For hosts that need MFA or a password, configur
 `ControlMaster auto` with a `ControlPath` in `~/.ssh/config` and authenticate once
 with `ssh HOST` in a terminal: the app reuses that master connection while it lives.
 Otherwise, on macOS and Linux, the app's own short commands on a host (Git reads,
-port scans, scripts) share one SSH login per host instead of a login each, so
+usage, scripts) share one SSH login per host instead of a login each, so
 hosts that rate-limit new SSH connections (a firewall `limit` rule, sshd's
 `MaxStartups`) are not flooded; large host transfers get a second
 login of their own, and terminals keep their own connection. These shared logins
@@ -179,7 +179,7 @@ for the selected host's focused pane, whatever the delivery setting. Clicking it
 tests the normal focus and navigation path. On macOS it needs the `just run`
 bundle, and the first one asks for notification permission.
 
-Spaces lists Local first, then saved hosts in the upstream catalog's order.
+Workspaces lists Local first, then saved hosts in the upstream catalog's order.
 Enabled hosts connect in the background with inactive terminal surfaces; disabled
 hosts remain visible. Host and repository collapse state is endpoint-scoped, and
 Agents aggregates all connected endpoints with host labels. The catalog is read
@@ -202,7 +202,7 @@ in the status bar and do not undo the UI choice. Rename, remove, enable, and
 disable remain available through `herdr machine`.
 
 The fixed bottom-left device picker offers **All Devices**, **Local**, saved SSH
-devices, and **Add Device…**. All Devices shows Spaces and Agents across hosts
+devices, and **Add Device…**. All Devices shows Workspaces and Agents across hosts
 without changing the active terminal. Choosing a device filters both lists and
 switches the terminal through the existing surface handoff. To list a few
 devices instead of one, `Cmd`-click (`Ctrl`-click on Linux and Windows) each
@@ -300,7 +300,7 @@ take no new commands once it is gone.
 Enter an SSH target or alias and label directly. The form does not search for
 hosts or suggest targets. **Enter** adds exactly what the target field shows.
 
-Each device's header in the Spaces list starts with a mark for where it runs:
+Each device's header in the Workspaces list starts with a mark for where it runs:
 a monitor for this machine and a terminal for an SSH host or WSL
 distribution. An SSH host shows the
 Tailscale logo when it is a `*.ts.net` name or a Tailscale address
@@ -310,7 +310,7 @@ top-level `show_device_icons = false`, or turn off **Show device icons** under
 Settings > Sidebar, to leave it out everywhere; the name
 then starts where the mark was.
 
-Right-click a saved SSH device's header in the Spaces list to **Rename** it or
+Right-click a saved SSH device's header in the Workspaces list to **Rename** it or
 choose **Remove device…** to forget it. Renaming runs `herdr machine rename`;
 an empty name falls back to the SSH target, as when adding. Removal runs the installed `herdr machine remove`, which
 edits only the local catalog: the host's own Herdr keeps running. When the
@@ -695,7 +695,7 @@ on a prompt; tabs whose agents are idle or done, or that have none, close at
 once. Set top-level `confirm_close_tab = false` to never ask for tabs
 (including their running processes), `confirm_close_pane = false` to close
 panes without asking, and `show_agents = false` to hide the Agents
-section and give Spaces the full sidebar height. All three default to `true`.
+section and give Workspaces the full sidebar height. All three default to `true`.
 The pane dialog's **Do not ask again** checkbox (click it or press Space) saves
 `confirm_close_pane = false` to `config-gpui.local.toml` once the close is sent. Saved edits apply automatically. The
 **Show agents** control in **Settings > Sidebar** saves
@@ -706,15 +706,18 @@ order then follows Herdr's `ui.agent_panel_sort` (`priority` or `grouped`)
 unless it was toggled earlier or a plugin sets the agent view, which keeps the
 header shown while that view is active.
 
-Agents list in their own section below Spaces by default. Set top-level
+Click the arrow beside **Workspaces** to collapse or expand the list in this window.
+The Agents panel takes the freed space. Expanding Workspaces restores the previous split.
+
+Agents list in their own section below Workspaces by default. Set top-level
 `agents_placement = "nested"`, or pick **Under workspaces** for **Agents
 placement** in **Settings > Sidebar**, to list each agent under the workspace
-it runs in instead; Spaces then takes the full sidebar height. The collapsed
+it runs in instead; Workspaces then takes the full sidebar height. The collapsed
 rail keeps its own agents section either way.
 
 A search field at the top of the sidebar finds devices, worktrees, and
 branches by name; while it holds text, results grouped by kind replace the
-spaces list. Up and Down move through them, Enter opens one, and Escape
+workspace list. Up and Down move through them, Enter opens one, and Escape
 clears the search. Set top-level `show_sidebar_search = false`, or turn off
 **Show search** in **Settings > Sidebar**, to hide it.
 
@@ -725,16 +728,16 @@ or turn off **Show repository icons** in **Settings > Sidebar**, to hide it
 and give the name its room. The Superset layout
 keeps its icon slot and draws its branch glyph there instead.
 
-`[usage]` provides independent switches in `config-gpui.local.toml` for the
-usage indicators the daemon reports:
+`[usage]` provides independent switches in `config-gpui.local.toml`:
 
 ```toml
 [usage]
+show = true     # Native bottom-bar usage
 topbar = true   # Daemon toolbar text, including plugin percentages
 inline = true   # Daemon sidebar rows, styles, and custom tokens
 ```
 
-Both default to `true` and apply on config reload. Set `topbar`
+All three default to `true` and apply on config reload. Set `topbar`
 to `false` to hide daemon text without hiding the Git/account controls. Set
 `inline` to `false` to use native sidebar layouts.
 These switches affect GPUI only; they do not change
@@ -872,6 +875,8 @@ On Linux and Windows it stays in the same position when the sidebar collapses
 to a rail. The leftmost tab strip takes the button when the sidebar is hidden
 or the rail cannot fit it beside macOS's traffic lights.
 It stays available when the sidebar is hidden; the existing View menu command and shortcut still work.
+In **Settings > Status bar**, toggle **Usage** to turn the bottom quota display on or off.
+The choice is saved to `config-gpui.local.toml` and follows the existing `[usage] show` setting.
 
 The app's own colored marks and labels (status dots and words, pull request
 badges, diff counts, usage warnings, online dots, toasts) keep a minimum
@@ -1695,6 +1700,9 @@ window at once, and `spaceport ui panel NAME` shows a section.
   column beside the list shows each host's agents, connectivity and ports;
   each host folds, and the column folds to a strip of load dots. The icon
   counts what needs you.
+- **Usage** shows every host's plan limits, one card per signed-in agent. Only
+  the selected host is read; another host shows what was read while it was
+  selected.
 
 When Overview or a section opens an agent's pane, the title bar's Back returns
 to it before walking back through panes.
@@ -2374,7 +2382,7 @@ it), so the app's own F6, F11, and tab keys carry its Ctrl prefix.
   end on one-line rows, Compact included. Minimal rows leave them off. They
   appear only while the daemon's `[ui.sidebar.spaces]` rows name `git_status`,
   as its defaults do, because the daemon computes them only then.
-- With several hosts listed, the Spaces list groups workspaces under a row per
+- With several hosts listed, the Workspaces list groups workspaces under a row per
   host, and the row of the host whose workspaces are at the top of the
   scrolled list stays pinned there, so you can always see which machine they
   are on, until the next host's row pushes it out. The pinned copy works like
@@ -2389,7 +2397,7 @@ it), so the app's own F6, F11, and tab keys carry its Ctrl prefix.
   recent change on any host. While any host shows an agent view, each host
   keeps its own order.
 - Resizable sidebar with width persisted per local daemon socket, shared across
-  host groups. Drag the divider between Spaces and Agents up or down to resize
+  host groups. Drag the divider between Workspaces and Agents up or down to resize
   their sections; double-click it to restore an even split. The split is saved
   across launches and retained while Agents is hidden.
   Checkout rows use a neutral repository icon on local and remote workspaces.
@@ -3132,19 +3140,19 @@ and the Windows CI jobs run only while the repository variable
 `WINDOWS_ENABLED` is `true` (it is off). When on, CI's `windows-package` job,
 when its inputs change, builds and CLI-tests the
 optimized x86_64 executable, packages
-`Sheprd-VERSION-x86_64-pc-windows-msvc.zip`, and installs and uninstalls its
+`Spaceport-VERSION-x86_64-pc-windows-msvc.zip`, and installs and uninstalls its
 unsigned installer (see `scripts/release/README.md`). The zip also holds
-`spaceport-launcher.exe` (`crates/sheprd-launcher`), a windowed program
+`spaceport-launcher.exe` (`crates/spaceport-launcher`), a windowed program
 that starts the console-subsystem `spaceport.exe` from its own directory with
 `CREATE_NO_WINDOW` and exits. The GUI then shows no console window, and console
 programs it starts (git, gh, `wsl.exe`) share its hidden console instead of
 each opening one. `spaceport.exe` stays a console program so the command line
 keeps its output, exit codes, and a shell that waits for it. When the GUI
 cannot be started, the launcher shows the error in a message box. When the
-launcher sits beside it, every Herdr window carries the AppUserModelID
-`so.pen.herdr-gpui` and relaunch properties naming the launcher
+launcher sits beside it, every Herdr window carries the build's app ID as its
+AppUserModelID and relaunch properties naming the launcher
 (`src/taskbar.rs`), so pinning a running window to the taskbar pins
-`spaceport-launcher.exe` as **Sheprd**, and the pin and the running window
+`spaceport-launcher.exe` as **Spaceport**, and the pin and the running window
 share one taskbar button. The properties are cleared as each window closes. Local
 connections use the named pipe the Windows
 daemon binds, derived from the same socket path string upstream uses, so
@@ -3220,6 +3228,10 @@ catalog (`%LOCALAPPDATA%\herdr\client`), never in the catalog itself, whose
 strict schema cannot name one. The device you last chose, a distribution
 included, is selected again at startup.
 
+Plan usage is read through its own `wsl.exe` shell in the same way, as on an
+SSH host: the distribution's own agent sign-ins, read with its `python3` or
+`jq` and sent with its `curl`, so they never leave it.
+
 Listening ports are scanned with the distribution's own `ss` (or `lsof`)
 through another `wsl.exe` shell. WSL forwards a distribution's `localhost`
 ports to Windows, so a port opens at `http://localhost:<port>` on this machine
@@ -3284,7 +3296,7 @@ window, the main window exposes:
   and place, a device's name and connection), selected when focused, and
   expandable when they fold others, which Expand and Collapse do; **New
   workspace**, **Menu**, the agents' sort, the device picker, and **Sessions**;
-- the status bar as a status bar: the connection message, the model,
+- the status bar as a status bar: the connection message, the model, usage,
   and network readings by what they say, and its buttons
   (**Keep the display awake** as a switch);
 - every popup as a menu (context menus) or a dialog named by its title, with

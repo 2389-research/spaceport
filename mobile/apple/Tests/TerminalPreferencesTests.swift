@@ -20,6 +20,22 @@ final class TerminalPreferencesTests: XCTestCase {
     }
 
     @MainActor
+    func testOnlyTheDockedToolbarPaintsTheOuterMargin() throws {
+        for keyboard in [false, true] {
+            let toolbar = SessionToolbar(width: 720, keyboard: keyboard, modifiers: .constant(0),
+                                         sendKey: { _, _ in }, toggleKeyboard: {})
+            let image = try XCTUnwrap(ImageRenderer(content: toolbar.frame(width: 720)).cgImage)
+            let margin = try XCTUnwrap(image.cropping(to: CGRect(x: 0, y: 23, width: 1, height: 1)))
+            let context = try XCTUnwrap(CGContext(data: nil, width: 1, height: 1, bitsPerComponent: 8,
+                                                  bytesPerRow: 4, space: CGColorSpaceCreateDeviceRGB(),
+                                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+            context.draw(margin, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+            let opacity = try XCTUnwrap(context.data).load(fromByteOffset: 3, as: UInt8.self)
+            XCTAssertEqual(opacity, keyboard ? 255 : 0)
+        }
+    }
+
+    @MainActor
     func testOpenTerminalHeaderFitsOneControlRow() {
         let header = TerminalHeader(view: nil, location: "A long session name on the open display",
                                     address: SSHAddress(hostname: "example.test", port: 22, username: "pilot"),
@@ -56,6 +72,7 @@ final class TerminalPreferencesTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testTerminalSelectionFollowsVisibleCellsAndIncludesWideGlyphs() {
         func cell(_ text: String, skipped: Bool = false, hidden: Bool = false) -> MobileCell {
             MobileCell(symbol: text, fg: 0, bg: 0, modifier: hidden ? 128 : 0, skip: skipped)

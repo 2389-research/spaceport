@@ -10,6 +10,12 @@ fail() { printf '%s\n' "$*" >&2; exit 1; }
 version_check() {
     [[ $1 =~ ^[1-9][0-9]{7}\.[1-9][0-9]*$ ]] || fail 'Version must be YYYYMMDD.COUNTER (no v prefix, counter from 1, no leading zeros)'
 }
+# iOS reserves the last two digits of the build number for the daily counter.
+ios_version_check() {
+    version_check "$1"
+    local counter=${1#*.}
+    [[ ${#counter} -le 2 ]] || fail 'iOS counter must be 1 through 99'
+}
 new_output() {
     [[ ! -e $1 && ! -L $1 ]] || fail "Output already exists: $1"
     [[ -d $(dirname -- "$1") ]] || fail "Output parent must exist: $1"

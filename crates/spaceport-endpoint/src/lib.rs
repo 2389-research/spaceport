@@ -24,7 +24,6 @@
 mod catalog;
 mod error;
 mod follow;
-mod history;
 mod host;
 mod ids;
 mod order;
@@ -37,7 +36,6 @@ mod localize;
 
 pub use error::{Error, Result};
 pub use follow::focus_requested;
-pub use history::{History, Step};
 #[cfg(any(test, feature = "test-support"))]
 pub use host::link::{Failure, Link};
 pub use host::link::{MAX_RETRY_DELAY, STABLE_CONNECTION_PERIOD};
@@ -47,6 +45,7 @@ pub use host::{
 };
 pub use ids::{LOCAL, SAVED_PREFIX, WSL_PREFIX, saved_profile_id};
 pub use order::{moved, rank};
+pub use spaceport_client::pane_history::{History, Step};
 pub use storage::StorageFailure;
 pub use wake::{NetworkChanges, Trigger, WakeClock, network_changes, watch_network};
 

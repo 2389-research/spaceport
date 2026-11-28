@@ -35,6 +35,8 @@ pub mod login_env;
 mod method;
 pub mod navigation;
 mod options;
+pub mod pane_action;
+pub mod pane_history;
 pub mod private_endpoint;
 mod process;
 pub mod projection;
@@ -79,7 +81,9 @@ pub use clipboard::{ClipboardImageCancellation, ClipboardImageUpload};
 pub use compat::{MIN_HERDR_VERSION, VersionMismatch};
 pub use connect::{connect, connect_with_connector, connect_with_surface_active};
 #[cfg(unix)]
-pub use connect::{connect_embedded_bridge, connect_embedded_bridge_with_path};
+pub use connect::{
+    connect_embedded_bridge, connect_embedded_bridge_with_path, observe_embedded_bridge,
+};
 pub use discovery::{ConnectTarget, local_var, session_socket, set_login_config_home};
 pub use environment::set_command_environment;
 /// Error returned when queueing commands; also available as the crate's `Error`.

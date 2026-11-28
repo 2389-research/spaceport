@@ -9,12 +9,14 @@ use spaceport_client::protocol::ClientShellSnapshot;
 mod appear;
 mod chrome;
 mod group_rows;
+mod keybinds;
 mod left_checkout;
 mod page_set;
 mod page_title;
 mod pane_payloads;
 mod picker_lines;
 mod tab_payloads;
+mod workspace_popover;
 mod workspace_targets;
 
 /// The repository the snapshot's linked checkouts hang off, in the shape

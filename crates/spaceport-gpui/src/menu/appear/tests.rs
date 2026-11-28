@@ -2,6 +2,8 @@ use super::*;
 use crate::motion::{ENTER, LEAVE};
 use gpui::{point, px};
 
+mod kept;
+
 #[test]
 fn unit_tests_see_menus_settled() {
     let start = Instant::now();

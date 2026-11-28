@@ -105,7 +105,7 @@ fn tooltip(
     let text = SharedString::from(details(reading));
     let (foreground, surface) = (theme.foreground, theme.surface);
     move |_, cx| {
-        cx.new(|_| crate::hint::Hint {
+        cx.new(|_| crate::usage::Hint {
             text: text.clone(),
             foreground,
             surface,

@@ -115,7 +115,7 @@ extension MobilePane {
     }
 }
 
-struct GoToPane: Identifiable {
+struct GoToPane: Identifiable, Equatable {
     let workspace: MobileWorkspace
     let tab: MobileTab
     let pane: MobilePane

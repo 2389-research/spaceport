@@ -84,6 +84,13 @@ impl SpaceportWindow {
             self.pane_menu_key(event, window, cx);
             return;
         }
+        if let Some(Page::Usage(provider)) = self.menu.page
+            && self.usage_key(provider, event, cx)
+        {
+            cx.stop_propagation();
+            window.prevent_default();
+            return;
+        }
         if self
             .menu
             .page

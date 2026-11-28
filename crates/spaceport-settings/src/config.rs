@@ -153,8 +153,7 @@ pub struct Config {
     /// ignored, as Herdr ignores its own, so a config written by a newer
     /// build or with a typo still loads; `diagnostic` reports them.
     pub unknown_keys: Vec<String>,
-    /// `[usage]`: which daemon-reported usage indicators the window shows.
-    pub usage: crate::usage::Indicators,
+    pub usage: spaceport_usage::UsageConfig,
     /// The private view settings' `[keys]` table as written, kept so the app
     /// can build its keymap from the same defaults this config was layered
     /// over. Not a value this crate resolves: keystrokes are the app's.
@@ -239,7 +238,7 @@ impl Default for Config {
             theme: "Default".into(), // i18n: data
             ui: font(ui, 12.0),
             unknown_keys: Vec::new(),
-            usage: crate::usage::Indicators::default(),
+            usage: spaceport_usage::UsageConfig::default(),
             view_keys: None,
             worktrees: Worktrees::default(),
             zen: Zen::default(),
@@ -298,7 +297,7 @@ struct Settings {
     terminal: FontSettings,
     theme: Option<String>,
     ui: FontSettings,
-    usage: crate::usage::Indicators,
+    usage: spaceport_usage::UsageConfig,
     worktrees: worktrees::WorktreeSettings,
     zen: zen::ZenSettings,
     // keep-sorted end
@@ -381,18 +380,12 @@ impl Config {
         let (_lock, local) = Self::prepare_files(path)?;
         let text =
             fs::read_to_string(&local).map_err(|error| Error::from(error).at_path(&local))?;
-        Self::parse_loaded(&text, &base)
-            .map_err(|error| error.at_path(&local))
-            .map(|config| config.with_desktop_theme(&text))
-    }
-
-    /// The overrides file as a load reads it, so a save can check the text it
-    /// is about to write exactly as reload will.
-    pub(crate) fn parse_loaded(text: &str, base: &Daemon) -> Result<Self> {
         // Validate the override independently so bad types/unknown keys cannot
         // disappear inside the merge. Empty arrays explicitly replace defaults.
-        Self::parse_over(text, base)?;
-        Self::parse_layers([DEFAULT_CONFIG, text], base)
+        Self::parse_over(&text, &base).map_err(|error| error.at_path(&local))?;
+        Self::parse_layers([DEFAULT_CONFIG, &text], &base)
+            .map_err(|error| error.at_path(&local))
+            .map(|config| config.with_desktop_theme(&text))
     }
 
     /// Without a home directory there is no desktop theme to find, and the
@@ -454,6 +447,7 @@ impl Config {
             }
             known
         });
+        unknown_keys.extend(settings.usage.retain_known());
         // Only catalog profile IDs name a device; anything else is ignored
         // and reported like any other unknown key.
         settings.devices.retain(|id, _| {
@@ -475,6 +469,20 @@ impl Config {
             .into_iter()
             .flat_map(|(name, face)| face.reject_terminal_keys(name)),
         );
+        // An old account table must not silently become accepted inert data:
+        // the app no longer owns GitHub sign-ins, and settings must say so.
+        if unknown_keys
+            .iter()
+            .any(|key| key == "github" || key.starts_with("github."))
+        {
+            return Err(Error::RemovedGitHub);
+        }
+        if unknown_keys
+            .iter()
+            .any(|key| key == "updates" || key.starts_with("updates."))
+        {
+            return Err(Error::RemovedUpdates);
+        }
         unknown_keys.sort();
         unknown_keys.dedup();
         let mut config = Self {
@@ -557,10 +565,10 @@ impl Config {
         config.backdrop = settings.backdrop;
         config.accent = settings.accent;
         config.contrast = settings.contrast;
-        config.usage = settings.usage;
         config.agents_placement = settings.agents_placement;
         config.quiet_after = settings.quiet_after;
         config.agent_skill = settings.agent_skill;
+        config.usage = settings.usage;
         config.option_as_alt = settings.option_as_alt;
         config.keep_selection_after_copy = settings.keep_selection_after_copy.unwrap_or(true);
         config.herdr_2_terminals = settings.herdr_2_terminals.unwrap_or(false);

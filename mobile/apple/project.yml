@@ -11,7 +11,7 @@ packages:
 settings:
   base:
     MARKETING_VERSION: "0.1"
-    CURRENT_PROJECT_VERSION: "17"
+    CURRENT_PROJECT_VERSION: "18"
     SWIFT_VERSION: "5.0"
     TARGETED_DEVICE_FAMILY: "1,2"
     GENERATE_INFOPLIST_FILE: YES
@@ -25,6 +25,7 @@ targets:
     type: application
     platform: iOS
     sources:
+      - FileSharing
       - Sources
       - Shared
       - Assets.xcassets
@@ -40,6 +41,8 @@ targets:
         buildPhase: resources
       - Generated/spaceport_mobile.swift
     dependencies:
+      - target: ShareFile
+        embed: true
       - target: AgentStatusWidget
         embed: true
       - framework: ../.build/SpaceportMobileCore.xcframework
@@ -65,6 +68,26 @@ targets:
         Release:
           "PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]": "$(SPACEPORT_MOBILE_PROFILE)"
           PRODUCT_BUNDLE_IDENTIFIER: ai.2389.spaceport.mobile
+  ShareFile:
+    type: app-extension
+    platform: iOS
+    sources:
+      - FileSharing
+      - path: ShareExtension
+        excludes: [Info.plist]
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: WidgetGroup.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Send to Spaceport
+        INFOPLIST_FILE: ShareExtension/Info.plist
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: ai.2389.spaceport.mobile.development.share
+        Release:
+          "PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]": "$(SPACEPORT_SHARE_PROFILE)"
+          PRODUCT_BUNDLE_IDENTIFIER: ai.2389.spaceport.mobile.share
   AgentStatusWidget:
     type: app-extension
     platform: iOS

@@ -5,6 +5,7 @@ import XCTest
 @testable import SpaceportMobile
 
 final class AgentBadgeTests: XCTestCase {
+    @MainActor
     func testKnownIdentitiesLoadTheirMarksFromTheBundle() throws {
         for identity in ["codex", "claude", "gemini", "omo"] {
             let expected = try XCTUnwrap(UIImage(named: "agent-" + identity))

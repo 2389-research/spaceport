@@ -1,5 +1,4 @@
 // i18n: migrated
-use crate::direction::Logical;
 use crate::i18n::fl;
 use crate::menu::labels;
 use crate::{
@@ -8,6 +7,7 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 use spaceport_client::Method;
+use spaceport_menu::form;
 use spaceport_menu::pane::{Action, Offers, Target, render};
 use spaceport_menu::rows::Row;
 
@@ -533,58 +533,43 @@ impl SpaceportWindow {
                 },
             );
         } else {
-            body =
-                body.p(px(8.))
-                    .gap(px(12.))
-                    .child(
-                        div()
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .child(fl!("pane-menu-rename-title")),
-                    )
-                    .child(
-                        div()
-                            .text_color(rgb(self.theme.subtext()))
-                            .child(fl!("pane-menu-rename-hint")),
-                    )
-                    .when_some(pane.input.clone(), |body, input| {
-                        if pane.pending.is_some() {
-                            body.child(div().child(input.read(cx).text().to_owned()))
-                        } else {
-                            body.child(input)
-                        }
-                    })
-                    .child(
-                        div()
-                            .row()
-                            .justify_end()
-                            .gap(px(8.))
-                            .child(
-                                div()
-                                    .id("pane-rename-cancel")
-                                    .p(px(6.))
-                                    .cursor_pointer()
-                                    .child(fl!("pane-menu-cancel"))
-                                    .on_click(cx.listener(|this, _, window, cx| {
-                                        this.dismiss_menu(window, cx)
-                                    })),
-                            )
-                            .child(
-                                div()
-                                    .id("pane-rename-submit")
-                                    .p(px(6.))
-                                    .rounded(px(crate::config::corners::CONTROL))
-                                    .bg(rgb(self.theme.active))
-                                    .cursor_pointer()
-                                    .child(if pane.pending.is_some() {
-                                        fl!("pane-menu-renaming")
-                                    } else {
-                                        fl!("pane-menu-rename-submit")
-                                    })
-                                    .on_click(cx.listener(|this, _, window, cx| {
-                                        this.submit_pane_rename(window, cx)
-                                    })),
-                            ),
-                    );
+            // The form draws the refusal its last submit earned under itself.
+            let rename = form::Rename {
+                buttons: form::Buttons {
+                    cancel: fl!("pane-menu-cancel"),
+                    submit: if pane.pending.is_some() {
+                        fl!("pane-menu-renaming")
+                    } else {
+                        fl!("pane-menu-rename-submit")
+                    },
+                },
+                error: pane.error.clone(),
+                hint: Some(fl!("pane-menu-rename-hint")),
+                selector: "pane",
+                title: fl!("pane-menu-rename-title"),
+            };
+            let draft = pane.input.clone().map(|input| {
+                if pane.pending.is_some() {
+                    div()
+                        .child(input.read(cx).text().to_owned())
+                        .into_any_element()
+                } else {
+                    input.into_any_element()
+                }
+            });
+            return form::rename(
+                body,
+                &rename,
+                &self.theme,
+                draft,
+                |button, element| match button {
+                    form::Button::Cancel => element
+                        .on_click(cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx))),
+                    form::Button::Submit => element.on_click(
+                        cx.listener(|this, _, window, cx| this.submit_pane_rename(window, cx)),
+                    ),
+                },
+            );
         }
         body.when_some(pane.error.clone(), |body, error| {
             // No width of its own, so the labels set the panel's width and

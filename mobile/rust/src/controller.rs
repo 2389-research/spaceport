@@ -2,6 +2,8 @@
 // ABOUTME: Drains the worker continuously and coalesces display updates for Swift.
 #[path = "history.rs"]
 pub(crate) mod history;
+pub(crate) mod pane_tools;
+mod parked_roster;
 use crate::{
     projection::{
         FocusAction, HostChallenge, InputTarget, MobileView, OwnedNavigationTarget, Projection,
@@ -11,6 +13,7 @@ use crate::{
         open_bridge,
     },
 };
+pub(crate) use parked_roster::ParkedRosterCheck;
 use spaceport_activation::Failure;
 use spaceport_client::{
     Client, ClientEvent, ClientHandle, ConnectOptions,
@@ -25,6 +28,14 @@ use std::{
 
 #[derive(Clone, Debug, thiserror::Error, uniffi::Error)]
 pub enum MobileError {
+    #[error(
+        "Could not open the service preview. Stop any open preview and enter a port from 1 to 65535."
+    )]
+    ServicePreview,
+    #[error("The preview is still closing. Try Stop again.")]
+    ServicePreviewStopping,
+    #[error("Herdr did not answer the roster request in time.")]
+    RosterTimeout,
     #[error("Herdr did not answer the history search in time.")]
     HistoryTimeout,
     #[error("A history search is already underway.")]
@@ -55,9 +66,11 @@ pub enum MobileError {
     TerminalStarting,
     #[error("The terminal input buffer is full or the paste is too large.")]
     TerminalQueueFull,
-    #[error("Could not transfer the screenshot to this host.")]
+    #[error("Could not transfer the attachment to this host.")]
     ImageTransfer,
-    #[error("Could not confirm the screenshot on the host. A temporary copy may remain.")]
+    #[error("File transfer cancelled.")]
+    FileCancelled,
+    #[error("Could not confirm the attachment on the host. A temporary copy may remain.")]
     ImageRetentionUnconfirmed,
     #[error("This key is unsupported.")]
     InvalidKey,
@@ -106,6 +119,7 @@ pub struct MobileSession {
 
 impl Drop for MobileSession {
     fn drop(&mut self) {
+        self.routes.preview.cancel();
         self.routes.cancel();
         self.handle.disconnect();
     }
@@ -124,7 +138,9 @@ impl MobileSession {
         cell_height: u32,
     ) -> Result<Arc<Self>, MobileError> {
         let options = geometry(cols, rows, cell_width, cell_height)?;
-        let projection = Arc::new(Mutex::new(Projection::new(options)));
+        let mut projection = Projection::new(options);
+        projection.trail_host = pane_tools::TrailHost::new(&host, &session);
+        let projection = Arc::new(Mutex::new(projection));
         let connecting = projection.clone();
         let (sender, request) = tokio::sync::oneshot::channel();
         let sender = matches!(auth, SshAuth::Password { .. }).then_some(sender);
@@ -144,25 +160,7 @@ impl MobileSession {
                     Some(request),
                     Some((worker_routes, named_session)),
                 )
-                .map_err(|error| {
-                    let challenge = match &error {
-                        SshError::UnknownHost { fingerprint } => Some(HostChallenge {
-                            fingerprint: fingerprint.clone(),
-                            changed: false,
-                        }),
-                        SshError::ChangedHost { fingerprint } => Some(HostChallenge {
-                            fingerprint: fingerprint.clone(),
-                            changed: true,
-                        }),
-                        _ => None,
-                    };
-                    if let Some(challenge) = challenge {
-                        let mut state = lock(&connecting);
-                        state.challenge = Some(challenge);
-                        state.version += 1;
-                    }
-                    spaceport_client::Error::from(io::Error::other(error))
-                })
+                .map_err(|error| connection_error(&connecting, error))
             },
             move |path| path_routes.accept_path(path),
         )?;
@@ -229,6 +227,7 @@ impl MobileSession {
         let mut state = self.current(&boot_id)?;
         let request = self.handle.set_surface_active(&boot_id, true)?;
         state.start_resume(request.clone(), Instant::now());
+        self.frames.notify_all();
         Ok(request)
     }
 
@@ -249,6 +248,11 @@ impl MobileSession {
         Ok(true)
     }
 
+    /// Known wire capabilities of the last accepted handshake, safe to copy into a report.
+    pub fn diagnostic_capabilities(&self) -> Option<String> {
+        lock(&self.projection).diagnostic_capabilities.clone()
+    }
+
     /// A boot snapshot must have arrived before stream loss can authorize mobile recovery.
     pub fn transport_lost(&self) -> bool {
         self.handle.transport_lost() && lock(&self.projection).snapshot.is_some()
@@ -259,7 +263,22 @@ impl MobileSession {
         lock(&self.projection).focus_interrupted()
     }
 
+    pub fn start_service_preview(&self, remote_port: u16) -> Result<u16, MobileError> {
+        let state = lock(&self.projection);
+        if self.handle.is_disconnected() || state.disconnected || state.snapshot.is_none() {
+            return Err(MobileError::Disconnected);
+        }
+        self.routes
+            .preview
+            .start(&self.routes.transport, remote_port)
+    }
+
+    pub fn stop_service_preview(&self) -> Result<(), MobileError> {
+        self.routes.preview.stop()
+    }
+
     pub fn disconnect(&self) {
+        self.routes.preview.cancel();
         self.routes.cancel();
         self.handle.disconnect();
         let mut state = lock(&self.projection);
@@ -323,15 +342,21 @@ impl MobileSession {
         target: InputTarget,
         png: Vec<u8>,
     ) -> Result<Arc<crate::StagedImage>, MobileError> {
-        {
-            let state = self.current(&target.boot_id)?;
-            if state.target().as_ref() != Some(&target)
-                && state.direct_target().as_ref() != Some(&target)
-            {
-                return Err(MobileError::StaleView);
-            }
-        }
-        self.routes.images.stage(png)
+        self.check_draft_target(&target)?;
+        self.routes.images.stage(&self.routes.transport, png)
+    }
+
+    pub fn stage_draft_file(
+        &self,
+        target: InputTarget,
+        name: String,
+        bytes: Vec<u8>,
+        transfer: Arc<crate::MobileFileTransfer>,
+    ) -> Result<Arc<crate::StagedImage>, MobileError> {
+        self.check_draft_target(&target)?;
+        self.routes
+            .images
+            .stage_file(&self.routes.transport, name, bytes, transfer)
     }
 
     pub fn send_text(&self, target: InputTarget, text: String) -> Result<(), MobileError> {
@@ -426,6 +451,18 @@ impl MobileSession {
 }
 
 impl MobileSession {
+    fn check_draft_target(&self, target: &InputTarget) -> Result<(), MobileError> {
+        {
+            let state = self.current(&target.boot_id)?;
+            if state.target().as_ref() != Some(target)
+                && state.direct_target().as_ref() != Some(target)
+            {
+                return Err(MobileError::StaleView);
+            }
+        }
+        Ok(())
+    }
+
     fn poll_view(&self, after: u64, direct_attach: bool) -> Option<MobileView> {
         let state = {
             let mut state = lock(&self.projection);
@@ -639,7 +676,30 @@ fn fence_failure_reason(cause: Failure) -> String {
     }
 }
 
-fn lock<T>(state: &Mutex<T>) -> MutexGuard<'_, T> {
+pub(crate) fn connection_error(
+    state: &Mutex<Projection>,
+    error: SshError,
+) -> spaceport_client::Error {
+    let challenge = match &error {
+        SshError::UnknownHost { fingerprint } => Some(HostChallenge {
+            fingerprint: fingerprint.clone(),
+            changed: false,
+        }),
+        SshError::ChangedHost { fingerprint } => Some(HostChallenge {
+            fingerprint: fingerprint.clone(),
+            changed: true,
+        }),
+        _ => None,
+    };
+    if let Some(challenge) = challenge {
+        let mut state = lock(state);
+        state.challenge = Some(challenge);
+        state.version += 1;
+    }
+    spaceport_client::Error::from(io::Error::other(error))
+}
+
+pub(crate) fn lock<T>(state: &Mutex<T>) -> MutexGuard<'_, T> {
     state.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
@@ -662,6 +722,23 @@ fn drain(
             state.end(fence_failure_reason(cause));
         } else {
             match event {
+                Ok(ClientEvent::Connected(welcome)) => {
+                    state.pane_actions =
+                        pane_tools::MobilePaneActions::from_methods(&welcome.methods);
+                    let known = [
+                        "health_check",
+                        "presentation_effects_fence",
+                        spaceport_client::protocol::surface_delta::CAPABILITY,
+                        "surface_interest",
+                        spaceport_client::protocol::surface_reuse::CAPABILITY,
+                        spaceport_client::protocol::surface_scroll::CAPABILITY,
+                    ];
+                    let accepted: Vec<_> = known
+                        .into_iter()
+                        .filter(|name| welcome.capabilities.iter().any(|offered| offered == *name))
+                        .collect();
+                    state.diagnostic_capabilities = Some(accepted.join(", "));
+                }
                 Ok(ClientEvent::Snapshot(s)) => state.snapshot(s),
                 Ok(ClientEvent::Surface(s)) => state.surface(s),
                 Ok(ClientEvent::Response {

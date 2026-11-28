@@ -65,7 +65,7 @@
               ./assets
               # The agent skill is compiled into the executable.
               ./skills
-              ./scripts/release/org.sheprd.Sheprd.desktop
+              ./scripts/release/spaceport.desktop
             ];
           };
           cargoLock.lockFile = ./Cargo.lock;
@@ -100,7 +100,7 @@
           ++ runtimeLibraries;
           # Nix owns the store path and upgrades come from the flake.
           postInstall = ''
-            install -Dm644 scripts/release/org.sheprd.Sheprd.desktop \
+            install -Dm644 scripts/release/spaceport.desktop \
               $out/share/applications/spaceport.development.desktop
             install -Dm644 assets/icons/spaceport-linux.svg \
               $out/share/icons/hicolor/scalable/apps/spaceport.svg

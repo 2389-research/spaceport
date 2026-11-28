@@ -426,9 +426,9 @@ jobs:
       - name: Install the pinned Inno Setup compiler
         run: python scripts/release/windows-installer.py install-iscc "$RUNNER_TEMP/inno-setup" > "$RUNNER_TEMP/iscc-path"
       - name: Build the Windows installer
-        run: python scripts/release/windows-installer.py build "$VERSION" "$TARGET" "dist/Sheprd-$VERSION-$TARGET.zip" dist "$(cat "$RUNNER_TEMP/iscc-path")"
+        run: python scripts/release/windows-installer.py build "$VERSION" "$TARGET" "dist/Spaceport-$VERSION-$TARGET.zip" dist "$(cat "$RUNNER_TEMP/iscc-path")"
       - name: Install and uninstall the Windows installer
-        run: python scripts/release/windows-installer.py smoke "dist/Sheprd-$VERSION-$TARGET-setup.exe"
+        run: python scripts/release/windows-installer.py smoke "dist/Spaceport-$VERSION-$TARGET-setup.exe"
 
   # Keep the branch-protection context stable while requiring active platforms.
   checks-passed:

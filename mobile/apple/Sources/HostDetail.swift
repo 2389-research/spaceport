@@ -5,6 +5,9 @@ import SwiftUI
 struct HostDetail: View {
     let host: SavedHost
     let sessions: [SavedSession]
+    let saveTags: (String) throws -> Void
+    @State private var editingTags = false
+    @State private var tagText = ""
     let open: (HostProfile) -> Void
     let edit: () -> Void
     let add: () -> Void
@@ -38,6 +41,14 @@ struct HostDetail: View {
                 }
             } header: { Text("Trusted Host Key") } footer: {
                 if fingerprint != nil { Text("Verified on this device. This key applies to every account on this host and port.") }
+            }
+            Section("Tags") {
+                Button {
+                    tagText = (host.tags ?? []).joined(separator: ", ")
+                    editingTags = true
+                } label: {
+                    LabeledContent("Edit tags", value: (host.tags ?? []).joined(separator: ", "))
+                }
             }
             Section("Herdr Sessions") {
                 ForEach(sessions) { session in
@@ -81,6 +92,11 @@ struct HostDetail: View {
                 do { try remove() } catch { notice = error.localizedDescription }
             }
         } message: { Text("This removes its saved sessions from this device. Herdr keeps running on the host.") }
+        .alert("Host tags", isPresented: $editingTags) {
+            TextField("Work, Personal", text: $tagText)
+            Button("Cancel", role: .cancel) {}
+            Button("Save") { do { try saveTags(tagText) } catch { notice = error.localizedDescription } }
+        } message: { Text("Enter up to eight tags, separated by commas.") }
         .alert("Host Details", isPresented: $notice.presented) { Button("OK") { notice = nil } } message: { Text(notice ?? "") }
     }
 }

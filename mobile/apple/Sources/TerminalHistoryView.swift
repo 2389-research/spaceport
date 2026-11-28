@@ -105,8 +105,8 @@ struct TerminalHistoryView: View {
 
     private func excerpt(_ match: HistoryMatch) -> AttributedString {
         var selected = AttributedString(match.matched)
-        selected.backgroundColor = .yellow
-        selected.foregroundColor = .black
+        selected[AttributeScopes.SwiftUIAttributes.BackgroundColorAttribute.self] = .yellow
+        selected[AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute.self] = .black
         return AttributedString(match.before) + selected + AttributedString(match.after)
     }
 
