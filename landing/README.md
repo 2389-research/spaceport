@@ -38,7 +38,8 @@ tests only. The repository's Pages source must be set to GitHub Actions.
 - Keep every path relative. The page is served under `/spaceport/`.
 - The download buttons ask the GitHub API for the newest preview disk image,
   because previews are prereleases. Without JavaScript they open the releases
-  list.
+  list. The stable channel in `scripts/release/channels.json` names the file,
+  label and release page for a future stable download.
 
 Product facts live in `PRODUCT.md`; the page's design contract lives in
 `.impeccable/surfaces/`.
