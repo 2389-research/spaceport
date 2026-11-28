@@ -1,12 +1,15 @@
-//! WSL distributions as devices: the dialog that lists this machine's
+//! WSL distributions as devices: the form that lists this machine's
 //! distributions and saves one once Herdr answers inside it, and removal, which
 //! only forgets the distribution here. Nothing here installs Herdr, edits a
-//! distribution, or boots one the user did not pick.
+//! distribution, or boots one the user did not pick. The paint is
+//! `spaceport_menu::devices`'s; the workers, the keys and the words are here.
 use super::Page;
 use crate::i18n::fl;
 use crate::{SpaceportWindow, endpoint::WSL_PREFIX, search_input::SearchInput};
 use gpui::{prelude::*, *};
 use spaceport_client::HostProbe;
+use spaceport_menu::devices::wsl;
+use spaceport_menu::devices::{Field, Submit, Value};
 
 pub(in crate::menu) struct WslSetup {
     distros: Distros,
@@ -24,6 +27,25 @@ enum Distros {
     Loading,
     Ready(Vec<String>),
     Failed(String),
+}
+
+impl Distros {
+    /// The rows the form lists: every distribution this machine has, saying
+    /// which are already devices and which one the form would add. A list that
+    /// has not arrived, or failed to, lists none.
+    fn rows(&self, selected: Option<&str>, saved: &[String]) -> Vec<wsl::Distro> {
+        let Self::Ready(distros) = self else {
+            return Vec::new();
+        };
+        distros
+            .iter()
+            .map(|name| wsl::Distro {
+                name: name.clone(),
+                added: saved.contains(name),
+                chosen: selected == Some(name.as_str()),
+            })
+            .collect()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -107,39 +129,28 @@ impl SpaceportWindow {
         cx: &mut Context<Self>,
     ) {
         let saved = self.saved_distros();
-        let Some(setup) = &mut self.menu.wsl_setup else {
+        let Some(setup) = &self.menu.wsl_setup else {
             return;
         };
         if setup.session.read(cx).is_composing() {
             return;
         }
+        let selected = setup.selected.clone();
+        let rows = setup.distros.rows(selected.as_deref(), &saved);
         match event.keystroke.key.as_str() {
             "enter" => self.submit_add_wsl(window, cx),
             "escape" => self.dismiss_menu(window, cx),
             key @ ("up" | "down") => {
-                let Distros::Ready(distros) = &setup.distros else {
+                // Only the distributions that can still be added, as a press
+                // on a row allows.
+                let chosen = wsl::stepped(&rows, selected.as_deref(), key == "down");
+                let Some(chosen) = chosen.map(str::to_owned) else {
                     return;
                 };
-                // Only the distributions that can still be added, as a click allows.
-                let distros: Vec<&String> = distros
-                    .iter()
-                    .filter(|distro| !saved.contains(distro))
-                    .collect();
-                if distros.is_empty() {
-                    return;
+                if let Some(setup) = &mut self.menu.wsl_setup {
+                    setup.selected = Some(chosen);
+                    cx.notify();
                 }
-                let current = setup
-                    .selected
-                    .as_ref()
-                    .and_then(|selected| distros.iter().position(|distro| *distro == selected));
-                let next = match (current, key) {
-                    (None, "up") => distros.len() - 1,
-                    (None, _) => 0,
-                    (Some(index), "up") => (index + distros.len() - 1) % distros.len(),
-                    (Some(index), _) => (index + 1) % distros.len(),
-                };
-                setup.selected = Some(distros[next].to_owned());
-                cx.notify();
             }
             _ => return,
         }
@@ -203,168 +214,76 @@ impl SpaceportWindow {
         cx.notify();
     }
 
-    #[allow(clippy::too_many_lines, reason = "2026-11-27 baseline: 156 lines")]
-    pub(in crate::menu) fn render_add_wsl(
-        &self,
-        compact: bool,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement {
-        let theme = &self.theme;
-        let frame = |pane: Div, cx: &mut Context<Self>| {
-            self.add_device_frame("wsl-setup-dialog", "wsl-setup-close", compact, pane, cx)
-        };
-        let Some(setup) = &self.menu.wsl_setup else {
-            return frame(div(), cx);
-        };
+    /// The form, as `spaceport_menu` paints it.
+    fn wsl_form(&self, setup: &WslSetup) -> wsl::Form {
         let saved = self.saved_distros();
-        let mut list = div()
-            .debug_selector(|| "wsl-setup-distros".into())
-            .flex()
-            .flex_col()
-            .gap(px(2.));
-        match &setup.distros {
-            Distros::Loading => {
-                list = list.child(
-                    div()
-                        .text_color(rgb(theme.muted))
-                        .child(fl!("devices-wsl-looking")),
-                )
-            }
+        let list = match &setup.distros {
+            Distros::Loading => wsl::List::Note(fl!("devices-wsl-looking")),
             Distros::Failed(error) => {
-                list = list.child(
-                    div()
-                        .text_color(crate::menu::danger(theme))
-                        .child(fl!("devices-wsl-list-failed", error = error.as_str())),
-                )
+                wsl::List::Unavailable(fl!("devices-wsl-list-failed", error = error.as_str()))
             }
             Distros::Ready(distros) if distros.is_empty() => {
-                list = list.child(
-                    div()
-                        .text_color(rgb(theme.muted))
-                        .child(fl!("devices-wsl-none")),
-                )
+                wsl::List::Note(fl!("devices-wsl-none"))
             }
-            Distros::Ready(distros) => {
-                for (index, distro) in distros.iter().enumerate() {
-                    let added = saved.contains(distro);
-                    let checked = setup.selected.as_ref() == Some(distro);
-                    let pick = distro.clone();
-                    list = list.child(
-                        div()
-                            .id(("wsl-distro", index))
-                            .debug_selector(move || format!("wsl-distro-{index}"))
-                            .px(px(8.))
-                            .py(px(6.))
-                            .rounded(px(crate::config::corners::CONTROL))
-                            .flex()
-                            .items_center()
-                            .gap(px(8.))
-                            .when(checked, |row| row.bg(rgb(theme.active)))
-                            .when(added, |row| row.text_color(rgb(theme.muted)))
-                            .when(!added, |row| {
-                                row.cursor_pointer().hover(|s| s.bg(rgb(theme.active)))
-                            })
-                            .child(crate::toggles::radio(
-                                theme,
-                                self.config.ui.size + 2.,
-                                checked,
-                            ))
-                            .child(div().flex_1().truncate().child(distro.clone()))
-                            .when(added, |row| row.child(fl!("devices-wsl-added")))
-                            .on_click(cx.listener(move |this, _, _, cx| {
-                                if added {
-                                    return;
-                                }
-                                if let Some(setup) = &mut this.menu.wsl_setup {
-                                    setup.selected = Some(pick.clone());
-                                    cx.notify();
-                                }
-                            })),
-                    );
+            Distros::Ready(_) => {
+                wsl::List::Distros(setup.distros.rows(setup.selected.as_deref(), &saved))
+            }
+        };
+        wsl::Form {
+            intro: fl!("devices-wsl-intro"),
+            list,
+            added_label: fl!("devices-wsl-added"),
+            session: Field {
+                label: fl!("devices-wsl-session"),
+                value: Value::Input(setup.session.clone().into_any_element()),
+            },
+            error: setup.error.clone(),
+            status: match &setup.step {
+                Step::Form => None,
+                Step::Checking(distro) => {
+                    Some(fl!("devices-wsl-checking", distro = distro.as_str()))
                 }
-            }
+            },
+            submit: Submit {
+                selector: "wsl-setup-submit".to_owned(),
+                label: match setup.step {
+                    Step::Form => fl!("devices-wsl-add"),
+                    Step::Checking(_) => fl!("devices-wsl-add-checking"),
+                },
+                enabled: setup.step == Step::Form && setup.selected.is_some(),
+            },
+            danger: crate::menu::danger(&self.theme),
         }
-        let mut body = div()
-            .id("wsl-setup-body")
-            .debug_selector(|| "wsl-setup-body".into())
-            .flex_1()
-            .min_h_0()
-            .overflow_y_scroll()
-            .p(px(16.))
-            .flex()
-            .flex_col()
-            .gap(px(12.))
-            .child(
-                div()
-                    .flex_none()
-                    .text_color(rgb(theme.subtext()))
-                    .child(fl!("devices-wsl-intro")),
-            )
-            .child(list)
-            .child(
-                div()
-                    .flex_none()
-                    .flex()
-                    .flex_col()
-                    .gap(px(6.))
-                    .child(fl!("devices-wsl-session"))
-                    .child(setup.session.clone()),
-            );
-        if let Some(error) = &setup.error {
-            body = body.child(
-                div()
-                    .debug_selector(|| "wsl-setup-error".into())
-                    .flex_none()
-                    .text_color(crate::menu::danger(theme))
-                    .child(error.clone()),
-            );
-        }
-        if let Step::Checking(distro) = &setup.step {
-            body = body.child(
-                div()
-                    .debug_selector(|| "wsl-setup-status".into())
-                    .flex_none()
-                    .text_color(rgb(theme.muted))
-                    .child(fl!("devices-wsl-checking", distro = distro.as_str())),
-            );
-        }
-        let ready = setup.step == Step::Form && setup.selected.is_some();
-        let footer = div()
-            .flex_none()
-            .p(px(16.))
-            .border_t_1()
-            .border_color(rgb(theme.active))
-            .flex()
-            .justify_end()
-            .child(
-                div()
-                    .id("wsl-setup-submit")
-                    .debug_selector(|| "wsl-setup-submit".into())
-                    .p(px(8.))
-                    .rounded(px(crate::config::corners::CONTROL))
-                    .bg(rgb(theme.active))
-                    .when(ready, |button| {
-                        button.cursor_pointer().hover(|s| {
-                            s.bg(rgb(theme.active).blend(rgba((theme.foreground << 8) | 0x20)))
-                        })
-                    })
-                    .when(!ready, |button| button.text_color(rgb(theme.muted)))
-                    .child(match setup.step {
-                        Step::Form => fl!("devices-wsl-add"),
-                        Step::Checking(_) => fl!("devices-wsl-add-checking"),
-                    })
-                    .on_click(cx.listener(|this, _, window, cx| this.submit_add_wsl(window, cx))),
-            );
-        frame(
-            div()
-                .flex_1()
-                .min_h_0()
-                .flex()
-                .flex_col()
-                .child(body)
-                .child(footer),
-            cx,
-        )
+    }
+
+    pub(in crate::menu) fn render_add_wsl(&self, compact: bool, cx: &mut Context<Self>) -> Div {
+        let pane = match self
+            .menu
+            .wsl_setup
+            .as_ref()
+            .map(|setup| self.wsl_form(setup))
+        {
+            Some(form) => wsl::body(
+                &crate::menu::chrome::text(&self.config.ui),
+                &self.theme,
+                form,
+                |action, control| match action {
+                    wsl::Action::Pick(distro) => {
+                        control.on_click(cx.listener(move |this, _, _, cx| {
+                            if let Some(setup) = &mut this.menu.wsl_setup {
+                                setup.selected = Some(distro.clone());
+                                cx.notify();
+                            }
+                        }))
+                    }
+                    wsl::Action::Submit => control.on_click(
+                        cx.listener(|this, _, window, cx| this.submit_add_wsl(window, cx)),
+                    ),
+                },
+            ),
+            None => div(),
+        };
+        self.add_device_frame("wsl-setup-dialog", "wsl-setup-close", compact, pane, cx)
     }
 
     /// Ask before forgetting a saved distribution.
@@ -442,56 +361,23 @@ impl SpaceportWindow {
     }
 
     pub(in crate::menu) fn render_remove_wsl(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
         let Some(distro) = &self.menu.wsl_remove else {
             return div();
         };
-        div()
-            .debug_selector(|| "remove-wsl".into())
-            .flex()
-            .flex_col()
-            .p(px(8.))
-            .gap(px(12.))
-            .child(
-                div()
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .child(fl!("devices-wsl-remove-title")),
-            )
-            .child(
-                div()
-                    .text_color(rgb(theme.subtext()))
-                    .child(fl!("devices-wsl-remove-note", distro = distro.as_str())),
-            )
-            .child(
-                div()
-                    .flex()
-                    .justify_end()
-                    .gap(px(8.))
-                    .child(
-                        div()
-                            .id("remove-wsl-cancel")
-                            .p(px(6.))
-                            .cursor_pointer()
-                            .child(fl!("devices-wsl-cancel"))
-                            .on_click(
-                                cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx)),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .id("remove-wsl-submit")
-                            .debug_selector(|| "remove-wsl-submit".into())
-                            .p(px(6.))
-                            .rounded(px(crate::config::corners::CONTROL))
-                            .bg(rgb(theme.active))
-                            .text_color(crate::menu::danger(theme))
-                            .cursor_pointer()
-                            .child(fl!("devices-wsl-remove"))
-                            .on_click(cx.listener(|this, _, window, cx| {
-                                this.confirm_remove_wsl(window, cx)
-                            })),
-                    ),
-            )
+        let question = wsl::Question {
+            title: fl!("devices-wsl-remove-title"),
+            note: fl!("devices-wsl-remove-note", distro = distro.as_str()),
+            cancel: fl!("devices-wsl-cancel"),
+            remove: fl!("devices-wsl-remove"),
+            danger: crate::menu::danger(&self.theme),
+        };
+        wsl::removal(&self.theme, question, |action, button| match action {
+            wsl::Removal::Cancel => {
+                button.on_click(cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx)))
+            }
+            wsl::Removal::Confirm => button
+                .on_click(cx.listener(|this, _, window, cx| this.confirm_remove_wsl(window, cx))),
+        })
     }
 }
 
