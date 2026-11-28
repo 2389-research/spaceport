@@ -225,7 +225,7 @@ impl Drop for Stream {
     /// The worker writes the CLOSE behind this stream's queued frames; a
     /// destructor must not wait for a full queue or drop the close.
     fn drop(&mut self) {
-        self.shared.release(self.channel, Arc::clone(&self.route));
+        self.shared.release(self.channel, &self.route);
     }
 }
 

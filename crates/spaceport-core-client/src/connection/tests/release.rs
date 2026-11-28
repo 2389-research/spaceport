@@ -7,7 +7,7 @@ use super::*;
 fn worker(capacity: usize) -> (Worker<io::Cursor<Vec<u8>>>, Link) {
     let (outbound, queue) = crossbeam_channel::bounded(capacity);
     let worker = Worker {
-        closing: Vec::new(),
+        closing: VecDeque::new(),
         decoder: Decoder::default(),
         queue,
         shared: Arc::new(Shared::default()),
@@ -136,4 +136,58 @@ fn losing_the_connection_drops_pending_releases() {
     assert!(locked(&worker.shared.released).is_empty());
     assert!(worker.write_queued().unwrap());
     assert!(written(&worker).is_empty());
+}
+
+#[test]
+fn dropping_a_stream_after_remote_close_keeps_no_route_or_release_record() {
+    for reuse in [false, true] {
+        let (mut worker, link) = worker(1);
+        let old = register(&worker, &link, 5);
+        let old_route = Arc::downgrade(&old.route);
+        worker
+            .dispatch(Frame {
+                channel: 5,
+                kind: Kind::Close,
+                payload: vec![],
+            })
+            .unwrap();
+        let _replacement = reuse.then(|| register(&worker, &link, 5));
+        drop(old);
+
+        assert!(old_route.upgrade().is_none(), "retained the closed route");
+        assert!(locked(&worker.shared.released).is_empty());
+    }
+}
+
+#[test]
+fn normal_frames_and_due_closes_share_the_budget_until_the_last_link_drains() {
+    let (mut worker, link) = worker(WRITE_BATCH);
+    for _ in 1..WRITE_BATCH {
+        link.send(1, Kind::Data, b"before").unwrap();
+    }
+    let channels = 2..(2 + 2 * WRITE_BATCH as u32);
+    for channel in channels.clone() {
+        drop(register(&worker, &link, channel));
+    }
+
+    assert!(worker.write_queued().unwrap());
+    assert_eq!(written(&worker).len(), WRITE_BATCH);
+    link.send(1, Kind::Data, b"after").unwrap();
+    drop(link);
+    assert!(worker.write_queued().unwrap());
+    let middle = written(&worker);
+    assert_eq!(middle.len(), 2 * WRITE_BATCH);
+    assert!(
+        middle[WRITE_BATCH..]
+            .iter()
+            .all(|(_, kind, _)| *kind == Kind::Close)
+    );
+
+    // A turn can use its last slot before it sees the queue disconnect.
+    worker.write_queued().unwrap();
+    assert!(!worker.write_queued().unwrap());
+    let mut expected = vec![(1, Kind::Data, b"before".to_vec()); WRITE_BATCH - 1];
+    expected.extend(channels.map(|channel| (channel, Kind::Close, Vec::new())));
+    expected.push((1, Kind::Data, b"after".to_vec()));
+    assert_eq!(written(&worker), expected);
 }

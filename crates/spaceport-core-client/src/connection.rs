@@ -19,10 +19,10 @@ use crossbeam_channel::{Receiver, RecvTimeoutError, Sender, TryRecvError};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     io::{self, Read, Write},
     sync::{
-        Arc, Mutex, MutexGuard, PoisonError,
+        Arc, Mutex, MutexGuard, PoisonError, Weak,
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
     time::{Duration, Instant},
@@ -136,7 +136,7 @@ pub(crate) struct Shared {
     lost: AtomicBool,
     pending: Mutex<HashMap<u64, Call>>,
     /// Dropped streams the worker has not seen yet; see `release`.
-    released: Mutex<Vec<(u32, Arc<Route>)>>,
+    released: Mutex<Vec<(u32, Weak<Route>)>>,
     routes: Mutex<HashMap<u32, Arc<Route>>>,
 }
 
@@ -376,7 +376,7 @@ impl Core {
         let mut decoder = Decoder::default();
         decoder.push(&rest);
         let worker = Worker {
-            closing: Vec::new(),
+            closing: VecDeque::new(),
             decoder,
             queue,
             shared: Arc::clone(&shared),
@@ -681,7 +681,7 @@ fn waiting(error: &io::Error) -> bool {
 
 struct Worker<S> {
     /// Released routes waiting for the frames queued ahead of their CLOSE.
-    closing: Vec<release::Closing>,
+    closing: VecDeque<release::Closing>,
     decoder: Decoder,
     queue: Receiver<Vec<u8>>,
     shared: Arc<Shared>,
@@ -718,13 +718,17 @@ impl<S: Read + Write> Worker<S> {
         Ok(())
     }
 
-    /// Writes a bounded batch and the CLOSEs it makes due; false once
-    /// nobody can queue more.
+    /// Writes a bounded batch of queued frames and due CLOSEs. Stops once
+    /// the last sender and its pending releases are gone.
     fn write_queued(&mut self) -> Result<bool> {
         self.take_releases();
         let mut open = true;
         let mut wrote = false;
         for _ in 0..WRITE_BATCH {
+            if let Some(closing) = self.closing.pop_front_if(|close| close.due <= self.written) {
+                wrote |= self.close_released(closing)?;
+                continue;
+            }
             match self.queue.try_recv() {
                 Ok(frame) => {
                     self.stream.write_all(&frame)?;
@@ -736,15 +740,16 @@ impl<S: Read + Write> Worker<S> {
                     // Every stream released before dropping its link.
                     self.take_releases();
                     open = false;
-                    break;
+                    if self.closing.is_empty() {
+                        break;
+                    }
                 }
             }
         }
-        wrote |= self.close_released()?;
         if wrote {
             self.stream.flush()?;
         }
-        Ok(open)
+        Ok(open || !self.closing.is_empty())
     }
 
     fn dispatch(&mut self, frame: Frame) -> Result<()> {

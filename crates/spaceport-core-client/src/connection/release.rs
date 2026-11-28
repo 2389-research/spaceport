@@ -1,8 +1,8 @@
 // ABOUTME: Closes the channels of dropped streams from the connection worker.
 // ABOUTME: Keeps each CLOSE behind accepted data and off reused channels.
 //! A dropped stream only records its release; the worker writes the CLOSE.
-//! A destructor therefore never blocks, and a full outbound queue cannot
-//! lose the close. The worker writes it once every frame the queue held when
+//! A destructor never waits for outbound capacity or writes to the socket.
+//! The worker writes the CLOSE once every frame the queue held when
 //! it saw the release has gone out, so it never overtakes accepted data.
 
 use super::{Shared, Worker, locked};
@@ -13,26 +13,29 @@ use crate::{
 };
 use std::{
     io::Write,
-    sync::{Arc, atomic::Ordering},
+    sync::{Arc, Weak, atomic::Ordering},
 };
 
 /// A released route waiting for the frames queued ahead of it.
 pub(super) struct Closing {
     channel: u32,
     /// The worker's written-frame count after which the CLOSE may go.
-    due: u64,
-    route: Arc<Route>,
+    pub(super) due: u64,
+    route: Weak<Route>,
 }
 
 impl Shared {
-    /// Records that the stream owning `route` on `channel` is gone. Each
-    /// registered route belongs to one stream, which releases it once, so
-    /// pending releases stay bounded by the registered routes.
-    pub(crate) fn release(&self, channel: u32, route: Arc<Route>) {
+    /// Each registered route belongs to one stream, which releases it once.
+    pub(crate) fn release(&self, channel: u32, route: &Arc<Route>) {
         let mut released = locked(&self.released);
-        // A lost connection already ended every route; nothing is left to close.
-        if !self.lost.load(Ordering::Acquire) {
-            released.push((channel, route));
+        // The daemon can close a route and reuse its channel before the
+        // application drops the old stream. Only the current owner owes a CLOSE.
+        if !self.lost.load(Ordering::Acquire)
+            && locked(&self.routes)
+                .get(&channel)
+                .is_some_and(|current| Arc::ptr_eq(current, route))
+        {
+            released.push((channel, Arc::downgrade(route)));
         }
     }
 }
@@ -55,34 +58,21 @@ impl<S: Write> Worker<S> {
             }));
     }
 
-    /// Writes the CLOSE of every release whose frames have gone out, unless
-    /// the core already closed that channel. Returns whether it wrote any.
-    pub(super) fn close_released(&mut self) -> Result<bool> {
-        let written = self.written;
-        let (ready, waiting) = std::mem::take(&mut self.closing)
-            .into_iter()
-            .partition::<Vec<_>, _>(|closing| closing.due <= written);
-        self.closing = waiting;
-        let mut wrote = false;
-        for closing in ready {
-            // A route the core closed is gone, or another stream's now that
-            // the channel was reused; either way this CLOSE is not owed.
-            let owed = {
-                let mut routes = locked(&self.shared.routes);
-                let ours = routes
-                    .get(&closing.channel)
-                    .is_some_and(|route| Arc::ptr_eq(route, &closing.route));
-                if ours {
-                    routes.remove(&closing.channel);
-                }
-                ours
-            };
-            if owed {
-                self.stream
-                    .write_all(&frame::encode(closing.channel, Kind::Close, &[])?)?;
-                wrote = true;
+    /// Writes one due CLOSE if the daemon still has the same route. A weak
+    /// reference identifies it without retaining an already closed inbox.
+    pub(super) fn close_released(&mut self, closing: Closing) -> Result<bool> {
+        {
+            let mut routes = locked(&self.shared.routes);
+            if !routes
+                .get(&closing.channel)
+                .is_some_and(|route| std::ptr::eq(Arc::as_ptr(route), closing.route.as_ptr()))
+            {
+                return Ok(false);
             }
+            routes.remove(&closing.channel);
         }
-        Ok(wrote)
+        self.stream
+            .write_all(&frame::encode(closing.channel, Kind::Close, &[])?)?;
+        Ok(true)
     }
 }
