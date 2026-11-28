@@ -73,6 +73,7 @@ internal class PhoneUi(private val ctx: Context) {
         held: (() -> Unit)? = null,
         swiped: ((towardEnd: Boolean) -> Unit)? = null,
         actions: List<Pair<String, () -> Unit>> = emptyList(),
+        brand: AgentRow? = null,
     ): LinearLayout {
         val row =
             line().apply {
@@ -99,6 +100,15 @@ internal class PhoneUi(private val ctx: Context) {
                 LinearLayout.LayoutParams(dp(7), dp(7)).apply { marginEnd = dp(10) },
             )
         }
+        if (brand?.name != null) {
+            val drawable = agentBrand(ctx, brand.identity)
+            val badge = if (drawable != null) android.widget.ImageView(ctx).apply {
+                setImageDrawable(drawable)
+                if (brand.identity != "omo") setColorFilter(ink)
+            } else text(brand.name.take(1).uppercase(), 16, ink, true).apply { gravity = Gravity.CENTER }
+            badge.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            row.addView(badge, LinearLayout.LayoutParams(dp(22), dp(22)).apply { marginEnd = dp(10) })
+        }
         val labels = column()
         labels.addView(
             text(title, 17, ink, true).apply {
@@ -106,7 +116,11 @@ internal class PhoneUi(private val ctx: Context) {
                 ellipsize = android.text.TextUtils.TruncateAt.END
             }
         )
-        if (detail.isNotBlank()) labels.addView(text(detail, 13, muted).apply { maxLines = 2 })
+        val description = if (brand?.name == null) detail else {
+            val state = if (brand.status == "blocked") "Waiting for you" else brand.status.replaceFirstChar { it.uppercase() }
+            listOf(detail, state).filter(String::isNotBlank).joinToString(" · ")
+        }
+        if (description.isNotBlank()) labels.addView(text(description, 13, muted).apply { id = android.R.id.text2; maxLines = 2 })
         row.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))
         row.addView(
             text("›", 23, muted).apply {

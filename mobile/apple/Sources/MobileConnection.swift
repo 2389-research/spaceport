@@ -576,7 +576,7 @@ final class MobileConnection: ObservableObject {
             try await Task.detached(priority: .userInitiated) {
                 if let file { return try session.stageDraftFile(target: target, name: file.name, bytes: file.data, transfer: transfer) }
                 guard let image else { throw MobileError.StaleView }
-                return try session.stageDraftImage(target: target, png: image.png)
+                return try session.stageDraftImage(target: target, png: image.png, transfer: transfer)
             }.value
         } onCancel: { transfer.cancel() }
         try Task.checkCancellation()

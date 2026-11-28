@@ -48,12 +48,13 @@ internal class PhoneKey private constructor(
                 .build()
 
         @Synchronized
-        fun open(alias: String = "spaceport.ssh.unlocked.p256"): PhoneKey {
+        fun open(alias: String = "spaceport.ssh.unlocked.p256", createIfMissing: Boolean = true): PhoneKey {
             if (Build.VERSION.SDK_INT < 28) {
                 throw HardwareKeyUnavailable("Phone key requires Android 9 or later. Use password sign-in.")
             }
             val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
             if (!store.containsAlias(alias)) {
+                if (!createIfMissing) throw HardwareKeyUnavailable("The enrolled phone key is unavailable.")
                 try {
                     val generator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore")
                     generator.initialize(parameters(alias))

@@ -107,6 +107,7 @@ fn loss_ends_waiters_and_tombstones_and_refuses_registration() {
             outbound: crossbeam_channel::bounded(1).0,
         },
         route,
+        shared: Arc::new(shared),
     };
     // The stream has no public reader; its attachment exposes the real inbox.
     let terminal = serde_json::from_value(crate::tests::terminal("t1")).unwrap();

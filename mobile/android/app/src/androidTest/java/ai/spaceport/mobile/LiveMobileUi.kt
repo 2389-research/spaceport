@@ -79,6 +79,11 @@ abstract class LiveMobileUi {
         }
     }
 
+    protected fun tapHome() {
+        val announcement = node { it.contentDescription?.startsWith("Home,") == true }?.contentDescription
+        click(announcement?.toString() ?: "Home")
+    }
+
     protected fun input(value: String, hint: String? = null) {
         val editor = requireNotNull(node { it.isEditable && (hint == null || it.hintText?.toString() == hint) }) { "No active editor" }
         check(editor.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {

@@ -44,6 +44,18 @@ internal class HostDetailScreen(
             body.addView(ui.button("Forget host key…") { forget(pin) })
         }
 
+        ui.heading(body, "Tags")
+        val tags = pages.hosts.tags(group.account)
+        ui.row(body, "Edit tags", tags.joinToString(", "), action = {
+            val input = EditText(activity).apply { setSingleLine(); setText(tags.joinToString(", ")) }
+            AlertDialog.Builder(activity).setTitle("Host tags")
+                .setMessage("Enter up to eight tags, separated by commas.").setView(input)
+                .setNegativeButton("Cancel", null).setPositiveButton("Save") { _, _ ->
+                    pages.hosts.tag(group.account, input.text.toString())
+                    pages.redraw()
+                }.show()
+        })
+
         ui.heading(body, "Herdr sessions")
         for (session in group.sessions) {
             ui.row(body, session.session, "Hold to rename or remove", action = { pages.open(session) }, held = { manage(session) })
@@ -113,7 +125,9 @@ internal class HostDetailScreen(
             if (account != group.account && pages.hosts.profiles().any { it.account == account })
                 return@setOnClickListener pages.toast("Another saved host already uses ${moved.first().destination}")
             if (moved != group.sessions) {
+                val tags = pages.hosts.tags(group.account)
                 pages.hosts.replace(group.sessions, moved)
+                if (account != group.account) pages.hosts.tag(account, tags.joinToString(","))
                 pages.forget(group.sessions)
             }
             if (account != group.account) pages.hosts.rename(group.account, "")
@@ -128,7 +142,7 @@ internal class HostDetailScreen(
     }
 
     private fun forget(pin: String) =
-        confirm("Forget the trusted key for ${first.endpoint}?", "You will need to verify the host key again before connecting.",
+        confirm("Forget the trusted key for ${first.endpoint}?", "This clears cached agents and marks for this host. Verify its key again before connecting.",
             "Forget host key") {
             if (pages.hosts.forgetPin(first, pin)) pages.closeEndpoint(first.endpoint)
             else pages.toast("The saved host key changed. Review it again.")

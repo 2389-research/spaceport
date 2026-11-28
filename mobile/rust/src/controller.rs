@@ -336,14 +336,17 @@ impl MobileSession {
         self.navigate(&boot_id, OwnedNavigationTarget::Pane(id).into())
     }
 
-    /// Run on a background thread. Swift rechecks the original input route before pasting.
+    /// Run on a background thread. The caller rechecks the original input route before pasting.
     pub fn stage_draft_image(
         &self,
         target: InputTarget,
         png: Vec<u8>,
+        transfer: Arc<crate::MobileFileTransfer>,
     ) -> Result<Arc<crate::StagedImage>, MobileError> {
         self.check_draft_target(&target)?;
-        self.routes.images.stage(&self.routes.transport, png)
+        self.routes
+            .images
+            .stage(&self.routes.transport, png, transfer)
     }
 
     pub fn stage_draft_file(

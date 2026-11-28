@@ -25,8 +25,10 @@ class SessionController(context: Context) {
     private val main = Handler(Looper.getMainLooper())
     private val io = Executors.newSingleThreadExecutor()
     private val keys = Executors.newSingleThreadExecutor()
+    internal val draft = SessionDraft()
     private val recovery = TransportRecovery()
     private var native: MobileSession? = null
+    private var paneTrail: uniffi.spaceport_mobile.MobilePaneTrail? = null
     @Volatile private var generation = 0L
     private var closed = false
     private var pinnedAtOpen: String? = null
@@ -45,6 +47,54 @@ class SessionController(context: Context) {
     var changed: (() -> Unit)? = null
     var profile: HostProfile? = null
         private set
+    var previewPort: Int? = null
+        private set
+
+    fun startServicePreview(remote: Int): Int {
+        require(remote in 1..65535)
+        val handle = checkNotNull(native?.takeIf { phase == ConnectionPhase.Connected })
+        val local = handle.startServicePreview(remote.toUShort()).toInt()
+        previewPort = local
+        return local
+    }
+
+    private var stoppingPreview = false
+
+    fun stopServicePreview(onError: (String) -> Unit) {
+        val session = native ?: return
+        val port = previewPort ?: return
+        if (stoppingPreview) return
+        stoppingPreview = true
+        io.execute {
+            val result = runCatching { session.stopServicePreview() }
+            main.post {
+                if (native !== session || previewPort != port) return@post
+                stoppingPreview = false
+                result.onSuccess { previewPort = null }.onFailure { onError("The preview is still closing. Try Stop again.") }
+            }
+        }
+    }
+
+    private enum class Stage(val label: String) {
+        VERIFY("SSH host verification"), OPEN("SSH login / Herdr attach"), ROSTER("Herdr handshake / roster"),
+        CONNECTED("Connected"), RESUME("Verify retained session")
+    }
+    private var stage = Stage.VERIFY
+    private var lastFailure: Stage? = null
+    private var lastCapabilities: String? = null
+    private var lastRoster: Long? = null
+
+    private fun connectionStage(): Stage =
+        if (stage == Stage.OPEN && native?.diagnosticCapabilities() != null) Stage.ROSTER else stage
+
+    fun diagnosticReport(build: Long, cachedObservation: Long?): String {
+        val caps = native?.diagnosticCapabilities() ?: lastCapabilities ?: "unavailable"
+        val observed = (lastRoster ?: cachedObservation)?.let(java.time.Instant::ofEpochMilli)?.toString() ?: "unknown"
+        return listOf("Spaceport Android build $build", "Stage: ${connectionStage().label}",
+            "Last failure: ${lastFailure?.label ?: "none"}", "Last negotiated capabilities: $caps",
+            "Last roster observation: $observed").joinToString("\n")
+    }
+
     var phase = ConnectionPhase.Disconnected
         private set
     var view: MobileView? = null
@@ -77,6 +127,7 @@ class SessionController(context: Context) {
     }
 
     private fun startLogin(p: HostProfile, requestPassword: Boolean) {
+        stage = Stage.VERIFY
         val pin = store.pin(p)
         pinnedAtOpen = pin
         keyChanged = false
@@ -108,6 +159,8 @@ class SessionController(context: Context) {
     }
 
     private fun challenge(value: String, changedKey: Boolean) {
+        stage = Stage.VERIFY
+        if (changedKey) lastFailure = connectionStage()
         fingerprint = value
         keyChanged = changedKey
         if (changedKey) show(ConnectionPhase.Failed, "The SSH host key changed. Verify the new fingerprint with the host operator.")
@@ -159,6 +212,7 @@ class SessionController(context: Context) {
 
     private fun open(p: HostProfile, pin: String, password: String?) {
         val token = generation
+        stage = Stage.OPEN
         passwordLogin = password != null
         rememberKeyOnConnect = password == null && !store.enrolled(p)
         show(ConnectionPhase.Connecting)
@@ -176,6 +230,7 @@ class SessionController(context: Context) {
                         session.disconnect()
                         session.close()
                     } else {
+                        paneTrail?.let(session::restorePaneTrail)
                         native = session
                         poll(session, token, 0u)
                     }
@@ -226,6 +281,12 @@ class SessionController(context: Context) {
         val ready = update.bootId.isNotEmpty()
         presentation = if (ready && !update.goToPending) Presentation(update, session) else null
         if (ready) {
+            stage = Stage.CONNECTED
+            update.rosterObservedAtMs?.toLong()?.takeIf { it >= 0 }?.let { lastRoster = it }
+            if (phase != ConnectionPhase.Connected) profile?.let {
+                store.allowHomeObservation(it, true)
+                store.recordOpened(it)
+            }
             phase = ConnectionPhase.Connected
             if (rememberKeyOnConnect) {
                 rememberKeyOnConnect = false
@@ -268,10 +329,30 @@ class SessionController(context: Context) {
         }
     }
 
+    fun travel(from: MobileView, pane: String, forward: Boolean): ULong? {
+        val session = currentSession(from) ?: return null
+        return try {
+            session.travelToPane(from.bootId, pane, forward).also { refreshInput() }
+        } catch (e: Exception) {
+            notice(diagnostic(e))
+            null
+        }
+    }
+
+    internal fun editPane(from: MobileView, row: AgentRow, action: uniffi.spaceport_mobile.MobilePaneAction) =
+        navigate(from) { it.applyPaneAction(from.bootId, row.workspace, row.tab, row.id, action) }
+
     fun cancelGoTo() {
         if (phase != ConnectionPhase.Connected) return
         native?.cancelGoTo()
         refreshInput()
+    }
+
+    fun createTab(from: MobileView) {
+        val workspace = from.focusedWorkspace ?: return
+        val tab = from.focusedTab ?: return
+        if (sessionFor(from) == null || from.inputTarget == null) return
+        navigate(from) { it.createTab(from.bootId, workspace, tab) }
     }
 
     fun focusWorkspace(id: String, from: MobileView) = navigate(from) { it.focusWorkspace(from.bootId, id) }
@@ -310,6 +391,14 @@ class SessionController(context: Context) {
         }
     }
 
+    internal fun parkedRoster(): RosterRead? {
+        if (phase != ConnectionPhase.Parked) return null
+        val session = native ?: return null
+        val boot = parkedBoot ?: return null
+        val request = session.beginParkedRoster(boot)
+        return RosterRead({ session.waitParkedRoster(boot, request) }, { session.cancelParkedRoster(request) })
+    }
+
     fun resume() {
         if (phase != ConnectionPhase.Parked) return
         val p = profile ?: return
@@ -319,6 +408,7 @@ class SessionController(context: Context) {
         val token = generation
         show(ConnectionPhase.Connecting)
         try {
+            stage = Stage.RESUME
             val request = session.beginResume(boot)
             checkResume(session, boot, request, token)
         } catch (e: Exception) {
@@ -354,6 +444,7 @@ class SessionController(context: Context) {
 
     private fun lost(session: MobileSession, reason: String, resumeTimeout: Boolean = false) {
         val p = profile
+        lastFailure = connectionStage()
         val interrupted = session.focusInterrupted()
         val established = phase == ConnectionPhase.Connected || parkedBoot != null
         if (p != null && recovery.take(established, session.transportLost() || resumeTimeout, interrupted)) {
@@ -429,6 +520,7 @@ class SessionController(context: Context) {
 
     fun disconnect() {
         if (closed) return
+        draft.clear()
         retire()
         fingerprint = null
         keyChanged = false
@@ -438,9 +530,12 @@ class SessionController(context: Context) {
     fun close() {
         if (closed) return
         closed = true
+        draft.clear()
         changed = null
         retire()
         phase = ConnectionPhase.Disconnected
+        paneTrail?.close()
+        paneTrail = null
         io.shutdown()
         keys.shutdown()
     }
@@ -460,8 +555,15 @@ class SessionController(context: Context) {
     }
 
     private fun retire() {
+        stoppingPreview = false
+        previewPort = null
         invalidate()
         native?.let { session ->
+            session.diagnosticCapabilities()?.let { lastCapabilities = it }
+            session.savedPaneTrail()?.let {
+                paneTrail?.close()
+                paneTrail = it
+            }
             session.disconnect()
             io.execute { session.close() }
         }
@@ -477,6 +579,7 @@ class SessionController(context: Context) {
     }
 
     private fun fail(text: String) {
+        lastFailure = connectionStage()
         retire()
         show(ConnectionPhase.Failed, text)
     }
@@ -493,7 +596,7 @@ class SessionController(context: Context) {
     }
 }
 
-private fun HostProfile.sshHost(pin: String?) = SshHost(hostname, port.toUShort(), username, pin)
+internal fun HostProfile.sshHost(pin: String?) = SshHost(hostname, port.toUShort(), username, pin)
 
 private fun diagnostic(error: Exception): String = when (error) {
     is HardwareKeyUnavailable -> error.message.orEmpty()

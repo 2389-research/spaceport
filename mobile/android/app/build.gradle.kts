@@ -1,5 +1,10 @@
 // ABOUTME: Packages the Kotlin application, generated bindings, and Android native libraries.
 // ABOUTME: Builds the shared Rust controller for both supported ABIs before Android compilation.
+import com.android.ide.common.vectordrawable.Svg2Vector
+import com.android.ide.common.vectordrawable.VdPreview
+import java.io.ByteArrayOutputStream
+import javax.imageio.ImageIO
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -7,6 +12,48 @@ plugins {
 
 val mobile = rootDir.parentFile
 val generated = mobile.resolve(".build/android")
+
+val brandResources = layout.buildDirectory.dir("generated/agent-brand-res")
+val brandSources = layout.buildDirectory.dir("generated/agent-brand-kotlin")
+val generateAgentBrands = tasks.register("generateAgentBrands") {
+    val marks = fileTree(mobile.parentFile.resolve("assets/icons")) { include("agent-*.svg", "agent-*.png") }
+    inputs.files(marks)
+    outputs.dir(brandResources)
+    outputs.dir(brandSources)
+    doLast {
+        val drawables = brandResources.get().dir("drawable-nodpi").asFile
+        drawables.deleteRecursively()
+        drawables.mkdirs()
+        val bindings = mutableListOf<String>()
+        for (mark in marks.sortedBy { it.name }) {
+            val name = mark.nameWithoutExtension.replace('-', '_')
+            val identity = mark.nameWithoutExtension.removePrefix("agent-")
+            require(identity.matches(Regex("[a-z0-9-]{1,32}")))
+            bindings.add("    \"$identity\" to R.drawable.$name,")
+            if (mark.extension == "png") {
+                mark.copyTo(drawables.resolve("$name.png"))
+            } else {
+                val svg = temporaryDir.resolve(mark.name)
+                svg.writeText(mark.readText().replace("currentColor", "#ffffff"))
+                val vector = ByteArrayOutputStream()
+                val errors = Svg2Vector.parseSvgToXml(svg.toPath(), vector)
+                check(errors.isEmpty()) { "${mark.name}: $errors" }
+                val detail = StringBuilder()
+                val pixels = VdPreview.getPreviewFromVectorXml(
+                    VdPreview.TargetSize.createFromMaxDimension(88), vector.toString(Charsets.UTF_8), detail,
+                )
+                check(pixels != null && detail.isEmpty()) { "${mark.name}: $detail" }
+                ImageIO.write(pixels, "png", drawables.resolve("$name.png"))
+            }
+        }
+        val source = brandSources.get().asFile
+        source.mkdirs()
+        source.resolve("AgentBrandResources.kt").writeText(
+            "package ai.spaceport.mobile\n\ninternal val agentBrandResources = mapOf(\n" +
+                bindings.joinToString("\n") + "\n)\n"
+        )
+    }
+}
 
 android {
     namespace = "ai.spaceport.mobile"
@@ -47,6 +94,8 @@ android {
     // JNA distributes prebuilt dispatch libraries, including legacy ABIs the NDK cannot strip.
     packaging.jniLibs.keepDebugSymbols += "**/libjnidispatch.so"
     sourceSets["main"].apply {
+        res.srcDir(brandResources)
+        java.srcDir(brandSources)
         java.srcDir(generated.resolve("kotlin"))
         jniLibs.srcDir(generated.resolve("jniLibs"))
     }
@@ -67,7 +116,7 @@ val buildMobileNative = tasks.register<Exec>("buildMobileNative") {
         )
     }
 }
-tasks.named("preBuild") { dependsOn(buildMobileNative) }
+tasks.named("preBuild") { dependsOn(buildMobileNative, generateAgentBrands) }
 
 dependencies {
     implementation("androidx.activity:activity:1.13.0")
